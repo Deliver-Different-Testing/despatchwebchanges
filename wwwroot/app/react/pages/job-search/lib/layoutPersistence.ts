@@ -95,6 +95,26 @@ export function saveBoxVisibility(
     }
 }
 
+/**
+ * Merge persisted visibility/collapsed state onto a fresh set of box
+ * definitions. Boxes with no saved entry keep their definition defaults.
+ * Shared by the React layout hook and the AngularJS toolbar's settings dialog
+ * so both render the same box list.
+ */
+export function mergeBoxVisibility(
+    boxes: Record<string, IBox>,
+    saved: Record<string, BoxVisibilityRecord> | null,
+): Record<string, IBox> {
+    if (!saved) return boxes;
+    const next: Record<string, IBox> = {...boxes};
+    for (const [name, state] of Object.entries(saved)) {
+        if (next[name]) {
+            next[name] = {...next[name], visible: state.visible, collapsed: state.collapsed};
+        }
+    }
+    return next;
+}
+
 function isLocalStorageAvailable(): boolean {
     if (typeof window === 'undefined') return false;
     const modernizr = (globalThis as {Modernizr?: {localstorage?: boolean}}).Modernizr;

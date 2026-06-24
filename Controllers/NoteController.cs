@@ -131,7 +131,7 @@ public class NoteController(
             else
             {
                 // Check if a note exists in TucNotes / TucNoteArchives
-                var existingNote = await noteRepository.GetNoteByIdAsync(noteViewModel.NoteId);
+                var existingNote = await noteRepository.GetNoteByIdAsync(noteViewModel.NoteId, noteViewModel.JobId);
                 if (existingNote == null)
                 {
                     return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
@@ -184,14 +184,14 @@ public class NoteController(
     }
 
     [HttpDelete]
-    public async Task<IActionResult> DeleteNote(int noteId)
+    public async Task<IActionResult> DeleteNote(int noteId, int? jobId = null)
     {
         try
         {
-            var note = await noteRepository.GetNoteByIdAsync(noteId);
+            var note = await noteRepository.GetNoteByIdAsync(noteId, jobId);
             ArgumentNullException.ThrowIfNull(note);
 
-            await noteRepository.DeleteNoteAsync(noteId);
+            await noteRepository.DeleteNoteAsync(noteId, jobId);
 
             return Ok();
         }

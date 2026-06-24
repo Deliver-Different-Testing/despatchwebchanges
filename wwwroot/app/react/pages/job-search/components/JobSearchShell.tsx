@@ -1,5 +1,8 @@
 import React, {Fragment, useRef} from 'react';
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
+import EditIcon from '@mui/icons-material/Edit';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {alpha} from '@mui/material/styles';
 import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
@@ -81,6 +84,15 @@ const boxContentSx: SxProps<Theme> = {
     overflow: 'auto',
 };
 
+// Insets each card inside its panel so neighbouring cards get a small,
+// uniform gap. border-box keeps the card at the panel's full size minus
+// the padding, so it never overflows / triggers a scrollbar.
+const boxPanelPadSx: SxProps<Theme> = {
+    height: '100%',
+    p: 0.5,
+    boxSizing: 'border-box',
+};
+
 const DRAG_MIME = 'application/x-jobsearch-box';
 
 interface DragRef {
@@ -109,6 +121,9 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
     onMoveBox,
 }) => {
     const dragRef = useRef<DragRef | null>(null);
+    // Name of the panel whose drag handle should be re-focused after a reorder
+    // remounts the panel tree (see BoxHeader.focusHandleOnMount).
+    const pendingFocusRef = useRef<string | null>(null);
 
     const handleDragStart = (sourceColumnId: string, sourceIndex: number) =>
         (event: React.DragEvent<HTMLDivElement>) => {
@@ -146,7 +161,33 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
         };
 
     return (
-        <Box sx={{height: '100%', width: '100%', p: 1, boxSizing: 'border-box', minHeight: 0}}>
+        <Box sx={{
+            height: '100%',
+            width: '100%',
+            p: 1,
+            boxSizing: 'border-box',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.5,
+        }}>
+            {/* Edit-mode signal: only shown on a custom (editable) layout. The
+                read-only Default layout shows nothing so it doesn't waste space. */}
+            {!isDefaultLayout && (
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, px: 0.5, flexShrink: 0}}>
+                    <Chip
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        icon={<EditIcon/>}
+                        label={`Editing: ${layout.name}`}
+                    />
+                    <Typography variant="caption" sx={{color: 'text.secondary'}}>
+                        Drag a panel, or focus its handle and use the arrow keys, to reorder
+                    </Typography>
+                </Box>
+            )}
+            <Box sx={{flex: 1, minHeight: 0}}>
             <PanelGroup
                 key={`columns-${layoutVersion}`}
                 direction="horizontal"
@@ -159,7 +200,9 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                             originalIndex,
                             meta: boxes[boxRef.name ?? ''],
                         }))
-                        .filter(item => item.meta && item.meta.visible);
+                        // The Default layout is read-only — panels can't be hidden there,
+                        // so always show every panel regardless of any stored visibility.
+                        .filter(item => item.meta && (isDefaultLayout || item.meta.visible));
 
                     const visibleBoxNames = visibleBoxes.map(item => item.boxRef.name ?? '');
 
@@ -208,6 +251,22 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                                                 const collapsed = meta.collapsed ?? false;
                                                 const defaultSize = collapsed ? 8 : parsePercent(boxRef.height, 33);
                                                 const minSize = collapsed ? 6 : 12;
+                                                const boxName = meta.name ?? '';
+
+                                                // Keyboard reorder targets the neighbouring visible panel's
+                                                // original index — mirroring the drag drop-on-box semantics so
+                                                // useBoxLayout.moveBox applies the same index adjustment.
+                                                const canReorder = !isDefaultLayout && !!onMoveBox;
+                                                const prevVisible = vIdx > 0 ? visibleBoxes[vIdx - 1] : undefined;
+                                                const nextVisible = vIdx < visibleBoxes.length - 1
+                                                    ? visibleBoxes[vIdx + 1]
+                                                    : undefined;
+                                                const moveTo = (targetIndex: number) => {
+                                                    if (!onMoveBox) return;
+                                                    pendingFocusRef.current = boxName;
+                                                    // Within-column only for keyboard; cross-column stays mouse-only.
+                                                    onMoveBox(column.id, originalIndex, column.id, targetIndex);
+                                                };
 
                                                 return (
                                                     <Fragment key={boxRef.name}>
@@ -217,31 +276,43 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                                                             </PanelResizeHandle>
                                                         )}
                                                         <Panel defaultSize={defaultSize} minSize={minSize}>
-                                                            <Box
-                                                                sx={boxCardSx}
-                                                                onDragOver={handleDragOver}
-                                                                onDrop={handleDropOnBox(column.id, originalIndex)}
-                                                            >
-                                                                <BoxHeader
-                                                                    icon={meta.icon ?? 'crop_square'}
-                                                                    title={meta.title ?? meta.name ?? ''}
-                                                                    subtitle={boxSubtitle?.(meta.name ?? '')}
-                                                                    locked={boxLocked?.(meta.name ?? '')}
-                                                                    collapsed={collapsed}
-                                                                    showRefresh={!!meta.showRefresh}
-                                                                    showCollapse={!isDefaultLayout}
-                                                                    showDragHandle={!isDefaultLayout}
-                                                                    onDragStart={isDefaultLayout
-                                                                        ? undefined
-                                                                        : handleDragStart(column.id, originalIndex)}
-                                                                    onRefresh={() => onRefreshBox(meta.name ?? '')}
-                                                                    onToggleCollapse={() => onToggleCollapse(meta.name ?? '')}
-                                                                />
-                                                                {!collapsed ? (
-                                                                    <Box sx={boxContentSx}>
-                                                                        {renderBoxContent(meta.name ?? '')}
-                                                                    </Box>
-                                                                ) : null}
+                                                            <Box sx={boxPanelPadSx}>
+                                                                <Box
+                                                                    sx={boxCardSx}
+                                                                    onDragOver={handleDragOver}
+                                                                    onDrop={handleDropOnBox(column.id, originalIndex)}
+                                                                >
+                                                                    <BoxHeader
+                                                                        icon={meta.icon ?? 'crop_square'}
+                                                                        title={meta.title ?? meta.name ?? ''}
+                                                                        subtitle={boxSubtitle?.(meta.name ?? '')}
+                                                                        locked={boxLocked?.(meta.name ?? '')}
+                                                                        collapsed={collapsed}
+                                                                        showRefresh={!!meta.showRefresh}
+                                                                        showCollapse={!isDefaultLayout}
+                                                                        showDragHandle={!isDefaultLayout}
+                                                                        onDragStart={isDefaultLayout
+                                                                            ? undefined
+                                                                            : handleDragStart(column.id, originalIndex)}
+                                                                        onRefresh={() => onRefreshBox(meta.name ?? '')}
+                                                                        onToggleCollapse={() => onToggleCollapse(meta.name ?? '')}
+                                                                        onMoveUp={canReorder && prevVisible
+                                                                            ? () => moveTo(prevVisible.originalIndex)
+                                                                            : undefined}
+                                                                        onMoveDown={canReorder && nextVisible
+                                                                            ? () => moveTo(nextVisible.originalIndex)
+                                                                            : undefined}
+                                                                        focusHandleOnMount={pendingFocusRef.current === boxName}
+                                                                        onHandleFocused={() => {
+                                                                            pendingFocusRef.current = null;
+                                                                        }}
+                                                                    />
+                                                                    {!collapsed ? (
+                                                                        <Box sx={boxContentSx}>
+                                                                            {renderBoxContent(meta.name ?? '')}
+                                                                        </Box>
+                                                                    ) : null}
+                                                                </Box>
                                                             </Box>
                                                         </Panel>
                                                     </Fragment>
@@ -255,6 +326,7 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                     );
                 })}
             </PanelGroup>
+            </Box>
         </Box>
     );
 };

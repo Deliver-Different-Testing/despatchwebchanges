@@ -126,13 +126,13 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
                                     }}>
                                         Type:
                                     </Typography>
-                                    <Chip label={entry.oldNoteTypeName ?? 'Unknown'} size="small" variant="outlined" color="default" />
+                                    <Chip label={entry.oldNoteTypeName ?? 'Unknown'} size="small" color="default" />
                                     <Typography variant="caption" sx={{
                                         color: "text.secondary"
                                     }}>
                                         &rarr;
                                     </Typography>
-                                    <Chip label={entry.newNoteTypeName ?? 'Unknown'} size="small" variant="outlined" color="primary" />
+                                    <Chip label={entry.newNoteTypeName ?? 'Unknown'} size="small" color="primary" />
                                 </Box>
                             )}
 
@@ -148,7 +148,6 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
                                         label={entry.newIsImportant ? 'Marked important' : 'Unmarked important'}
                                         size="small"
                                         color={entry.newIsImportant ? 'warning' : 'default'}
-                                        variant="outlined"
                                     />
                                 </Box>
                             )}

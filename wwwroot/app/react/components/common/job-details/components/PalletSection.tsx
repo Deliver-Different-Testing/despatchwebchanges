@@ -72,8 +72,8 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                             </TableCell>
                             <TableCell sx={cellSx}>
                                 <Box sx={{display: 'flex', gap: 0.5}}>
-                                    {pallet.pu && <Chip label="PU" size="small" color="primary" variant="outlined" sx={{height: 20, fontSize: '0.6875rem'}} />}
-                                    {pallet.do && <Chip label="DO" size="small" color="success" variant="outlined" sx={{height: 20, fontSize: '0.6875rem'}} />}
+                                    {pallet.pu && <Chip label="PU" size="small" color="primary" sx={{height: 20, fontSize: '0.6875rem'}} />}
+                                    {pallet.do && <Chip label="DO" size="small" color="success" sx={{height: 20, fontSize: '0.6875rem'}} />}
                                 </Box>
                             </TableCell>
                             <TableCell sx={cellSx}>{pallet.dgClass || '\u2014'}</TableCell>

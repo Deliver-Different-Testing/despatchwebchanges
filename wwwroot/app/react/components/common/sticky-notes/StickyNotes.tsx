@@ -187,7 +187,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         if (!confirmed) return;
 
         try {
-            await notesApi.deleteNote(note.noteId ?? 0);
+            await notesApi.deleteNote(note.noteId ?? 0, note.jobId ?? (isRecurringJob ? undefined : jobId));
             await invalidateNotes();
             showSuccessToast?.('Note deleted successfully');
         } catch (error) {

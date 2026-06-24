@@ -106,6 +106,12 @@ export function useMessages(currentStaffId: number) {
         setMessages(prev => [...prev, message]);
     }, []);
 
+    const updateMessage = useCallback((messageId: number, updates: Partial<ChatMessage>) => {
+        setMessages(prev => prev.map(m =>
+            m.messageId === messageId ? {...m, ...updates} : m
+        ));
+    }, []);
+
     const clearMessages = useCallback(() => {
         setMessages([]);
     }, []);
@@ -116,6 +122,7 @@ export function useMessages(currentStaffId: number) {
         error,
         loadMessages,
         addOptimisticMessage,
+        updateMessage,
         clearMessages,
     };
 }

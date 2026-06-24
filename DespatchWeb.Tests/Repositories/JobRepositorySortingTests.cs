@@ -254,8 +254,8 @@ public class JobRepositorySortingTests
         Assert.Equal(expected, result.To);
     }
 
-    private static TucCourier MakeCourier(int id, string code, string name, string surname) =>
-        new() { UccrId = id, Code = code, UccrName = name, UccrSurname = surname };
+    private static JobRepository.CourierLite MakeCourier(int id, string code, string name, string surname) =>
+        new(id, code, name, surname);
 
     [Fact]
     public void GetCourierDescription_Transfer_RunViewerCourier_FormatsOpsDescription()
@@ -301,6 +301,19 @@ public class JobRepositorySortingTests
             (int)ScanType.Transfer, courier, null, null, null);
 
         Assert.Equal("C01 Alice Smith", result);
+    }
+
+    [Fact]
+    public void GetCourierDescription_Transfer_NullCourier_DoesNotThrow()
+    {
+        // A Transfer scan can have a null/unmatched CourierId (the courier is a
+        // LEFT JOIN). It must not NRE — render an empty courier, plus any TransferTo.
+        var transferTo = MakeCourier(2, "C02", "Bob", "Jones");
+
+        var result = JobRepository.GetCourierDescription(
+            (int)ScanType.Transfer, null, transferTo, null, null);
+
+        Assert.Equal("   to C02 Bob Jones", result);
     }
 
     [Fact]

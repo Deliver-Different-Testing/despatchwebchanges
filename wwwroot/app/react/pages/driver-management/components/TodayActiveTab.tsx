@@ -32,9 +32,9 @@ const formatSessionTime = (totalMinutes: number): string => {
 };
 
 const columns: DataTableColumn<TodayActiveDriver>[] = [
-    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Chip label={row.code} size="small" color="primary" variant="outlined" />},
+    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Chip label={row.code} size="small" color="primary" />},
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
-    {key: 'fleet', label: 'Fleet', sortable: true, render: (row) => <Chip label={row.fleet} size="small" variant="outlined" sx={getFleetChipSx(row.fleet)} />},
+    {key: 'fleet', label: 'Fleet', sortable: true, render: (row) => <Chip label={row.fleet} size="small" sx={getFleetChipSx(row.fleet)} />},
     {key: 'loginTime', label: 'Login Time', sortable: true, width: '110px', render: (row) => row.loginTime ? dayjs(row.loginTime).format('HH:mm') : ''},
     {key: 'logoutTime', label: 'Logout Time', sortable: true, width: '110px', render: (row) => row.logoutTime ? dayjs(row.logoutTime).format('HH:mm') : ''},
     {key: 'duration', label: 'Duration', sortable: true, width: '100px', render: (row) => row.duration},

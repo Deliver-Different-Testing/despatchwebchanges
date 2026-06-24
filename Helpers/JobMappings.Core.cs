@@ -45,7 +45,7 @@ public static partial class JobMappings
         // real value; surface NULL otherwise so the UI shows '-'.
         DispatchTime = j.UcjbDispDate.HasValue && j.UcjbDispDate.Value.Year > 1900
             ? j.UcjbDispDate.Value.CombineWithTime(j.UcjbDispTime)
-            : (DateTime?)null,
+            : null,
         CreatedDate = j.CreatedTimeUtc,
         ScheduleName = j.ScheduleName ?? Defaults.NotAvailable,
         FollowupTime = j.FollowupTime,

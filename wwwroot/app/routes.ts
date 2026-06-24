@@ -11,10 +11,15 @@ import {
     saveLayouts,
     loadLastActiveLayoutName,
     saveLastActiveLayoutName,
+    loadBoxVisibility,
+    saveBoxVisibility,
+    mergeBoxVisibility,
 } from './react/pages/job-search/lib/layoutPersistence';
-import {createDefaultJobSearchLayout} from './react/pages/job-search/lib/boxDefinitions';
-import type {ILayout} from './interfaces/layout.interfaces';
+import {createDefaultJobSearchLayout, createJobSearchBoxes} from './react/pages/job-search/lib/boxDefinitions';
+import type {IBox, ILayout} from './interfaces/layout.interfaces';
 import {AppPage} from './enums/app-pages.enum';
+import {isAiEnabled, setAiEnabled} from './functions/aiSettings';
+import isDefaultLayout from './functions/isDefaultLayout';
 
 class RouterConfig {
     constructor(
@@ -224,6 +229,7 @@ class RouterConfig {
                             on-load-layout="ctrl.loadLayout(index)"
                             on-delete-layout="ctrl.deleteLayout(index)"
                             on-settings-click="ctrl.openSettingsDialog($event)"
+                            on-customize-panels="ctrl.openCustomizePanelsDialog()"
                             on-create-new-job="ctrl.createNewJob($event)"
                             on-inter-courier-charge="ctrl.interCourierCharge($event)">
                     </react-app-shell>
@@ -278,9 +284,13 @@ class RouterConfig {
                         name: d.name,
                         files: [getAssetPath(d.file)],
                     })));
+                    const jobSearchFiles = [getAssetPath('jobSearchReact.js')];
+                    if (manifest['jobSearchReact.css']) {
+                        jobSearchFiles.push(getAssetPath('jobSearchReact.css'));
+                    }
                     await $ocLazyLoad.load({
                         name: 'uDispatch.jobSearchReact',
-                        files: [getAssetPath('jobSearchReact.js')]
+                        files: jobSearchFiles
                     });
                 }]
             },
@@ -348,13 +358,18 @@ class RouterConfig {
                                             showDashboards?: boolean;
                                             showAiToggle?: boolean;
                                             showJobSearchBetaToggle?: boolean;
+                                            panelsMovedNotice?: boolean;
                                         },
-                                        boxes: Record<string, unknown>,
+                                        boxes: Record<string, IBox>,
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         aiEnabled?: boolean,
                                         jobSearchBetaEnabled?: boolean,
-                                    ) => Promise<{jobSearchBetaEnabled?: boolean; aiEnabled?: boolean} | null>;
+                                    ) => Promise<{
+                                        jobSearchBetaEnabled?: boolean;
+                                        aiEnabled?: boolean;
+                                        boxes?: Record<string, IBox>;
+                                    } | null>;
                                 };
                             };
                             if (!w.ReactDashboardSettingsDialog) {
@@ -363,18 +378,29 @@ class RouterConfig {
                             }
                             try {
                                 const wasOn = getJobSearchBetaEnabled();
+                                // Panel visibility moved to the dedicated Customize
+                                // Panels dialog (Layouts menu) — the gear now shows a
+                                // notice instead of panel toggles.
                                 const result = await w.ReactDashboardSettingsDialog.open(
                                     {
                                         title: 'Job Search Dashboard Settings',
+                                        showAiToggle: true,
                                         showJobSearchBetaToggle: true,
+                                        panelsMovedNotice: true,
                                     },
                                     {},
                                     undefined,
                                     undefined,
-                                    undefined,
+                                    isAiEnabled(),
                                     wasOn,
                                 );
-                                if (result && result.jobSearchBetaEnabled !== undefined
+                                if (!result) return;
+
+                                if (result.aiEnabled !== undefined) {
+                                    setAiEnabled(result.aiEnabled);
+                                }
+
+                                if (result.jobSearchBetaEnabled !== undefined
                                     && result.jobSearchBetaEnabled !== wasOn) {
                                     setJobSearchBetaEnabled(result.jobSearchBetaEnabled);
                                     if (!result.jobSearchBetaEnabled) {
@@ -396,6 +422,45 @@ class RouterConfig {
                             }
                         },
 
+                        openCustomizePanelsDialog: async () => {
+                            const w = window as unknown as {
+                                ReactCustomizePanelsDialog?: {
+                                    open: (
+                                        boxes: Record<string, IBox>,
+                                        layoutEditable?: boolean,
+                                        title?: string,
+                                    ) => Promise<Record<string, IBox> | null>;
+                                };
+                            };
+                            if (!w.ReactCustomizePanelsDialog) {
+                                toastrService.showErrorToast('Customize panels dialog is not loaded.');
+                                return;
+                            }
+                            try {
+                                const layoutName = ctrl.currentLayoutName ?? 'Default';
+                                // Build the live box list from definitions + persisted
+                                // visibility so operators can show/hide panels.
+                                const boxes = mergeBoxVisibility(
+                                    createJobSearchBoxes(),
+                                    loadBoxVisibility(layoutStorageKeys, layoutName),
+                                );
+                                const result = await w.ReactCustomizePanelsDialog.open(
+                                    boxes,
+                                    !isDefaultLayout(layoutName),
+                                    layoutName,
+                                );
+                                if (!result) return;
+
+                                // Persist box visibility and push it into the live React
+                                // page (reloadLayoutsFromStorage re-reads visibility and
+                                // bumps the layout version).
+                                saveBoxVisibility(layoutStorageKeys, layoutName, result);
+                                window.ReactJobSearch?.reloadLayoutsFromStorage();
+                            } catch (err) {
+                                console.error('[jobSearchV2] customize panels dialog error', err);
+                            }
+                        },
+
                         createNewJob: ($event: MouseEvent) => {
                             const w = window as unknown as {
                                 ReactCreateJobDialog?: {
@@ -414,19 +479,16 @@ class RouterConfig {
 
                         interCourierCharge: ($event: MouseEvent) => {
                             void $event;
-                            // The inter-courier dialog is bundled with whichever
-                            // page first imports it; if no caller has loaded it
-                            // yet, this gracefully degrades. Phase 4 will move
-                            // it into the V2 preload bundle list.
-                            const w = window as unknown as {
-                                openInterCourierChargeDialog?: () => Promise<void>;
-                            };
-                            if (w.openInterCourierChargeDialog) {
-                                w.openInterCourierChargeDialog().catch(err =>
+                            // The dialog component is statically bundled into
+                            // jobSearchReact.js (imported by JobSearchPage), so it
+                            // is always available once the page has mounted. The
+                            // bridge wires it to the page's toast service.
+                            if (window.ReactJobSearch?.openInterCourierCharge) {
+                                window.ReactJobSearch.openInterCourierCharge().catch(err =>
                                     console.error('[jobSearchV2] inter-courier dialog error', err)
                                 );
                             } else {
-                                toastrService.showErrorToast('Inter-courier dialog is not loaded — open it once from /jobSearch first.');
+                                toastrService.showErrorToast('Inter-courier dialog is not loaded.');
                             }
                         },
 
@@ -513,10 +575,8 @@ class RouterConfig {
                 <md-content class="md-dense prebook-view">
                     <style>.prebook-view md-card { margin: 0; }</style>
                     <react-app-shell section="Dashboards" title="Recurring Jobs"></react-app-shell>
-                    <div class="dashboard-padding" style="height: calc(100vh - 64px);">
-                        <div style="display: flex; height: 100%; padding: 16px;">
-                            <div id="react-recurring-jobs-list" style="flex: 1; height: 100%; overflow: hidden;"></div>
-                        </div>
+                    <div style="height: calc(100vh - 64px); overflow: hidden;">
+                        <div id="react-recurring-jobs-list" style="height: 100%; overflow: hidden;"></div>
                     </div>
                 </md-content>
             `,
@@ -668,10 +728,8 @@ class RouterConfig {
                         on-load-layout="loadLayout(index)"
                         on-delete-layout="deleteLayout(index)">
                     </react-app-shell>
-                    <div class="dashboard-padding" style="height: calc(100vh - 64px);">
-                        <div style="display: flex; height: 100%; padding: 16px;">
-                            <div id="react-task-dashboard" style="flex: 1; height: 100%; overflow: hidden;"></div>
-                        </div>
+                    <div style="height: calc(100vh - 64px); overflow: hidden;">
+                        <div id="react-task-dashboard" style="height: 100%; overflow: hidden;"></div>
                     </div>
                 </md-content>
             `,

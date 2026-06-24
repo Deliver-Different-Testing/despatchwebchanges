@@ -2254,11 +2254,8 @@ class HomeController extends BaseController {
                 this.onDriverLocationRefreshIntervalChange(result.selectedDriverLocationRefreshInterval);
             }
 
-            if (result.boxes) {
-                this.boxes = result.boxes;
-                this.saveBoxVisibility();
-            }
-
+            // Panel visibility now lives in the Customize Panels dialog
+            // (openCustomizePanelsDialog); the gear no longer returns boxes.
             if (result.aiEnabled !== undefined) {
                 setAiEnabled(result.aiEnabled);
             }
@@ -2270,6 +2267,28 @@ class HomeController extends BaseController {
             if (!error) return;
             console.error('Error opening settings dialog:', error);
             this.toastrService.showErrorToast('Failed to open settings dialog');
+        }
+    }
+
+    async openCustomizePanelsDialog(): Promise<void> {
+        if (!this.boxes) return;
+
+        try {
+            const result = await this.dashboardSettingsDialog.openCustomizePanelsDialog(
+                this.currentLayoutName ?? 'Default',
+                this.boxes,
+            );
+
+            if (!result) return;
+
+            this.boxes = result;
+            this.saveBoxVisibility();
+            this.saveCurrentLayout();
+            this.applyScope();
+        } catch (error) {
+            if (!error) return;
+            console.error('Error opening customize panels dialog:', error);
+            this.toastrService.showErrorToast('Failed to open customize panels dialog');
         }
     }
 

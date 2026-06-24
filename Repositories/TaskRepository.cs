@@ -31,7 +31,7 @@ public class TaskRepository(
         // so the inter-tenant change-request workflow surfaces in the task dashboard.
         var query = Context.TucEvents
             .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
-                     || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
+                        || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
 
         if (filters != null)
         {
@@ -356,6 +356,7 @@ public class TaskRepository(
         var job = await jobTask;
 
         ArgumentNullException.ThrowIfNull(job);
+        ArgumentNullException.ThrowIfNull(staffInfo);
 
         var currentDate = clock.TenantNow;
 
@@ -544,13 +545,9 @@ public class TaskRepository(
             var automaticResponse = false;
             if (jobContactInfo?.ContactJobType != null)
             {
-                automaticResponse = type switch
-                {
-                    (int)EventType.LatePickUp => AutoResponseTypes.Contains(jobContactInfo.ContactJobType.PickupType),
-                    (int)EventType.LateDelivery => AutoResponseTypes.Contains(
-                        jobContactInfo.ContactJobType.DeliveryType),
-                    _ => false
-                };
+                automaticResponse = AutoResponseTypes.Contains(type == (int)EventType.LatePickUp
+                    ? jobContactInfo.ContactJobType.PickupType
+                    : jobContactInfo.ContactJobType.DeliveryType);
             }
 
             // Set fields for automatic response

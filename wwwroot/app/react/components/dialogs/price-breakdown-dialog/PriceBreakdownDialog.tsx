@@ -569,7 +569,6 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                                         label="This Job"
                                                                         size="small"
                                                                         color="primary"
-                                                                        variant="outlined"
                                                                         sx={{ height: 20, mt: 0.5, '& .MuiChip-label': { px: 0.75 } }}
                                                                     />
                                                                 )}

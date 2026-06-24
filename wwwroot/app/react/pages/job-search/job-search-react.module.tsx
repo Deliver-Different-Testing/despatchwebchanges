@@ -117,6 +117,15 @@ export function promptDeleteLayout(layoutName: string): Promise<boolean> {
     return layoutBridge?.promptDeleteLayout(layoutName) ?? Promise.resolve(false);
 }
 
+/**
+ * Open the Inter-Courier Charge dialog from the AngularJS toolbar. The dialog
+ * component is statically imported by JobSearchPage, so it's already in this
+ * bundle — no separate lazy-load needed. No-op if React is not mounted.
+ */
+export function openInterCourierCharge(): Promise<void> {
+    return layoutBridge?.openInterCourierCharge() ?? Promise.resolve();
+}
+
 // Expose globally for AngularJS access (typed via global.d.ts)
 declare global {
     interface Window {
@@ -127,6 +136,7 @@ declare global {
             reloadLayoutsFromStorage: typeof reloadLayoutsFromStorage;
             promptSaveLayout: typeof promptSaveLayout;
             promptDeleteLayout: typeof promptDeleteLayout;
+            openInterCourierCharge: typeof openInterCourierCharge;
         };
     }
 }
@@ -138,6 +148,7 @@ window.ReactJobSearch = {
     reloadLayoutsFromStorage,
     promptSaveLayout,
     promptDeleteLayout,
+    openInterCourierCharge,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

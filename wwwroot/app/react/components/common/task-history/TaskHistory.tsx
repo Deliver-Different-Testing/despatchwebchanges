@@ -414,7 +414,6 @@ const EventRow: React.FC<EventRowProps> = ({event, index, spec, densityMode, tim
                             <Chip
                                 label={tag}
                                 size="small"
-                                variant="outlined"
                                 sx={{
                                     height: densityMode === DensityMode.UltraDense ? 16 : 20,
                                     maxWidth: densityMode === DensityMode.UltraDense ? 120 : 220,
@@ -433,7 +432,6 @@ const EventRow: React.FC<EventRowProps> = ({event, index, spec, densityMode, tim
                         <Chip
                             label={`+${remainingTags}`}
                             size="small"
-                            variant="outlined"
                             sx={{
                                 height: densityMode === DensityMode.UltraDense ? 16 : 20,
                                 fontStyle: 'italic',

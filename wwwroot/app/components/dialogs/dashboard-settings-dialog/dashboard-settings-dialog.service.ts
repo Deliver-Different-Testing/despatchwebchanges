@@ -80,7 +80,12 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
         const isValidPage = appPage === AppPage.Dispatch
             || appPage === AppPage.Domestic
             || appPage === AppPage.JobSearch;
-        const canShowDashboards = isValidPage && !isDefaultLayout(currentLayoutName);
+        // Panel visibility now lives in its own Customize Panels dialog, reached
+        // from the Layouts menu — so the gear shows a "moved" notice instead.
+        const panelsMovedNotice = appPage === AppPage.JobSearch
+            || appPage === AppPage.Dispatch
+            || appPage === AppPage.Domestic;
+        const canShowDashboards = isValidPage && !panelsMovedNotice && !isDefaultLayout(currentLayoutName);
 
         console.log('DashboardSettingsDialog: Opening with layout', currentLayoutName, 'isDefault:', isDefaultLayout(currentLayoutName), 'canShowDashboards:', canShowDashboards);
 
@@ -91,6 +96,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             showDashboards: canShowDashboards,
             showAiToggle: true,
             showJobSearchBetaToggle: appPage === AppPage.JobSearch,
+            panelsMovedNotice,
         };
 
         if (!selectedRefreshInterval) {
@@ -129,6 +135,37 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             }
 
             console.error('DashboardSettingsDialogService: Error in openSettingsDialog', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Opens the dedicated Customize Panels dialog (panel visibility). Reachable
+     * from the Layouts menu. Ships in the same bundle as the settings dialog.
+     */
+    async openCustomizePanelsDialog(
+        currentLayoutName: string,
+        boxes: Record<string, IBox>,
+    ): Promise<Record<string, IBox> | undefined> {
+        await this.loadReactDashboardSettingsDialog();
+
+        if (!window.ReactCustomizePanelsDialog) {
+            throw new Error('React customize panels dialog not loaded');
+        }
+
+        try {
+            const result = await window.ReactCustomizePanelsDialog.open(
+                boxes,
+                !isDefaultLayout(currentLayoutName),
+                currentLayoutName,
+            );
+            return result ?? undefined;
+        } catch (error) {
+            if (!error) {
+                console.debug('User closed customize panels dialog');
+                return;
+            }
+            console.error('DashboardSettingsDialogService: Error in openCustomizePanelsDialog', error);
             throw error;
         }
     }

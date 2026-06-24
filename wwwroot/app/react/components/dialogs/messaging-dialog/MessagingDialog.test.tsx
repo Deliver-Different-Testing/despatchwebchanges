@@ -8,7 +8,7 @@ import React from 'react';
 import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {MessagingDialog} from './MessagingDialog';
+import {MessagingDialog, isNearBottom} from './MessagingDialog';
 import {messagingApi} from '../../../services/messagingApi';
 import {suppressConsoleError} from '../../../__testUtils__';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
@@ -91,27 +91,93 @@ Element.prototype.scrollIntoView = jest.fn();
 
 describe('MessagingDialog', () => {
     // ── Rendering + close (single render) ───────────────────────────
-    it('renders dialog with title, conversations panel, and calls onClose on close button', async () => {
+    it('renders drawer with title, conversations panel, and calls onClose on close button', async () => {
         const user = userEvent.setup();
         setupApiDefaults();
         const onClose = jest.fn();
         renderWithTheme(<MessagingDialog {...defaultProps} onClose={onClose} />);
 
-        expect(await screen.findByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Message Center')).toBeInTheDocument();
+        expect(await screen.findByText('Message Center')).toBeInTheDocument();
         expect(screen.getByText('Conversations')).toBeInTheDocument();
 
-        // Close button — find within the dialog's gradient header (parent of the title)
+        // Close button — find within the drawer's gradient header (parent of the title)
         const header = screen.getByText('Message Center').closest('div')!.parentElement!;
         await user.click(within(header).getByRole('button'));
         expect(onClose).toHaveBeenCalled();
     });
 
-    // ── Closed dialog ───────────────────────────────────────────────
-    it('does not render dialog content when closed', () => {
+    // ── Outside click does not dismiss ──────────────────────────────
+    it('stays open on backdrop (outside) click but closes on the close button', async () => {
+        const user = userEvent.setup();
+        setupApiDefaults();
+        const onClose = jest.fn();
+        renderWithTheme(<MessagingDialog {...defaultProps} onClose={onClose} />);
+
+        expect(await screen.findByText('Message Center')).toBeInTheDocument();
+
+        // Clicking the dimmed backdrop outside the panel must NOT close it.
+        const backdrop = document.querySelector('.MuiBackdrop-root');
+        expect(backdrop).not.toBeNull();
+        await user.click(backdrop as Element);
+        expect(onClose).not.toHaveBeenCalled();
+        expect(screen.getByText('Message Center')).toBeInTheDocument();
+
+        // The header close button still dismisses.
+        const header = screen.getByText('Message Center').closest('div')!.parentElement!;
+        await user.click(within(header).getByRole('button'));
+        expect(onClose).toHaveBeenCalled();
+    });
+
+    // ── Closed drawer ───────────────────────────────────────────────
+    it('does not render drawer content when closed', () => {
         setupApiDefaults();
         renderWithTheme(<MessagingDialog {...defaultProps} open={false}/>);
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.queryByText('Message Center')).not.toBeInTheDocument();
+    });
+
+    // ── Accessibility: labelled controls + live region ─────────────
+    it('exposes accessible names on icon controls and a live region for messages', async () => {
+        const user = userEvent.setup();
+        setupApiDefaults([createConversation({otherPartyId: 10})]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        // Conversation-list controls are labelled
+        expect(await screen.findByRole('button', {name: /close message center/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /refresh conversations/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /new conversation/i})).toBeInTheDocument();
+
+        // Open a conversation to reveal the chat-panel controls + message log
+        await user.click(await screen.findByText('John Driver'));
+
+        expect(await screen.findByRole('button', {name: /send message/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /quick responses/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /refresh messages/i})).toBeInTheDocument();
+        // Incoming messages are announced to screen readers
+        expect(screen.getByRole('log')).toBeInTheDocument();
+    });
+
+    // ── Message grouping: consecutive same-sender messages share one timestamp ─
+    it('groups consecutive same-sender messages so only the last shows a timestamp', async () => {
+        const user = userEvent.setup();
+        setupApiDefaults([createConversation({otherPartyId: 10})]);
+        // Two messages from the same sender, same minute → one group.
+        mockApi.getMessages.mockResolvedValue([
+            createMessage({messageId: 1, message: 'First', isSender: true, read: true, messageTime: '2020-01-15T09:00:00'}),
+            createMessage({messageId: 2, message: 'Second', isSender: true, read: true, messageTime: '2020-01-15T09:00:00'}),
+        ]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await user.click(await screen.findByText('John Driver'));
+
+        // Both bubbles render…
+        await waitFor(() => {
+            expect(screen.getByText('First')).toBeInTheDocument();
+            expect(screen.getByText('Second')).toBeInTheDocument();
+        });
+        // …but the grouped run shows a single message timestamp (the last bubble's),
+        // not one per message. (The "Jan 15, 2020" date separator is excluded by
+        // matching the HH:mm time portion.)
+        expect(screen.getAllByText(/\d{1,2}:\d{2}/)).toHaveLength(1);
     });
 
     // ── Conversations list: unread counts, previews, truncation, prefixes (single render) ─
@@ -370,5 +436,117 @@ describe('MessagingDialog', () => {
         expect(backButton).toBeDefined();
         await user.click(backButton!);
         expect(await screen.findByText('Message Center')).toBeInTheDocument();
+    });
+
+    // ── Conversation list filter: by name and unread-only ───────────
+    it('filters the conversation list by name and by unread', async () => {
+        const user = userEvent.setup();
+        setupApiDefaults([
+            createConversation({otherPartyId: 1, otherPartyName: 'Alice', unreadCount: 0}),
+            createConversation({otherPartyId: 2, otherPartyName: 'Bob', unreadCount: 3}),
+        ]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await screen.findByText('Alice');
+        expect(screen.getByText('Bob')).toBeInTheDocument();
+
+        // Filter by name
+        await user.type(screen.getByLabelText('Filter conversations'), 'ali');
+        await waitFor(() => expect(screen.queryByText('Bob')).not.toBeInTheDocument());
+        expect(screen.getByText('Alice')).toBeInTheDocument();
+
+        // Clear, then unread-only
+        await user.click(screen.getByLabelText('Clear filter'));
+        await user.click(screen.getByRole('button', {name: 'Unread'}));
+        await waitFor(() => expect(screen.queryByText('Alice')).not.toBeInTheDocument());
+        expect(screen.getByText('Bob')).toBeInTheDocument();
+    });
+
+    // ── Mark-as-read quick action from the list ─────────────────────
+    it('marks a conversation as read from the list quick action', async () => {
+        const user = userEvent.setup();
+        setupApiDefaults([createConversation({otherPartyId: 10, otherPartyName: 'John Driver', unreadCount: 2})]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        const markBtn = await screen.findByRole('button', {name: /mark conversation with john driver as read/i});
+        await user.click(markBtn);
+
+        await waitFor(() => {
+            expect(mockApi.markMessagesAsRead).toHaveBeenCalledWith(10, OtherMessagePartyType.Courier);
+        });
+        // The action disappears once the conversation has no unread messages
+        await waitFor(() =>
+            expect(screen.queryByRole('button', {name: /mark conversation with john driver as read/i})).not.toBeInTheDocument()
+        );
+    });
+
+    // ── Relative date separator ─────────────────────────────────────
+    it('labels the date separator "Today" for messages sent today', async () => {
+        const user = userEvent.setup();
+        const today = new Date().toISOString().slice(0, 10);
+        setupApiDefaults([createConversation({otherPartyId: 10})]);
+        mockApi.getMessages.mockResolvedValue([
+            createMessage({messageId: 1, message: 'Hi today', messageTime: `${today}T10:00:00`}),
+        ]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await user.click(await screen.findByText('John Driver'));
+        expect(await screen.findByText('Today')).toBeInTheDocument();
+    });
+
+    // ── Sending / failed message states ─────────────────────────────
+    it('shows a sending indicator while a message is in flight', async () => {
+        const user = userEvent.setup();
+        setupApiDefaults([createConversation({otherPartyId: 10})]);
+        let resolveSend!: () => void;
+        mockApi.sendMessage.mockImplementationOnce(
+            () => new Promise<void>((res) => { resolveSend = () => res(); })
+        );
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await user.click(await screen.findByText('John Driver'));
+        await user.click(await screen.findByPlaceholderText('Type a message...'));
+        await user.paste('Pending msg');
+        await user.click(screen.getByRole('button', {name: /send message/i}));
+
+        // Optimistic bubble appears immediately with a "Sending" indicator
+        expect(await screen.findByText('Pending msg')).toBeInTheDocument();
+        expect(screen.getByTitle('Sending')).toBeInTheDocument();
+
+        resolveSend();
+        await waitFor(() => expect(screen.queryByTitle('Sending')).not.toBeInTheDocument());
+    });
+
+    it('shows a failed state with retry when sending fails, and resends on retry', async () => {
+        const user = userEvent.setup();
+        const errorSpy = suppressConsoleError('Failed to send message');
+        setupApiDefaults([createConversation({otherPartyId: 10})]);
+        mockApi.sendMessage.mockRejectedValueOnce(new Error('network down'));
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await user.click(await screen.findByText('John Driver'));
+        await user.click(await screen.findByPlaceholderText('Type a message...'));
+        await user.paste('Retry me');
+        await user.click(screen.getByRole('button', {name: /send message/i}));
+
+        const retry = await screen.findByRole('button', {name: /retry sending message/i});
+        expect(screen.getByText('Retry me')).toBeInTheDocument();
+        expect(screen.getByText('Failed')).toBeInTheDocument();
+
+        // Second attempt uses the default resolved mock
+        await user.click(retry);
+        await waitFor(() => expect(screen.queryByText('Failed')).not.toBeInTheDocument());
+        expect(mockApi.sendMessage).toHaveBeenCalledTimes(2);
+
+        errorSpy.mockRestore();
+    });
+});
+
+describe('isNearBottom', () => {
+    it('is true at/near the bottom and false when scrolled up', () => {
+        expect(isNearBottom({scrollHeight: 1000, scrollTop: 920, clientHeight: 100})).toBe(true);
+        expect(isNearBottom({scrollHeight: 1000, scrollTop: 850, clientHeight: 100})).toBe(true);
+        expect(isNearBottom({scrollHeight: 1000, scrollTop: 800, clientHeight: 100})).toBe(false);
+        expect(isNearBottom({scrollHeight: 1000, scrollTop: 0, clientHeight: 100})).toBe(false);
     });
 });

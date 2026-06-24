@@ -248,7 +248,10 @@ describe('RouterConfig', () => {
 
         it('should give the recurring jobs React container full width', () => {
             const state = registeredStates.get('recurringJobs');
-            expect(state.template).toContain('flex: 1');
+            // The flex wrapper was removed in the layout-modernization pass;
+            // the mount point now fills the viewport-height container directly.
+            expect(state.template).toContain('height: calc(100vh - 64px)');
+            expect(state.template).toContain('height: 100%; overflow: hidden');
         });
 
         it('should configure overview state', () => {
@@ -265,7 +268,7 @@ describe('RouterConfig', () => {
             expect(state.template).toContain('react-app-shell');
             expect(state.template).toContain('react-task-dashboard');
             expect(state.template).not.toContain('job-detail-widget');
-            expect(state.template).toContain('flex: 1');
+            expect(state.template).toContain('height: 100%; overflow: hidden');
         });
 
         it('should configure driverManagement state', () => {

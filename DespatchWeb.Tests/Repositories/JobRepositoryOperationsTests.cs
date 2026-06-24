@@ -22,6 +22,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly Mock<IJobApiClient> _jobApiClientMock = new();
     private FakeTenantClock _clock = new(TestDates.Now);
     private static readonly int[] SourceArray = [100, 101];
 
@@ -48,7 +49,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         _clock,
         _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object
+        _createJobServiceMock.Object,
+        _jobApiClientMock.Object
     );
 
     [Fact]

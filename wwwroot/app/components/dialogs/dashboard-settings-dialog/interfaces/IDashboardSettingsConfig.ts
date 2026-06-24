@@ -6,6 +6,8 @@
     showAiToggle?: boolean;
     /** Show the "Try the React (BETA) Job Search" toggle. Job Search settings only. */
     showJobSearchBetaToggle?: boolean;
+    /** Replace the panels section with a "moved to the Layouts menu" notice. */
+    panelsMovedNotice?: boolean;
 }
 
 export default IDashboardSettingsConfig;

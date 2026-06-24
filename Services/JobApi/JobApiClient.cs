@@ -126,6 +126,7 @@ public sealed class JobApiClient(
             ClientReferenceB = request.RefB,
             ClientNotes = request.JobNotes,
             FixedAmount = request.Charge,
+            VehicleSizeId = request.VehicleId,
             OnHold = false,
             IsSignatureRequired = true
         };

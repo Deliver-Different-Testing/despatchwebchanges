@@ -581,7 +581,6 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                             label={flightNumber}
                                             size="small"
                                             color="primary"
-                                            variant="outlined"
                                         />
                                         <ArrowForwardIcon sx={{fontSize: 32, color: 'text.secondary', mt: 1}}/>
                                     </Box>

@@ -396,6 +396,8 @@ public partial class TucJobBooking
 
     public byte RecurringMode { get; set; }
 
+    public int? LinehaulRunId { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucJobBooking BookingParent { get; set; }

@@ -78,7 +78,6 @@ export const AgentInformation = React.memo(({agent}: AgentInformationProps) => {
                                 size="small"
                                 icon={<MilitaryTechIcon />}
                                 label={agent.agentRanking}
-                                variant="outlined"
                             />
                         )}
                         {agent.agentRate != null && (
@@ -86,7 +85,6 @@ export const AgentInformation = React.memo(({agent}: AgentInformationProps) => {
                                 size="small"
                                 icon={<StarRateIcon />}
                                 label={formatCurrency(agent.agentRate)}
-                                variant="outlined"
                             />
                         )}
                     </Box>

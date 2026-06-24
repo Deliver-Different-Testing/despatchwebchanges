@@ -38,6 +38,11 @@ export interface ChatMessage {
     readTime?: string;
     sent: boolean;
     isSender: boolean;
+    /**
+     * Client-side delivery state for optimistic (outgoing) messages.
+     * Absent on messages loaded from the API — those are already delivered.
+     */
+    status?: 'sending' | 'sent' | 'failed';
 }
 
 /**

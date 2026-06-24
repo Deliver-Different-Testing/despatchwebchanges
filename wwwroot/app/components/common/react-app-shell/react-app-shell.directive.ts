@@ -37,6 +37,7 @@ interface ReactAppShellScope extends angular.IScope {
     onSaveLayout?: () => void;
     onLoadLayout?: (args: { index: number }) => void;
     onDeleteLayout?: (args: { index: number }) => void;
+    onCustomizePanels?: () => void;
     onSettingsClick?: (event: { $event: MouseEvent }) => void;
     onRefreshClick?: () => void;
     refreshLoading?: boolean;
@@ -72,6 +73,7 @@ function reactAppShellDirective(
             onSaveLayout: '&?',
             onLoadLayout: '&?',
             onDeleteLayout: '&?',
+            onCustomizePanels: '&?',
             onSettingsClick: '&?',
             onRefreshClick: '&?',
             refreshLoading: '<?',
@@ -192,6 +194,16 @@ function reactAppShellDirective(
                                 scope.onDeleteLayout!({ index });
                             });
                         },
+                        // Cross-link the organiser: "Customize panels…" opens the
+                        // dedicated panel-visibility dialog. Only wired when the host
+                        // page provides `on-customize-panels`.
+                        ...(scope.onCustomizePanels ? {
+                            onCustomizePanels: () => {
+                                scope.$apply(() => {
+                                    scope.onCustomizePanels!();
+                                });
+                            },
+                        } : {}),
                     };
                 }
 
@@ -354,9 +366,9 @@ function reactAppShellDirective(
             }, true);
 
             // Mount on init
-            mountShell();
+           void mountShell();
 
-            // Cleanup on destroy
+            // Clean-up on destroy
             scope.$on('$destroy', () => {
                 console.log('[ReactAppShellDirective] Destroying...');
                 if (stateChangeListener) {

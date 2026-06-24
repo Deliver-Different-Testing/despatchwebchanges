@@ -138,7 +138,6 @@ export const RecurringJourneyRunRow: React.FC<RecurringJourneyRunRowProps> = ({
                     <Chip
                         label={run.parentJobNumber}
                         size="small"
-                        variant="outlined"
                         color="primary"
                         clickable
                         onClick={() => onParentClick(run.parentJobId, run.parentJobNumber)}
@@ -155,7 +154,6 @@ export const RecurringJourneyRunRow: React.FC<RecurringJourneyRunRowProps> = ({
                                     key={child.jobId}
                                     label={child.jobNumber}
                                     size="small"
-                                    variant="outlined"
                                     color={isAccent ? 'primary' : 'default'}
                                     clickable
                                     onClick={() => onChildClick(child.jobId, child.jobNumber)}

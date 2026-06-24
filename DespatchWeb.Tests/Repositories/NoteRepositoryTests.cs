@@ -386,7 +386,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.DeleteNoteAsync(noteId, TestContext.Current.CancellationToken);
+        await repository.DeleteNoteAsync(noteId, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert — query is untracked by the global QueryTrackingBehavior so we see
         // the post-ExecuteDeleteAsync state, not a stale tracker entry.
@@ -397,6 +397,142 @@ public class NoteRepositoryTests : IAsyncDisposable
             .Where(h => h.NoteId == noteId)
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(history);
+    }
+
+    [Fact]
+    public async Task GetNoteByIdAsync_CollidingId_ArchivedJob_ReturnsArchivedNote()
+    {
+        const int noteId = 1;
+        const int archivedJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobArchives.Add(CreateArchivedJob(archivedJobId, "ARCH001"));
+        _context.TucNoteArchives.Add(CreateArchivedNote(noteId, archivedJobId, "Archived note", TestDates.Now));
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = noteId,
+            JobId = 999,
+            NoteText = "Active note",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = TestDates.Now
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        var result = await repository.GetNoteByIdAsync(noteId, archivedJobId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Archived note", result.NoteText);
+    }
+
+    [Fact]
+    public async Task GetNoteByIdAsync_CollidingId_LiveJob_ReturnsActiveNote()
+    {
+        const int noteId = 1;
+        const int liveJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobs.Add(CreateJob(liveJobId, "JOB001"));
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = noteId,
+            JobId = liveJobId,
+            NoteText = "Active note",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = TestDates.Now
+        });
+        _context.TucNoteArchives.Add(CreateArchivedNote(noteId, 999, "Archived note", TestDates.Now));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        var result = await repository.GetNoteByIdAsync(noteId, liveJobId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Active note", result.NoteText);
+    }
+
+    [Fact]
+    public async Task GetNoteByIdAsync_NullJobId_ReturnsActiveNote()
+    {
+        const int noteId = 1;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = noteId,
+            JobId = 100,
+            NoteText = "Active note",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = TestDates.Now
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        var result = await repository.GetNoteByIdAsync(noteId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Active note", result.NoteText);
+    }
+
+    [Fact]
+    public async Task GetNoteByIdAsync_NonExistentNote_ReturnsNull()
+    {
+        var repository = CreateRepository();
+
+        var result = await repository.GetNoteByIdAsync(999, 100);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task DeleteNoteAsync_ArchivedJob_DeletesArchivedNoteAndHistory_LeavesCollidingActiveNote()
+    {
+        const int noteId = 1;
+        const int archivedJobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobArchives.Add(CreateArchivedJob(archivedJobId, "ARCH001"));
+        _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
+        _context.TucNoteArchives.Add(CreateArchivedNote(noteId, archivedJobId, "Archived note", TestDates.Now));
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = noteId,
+            JobId = 999,
+            NoteText = "Active note",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = TestDates.Now
+        });
+        _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Archive, noteId, 1,
+            DateTime.UtcNow, "Old", "Archived note"));
+        _context.TucNoteHistories.Add(CreateNoteHistory(2, NoteHistorySource.Note, noteId, 1,
+            DateTime.UtcNow, "Old", "Active note"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        await repository.DeleteNoteAsync(noteId, archivedJobId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var archived = await _context.TucNoteArchives
+            .FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Null(archived);
+
+        var archiveHistory = await _context.TucNoteHistories
+            .Where(h => h.ArchiveNoteId == noteId)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Empty(archiveHistory);
+
+        var active = await _context.TucNotes
+            .FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(active);
+
+        var activeHistory = await _context.TucNoteHistories
+            .Where(h => h.NoteId == noteId)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Single(activeHistory);
     }
 
     [Fact]
@@ -1059,7 +1195,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.DeleteNoteAsync(noteId, TestContext.Current.CancellationToken);
+        await repository.DeleteNoteAsync(noteId, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert — bulk note history is untouched
         var remaining = await _context.TucNoteHistories

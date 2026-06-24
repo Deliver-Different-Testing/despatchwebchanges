@@ -65,9 +65,9 @@ function formatDaysUntil(daysUntil: number): string {
 
 
 const columns: DataTableColumn<CourierCompliance>[] = [
-    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Chip label={row.code} size="small" color="primary" variant="outlined" />},
+    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Chip label={row.code} size="small" color="primary" />},
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
-    {key: 'complianceType', label: 'Type', sortable: true, render: (row) => <Chip label={row.complianceType} size="small" color={getComplianceTypeColor(row.complianceType)} variant="outlined" />},
+    {key: 'complianceType', label: 'Type', sortable: true, render: (row) => <Chip label={row.complianceType} size="small" color={getComplianceTypeColor(row.complianceType)} />},
     {key: 'itemNumber', label: 'Item/Number', sortable: true, render: (row) => row.itemNumber},
     {key: 'expiryDate', label: 'Expiry Date', sortable: true, width: '120px', render: (row) => row.expiryDate ? dayjs(row.expiryDate).format('MMM D, YYYY') : ''},
     {key: 'status', label: 'Status', sortable: true, sortKey: 'expiryDate', width: '120px', render: (row) => {
@@ -76,7 +76,7 @@ const columns: DataTableColumn<CourierCompliance>[] = [
     }},
     {key: 'daysUntil', label: 'Days Until Expiry', sortable: true, sortKey: 'expiryDate', width: '140px', render: (row) => {
         const cs = getComplianceStatus(row.expiryDate);
-        return <Chip label={formatDaysUntil(cs.daysUntil)} size="small" color={cs.color} variant="outlined" />;
+        return <Chip label={formatDaysUntil(cs.daysUntil)} size="small" color={cs.color} />;
     }},
     {key: 'actions', label: 'Actions', width: '80px', align: 'center', render: () => null},
 ];

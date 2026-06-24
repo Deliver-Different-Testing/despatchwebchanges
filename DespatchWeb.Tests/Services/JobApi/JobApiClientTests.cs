@@ -28,10 +28,11 @@ public class JobApiClientTests
 
     private JobApiClient CreateClient() => new(_despatchApi, _httpContextAccessor);
 
-    private static JobCreateViewModel SampleRequest(decimal? weightKg = null, decimal? weightLb = null) => new()
+    private static JobCreateViewModel SampleRequest(decimal? weightKg = null, decimal? weightLb = null, int? vehicleId = null) => new()
     {
         ClientId = 42,
         SpeedId = 7,
+        VehicleId = vehicleId,
         FromContactName = "Alice",
         DeliverToContact = "Bob",
         PickUpAddress = new AddressViewModel { AddressLine1 = "Acme Co", AddressLine3 = "12 Main", AddressLine5 = "Auckland", AddressLine6 = "1010", AddressLine8 = "NZ", Latitude = -36.84m, Longitude = 174.76m },
@@ -106,6 +107,36 @@ public class JobApiClientTests
         Assert.Equal("NZ", captured.Delivery.To.CountryCode);
         Assert.Single(captured.Packages);
         Assert.Equal(1, captured.Packages[0].Units);
+    }
+
+    [Fact]
+    public async Task QuickCreateAsync_VehicleId_MapsToVehicleSizeId()
+    {
+        BookPickupDto? captured = null;
+        _despatchApi.BookPickupAsync(
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<int>(),
+                Arg.Do<BookPickupDto>(d => captured = d), Arg.Any<CancellationToken>())
+            .Returns(new JobResponseDto { JobId = 1 });
+
+        await CreateClient().QuickCreateAsync(SampleRequest(vehicleId: 3), TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        Assert.Equal(3, captured.VehicleSizeId);
+    }
+
+    [Fact]
+    public async Task QuickCreateAsync_NoVehicleId_LeavesVehicleSizeIdNull()
+    {
+        BookPickupDto? captured = null;
+        _despatchApi.BookPickupAsync(
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<int>(),
+                Arg.Do<BookPickupDto>(d => captured = d), Arg.Any<CancellationToken>())
+            .Returns(new JobResponseDto { JobId = 1 });
+
+        await CreateClient().QuickCreateAsync(SampleRequest(), TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        Assert.Null(captured.VehicleSizeId);
     }
 
     [Fact]

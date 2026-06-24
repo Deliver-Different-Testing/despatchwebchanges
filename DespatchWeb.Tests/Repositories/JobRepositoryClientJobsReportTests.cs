@@ -19,6 +19,7 @@ public class JobRepositoryClientJobsReportTests : IAsyncDisposable
     private readonly DespatchContext _context;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly Mock<IJobApiClient> _jobApiClientMock = new();
     private readonly SqliteTestDatabase _db = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
 
@@ -41,7 +42,8 @@ public class JobRepositoryClientJobsReportTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         _clock,
         _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object
+        _createJobServiceMock.Object,
+        _jobApiClientMock.Object
     );
 
     private static ClientJobsReportRequest BuildRequest(IEnumerable<int> clientIds) => new()

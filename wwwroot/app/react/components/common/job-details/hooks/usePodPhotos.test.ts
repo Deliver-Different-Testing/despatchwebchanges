@@ -6,6 +6,7 @@ import {renderHook, waitFor, act} from '@testing-library/react';
 import {QueryClient} from '@tanstack/react-query';
 import {usePodPhotos} from './usePodPhotos';
 import {createTestQueryClient, createWrapper} from '../../../../__testUtils__';
+import {JobStatus} from '../../../../../enums/job-status.enum';
 import dayjs from 'dayjs';
 
 // Mock API services
@@ -29,6 +30,7 @@ const mockGetPickupPhotos = getJobPickupPhotos as jest.MockedFunction<typeof get
 function createMockJob(overrides?: Record<string, unknown>) {
     return {
         id: 100,
+        statusId: JobStatus.Completed,
         completedTime: dayjs('2024-06-15T10:30:00Z'),
         courierData: {courierName: 'Test Driver'},
         deliveryAddress: {latitude: -33.8688, longitude: 151.2093},
@@ -84,14 +86,38 @@ describe('usePodPhotos', () => {
         expect(result.current.deliveryPhotos).toEqual([]);
     });
 
-    it('does not fetch photos when job has no completedTime', async () => {
-        const job = createMockJob({completedTime: null});
+    it('does not fetch photos for a job that has not been picked up', async () => {
+        const job = createMockJob({statusId: JobStatus.New, completedTime: null});
         const {result} = renderUsePodPhotos({job, isRecurringJob: false});
 
         await act(async () => {});
 
         expect(mockGetDeliveryPhotos).not.toHaveBeenCalled();
         expect(mockGetPickupPhotos).not.toHaveBeenCalled();
+        expect(result.current.deliveryPhotos).toEqual([]);
+        expect(result.current.pickupPhotos).toEqual([]);
+    });
+
+    it('fetches pickup photos (but not delivery) once picked up, keyed off puTime', async () => {
+        const job = createMockJob({
+            statusId: JobStatus.PickedUp,
+            completedTime: null,
+            puTime: dayjs('2024-03-10T08:00:00Z'),
+        });
+        mockGetPickupPhotos.mockResolvedValueOnce([createMockPhotoData()] as any);
+
+        const {result} = renderUsePodPhotos({job, isRecurringJob: false});
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(mockGetDeliveryPhotos).not.toHaveBeenCalled();
+        expect(mockGetPickupPhotos).toHaveBeenCalledWith(
+            100,
+            2024,
+            3,
+            expect.objectContaining({signal: expect.any(AbortSignal)})
+        );
+        expect(result.current.pickupPhotos).toHaveLength(1);
         expect(result.current.deliveryPhotos).toEqual([]);
     });
 

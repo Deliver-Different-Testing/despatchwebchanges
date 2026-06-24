@@ -271,7 +271,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     return (
         <Box sx={{
             height: '100%',
-            p: 2,
+            p: 1,
             bgcolor: 'background.default',
         }}>
             <PanelGroup direction="horizontal" autoSaveId="recurring-jobs-layout">

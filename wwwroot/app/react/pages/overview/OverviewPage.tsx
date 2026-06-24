@@ -300,7 +300,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     return (
         <Box
             sx={{
-                p: 2,
+                p: 1,
                 display: 'flex',
                 flexDirection: {xs: 'column', md: 'row'},
                 gap: 2,

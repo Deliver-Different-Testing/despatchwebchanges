@@ -20,6 +20,7 @@ public class JobRepositoryScanListTests : IAsyncDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly Mock<IJobApiClient> _jobApiClientMock = new();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryScanListTests()
@@ -43,7 +44,8 @@ public class JobRepositoryScanListTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         _clock,
         _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object
+        _createJobServiceMock.Object,
+        _jobApiClientMock.Object
     );
 
     [Fact]
@@ -150,6 +152,137 @@ public class JobRepositoryScanListTests : IAsyncDisposable
         var result = await repository.ScanList(TestDates.Now, jobId: 9999, isBulkJob: false);
 
         // Assert — empty because the subquery yields no job numbers to match against.
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task ScanList_LiveJob_MatchesScanKeyedByItemBarcode()
+    {
+        // Arrange — depot scans are recorded against the item barcode, not the
+        // job number. The job number alone would miss this scan.
+        const int jobId = 60;
+        const string jobNumber = "URG-60";
+        const string barcode = "BC-60-1";
+      
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = jobNumber });
+        _context.TucJobItems.Add(new TucJobItem { JobId = jobId, ItemId = 1, Barcode = barcode });
+        _context.TblBulkScans.Add(new TblBulkScan
+        {
+            BulkScanId = 200,
+            ScanDateTime = TestDates.Now.AddHours(-1),
+            Scan = barcode,
+            ScanType = (int)ScanType.Sort
+        });
+        
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.ScanList(TestDates.Now, jobId, isBulkJob: false);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal(200, result[0].BulkScanId);
+    }
+
+    [Fact]
+    public async Task ScanList_BulkJobNotYetLive_MatchesScanKeyedByBulkItemBarcode()
+    {
+        // Arrange — bulk job not pushed live, items live in tblBulkJobItems.
+        const int bulkJobId = 8;
+        const string bulkJobNumber = "BULK-8";
+        const string barcode = "BC-8-1";
+      
+        _context.TblBulkJobs.Add(new TblBulkJob { BulkJobId = bulkJobId, JobNumber = bulkJobNumber, Done = false });
+        _context.TblBulkJobItems.Add(new TblBulkJobItem { JobId = bulkJobId, ItemId = 1, Barcode = barcode });
+        _context.TblBulkScans.Add(new TblBulkScan
+        {
+            BulkScanId = 210,
+            ScanDateTime = TestDates.Now.AddHours(-2),
+            Scan = barcode,
+            ScanType = (int)ScanType.Run
+        });
+        
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.ScanList(TestDates.Now, bulkJobId, isBulkJob: true);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal(210, result[0].BulkScanId);
+    }
+
+    [Fact]
+    public async Task ScanList_MatchesBothJobNumberAndItemBarcodeScans()
+    {
+        // Arrange — a Transfer scan keyed by job number AND a Sort scan keyed by
+        // item barcode for the same job should both be returned.
+        const int jobId = 61;
+        const string jobNumber = "URG-61";
+        const string barcode = "BC-61-1";
+      
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = jobNumber });
+        _context.TucJobItems.Add(new TucJobItem { JobId = jobId, ItemId = 1, Barcode = barcode });
+        _context.TblBulkScans.Add(new TblBulkScan
+        {
+            BulkScanId = 220,
+            ScanDateTime = TestDates.Now.AddHours(-2),
+            Scan = jobNumber,
+            ScanType = (int)ScanType.Transfer
+        });
+        _context.TblBulkScans.Add(new TblBulkScan
+        {
+            BulkScanId = 221,
+            ScanDateTime = TestDates.Now.AddHours(-1),
+            Scan = barcode,
+            ScanType = (int)ScanType.Sort
+        });
+        
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.ScanList(TestDates.Now, jobId, isBulkJob: false);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, r => r.BulkScanId == 220);
+        Assert.Contains(result, r => r.BulkScanId == 221);
+    }
+
+    [Fact]
+    public async Task ScanList_ItemBarcodeOfDifferentJob_IsExcluded()
+    {
+        // Arrange — a scan keyed by an item barcode that belongs to another job
+        // must not leak into this job's scan list.
+        const int jobId = 62;
+        const string jobNumber = "URG-62";
+       
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = jobNumber });
+        _context.TucJobItems.Add(new TucJobItem { JobId = jobId, ItemId = 1, Barcode = "BC-62-1" });
+        // Item + scan belonging to a different job.
+        _context.TucJobItems.Add(new TucJobItem { JobId = 999, ItemId = 1, Barcode = "BC-999-1" });
+        _context.TblBulkScans.Add(new TblBulkScan
+        {
+            BulkScanId = 230,
+            ScanDateTime = TestDates.Now.AddHours(-1),
+            Scan = "BC-999-1",
+            ScanType = (int)ScanType.Sort
+        });
+        
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.ScanList(TestDates.Now, jobId, isBulkJob: false);
+
+        // Assert
         Assert.Empty(result);
     }
 

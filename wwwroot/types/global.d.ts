@@ -277,6 +277,13 @@ declare global {
                 jobSearchBetaEnabled?: boolean
             ) => Promise<DashboardSettingsResult | null>;
         };
+        ReactCustomizePanelsDialog?: {
+            open: (
+                boxes: Record<string, DashboardBox>,
+                layoutEditable?: boolean,
+                title?: string
+            ) => Promise<Record<string, DashboardBox> | null>;
+        };
         ReactDateRangeDialog?: {
             open: (initialRange?: { start?: Date; end?: Date }) => Promise<DateRange | null>;
         };

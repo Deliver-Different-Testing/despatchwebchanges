@@ -232,7 +232,6 @@ export const MetricsGrid = React.memo(({
                     <Chip
                         label={`Internal: ${getInternalStatusLabel(job.internalStatusId)}`}
                         size="small"
-                        variant="outlined"
                         clickable
                         onClick={onInternalStatusClick}
                         sx={{fontSize: '0.75rem', fontWeight: 500}}

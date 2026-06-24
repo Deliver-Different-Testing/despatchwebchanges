@@ -113,7 +113,6 @@ export function DriverListItem({ driver, onClick }: DriverListItemProps) {
                             <Chip
                                 label={driver.code}
                                 size="small"
-                                variant="outlined"
                                 sx={{
                                     height: 18,
                                     fontSize: 10,

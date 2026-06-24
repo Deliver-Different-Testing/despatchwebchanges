@@ -438,7 +438,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            p: 2,
+            p: 1,
             bgcolor: 'background.default',
         }}>
             {/* Inject animation keyframes */}
