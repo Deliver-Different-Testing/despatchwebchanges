@@ -62,7 +62,7 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                     )}
                 </Box>
                 {elapsed && (
-                    <Chip size="small" icon={<ScheduleIcon />} label={elapsed} variant="outlined" />
+                    <Chip size="small" icon={<ScheduleIcon />} label={elapsed} />
                 )}
             </Box>
             {/* Route: departure ··· ✈ ··· arrival */}
@@ -89,7 +89,6 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                         <Chip
                             size="small"
                             label={`Terminal ${segment.departureTerminal}`}
-                            variant="outlined"
                             sx={{mt: 0.5, height: 20, fontSize: '0.625rem'}}
                         />
                     )}
@@ -144,7 +143,6 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                         <Chip
                             size="small"
                             label={`Terminal ${segment.arrivalTerminal}`}
-                            variant="outlined"
                             sx={{mt: 0.5, height: 20, fontSize: '0.625rem'}}
                         />
                     )}
@@ -207,7 +205,6 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
                                 size="small"
                                 icon={<ScheduleIcon />}
                                 label={`${getConnectionTime(segment, segments[index + 1])} connection`}
-                                variant="outlined"
                                 color="warning"
                             />
                         </Box>

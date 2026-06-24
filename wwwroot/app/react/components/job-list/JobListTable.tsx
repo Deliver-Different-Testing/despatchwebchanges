@@ -1182,7 +1182,6 @@ const CellContent: React.FC<{
                     label={statusText}
                     size="small"
                     color={getStatusChipColor(job)}
-                    variant="outlined"
                     sx={{
                         height: 22,
                         fontSize: '0.6875rem',

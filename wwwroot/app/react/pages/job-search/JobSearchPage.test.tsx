@@ -8,21 +8,36 @@ import {ThemeProvider, createTheme} from '@mui/material/styles';
 const mockPanel: {
     onSearch?: () => void;
     onCriteriaChange?: (field: string, value: unknown) => void;
+    onDownload?: () => void;
+    onClientReport?: () => void;
+    onBackendFilter?: (column: string, direction: string) => void;
     updateParams: Record<string, jest.Mock>;
 } = {updateParams: {}};
 
 jest.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', () => ({
-    SearchCriteriaPanel: ({onSearch, onCriteriaChange}: {onSearch: () => void; onCriteriaChange: (f: string, v: unknown) => void}) => {
+    SearchCriteriaPanel: ({onSearch, onCriteriaChange, onDownload, onClientReport}: {
+        onSearch: () => void;
+        onCriteriaChange: (f: string, v: unknown) => void;
+        onDownload: () => void;
+        onClientReport: () => void;
+    }) => {
         mockPanel.onSearch = onSearch;
         mockPanel.onCriteriaChange = onCriteriaChange;
+        mockPanel.onDownload = onDownload;
+        mockPanel.onClientReport = onClientReport;
         return <div data-testid="mock-search-panel" />;
     },
 }));
 
 jest.mock('../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, setUpdateSearchParamsCallback}: {storagePrefix: string; setUpdateSearchParamsCallback?: (cb: jest.Mock) => void}) => {
+    JobListPanel: ({storagePrefix, setUpdateSearchParamsCallback, onBackendFilter}: {
+        storagePrefix: string;
+        setUpdateSearchParamsCallback?: (cb: jest.Mock) => void;
+        onBackendFilter?: (column: string, direction: string) => void;
+    }) => {
         const fn = mockPanel.updateParams[storagePrefix] ?? (mockPanel.updateParams[storagePrefix] = jest.fn());
         setUpdateSearchParamsCallback?.(fn);
+        if (onBackendFilter) mockPanel.onBackendFilter = onBackendFilter;
         return <div data-testid={`mock-job-list-${storagePrefix}`} />;
     },
 }));
@@ -65,6 +80,9 @@ describe('JobSearchPage', () => {
     beforeEach(() => {
         mockPanel.onSearch = undefined;
         mockPanel.onCriteriaChange = undefined;
+        mockPanel.onDownload = undefined;
+        mockPanel.onClientReport = undefined;
+        mockPanel.onBackendFilter = undefined;
         mockPanel.updateParams = {};
     });
 
@@ -125,5 +143,40 @@ describe('JobSearchPage', () => {
         expect(screen.getByText('Scan Detail')).toBeInTheDocument();
         expect(screen.getByText('Map')).toBeInTheDocument();
         expect(screen.getByText('Delivery Journey')).toBeInTheDocument();
+    });
+
+    it('downloads via the real PodSearchDownload endpoint in a new tab', () => {
+        const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+        renderPage();
+        act(() => {
+            mockPanel.onDownload?.();
+        });
+        const url = openSpy.mock.calls.at(-1)?.[0] as string;
+        expect(url).toMatch(/^\/Job\/PodSearchDownload\?/);
+        expect(openSpy.mock.calls.at(-1)?.[1]).toBe('_blank');
+        openSpy.mockRestore();
+    });
+
+    it('opens the client jobs report via the real ClientJobsReportDownload endpoint', () => {
+        const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+        renderPage();
+        act(() => {
+            mockPanel.onClientReport?.();
+        });
+        const url = openSpy.mock.calls.at(-1)?.[0] as string;
+        expect(url).toMatch(/^\/Job\/ClientJobsReportDownload\?/);
+        openSpy.mockRestore();
+    });
+
+    it('re-pushes the active sort to the main list on search', () => {
+        renderPage();
+        act(() => {
+            mockPanel.onBackendFilter?.('jobNo', 'desc');
+        });
+        act(() => {
+            mockPanel.onSearch?.();
+        });
+        const mainCall = mockPanel.updateParams.jobSearchJobList.mock.calls.at(-1)?.[0];
+        expect(mainCall).toMatchObject({sortColumn: 'jobNo', sortDirection: 'desc'});
     });
 });

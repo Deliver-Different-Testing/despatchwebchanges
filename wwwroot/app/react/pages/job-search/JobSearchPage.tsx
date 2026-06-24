@@ -38,6 +38,8 @@ import {useSearchCriteria} from './hooks/useSearchCriteria';
 import {useBoxLayout} from './hooks/useBoxLayout';
 import {useDeepLinkJob} from './hooks/useDeepLinkJob';
 import {filterCouriersForNumericSearch} from './lib/searchCriteria';
+import {getClientJobsReportDownloadUrl, getPodJobsDownloadUrl} from './lib/exportUrls';
+import {openInterCourierChargeDialog} from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
 import type {LayoutStorageKeys} from './lib/layoutPersistence';
 import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/SaveLayoutDialog';
 import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
@@ -51,6 +53,8 @@ export interface JobSearchLayoutBridge {
     promptSaveLayout: () => Promise<string | null>;
     /** Opens the MUI "Delete Layout" confirmation and resolves true if confirmed. */
     promptDeleteLayout: (layoutName: string) => Promise<boolean>;
+    /** Opens the Inter-Courier Charge dialog, wired to this page's toast. */
+    openInterCourierCharge: () => Promise<void>;
 }
 
 export interface JobSearchPageProps {
@@ -168,14 +172,20 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         },
     });
 
+    const openInterCourierCharge = useCallback(
+        () => openInterCourierChargeDialog({showToast}),
+        [showToast],
+    );
+
     useEffect(() => {
         onLayoutBridgeReady?.({
             setCurrentLayoutName: boxLayout.setCurrentLayoutName,
             reloadFromStorage: boxLayout.reloadFromStorage,
             promptSaveLayout,
             promptDeleteLayout,
+            openInterCourierCharge,
         });
-    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, promptSaveLayout, promptDeleteLayout]);
+    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, promptSaveLayout, promptDeleteLayout, openInterCourierCharge]);
 
     const fetchConfigMain = useMemo(() => ({
         fetchFn: fetchPodJobs,
@@ -236,6 +246,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             wild: searchCriteria.criteria.wild,
             job: searchCriteria.criteria.job,
             jobId: searchCriteria.criteria.jobId,
+            sortColumn,
+            sortDirection,
             disabled: byBulkJobId,
             page: 0,
         };
@@ -252,7 +264,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             disabled: byJobId,
             page: 0,
         });
-    }, [searchCriteria]);
+    }, [searchCriteria, sortColumn, sortDirection]);
 
     const handleRefreshBox = useCallback((boxName: string) => {
         switch (boxName) {
@@ -312,27 +324,27 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     );
 
     const handleDownload = useCallback(() => {
-        const params = new URLSearchParams();
-        if (searchCriteria.criteria.from_date)
-            params.append('fromDate', searchCriteria.criteria.from_date.toISOString());
-        if (searchCriteria.criteria.to_date)
-            params.append('toDate', searchCriteria.criteria.to_date.toISOString());
-        searchCriteria.selectedClientIds?.forEach(id => params.append('clientIds', String(id)));
-        searchCriteria.selectedCourierIds?.forEach(id => params.append('courierIds', String(id)));
-        searchCriteria.selectedSpeedIds?.forEach(id => params.append('speedIds', String(id)));
-        if (searchCriteria.criteria.wild) params.append('wild', searchCriteria.criteria.wild);
-        if (searchCriteria.criteria.job) params.append('job', searchCriteria.criteria.job);
-        window.location.assign(`/Job/DownloadPODJobs?${params.toString()}`);
+        const url = getPodJobsDownloadUrl(
+            searchCriteria.criteria.from_date,
+            searchCriteria.criteria.to_date,
+            searchCriteria.selectedCourierIds,
+            searchCriteria.selectedClientIds,
+            searchCriteria.selectedSpeedIds,
+            searchCriteria.criteria.wild,
+            searchCriteria.criteria.job,
+            searchCriteria.criteria.jobId,
+        );
+        // Open in a new tab to trigger the browser's native download (matches V1).
+        window.open(url, '_blank');
     }, [searchCriteria]);
 
     const handleClientReport = useCallback(() => {
-        const params = new URLSearchParams();
-        if (searchCriteria.criteria.from_date)
-            params.append('fromDate', searchCriteria.criteria.from_date.toISOString());
-        if (searchCriteria.criteria.to_date)
-            params.append('toDate', searchCriteria.criteria.to_date.toISOString());
-        searchCriteria.selectedClientIds?.forEach(id => params.append('clientIds', String(id)));
-        window.location.assign(`/Job/DownloadClientJobsReport?${params.toString()}`);
+        const url = getClientJobsReportDownloadUrl(
+            searchCriteria.criteria.from_date,
+            searchCriteria.criteria.to_date,
+            searchCriteria.selectedClientIds,
+        );
+        window.open(url, '_blank');
     }, [searchCriteria]);
 
     const handleUpload = useCallback(() => {

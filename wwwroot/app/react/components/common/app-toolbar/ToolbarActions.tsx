@@ -13,20 +13,25 @@ import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import ListSubheader from '@mui/material/ListSubheader';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import Popover from '@mui/material/Popover';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import DeleteIcon from '@mui/icons-material/Delete';
 import GridViewIcon from '@mui/icons-material/GridView';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import SaveIcon from '@mui/icons-material/Save';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SmsIcon from '@mui/icons-material/Sms';
-import TuneIcon from '@mui/icons-material/Tune';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type {SxProps, Theme} from '@mui/material/styles';
@@ -250,7 +255,11 @@ export interface LayoutsMenuProps {
     onSaveLayout: () => void;
     onLoadLayout: (index: number) => void;
     onDeleteLayout: (index: number) => void;
+    /** Optional: opens the panel-visibility settings (cross-link to the organiser). */
+    onCustomizePanels?: () => void;
 }
+
+const DEFAULT_LAYOUT_NAME = 'Default';
 
 export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                                             layouts,
@@ -258,6 +267,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                                             onSaveLayout,
                                                             onLoadLayout,
                                                             onDeleteLayout,
+                                                            onCustomizePanels,
                                                         }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
@@ -281,18 +291,33 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
     };
 
     const handleDelete = (event: React.MouseEvent, index: number) => {
+        // Keep the row's load action from firing; the confirmation dialog
+        // owns the actual deletion.
         event.stopPropagation();
         onDeleteLayout(index);
     };
 
+    const handleCustomize = () => {
+        onCustomizePanels?.();
+        handleClose();
+    };
+
+    const tooltip = currentLayoutName ? `Layouts · ${currentLayoutName}` : 'Layouts';
+
+    // Panel visibility only applies to a custom layout — the Default layout is
+    // read-only, so the entry is disabled with an explanatory tooltip.
+    const isDefaultLayout = !currentLayoutName || currentLayoutName === DEFAULT_LAYOUT_NAME;
+    const customizeDisabledReason =
+        'Panel visibility is only available with a custom layout. Add or select a custom layout to choose which panels appear.';
+
     return (
         <>
-            <Tooltip title="Layouts">
+            <Tooltip title={tooltip}>
                 <IconButton color="inherit" onClick={handleClick} sx={toolbarIconButtonSx}>
                     <GridViewIcon sx={{fontSize: 22}}/>
                 </IconButton>
             </Tooltip>
-            <Menu
+            <Popover
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
@@ -301,59 +326,105 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                 slotProps={{
                     paper: {
                         elevation: 3,
-                        sx: {minWidth: 200, mt: 0.5},
+                        sx: {minWidth: 240, mt: 0.5},
                     }
                 }}
             >
-                <MenuItem onClick={handleSave}>
-                    <ListItemIcon>
-                        <SaveIcon fontSize="small"/>
-                    </ListItemIcon>
-                    <ListItemText>Add Layout</ListItemText>
-                </MenuItem>
-                {layouts.length > 0 && <Divider sx={{my: 0.5}}/>}
-                {layouts.map((layout, index) => {
-                    const isActive = layout.name === currentLayoutName;
-                    const isDefault = layout.name === 'Default';
-                    return (
-                        <MenuItem
-                            key={index}
-                            onClick={() => handleLoad(index)}
-                            sx={(theme) => ({
-                                bgcolor: isActive ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
-                            })}
+                <List dense disablePadding sx={{py: 0.5}}>
+                    <ListItemButton onClick={handleSave}>
+                        <ListItemIcon sx={{minWidth: 36}}>
+                            <AddIcon fontSize="small"/>
+                        </ListItemIcon>
+                        <ListItemText
+                            slotProps={{primary: {variant: 'body2'}}}
                         >
-                            <ListItemIcon>
-                                {isDefault ? (
-                                    <TuneIcon fontSize="small" color={isActive ? 'primary' : 'inherit'}/>
-                                ) : (
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => handleDelete(e, index)}
-                                        sx={{
-                                            p: 0.25,
-                                            '&:hover': {
-                                                color: 'error.main',
-                                            },
-                                        }}
-                                    >
-                                        <DeleteIcon fontSize="small"/>
-                                    </IconButton>
+                            Add layout
+                        </ListItemText>
+                    </ListItemButton>
+
+                    {layouts.length > 0 && (
+                        <ListSubheader
+                            disableSticky
+                            sx={{
+                                lineHeight: '32px',
+                                bgcolor: 'transparent',
+                                color: 'text.secondary',
+                                fontWeight: 600,
+                            }}
+                        >
+                            Switch layout
+                        </ListSubheader>
+                    )}
+
+                    {layouts.map((layout, index) => {
+                        const isActive = layout.name === currentLayoutName;
+                        const isDefault = layout.name === DEFAULT_LAYOUT_NAME;
+                        return (
+                            <ListItem
+                                key={index}
+                                disablePadding
+                                secondaryAction={isDefault ? undefined : (
+                                    <Tooltip title="Delete layout">
+                                        <IconButton
+                                            className="layout-delete"
+                                            edge="end"
+                                            size="small"
+                                            aria-label={`Delete ${layout.name}`}
+                                            onClick={(e) => handleDelete(e, index)}
+                                            sx={{'&:hover': {color: 'error.main'}}}
+                                        >
+                                            <DeleteIcon fontSize="small"/>
+                                        </IconButton>
+                                    </Tooltip>
                                 )}
-                            </ListItemIcon>
-                            <ListItemText
-                                slotProps={{primary: {
-                                    variant: 'body2',
-                                    color: isActive ? 'primary.main' : 'text.primary',
-                                    sx: {fontWeight: isActive ? 600 : 400},
-                                }}}
+                                sx={{
+                                    '& .layout-delete': {opacity: 0, transition: 'opacity 0.15s'},
+                                    '&:hover .layout-delete, &:focus-within .layout-delete': {opacity: 1},
+                                }}
                             >
-                                {layout.name}
-                            </ListItemText>
-                        </MenuItem>
-                    );
-                })}
-            </Menu>
+                                <ListItemButton selected={isActive} onClick={() => handleLoad(index)}>
+                                    <ListItemIcon sx={{minWidth: 36}}>
+                                        {isActive ? <CheckIcon fontSize="small" color="primary"/> : null}
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        slotProps={{primary: {
+                                            variant: 'body2',
+                                            color: isActive ? 'primary.main' : 'text.primary',
+                                            sx: {fontWeight: isActive ? 600 : 400},
+                                        }}}
+                                    >
+                                        {layout.name}
+                                    </ListItemText>
+                                </ListItemButton>
+                            </ListItem>
+                        );
+                    })}
+
+                    {onCustomizePanels && [
+                        <Divider key="customize-divider" sx={{my: 0.5}}/>,
+                        <Tooltip
+                            key="customize"
+                            title={isDefaultLayout ? customizeDisabledReason : ''}
+                            placement="left"
+                        >
+                            {/* span wrapper so the tooltip still works while the button is disabled */}
+                            <Box component="span" sx={{display: 'block'}}>
+                                <ListItemButton
+                                    onClick={handleCustomize}
+                                    disabled={isDefaultLayout}
+                                >
+                                    <ListItemIcon sx={{minWidth: 36}}>
+                                        <SettingsIcon fontSize="small"/>
+                                    </ListItemIcon>
+                                    <ListItemText slotProps={{primary: {variant: 'body2'}}}>
+                                        Customize panels…
+                                    </ListItemText>
+                                </ListItemButton>
+                            </Box>
+                        </Tooltip>,
+                    ]}
+                </List>
+            </Popover>
         </>
     );
 };

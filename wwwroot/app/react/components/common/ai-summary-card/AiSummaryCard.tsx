@@ -411,7 +411,6 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                                         key={`${fact}-${i}`}
                                         label={fact}
                                         size="small"
-                                        variant="outlined"
                                         sx={{bgcolor: 'background.paper'}}
                                     />
                                 ))}

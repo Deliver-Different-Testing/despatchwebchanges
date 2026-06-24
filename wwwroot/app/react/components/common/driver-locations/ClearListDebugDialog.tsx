@@ -254,7 +254,7 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                     <InfoRow label="Suburbs in Polygon" value={
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                             {data.gpsPolygonSuburbs.map(s => (
-                                <Chip key={s} label={s} size="small" variant="outlined" />
+                                <Chip key={s} label={s} size="small" />
                             ))}
                         </Box>
                     } />
@@ -338,7 +338,6 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                                 <Chip
                                     label={`Ch: ${m.areaChannelId}`}
                                     size="small"
-                                    variant="outlined"
                                 />
                                 <Chip
                                     label={m.channelMatches ? 'Channel Match' : 'No Match'}

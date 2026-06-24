@@ -208,7 +208,7 @@ export function useDeleteNote() {
     const queryClient = useQueryClient();
 
     return useMutation<void, Error, { noteId: number; jobId?: number; jobBookingId?: number; bulkJobId?: number }>({
-        mutationFn: ({noteId}) => notesApi.deleteNote(noteId),
+        mutationFn: ({noteId, jobId}) => notesApi.deleteNote(noteId, jobId),
         onSuccess: async (_, variables) => {
             // Invalidate relevant queries
             if (variables.jobId) {

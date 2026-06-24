@@ -26,6 +26,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
     private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
     private readonly Mock<IJobReportService> _jobReportServiceMock = new();
     private readonly Mock<IPodReportService> _podReportServiceMock = new();
+    private readonly Mock<IPdfOverlayClient> _pdfOverlayClientMock = new();
     private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
     private readonly Mock<IRateJobService> _rateJobServiceMock = new();
     private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
@@ -69,6 +70,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
         _deliveryJourneyServiceMock.Object,
         _pricingPermissionServiceMock.Object,
         _podReportServiceMock.Object,
+        _pdfOverlayClientMock.Object,
         _splitJobServiceMock.Object,
         _sendToPartnerServiceMock.Object,
         _partnerJobGateMock.Object);

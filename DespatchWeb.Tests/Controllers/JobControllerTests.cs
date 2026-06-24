@@ -40,6 +40,7 @@ public class JobControllerTests : IDisposable
 
     private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
     private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
+    private readonly IPdfOverlayClient _pdfOverlayClientMock = Substitute.For<IPdfOverlayClient>();
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
     private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
 
@@ -89,6 +90,7 @@ public class JobControllerTests : IDisposable
             _deliveryJourneyServiceMock,
             _pricingPermissionServiceMock,
             _podReportServiceMock,
+            _pdfOverlayClientMock,
             _splitJobServiceMock,
             _sendToPartnerServiceMock,
             _partnerJobGateMock);
@@ -2825,8 +2827,8 @@ public class JobControllerTests : IDisposable
         const string job1 = "JOB001";
         const string job2 = "JOB002";
 
-        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns((int?)10);
-        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns((int?)20);
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns(10);
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns(20);
         _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10, Arg.Any<string?>()).Returns(false);
 
         var controller = CreateController();
@@ -2850,8 +2852,8 @@ public class JobControllerTests : IDisposable
         const string job1 = "JOB001";
         const string job2 = "JOB002";
 
-        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns((int?)10);
-        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns((int?)20);
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns(10);
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns(20);
         _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10, Arg.Any<string?>()).Returns(true);
 
         var controller = CreateController();

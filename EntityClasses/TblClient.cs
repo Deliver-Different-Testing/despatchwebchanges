@@ -593,6 +593,8 @@ public partial class TblClient
 
     public string AccountingPaymentTermXeroType { get; set; }
 
+    public bool ArReminderSuppressed { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

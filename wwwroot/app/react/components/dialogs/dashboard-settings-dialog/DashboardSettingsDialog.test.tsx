@@ -56,6 +56,22 @@ const createMockProps = (overrides?: Partial<DashboardSettingsDialogProps>) =>
     createProps(defaultProps, overrides);
 
 describe('DashboardSettingsDialog', () => {
+    describe('panelsMovedNotice', () => {
+        it('shows a moved notice instead of panel toggles when set', () => {
+            renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({
+                        config: {...mockConfig, showDashboards: false, panelsMovedNotice: true},
+                    })}
+                />,
+            );
+
+            expect(screen.getByText(/Panel options have moved/)).toBeInTheDocument();
+            // The per-panel visibility switches are gone.
+            expect(screen.queryByText('Pending Jobs')).not.toBeInTheDocument();
+        });
+    });
+
     // ── Default render (single render for all read-only checks) ─────
     describe('Default render', () => {
         it('renders dialog with all sections, panels, switches and refresh options', () => {

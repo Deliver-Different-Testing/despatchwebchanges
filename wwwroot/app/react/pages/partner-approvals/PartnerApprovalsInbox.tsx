@@ -322,7 +322,7 @@ function InboxRow({
                     <Typography variant="subtitle2" sx={{fontWeight: 600}}>{meta.label}</Typography>
                     {request.requiresCommercialRefresh && (
                         <Tooltip title="Triggers a price re-rate when approved">
-                            <Chip size="small" label="re-rates" color="warning" variant="outlined"/>
+                            <Chip size="small" label="re-rates" color="warning"/>
                         </Tooltip>
                     )}
                     <Box sx={{ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.5}}>

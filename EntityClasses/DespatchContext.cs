@@ -3632,6 +3632,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CompanyAddress).HasMaxLength(100);
             entity.Property(e => e.CompanyBankNumber).HasMaxLength(100);
             entity.Property(e => e.ComposerExtrasPath).HasMaxLength(500);
+            entity.Property(e => e.ConsolidatedContractorSupplierRef).HasMaxLength(100);
             entity.Property(e => e.ContactUsEmailSubject)
                 .IsRequired()
                 .HasMaxLength(100);
@@ -3764,7 +3765,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.OpenforceApiKey).HasMaxLength(50);
             entity.Property(e => e.OpenforceClientGuid).HasMaxLength(50);
             entity.Property(e => e.OpenforceClientId).HasMaxLength(100);
-            entity.Property(e => e.OpenforceQboVendorId).HasMaxLength(50);
             entity.Property(e => e.ParentJobCourierId).HasColumnName("ParentJobCourierID");
             entity.Property(e => e.PpdAppliedDescription)
                 .IsRequired()
@@ -4817,6 +4817,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.NpAgentId, "IX_tucCourier_NpAgentId");
 
+            entity.HasIndex(e => e.PortalAccessToken, "IX_tucCourier_PortalAccessToken");
+
             entity.HasIndex(e => e.UccrInsuranceId, "InsuranceID");
 
             entity.HasIndex(e => e.UccrPublicLiabilityId, "PublicLiabilityID");
@@ -4899,6 +4901,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Podreqd)
                 .HasDefaultValue(false, "DF_tucCourier_PODreqd")
                 .HasColumnName("PODreqd");
+            entity.Property(e => e.PortalAccessToken).HasMaxLength(256);
             entity.Property(e => e.RegistrationExpiry).HasColumnType("datetime");
             entity.Property(e => e.Ruckms).HasColumnName("RUCKms");
             entity.Property(e => e.Rucpayload).HasColumnName("RUCPayload");
@@ -5618,6 +5621,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
 
+            entity.HasIndex(e => e.LinehaulRunId, "IX_tucJob_LinehaulRunId");
+
             entity.HasIndex(e => e.NpAgentId, "IX_tucJob_NpAgentId");
 
             entity.HasIndex(e => e.PartnerJobGuid, "IX_tucJob_PartnerJobGuid");
@@ -6158,6 +6163,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobArchive_FromAirportId");
 
+            entity.HasIndex(e => e.LinehaulRunId, "IX_tucJobArchive_LinehaulRunId");
+
             entity.HasIndex(e => e.NpAgentId, "IX_tucJobArchive_NpAgentId");
 
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobArchive_ToAirportId");
@@ -6581,6 +6588,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.AgentId, "IX_tucJobBooking_AgentId");
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
+
+            entity.HasIndex(e => e.LinehaulRunId, "IX_tucJobBooking_LinehaulRunId");
 
             entity.HasIndex(e => e.NpAgentId, "IX_tucJobBooking_NpAgentId");
 

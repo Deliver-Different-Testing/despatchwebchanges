@@ -43,6 +43,5 @@ public interface IAiClientService
     IAsyncEnumerable<string> StreamMessageAsync(
         string systemPrompt,
         List<AiMessage> messages,
-        int maxTokens,
         CancellationToken ct = default);
 }

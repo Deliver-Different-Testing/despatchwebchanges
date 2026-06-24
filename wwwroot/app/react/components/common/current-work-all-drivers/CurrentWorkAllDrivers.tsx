@@ -21,7 +21,7 @@ import Divider from '@mui/material/Divider';
 import SearchIcon from '@mui/icons-material/Search';
 import SortIcon from '@mui/icons-material/SortByAlpha';
 import ClearIcon from '@mui/icons-material/Clear';
-import TruckIcon from '@mui/icons-material/LocalShipping';
+import { NoData } from '../no-data';
 import { IDriverWorkOverview, SortOrder, CurrentWorkAllDriversProps } from './CurrentWorkAllDrivers.types';
 
 /**
@@ -158,30 +158,15 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
             {/* Driver List */}
             <Box sx={{ flex: 1, overflow: 'auto' }}>
                 {filteredAndSortedDrivers.length === 0 ? (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            py: 6,
-                            px: 2,
-                            color: 'text.secondary',
-                        }}
-                    >
-                        <TruckIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
-                        <Typography variant="subtitle1" gutterBottom>
-                            {searchText ? 'No Drivers Found' : 'No Drivers Available'}
-                        </Typography>
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            {searchText
+                    <NoData
+                        icon="local_shipping"
+                        title={searchText ? 'No Drivers Found' : 'No Drivers Available'}
+                        message={
+                            searchText
                                 ? `No drivers match "${searchText}"`
                                 : 'No active drivers found'
-                            }
-                        </Typography>
-                    </Box>
+                        }
+                    />
                 ) : (
                     <List disablePadding>
                         {filteredAndSortedDrivers.map((driver, index) => (

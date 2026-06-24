@@ -28,11 +28,11 @@ interface DriverEmailsTabProps {
 }
 
 const columns: DataTableColumn<DriverEmail>[] = [
-    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Chip label={row.code} size="small" color="primary" variant="outlined" />},
+    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Chip label={row.code} size="small" color="primary" />},
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
     {key: 'email', label: 'Email', sortable: true, render: (row) => row.email},
     {key: 'phone', label: 'Phone', sortable: true, render: (row) => row.phone},
-    {key: 'fleet', label: 'Fleet', sortable: true, render: (row) => <Chip label={row.fleet} size="small" variant="outlined" sx={getFleetChipSx(row.fleet)} />},
+    {key: 'fleet', label: 'Fleet', sortable: true, render: (row) => <Chip label={row.fleet} size="small" sx={getFleetChipSx(row.fleet)} />},
     {key: 'actions', label: 'Actions', width: '80px', align: 'center', render: () => null},
 ];
 

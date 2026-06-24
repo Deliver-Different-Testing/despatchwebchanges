@@ -19,6 +19,8 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Moq" />
       <PackageReference Include="NSubstitute"/>
+    <!-- Pin transitive SQLite native lib to a non-vulnerable version (NU1903 / GHSA-2m69-gcr7-jv3q) -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 

@@ -361,7 +361,7 @@ describe('StickyNotes', () => {
             fireEvent.click(deleteAction!);
 
             expect(confirmSpy).toHaveBeenCalled();
-            expect(mockedNotesApi.deleteNote).toHaveBeenCalledWith(1);
+            expect(mockedNotesApi.deleteNote).toHaveBeenCalledWith(1, 123);
 
             // Shows success toast after deleting
             await waitFor(() => {

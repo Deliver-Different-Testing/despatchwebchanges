@@ -5,7 +5,7 @@
  * by Recurring Jobs, Overview, Task Dashboard, etc.
  */
 
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
@@ -30,6 +30,18 @@ export interface BoxHeaderProps {
     onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
     onRefresh?: () => void;
     onToggleCollapse?: () => void;
+    /** Keyboard reorder: move this panel up among its visible siblings. Undefined at the top. */
+    onMoveUp?: () => void;
+    /** Keyboard reorder: move this panel down among its visible siblings. Undefined at the bottom. */
+    onMoveDown?: () => void;
+    /**
+     * Re-focus the drag handle on mount. Reordering bumps the layout version,
+     * which remounts the panel tree and drops focus — the shell sets this on the
+     * moved panel so keyboard reordering can continue without re-tabbing.
+     */
+    focusHandleOnMount?: boolean;
+    /** Called once the handle has been re-focused, so the shell can clear its pending flag. */
+    onHandleFocused?: () => void;
     rightSlot?: React.ReactNode;
 }
 
@@ -52,11 +64,39 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
     onDragStart,
     onRefresh,
     onToggleCollapse,
+    onMoveUp,
+    onMoveDown,
+    focusHandleOnMount,
+    onHandleFocused,
     rightSlot,
 }) => {
     // Subtitle (typically the selected jobNo) lives in the title itself so
     // it picks up PanelHeader's existing truncation + contrast handling.
     const composedTitle = subtitle ? `${title} · ${subtitle}` : title;
+
+    const dragHandleRef = useRef<HTMLButtonElement>(null);
+
+    // Restore focus to the handle after a reorder remounts the panel tree.
+    useEffect(() => {
+        if (focusHandleOnMount) {
+            dragHandleRef.current?.focus();
+            onHandleFocused?.();
+        }
+        // Mount-only: focusHandleOnMount reflects the moved panel at mount time.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleReorderKeyDown = (event: React.KeyboardEvent) => {
+        if (event.key === 'ArrowUp' && onMoveUp) {
+            event.preventDefault();
+            event.stopPropagation();
+            onMoveUp();
+        } else if (event.key === 'ArrowDown' && onMoveDown) {
+            event.preventDefault();
+            event.stopPropagation();
+            onMoveDown();
+        }
+    };
 
     const action = (
         <>
@@ -81,21 +121,17 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
                 </Tooltip>
             ) : null}
             {showDragHandle ? (
-                <Tooltip title="Drag to reorder">
-                    <Box
-                        component="span"
-                        aria-label="Drag handle"
-                        sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            color: 'inherit',
-                            cursor: 'grab',
-                            opacity: 0.85,
-                            '&:active': {cursor: 'grabbing'},
-                        }}
+                <Tooltip title="Drag, or use the arrow keys, to reorder">
+                    <IconButton
+                        ref={dragHandleRef}
+                        size="small"
+                        aria-label={`Reorder ${title} — use the up and down arrow keys`}
+                        aria-roledescription="sortable"
+                        onKeyDown={handleReorderKeyDown}
+                        sx={{...actionButtonSx, cursor: 'grab', opacity: 0.85, '&:active': {cursor: 'grabbing'}}}
                     >
                         <DragIndicatorIcon fontSize="small" />
-                    </Box>
+                    </IconButton>
                 </Tooltip>
             ) : null}
         </>

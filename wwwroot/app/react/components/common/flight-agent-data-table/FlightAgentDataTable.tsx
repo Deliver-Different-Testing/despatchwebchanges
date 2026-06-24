@@ -186,7 +186,6 @@ const CharterChip: React.FC<{ description?: string }> = ({description}) => (
             label="Charter"
             size="small"
             color="warning"
-            variant="outlined"
             sx={{height: 16, fontSize: 9, fontWeight: 600, '& .MuiChip-label': {px: 0.5}}}
         />
     </Tooltip>

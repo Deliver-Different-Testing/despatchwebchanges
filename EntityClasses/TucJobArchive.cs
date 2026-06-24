@@ -521,6 +521,8 @@ public partial class TucJobArchive
 
     public string MasterSubSettlementMode { get; set; }
 
+    public int? LinehaulRunId { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucAgent Agent { get; set; }

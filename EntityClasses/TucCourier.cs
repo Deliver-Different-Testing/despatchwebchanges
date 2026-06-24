@@ -275,6 +275,12 @@ public partial class TucCourier
 
     public string MasterSubSettlementMode { get; set; }
 
+    public string PortalAccessToken { get; set; }
+
+    public DateTime? PortalTokenIssuedAt { get; set; }
+
+    public DateTime? PortalTokenLastUsedAt { get; set; }
+
     public virtual TucCourierFleet CourierFleet { get; set; }
 
     public virtual TblCourierGp CourierGps { get; set; }

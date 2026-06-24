@@ -21,9 +21,8 @@ import CheckBoxOutlineBlank from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import Close from '@mui/icons-material/Close';
-import PersonOff from '@mui/icons-material/PersonOff';
 import Search from '@mui/icons-material/Search';
-import SearchOff from '@mui/icons-material/SearchOff';
+import { NoData } from '../../../components/common/no-data';
 import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
 
@@ -381,78 +380,22 @@ export function DriversPanel({
 
                     {/* Empty: no drivers at all */}
                     {!isLoading && drivers.length === 0 && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                py: 5,
-                                gap: 1,
-                            }}
-                        >
-                            <PersonOff
-                                sx={{
-                                    fontSize: 40,
-                                    color: 'text.disabled',
-                                    opacity: 0.6,
-                                }}
-                            />
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: "text.secondary",
-                                    fontWeight: 500
-                                }}>
-                                No active drivers
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    color: "text.disabled"
-                                }}
-                            >
-                                Drivers will appear when they log in
-                            </Typography>
-                        </Box>
+                        <NoData
+                            icon="person_off"
+                            title="No active drivers"
+                            message="Drivers will appear when they log in"
+                        />
                     )}
 
                     {/* Empty: search has no results */}
                     {!isLoading &&
                         drivers.length > 0 &&
                         filteredDrivers.length === 0 && (
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    py: 5,
-                                    gap: 1,
-                                }}
-                            >
-                                <SearchOff
-                                    sx={{
-                                        fontSize: 40,
-                                        color: 'text.disabled',
-                                        opacity: 0.6,
-                                    }}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: "text.secondary",
-                                        fontWeight: 500
-                                    }}>
-                                    No matches found
-                                </Typography>
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: "text.disabled"
-                                    }}
-                                >
-                                    Try a different name or code
-                                </Typography>
-                            </Box>
+                            <NoData
+                                icon="search_off"
+                                title="No matches found"
+                                message="Try a different name or code"
+                            />
                         )}
 
                     {/* Driver list */}

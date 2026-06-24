@@ -171,7 +171,6 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                                             label={statusLabel}
                                             size="small"
                                             color={statusTone === 'default' || !statusTone ? 'default' : statusTone}
-                                            variant="outlined"
                                         />
                                     )}
                                     {hasTotal && (

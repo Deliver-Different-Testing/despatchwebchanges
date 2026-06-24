@@ -127,7 +127,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 {rateResult.source === 'rate_card' && rateResult.rateCardRate != null && (
                     <Paper elevation={0} sx={SECTION_PAPER_SX}>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-                            <Chip label="Rate Card" size="small" color="primary" variant="outlined"/>
+                            <Chip label="Rate Card" size="small" color="primary"/>
                             <Typography variant="body2">
                                 Pre-agreed rate: <Box component="strong" sx={{fontWeight: 700}}>${rateResult.rateCardRate.toFixed(2)}</Box>
                             </Typography>
@@ -138,7 +138,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 {rateResult.source === 'live_quote' && rateResult.liveQuotes.length > 0 && (
                     <Paper elevation={0} sx={SECTION_PAPER_SX}>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mb: 1}}>
-                            <Chip label="Live Quote" size="small" color="primary" variant="outlined"/>
+                            <Chip label="Live Quote" size="small" color="primary"/>
                             <Typography variant="body2" sx={{
                                 color: "text.secondary"
                             }}>
@@ -175,7 +175,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 {rateResult.source === 'percentage' && rateResult.derivedRate != null && (
                     <Paper elevation={0} sx={SECTION_PAPER_SX}>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-                            <Chip label="Percentage" size="small" color="primary" variant="outlined"/>
+                            <Chip label="Percentage" size="small" color="primary"/>
                             <Typography variant="body2">
                                 Partner will be paid <Box component="strong" sx={{fontWeight: 700}}>${rateResult.derivedRate.toFixed(2)}</Box>
                                 {rateResult.percentageOfClientCharge != null && (
@@ -198,7 +198,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 {rateResult.source === 'cost_plus' && rateResult.liveQuotes.length > 0 && (
                     <Paper elevation={0} sx={SECTION_PAPER_SX}>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap'}}>
-                            <Chip label="Cost Plus" size="small" color="primary" variant="outlined"/>
+                            <Chip label="Cost Plus" size="small" color="primary"/>
                             <Typography variant="body2">
                                 Partner quote: <Box component="strong" sx={{fontWeight: 700}}>${rateResult.liveQuotes[0].totalCharge.toFixed(2)}</Box>
                                 {rateResult.marginPercent != null && rateResult.derivedRevenue != null && (

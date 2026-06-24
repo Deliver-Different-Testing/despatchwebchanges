@@ -593,6 +593,8 @@ public partial class TucClient
 
     public string AccountingPaymentTermXeroType { get; set; }
 
+    public bool ArReminderSuppressed { get; set; }
+
     public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();
 
     public virtual TucAgent NpAgent { get; set; }

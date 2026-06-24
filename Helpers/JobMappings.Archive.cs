@@ -26,7 +26,7 @@ public static partial class JobMappings
         // shows '-' instead of "Jan/01 23:00".
         DispatchTime = j.UcjbDispDate.HasValue && j.UcjbDispDate.Value.Year > 1900
             ? j.UcjbDispDate.Value.CombineWithTime(j.UcjbDispTime)
-            : (DateTime?)null,
+            : null,
         CreatedDate = j.CreatedTimeUtc,
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,

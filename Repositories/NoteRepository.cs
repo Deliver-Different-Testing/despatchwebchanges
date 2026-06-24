@@ -52,24 +52,21 @@ public class NoteRepository(
             ? await GetArchivedNotesByJobIdAsync(jobId)
             : await GetActiveNotesByJobIdAsync(jobId);
 
-    public async Task<TucNoteViewModel> GetNoteByIdAsync(int noteId)
+    public async Task<TucNoteViewModel> GetNoteByIdAsync(int noteId, int? jobId = null)
     {
-        await using var activeContext = CreateNewContext();
-        await using var archivedContext = CreateNewContext();
-
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
-        var activeTask = activeContext.GetActiveNotesByNoteIdAsync(noteId);
-        var archivedTask = CreateArchivedNoteQuery(archivedContext)
-            .Where(note => note.NoteId == noteId)
-            .FirstOrDefaultAsync();
+        // Active (TucNotes) and archived (TucNoteArchives) tables have independent
+        // NoteId sequences, so the job decides which one to read. A null jobId
+        // (recurring/prebook notes, only ever active) falls back to the active table.
+        var isArchived = jobId.HasValue && await IsJobArchived(jobId.Value);
 
-        await Task.WhenAll(activeTask, archivedTask);
+        var result = isArchived
+            ? await CreateArchivedNoteQuery()
+                .Where(note => note.NoteId == noteId)
+                .FirstOrDefaultAsync()
+            : await Context.GetActiveNotesByNoteIdAsync(noteId);
 
-        var activeNote = await activeTask;
-        var archivedNote = await archivedTask;
-
-        var result = activeNote ?? archivedNote;
         if (result != null)
         {
             UpdateNoteDate(result, tenantTimeZone);
@@ -193,8 +190,25 @@ public class NoteRepository(
         await Context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteNoteAsync(int noteId, CancellationToken cancellationToken = default)
+    public async Task DeleteNoteAsync(int noteId, int? jobId = null,
+        CancellationToken cancellationToken = default)
     {
+        // Mirror GetNoteByIdAsync: the job picks the table so a colliding NoteId in
+        // the other table is untouched. Archive history is keyed by ArchiveNoteId.
+        var isArchived = jobId.HasValue && await IsJobArchived(jobId.Value);
+
+        if (isArchived)
+        {
+            await Context.TucNoteHistories
+                .Where(h => h.ArchiveNoteId == noteId)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            await Context.TucNoteArchives
+                .Where(note => note.NoteId == noteId)
+                .ExecuteDeleteAsync(cancellationToken);
+            return;
+        }
+
         await Context.TucNoteHistories
             .Where(h => h.NoteId == noteId)
             .ExecuteDeleteAsync(cancellationToken);

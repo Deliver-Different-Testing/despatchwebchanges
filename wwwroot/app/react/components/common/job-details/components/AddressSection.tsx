@@ -247,7 +247,7 @@ function AddressBlock({
                             dense={dense}
                         >
                             {phoneSource && (
-                                <Chip label={phoneSource} size="small" variant="outlined"
+                                <Chip label={phoneSource} size="small"
                                       sx={{height: 20, fontSize: '0.6875rem', ml: 0.5}}/>
                             )}
                             {contactPhone && (

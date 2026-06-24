@@ -5,6 +5,7 @@ import {
     loadBoxVisibility,
     loadLastActiveLayoutName,
     loadLayouts,
+    mergeBoxVisibility,
     saveBoxVisibility,
     saveLastActiveLayoutName,
     saveLayouts,
@@ -54,7 +55,7 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
     const [boxes, setBoxes] = useState<Record<string, IBox>>(() => {
         const initial = createJobSearchBoxes();
         const saved = loadBoxVisibility(storageKeys, currentLayoutName);
-        return applySavedVisibility(initial, saved);
+        return mergeBoxVisibility(initial, saved);
     });
     const [layoutVersion, setLayoutVersion] = useState(0);
 
@@ -76,7 +77,7 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
             const layout = prev[index] ?? prev[0];
             if (!layout) return prev;
             setCurrentLayoutName(layout.name);
-            setBoxes(applySavedVisibility(
+            setBoxes(mergeBoxVisibility(
                 createJobSearchBoxes(),
                 loadBoxVisibility(storageKeys, layout.name),
             ));
@@ -90,7 +91,7 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
             const exists = prev.some(l => l.name === name);
             const targetName = exists ? name : DEFAULT_LAYOUT_NAME;
             setCurrentLayoutName(targetName);
-            setBoxes(applySavedVisibility(
+            setBoxes(mergeBoxVisibility(
                 createJobSearchBoxes(),
                 loadBoxVisibility(storageKeys, targetName),
             ));
@@ -107,7 +108,7 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
             ? storedName
             : DEFAULT_LAYOUT_NAME;
         setCurrentLayoutName(targetName);
-        setBoxes(applySavedVisibility(
+        setBoxes(mergeBoxVisibility(
             createJobSearchBoxes(),
             loadBoxVisibility(storageKeys, targetName),
         ));
@@ -283,20 +284,6 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
 
 function layoutsContain(layouts: ILayout[], name: string): boolean {
     return layouts.some(l => l.name === name);
-}
-
-function applySavedVisibility(
-    boxes: Record<string, IBox>,
-    saved: ReturnType<typeof loadBoxVisibility>,
-): Record<string, IBox> {
-    if (!saved) return boxes;
-    const next: Record<string, IBox> = {...boxes};
-    for (const [name, state] of Object.entries(saved)) {
-        if (next[name]) {
-            next[name] = {...next[name], visible: state.visible, collapsed: state.collapsed};
-        }
-    }
-    return next;
 }
 
 function cloneLayoutPayload(layout: ILayout['layout']): ILayout['layout'] {

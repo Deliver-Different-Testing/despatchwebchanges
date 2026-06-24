@@ -16,10 +16,11 @@ import {
     DashboardBox,
     RefreshOption,
 } from './DashboardSettingsDialog';
+import {CustomizePanelsDialog} from '../customize-panels-dialog/CustomizePanelsDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 
-// State management for the dialog
+// State management for the dialogue
 interface DialogState {
     open: boolean;
     config: DashboardSettingsConfig;
@@ -168,6 +169,78 @@ export function openDashboardSettingsDialog(
 // Expose globally for AngularJS access
 window.ReactDashboardSettingsDialog = {
     open: openDashboardSettingsDialog,
+};
+
+interface CustomizePanelsState {
+    open: boolean;
+    title?: string;
+    boxes: Record<string, DashboardBox>;
+    layoutEditable: boolean;
+    resolve?: (value: Record<string, DashboardBox> | null) => void;
+}
+
+let panelsRoot: Root | null = null;
+let panelsContainer: HTMLDivElement | null = null;
+let panelsState: CustomizePanelsState = {open: false, boxes: {}, layoutEditable: true};
+
+function renderPanelsDialog(): void {
+    if (!panelsRoot) return;
+
+    const handleClose = () => {
+        panelsState.open = false;
+        panelsState.resolve?.(null);
+        panelsState.resolve = undefined;
+        renderPanelsDialog();
+    };
+
+    const handleSave = (boxes: Record<string, DashboardBox>) => {
+        panelsState.open = false;
+        panelsState.resolve?.(boxes);
+        panelsState.resolve = undefined;
+        renderPanelsDialog();
+    };
+
+    const currentTheme = getTheme();
+
+    panelsRoot.render(
+        <ReactQueryProvider>
+            <ThemeProvider theme={currentTheme}>
+                <CssBaseline/>
+                <CustomizePanelsDialog
+                    open={panelsState.open}
+                    title={panelsState.title}
+                    boxes={panelsState.boxes}
+                    layoutEditable={panelsState.layoutEditable}
+                    onClose={handleClose}
+                    onSave={handleSave}
+                />
+            </ThemeProvider>
+        </ReactQueryProvider>
+    );
+}
+
+function initializePanelsRoot(): void {
+    if (panelsRoot) return;
+    panelsContainer = document.createElement('div');
+    panelsContainer.id = 'react-customize-panels-dialog-root';
+    document.body.appendChild(panelsContainer);
+    panelsRoot = createRoot(panelsContainer);
+}
+
+export function openCustomizePanelsDialog(
+    boxes: Record<string, DashboardBox>,
+    layoutEditable: boolean = true,
+    title?: string,
+): Promise<Record<string, DashboardBox> | null> {
+    initializePanelsRoot();
+    return new Promise((resolve) => {
+        panelsState = {open: true, title, boxes: {...boxes}, layoutEditable, resolve};
+        renderPanelsDialog();
+    });
+}
+
+window.ReactCustomizePanelsDialog = {
+    open: openCustomizePanelsDialog,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

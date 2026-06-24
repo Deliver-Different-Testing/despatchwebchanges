@@ -341,9 +341,9 @@ public partial class TblSetting
 
     public bool TenantGeneratesContractorInvoice { get; set; }
 
-    public bool ConsolidateOpenforceInQbo { get; set; }
+    public bool ConsolidateContractorsInQbo { get; set; }
 
-    public string OpenforceQboVendorId { get; set; }
+    public string ConsolidatedContractorSupplierRef { get; set; }
 
     public virtual TucStaff InternetJobStaff { get; set; }
 }

@@ -66,7 +66,7 @@ const columns: DataTableColumn<AfterHoursCourierScheduleItem>[] = [
     {key: 'days', label: 'Days', sortable: true, render: (row) => (
         <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap'}}>
             {row.days.map(day => (
-                <Chip key={day} label={day.slice(0, 3)} size="small" color={getDayChipColor(day)} variant="outlined" />
+                <Chip key={day} label={day.slice(0, 3)} size="small" color={getDayChipColor(day)} />
             ))}
         </Box>
     )},

@@ -329,7 +329,7 @@ describe('useDeleteNote', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockNotesApi.deleteNote).toHaveBeenCalledWith(1);
+        expect(mockNotesApi.deleteNote).toHaveBeenCalledWith(1, 100);
     });
 
     it('should handle errors', async () => {

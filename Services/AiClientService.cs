@@ -55,10 +55,9 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
     public async IAsyncEnumerable<string> StreamMessageAsync(
         string systemPrompt,
         List<AiMessage> messages,
-        int maxTokens,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var messageParams = BuildMessageParameters(systemPrompt, messages, maxTokens);
+        var messageParams = BuildMessageParameters(systemPrompt, messages, _settings.MaxTokensPerRequest);
 
         await foreach (var rawEvent in _client.Messages.CreateStreaming(messageParams, ct))
         {

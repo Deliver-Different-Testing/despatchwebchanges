@@ -501,6 +501,8 @@ public partial class TucJob
 
     public string MasterSubSettlementMode { get; set; }
 
+    public int? LinehaulRunId { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }

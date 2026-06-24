@@ -1,6 +1,7 @@
-﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using Serilog;
 
@@ -35,106 +36,18 @@ public sealed class AddAgentRecoveryJobService(
             var parentId = job.ParentId ?? job.UcjbId;
             var agentName = await nationwideJobRepository.GetAgentNameAsync(request.AgentId);
 
-            var newStopJob = new TucJob
+            var input = BuildRecoveryJobInputModel(job, newStopJobNumber);
+            var createResult = await commandRepository.CreateMinimalTucJobAsync(input);
+            if (!createResult.Success || !createResult.JobId.HasValue)
             {
-                UcjbNumber = newStopJobNumber,
-                UcjbDate = job.UcjbDate,
-                UcjbTime = job.UcjbTime,
-                UcjbType = job.UcjbType,
-                UcjbClientId = job.UcjbClientId,
-                UcjbContact = job.UcjbContact,
-                UcjbChargeType = job.UcjbChargeType,
-                UcjbAmount = job.UcjbAmount,
-                CourierPayment = job.CourierPayment,
-                UcjbSpeed = job.UcjbSpeed,
-                UcjbFrom = job.UcjbFrom,
-                UcjbFromAddr = job.UcjbFromAddr,
-                UcjbTo = job.UcjbTo,
-                UcjbToSpecial = null,
-                UcjbToAddr = job.UcjbFromAddr,
-                UcjbSize = job.UcjbSize,
-                UcjbQty = job.UcjbQty,
-                UcjbCbd = false,
-                UcjbKm = 0,
-                UcjbFlightDetails = null,
-                UcjbWeight = job.UcjbWeight,
-                UcjbStatus = job.UcjbStatus,
-                UcjbCourierId = null,
-                UcjbJobDone = false,
-                UcjbClientRefa = job.UcjbClientRefa,
-                UcjbClientRefb = job.UcjbClientRefb,
-                UcjbOurRef = job.UcjbNumber,
-                UcjbOpId = job.UcjbOpId,
-                UcjbDispId = null,
-                UcjbVan = job.UcjbVan,
-                UcjbReturn = job.UcjbReturn,
-                UcjbVoid = false,
-                UcjbAttention = true,
-                UcjbPickUpFrom = job.UcjbPickUpFrom,
-                UcjbPaged = false,
-                UcjbClientCode = job.UcjbClientCode,
-                UcjbRefJobId = job.UcjbId,
-                UcjbDispDate = null,
-                UcjbDispTime = null,
-                SaturdayDelivery = false,
-                ClientNotes = job.ClientNotes,
-                UcjbContactPhone = job.UcjbContactPhone,
-                ContactId = job.ContactId,
-                DeliverToPrivateBusiness = null,
-                DeliverToLeaveId = null,
-                ProofOfDelivery = null,
-                ProofOfDeliveryEmail = null,
-                ParentId = parentId,
-                JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild,
-                PickupFromContact = job.PickupFromContact,
-                PickupFromPhone = job.PickupFromPhone,
-                DeliverToContact = job.DeliverToContact,
-                DeliverToPhone = job.DeliverToPhone,
-                Dgclass = job.Dgclass,
-                Dgdocument = job.Dgdocument,
-                RawAmount = job.RawAmount,
-                PickUpLatitude = job.PickUpLatitude,
-                PickUpLongitude = job.PickUpLongitude,
-                DeliveryLatitude = job.DeliveryLatitude,
-                DeliveryLongitude = job.DeliveryLongitude,
-                FuelSurchargeAmount = 0,
-                CourierFuel = job.CourierFuel,
-                ShopId = job.ShopId,
-                ShopRef1 = CleanShopRef(job.ShopRef1),
-                ShopRef2 = CleanShopRef(job.ShopRef2),
-                ShopRef3 = CleanShopRef(job.ShopRef3),
-                ShopRef4 = CleanShopRef(job.ShopRef4),
-                ShopRef5 = CleanShopRef(job.ShopRef5),
-                CourierPercentageOverride = job.CourierPercentageOverride,
-                DryIceWeight = job.DryIceWeight,
-                PickupAddressLine1 = job.PickupAddressLine1,
-                PickupAddressLine2 = job.PickupAddressLine2,
-                PickupAddressLine3 = job.PickupAddressLine3,
-                PickupAddressLine4 = job.PickupAddressLine4,
-                PickupAddressLine5 = job.PickupAddressLine5,
-                PickupAddressLine6 = job.PickupAddressLine6,
-                PickupAddressLine7 = job.PickupAddressLine7,
-                PickupAddressLine8 = job.PickupAddressLine8,
-                DeliveryAddressLine1 = job.DeliveryAddressLine1,
-                DeliveryAddressLine2 = job.DeliveryAddressLine2,
-                DeliveryAddressLine3 = job.DeliveryAddressLine3,
-                DeliveryAddressLine4 = job.DeliveryAddressLine4,
-                DeliveryAddressLine5 = job.DeliveryAddressLine5,
-                DeliveryAddressLine6 = job.DeliveryAddressLine6,
-                DeliveryAddressLine7 = job.DeliveryAddressLine7,
-                FromAirportId = job.FromAirportId,
-                ToAirportId = job.ToAirportId,
-                DeliverByTime = job.DeliverByTime,
-                InternalStatus = job.InternalStatus,
-                PickupTimeZoneId = job.PickupTimeZoneId,
-                DeliverByTimeZoneId = job.DeliverByTimeZoneId,
-                TotalDistance = null,
-                RatedManually = true,
-                DisplayInDespatch = false
-            };
+                throw new InvalidOperationException($"Failed to create recovery agent job: {createResult.Message}");
+            }
 
-            // Insert the new job stop — must save to generate UcjbId for downstream references
-            await commandRepository.AddEntityAsync(newStopJob);
+            // Load the created job and overwrite the fields the stored procedure doesn't handle.
+            var newStopJob = await queryRepository.GetByIdAsync<TucJob>(createResult.JobId.Value);
+            ArgumentNullException.ThrowIfNull(newStopJob);
+
+            ApplyRecoveryLegFields(newStopJob, job, parentId);
             await commandRepository.SaveChangesAsync();
 
             Log.Debug("New Stop Job with ID: {JobId} has been created", newStopJob.UcjbId);
@@ -147,8 +60,8 @@ public sealed class AddAgentRecoveryJobService(
             await commandRepository.AddEntityAsync(note);
 
             // Add Recovery Agent Record
-            var recoveryAgentRecord = CreateJobRecoveryAgent(newStopJob.UcjbId, request.AgentId, request.AirportId, staffId,
-                request.IsPrimaryRecoveryAgent);
+            var recoveryAgentRecord = CreateJobRecoveryAgent(newStopJob.UcjbId, request.AgentId, request.AirportId,
+                staffId, request.IsPrimaryRecoveryAgent);
             await commandRepository.AddEntityAsync(recoveryAgentRecord);
 
             await commandRepository.SaveChangesAsync();
@@ -161,6 +74,179 @@ public sealed class AddAgentRecoveryJobService(
                 request.AgentId);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Builds the minimal create-job input for the recovery leg. The leg starts as an ordinary job
+    /// (a non-zero placeholder charge, no parent/relationship); <see cref="ApplyRecoveryLegFields"/>
+    /// turns it into the hidden, zero-charge SplitChild afterward.
+    /// </summary>
+    private CreateMinimalTucJobInputModel BuildRecoveryJobInputModel(TucJob job, string newStopJobNumber) =>
+        new()
+        {
+            JobNumber = newStopJobNumber,
+            ClientId = job.UcjbClientId ?? 0,
+            SpeedId = job.UcjbSpeed ?? 0,
+            Amount = job.UcjbAmount ?? 0m,
+            FromAddress = BuildAddress(job.PickupAddressLine1, job.PickupAddressLine2, job.PickupAddressLine3,
+                job.PickupAddressLine4, job.PickupAddressLine5, job.PickupAddressLine6, job.PickupAddressLine7,
+                job.PickupAddressLine8, job.UcjbFromAddr ?? job.UcjbNumber, job.PickUpLatitude, job.PickUpLongitude),
+            ToAddress = BuildAddress(job.DeliveryAddressLine1, job.DeliveryAddressLine2, job.DeliveryAddressLine3,
+                job.DeliveryAddressLine4, job.DeliveryAddressLine5, job.DeliveryAddressLine6, job.DeliveryAddressLine7,
+                null, job.UcjbFromAddr ?? job.UcjbNumber, job.DeliveryLatitude, job.DeliveryLongitude),
+            Reference = job.UcjbClientRefa,
+            ReferenceB = job.UcjbClientRefb,
+            OurRef = job.UcjbNumber,
+            BookedBy = string.IsNullOrWhiteSpace(job.UcjbContact) ? job.UcjbNumber : job.UcjbContact,
+            FromContactName = job.PickupFromContact,
+            FromPhoneNumber = job.PickupFromPhone,
+            ToContactName = job.DeliverToContact,
+            ToPhoneNumber = job.DeliverToPhone,
+            PickUpLatitude = job.PickUpLatitude,
+            PickUpLongitude = job.PickUpLongitude,
+            DeliveryLatitude = job.DeliveryLatitude,
+            DeliveryLongitude = job.DeliveryLongitude,
+            DgClass = job.Dgclass,
+            DryIceWeight = job.DryIceWeight,
+            FuelSurchargeAmount = 0,
+            LoggedInContactId = infoService.GetContactId(),
+            TenantCurrentTime = clock.TenantNow
+        };
+
+    /// <summary>
+    /// Overwrites the freshly created job with the recovery leg's data: copies the parent's details,
+    /// links it as a hidden SplitChild, and zeroes the client charge so the parent keeps it.
+    /// </summary>
+    private static void ApplyRecoveryLegFields(TucJob newStopJob, TucJob job, int parentId)
+    {
+        newStopJob.UcjbDate = job.UcjbDate;
+        newStopJob.UcjbTime = job.UcjbTime;
+        newStopJob.UcjbType = job.UcjbType;
+        newStopJob.UcjbClientId = job.UcjbClientId;
+        newStopJob.UcjbContact = job.UcjbContact;
+        newStopJob.UcjbChargeType = job.UcjbChargeType;
+        newStopJob.UcjbAmount = 0m;
+        newStopJob.CourierPayment = job.CourierPayment;
+        newStopJob.UcjbSpeed = job.UcjbSpeed;
+        newStopJob.UcjbFrom = job.UcjbFrom;
+        newStopJob.UcjbFromAddr = job.UcjbFromAddr;
+        newStopJob.UcjbTo = job.UcjbTo;
+        newStopJob.UcjbToSpecial = null;
+        newStopJob.UcjbToAddr = job.UcjbFromAddr;
+        newStopJob.UcjbSize = job.UcjbSize;
+        newStopJob.UcjbQty = job.UcjbQty;
+        newStopJob.UcjbCbd = false;
+        newStopJob.UcjbKm = 0;
+        newStopJob.UcjbFlightDetails = null;
+        newStopJob.UcjbWeight = job.UcjbWeight;
+        newStopJob.UcjbStatus = job.UcjbStatus;
+        newStopJob.UcjbCourierId = null;
+        newStopJob.UcjbJobDone = false;
+        newStopJob.UcjbClientRefa = job.UcjbClientRefa;
+        newStopJob.UcjbClientRefb = job.UcjbClientRefb;
+        newStopJob.UcjbOurRef = job.UcjbNumber;
+        newStopJob.UcjbOpId = job.UcjbOpId;
+        newStopJob.UcjbDispId = null;
+        newStopJob.UcjbVan = job.UcjbVan;
+        newStopJob.UcjbReturn = job.UcjbReturn;
+        newStopJob.UcjbVoid = false;
+        newStopJob.UcjbAttention = true;
+        newStopJob.UcjbPickUpFrom = job.UcjbPickUpFrom;
+        newStopJob.UcjbPaged = false;
+        newStopJob.UcjbClientCode = job.UcjbClientCode;
+        newStopJob.UcjbRefJobId = job.UcjbId;
+        newStopJob.UcjbDispDate = null;
+        newStopJob.UcjbDispTime = null;
+        newStopJob.SaturdayDelivery = false;
+        newStopJob.ClientNotes = job.ClientNotes;
+        newStopJob.UcjbContactPhone = job.UcjbContactPhone;
+        newStopJob.ContactId = job.ContactId;
+        newStopJob.DeliverToPrivateBusiness = null;
+        newStopJob.DeliverToLeaveId = null;
+        newStopJob.ProofOfDelivery = null;
+        newStopJob.ProofOfDeliveryEmail = null;
+        newStopJob.ParentId = parentId;
+        newStopJob.JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild;
+        newStopJob.PickupFromContact = job.PickupFromContact;
+        newStopJob.PickupFromPhone = job.PickupFromPhone;
+        newStopJob.DeliverToContact = job.DeliverToContact;
+        newStopJob.DeliverToPhone = job.DeliverToPhone;
+        newStopJob.Dgclass = job.Dgclass;
+        newStopJob.Dgdocument = job.Dgdocument;
+        newStopJob.RawAmount = job.RawAmount;
+        newStopJob.PickUpLatitude = job.PickUpLatitude;
+        newStopJob.PickUpLongitude = job.PickUpLongitude;
+        newStopJob.DeliveryLatitude = job.DeliveryLatitude;
+        newStopJob.DeliveryLongitude = job.DeliveryLongitude;
+        newStopJob.FuelSurchargeAmount = 0;
+        newStopJob.CourierFuel = job.CourierFuel;
+        newStopJob.ShopId = job.ShopId;
+        newStopJob.ShopRef1 = CleanShopRef(job.ShopRef1);
+        newStopJob.ShopRef2 = CleanShopRef(job.ShopRef2);
+        newStopJob.ShopRef3 = CleanShopRef(job.ShopRef3);
+        newStopJob.ShopRef4 = CleanShopRef(job.ShopRef4);
+        newStopJob.ShopRef5 = CleanShopRef(job.ShopRef5);
+        newStopJob.CourierPercentageOverride = job.CourierPercentageOverride;
+        newStopJob.DryIceWeight = job.DryIceWeight;
+        newStopJob.PickupAddressLine1 = job.PickupAddressLine1;
+        newStopJob.PickupAddressLine2 = job.PickupAddressLine2;
+        newStopJob.PickupAddressLine3 = job.PickupAddressLine3;
+        newStopJob.PickupAddressLine4 = job.PickupAddressLine4;
+        newStopJob.PickupAddressLine5 = job.PickupAddressLine5;
+        newStopJob.PickupAddressLine6 = job.PickupAddressLine6;
+        newStopJob.PickupAddressLine7 = job.PickupAddressLine7;
+        newStopJob.PickupAddressLine8 = job.PickupAddressLine8;
+        newStopJob.DeliveryAddressLine1 = job.DeliveryAddressLine1;
+        newStopJob.DeliveryAddressLine2 = job.DeliveryAddressLine2;
+        newStopJob.DeliveryAddressLine3 = job.DeliveryAddressLine3;
+        newStopJob.DeliveryAddressLine4 = job.DeliveryAddressLine4;
+        newStopJob.DeliveryAddressLine5 = job.DeliveryAddressLine5;
+        newStopJob.DeliveryAddressLine6 = job.DeliveryAddressLine6;
+        newStopJob.DeliveryAddressLine7 = job.DeliveryAddressLine7;
+        newStopJob.FromAirportId = job.FromAirportId;
+        newStopJob.ToAirportId = job.ToAirportId;
+        newStopJob.DeliverByTime = job.DeliverByTime;
+        newStopJob.InternalStatus = job.InternalStatus;
+        newStopJob.PickupTimeZoneId = job.PickupTimeZoneId;
+        newStopJob.DeliverByTimeZoneId = job.DeliverByTimeZoneId;
+        newStopJob.TotalDistance = null;
+        newStopJob.RatedManually = true;
+        newStopJob.DisplayInDespatch = false;
+    }
+
+    /// <summary>
+    /// Builds an address view model from the parent's structured lines, falling back to a single line
+    /// so <see cref="AddressViewModel.FullAddress"/> is never empty (the create-job validation rejects
+    /// blank addresses). The leg's real addresses are set in <see cref="ApplyRecoveryLegFields"/>.
+    /// </summary>
+    private static AddressViewModel BuildAddress(string line1, string line2, string line3, string line4, string line5,
+        string line6, string line7, string line8, string fallback, decimal? latitude, decimal? longitude)
+    {
+        var address = new AddressViewModel
+        {
+            AddressLine1 = line1,
+            AddressLine2 = line2,
+            AddressLine3 = line3,
+            AddressLine4 = line4,
+            AddressLine5 = line5,
+            AddressLine6 = line6,
+            AddressLine7 = line7,
+            AddressLine8 = line8,
+            Latitude = latitude,
+            Longitude = longitude
+        };
+
+        if (!string.IsNullOrWhiteSpace(address.FullAddress))
+        {
+            return address;
+        }
+
+        return new AddressViewModel
+        {
+            AddressLine1 = fallback,
+            Latitude = latitude,
+            Longitude = longitude
+        };
     }
 
     /// <summary>

@@ -3,6 +3,10 @@ import {Dayjs} from "dayjs";
 import {formatDateForApiWithTzs} from "../../react/utils/dateUtils";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
 import {transformDispatchJobDTO} from "../../functions/dtoMappings";
+import {
+    getPodJobsDownloadUrl,
+    getClientJobsReportDownloadUrl,
+} from "../../react/pages/job-search/lib/exportUrls";
 import angular from 'angular';
 
 class JobSearchService implements angular.IServiceProvider {
@@ -69,22 +73,7 @@ class JobSearchService implements angular.IServiceProvider {
         job?: string,
         jobId?: number,
     ): string {
-        const params = new URLSearchParams();
-        params.append('fromDate', formatDateForApiWithTzs(fromDate));
-        params.append('toDate', formatDateForApiWithTzs(toDate));
-        if (courierIds?.length) {
-            courierIds.forEach(id => params.append('courierIds', id.toString()));
-        }
-        if (clientIds?.length) {
-            clientIds.forEach(id => params.append('clientIds', id.toString()));
-        }
-        if (speedIds?.length) {
-            speedIds.forEach(id => params.append('speedIds', id.toString()));
-        }
-        if (wild) params.append('wild', wild);
-        if (job) params.append('job', job);
-        if (jobId) params.append('jobId', jobId.toString());
-        return `/Job/PodSearchDownload?${params.toString()}`;
+        return getPodJobsDownloadUrl(fromDate, toDate, courierIds, clientIds, speedIds, wild, job, jobId);
     }
 
     getClientJobsReportDownloadUrl(
@@ -92,13 +81,7 @@ class JobSearchService implements angular.IServiceProvider {
         toDate: Dayjs,
         clientIds?: number[],
     ): string {
-        const params = new URLSearchParams();
-        params.append('startDate', formatDateForApiWithTzs(fromDate));
-        params.append('endDate', formatDateForApiWithTzs(toDate));
-        if (clientIds?.length) {
-            clientIds.forEach(id => params.append('clientIds', id.toString()));
-        }
-        return `/Job/ClientJobsReportDownload?${params.toString()}`;
+        return getClientJobsReportDownloadUrl(fromDate, toDate, clientIds);
     }
 
     async uploadJobList(file: File) {

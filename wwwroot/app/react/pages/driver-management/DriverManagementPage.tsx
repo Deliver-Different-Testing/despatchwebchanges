@@ -60,7 +60,7 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
         <Box sx={{height: '100%', bgcolor: 'background.default'}}>
         <Box sx={{
             height: '100%', display: 'flex', flexDirection: 'column', gap: 2,
-            maxWidth: 1400, mx: 'auto', p: {xs: 2, md: 3},
+            p: 1,
             '& .MuiCard-root': {
                 borderRadius: 3,
                 boxShadow: 1,

@@ -215,20 +215,21 @@ describe('LayoutsMenu', () => {
         fireEvent.click(screen.getByRole('button'));
 
         await waitFor(() => {
-            expect(screen.getByText('Add Layout')).toBeInTheDocument();
+            expect(screen.getByText('Add layout')).toBeInTheDocument();
+            expect(screen.getByText('Switch layout')).toBeInTheDocument();
             expect(screen.getByText('Default')).toBeInTheDocument();
             expect(screen.getByText('Custom Layout 1')).toBeInTheDocument();
         });
     });
 
-    it('should call onSaveLayout when Add Layout is clicked', async () => {
+    it('should call onSaveLayout when Add layout is clicked', async () => {
         const onSaveLayout = jest.fn();
         renderWithTheme(<LayoutsMenu {...defaultProps} onSaveLayout={onSaveLayout} />);
 
         fireEvent.click(screen.getByRole('button'));
 
         await waitFor(() => {
-            fireEvent.click(screen.getByText('Add Layout'));
+            fireEvent.click(screen.getByText('Add layout'));
         });
 
         expect(onSaveLayout).toHaveBeenCalledTimes(1);
@@ -258,6 +259,90 @@ describe('LayoutsMenu', () => {
             const layoutItem = screen.getByText('Custom Layout 1');
             expect(layoutItem).toHaveStyle({fontWeight: 600});
         });
+    });
+
+    it('should expose a delete control for custom layouts but not Default', async () => {
+        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+
+        fireEvent.click(screen.getByRole('button'));
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Delete Custom Layout 1')).toBeInTheDocument();
+        });
+        expect(screen.getByLabelText('Delete Custom Layout 2')).toBeInTheDocument();
+        expect(screen.queryByLabelText('Delete Default')).not.toBeInTheDocument();
+    });
+
+    it('should call onDeleteLayout with index when the trailing delete is clicked', async () => {
+        const onDeleteLayout = jest.fn();
+        const onLoadLayout = jest.fn();
+        renderWithTheme(
+            <LayoutsMenu
+                {...defaultProps}
+                onDeleteLayout={onDeleteLayout}
+                onLoadLayout={onLoadLayout}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button'));
+
+        await waitFor(() => {
+            fireEvent.click(screen.getByLabelText('Delete Custom Layout 1'));
+        });
+
+        expect(onDeleteLayout).toHaveBeenCalledWith(1);
+        // Deleting must not also trigger a layout load on the same row.
+        expect(onLoadLayout).not.toHaveBeenCalled();
+    });
+
+    it('should not render a Customize panels entry without onCustomizePanels', async () => {
+        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+
+        fireEvent.click(screen.getByRole('button'));
+        await waitFor(() => {
+            expect(screen.getByText('Add layout')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('Customize panels…')).not.toBeInTheDocument();
+    });
+
+    it('should call onCustomizePanels when clicked on a custom layout', async () => {
+        const onCustomizePanels = jest.fn();
+        renderWithTheme(
+            <LayoutsMenu
+                {...defaultProps}
+                currentLayoutName="Custom Layout 1"
+                onCustomizePanels={onCustomizePanels}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button'));
+        await waitFor(() => {
+            fireEvent.click(screen.getByText('Customize panels…'));
+        });
+
+        expect(onCustomizePanels).toHaveBeenCalledTimes(1);
+    });
+
+    it('should disable Customize panels on the Default layout', async () => {
+        const onCustomizePanels = jest.fn();
+        renderWithTheme(
+            <LayoutsMenu
+                {...defaultProps}
+                currentLayoutName="Default"
+                onCustomizePanels={onCustomizePanels}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button'));
+        await waitFor(() => {
+            expect(screen.getByText('Customize panels…')).toBeInTheDocument();
+        });
+
+        // The entry is disabled, so clicking it must not open the dialog.
+        fireEvent.click(screen.getByText('Customize panels…'));
+        expect(onCustomizePanels).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', {name: /customize panels/i}))
+            .toHaveAttribute('aria-disabled', 'true');
     });
 });
 

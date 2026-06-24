@@ -1,14 +1,13 @@
 /**
- * React Messaging Dialog
+ * React Messaging Dialogue
  *
  * A modern replacement for the AngularJS messaging-dialog using MUI components.
  * Features real-time messaging, conversation list, quick responses, and multi-recipient support.
  */
 
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {accentPalette, sharedColors} from '../../../theme/muiTheme';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
+import Drawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -37,6 +36,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import QuickReplyIcon from '@mui/icons-material/QuickreplyOutlined';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import DoneIcon from '@mui/icons-material/Done';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
@@ -72,7 +72,13 @@ const SX_FLEX_1 = {flex: 1} as const;
 const SX_MR_1 = {mr: 1} as const;
 const SX_PRIMARY_AVATAR = {bgcolor: 'primary.main'} as const;
 const SX_DIALOG_CONTENT_ROW = {p: 0, display: 'flex', flex: 1, overflow: 'hidden'} as const;
-const SX_DIALOG_CONTENT_COL = {p: 0, display: 'flex', flexDirection: 'column' as const, flex: 1, overflow: 'hidden'} as const;
+const SX_DIALOG_CONTENT_COL = {
+    p: 0,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    flex: 1,
+    overflow: 'hidden'
+} as const;
 const SX_CONV_NAME_ROW = {display: 'flex', justifyContent: 'space-between', alignItems: 'baseline'} as const;
 const SX_CONV_NAME_TEXT = {maxWidth: 140} as const;
 const SX_CONV_SECONDARY_ROW = {display: 'flex', alignItems: 'center', gap: 1} as const;
@@ -92,6 +98,12 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                                                     currentStaffId,
                                                                 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    // Whether the user is parked at (or near) the bottom of the thread. When
+    // they've scrolled up to read history we must NOT yank them back down on
+    // the 10s auto-refresh — only follow new messages they're already tracking.
+    const isNearBottomRef = useRef(true);
+    const prevConversationKeyRef = useRef<string | null>(null);
 
     const [selectedConversation, setSelectedConversation] = useState<RecentConversation | null>(null);
     const [showNewChatView, setShowNewChatView] = useState(false);
@@ -116,6 +128,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         isLoading: isMessagesLoading,
         loadMessages,
         addOptimisticMessage,
+        updateMessage,
         clearMessages,
     } = useMessages(currentStaffId);
 
@@ -165,12 +178,34 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         open && !!selectedConversation
     );
 
-    // Scroll to bottom when messages change
+    const handleMessagesScroll = useCallback(() => {
+        const el = messagesContainerRef.current;
+        if (el) {
+            isNearBottomRef.current = isNearBottom(el);
+        }
+    }, []);
+
+    // Follow the conversation as messages change, but respect the reader:
+    // jump to the bottom when switching conversations, and on new messages only
+    // when the user is already near the bottom or just sent the latest message.
     useEffect(() => {
-        if (messagesEndRef.current) {
+        const conversationKey = selectedConversation
+            ? `${selectedConversation.otherPartyType}-${selectedConversation.otherPartyId}`
+            : null;
+        const conversationChanged = conversationKey !== prevConversationKeyRef.current;
+        prevConversationKeyRef.current = conversationKey;
+
+        if (!messagesEndRef.current) return;
+
+        const lastMessageIsOwn = messages[messages.length - 1]?.isSender === true;
+
+        if (conversationChanged) {
+            messagesEndRef.current.scrollIntoView({behavior: 'auto'});
+            isNearBottomRef.current = true;
+        } else if (isNearBottomRef.current || lastMessageIsOwn) {
             messagesEndRef.current.scrollIntoView({behavior: 'smooth'});
         }
-    }, [messages]);
+    }, [messages, selectedConversation]);
 
     const handleSelectConversation = async (conversation: RecentConversation) => {
         if (
@@ -195,58 +230,74 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         }
     };
 
-    const handleSendMessage = async () => {
-        if (!newMessage.trim() || !selectedConversation || isSending) return;
+    // Core send used by both the composer and the failed-message retry. The
+    // bubble appears immediately as 'sending', then resolves to 'sent' or
+    // 'failed' so the user can see progress and retry in place.
+    const sendMessageContent = useCallback(async (content: string, retryMessageId?: number) => {
+        if (!selectedConversation) return;
 
-        const messageContent = newMessage.trim();
-        setIsSending(true);
+        const tempId = retryMessageId ?? -Date.now();
+        const data: SendMessageRequest = {
+            sendToCourierId: selectedConversation.otherPartyType === OtherMessagePartyType.Courier
+                ? selectedConversation.otherPartyId : undefined,
+            sendToStaffId: selectedConversation.otherPartyType === OtherMessagePartyType.Staff
+                ? selectedConversation.otherPartyId : undefined,
+            message: content,
+            messageType: messageDeliveryType,
+        };
 
-        try {
-            const data: SendMessageRequest = {
-                sendToCourierId: selectedConversation.otherPartyType === OtherMessagePartyType.Courier
-                    ? selectedConversation.otherPartyId : undefined,
-                sendToStaffId: selectedConversation.otherPartyType === OtherMessagePartyType.Staff
-                    ? selectedConversation.otherPartyId : undefined,
-                message: messageContent,
-                messageType: messageDeliveryType,
-            };
-
-            await messagingApi.sendMessage(data);
-
-            // Add optimistic message
-            const optimisticMessage: ChatMessage = {
-                messageId: -Date.now(),
+        if (retryMessageId !== undefined) {
+            updateMessage(tempId, {status: 'sending'});
+        } else {
+            addOptimisticMessage({
+                messageId: tempId,
                 sendFromStaffId: currentStaffId,
                 sendToCourierId: data.sendToCourierId,
                 sendToStaffId: data.sendToStaffId,
-                message: messageContent,
+                message: content,
                 messageTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
                 read: false,
-                sent: true,
+                sent: false,
                 isSender: true,
-            };
+                status: 'sending',
+            });
+        }
 
-            addOptimisticMessage(optimisticMessage);
-            setNewMessage('');
-
-            // Update conversation preview
+        try {
+            await messagingApi.sendMessage(data);
+            updateMessage(tempId, {status: 'sent', sent: true});
             updateConversation(
                 selectedConversation.otherPartyId,
                 selectedConversation.otherPartyType,
                 {
-                    lastMessage: messageContent,
+                    lastMessage: content,
                     lastMessageTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
                 }
             );
-
             showToast('Message sent', 'success');
         } catch (err) {
             console.error('Failed to send message:', err);
+            updateMessage(tempId, {status: 'failed'});
             showToast('Failed to send message', 'error');
+        }
+    }, [selectedConversation, messageDeliveryType, currentStaffId, addOptimisticMessage, updateMessage, updateConversation, showToast]);
+
+    const handleSendMessage = async () => {
+        const content = newMessage.trim();
+        if (!content || !selectedConversation || isSending) return;
+
+        setIsSending(true);
+        setNewMessage('');
+        try {
+            await sendMessageContent(content);
         } finally {
             setIsSending(false);
         }
     };
+
+    const handleRetryMessage = useCallback((message: ChatMessage) => {
+        void sendMessageContent(message.message, message.messageId);
+    }, [sendMessageContent]);
 
     const handleSendMultiMessage = async () => {
         if (!newMessage.trim() || selectedContacts.length === 0 || isSending) return;
@@ -365,6 +416,15 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         setShowQuickResponses(false);
     };
 
+    const handleMarkConversationRead = useCallback(async (conv: RecentConversation) => {
+        try {
+            await messagingApi.markMessagesAsRead(conv.otherPartyId, conv.otherPartyType);
+            updateConversation(conv.otherPartyId, conv.otherPartyType, {unreadCount: 0});
+        } catch (err) {
+            console.error('Failed to mark conversation as read:', err);
+        }
+    }, [updateConversation]);
+
     const getTotalUnreadCount = (): number => {
         return conversations.reduce((total, conv) => total + conv.unreadCount, 0);
     };
@@ -419,7 +479,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                     subtitle="Send and receive messages"
                     onClose={onClose}
                 />
-                <DialogContent sx={SX_DIALOG_CONTENT_ROW}>
+                <Box component="section" sx={SX_DIALOG_CONTENT_ROW}>
                     {conversationsError ? (
                         <ErrorState
                             message={conversationsError}
@@ -436,6 +496,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                 onSelectConversation={handleSelectConversation}
                                 onRefresh={() => loadConversations()}
                                 onNewChat={handleShowNewChat}
+                                onMarkRead={handleMarkConversationRead}
                             />
 
                             {/* Chat Panel */}
@@ -459,29 +520,36 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                 onToggleQuickResponses={() => setShowQuickResponses(!showQuickResponses)}
                                 onSelectQuickResponse={handleSelectQuickResponse}
                                 messagesEndRef={messagesEndRef}
+                                messagesContainerRef={messagesContainerRef}
+                                onMessagesScroll={handleMessagesScroll}
+                                onRetryMessage={handleRetryMessage}
                             />
                         </Box>
                     )}
-                </DialogContent>
+                </Box>
             </>
         );
     };
 
     return (
-        <Dialog
+        <Drawer
+            anchor="right"
             open={open}
-            onClose={onClose}
-            maxWidth={false}
+            onClose={(_event, reason) => {
+                // Stay open on outside/backdrop click — the Message Center is a
+                // working surface, not a quick confirm. Only the X button and
+                // Escape dismiss it.
+                if (reason === 'backdropClick') return;
+                onClose();
+            }}
             slotProps={{
                 paper: {
+                    elevation: 24,
                     sx: {
-                        width: '90vw',
-                        maxWidth: 1100,
-                        height: '80vh',
-                        maxHeight: 800,
-                        minWidth: 700,
-                        minHeight: 500,
-                        borderRadius: 2,
+                        width: {xs: '100%', sm: '90vw'},
+                        maxWidth: 1000,
+                        minWidth: {sm: 700},
+                        height: '100%',
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
@@ -490,7 +558,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             }}
         >
             {renderContent()}
-        </Dialog>
+        </Drawer>
     );
 };
 
@@ -518,7 +586,7 @@ function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: Dialog
             })}
         >
             {showBackButton && (
-                <IconButton onClick={onBack} sx={SX_WHITE_TEXT}>
+                <IconButton onClick={onBack} sx={SX_WHITE_TEXT} aria-label="Back">
                     <ArrowBackIcon/>
                 </IconButton>
             )}
@@ -535,7 +603,7 @@ function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: Dialog
                     </Typography>
                 )}
             </Box>
-            <IconButton onClick={onClose} sx={SX_WHITE_TEXT}>
+            <IconButton onClick={onClose} sx={SX_WHITE_TEXT} aria-label="Close message center">
                 <CloseIcon/>
             </IconButton>
         </Box>
@@ -550,6 +618,7 @@ interface ConversationsPanelProps {
     onSelectConversation: (conv: RecentConversation) => void;
     onRefresh: () => void;
     onNewChat: () => void;
+    onMarkRead: (conv: RecentConversation) => void;
 }
 
 function ConversationsPanel({
@@ -560,7 +629,20 @@ function ConversationsPanel({
                                 onSelectConversation,
                                 onRefresh,
                                 onNewChat,
+                                onMarkRead,
                             }: ConversationsPanelProps) {
+    const [filterText, setFilterText] = useState('');
+    const [unreadOnly, setUnreadOnly] = useState(false);
+
+    const filteredConversations = useMemo(() => {
+        const term = filterText.trim().toLowerCase();
+        return conversations.filter((conv) => {
+            if (unreadOnly && conv.unreadCount === 0) return false;
+            if (term && !conv.otherPartyName.toLowerCase().includes(term)) return false;
+            return true;
+        });
+    }, [conversations, filterText, unreadOnly]);
+
     return (
         <Box
             sx={{
@@ -597,13 +679,62 @@ function ConversationsPanel({
                     />
                 )}
                 <Box sx={SX_FLEX_1}/>
-                <IconButton size="small" onClick={onRefresh} disabled={isLoading}>
+                <IconButton size="small" onClick={onRefresh} disabled={isLoading} aria-label="Refresh conversations">
                     <RefreshIcon sx={{animation: isLoading ? 'spin 1s linear infinite' : 'none'}}/>
                 </IconButton>
-                <IconButton size="small" color="primary" onClick={onNewChat}>
+                <IconButton size="small" color="primary" onClick={onNewChat} aria-label="New conversation">
                     <AddCommentIcon/>
                 </IconButton>
             </Box>
+            {/* Filter row */}
+            {conversations.length > 0 && (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        px: 1.5,
+                        py: 1,
+                        bgcolor: 'background.paper',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                >
+                    <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="Filter conversations"
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                        slotProps={{
+                            htmlInput: {'aria-label': 'Filter conversations'},
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon color="action" fontSize="small"/>
+                                    </InputAdornment>
+                                ),
+                                endAdornment: filterText ? (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={() => setFilterText('')} aria-label="Clear filter">
+                                            <CloseIcon fontSize="small"/>
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : undefined,
+                            },
+                        }}
+                        sx={{'& .MuiOutlinedInput-root': {borderRadius: 3}}}
+                    />
+                    <Chip
+                        label="Unread"
+                        size="small"
+                        color={unreadOnly ? 'primary' : 'default'}
+                        variant={unreadOnly ? 'filled' : 'outlined'}
+                        onClick={() => setUnreadOnly((v) => !v)}
+                        aria-pressed={unreadOnly}
+                    />
+                </Box>
+            )}
             {/* Loading indicator */}
             {isLoading && conversations.length === 0 && (
                 <Box sx={SX_LOADING_BOX}>
@@ -611,8 +742,9 @@ function ConversationsPanel({
                 </Box>
             )}
             {/* Conversations List */}
+            {filteredConversations.length > 0 && (
             <List sx={SX_LIST_CONTAINER}>
-                {conversations.map((conv) => (
+                {filteredConversations.map((conv) => (
                     <ListItem
                         key={`${conv.otherPartyId}-${conv.otherPartyType}`}
                         onClick={() => onSelectConversation(conv)}
@@ -626,6 +758,9 @@ function ConversationsPanel({
                             selectedConversation?.otherPartyType === conv.otherPartyType
                                 ? 'action.selected' : 'transparent',
                             '&:hover': {bgcolor: 'action.hover'},
+                            '& .conv-mark-read': {opacity: 0, transition: 'opacity 0.15s'},
+                            '&:hover .conv-mark-read': {opacity: 1},
+                            '@media (hover: none)': {'& .conv-mark-read': {opacity: 1}},
                         }}
                     >
                         <ListItemAvatar>
@@ -698,9 +833,25 @@ function ConversationsPanel({
                                 </Box>
                             }
                         />
+                        {conv.unreadCount > 0 && (
+                            <IconButton
+                                className="conv-mark-read"
+                                size="small"
+                                edge="end"
+                                aria-label={`Mark conversation with ${conv.otherPartyName} as read`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkRead(conv);
+                                }}
+                                sx={{ml: 0.5}}
+                            >
+                                <DoneAllIcon fontSize="small"/>
+                            </IconButton>
+                        )}
                     </ListItem>
                 ))}
             </List>
+            )}
             {/* Empty State */}
             {!isLoading && conversations.length === 0 && (
                 <EmptyState
@@ -713,6 +864,26 @@ function ConversationsPanel({
                             onClick={onNewChat}
                         >
                             Start Conversation
+                        </Button>
+                    }
+                />
+            )}
+            {/* No conversations match the current filter */}
+            {!isLoading && conversations.length > 0 && filteredConversations.length === 0 && (
+                <EmptyState
+                    icon={<SearchOffIcon sx={SX_LARGE_ICON}/>}
+                    message={unreadOnly && !filterText.trim()
+                        ? 'No unread conversations'
+                        : 'No matching conversations'}
+                    action={
+                        <Button
+                            variant="text"
+                            onClick={() => {
+                                setFilterText('');
+                                setUnreadOnly(false);
+                            }}
+                        >
+                            Clear filters
                         </Button>
                     }
                 />
@@ -738,6 +909,9 @@ interface ChatPanelProps {
     onToggleQuickResponses: () => void;
     onSelectQuickResponse: (response: QuickResponse) => void;
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
+    messagesContainerRef: React.RefObject<HTMLDivElement | null>;
+    onMessagesScroll: () => void;
+    onRetryMessage: (message: ChatMessage) => void;
 }
 
 function ChatPanel({
@@ -757,6 +931,9 @@ function ChatPanel({
                        onToggleQuickResponses,
                        onSelectQuickResponse,
                        messagesEndRef,
+                       messagesContainerRef,
+                       onMessagesScroll,
+                       onRetryMessage,
                    }: ChatPanelProps) {
     if (!selectedConversation) {
         return (
@@ -809,12 +986,17 @@ function ChatPanel({
                         {' · '}{selectedConversation.otherPartyStatus}
                     </Typography>
                 </Box>
-                <IconButton size="small" onClick={onRefreshMessages} disabled={isMessagesLoading}>
+                <IconButton size="small" onClick={onRefreshMessages} disabled={isMessagesLoading} aria-label="Refresh messages">
                     <RefreshIcon sx={{animation: isMessagesLoading ? 'spin 1s linear infinite' : 'none'}}/>
                 </IconButton>
             </Box>
             {/* Messages Area */}
             <Box
+                ref={messagesContainerRef}
+                onScroll={onMessagesScroll}
+                role="log"
+                aria-live="polite"
+                aria-label="Messages"
                 sx={{
                     flex: 1,
                     overflow: 'auto',
@@ -836,8 +1018,17 @@ function ChatPanel({
                 ) : (
                     <>
                         {messages.map((msg, index) => {
-                            const showDateSeparator = index === 0 ||
-                                !isSameDay(messages[index - 1].messageTime, msg.messageTime);
+                            const prevMsg = index > 0 ? messages[index - 1] : null;
+                            const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
+                            const showDateSeparator = !prevMsg ||
+                                !isSameDay(prevMsg.messageTime, msg.messageTime);
+                            // A run ends when the next message is from the other
+                            // party, on a different day, or far enough apart in time
+                            // to read as a separate burst.
+                            const isLastInGroup = !nextMsg ||
+                                nextMsg.isSender !== msg.isSender ||
+                                !isSameDay(nextMsg.messageTime, msg.messageTime) ||
+                                !withinGroupingWindow(msg.messageTime, nextMsg.messageTime);
 
                             return (
                                 <React.Fragment key={msg.messageId}>
@@ -850,7 +1041,7 @@ function ChatPanel({
                                                 my: 2,
                                                 px: 2,
                                                 py: 0.5,
-                                                bgcolor: 'grey.100',
+                                                bgcolor: 'background.paper',
                                                 alignSelf: 'center',
                                                 borderRadius: 2,
                                                 border: '1px solid',
@@ -860,7 +1051,12 @@ function ChatPanel({
                                             {formatDateSeparator(msg.messageTime)}
                                         </Typography>
                                     )}
-                                    <MessageBubble message={msg}/>
+                                    <MessageBubble
+                                        message={msg}
+                                        isLastInGroup={isLastInGroup}
+                                        onRetry={onRetryMessage}
+                                        avatarInitials={selectedConversation.otherPartyInitials || generateInitials(selectedConversation.otherPartyName)}
+                                    />
                                 </React.Fragment>
                             );
                         })}
@@ -888,7 +1084,7 @@ function ChatPanel({
                             }}>
                             Quick Responses
                         </Typography>
-                        <IconButton size="small" onClick={onToggleQuickResponses}>
+                        <IconButton size="small" onClick={onToggleQuickResponses} aria-label="Hide quick responses">
                             <CloseIcon fontSize="small"/>
                         </IconButton>
                     </Box>
@@ -898,7 +1094,6 @@ function ChatPanel({
                                 key={response.id}
                                 label={response.text}
                                 onClick={() => onSelectQuickResponse(response)}
-                                variant="outlined"
                                 size="small"
                                 sx={{
                                     '&:hover': {
@@ -924,7 +1119,7 @@ function ChatPanel({
                     bgcolor: 'background.paper',
                 }}
             >
-                <IconButton onClick={onToggleQuickResponses}>
+                <IconButton onClick={onToggleQuickResponses} aria-label="Quick responses">
                     <QuickReplyIcon/>
                 </IconButton>
                 <TextField
@@ -959,9 +1154,10 @@ function ChatPanel({
                     color="primary"
                     onClick={onSendMessage}
                     disabled={!newMessage.trim() || isSending}
+                    aria-label="Send message"
                     sx={{
                         bgcolor: 'primary.main',
-                        color: 'white',
+                        color: 'primary.contrastText',
                         '&:hover': {bgcolor: 'primary.dark'},
                         '&:disabled': {bgcolor: 'action.disabledBackground'},
                     }}
@@ -975,27 +1171,56 @@ function ChatPanel({
 
 interface MessageBubbleProps {
     message: ChatMessage;
+    // False when another message from the same party follows shortly after —
+    // consecutive messages are grouped: only the last keeps its tail and timestamp.
+    isLastInGroup?: boolean;
+    onRetry?: (message: ChatMessage) => void;
+    // Other party's initials, shown beside the last bubble of a received run.
+    avatarInitials?: string;
 }
 
-function MessageBubble({message}: MessageBubbleProps) {
+function MessageBubble({message, isLastInGroup = true, onRetry, avatarInitials}: MessageBubbleProps) {
     const isSent = message.isSender;
+    const isFailed = message.status === 'failed';
+    const isSending = message.status === 'sending';
+    // Tail (the 4px corner) only on the last bubble of a run; grouped bubbles
+    // stay fully rounded so the run reads as a single block.
+    const borderRadius = isLastInGroup
+        ? (isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px')
+        : '16px';
+    // Timestamp only on the last bubble of a run; ticks stay per-message since
+    // read/sent status is meaningful for each individual message.
+    const showMeta = isSent || isLastInGroup;
 
     return (
         <Box
             sx={{
                 display: 'flex',
                 justifyContent: isSent ? 'flex-end' : 'flex-start',
-                mb: 1,
+                alignItems: 'flex-end',
+                gap: 1,
+                mb: isLastInGroup ? 1 : 0.25,
             }}
         >
+            {!isSent && (
+                isLastInGroup
+                    ? (
+                        <Avatar sx={{width: 28, height: 28, fontSize: 12, bgcolor: 'primary.main', flexShrink: 0}}>
+                            {avatarInitials}
+                        </Avatar>
+                    )
+                    : <Box sx={{width: 28, flexShrink: 0}}/>
+            )}
             <Box
                 sx={{
                     maxWidth: '70%',
                     px: 2,
                     py: 1,
-                    borderRadius: isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    bgcolor: isSent ? 'primary.main' : 'background.paper',
-                    color: isSent ? 'white' : 'text.primary',
+                    borderRadius,
+                    // primary.dark (not main) + theme contrastText keeps the sent
+                    // bubble at WCAG AA: 4.60:1 on the blue theme, 9.06:1 on amber.
+                    bgcolor: isSent ? 'primary.dark' : 'background.paper',
+                    color: isSent ? 'primary.contrastText' : 'text.primary',
                     border: isSent ? 'none' : '1px solid',
                     borderColor: 'divider',
                 }}
@@ -1003,20 +1228,47 @@ function MessageBubble({message}: MessageBubbleProps) {
                 <Typography variant="body2" sx={SX_MSG_BODY}>
                     {message.message}
                 </Typography>
-                <Box sx={SX_MSG_META_ROW}>
-                    <Typography
-                        variant="caption"
-                        sx={{opacity: isSent ? 0.8 : 0.6}}
-                    >
-                        {formatMessageTime(message.messageTime)}
-                    </Typography>
-                    {isSent && message.read && (
-                        <DoneAllIcon sx={SX_MSG_TICK_ICON}/>
-                    )}
-                    {isSent && !message.read && message.sent && (
-                        <DoneIcon sx={SX_MSG_TICK_ICON}/>
-                    )}
-                </Box>
+                {isFailed ? (
+                    <Box sx={SX_MSG_META_ROW}>
+                        <ErrorOutlineIcon color="error" sx={{fontSize: 14}} titleAccess="Failed to send"/>
+                        <Typography variant="caption">Failed</Typography>
+                        <Button
+                            size="small"
+                            onClick={() => onRetry?.(message)}
+                            aria-label="Retry sending message"
+                            sx={{
+                                minWidth: 0,
+                                p: 0,
+                                color: 'inherit',
+                                fontSize: 12,
+                                lineHeight: 1,
+                                textDecoration: 'underline',
+                            }}
+                        >
+                            Retry
+                        </Button>
+                    </Box>
+                ) : showMeta && (
+                    <Box sx={SX_MSG_META_ROW}>
+                        {isLastInGroup && (
+                            <Typography
+                                variant="caption"
+                                sx={{opacity: isSent ? 0.8 : 0.6}}
+                            >
+                                {formatMessageTime(message.messageTime)}
+                            </Typography>
+                        )}
+                        {isSent && isSending && (
+                            <ScheduleIcon sx={SX_MSG_TICK_ICON} titleAccess="Sending"/>
+                        )}
+                        {isSent && !isSending && message.read && (
+                            <DoneAllIcon sx={SX_MSG_TICK_ICON}/>
+                        )}
+                        {isSent && !isSending && !message.read && message.sent && (
+                            <DoneIcon sx={SX_MSG_TICK_ICON}/>
+                        )}
+                    </Box>
+                )}
             </Box>
         </Box>
     );
@@ -1062,7 +1314,7 @@ function NewChatView({
                          isContactSelected,
                      }: NewChatViewProps) {
     return (
-        <DialogContent sx={SX_DIALOG_CONTENT_COL}>
+        <Box component="section" sx={SX_DIALOG_CONTENT_COL}>
             {/* Multi-select Header */}
             {isMultiSelectMode && (
                 <Box
@@ -1275,7 +1527,7 @@ function NewChatView({
                     </Box>
                 )}
             </Box>
-        </DialogContent>
+        </Box>
     );
 }
 
@@ -1355,6 +1607,7 @@ function EmptyState({icon, message, action}: EmptyStateProps) {
     return (
         <Box
             sx={{
+                flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -1470,6 +1723,11 @@ function formatLastMessageTime(lastMessageTime: string): string {
 
 function formatDateSeparator(messageTime: string): string {
     const time = parseDateFromApi(messageTime);
+    const now = dayjs();
+    if (time.isSame(now, 'day')) return 'Today';
+    if (time.isSame(now.subtract(1, 'day'), 'day')) return 'Yesterday';
+    if (now.diff(time, 'day') < 7) return time.format('dddd');
+    if (time.isSame(now, 'year')) return time.format('MMM D');
     return time.format('MMM D, YYYY');
 }
 
@@ -1477,6 +1735,26 @@ function isSameDay(time1: string, time2: string): boolean {
     const date1 = parseDateFromApi(time1);
     const date2 = parseDateFromApi(time2);
     return date1.isSame(date2, 'day');
+}
+
+// How close to the bottom (in px) still counts as "following" the thread.
+const NEAR_BOTTOM_THRESHOLD_PX = 80;
+
+export function isNearBottom(
+    el: Pick<HTMLElement, 'scrollHeight' | 'scrollTop' | 'clientHeight'>,
+    threshold = NEAR_BOTTOM_THRESHOLD_PX,
+): boolean {
+    return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+}
+
+// Consecutive messages from the same party within this window are grouped
+// into a single visual run (shared timestamp, tighter spacing).
+const MESSAGE_GROUP_WINDOW_MINUTES = 5;
+
+function withinGroupingWindow(earlier: string, later: string): boolean {
+    const a = parseDateFromApi(earlier);
+    const b = parseDateFromApi(later);
+    return Math.abs(b.diff(a, 'minute')) <= MESSAGE_GROUP_WINDOW_MINUTES;
 }
 
 function highlightSearchTerm(text: string, searchTerm: string): string {

@@ -20,7 +20,8 @@ public partial class JobRepository(
     ITenantInfoService infoService,
     ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
-    ICreateJobService createJobService)
+    ICreateJobService createJobService,
+    IJobApiClient jobApiClient)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobQueryRepository,
         IJobCommandRepository
 {
@@ -36,7 +37,6 @@ public partial class JobRepository(
     /// <param name="data">List of job pricing updates to apply.</param>
     public async Task UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data)
     {
-        // Normalize all nullable values to 0 at the beginning
         data = data.Select(item => new JobManualPriceModel
         {
             Id = item.Id,
@@ -1585,6 +1585,9 @@ public partial class JobRepository(
 
     /// <summary>
     /// Creates a new job with minimal required information for quick entry.
+    /// Delegates to the sister api project (POST /api/Jobs via <see cref="IJobApiClient"/>),
+    /// which owns job-number generation, speed/rate resolution, geocoding, and the
+    /// authoritative tucJob insert. Pricing is passed through as a fixed amount.
     /// </summary>
     /// <param name="request">Job creation request with addresses, client, and speed.</param>
     /// <returns>The ID of the newly created job.</returns>
@@ -1592,53 +1595,7 @@ public partial class JobRepository(
     {
         try
         {
-            var now = _clock.TenantNow;
-            var staffInfo = await _infoService.GetStaffInfoAsync();
-
-            // Generate request number
-            var jobNumber = await GenerateJobNumberAsync(staffInfo.Id, request.SpeedId);
-            var speed = await GetSpeedSuggestionBySpeedIdAsync(request.SpeedId);
-
-            var jobInput = new CreateMinimalTucJobInputModel
-            {
-                JobNumber = jobNumber,
-                FromAddress = request.PickUpAddress,
-                ToAddress = request.DeliveryAddress,
-                BookedBy = staffInfo.Text,
-                ClientId = request.ClientId,
-                AgentCourierId = null,
-                Speed = speed.Text,
-                SpeedId = speed.Id,
-                Amount = request.Charge,
-                Reference = request.RefA,
-                ReferenceB = request.RefB,
-                Notes = request.JobNotes,
-                TenantCurrentTime = now,
-                LoggedInContactId = staffInfo.Id,
-
-                // Additional properties specific to QuickAdd
-                FromContactName = request.FromContactName,
-                ToContactName = request.DeliverToContact,
-                PickupNotes = request.PickupNotes,
-                DeliveryNotes = request.DeliveryNotes,
-                PickUpLatitude = request.PickUpAddress?.Latitude,
-                PickUpLongitude = request.PickUpAddress?.Longitude,
-                DeliveryLatitude = request.DeliveryAddress?.Latitude,
-                DeliveryLongitude = request.DeliveryAddress?.Longitude,
-                Pickup = request.Date.DateTime,
-
-                // Set other properties as needed
-                Hold = false
-            };
-
-            // Call the reusable function
-            var result = await CreateMinimalTucJobAsync(jobInput);
-            if (!result.Success)
-            {
-                throw new Exception($"Failed to create quick add job: {result.Message}");
-            }
-
-            return result.JobId ?? throw new Exception("Failed to get job id from quick add job");
+            return await jobApiClient.QuickCreateAsync(request);
         }
         catch (Exception e)
         {
@@ -1817,16 +1774,11 @@ public partial class JobRepository(
         var staffId = _infoService.GetStaffId();
         var shouldMarkAsRead = data.ShouldMarkAsRead;
 
-        // Build parameterized IN clause to prevent SQL injection
-        // Generate parameter placeholders: @p3, @p4, @p5, etc. (p0-p2 are used for other params)
         var parameterPlaceholders = string.Join(",", jobIds.Select((_, i) => $"@p{i + 3}"));
 
-        // Build parameter array: shouldMarkAsRead, currentTenantTime, staffId, then all job IDs
         var parameters = new List<object> { shouldMarkAsRead, currentTenantTime, staffId };
         parameters.AddRange(jobIds.Cast<object>());
 
-        // Use a single atomic SQL statement to handle both update and insert
-        // This prevents the race condition where multiple pods try to insert the same JobId
         var sql = """
                   -- Update existing tracker records
                   UPDATE tucJobReadTracker
@@ -1858,7 +1810,17 @@ public partial class JobRepository(
     {
         try
         {
+            // A null list means "remove all parcels" — treat it as empty.
             parcels ??= [];
+
+            // Archived jobs live in tucJobArchive / tucJobItemsArchive, not the live tables —
+            // route them to the archive equivalents so package/weight edits on archived (but
+            // not-yet-invoiced) jobs succeed instead of failing.
+            if (await IsJobArchived(jobId))
+            {
+                await UpdatePackagesForArchivedJobAsync(jobId, parcels);
+                return;
+            }
 
             var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
             var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
@@ -1943,8 +1905,99 @@ public partial class JobRepository(
         }
     }
 
+    /// <summary>
+    /// Archive-table counterpart of <see cref="UpdatePackagesForJobAsync"/>. Mirrors the same
+    /// delete-and-reinsert flow against tucJobItemsArchive / tucJobArchive for archived jobs.
+    /// </summary>
+    private async Task UpdatePackagesForArchivedJobAsync(int jobId,
+        IReadOnlyList<ParcelDimensions> parcels)
+    {
+        var effectiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+        var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
+
+        Log.Information(
+            "UpdatePackages for archived Job {JobId} (effective {EffectiveJobId}, child {ChildJobId}): {Count} parcels",
+            jobId, effectiveJobId, childJobId, parcels.Count);
+
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await Context.Database.BeginTransactionAsync();
+
+            // Delete all existing items for this scope
+            await Context.TucJobItemsArchives
+                .Where(i => i.JobId == effectiveJobId &&
+                            (childJobId == null || i.ChildJobId == childJobId))
+                .ExecuteDeleteAsync();
+
+            // Re-insert all parcels with sequential ItemIds
+            if (parcels.Count > 0)
+            {
+                // Get max ItemId across ALL items for this job (not just this scope)
+                // to avoid collisions with sibling stop jobs
+                var maxItemId = await Context.TucJobItemsArchives
+                    .Where(i => i.JobId == effectiveJobId)
+                    .MaxAsync(i => (int?)i.ItemId) ?? 0;
+
+                var nextItemId = maxItemId + 1;
+
+                var newItems = parcels.Select(p => new TucJobItemsArchive
+                {
+                    JobId = effectiveJobId,
+                    ChildJobId = childJobId,
+                    Height = p.Height ?? 0,
+                    Length = p.Length ?? 0,
+                    Depth = p.Depth ?? 0,
+                    Weight = p.Weight ?? 0,
+                    Notes = p.ItemName,
+                    Barcode = p.Barcode,
+                    Items = 1,
+                    ItemId = nextItemId++
+                }).ToList();
+
+                await Context.TucJobItemsArchives.AddRangeAsync(newItems);
+                await Context.SaveChangesAsync();
+            }
+
+            // Update UcjbQty with total parcel count so it stays consistent with the parcels
+            // For stop jobs, only count items belonging to this specific stop (not sibling stops)
+            var totalItemCount = await Context.TucJobItemsArchives
+                .Where(i => i.JobId == effectiveJobId &&
+                            (childJobId == null || i.ChildJobId == childJobId))
+                .CountAsync();
+
+            if (childJobId == null)
+            {
+                // Non-stop: sync qty across parent and all split children (they share the same parcels)
+                await Context.TucJobArchives
+                    .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+            }
+            else
+            {
+                // Stop job: each stop has its own parcels — only update this stop's qty
+                await Context.TucJobArchives
+                    .Where(j => j.UcjbId == jobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+            }
+
+            await transaction.CommitAsync();
+        });
+    }
+
     public async Task UpdateJobWeightAsync(int jobId, decimal weight)
     {
+        // Archived jobs live in tucJobArchive, not tucJob — route them to the archive tables
+        // so weight edits on archived (but not-yet-invoiced) jobs succeed instead of silently
+        // updating zero live rows.
+        if (await IsJobArchived(jobId))
+        {
+            await UpdateArchivedJobWeightAsync(jobId, weight);
+            return;
+        }
+
         if (await IsStopJob(jobId))
         {
             // Stop job: each stop has its own weight — only update this stop
@@ -1957,6 +2010,24 @@ public partial class JobRepository(
         // Non-stop: resolve to parent and sync weight across the entire delivery chain
         var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
         await Context.TucJobs
+            .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
+    }
+
+    private async Task UpdateArchivedJobWeightAsync(int jobId, decimal weight)
+    {
+        if (await IsStopJob(jobId))
+        {
+            // Stop job: each stop has its own weight — only update this stop
+            await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
+            return;
+        }
+
+        // Non-stop: resolve to parent and sync weight across the entire delivery chain
+        var effectiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+        await Context.TucJobArchives
             .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
     }
@@ -4364,33 +4435,103 @@ public partial class JobRepository(
     public async Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate,
         int jobId, bool isBulkJob)
     {
+        // Scans are recorded against the parcel/item barcode for operational scan
+        // types (Sort, Run, Pickup, Transit, InwardsDepot) and against the job
+        // number only for Transfer scans. Match on the job number AND the job's
+        // item barcodes, mirroring the Run Viewer Scan Manager (RVW_stpScanJobs /
+        // RVW_stpJobItems). Matching the job number alone misses every depot scan.
         string jobNumber;
+        var scanKeys = new HashSet<string>();
+
         if (isBulkJob)
         {
-            jobNumber = await Context.TblBulkJobs
+            // One read for the number, the item-level (parent) bulk id and the job's
+            // own barcode, instead of three round trips to the same row.
+            var bulk = await Context.TblBulkJobs
                 .Where(j => j.BulkJobId == jobId)
-                .Select(j => j.JobNumber)
+                .Select(j => new
+                {
+                    j.JobNumber,
+                    ItemBulkJobId = j.BulkParentId ?? j.BulkJobId,
+                    j.Barcode
+                })
                 .FirstOrDefaultAsync();
+
+            jobNumber = bulk?.JobNumber;
+            if (string.IsNullOrEmpty(jobNumber))
+            {
+                Log.Information(
+                    "ScanList: no job number resolved for jobId={JobId} isBulkJob={IsBulkJob}",
+                    jobId, true);
+                return [];
+            }
+
+            scanKeys.Add(jobNumber);
+            if (!string.IsNullOrEmpty(bulk.Barcode))
+            {
+                scanKeys.Add(bulk.Barcode);
+            }
+
+            // Items live at the parent bulk job: read from tucJobItems once the bulk
+            // job is pushed live, otherwise from tblBulkJobItems (mirrors RVW_stpJobItems).
+            var liveJobId = await Context.TblBulkJobs
+                .Where(j => j.BulkJobId == bulk.ItemBulkJobId && j.Done && j.JobId != null)
+                .Select(j => j.JobId)
+                .FirstOrDefaultAsync();
+
+            var bulkBarcodes = liveJobId != null
+                ? await Context.TucJobItems
+                    .Where(ji => ji.JobId == liveJobId && ji.Barcode != null)
+                    .Select(ji => ji.Barcode)
+                    .ToListAsync()
+                : await Context.TblBulkJobItems
+                    .Where(ji => ji.JobId == bulk.ItemBulkJobId && ji.Barcode != null)
+                    .Select(ji => ji.Barcode)
+                    .ToListAsync();
+            scanKeys.UnionWith(bulkBarcodes);
         }
         else
         {
+            // Live job: number + item barcodes from the live tables.
             jobNumber = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.UcjbNumber)
-                .FirstOrDefaultAsync()
-                ?? await Context.TucJobArchives
+                .FirstOrDefaultAsync();
+
+            if (!string.IsNullOrEmpty(jobNumber))
+            {
+                scanKeys.UnionWith(await Context.TucJobItems
+                    .Where(ji => ji.JobId == jobId && ji.Barcode != null)
+                    .Select(ji => ji.Barcode)
+                    .ToListAsync());
+            }
+            else
+            {
+                // Archived job: number + item barcodes live in the archive tables;
+                // skip the live-item lookup entirely.
+                jobNumber = await Context.TucJobArchives
                     .Where(j => j.UcjbId == jobId)
                     .Select(j => j.UcjbNumber)
                     .FirstOrDefaultAsync();
+
+                if (string.IsNullOrEmpty(jobNumber))
+                {
+                    Log.Information(
+                        "ScanList: no job number resolved for jobId={JobId} isBulkJob={IsBulkJob}",
+                        jobId, false);
+                    return [];
+                }
+
+                scanKeys.UnionWith(await Context.TucJobItemsArchives
+                    .Where(ji => ji.JobId == jobId && ji.Barcode != null)
+                    .Select(ji => ji.Barcode)
+                    .ToListAsync());
+            }
+
+            scanKeys.Add(jobNumber);
         }
 
-        if (string.IsNullOrEmpty(jobNumber))
-        {
-            Log.Information(
-                "ScanList: no job number resolved for jobId={JobId} isBulkJob={IsBulkJob}",
-                jobId, isBulkJob);
-            return [];
-        }
+        var scanKeyList = scanKeys.ToList();
 
         runDate ??= _clock.TenantNow;
         // Compare wall-clock-to-wall-clock: bs.ScanDateTime is stored as
@@ -4405,25 +4546,32 @@ public partial class JobRepository(
             join runViewerTransferTo in Context.TucCouriers on bs.ToCourierId equals runViewerTransferTo.UccrId into
                 rvtJoin
             from runViewerTransferTo in rvtJoin.DefaultIfEmpty()
-            where bs.ScanDateTime > cutoffDate && bs.Scan == jobNumber
+            where bs.ScanDateTime > cutoffDate && scanKeyList.Contains(bs.Scan)
             orderby bs.ScanDateTime
             select new
             {
                 bs.BulkScanId,
-                Courier = courier,
+                // Project only the courier columns GetCourierDescription needs,
+                // not whole TucCourier rows (three per scan otherwise).
+                Courier = courier == null
+                    ? (CourierLite?)null
+                    : new CourierLite(courier.UccrId, courier.Code, courier.UccrName, courier.UccrSurname),
                 bs.ScanDateTime,
                 bs.ScanType,
-                bs.CourierId,
-                bs.ToCourierId,
                 bs.RunName,
-                TransferTo = bs.ToCourier,
+                TransferTo = bs.ToCourier == null
+                    ? (CourierLite?)null
+                    : new CourierLite(bs.ToCourier.UccrId, bs.ToCourier.Code, bs.ToCourier.UccrName, bs.ToCourier.UccrSurname),
                 // Only include RunViewerTransferTo when CourierId is 999 and the courier is active
                 RunViewerTransferTo = bs.CourierId == 999 && runViewerTransferTo != null && runViewerTransferTo.Active
-                    ? runViewerTransferTo
-                    : null
+                    ? new CourierLite(runViewerTransferTo.UccrId, runViewerTransferTo.Code, runViewerTransferTo.UccrName, runViewerTransferTo.UccrSurname)
+                    : (CourierLite?)null
             };
 
+        const int maxScanRows = 1000;
         var results = await query
+            .AsNoTracking()
+            .Take(maxScanRows)
             .Select(s => new ScanDetailResult
             {
                 BulkScanId = s.BulkScanId,
@@ -4434,8 +4582,8 @@ public partial class JobRepository(
             .ToListAsync();
 
         Log.Information(
-            "ScanList: jobId={JobId} isBulkJob={IsBulkJob} jobNumber={JobNumber} count={Count}",
-            jobId, isBulkJob, jobNumber, results.Count);
+            "ScanList: jobId={JobId} isBulkJob={IsBulkJob} jobNumber={JobNumber} keyCount={KeyCount} count={Count}",
+            jobId, isBulkJob, jobNumber, scanKeyList.Count, results.Count);
 
         return results;
     }
@@ -5261,16 +5409,6 @@ public partial class JobRepository(
         return outputParam.Value ?? 0m;
     }
 
-    private async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
-        await Context.TucJobTypes
-            .Where(s => s.UcjtId == speedId)
-            .Select(s => new Suggestion
-            {
-                Id = s.UcjtId,
-                Text = s.UcjtName
-            })
-            .FirstOrDefaultAsync();
-
     private async Task<string> GenerateJobNumberAsync(
         int staffId,
         int jobTypeId,
@@ -5316,10 +5454,16 @@ public partial class JobRepository(
 
     private async Task<bool> IsStopJob(int jobId)
     {
+        // Live jobs live in tucJob; once archived the row moves to tucJobArchive. Look in the
+        // live table first, then fall back to the archive so this works for archived jobs too.
         var jobNumber = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.UcjbNumber)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync()
+            ?? await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => j.UcjbNumber)
+                .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(jobNumber);
         // Stop jobs are created by appending a single lowercase letter (a-z, not v) to the parent
@@ -5451,18 +5595,24 @@ public partial class JobRepository(
             _ => null
         };
 
+    /// <summary>
+    /// Lightweight courier projection — only the fields the scan-list description
+    /// needs, so the query doesn't materialise whole TucCourier rows.
+    /// </summary>
+    internal readonly record struct CourierLite(int UccrId, string Code, string UccrName, string UccrSurname);
+
     internal static string GetCourierDescription(int scanType,
-        TucCourier courier,
-        TucCourier transferTo,
-        TucCourier runViewerTransferTo,
+        CourierLite? courier,
+        CourierLite? transferTo,
+        CourierLite? runViewerTransferTo,
         string runName) =>
         scanType switch
         {
-            (int)ScanType.Transfer when courier.UccrId == 999 =>
-                $"Ops (Run Viewer){(runViewerTransferTo != null ? $" to {runViewerTransferTo.Code} {runViewerTransferTo.UccrName} {runViewerTransferTo.UccrSurname}" : string.Empty)}",
+            (int)ScanType.Transfer when courier?.UccrId == 999 =>
+                $"Ops (Run Viewer){(runViewerTransferTo != null ? $" to {runViewerTransferTo.Value.Code} {runViewerTransferTo.Value.UccrName} {runViewerTransferTo.Value.UccrSurname}" : string.Empty)}",
 
             (int)ScanType.Transfer =>
-                $"{courier.Code} {courier.UccrName} {courier.UccrSurname}{(transferTo != null ? $" to {transferTo.Code} {transferTo.UccrName} {transferTo.UccrSurname}" : string.Empty)}",
+                $"{courier?.Code} {courier?.UccrName} {courier?.UccrSurname}{(transferTo != null ? $" to {transferTo.Value.Code} {transferTo.Value.UccrName} {transferTo.Value.UccrSurname}" : string.Empty)}",
 
             (int)ScanType.InvalidRun =>
                 $"{courier?.Code} {courier?.UccrName} - Run {runName?.ToUpper() ?? string.Empty}",
@@ -5565,7 +5715,7 @@ public partial class JobRepository(
             .Where(j => jobIds.Contains(j.UcjbId))
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(j => j.UcjbCourierId, courierId)
-                .SetProperty(j => j.UcjbDispId, dispatcherStaffId > 0 ? dispatcherStaffId : (int?)null)
+                .SetProperty(j => j.UcjbDispId, dispatcherStaffId > 0 ? dispatcherStaffId : null)
                 .SetProperty(j => j.DesCheck, false)
                 .SetProperty(j => j.FdcourierId, (int?)null)
                 .SetProperty(j => j.UcjbDispDate, tenantTime)

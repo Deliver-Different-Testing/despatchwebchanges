@@ -17,6 +17,7 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
+import Alert from '@mui/material/Alert';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -52,6 +53,12 @@ export interface DashboardSettingsConfig {
     showAiToggle?: boolean;
     /** Show the "Try the React (BETA) Job Search" toggle. Job Search settings only. */
     showJobSearchBetaToggle?: boolean;
+    /**
+     * Replace the Dashboard panels section with a notice that panel options have
+     * moved to the Layouts menu → Customize panels. Set where the dedicated
+     * Customize Panels dialog owns visibility (currently Job Search).
+     */
+    panelsMovedNotice?: boolean;
 }
 
 export interface DashboardSettingsResult {
@@ -536,7 +543,12 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         </Typography>
                     </Stack>
 
-                    {config.showDashboards ? (
+                    {config.panelsMovedNotice ? (
+                        <Alert severity="info" sx={{ml: 6}}>
+                            Panel options have moved. Use the Layouts menu in the toolbar, then
+                            <strong> Customize panels</strong>, to choose which panels appear.
+                        </Alert>
+                    ) : config.showDashboards ? (
                         <>
                             <Typography
                                 variant="body2"

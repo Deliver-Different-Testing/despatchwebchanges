@@ -4,7 +4,6 @@
  * Entry point for the React-based App Toolbar and Side Nav components.
  * Provides functions to mount/unmount the app shell in an AngularJS context.
  */
-
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider} from '@mui/material/styles';
@@ -24,8 +23,12 @@ import {
     Layout,
     DateFilterData,
 } from '../app-toolbar/ToolbarActions';
+import {ToolbarActionsBar, ToolbarActionItem} from '../app-toolbar/ToolbarActionsBar';
+import SmsIcon from '@mui/icons-material/Sms';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SettingsIcon from '@mui/icons-material/Settings';
 import angular from 'angular';
-import {openHubUrl, openJobInSearch} from '../../../services/navigationService';
+import {openHubUrl} from '../../../services/navigationService';
 import {ReactQueryProvider} from '../../../query';
 import {PartnerApprovalsBadge} from '../../../pages/partner-approvals/PartnerApprovalsBadge';
 
@@ -59,6 +62,7 @@ export interface ToolbarActionsConfig {
         onSaveLayout: () => void;
         onLoadLayout: (index: number) => void;
         onDeleteLayout: (index: number) => void;
+        onCustomizePanels?: () => void;
     };
     // Date Filter - React component
     dateFilter?: {
@@ -109,28 +113,35 @@ let toolbarActions: ToolbarActionsConfig | null = null;
 function buildToolbarChildren(): React.ReactNode {
     if (!toolbarActions) return null;
 
-    const elements: React.ReactNode[] = [];
+    // Ordered left→right. Items with an `overflow` descriptor collapse into the
+    // "More" menu on narrow viewports; dropdown-menu actions stay inline.
+    const items: ToolbarActionItem[] = [];
 
     // Actions menu (Add New Job, Inter-Courier Charge)
     if (toolbarActions.actionsMenu) {
-        elements.push(
-            <ActionsMenu
-                key="actionsMenu"
-                onCreateNewJob={toolbarActions.actionsMenu.onCreateNewJob}
-                onInterCourierCharge={toolbarActions.actionsMenu.onInterCourierCharge}
-            />
-        );
+        items.push({
+            key: 'actionsMenu',
+            node: (
+                <ActionsMenu
+                    onCreateNewJob={toolbarActions.actionsMenu.onCreateNewJob}
+                    onInterCourierCharge={toolbarActions.actionsMenu.onInterCourierCharge}
+                />
+            ),
+        });
     }
 
     // Messages button
     if (toolbarActions.messages) {
-        elements.push(
-            <MessagesButton
-                key="messages"
-                unreadCount={toolbarActions.messages.unreadCount}
-                onClick={toolbarActions.messages.onClick}
-            />
-        );
+        const {unreadCount, onClick} = toolbarActions.messages;
+        items.push({
+            key: 'messages',
+            node: <MessagesButton unreadCount={unreadCount} onClick={onClick}/>,
+            overflow: {
+                label: unreadCount > 0 ? `Messages (${unreadCount > 99 ? '99+' : unreadCount})` : 'Messages',
+                icon: <SmsIcon fontSize="small"/>,
+                onSelect: (event) => onClick(event),
+            },
+        });
     }
 
     // Partner approvals badge — drawer-based inbox of pending change
@@ -139,88 +150,104 @@ function buildToolbarChildren(): React.ReactNode {
     // a provider mounted (the App Shell renders before any page state).
     if (toolbarActions.partnerApprovals?.enabled) {
         const onOpenJob = toolbarActions.partnerApprovals.onOpenJob;
-        elements.push(
-            <ReactQueryProvider key="partnerApprovals">
-                <PartnerApprovalsBadge
-                    toolbarVariant
-                    onOpenJob={onOpenJob}
-                />
-            </ReactQueryProvider>
-        );
+        items.push({
+            key: 'partnerApprovals',
+            node: (
+                <ReactQueryProvider>
+                    <PartnerApprovalsBadge
+                        toolbarVariant
+                        onOpenJob={onOpenJob}
+                    />
+                </ReactQueryProvider>
+            ),
+        });
     }
 
     // Date filter menu
     if (toolbarActions.dateFilter) {
-        elements.push(
-            <DateFilterMenu
-                key="dateFilter"
-                dateFilterData={toolbarActions.dateFilter.data}
-                appPage={toolbarActions.dateFilter.appPage}
-                timeZone={toolbarActions.dateFilter.timeZone}
-                onRefreshData={toolbarActions.dateFilter.onRefreshData}
-                onShowToast={toolbarActions.dateFilter.onShowToast}
-            />
-        );
+        items.push({
+            key: 'dateFilter',
+            node: (
+                <DateFilterMenu
+                    dateFilterData={toolbarActions.dateFilter.data}
+                    appPage={toolbarActions.dateFilter.appPage}
+                    timeZone={toolbarActions.dateFilter.timeZone}
+                    onRefreshData={toolbarActions.dateFilter.onRefreshData}
+                    onShowToast={toolbarActions.dateFilter.onShowToast}
+                />
+            ),
+        });
     }
 
     // Views menu
     if (toolbarActions.views) {
-        elements.push(
-            <ViewsMenu
-                key="views"
-                views={toolbarActions.views.items}
-                loading={toolbarActions.views.loading}
-                onToggleView={toolbarActions.views.onToggleView}
-                onClearAll={toolbarActions.views.onClearAll}
-            />
-        );
+        items.push({
+            key: 'views',
+            node: (
+                <ViewsMenu
+                    views={toolbarActions.views.items}
+                    loading={toolbarActions.views.loading}
+                    onToggleView={toolbarActions.views.onToggleView}
+                    onClearAll={toolbarActions.views.onClearAll}
+                />
+            ),
+        });
     }
 
     // Layouts menu
     if (toolbarActions.layouts) {
-        elements.push(
-            <LayoutsMenu
-                key="layouts"
-                layouts={toolbarActions.layouts.items}
-                currentLayoutName={toolbarActions.layouts.currentLayoutName}
-                onSaveLayout={toolbarActions.layouts.onSaveLayout}
-                onLoadLayout={toolbarActions.layouts.onLoadLayout}
-                onDeleteLayout={toolbarActions.layouts.onDeleteLayout}
-            />
-        );
+        items.push({
+            key: 'layouts',
+            node: (
+                <LayoutsMenu
+                    layouts={toolbarActions.layouts.items}
+                    currentLayoutName={toolbarActions.layouts.currentLayoutName}
+                    onSaveLayout={toolbarActions.layouts.onSaveLayout}
+                    onLoadLayout={toolbarActions.layouts.onLoadLayout}
+                    onDeleteLayout={toolbarActions.layouts.onDeleteLayout}
+                    onCustomizePanels={toolbarActions.layouts.onCustomizePanels}
+                />
+            ),
+        });
     }
 
     // Refresh button
     if (toolbarActions.refresh) {
-        elements.push(
-            <RefreshButton
-                key="refresh"
-                onClick={toolbarActions.refresh.onClick}
-                loading={toolbarActions.refresh.loading}
-            />
-        );
+        const {onClick, loading} = toolbarActions.refresh;
+        items.push({
+            key: 'refresh',
+            node: <RefreshButton onClick={onClick} loading={loading}/>,
+            overflow: {
+                label: loading ? 'Refreshing…' : 'Refresh',
+                icon: <RefreshIcon fontSize="small"/>,
+                onSelect: () => onClick(),
+            },
+        });
     }
 
     // Settings button
     if (toolbarActions.settings) {
-        elements.push(
-            <SettingsButton
-                key="settings"
-                onClick={toolbarActions.settings.onClick}
-            />
-        );
+        const {onClick} = toolbarActions.settings;
+        items.push({
+            key: 'settings',
+            node: <SettingsButton onClick={onClick}/>,
+            overflow: {
+                label: 'Settings',
+                icon: <SettingsIcon fontSize="small"/>,
+                onSelect: (event) => onClick(event),
+            },
+        });
     }
 
     // Custom content
     if (toolbarActions.customContent) {
-        elements.push(
-            <React.Fragment key="custom">
-                {toolbarActions.customContent}
-            </React.Fragment>
-        );
+        items.push({
+            key: 'custom',
+            node: <>{toolbarActions.customContent}</>,
+        });
     }
 
-    return elements.length > 0 ? <>{elements}</> : null;
+    return items.length > 0 ? <ToolbarActionsBar actions={items}/> : null;
 }
 
 /**
@@ -506,7 +533,7 @@ appShellReactModule.service('reactAppShellService', [
             updateBreadcrumbs: updateBreadcrumbs,
 
             /**
-             * Unmount and cleanup
+             * Unmount and clean-up
              */
             unmount: () => {
                 if (stateChangeListener) {

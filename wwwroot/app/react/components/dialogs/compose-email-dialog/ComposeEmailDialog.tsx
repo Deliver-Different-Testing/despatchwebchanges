@@ -182,7 +182,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                     </Typography>
                     <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
                         {selectedCouriers.map(c => (
-                            <Chip key={c.courierId} label={c.name} size="small" variant="outlined" />
+                            <Chip key={c.courierId} label={c.name} size="small" />
                         ))}
                     </Box>
                 </Box>
