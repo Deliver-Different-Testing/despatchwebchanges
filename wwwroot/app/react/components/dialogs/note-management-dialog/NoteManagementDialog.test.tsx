@@ -7,11 +7,12 @@
 import React from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {NoteManagementDialog} from './NoteManagementDialog';
 import {NoteManagementDialogProps} from './types';
 import {JobNote, NoteType} from '../../../interfaces/notes';
+import {testTheme} from '../../../__testUtils__';
 
 // Mock the dateUtils module
 jest.mock('../../../utils/dateUtils', () => ({
@@ -28,8 +29,6 @@ jest.mock('../../../hooks/useNotesApi', () => ({
     })),
 }));
 
-const theme = createTheme();
-
 const createTestQueryClient = () =>
     new QueryClient({
         defaultOptions: {
@@ -41,7 +40,7 @@ const renderWithTheme = (ui: React.ReactElement) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <ThemeProvider theme={testTheme}>
                 {ui}
             </ThemeProvider>
         </QueryClientProvider>

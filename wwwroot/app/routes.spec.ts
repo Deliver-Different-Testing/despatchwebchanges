@@ -160,6 +160,7 @@ describe('RouterConfig', () => {
         it('should register all expected states', () => {
             const expectedStates = [
                 'home',
+                'dispatchV2',
                 'nw',
                 'cs',
                 'jobSearch',
@@ -181,10 +182,12 @@ describe('RouterConfig', () => {
         });
 
         it('should register exactly the expected number of states', () => {
-            // 14 states total (excluding commented megaMap; jobSearchV2 added
+            // 15 states total (excluding commented megaMap; jobSearchV2 added
             // for Phase 3 of the AngularJS → React migration — see
-            // wwwroot/app/react/pages/job-search/MIGRATION_CHECKLIST.md).
-            expect(registeredStates.size).toBe(14);
+            // wwwroot/app/react/pages/job-search/MIGRATION_CHECKLIST.md;
+            // dispatchV2 added for the parallel React rebuild of the home/
+            // dispatch page).
+            expect(registeredStates.size).toBe(15);
         });
     });
 
@@ -329,8 +332,8 @@ describe('Base URL Behavior', () => {
 
 describe('jobSearchV2 Layout Toolbar', () => {
     const CONTACT_ID = 4242;
-    const LAYOUTS_KEY = `layoutsCS-${CONTACT_ID}`;
-    const LAST_ACTIVE_KEY = `lastActiveLayoutCS-${CONTACT_ID}`;
+    const LAYOUTS_KEY = `layoutsCSV2-${CONTACT_ID}`;
+    const LAST_ACTIVE_KEY = `lastActiveLayoutCSV2-${CONTACT_ID}`;
 
     let reactJobSearch: {
         mount: jest.Mock;

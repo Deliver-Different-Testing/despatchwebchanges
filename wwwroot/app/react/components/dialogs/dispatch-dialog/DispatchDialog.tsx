@@ -349,7 +349,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                             >
                                 <FormControlLabel value="Courier" control={<Radio size="small"/>} label="Courier"/>
                                 {dfrntState.disabled ? (
-                                    <Tooltip title={dfrntState.tooltip} placement="top">
+                                    <Tooltip title={dfrntState.tooltip} placement="top" enterDelay={0} enterTouchDelay={0}>
                                         <span>{dfrntRadio}</span>
                                     </Tooltip>
                                 ) : (

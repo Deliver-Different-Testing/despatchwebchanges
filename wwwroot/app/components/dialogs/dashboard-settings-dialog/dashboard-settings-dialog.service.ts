@@ -8,6 +8,9 @@ import {isAiEnabled} from "../../../functions/aiSettings";
 import {
     getJobSearchBetaEnabled,
 } from "../../../react/pages/job-search/lib/betaPreference";
+import {
+    getDispatchBetaEnabled,
+} from "../../../react/pages/dispatch/lib/betaPreference";
 import angular from 'angular';
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
@@ -96,6 +99,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             showDashboards: canShowDashboards,
             showAiToggle: true,
             showJobSearchBetaToggle: appPage === AppPage.JobSearch,
+            showDispatchBetaToggle: appPage === AppPage.Dispatch,
             panelsMovedNotice,
         };
 
@@ -123,6 +127,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 selectedDriverLocationRefreshInterval,
                 isAiEnabled(),
                 appPage === AppPage.JobSearch ? getJobSearchBetaEnabled() : undefined,
+                appPage === AppPage.Dispatch ? getDispatchBetaEnabled() : undefined,
             );
 
             console.debug('DashboardSettingsDialogService: Dialog closed!');

@@ -32,7 +32,7 @@ public sealed class DespatchApiBaseUrlResolver(
             }
         }
 
-        var fallback = options.Value?.BaseUrl;
+        var fallback = options.Value.BaseUrl;
         if (string.IsNullOrWhiteSpace(fallback))
         {
             fallback = Environment.GetEnvironmentVariable("WebAPIUrl");

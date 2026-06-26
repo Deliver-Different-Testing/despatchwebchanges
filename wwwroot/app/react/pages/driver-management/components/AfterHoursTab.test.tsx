@@ -102,45 +102,29 @@ describe('AfterHoursTab', () => {
         expect(screen.getByText('Active Drivers')).toBeInTheDocument();
     });
 
-    describe('Sort clicks', () => {
-        it('should update orderBy when Driver Name header is clicked', async () => {
-            setupMocks();
-            renderWithProviders();
+    it('updates orderBy when the Driver Name header is clicked', () => {
+        setupMocks();
+        renderWithProviders();
 
-            fireEvent.click(screen.getByText('Driver Name'));
+        fireEvent.click(screen.getByText('Driver Name'));
 
-            await waitFor(() => {
-                const lastCall = mockUseAfterHoursSchedule.mock.calls[mockUseAfterHoursSchedule.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('courierName');
-            });
-        });
+        const lastCall = mockUseAfterHoursSchedule.mock.calls[mockUseAfterHoursSchedule.mock.calls.length - 1][0];
+        expect(lastCall.orderBy).toBe('courierName');
     });
 
-    describe('Delete confirmation dialog', () => {
-        it('should open delete dialog when delete button is clicked', () => {
-            setupMocks();
-            renderWithProviders();
+    it('opens the delete dialog and closes it on Cancel', async () => {
+        setupMocks();
+        renderWithProviders();
 
-            const deleteButtons = screen.getAllByRole('button', {name: 'Delete'});
-            fireEvent.click(deleteButtons[0]);
+        const deleteButtons = screen.getAllByRole('button', {name: 'Delete'});
+        fireEvent.click(deleteButtons[0]);
+        expect(screen.getByText('Delete Schedule')).toBeInTheDocument();
+        expect(screen.getByText(/Are you sure you want to delete this schedule for John Smith/)).toBeInTheDocument();
 
-            expect(screen.getByText('Delete Schedule')).toBeInTheDocument();
-            expect(screen.getByText(/Are you sure you want to delete this schedule for John Smith/)).toBeInTheDocument();
-        });
+        fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
-        it('should close dialog when Cancel is clicked', async () => {
-            setupMocks();
-            renderWithProviders();
-
-            const deleteButtons = screen.getAllByRole('button', {name: 'Delete'});
-            fireEvent.click(deleteButtons[0]);
-            expect(screen.getByText('Delete Schedule')).toBeInTheDocument();
-
-            fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-
-            await waitFor(() => {
-                expect(screen.queryByText('Delete Schedule')).not.toBeInTheDocument();
-            });
+        await waitFor(() => {
+            expect(screen.queryByText('Delete Schedule')).not.toBeInTheDocument();
         });
     });
 

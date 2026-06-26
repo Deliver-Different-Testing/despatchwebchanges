@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {
     Layout,
@@ -127,11 +127,9 @@ describe('ViewsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            expect(screen.getByText('View 1')).toBeInTheDocument();
-            expect(screen.getByText('View 2')).toBeInTheDocument();
-            expect(screen.getByText('View 3')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('View 1')).toBeInTheDocument();
+        expect(screen.getByText('View 2')).toBeInTheDocument();
+        expect(screen.getByText('View 3')).toBeInTheDocument();
 
         // Clear Selection is visible
         expect(screen.getByText('Clear Selection')).toBeInTheDocument();
@@ -147,9 +145,7 @@ describe('ViewsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            fireEvent.click(screen.getByText('View 2'));
-        });
+        fireEvent.click(await screen.findByText('View 2'));
 
         expect(onToggleView).toHaveBeenCalledWith(mockViews[1]);
     });
@@ -181,9 +177,7 @@ describe('ViewsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            expect(screen.getByText('View 1')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('View 1')).toBeInTheDocument();
 
         const fragmentWarnings = consoleErrorSpy.mock.calls.filter(
             (args) => typeof args[0] === 'string' && args[0].includes('Fragment as a child')
@@ -214,12 +208,10 @@ describe('LayoutsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            expect(screen.getByText('Add layout')).toBeInTheDocument();
-            expect(screen.getByText('Switch layout')).toBeInTheDocument();
-            expect(screen.getByText('Default')).toBeInTheDocument();
-            expect(screen.getByText('Custom Layout 1')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Add layout')).toBeInTheDocument();
+        expect(screen.getByText('Switch layout')).toBeInTheDocument();
+        expect(screen.getByText('Default')).toBeInTheDocument();
+        expect(screen.getByText('Custom Layout 1')).toBeInTheDocument();
     });
 
     it('should call onSaveLayout when Add layout is clicked', async () => {
@@ -228,9 +220,7 @@ describe('LayoutsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            fireEvent.click(screen.getByText('Add layout'));
-        });
+        fireEvent.click(await screen.findByText('Add layout'));
 
         expect(onSaveLayout).toHaveBeenCalledTimes(1);
     });
@@ -241,9 +231,7 @@ describe('LayoutsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            fireEvent.click(screen.getByText('Custom Layout 1'));
-        });
+        fireEvent.click(await screen.findByText('Custom Layout 1'));
 
         expect(onLoadLayout).toHaveBeenCalledWith(1);
     });
@@ -255,10 +243,8 @@ describe('LayoutsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            const layoutItem = screen.getByText('Custom Layout 1');
-            expect(layoutItem).toHaveStyle({fontWeight: 600});
-        });
+        const layoutItem = await screen.findByText('Custom Layout 1');
+        expect(layoutItem).toHaveStyle({fontWeight: 600});
     });
 
     it('should expose a delete control for custom layouts but not Default', async () => {
@@ -266,9 +252,7 @@ describe('LayoutsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            expect(screen.getByLabelText('Delete Custom Layout 1')).toBeInTheDocument();
-        });
+        expect(await screen.findByLabelText('Delete Custom Layout 1')).toBeInTheDocument();
         expect(screen.getByLabelText('Delete Custom Layout 2')).toBeInTheDocument();
         expect(screen.queryByLabelText('Delete Default')).not.toBeInTheDocument();
     });
@@ -286,22 +270,67 @@ describe('LayoutsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            fireEvent.click(screen.getByLabelText('Delete Custom Layout 1'));
-        });
+        fireEvent.click(await screen.findByLabelText('Delete Custom Layout 1'));
 
         expect(onDeleteLayout).toHaveBeenCalledWith(1);
         // Deleting must not also trigger a layout load on the same row.
         expect(onLoadLayout).not.toHaveBeenCalled();
     });
 
+    it('should expose a rename control for custom layouts but not Default', async () => {
+        renderWithTheme(<LayoutsMenu {...defaultProps} onRenameLayout={jest.fn()} />);
+
+        fireEvent.click(screen.getByRole('button'));
+
+        expect(await screen.findByLabelText('Rename Custom Layout 1')).toBeInTheDocument();
+        expect(screen.queryByLabelText('Rename Default')).not.toBeInTheDocument();
+    });
+
+    it('should call onRenameLayout with index without loading the row', async () => {
+        const onRenameLayout = jest.fn();
+        const onLoadLayout = jest.fn();
+        renderWithTheme(
+            <LayoutsMenu {...defaultProps} onRenameLayout={onRenameLayout} onLoadLayout={onLoadLayout} />
+        );
+
+        fireEvent.click(screen.getByRole('button'));
+        fireEvent.click(await screen.findByLabelText('Rename Custom Layout 1'));
+
+        expect(onRenameLayout).toHaveBeenCalledWith(1);
+        expect(onLoadLayout).not.toHaveBeenCalled();
+    });
+
+    it('should not render a rename control without onRenameLayout', async () => {
+        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+
+        fireEvent.click(screen.getByRole('button'));
+        expect(await screen.findByText('Custom Layout 1')).toBeInTheDocument();
+        expect(screen.queryByLabelText('Rename Custom Layout 1')).not.toBeInTheDocument();
+    });
+
+    it('should not render an Import V1 layouts entry without onImportLayouts', async () => {
+        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+
+        fireEvent.click(screen.getByRole('button'));
+        expect(await screen.findByText('Add layout')).toBeInTheDocument();
+        expect(screen.queryByText('Import V1 layouts')).not.toBeInTheDocument();
+    });
+
+    it('should call onImportLayouts when Import V1 layouts is clicked', async () => {
+        const onImportLayouts = jest.fn();
+        renderWithTheme(<LayoutsMenu {...defaultProps} onImportLayouts={onImportLayouts} />);
+
+        fireEvent.click(screen.getByRole('button'));
+        fireEvent.click(await screen.findByText('Import V1 layouts'));
+
+        expect(onImportLayouts).toHaveBeenCalledTimes(1);
+    });
+
     it('should not render a Customize panels entry without onCustomizePanels', async () => {
         renderWithTheme(<LayoutsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
-        await waitFor(() => {
-            expect(screen.getByText('Add layout')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Add layout')).toBeInTheDocument();
         expect(screen.queryByText('Customize panels…')).not.toBeInTheDocument();
     });
 
@@ -316,9 +345,7 @@ describe('LayoutsMenu', () => {
         );
 
         fireEvent.click(screen.getByRole('button'));
-        await waitFor(() => {
-            fireEvent.click(screen.getByText('Customize panels…'));
-        });
+        fireEvent.click(await screen.findByText('Customize panels…'));
 
         expect(onCustomizePanels).toHaveBeenCalledTimes(1);
     });
@@ -334,15 +361,62 @@ describe('LayoutsMenu', () => {
         );
 
         fireEvent.click(screen.getByRole('button'));
-        await waitFor(() => {
-            expect(screen.getByText('Customize panels…')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Customize panels…')).toBeInTheDocument();
 
         // The entry is disabled, so clicking it must not open the dialog.
         fireEvent.click(screen.getByText('Customize panels…'));
         expect(onCustomizePanels).not.toHaveBeenCalled();
         expect(screen.getByRole('button', {name: /customize panels/i}))
             .toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('should not render an Edit layout entry without onToggleEditMode', async () => {
+        renderWithTheme(<LayoutsMenu {...defaultProps} currentLayoutName="Custom Layout 1" />);
+        fireEvent.click(screen.getByRole('button'));
+        expect(await screen.findByText('Switch layout')).toBeInTheDocument();
+        expect(screen.queryByText('Edit layout')).not.toBeInTheDocument();
+    });
+
+    it('should call onToggleEditMode when Edit layout is clicked on a custom layout', async () => {
+        const onToggleEditMode = jest.fn();
+        renderWithTheme(
+            <LayoutsMenu
+                {...defaultProps}
+                currentLayoutName="Custom Layout 1"
+                onToggleEditMode={onToggleEditMode}
+            />,
+        );
+        fireEvent.click(screen.getByRole('button'));
+        fireEvent.click(await screen.findByText('Edit layout'));
+        expect(onToggleEditMode).toHaveBeenCalledTimes(1);
+    });
+
+    it('should show "Done editing" when editMode is on', async () => {
+        renderWithTheme(
+            <LayoutsMenu
+                {...defaultProps}
+                currentLayoutName="Custom Layout 1"
+                editMode
+                onToggleEditMode={jest.fn()}
+            />,
+        );
+        fireEvent.click(screen.getByRole('button'));
+        expect(await screen.findByText('Done editing')).toBeInTheDocument();
+        expect(screen.queryByText('Edit layout')).not.toBeInTheDocument();
+    });
+
+    it('should disable Edit layout on the Default layout', async () => {
+        const onToggleEditMode = jest.fn();
+        renderWithTheme(
+            <LayoutsMenu
+                {...defaultProps}
+                currentLayoutName="Default"
+                onToggleEditMode={onToggleEditMode}
+            />,
+        );
+        fireEvent.click(screen.getByRole('button'));
+        fireEvent.click(await screen.findByText('Edit layout'));
+        expect(onToggleEditMode).not.toHaveBeenCalled();
     });
 });
 

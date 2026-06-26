@@ -11,8 +11,36 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
-// Default MUI theme for tests
-export const testTheme = createTheme();
+/**
+ * MUI theme for tests with all enter/exit animations disabled.
+ *
+ * MUI's Dialog/Menu/Popover/Collapse/Tooltip transitions run on real timers
+ * and add hundreds of ms per interaction (userEvent waits for them) without
+ * testing anything. Zeroing the durations keeps renders deterministic and
+ * fast. Use this anywhere a test mounts transition-heavy MUI surfaces.
+ */
+export function createTestTheme() {
+    return createTheme({
+        transitions: {
+            duration: {
+                shortest: 0, shorter: 0, short: 0,
+                standard: 0, complex: 0,
+                enteringScreen: 0, leavingScreen: 0,
+            },
+        },
+        components: {
+            MuiDialog: {defaultProps: {transitionDuration: 0}},
+            MuiBackdrop: {defaultProps: {transitionDuration: 0}},
+            MuiMenu: {defaultProps: {transitionDuration: 0}},
+            MuiPopover: {defaultProps: {transitionDuration: 0}},
+            MuiCollapse: {defaultProps: {timeout: 0}},
+            MuiTooltip: {defaultProps: {enterDelay: 0, leaveDelay: 0, enterNextDelay: 0}},
+        },
+    });
+}
+
+// Default MUI theme for tests (animations disabled — see createTestTheme).
+export const testTheme = createTestTheme();
 
 /**
  * Create a QueryClient configured for testing (no retries, immediate GC)

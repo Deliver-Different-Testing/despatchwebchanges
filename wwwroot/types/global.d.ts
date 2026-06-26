@@ -274,7 +274,8 @@ declare global {
                 selectedRefreshInterval?: RefreshOption,
                 selectedDriverLocationRefreshInterval?: RefreshOption,
                 aiEnabled?: boolean,
-                jobSearchBetaEnabled?: boolean
+                jobSearchBetaEnabled?: boolean,
+                dispatchBetaEnabled?: boolean
             ) => Promise<DashboardSettingsResult | null>;
         };
         ReactCustomizePanelsDialog?: {

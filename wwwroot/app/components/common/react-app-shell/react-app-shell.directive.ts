@@ -26,6 +26,7 @@ function buildBreadcrumbs(section: string | undefined, title: string | undefined
 interface ReactAppShellScope extends angular.IScope {
     title: string;
     section?: string;
+    beta?: boolean;
     messagesCount?: number;
     onMessagesClick?: (event: { $event: MouseEvent }) => void;
     views?: any[];
@@ -37,7 +38,11 @@ interface ReactAppShellScope extends angular.IScope {
     onSaveLayout?: () => void;
     onLoadLayout?: (args: { index: number }) => void;
     onDeleteLayout?: (args: { index: number }) => void;
+    onRenameLayout?: (args: { index: number }) => void;
+    onImportLayouts?: () => void;
     onCustomizePanels?: () => void;
+    editMode?: boolean;
+    onToggleEditMode?: () => void;
     onSettingsClick?: (event: { $event: MouseEvent }) => void;
     onRefreshClick?: () => void;
     refreshLoading?: boolean;
@@ -62,6 +67,7 @@ function reactAppShellDirective(
         scope: {
             title: '@',
             section: '@?',
+            beta: '<?',
             messagesCount: '<?',
             onMessagesClick: '&?',
             views: '<?',
@@ -73,7 +79,11 @@ function reactAppShellDirective(
             onSaveLayout: '&?',
             onLoadLayout: '&?',
             onDeleteLayout: '&?',
+            onRenameLayout: '&?',
+            onImportLayouts: '&?',
             onCustomizePanels: '&?',
+            editMode: '<?',
+            onToggleEditMode: '&?',
             onSettingsClick: '&?',
             onRefreshClick: '&?',
             refreshLoading: '<?',
@@ -194,6 +204,25 @@ function reactAppShellDirective(
                                 scope.onDeleteLayout!({ index });
                             });
                         },
+                        // Rename a custom layout. Only wired when the host page
+                        // provides `on-rename-layout`.
+                        ...(scope.onRenameLayout ? {
+                            onRenameLayout: (index: number) => {
+                                scope.$apply(() => {
+                                    scope.onRenameLayout!({ index });
+                                });
+                            },
+                        } : {}),
+                        // "Import V1 layouts" — copy the user's legacy layouts into
+                        // this page's V2 store. Only wired when the host page
+                        // provides `on-import-layouts`.
+                        ...(scope.onImportLayouts ? {
+                            onImportLayouts: () => {
+                                scope.$apply(() => {
+                                    scope.onImportLayouts!();
+                                });
+                            },
+                        } : {}),
                         // Cross-link the organiser: "Customize panels…" opens the
                         // dedicated panel-visibility dialog. Only wired when the host
                         // page provides `on-customize-panels`.
@@ -201,6 +230,16 @@ function reactAppShellDirective(
                             onCustomizePanels: () => {
                                 scope.$apply(() => {
                                     scope.onCustomizePanels!();
+                                });
+                            },
+                        } : {}),
+                        // Layout edit-mode toggle ("Edit layout" / "Done editing").
+                        // Only wired when the host page provides `on-toggle-edit-mode`.
+                        ...(scope.onToggleEditMode ? {
+                            editMode: !!scope.editMode,
+                            onToggleEditMode: () => {
+                                scope.$apply(() => {
+                                    scope.onToggleEditMode!();
                                 });
                             },
                         } : {}),
@@ -297,6 +336,7 @@ function reactAppShellDirective(
                     ReactAppShell.mount(containerId, {
                         title: scope.title || 'Dashboard',
                         breadcrumbs: buildBreadcrumbs(scope.section, scope.title),
+                        beta: !!scope.beta,
                         firstName,
                         fullName,
                         isUsCustomer: APP_CONFIG.US_Customer,
@@ -340,6 +380,7 @@ function reactAppShellDirective(
                 'viewsLoading',
                 'currentLayoutName',
                 'refreshLoading',
+                'editMode',
             ], () => {
                 if (mounted) {
                     const ReactAppShell = (window as any).ReactAppShell;

@@ -8,6 +8,8 @@ interface ISettingsDialogResult {
     aiEnabled?: boolean;
     /** Present when the dialog was opened with `showJobSearchBetaToggle: true`. */
     jobSearchBetaEnabled?: boolean;
+    /** Present when the dialog was opened with `showDispatchBetaToggle: true`. */
+    dispatchBetaEnabled?: boolean;
 }
 
 export default ISettingsDialogResult;

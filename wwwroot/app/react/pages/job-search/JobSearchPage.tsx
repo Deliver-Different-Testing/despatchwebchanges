@@ -28,6 +28,9 @@ import {
 } from '../../services/jobListApi';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import {useDismissibleBanner} from '../../hooks/useDismissibleBanner';
 import {SearchCriteriaPanel} from '../../components/common/search-criteria-panel/SearchCriteriaPanel';
 import {JobListPanel} from '../../components/job-list/JobListPanel';
 import {TaskHistory} from '../../components/common/task-history/TaskHistory';
@@ -39,8 +42,10 @@ import {useBoxLayout} from './hooks/useBoxLayout';
 import {useDeepLinkJob} from './hooks/useDeepLinkJob';
 import {filterCouriersForNumericSearch} from './lib/searchCriteria';
 import {getClientJobsReportDownloadUrl, getPodJobsDownloadUrl} from './lib/exportUrls';
-import {openInterCourierChargeDialog} from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
-import type {LayoutStorageKeys} from './lib/layoutPersistence';
+import {
+    openInterCourierChargeDialog
+} from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
+import type {ImportLayoutsResult, LayoutStorageKeys} from './lib/layoutPersistence';
 import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/SaveLayoutDialog';
 import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
 import {DispatchDialog} from '../../components/dialogs/dispatch-dialog';
@@ -53,8 +58,14 @@ export interface JobSearchLayoutBridge {
     promptSaveLayout: () => Promise<string | null>;
     /** Opens the MUI "Delete Layout" confirmation and resolves true if confirmed. */
     promptDeleteLayout: (layoutName: string) => Promise<boolean>;
+    /** Opens the MUI "Rename Layout" dialog and resolves with the new name (or null if cancelled). */
+    promptRenameLayout: (layoutName: string) => Promise<string | null>;
+    /** Set layout edit mode (driven by the toolbar's Layouts → Edit layout toggle). */
+    setEditMode: (enabled: boolean) => void;
     /** Opens the Inter-Courier Charge dialog, wired to this page's toast. */
     openInterCourierCharge: () => Promise<void>;
+    /** Copy the user's V1 layouts into this page's (V2) layout store. */
+    importLegacyLayouts: () => ImportLayoutsResult;
 }
 
 export interface JobSearchPageProps {
@@ -65,33 +76,47 @@ export interface JobSearchPageProps {
     deepLinkJobId?: number;
     /** Called once with imperative handles for the AppShell toolbar to drive layout selection. */
     onLayoutBridgeReady?: (bridge: JobSearchLayoutBridge) => void;
+    /** Leave edit mode (in-shell "Done editing" button). Routes back through the toolbar. */
+    onExitEditMode?: () => void;
 }
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
-    showToast,
-    isUsCustomer,
-    timeZone,
-    timeZoneShort,
-    deepLinkJobId,
-    onLayoutBridgeReady,
-}) => {
+                                                                showToast,
+                                                                isUsCustomer,
+                                                                timeZone,
+                                                                timeZoneShort,
+                                                                deepLinkJobId,
+                                                                onLayoutBridgeReady,
+                                                                onExitEditMode,
+                                                            }) => {
     const storageKeys = useMemo<LayoutStorageKeys>(() => ({
+        layoutsKey: `layoutsCSV2-${ContactID}`,
+        lastActiveLayoutKey: `lastActiveLayoutCSV2-${ContactID}`,
+        boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.JobSearch}-${ContactID}`,
+    }), []);
+
+    // Legacy (V1) storage keys — the source for "Import V1 layouts".
+    const legacyStorageKeys = useMemo<LayoutStorageKeys>(() => ({
         layoutsKey: `layoutsCS-${ContactID}`,
         lastActiveLayoutKey: `lastActiveLayoutCS-${ContactID}`,
         boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.JobSearch}-${ContactID}`,
     }), []);
 
     const searchCriteria = useSearchCriteria({timeZone});
-    const boxLayout = useBoxLayout({storageKeys});
+    const boxLayout = useBoxLayout({storageKeys, legacyStorageKeys, page: 'JobSearch'});
 
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
     const [currentJobId, setCurrentJobId] = useState<number | undefined>();
     const [isBulkJob, setIsBulkJob] = useState(false);
+    // Layout edit mode: reveals drag handles / collapse / resize on the boxes.
+    // Off by default for a clean, locked view (Edit/Done toggle).
+    const [editMode, setEditMode] = useState(false);
+    const betaBanner = useDismissibleBanner(`jobSearchBetaBannerDismissed-${ContactID}`);
     const [sortColumn, setSortColumn] = useState<string | undefined>();
     const [sortDirection, setSortDirection] = useState<string | undefined>();
     const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
 
-    // Save-layout dialog — opened imperatively via the layout bridge from the
+    // Save-layout dialogue — opened imperatively via the layout bridge from the
     // AngularJS toolbar. Resolves the pending promise with the entered name (or
     // null on cancel) so `routes.ts` keeps owning persistence.
     const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -110,7 +135,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         saveLayoutResolverRef.current = null;
     }, []);
 
-    // Delete-layout confirmation — same imperative bridge pattern as save.
+    // Delete-layout confirmation — same imperative bridge pattern as safe.
     const [deleteDialogName, setDeleteDialogName] = useState<string | null>(null);
     const deleteLayoutResolverRef = useRef<((confirmed: boolean) => void) | null>(null);
 
@@ -125,6 +150,23 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         setDeleteDialogName(null);
         deleteLayoutResolverRef.current?.(confirmed);
         deleteLayoutResolverRef.current = null;
+    }, []);
+
+    // Rename-layout prompt — same imperative bridge pattern as save/delete.
+    const [renameDialogName, setRenameDialogName] = useState<string | null>(null);
+    const renameLayoutResolverRef = useRef<((name: string | null) => void) | null>(null);
+
+    const promptRenameLayout = useCallback((layoutName: string): Promise<string | null> => {
+        return new Promise<string | null>(resolve => {
+            renameLayoutResolverRef.current = resolve;
+            setRenameDialogName(layoutName);
+        });
+    }, []);
+
+    const resolveRenameLayout = useCallback((name: string | null) => {
+        setRenameDialogName(null);
+        renameLayoutResolverRef.current?.(name);
+        renameLayoutResolverRef.current = null;
     }, []);
 
     // Callbacks each JobListPanel hands back via `setUpdateSearchParamsCallback`.
@@ -183,9 +225,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             reloadFromStorage: boxLayout.reloadFromStorage,
             promptSaveLayout,
             promptDeleteLayout,
+            promptRenameLayout,
+            setEditMode,
             openInterCourierCharge,
+            importLegacyLayouts: boxLayout.importLegacyLayouts,
         });
-    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, promptSaveLayout, promptDeleteLayout, openInterCourierCharge]);
+    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, promptSaveLayout, promptDeleteLayout, promptRenameLayout, openInterCourierCharge]);
 
     const fetchConfigMain = useMemo(() => ({
         fetchFn: fetchPodJobs,
@@ -204,7 +249,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             sortColumn,
             sortDirection,
         },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }), []);
 
     const fetchConfigBulk = useMemo(() => ({
@@ -222,7 +267,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             job: searchCriteria.criteria.job,
             bulkJobId: searchCriteria.criteria.bulkJobId,
         },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }), []);
 
     const handleSearch = useCallback(() => {
@@ -266,24 +311,24 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         });
     }, [searchCriteria, sortColumn, sortDirection]);
 
-    const handleRefreshBox = useCallback((boxName: string) => {
+    const handleRefreshBox = useCallback(async (boxName: string) => {
         switch (boxName) {
             case JobSearchBoxes.JobList:
-                queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.pod({} as any)});
+                await queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.pod({} as any)});
                 break;
             case JobSearchBoxes.BulkJobList:
-                queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.bulk({} as any)});
+                await queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.bulk({} as any)});
                 break;
             case JobSearchBoxes.JobDetail:
                 if (currentJobId) {
-                    queryClient.invalidateQueries({
+                    await queryClient.invalidateQueries({
                         queryKey: queryKeys.jobs.detail(currentJobId, isBulkJob ? 'bulk' : 'standard'),
                     });
                 }
                 break;
             case JobSearchBoxes.ScanList:
                 if (currentJobId) {
-                    queryClient.invalidateQueries({
+                    await queryClient.invalidateQueries({
                         queryKey: queryKeys.jobSearch.scanDetail(currentJobId, isBulkJob),
                     });
                 }
@@ -379,12 +424,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         },
                         toastService: {showToast},
                     });
-                    invalidateDetail();
+                    await invalidateDetail();
                     return;
 
                 case 'attachments':
                     await w.ReactJobFileUploadDialog?.open(job.id);
-                    invalidateDetail();
+                    await invalidateDetail();
                     return;
 
                 case 'dispatch':
@@ -401,14 +446,14 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         await restoreJobs([job.id]);
                     }
                     showToast(`${job.jobNo} restored.`, 'success');
-                    invalidateLists();
-                    invalidateDetail();
+                    await invalidateLists();
+                    await invalidateDetail();
                     return;
 
                 case 'swapPod':
                     await w.ReactSwapPodsDialog?.open(job.jobNo, {showToast});
-                    invalidateLists();
-                    invalidateDetail();
+                    await invalidateLists();
+                    await invalidateDetail();
                     return;
 
                 case 'sendPod':
@@ -427,8 +472,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     const locked = actionId === 'lock';
                     await setJobLocked(job.id, locked, !!job.preBook);
                     showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
-                    invalidateLists();
-                    invalidateDetail();
+                    await invalidateLists();
+                    await invalidateDetail();
                     return;
                 }
 
@@ -441,8 +486,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     } else {
                         showToast(`${job.jobNo} un-split.`, 'success');
                     }
-                    invalidateLists();
-                    invalidateDetail();
+                    await invalidateLists();
+                    await invalidateDetail();
                     return;
                 }
 
@@ -473,8 +518,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             await allocateJobs(destination.id, [currentJob.id]);
         }
         showToast(`Job ${currentJob.jobNo} dispatched to ${destination.text}`, 'success');
-        queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all});
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all});
+        await queryClient.invalidateQueries({
             queryKey: queryKeys.jobs.detail(currentJob.id, isBulkJob ? 'bulk' : 'standard'),
         });
         setDispatchDialogOpen(false);
@@ -488,7 +533,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         }
         setDispatchDialogOpen(false);
         showToast(`Job ${currentJob.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`, 'success');
-        queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all});
+        await queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all});
     }, [currentJob, showToast]);
 
     const renderBoxContent = useCallback((boxName: string): React.ReactNode => {
@@ -662,33 +707,44 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
 
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>
-            {/* BETA banner — opt-in toggle lives in the Settings dialog. */}
-            <Box
-                sx={(theme) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    px: 2,
-                    py: 0.75,
-                    bgcolor: theme.palette.primary.main,
-                    color: 'primary.contrastText',
-                })}
-            >
-                <Chip
-                    label="BETA"
-                    size="small"
-                    sx={{
-                        height: 18,
-                        fontSize: '0.625rem',
-                        fontWeight: 700,
-                        bgcolor: 'rgba(255,255,255,0.2)',
-                        color: '#fff',
-                    }}
-                />
-                <Typography variant="body2" sx={{flex: 1}}>
-                    You&apos;re on the rebuilt Job Search. Spot something off? Open Settings and turn the toggle off to switch back.
-                </Typography>
-            </Box>
+            {/* BETA banner — dismissible; the opt-out toggle lives in Settings. */}
+            {!betaBanner.dismissed && (
+                <Box
+                    sx={(theme) => ({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        px: 2,
+                        py: 0.75,
+                        bgcolor: theme.palette.primary.main,
+                        color: 'primary.contrastText',
+                    })}
+                >
+                    <Chip
+                        label="BETA"
+                        size="small"
+                        sx={{
+                            height: 18,
+                            fontSize: '0.625rem',
+                            fontWeight: 700,
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            color: '#fff',
+                        }}
+                    />
+                    <Typography variant="body2" sx={{flex: 1}}>
+                        You&apos;re on the rebuilt Job Search. Spot something off? Open Settings and turn the toggle off to
+                        switch back.
+                    </Typography>
+                    <IconButton
+                        size="small"
+                        aria-label="Dismiss beta notice"
+                        onClick={betaBanner.dismiss}
+                        sx={{color: '#fff', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}
+                    >
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+            )}
             <Box sx={{flex: 1, minHeight: 0, position: 'relative'}}>
                 <JobSearchShell
                     layout={boxLayout.layout}
@@ -703,10 +759,15 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     onColumnSizes={boxLayout.setColumnSizes}
                     onBoxHeights={boxLayout.setBoxHeights}
                     onMoveBox={boxLayout.moveBox}
+                    onAddColumn={boxLayout.addColumn}
+                    onRemoveColumn={boxLayout.removeColumn}
+                    editMode={editMode}
+                    onExitEditMode={onExitEditMode}
                 />
-                {/* FAB lives outside the box — Phase 4 will dock it inside JobDetail header */}
+                {/* Job-detail FAB. Layout Edit/Done lives in the toolbar's
+                    Layouts dropdown (driven via the bridge). */}
                 <Box sx={{position: 'absolute', top: 8, right: 16, zIndex: 1}}>
-                    <JobDetailFab currentJob={currentJob} onAction={fabAction} />
+                    <JobDetailFab currentJob={currentJob} onAction={fabAction}/>
                 </Box>
             </Box>
             <SaveLayoutDialog
@@ -714,6 +775,16 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 existingNames={boxLayout.layouts.map(l => l.name)}
                 onClose={() => resolveSaveLayout(null)}
                 onConfirm={name => resolveSaveLayout(name)}
+            />
+            <SaveLayoutDialog
+                open={renameDialogName !== null}
+                initialName={renameDialogName ?? ''}
+                title="Rename Layout"
+                subtitle="Give this layout a new name"
+                confirmLabel="Rename"
+                existingNames={boxLayout.layouts.map(l => l.name).filter(n => n !== renameDialogName)}
+                onClose={() => resolveRenameLayout(null)}
+                onConfirm={name => resolveRenameLayout(name)}
             />
             <DeleteLayoutDialog
                 open={deleteDialogName !== null}
@@ -769,6 +840,6 @@ const ReactJobDetailsMount: React.FC<{
             w.ReactJobDetails?.unmount?.();
         };
     }, [jobId, isBulkJob, isUsCustomer, showToast]);
-    return <div id={containerId} style={{height: '100%', overflow: 'auto'}} />;
+    return <div id={containerId} style={{height: '100%', overflow: 'auto'}}/>;
 };
 

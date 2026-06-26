@@ -36,6 +36,7 @@ import PhotoSizeSelectLargeIcon from '@mui/icons-material/PhotoSizeSelectLarge';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import TagIcon from '@mui/icons-material/Tag';
+import BadgeIcon from '@mui/icons-material/Badge';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import EventIcon from '@mui/icons-material/Event';
@@ -76,6 +77,7 @@ const iconMap: Record<string, React.ComponentType<SvgIconProps>> = {
     bookmark: BookmarkIcon,
     bookmark_border: BookmarkBorderIcon,
     tag: TagIcon,
+    badge: BadgeIcon,
     business: BusinessIcon,
     person_off: PersonOffIcon,
     event: EventIcon,

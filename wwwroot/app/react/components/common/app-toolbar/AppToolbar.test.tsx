@@ -112,6 +112,16 @@ describe('AppToolbar', () => {
             );
             expect(screen.getByTestId('custom-action')).toBeInTheDocument();
         });
+
+        it('should render a BETA chip when beta is true', () => {
+            renderWithTheme(<AppToolbar {...defaultProps} beta />);
+            expect(screen.getByText('BETA')).toBeInTheDocument();
+        });
+
+        it('should not render a BETA chip by default', () => {
+            renderWithTheme(<AppToolbar {...defaultProps} />);
+            expect(screen.queryByText('BETA')).not.toBeInTheDocument();
+        });
     });
 
     describe('Greeting', () => {

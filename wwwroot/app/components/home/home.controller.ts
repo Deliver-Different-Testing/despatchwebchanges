@@ -50,6 +50,10 @@ import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog
 import {setAiEnabled} from "../../functions/aiSettings";
 import CurrentWorkLists from "./enums/CurrentWorkLists";
 import {fetchClearListJobs, fetchDispatchJobs} from "../../react/services/jobSearchApi";
+import {
+    getDispatchBetaEnabled,
+    setDispatchBetaEnabled,
+} from "../../react/pages/dispatch/lib/betaPreference";
 import {queryKeys} from "../../react/query/queryClient";
 import angular from "angular";
 import {DispatchJob} from "../../react/interfaces";
@@ -79,6 +83,7 @@ class HomeController extends BaseController {
         '$scope',
         '$timeout',
         '$interval',
+        '$state',
     ];
 
     private readonly MapZoomKey: string = `mapZoom-${AppPage.Dispatch}-${ContactID}`;
@@ -211,6 +216,7 @@ class HomeController extends BaseController {
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
+        private $state: angular.ui.IStateService,
     ) {
         super();
         this.initServices($timeout, $interval, $scope);
@@ -289,6 +295,19 @@ class HomeController extends BaseController {
     }
 
     $onInit(): void {
+        // Per-user opt-in for the React rebuild. When set, the home/dispatch
+        // page sends the operator over to /dispatchV2 — preserving any
+        // deep-link jobId — and skips the rest of this controller's work.
+        // Toggled via the dispatch settings dialog (see
+        // `wwwroot/app/react/pages/dispatch/lib/betaPreference.ts`).
+        if (getDispatchBetaEnabled()) {
+            const params = this.$stateParams.jobId ? {jobId: this.$stateParams.jobId} : {};
+            this.$state.go('dispatchV2', params).catch((err: unknown) => {
+                console.error('[Dispatch] Failed to redirect to beta route:', err);
+            });
+            return;
+        }
+
         this.mountReactJobList();
 
         this.registerInterval(async () => {
@@ -2258,6 +2277,19 @@ class HomeController extends BaseController {
             // (openCustomizePanelsDialog); the gear no longer returns boxes.
             if (result.aiEnabled !== undefined) {
                 setAiEnabled(result.aiEnabled);
+            }
+
+            // Beta opt-in changed: persist and (if turned on) flip to the new
+            // route immediately. Operators staying on V1 stay put.
+            if (result.dispatchBetaEnabled !== undefined
+                && result.dispatchBetaEnabled !== getDispatchBetaEnabled()) {
+                setDispatchBetaEnabled(result.dispatchBetaEnabled);
+                if (result.dispatchBetaEnabled) {
+                    this.$state.go('dispatchV2').catch((err: unknown) => {
+                        console.error('[Dispatch] Failed to switch to beta route:', err);
+                    });
+                    return;
+                }
             }
 
             this.saveCurrentLayout();

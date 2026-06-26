@@ -937,10 +937,8 @@ describe('JobListContextMenu', () => {
 
             await user.click(screen.getByText('Task Groups'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Pickup Events')).toBeInTheDocument();
-                expect(screen.getByText('Delivery Events')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Pickup Events')).toBeInTheDocument();
+            expect(screen.getByText('Delivery Events')).toBeInTheDocument();
         });
 
         it('clicking a group calls openEventGroupDialog with correct groupId/jobId', async () => {
@@ -952,11 +950,7 @@ describe('JobListContextMenu', () => {
 
             await user.click(screen.getByText('Task Groups'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Pickup Events')).toBeInTheDocument();
-            });
-
-            await user.click(screen.getByText('Pickup Events'));
+            await user.click(await screen.findByText('Pickup Events'));
 
             await waitFor(() => {
                 expect(mockedOpenEventGroupDialog).toHaveBeenCalledWith({

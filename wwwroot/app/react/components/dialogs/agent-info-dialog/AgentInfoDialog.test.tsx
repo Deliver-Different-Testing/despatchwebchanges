@@ -94,7 +94,14 @@ describe('AgentInfoDialog', () => {
             const props = createMockProps();
             renderWithTheme(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByRole('button')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /close dialog/i })).toBeInTheDocument();
+        });
+
+        it('labels the dialog with its title for assistive tech', () => {
+            const props = createMockProps();
+            renderWithTheme(<AgentInfoDialog {...props} />);
+
+            expect(screen.getByRole('dialog')).toHaveAccessibleName('Agent Details');
         });
     });
 
@@ -248,12 +255,22 @@ describe('AgentInfoDialog', () => {
     });
 
     describe('Close Functionality', () => {
-        it('calls onClose when close button is clicked', async () => {
+        it('calls onClose when the header close button is clicked', async () => {
             const user = userEvent.setup();
             const props = createMockProps();
             renderWithTheme(<AgentInfoDialog {...props} />);
 
-            await user.click(screen.getByRole('button'));
+            await user.click(screen.getByRole('button', { name: /close dialog/i }));
+
+            expect(props.onClose).toHaveBeenCalled();
+        });
+
+        it('calls onClose when the footer Close button is clicked', async () => {
+            const user = userEvent.setup();
+            const props = createMockProps();
+            renderWithTheme(<AgentInfoDialog {...props} />);
+
+            await user.click(screen.getByRole('button', { name: 'Close' }));
 
             expect(props.onClose).toHaveBeenCalled();
         });

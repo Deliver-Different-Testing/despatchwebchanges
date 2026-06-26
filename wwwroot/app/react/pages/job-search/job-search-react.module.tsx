@@ -16,6 +16,7 @@ import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {JobSearchPage, JobSearchPageProps, JobSearchLayoutBridge} from './JobSearchPage';
+import type {ImportLayoutsResult} from './lib/layoutPersistence';
 
 export interface MountJobSearchPageConfig extends JobSearchPageProps {}
 
@@ -118,12 +119,30 @@ export function promptDeleteLayout(layoutName: string): Promise<boolean> {
 }
 
 /**
+ * Open the React MUI "Rename Layout" dialog and resolve with the new name (or
+ * null if cancelled / React not mounted). The AngularJS toolbar awaits this.
+ */
+export function promptRenameLayout(layoutName: string): Promise<string | null> {
+    return layoutBridge?.promptRenameLayout(layoutName) ?? Promise.resolve(null);
+}
+
+/**
  * Open the Inter-Courier Charge dialog from the AngularJS toolbar. The dialog
  * component is statically imported by JobSearchPage, so it's already in this
  * bundle — no separate lazy-load needed. No-op if React is not mounted.
  */
 export function openInterCourierCharge(): Promise<void> {
     return layoutBridge?.openInterCourierCharge() ?? Promise.resolve();
+}
+
+/** Set layout edit mode from the AngularJS toolbar's Layouts → Edit layout toggle. */
+export function setEditMode(enabled: boolean): void {
+    layoutBridge?.setEditMode(enabled);
+}
+
+/** Copy the user's V1 layouts into the V2 store from the AngularJS toolbar. */
+export function importLegacyLayouts(): ImportLayoutsResult {
+    return layoutBridge?.importLegacyLayouts() ?? {imported: [], skipped: []};
 }
 
 // Expose globally for AngularJS access (typed via global.d.ts)
@@ -136,7 +155,10 @@ declare global {
             reloadLayoutsFromStorage: typeof reloadLayoutsFromStorage;
             promptSaveLayout: typeof promptSaveLayout;
             promptDeleteLayout: typeof promptDeleteLayout;
+            promptRenameLayout: typeof promptRenameLayout;
             openInterCourierCharge: typeof openInterCourierCharge;
+            setEditMode: typeof setEditMode;
+            importLegacyLayouts: typeof importLegacyLayouts;
         };
     }
 }
@@ -148,7 +170,10 @@ window.ReactJobSearch = {
     reloadLayoutsFromStorage,
     promptSaveLayout,
     promptDeleteLayout,
+    promptRenameLayout,
     openInterCourierCharge,
+    setEditMode,
+    importLegacyLayouts,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

@@ -247,6 +247,8 @@ export interface JobListSearchParams {
     isInternal?: boolean;
     despatchViewIds?: (string | number)[];
     selectedClearListId?: number;
+    /** Current Work list: the courier whose available work to fetch. */
+    courierId?: number;
 }
 
 export interface JobSearchResult {
@@ -259,6 +261,8 @@ export interface FetchConfig {
     fetchFn: (params: JobListSearchParams, options?: RequestOptions) => Promise<JobSearchResult>;
     queryKeyFn: (params: JobListSearchParams) => readonly unknown[];
     initialParams: JobListSearchParams;
+    /** Auto-refresh interval in ms (React Query refetchInterval). `false`/undefined = off. */
+    refetchInterval?: number | false;
 }
 
 // ── Mount Configuration ──────────────────────────────────────────────
@@ -311,6 +315,12 @@ export interface JobListPanelProps {
     fetchConfig?: FetchConfig;
     /** Hide the "Logged-in only" toggle in the toolbar */
     hideLoggedInSwitch?: boolean;
+    /**
+     * Card header DOM node (from JobSearchShell). When provided, the view options
+     * (density / reset columns / logged-in toggle) are portaled into the header
+     * instead of the toolbar.
+     */
+    headerSlot?: HTMLElement | null;
     /** Called once on mount with the current-work date filter mode (always today-only). */
     onDateFilterModeChange?: (todayOnly: boolean) => void;
     /** Called by mount module to allow pushing jobs from AngularJS (legacy, used when no fetchConfig) */

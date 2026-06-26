@@ -1841,7 +1841,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
                 UcjbNumber = $"JOB{i}",
                 UcjbDate = new DateTime(2025, 11, 1 + i),
                 UcjbStatus = 0,
-                BookingParentId = 400,
+                BookingParentId = 400
             }).ToArray());
 
         var service = CreateService();
@@ -1864,7 +1864,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             UcjbNumber = "JOB",
             UcjbDate = new DateTime(2025, 11, 1),
             UcjbStatus = 0,
-            BookingParentId = 500,
+            BookingParentId = 500
         });
 
         var service = CreateService();

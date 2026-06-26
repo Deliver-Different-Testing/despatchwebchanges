@@ -13,6 +13,7 @@ import {
     fetchDispatchBulkJobDetail,
     fetchDispatchJobs,
     fetchClearListJobs,
+    fetchCurrentWorkJobs,
     fetchNationwideJobsNew,
     fetchNationwideJobsPod,
     fetchNationwideJobsReprice,
@@ -263,6 +264,39 @@ describe('jobSearchApi', () => {
             expect(calledParams.order).toBe('time');
             expect(calledParams.orderDirection).toBe('asc');
             expect(calledParams.searchText).toBe('');
+        });
+    });
+
+    // ── fetchCurrentWorkJobs ─────────────────────────────────────────
+
+    describe('fetchCurrentWorkJobs', () => {
+        it('should call GET /job/GetCurrentWorkList with courierId and formatted dates', async () => {
+            mockApiClient.get.mockResolvedValueOnce(createMockDto());
+
+            await fetchCurrentWorkJobs(createBaseParams({
+                courierId: 42,
+                startDate: dayjs('2025-02-01') as any,
+                endDate: dayjs('2025-02-28') as any,
+            }));
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                '/job/GetCurrentWorkList',
+                expect.objectContaining({
+                    courierId: 42,
+                    startDate: expect.stringContaining('formatted-'),
+                    endDate: expect.stringContaining('formatted-'),
+                }),
+                undefined,
+            );
+        });
+
+        it('transforms each returned job', async () => {
+            mockApiClient.get.mockResolvedValueOnce(createMockDto(2));
+
+            const result = await fetchCurrentWorkJobs(createBaseParams({courierId: 1}));
+
+            expect(result.jobs).toHaveLength(2);
+            expect((result.jobs[0] as any)._transformed).toBe(true);
         });
     });
 

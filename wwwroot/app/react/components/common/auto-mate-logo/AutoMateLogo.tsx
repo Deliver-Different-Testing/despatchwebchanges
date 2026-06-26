@@ -16,8 +16,11 @@ import Box from '@mui/material/Box';
 
 /** Static brand mark, served from wwwroot/images. Used in headers/badges. */
 export const AUTO_MATE_LOGO_SRC = 'images/auto-mate.png';
-/** Animated "thinking" mark, served from wwwroot/images. Used in loading states. */
-export const AUTO_MATE_LOGO_ANIMATED_SRC = 'images/auto-mate-thinking.gif';
+/** Animated "thinking" mark, served from wwwroot/images. Used in loading states.
+ *  WebP (not GIF) so the transparent background is honoured on every frame —
+ *  the legacy GIF only flagged transparency on frame 0, flashing an opaque
+ *  background behind the icon on every loop. */
+export const AUTO_MATE_LOGO_ANIMATED_SRC = 'images/auto-mate-thinking.webp';
 
 interface AutoMateLogoProps {
     /** Square render size in px. Default 24 (matches the icon it replaces). */

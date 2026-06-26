@@ -165,6 +165,19 @@ describe('AiSummaryCard', () => {
             fireEvent.click(screen.getByLabelText('Expand Auto-mate briefing'));
             expect(mockFetch).toHaveBeenCalledTimes(1);
         });
+
+        it('starts expanded and fetches on mount when autoOpen is set', async () => {
+            const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+
+            renderWithTheme(
+                <AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} collapsible autoOpen />
+            );
+
+            // No click needed — the card opens and fetches straight away.
+            await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+            expect(await screen.findByText('🚨 Overdue for delivery — courier stale')).toBeInTheDocument();
+            expect(screen.getByLabelText('Collapse Auto-mate briefing')).toBeInTheDocument();
+        });
     });
 
     it('shows a stop button while loading and clears it on success', async () => {

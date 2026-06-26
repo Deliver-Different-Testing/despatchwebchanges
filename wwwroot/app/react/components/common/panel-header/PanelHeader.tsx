@@ -44,7 +44,12 @@ const rootSx = ((theme: Theme) => ({
     color: theme.palette.primary.contrastText,
     px: 2,
     py: 1.25,
-    minHeight: 48,
+    // Fixed (not min) height so every panel header is identical regardless of
+    // which action controls it carries — 56px is the natural height (36px icon
+    // badge + 2×10px py). Small MUI controls (≤44px) centre within it without
+    // changing the box height.
+    height: 56,
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     gap: 1.5,

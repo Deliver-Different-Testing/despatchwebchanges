@@ -216,9 +216,12 @@ describe('DispatchDialog', () => {
                 // Tooltip wrapper is a sibling span — hover the label text to fire the tooltip.
                 const labelEl = screen.getByText('DFRNT Partner');
                 await user.hover(labelEl);
-                await waitFor(() => {
-                    expect(screen.getByRole('tooltip')).toHaveTextContent(tooltip);
-                });
+                await waitFor(
+                    () => {
+                        expect(screen.getByRole('tooltip')).toHaveTextContent(tooltip);
+                    },
+                    {timeout: 3000},
+                );
             });
         }
 
@@ -346,10 +349,9 @@ describe('DispatchDialog', () => {
             await user.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
 
             // Wait for the partner dropdown to load.
-            await waitFor(() => expect(screen.getByLabelText('Partner')).toBeInTheDocument());
+            const select = await screen.findByLabelText('Partner');
 
             // Open the Select and choose PartnerCo.
-            const select = screen.getByLabelText('Partner');
             await user.click(select);
             const partnerOption = await screen.findByRole('option', {name: 'PartnerCo'});
             await user.click(partnerOption);

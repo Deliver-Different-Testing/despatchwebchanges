@@ -13,4 +13,6 @@ export interface AppShellProps {
     children?: React.ReactNode;
     onLogoClick?: () => void;
     onNavigate: (state: string) => void;
+    /** Show a BETA chip next to the page title (V2 pages). */
+    beta?: boolean;
 }

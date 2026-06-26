@@ -17,7 +17,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
-import GridViewIcon from '@mui/icons-material/GridView';
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 
@@ -28,6 +28,14 @@ export interface SaveLayoutDialogProps {
     onClose: () => void;
     /** Called with the trimmed, validated layout name. */
     onConfirm: (name: string) => void;
+    /** Pre-fill the name field (e.g. when renaming an existing layout). */
+    initialName?: string;
+    /** Header title. Defaults to "Save Layout". */
+    title?: string;
+    /** Header subtitle. */
+    subtitle?: string;
+    /** Primary action label. Defaults to "Add Layout". */
+    confirmLabel?: string;
 }
 
 export const SaveLayoutDialog: React.FC<SaveLayoutDialogProps> = ({
@@ -35,13 +43,17 @@ export const SaveLayoutDialog: React.FC<SaveLayoutDialogProps> = ({
     existingNames,
     onClose,
     onConfirm,
+    initialName = '',
+    title = 'Save Layout',
+    subtitle = 'Name the current arrangement to save it',
+    confirmLabel = 'Add Layout',
 }) => {
-    const [name, setName] = useState('');
+    const [name, setName] = useState(initialName);
 
-    // Reset the field each time the dialog opens.
+    // Reset the field to the initial value each time the dialog opens.
     useEffect(() => {
-        if (open) setName('');
-    }, [open]);
+        if (open) setName(initialName);
+    }, [open, initialName]);
 
     const trimmed = name.trim();
     const normalizedExisting = useMemo(
@@ -108,14 +120,14 @@ export const SaveLayoutDialog: React.FC<SaveLayoutDialogProps> = ({
                         justifyContent: 'center',
                     }}
                 >
-                    <GridViewIcon sx={{fontSize: 24}}/>
+                    <DashboardCustomizeIcon sx={{fontSize: 24}}/>
                 </Box>
                 <Box sx={{flex: 1}}>
                     <Typography variant="h6" sx={{fontWeight: 600}}>
-                        Save Layout
+                        {title}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Name the current arrangement to save it
+                        {subtitle}
                     </Typography>
                 </Box>
                 <IconButton
@@ -190,7 +202,7 @@ export const SaveLayoutDialog: React.FC<SaveLayoutDialogProps> = ({
                     startIcon={<SaveIcon/>}
                     sx={{minWidth: 100}}
                 >
-                    Add Layout
+                    {confirmLabel}
                 </Button>
             </DialogActions>
         </Dialog>

@@ -74,40 +74,31 @@ describe('AppShell', () => {
         });
 
         it('should close SideNav after mouse leaves with delay', async () => {
-            // Use real timers for this test as MUI Drawer has complex animations
-            jest.useRealTimers();
-
             renderWithTheme(<AppShell {...defaultProps} />);
 
             // Open sidenav
             const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
             fireEvent.mouseEnter(avatarButton);
+            expect(await screen.findByText('John Doe')).toBeInTheDocument();
 
-            // Verify drawer is open (has modal role with presentation)
-            await waitFor(() => {
-                const drawer = document.querySelector('.MuiDrawer-root');
-                expect(drawer).toBeInTheDocument();
-            });
-
-            // Get the drawer and simulate mouse leave
+            // Simulate mouse leave on the drawer
             const drawerPaper = document.querySelector('.MuiDrawer-paper');
             if (drawerPaper) {
                 fireEvent.mouseLeave(drawerPaper);
             }
 
-            // Wait for the close delay (300ms) and check drawer is no longer visible
-            await waitFor(
-                () => {
-                    // Check that the drawer modal is hidden
-                    const drawerRoot = document.querySelector('.MuiDrawer-root');
-                    // When drawer closes, MUI removes the root element or adds hidden styles
-                    expect(drawerRoot?.getAttribute('aria-hidden')).toBe('true');
-                },
-                {timeout: 1000}
-            );
+            // Advance past the 300ms close delay; the temporary Drawer then
+            // animates shut and is marked aria-hidden (keepMounted keeps it
+            // in the DOM). waitFor auto-advances fake timers to settle the
+            // exit transition.
+            act(() => {
+                jest.advanceTimersByTime(300);
+            });
 
-            // Restore fake timers for other tests
-            jest.useFakeTimers();
+            await waitFor(() => {
+                const drawerRoot = document.querySelector('.MuiDrawer-root');
+                expect(drawerRoot?.getAttribute('aria-hidden')).toBe('true');
+            });
         });
 
         it('should not close SideNav if mouse re-enters before delay', async () => {

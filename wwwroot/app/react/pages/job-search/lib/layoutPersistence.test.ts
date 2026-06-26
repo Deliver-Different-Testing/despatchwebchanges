@@ -2,9 +2,11 @@ import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
 import {
     LayoutStorageKeys,
     boxVisibilityKey,
+    importLayoutsFrom,
     loadBoxVisibility,
     loadLastActiveLayoutName,
     loadLayouts,
+    renameLayoutInStorage,
     saveBoxVisibility,
     saveLastActiveLayoutName,
     saveLayouts,
@@ -117,5 +119,103 @@ describe('box visibility', () => {
         saveBoxVisibility(keys, 'Default', sparse);
         expect(JSON.parse(localStorage.getItem(boxVisibilityKey(keys, 'Default'))!))
             .toEqual({a: {visible: true, collapsed: false}});
+    });
+});
+
+describe('importLayoutsFrom', () => {
+    const source: LayoutStorageKeys = {
+        layoutsKey: 'layout-v1',
+        lastActiveLayoutKey: 'lastActive-v1',
+        boxVisibilityKeyBase: 'boxVisibility-v1',
+    };
+    const target: LayoutStorageKeys = {
+        layoutsKey: 'layout-v2',
+        lastActiveLayoutKey: 'lastActive-v2',
+        boxVisibilityKeyBase: 'boxVisibility-v2',
+    };
+
+    const custom = (name: string): ILayout => ({name, layout: {columns: []}});
+
+    it('copies custom layouts into an empty target, ignoring Default', () => {
+        saveLayouts(source, [defaultLayout, custom('Wide'), custom('Tall')]);
+
+        const result = importLayoutsFrom(source, target, defaultLayout);
+
+        expect(result.imported).toEqual(['Wide', 'Tall']);
+        expect(result.skipped).toEqual([]);
+        const stored = loadLayouts(target, defaultLayout);
+        expect(stored.map(l => l.name)).toEqual(['Default', 'Wide', 'Tall']);
+    });
+
+    it('skips a source layout whose name already exists in the target', () => {
+        saveLayouts(source, [defaultLayout, custom('Wide')]);
+        saveLayouts(target, [defaultLayout, custom('Wide')]);
+
+        const result = importLayoutsFrom(source, target, defaultLayout);
+
+        expect(result.imported).toEqual([]);
+        expect(result.skipped).toEqual(['Wide']);
+        expect(loadLayouts(target, defaultLayout)).toHaveLength(2);
+    });
+
+    it('carries each imported layout\'s box-visibility record across', () => {
+        saveLayouts(source, [defaultLayout, custom('Wide')]);
+        saveBoxVisibility(source, 'Wide', {a: {name: 'a', visible: false, collapsed: true}});
+
+        importLayoutsFrom(source, target, defaultLayout);
+
+        expect(loadBoxVisibility(target, 'Wide')).toEqual({a: {visible: false, collapsed: true}});
+    });
+
+    it('is a no-op when the source has no custom layouts', () => {
+        const result = importLayoutsFrom(source, target, defaultLayout);
+        expect(result).toEqual({imported: [], skipped: []});
+        expect(localStorage.getItem(target.layoutsKey)).toBeNull();
+    });
+});
+
+describe('renameLayoutInStorage', () => {
+    const custom = (name: string): ILayout => ({name, layout: {columns: []}});
+
+    it('renames a custom layout in the layouts array', () => {
+        saveLayouts(keys, [defaultLayout, custom('Wide')]);
+        expect(renameLayoutInStorage(keys, 'Wide', 'Widescreen', defaultLayout)).toBe(true);
+        expect(loadLayouts(keys, defaultLayout).map(l => l.name)).toEqual(['Default', 'Widescreen']);
+    });
+
+    it('moves the box-visibility record to the new name', () => {
+        saveLayouts(keys, [defaultLayout, custom('Wide')]);
+        saveBoxVisibility(keys, 'Wide', {a: {name: 'a', visible: false, collapsed: true}});
+
+        renameLayoutInStorage(keys, 'Wide', 'Widescreen', defaultLayout);
+
+        expect(loadBoxVisibility(keys, 'Widescreen')).toEqual({a: {visible: false, collapsed: true}});
+        expect(localStorage.getItem(boxVisibilityKey(keys, 'Wide'))).toBeNull();
+    });
+
+    it('repoints last-active when it referenced the renamed layout', () => {
+        saveLayouts(keys, [defaultLayout, custom('Wide')]);
+        saveLastActiveLayoutName(keys, 'Wide');
+
+        renameLayoutInStorage(keys, 'Wide', 'Widescreen', defaultLayout);
+
+        expect(loadLastActiveLayoutName(keys)).toBe('Widescreen');
+    });
+
+    it('refuses to rename the Default layout', () => {
+        saveLayouts(keys, [defaultLayout, custom('Wide')]);
+        expect(renameLayoutInStorage(keys, 'Default', 'Home', defaultLayout)).toBe(false);
+    });
+
+    it('refuses an empty new name or a colliding name', () => {
+        saveLayouts(keys, [defaultLayout, custom('Wide'), custom('Tall')]);
+        expect(renameLayoutInStorage(keys, 'Wide', '   ', defaultLayout)).toBe(false);
+        expect(renameLayoutInStorage(keys, 'Wide', 'Tall', defaultLayout)).toBe(false);
+        expect(loadLayouts(keys, defaultLayout).map(l => l.name)).toEqual(['Default', 'Wide', 'Tall']);
+    });
+
+    it('returns false for an unknown layout name', () => {
+        saveLayouts(keys, [defaultLayout, custom('Wide')]);
+        expect(renameLayoutInStorage(keys, 'Nope', 'New', defaultLayout)).toBe(false);
     });
 });

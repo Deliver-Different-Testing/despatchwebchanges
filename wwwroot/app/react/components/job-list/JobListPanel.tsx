@@ -20,6 +20,8 @@ import type {
 } from '../../interfaces/dispatchJob';
 import {JobListStatsHeader} from './JobListStatsHeader';
 import {JobListToolbar} from './JobListToolbar';
+import {JobListViewOptions} from './JobListViewOptions';
+import {HeaderSlotPortal} from '../common/header-slot/HeaderSlotPortal';
 import {JobListTable} from './JobListTable';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
@@ -267,6 +269,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
+                                                              headerSlot,
                                                               onDateFilterModeChange,
                                                               setJobsCallback,
                                                               setRefreshCallback,
@@ -349,6 +352,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const [contextMenuPos, setContextMenuPos] = useState<{ mouseX: number; mouseY: number } | null>(null);
 
     const isJobSearchPage = appPage === 3; // AppPage.JobSearch
+    const allowDispatch = appPage === 1 || appPage === 3; // AppPage.Dispatch | AppPage.JobSearch
 
     // ── Register callbacks for AngularJS bridge (legacy mode) ────────
     const updateJobsRef = useRef<((jobs: DispatchJob[], total: number) => void) | null>(null);
@@ -779,6 +783,19 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 }} />
             )}
             <JobListStatsHeader stats={stats}/>
+            {headerSlot && (
+                <HeaderSlotPortal slot={headerSlot}>
+                    <JobListViewOptions
+                        densityMode={densityMode}
+                        onDensityModeChange={handleDensityModeChange}
+                        onResetColumns={handleResetColumns}
+                        loggedInCouriersOnly={loggedInCouriersOnly}
+                        onLoggedInCouriersOnlyChange={handleLoggedInCouriersOnlyChange}
+                        showLoggedInSwitch={allowDispatch && !hideLoggedInSwitch}
+                        headerVariant
+                    />
+                </HeaderSlotPortal>
+            )}
             <JobListToolbar
                 selectedCategory={selectedCategory}
                 onCategoryChange={handleCategoryChange}
@@ -797,6 +814,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onBulkMarkRead={handleBulkMarkRead}
                 onBulkMarkUnread={handleBulkMarkUnread}
                 hideLoggedInSwitch={hideLoggedInSwitch}
+                renderViewOptions={!headerSlot}
             />
             <JobListTable
                 jobs={visibleJobs}

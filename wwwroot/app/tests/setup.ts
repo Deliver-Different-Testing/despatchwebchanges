@@ -7,6 +7,39 @@
 
 import '@testing-library/jest-dom';
 
+// Disable MUI enter/exit animations globally in tests. Dialog/Menu/Popover/
+// Collapse/Tooltip transitions run on real timers and add hundreds of ms per
+// interaction (act/userEvent wait for them to settle) without testing
+// anything. Patching createTheme reaches every theme — including the many
+// per-file `createTheme()` calls — by deep-merging zero-duration transitions
+// and instant component defaults on top of whatever options the caller passes.
+jest.mock('@mui/material/styles', () => {
+    const actual = jest.requireActual('@mui/material/styles');
+    const noAnimationOverrides = {
+        transitions: {
+            duration: {
+                shortest: 0, shorter: 0, short: 0,
+                standard: 0, complex: 0,
+                enteringScreen: 0, leavingScreen: 0,
+            },
+        },
+        components: {
+            MuiDialog: {defaultProps: {transitionDuration: 0}},
+            MuiBackdrop: {defaultProps: {transitionDuration: 0}},
+            MuiMenu: {defaultProps: {transitionDuration: 0}},
+            MuiPopover: {defaultProps: {transitionDuration: 0}},
+            MuiCollapse: {defaultProps: {timeout: 0}},
+            MuiTooltip: {defaultProps: {enterDelay: 0, leaveDelay: 0, enterNextDelay: 0}},
+        },
+    };
+    return {
+        ...actual,
+        __esModule: true,
+        createTheme: (...args: unknown[]) =>
+            actual.createTheme(...(args.length ? args : [{}]), noAnimationOverrides),
+    };
+});
+
 // DOM mocks — only run in jsdom environment (skipped for node-only tests)
 if (typeof window !== 'undefined') {
     // Mock window.history for navigation tests

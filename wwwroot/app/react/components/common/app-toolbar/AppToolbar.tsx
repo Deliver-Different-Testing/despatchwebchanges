@@ -13,11 +13,13 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
+import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import MenuIcon from '@mui/icons-material/Menu';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import dayjs from 'dayjs';
+import {aiAccentColor} from '../../../theme/designTokens';
 
 export interface BreadcrumbItem {
     label: string;
@@ -32,6 +34,8 @@ export interface AppToolbarProps {
     children?: React.ReactNode;
     onLogoClick?: () => void;
     onMenuHover?: () => void;
+    /** Show a BETA chip next to the page title (V2 pages). */
+    beta?: boolean;
 }
 
 function greetUser(userName: string): string {
@@ -70,6 +74,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     children,
     onLogoClick,
     onMenuHover,
+    beta,
 }) => {
     const greeting = greetUser(firstName);
     const resolvedCrumbs = resolveCrumbs(breadcrumbs, title);
@@ -171,6 +176,22 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                         );
                     })}
                 </Breadcrumbs>
+            )}
+
+            {beta && (
+                <Chip
+                    label="BETA"
+                    size="small"
+                    sx={{
+                        ml: 1,
+                        height: 18,
+                        fontSize: '0.625rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.04em',
+                        bgcolor: aiAccentColor,
+                        color: '#fff',
+                    }}
+                />
             )}
 
             {/* Spacer */}

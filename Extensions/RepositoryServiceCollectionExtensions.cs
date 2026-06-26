@@ -19,6 +19,7 @@ public static class RepositoryServiceCollectionExtensions
         services.AddScoped<IRecurringJobRepository, RecurringJobRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IAccessorialChargeRepository, AccessorialChargeRepository>();
+        services.AddScoped<IDispatchLayoutRepository, DispatchLayoutRepository>();
 
         return services;
     }
