@@ -366,6 +366,81 @@ public class TenantInfoServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public void ConvertUtcToTenantTimeZone_NoClaim_WithOverride_UsesOverride()
+    {
+        // Repro of the delivery-journey "shows UTC" bug: the TimeZone claim is absent on
+        // this request, so without the override the conversion would degrade to UTC (+00).
+        // The client-supplied override (window.TimeZone) keeps it correct.
+        SetupHttpContextWithClaims(); // no TimeZone claim
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("New Zealand Standard Time");
+        var utcTime = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var result = service.ConvertUtcToTenantTimeZone(utcTime);
+
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset); // NZST (June) is +12
+        Assert.NotEqual(TimeSpan.Zero, result.Offset);
+    }
+
+    [Fact]
+    public void GetTenantTimeZone_NoClaim_WithOverride_ReturnsOverride()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("Pacific/Auckland");
+
+        Assert.Equal("Pacific/Auckland", service.GetTenantTimeZone());
+    }
+
+    [Fact]
+    public void GetTenantTimeZone_ClaimPresent_TakesPrecedenceOverOverride()
+    {
+        // The server-side claim is authoritative when present; the override only fills gaps.
+        SetupHttpContextWithClaims(("TimeZone", "Pacific Standard Time"));
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("New Zealand Standard Time");
+
+        Assert.Equal("Pacific Standard Time", service.GetTenantTimeZone());
+    }
+
+    [Fact]
+    public void SetTenantTimeZoneOverride_WhitespaceValue_IsIgnored()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("   ");
+
+        Assert.Equal("UTC", service.GetTenantTimeZone());
+    }
+
+    [Fact]
+    public void ConvertUtcToTenantTimeZone_EmptyClaim_DoesNotThrow_DefaultsToUtc()
+    {
+        // A present-but-empty TimeZone claim used to throw TimeZoneNotFoundException
+        // (500ing the journey). It must now degrade gracefully to UTC instead.
+        SetupHttpContextWithClaims(("TimeZone", ""));
+        var service = CreateService();
+        var utcTime = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var result = service.ConvertUtcToTenantTimeZone(utcTime);
+
+        Assert.Equal(TimeSpan.Zero, result.Offset);
+    }
+
+    [Fact]
+    public void ConvertUtcToTenantTimeZone_EmptyClaim_WithOverride_UsesOverride()
+    {
+        SetupHttpContextWithClaims(("TimeZone", ""));
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("New Zealand Standard Time");
+        var utcTime = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var result = service.ConvertUtcToTenantTimeZone(utcTime);
+
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset);
+    }
+
+    [Fact]
     public async Task GetStaffInfoAsync_WithValidStaffId_ReturnsStaffInfo()
     {
         // Arrange

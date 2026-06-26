@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -1310,5 +1311,84 @@ public class CourierRepositoryTests : IAsyncDisposable
         var driver = Assert.Single(result);
         Assert.Equal((int)CourierFleet.AucklandCool, driver.CourierFleetId);
         Assert.Equal("Auckland Cool", driver.CourierFleetName);
+    }
+
+    /// <summary>
+    /// Seeds one active and one inactive courier, both with a valid (future) driver's
+    /// license, for the compliance-list tests. Clock is fixed at 2024-01-15.
+    /// </summary>
+    private async Task SeedActiveAndInactiveCompliantCouriers()
+    {
+        await using var context = CreateContext();
+
+        context.TucCouriers.AddRange(
+            new TucCourier
+            {
+                UccrId = 1,
+                Code = "ACTIVE01",
+                UccrName = "Active",
+                UccrSurname = "Driver",
+                Active = true,
+                CourierFleetId = 1,
+                UccrChannelId = 1,
+                DriversLicenseExpiry = new DateTime(2025, 1, 1),
+                Created = TestDates.Now,
+                CreatedBy = "Test",
+                LastModified = TestDates.Now,
+                LastModifiedBy = "Test"
+            },
+            new TucCourier
+            {
+                UccrId = 2,
+                Code = "INACTIVE01",
+                UccrName = "Inactive",
+                UccrSurname = "Driver",
+                Active = false,
+                CourierFleetId = 1,
+                UccrChannelId = 1,
+                DriversLicenseExpiry = new DateTime(2025, 1, 1),
+                Created = TestDates.Now,
+                CreatedBy = "Test",
+                LastModified = TestDates.Now,
+                LastModifiedBy = "Test"
+            });
+
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetAllCourierComplianceAsync_ExcludesInactiveCouriersFromItemsAndAggregates()
+    {
+        // Arrange
+        await SeedActiveAndInactiveCompliantCouriers();
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAllCourierComplianceAsync(
+            new CourierComplianceFilterRequest { Page = 1, PageSize = 50 });
+
+        // Assert - only the active courier is returned and counted
+        var item = Assert.Single(result.Items);
+        Assert.Equal("ACTIVE01", item.Code);
+        Assert.Equal(1, result.Total);
+        Assert.Equal(1, result.TotalValid);
+        Assert.Equal(0, result.TotalExpired);
+        Assert.Equal(0, result.TotalExpiringSoon);
+    }
+
+    [Fact]
+    public async Task GetCourierComplianceForExportAsync_ExcludesInactiveCouriers()
+    {
+        // Arrange
+        await SeedActiveAndInactiveCompliantCouriers();
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetCourierComplianceForExportAsync(
+            new CourierComplianceFilterRequest());
+
+        // Assert - only the active courier is exported
+        var item = Assert.Single(result);
+        Assert.Equal("ACTIVE01", item.Code);
     }
 }

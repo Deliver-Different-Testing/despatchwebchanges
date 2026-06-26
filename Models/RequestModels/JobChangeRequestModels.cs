@@ -127,7 +127,7 @@ public sealed class JobChangeRequestResult
 /// </summary>
 public sealed class JobChangeRequestInboxItem
 {
-    public JobChangeRequestDto Request { get; init; } = default!;
+    public JobChangeRequestDto Request { get; init; } = null!;
     public string JobNo { get; init; } = string.Empty;
     public string? ClientName { get; init; }
 }

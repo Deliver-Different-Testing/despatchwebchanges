@@ -27,6 +27,7 @@ namespace DespatchWeb.EntityClasses
         Task<int> GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(OutputParameter<int?> maxAutoLateDeliveryAlert, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> GEN_qdfSetting_GetMaxAutoLatePickupAlertAsync(OutputParameter<int?> maxAutoLatePickupAlert, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> NET_stpJob_Insert_JobNumberAsync(int? staffID, int? jobTypeID, OutputParameter<string> jobNumber, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> RVW_stpActivateJobAsync(int? jobID, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<sp_AddJobAccessorialResult>> sp_AddJobAccessorialAsync(int? jobId, int? accessorialChargeId, decimal? inputValue, int? itemCount, string addedAtStage, string userName, string notes, OutputParameter<decimal?> newJobTotal, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);

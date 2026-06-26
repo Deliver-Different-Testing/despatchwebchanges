@@ -466,10 +466,7 @@ public partial class JobRepository(
     {
         try
         {
-            foreach (var jobId in jobIds)
-            {
-                await Context.Procedures.uspRestoreJobAsync(jobId);
-            }
+            await RestoreOrActivateJobsAsync(jobIds);
         }
         catch (Exception e)
         {
@@ -794,21 +791,53 @@ public partial class JobRepository(
     {
         try
         {
-            if (jobIds.Count == 0)
-            {
-                return;
-            }
-
-            foreach (var jobId in jobIds)
-            {
-                await Context.Procedures.uspRestoreJobAsync(jobId);
-            }
+            await RestoreOrActivateJobsAsync(jobIds);
         }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(RestoreJobsAsync)));
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Brings the given jobs back onto the dispatch board, routing each to the correct procedure.
+    /// Genuinely-completed jobs (done and not void) are re-opened via RVW_stpActivateJob, which clears
+    /// the POD name, completion time and job-done flag — without that, the DESWEB_qryDespatch view filters
+    /// the job out and it never reappears. uspRestoreJob deliberately no-ops on a completed job (see the
+    /// GuardCompletedJobsAgainstSilentRestore migration), so voided or not-yet-done jobs continue to use it.
+    /// </summary>
+    private async Task RestoreOrActivateJobsAsync(IReadOnlyList<int> jobIds)
+    {
+        if (jobIds is null or { Count: 0 })
+        {
+            return;
+        }
+
+        var completedJobIds = (await Context.TucJobs
+                .Where(j => jobIds.Contains(j.UcjbId) && j.UcjbJobDone && !j.UcjbVoid)
+                .Select(j => j.UcjbId)
+                .ToListAsync())
+            .ToHashSet();
+
+        string activatedByUserName = null;
+        if (completedJobIds.Count != 0)
+        {
+            // RVW_stpActivateJob stamps a "Job Restored ... via RunViewer User <name>" note.
+            activatedByUserName = (await _infoService.GetStaffInfoAsync())?.Text;
+        }
+
+        foreach (var jobId in jobIds)
+        {
+            if (completedJobIds.Contains(jobId))
+            {
+                await Context.Procedures.RVW_stpActivateJobAsync(jobId, activatedByUserName);
+            }
+            else
+            {
+                await Context.Procedures.uspRestoreJobAsync(jobId);
+            }
         }
     }
 

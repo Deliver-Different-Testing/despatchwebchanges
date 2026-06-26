@@ -31,6 +31,7 @@ import {
     saveStaffFilter,
     saveEventTypeFilter,
     StatusFilterValue,
+    getCurrentUserId,
 } from '../../../services/tasksService';
 import {
     useTasks,
@@ -237,7 +238,9 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
                                     showStatusIndicators: true,
                                     showOverdueWarning: true,
                                     onTaskClick: !!onSelectJob,
+                                    autoAssignOnClick: true,
                                 }}
+                                currentUserId={getCurrentUserId()}
                                 onTaskUpdated={() => refetch()}
                                 onTaskClick={onSelectJob ? (t) => t.jobId && onSelectJob(t.jobId) : undefined}
                                 tasksService={tasksServiceForComponents}

@@ -68,6 +68,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         config: configOverrides,
         onTaskUpdated,
         onTaskClick,
+        currentUserId,
         tasksService,
         dispatchService,
         showSuccessToast,
@@ -105,12 +106,30 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         setPopoverType(null);
     }, []);
 
-    const handleTaskClick = useCallback((event: React.MouseEvent) => {
-        if (config.onTaskClick && onTaskClick) {
-            event.stopPropagation();
-            onTaskClick(task);
+    const assignToCurrentUser = useCallback(async () => {
+        if (!currentUserId) return;
+
+        try {
+            await tasksService.reassignTaskToStaff(task.id, currentUserId);
+            showSuccessToast?.('Task assigned to you');
+            onTaskUpdated?.();
+        } catch (error) {
+            showErrorToast?.('Error assigning task');
+            console.error('Error assigning task to current user:', error);
         }
-    }, [config.onTaskClick, onTaskClick, task]);
+    }, [currentUserId, task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
+
+    const handleTaskClick = useCallback((event: React.MouseEvent) => {
+        if (!config.onTaskClick) return;
+        event.stopPropagation();
+
+        // Claim an unassigned, open task for the current user before selecting the job.
+        if (config.autoAssignOnClick && currentUserId && currentUserId > 0 && !task.assignee?.id && !task.closed) {
+            void assignToCurrentUser();
+        }
+
+        onTaskClick?.(task);
+    }, [config.onTaskClick, config.autoAssignOnClick, onTaskClick, task, currentUserId, assignToCurrentUser]);
 
     const handleCheckboxChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         event.stopPropagation();

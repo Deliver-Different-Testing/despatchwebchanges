@@ -922,6 +922,39 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<int> RVW_stpActivateJobAsync(int? jobID, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobID",
+                    Value = jobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "UserName",
+                    Size = 150,
+                    Value = userName ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[RVW_stpActivateJob] @JobID = @JobID, @UserName = @UserName", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<sp_AddJobAccessorialResult>> sp_AddJobAccessorialAsync(int? jobId, int? accessorialChargeId, decimal? inputValue, int? itemCount, string addedAtStage, string userName, string notes, OutputParameter<decimal?> newJobTotal, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterNewJobTotal = new SqlParameter

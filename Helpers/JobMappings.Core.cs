@@ -152,6 +152,7 @@ public static partial class JobMappings
         SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
         DeliverToLeaveId = j.DeliverToLeaveId,
         DeliverToContact = j.DeliverToContact ?? Defaults.NotSpecified,
+        DispatcherName = j.UcjbDisp != null ? FormatFullName(j.UcjbDisp) : null,
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,

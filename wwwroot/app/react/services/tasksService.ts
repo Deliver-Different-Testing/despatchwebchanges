@@ -45,6 +45,14 @@ function getContactId(): number {
 }
 
 /**
+ * The current logged-in user's staff id, as used by the "Mine" task filter.
+ * Same value the assignee chip compares against (task.assignee.id === this).
+ */
+export function getCurrentUserId(): number {
+    return getContactId();
+}
+
+/**
  * Check if localStorage is available
  */
 function isLocalStorageAvailable(): boolean {

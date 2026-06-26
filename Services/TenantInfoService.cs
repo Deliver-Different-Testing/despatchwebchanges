@@ -22,6 +22,7 @@ public sealed class TenantInfoService(
     private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
 
     private string _cachedTimeZone;
+    private string _timeZoneOverride;
     private string _cachedCountryCode;
     private int? _cachedStaffId;
     private int? _cachedContactId;
@@ -38,10 +39,40 @@ public sealed class TenantInfoService(
     private CultureInfo _cachedCultureInfo;
 
     /// <summary>
-    /// Gets the tenant's timezone from user claims.
+    /// Gets the tenant's timezone: the <c>TimeZone</c> claim when present, otherwise the
+    /// request-supplied override (see <see cref="SetTenantTimeZoneOverride"/>). Returns
+    /// null only when neither is available, so callers can apply their own UTC default.
     /// </summary>
-    private string GetTimeZone() => _cachedTimeZone ??= contextAccessor.HttpContext?.User.Claims
-        .FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+    private string GetTimeZone()
+    {
+        if (_cachedTimeZone is not null)
+        {
+            return _cachedTimeZone;
+        }
+
+        var claim = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+
+        _cachedTimeZone = !string.IsNullOrWhiteSpace(claim) ? claim
+            : !string.IsNullOrWhiteSpace(_timeZoneOverride) ? _timeZoneOverride
+            : null;
+        return _cachedTimeZone;
+    }
+
+    /// <inheritdoc />
+    public void SetTenantTimeZoneOverride(string timeZone)
+    {
+        if (string.IsNullOrWhiteSpace(timeZone))
+        {
+            return;
+        }
+
+        _timeZoneOverride = timeZone;
+        // A later call resolves through GetTimeZone(); clear any caches that may have
+        // been populated (as UTC) before the override arrived.
+        _cachedTimeZone = null;
+        _cachedTimeZoneInfo = null;
+    }
 
     /// <summary>
     /// Gets the tenant's country code from user claims.
@@ -59,9 +90,34 @@ public sealed class TenantInfoService(
             return _cachedTimeZoneInfo;
         }
 
-        var timeZone = GetTimeZone();
-        _cachedTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZone ?? "UTC");
+        _cachedTimeZoneInfo = ResolveTimeZoneInfo(GetTimeZone());
         return _cachedTimeZoneInfo;
+    }
+
+    /// <summary>
+    /// Resolves a timezone id to a <see cref="TimeZoneInfo"/> without throwing. Accepts
+    /// both Windows ("New Zealand Standard Time") and IANA ("Pacific/Auckland") ids, and
+    /// falls back to UTC for a missing/blank/unknown id rather than throwing — so a
+    /// timezone that can't be resolved degrades gracefully instead of 500ing the request.
+    /// </summary>
+    private static TimeZoneInfo ResolveTimeZoneInfo(string timeZone)
+    {
+        if (string.IsNullOrWhiteSpace(timeZone))
+        {
+            return TimeZoneInfo.Utc;
+        }
+
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(timeZone);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            // On Windows hosts IANA ids aren't recognised directly; convert then retry.
+            return TimeZoneInfo.TryConvertIanaIdToWindowsId(timeZone, out var windowsId)
+                ? TimeZoneInfo.FindSystemTimeZoneById(windowsId)
+                : TimeZoneInfo.Utc;
+        }
     }
 
     /// <summary>
