@@ -681,10 +681,10 @@ public class RecurringJobRepository(
                 $"Booking {startBookingId} is a child — Insert-to-live can only be initiated from the parent booking.");
         }
 
-        if (startMeta.RecurringMode != (byte)Enums.RecurringMode.Manual)
+        if (startMeta.RecurringMode != (byte)RecurringMode.Manual)
         {
             throw new InvalidOperationException(
-                $"Booking {startBookingId} is not in Manual mode (current mode: {(Enums.RecurringMode)startMeta.RecurringMode}). Only Manual bookings can be pushed via Insert-to-live.");
+                $"Booking {startBookingId} is not in Manual mode (current mode: {(RecurringMode)startMeta.RecurringMode}). Only Manual bookings can be pushed via Insert-to-live.");
         }
 
         switch (scope)
@@ -707,7 +707,7 @@ public class RecurringJobRepository(
                 var parentIds = await Context.TucJobBookings
                     .Where(b => b.RouteId == startMeta.RouteId.Value
                                 && b.UcbkOneOff != true
-                                && b.RecurringMode == (byte)Enums.RecurringMode.Manual
+                                && b.RecurringMode == (byte)RecurringMode.Manual
                                 && (!b.BookingParentId.HasValue || b.BookingParentId.Value == b.UcbkId))
                     .Select(b => b.UcbkId)
                     .ToListAsync();
@@ -1112,8 +1112,8 @@ public class RecurringJobRepository(
                 // boolean callers don't know about Manual — that state can
                 // only be set via JobProperty.RecurringMode below.
                 var newMode = isActive
-                    ? (byte)Enums.RecurringMode.Active
-                    : (byte)Enums.RecurringMode.Inactive;
+                    ? (byte)RecurringMode.Active
+                    : (byte)RecurringMode.Inactive;
 
                 if (isActive)
                 {
@@ -1144,18 +1144,18 @@ public class RecurringJobRepository(
                 //   Manual   => ucbkActive=1 (visible but excluded from
                 //               auto-materialiser via uspPrebookSet filter)
                 var modeValue = ParseValue<byte>(value, property);
-                if (!Enum.IsDefined(typeof(Enums.RecurringMode), modeValue))
+                if (!Enum.IsDefined(typeof(RecurringMode), modeValue))
                 {
                     throw new ArgumentException(
                         $"Invalid value '{value}' for RecurringMode. Expected 0 (Inactive), 1 (Active), or 2 (Manual).",
                         nameof(value));
                 }
 
-                var mode = (Enums.RecurringMode)modeValue;
+                var mode = (RecurringMode)modeValue;
                 var staffId = _infoService.GetStaffId();
                 var currentTenantTime = _clock.TenantNow;
 
-                if (mode == Enums.RecurringMode.Inactive)
+                if (mode == RecurringMode.Inactive)
                 {
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                         .ExecuteUpdateAsync(s => s
@@ -1251,7 +1251,7 @@ public class RecurringJobRepository(
         // hidden from the "Active" tab even though ucbkActive=1 on them.
         var modeFilter = request.RecurringMode.HasValue
             ? (byte)request.RecurringMode.Value
-            : (byte)(request.Active ? Enums.RecurringMode.Active : Enums.RecurringMode.Inactive);
+            : (byte)(request.Active ? RecurringMode.Active : RecurringMode.Inactive);
 
         var query = Context.TucJobBookings
             .Where(j => j.RecurringMode == modeFilter && j.UcbkOneOff != true);

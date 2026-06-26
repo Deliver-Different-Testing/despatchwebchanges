@@ -1509,7 +1509,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
         // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
         // per the compatibility rule, so Active is the safe default for active=true.
-        RecurringMode = active ? (byte)DespatchWeb.Enums.RecurringMode.Active : (byte)DespatchWeb.Enums.RecurringMode.Inactive,
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = oneOff,
         UcbkJobNumber = $"JOB{id}",
         UcbkAttention = false
@@ -1554,7 +1554,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
         // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
         // per the compatibility rule, so Active is the safe default for active=true.
-        RecurringMode = active ? (byte)DespatchWeb.Enums.RecurringMode.Active : (byte)DespatchWeb.Enums.RecurringMode.Inactive,
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false
     };
@@ -1573,7 +1573,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
         // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
         // per the compatibility rule, so Active is the safe default for active=true.
-        RecurringMode = active ? (byte)DespatchWeb.Enums.RecurringMode.Active : (byte)DespatchWeb.Enums.RecurringMode.Inactive,
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false
     };
@@ -1592,7 +1592,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
         // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
         // per the compatibility rule, so Active is the safe default for active=true.
-        RecurringMode = active ? (byte)DespatchWeb.Enums.RecurringMode.Active : (byte)DespatchWeb.Enums.RecurringMode.Inactive,
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false
     };
@@ -1611,7 +1611,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
         // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
         // per the compatibility rule, so Active is the safe default for active=true.
-        RecurringMode = active ? (byte)DespatchWeb.Enums.RecurringMode.Active : (byte)DespatchWeb.Enums.RecurringMode.Inactive,
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false
     };
@@ -1635,7 +1635,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
         // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
         // per the compatibility rule, so Active is the safe default for active=true.
-        RecurringMode = active ? (byte)DespatchWeb.Enums.RecurringMode.Active : (byte)DespatchWeb.Enums.RecurringMode.Inactive,
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false,
         UcbkClientCode = clientCode,

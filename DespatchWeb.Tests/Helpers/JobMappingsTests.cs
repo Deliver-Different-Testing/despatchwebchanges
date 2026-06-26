@@ -112,6 +112,80 @@ public class JobMappingsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void JobMappingCore_PopulatesDispatcherName_FromUcjbDisp(bool isUsCustomer)
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "JOB-001",
+            UcjbDisp = new TucStaff { UcstFirstName = "Jane", UcstLastName = "Doe" },
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var result = JobMappings.JobMappingCore(isUsCustomer).Compile()(job);
+
+        // Assert
+        Assert.Equal("Jane Doe", result.DispatcherName);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_DispatcherNameNull_WhenNoDispatcher(bool isUsCustomer)
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "JOB-001",
+            UcjbDisp = null,
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var result = JobMappings.JobMappingCore(isUsCustomer).Compile()(job);
+
+        // Assert
+        Assert.Null(result.DispatcherName);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_PopulatesDispatcherName_FromUcjbDisp()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "ARCH-001",
+            UcjbDisp = new TucStaff { UcstFirstName = "Jane", UcstLastName = "Doe" },
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>()
+        };
+
+        // Act
+        var result = JobMappings.JobArchiveMapping.Compile()(archivedJob);
+
+        // Assert - parity with the live mapping
+        Assert.Equal("Jane Doe", result.DispatcherName);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void JobMappingCore_MapsPickupArrivalTime(bool isUsCustomer)
     {
         // Arrange

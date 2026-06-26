@@ -2353,10 +2353,16 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> GetDeliveryJourney(int jobId)
+    public async Task<IActionResult> GetDeliveryJourney(int jobId, string timeZone = null)
     {
         try
         {
+            // The journey converts timestamps server-side via the tenant timezone. When the
+            // server-side TimeZone claim is missing/empty the conversion silently degrades to
+            // UTC, so the client passes its known-good window.TimeZone as a fallback. The claim
+            // still wins when present; this only fills the gap (see SetTenantTimeZoneOverride).
+            infoService.SetTenantTimeZoneOverride(timeZone);
+
             // Auto-apply any pending external qty changes before returning the journey
             await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
             var deliveryJourney = await deliveryJourneyService.GetDeliveryJourneyForJobAsync(jobId);
@@ -2369,10 +2375,15 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> GetRecurringJobDeliveryJourney(int bookingId)
+    public async Task<IActionResult> GetRecurringJobDeliveryJourney(int bookingId, string timeZone = null)
     {
         try
         {
+            // Same as GetDeliveryJourney: the client passes its known-good window.TimeZone so
+            // server-side conversion doesn't silently degrade to UTC when the TimeZone claim is
+            // missing on this request. The claim still wins when present.
+            infoService.SetTenantTimeZoneOverride(timeZone);
+
             var journey = await deliveryJourneyService.GetDeliveryJourneyForRecurringBookingAsync(bookingId);
             return Json(journey);
         }

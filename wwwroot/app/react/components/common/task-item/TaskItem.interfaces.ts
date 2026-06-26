@@ -36,6 +36,8 @@ export interface TaskItemConfig {
     allowCompletion?: boolean;
     showOverdueWarning?: boolean;
     onTaskClick?: boolean;
+    /** When true, clicking an unassigned, open task also claims it for the current user. */
+    autoAssignOnClick?: boolean;
     compactView?: boolean;
     customClass?: string;
 }
@@ -59,6 +61,8 @@ export interface TaskItemProps {
     config?: TaskItemConfig;
     onTaskUpdated?: () => void;
     onTaskClick?: (task: Task) => void;
+    /** Current user's staff id; required for `config.autoAssignOnClick` to take effect. */
+    currentUserId?: number;
     tasksService: TasksServiceInterface;
     dispatchService: DispatchServiceInterface;
     showSuccessToast?: (message: string) => void;

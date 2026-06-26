@@ -5,8 +5,8 @@
  * Used by the React Recurring Jobs page.
  */
 
-import dayjs from 'dayjs';
 import {apiClient, RequestOptions, downloadBlob} from './apiClient';
+import {parseDateFromApi, getTenantTimezone} from '../utils/dateUtils';
 import {
     InsertRecurringToLiveRequest,
     InsertRecurringToLiveResult,
@@ -28,9 +28,12 @@ import type {
 function transformRecurringJourneyRun(dto: RecurringJourneyRunDto): RecurringJourneyRun {
     return {
         ...dto,
-        serviceDate: dayjs(dto.serviceDate),
+        // parseDateFromApi (not bare dayjs) preserves the backend's wall-clock + offset
+        // as-is; bare dayjs() would re-project the instant into the browser's timezone
+        // and shift the displayed service/POD time.
+        serviceDate: parseDateFromApi(dto.serviceDate),
         pod: dto.pod
-            ? {time: dayjs(dto.pod.time), signedBy: dto.pod.signedBy}
+            ? {time: parseDateFromApi(dto.pod.time), signedBy: dto.pod.signedBy}
             : null,
     };
 }
@@ -106,7 +109,7 @@ export const recurringJobsApi = {
     getDeliveryJourney: async (bookingId: number, options?: RequestOptions): Promise<RecurringJourney> => {
         const response = await apiClient.get<RecurringJourneyDto>(
             'job/GetRecurringJobDeliveryJourney',
-            {bookingId},
+            {bookingId, timeZone: getTenantTimezone()},
             options,
         );
         return transformRecurringJourney(response);

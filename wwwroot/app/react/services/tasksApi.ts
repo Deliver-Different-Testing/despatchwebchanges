@@ -18,7 +18,7 @@ import {
     EventTypeSuggestion,
     EventGroupViewModel,
 } from '../interfaces';
-import {formatDateForApi, parseDateFromApi, formatRelativeDateTime} from '../utils/dateUtils';
+import {formatDateForApi, parseDateFromApi, formatRelativeDateTime, getTenantTimezone} from '../utils/dateUtils';
 import {Dayjs} from 'dayjs';
 import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-history/TaskHistory.interfaces';
 
@@ -125,7 +125,14 @@ function transformDeliveryJourneyDTO(dto: DeliveryJourneyDto): DeliveryJourney {
  * Get delivery journey for a job
  */
 export async function getDeliveryJourney(jobId: number, options?: RequestOptions): Promise<DeliveryJourney[]> {
-    const response = await apiClient.get<DeliveryJourneyDto[]>('job/GetDeliveryJourney', {jobId}, options);
+    // Pass the tenant's wall-clock timezone so the server can convert the journey
+    // timestamps even when its own TimeZone claim is missing on this request — otherwise
+    // the timeline silently renders in UTC. The server prefers its claim when present.
+    const response = await apiClient.get<DeliveryJourneyDto[]>(
+        'job/GetDeliveryJourney',
+        {jobId, timeZone: getTenantTimezone()},
+        options,
+    );
     return (response || []).map(transformDeliveryJourneyDTO);
 }
 

@@ -56,6 +56,7 @@ import {
     useUpdateTaskTime,
 } from '../../hooks/useTasksApi';
 import {tasksApi} from '../../services/tasksApi';
+import {getCurrentUserId} from '../../services/tasksService';
 import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
 import {AiSummaryCard} from '../../components/common/ai-summary-card/AiSummaryCard';
 import {isAiEnabled} from '../../../functions/aiSettings';
@@ -736,7 +737,9 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                                         showStatusIndicators: true,
                                                                         showOverdueWarning: true,
                                                                         onTaskClick: true,
+                                                                        autoAssignOnClick: true,
                                                                     }}
+                                                                    currentUserId={getCurrentUserId()}
                                                                     onTaskUpdated={() => refetchTasks()}
                                                                     onTaskClick={() => selectTaskForHistory(task)}
                                                                     tasksService={tasksServiceForComponents}

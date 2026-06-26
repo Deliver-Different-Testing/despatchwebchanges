@@ -27,6 +27,7 @@ public static partial class JobMappings
         DispatchTime = j.UcjbDispDate.HasValue && j.UcjbDispDate.Value.Year > 1900
             ? j.UcjbDispDate.Value.CombineWithTime(j.UcjbDispTime)
             : null,
+        DispatcherName = j.UcjbDisp != null ? FormatFullName(j.UcjbDisp) : null,
         CreatedDate = j.CreatedTimeUtc,
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,

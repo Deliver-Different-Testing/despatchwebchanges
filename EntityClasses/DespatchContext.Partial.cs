@@ -17,8 +17,8 @@ public partial class DespatchContext
     // global filters pass every row.
     private readonly IScopeProvider _scopeProvider;
 
-    private Models.ScopeContext CurrentScope =>
-        _scopeProvider?.Scope ?? Models.ScopeContext.BackgroundContext;
+    private ScopeContext CurrentScope =>
+        _scopeProvider?.Scope ?? ScopeContext.BackgroundContext;
 
     /// <summary>
     /// True when no row filter applies — background worker, scaffolding,
@@ -540,6 +540,14 @@ public partial class DespatchContext
                 .WithOne(i => i.Job)
                 .HasForeignKey(i => i.JobId)
                 .HasPrincipalKey(j => j.UcjbId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Dispatcher staff — the scaffolded TucJob has this nav but TucJobArchive
+            // doesn't, so it's wired here (kept out of the generated context so a
+            // re-scaffold won't drop it). Lets JobArchiveMapping project DispatcherName.
+            entity.HasOne(d => d.UcjbDisp)
+                .WithMany()
+                .HasForeignKey(d => d.UcjbDispId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasQueryFilter(j =>

@@ -745,7 +745,7 @@ public class CourierRepository(
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
-        var query = Context.TucCouriers.AsQueryable();
+        var query = Context.TucCouriers.Where(c => c.Active);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -2737,7 +2737,7 @@ public class CourierRepository(
         var tenantTimezone = infoService.GetTenantTimeZone();
         var expiringThreshold = now.AddDays(30);
 
-        var query = Context.TucCouriers.AsQueryable();
+        var query = Context.TucCouriers.Where(c => c.Active);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {

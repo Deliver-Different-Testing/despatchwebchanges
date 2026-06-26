@@ -34,6 +34,7 @@ jest.mock('../utils/dateUtils', () => ({
     formatRelativeDateTime: jest.fn((dateStr) => dateStr),
     formatLongDate: jest.fn((date) => date.format('MMM/DD/YYYY')),
     formatTime: jest.fn((date) => date.format('HH:mm')),
+    getTenantTimezone: jest.fn(() => 'New Zealand Standard Time'),
 }));
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
@@ -311,12 +312,18 @@ describe('tasksApi', () => {
             },
         ];
 
-        it('should call apiClient.get with correct URL and jobId', async () => {
+        it('should call apiClient.get with jobId and the tenant timezone', async () => {
             mockApiClient.get.mockResolvedValueOnce(mockDeliveryJourneyResponse);
 
             const result = await getDeliveryJourney(123);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('job/GetDeliveryJourney', {jobId: 123}, undefined);
+            // The tenant's wall-clock timezone is sent so the server can convert the
+            // journey timestamps even when its own TimeZone claim is missing on the request.
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'job/GetDeliveryJourney',
+                {jobId: 123, timeZone: 'New Zealand Standard Time'},
+                undefined,
+            );
             expect(result).toHaveLength(3);
             expect(result[0].title).toBe('Package picked up');
         });

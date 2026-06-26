@@ -20,6 +20,8 @@ public class JobViewModel : DispatchJobViewModel
 
     public string DeliverToContact { get; set; }
 
+    public string DispatcherName { get; set; }
+
     public int? TrackingMethod { get; set; }
     public string TrackingMobile { get; set; }
     public string TrackingEmail { get; set; }

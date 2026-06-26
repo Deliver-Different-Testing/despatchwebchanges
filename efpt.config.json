@@ -555,6 +555,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[RVW_stpActivateJob]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[sp_AddJobAccessorial]",
          "ObjectType": 1
       },

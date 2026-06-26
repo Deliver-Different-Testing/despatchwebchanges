@@ -296,6 +296,84 @@ describe('TaskItem', () => {
         });
     });
 
+    describe('Auto-assign on click', () => {
+        const unassigned = () => createMockTask({assignee: {id: 0, text: ''}});
+
+        it('claims an unassigned, open task for the current user and still selects the job', async () => {
+            const task = unassigned();
+            const props = createDefaultProps({
+                task,
+                config: {onTaskClick: true, autoAssignOnClick: true},
+                currentUserId: 555,
+            });
+            renderWithProviders(<TaskItem {...props} />);
+
+            await userEvent.click(screen.getByText('Test Task'));
+
+            await waitFor(() => {
+                expect(props.tasksService.reassignTaskToStaff).toHaveBeenCalledWith(task.id, 555);
+            });
+            expect(props.onTaskClick).toHaveBeenCalledWith(task);
+            await waitFor(() => {
+                expect(props.showSuccessToast).toHaveBeenCalledWith('Task assigned to you');
+            });
+        });
+
+        it('does not reassign a task that already has an assignee, but still selects the job', async () => {
+            const props = createDefaultProps({
+                config: {onTaskClick: true, autoAssignOnClick: true},
+                currentUserId: 555,
+            });
+            renderWithProviders(<TaskItem {...props} />);
+
+            await userEvent.click(screen.getByText('Test Task'));
+
+            expect(props.onTaskClick).toHaveBeenCalledWith(props.task);
+            expect(props.tasksService.reassignTaskToStaff).not.toHaveBeenCalled();
+        });
+
+        it('does not claim a closed unassigned task', async () => {
+            const task = createMockTask({closed: true, assignee: {id: 0, text: ''}});
+            const props = createDefaultProps({
+                task,
+                config: {onTaskClick: true, autoAssignOnClick: true},
+                currentUserId: 555,
+            });
+            renderWithProviders(<TaskItem {...props} />);
+
+            await userEvent.click(screen.getByText('Test Task'));
+
+            expect(props.onTaskClick).toHaveBeenCalledWith(task);
+            expect(props.tasksService.reassignTaskToStaff).not.toHaveBeenCalled();
+        });
+
+        it('does not claim when there is no current user id', async () => {
+            const props = createDefaultProps({
+                task: unassigned(),
+                config: {onTaskClick: true, autoAssignOnClick: true},
+                currentUserId: 0,
+            });
+            renderWithProviders(<TaskItem {...props} />);
+
+            await userEvent.click(screen.getByText('Test Task'));
+
+            expect(props.tasksService.reassignTaskToStaff).not.toHaveBeenCalled();
+        });
+
+        it('does not claim when autoAssignOnClick is off (default)', async () => {
+            const props = createDefaultProps({
+                task: unassigned(),
+                config: {onTaskClick: true},
+                currentUserId: 555,
+            });
+            renderWithProviders(<TaskItem {...props} />);
+
+            await userEvent.click(screen.getByText('Test Task'));
+
+            expect(props.tasksService.reassignTaskToStaff).not.toHaveBeenCalled();
+        });
+    });
+
     describe('Date Picker', () => {
         it('opens date popover when date button is clicked', async () => {
             const props = createDefaultProps();

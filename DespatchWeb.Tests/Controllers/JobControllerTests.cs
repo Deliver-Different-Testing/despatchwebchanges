@@ -2654,6 +2654,52 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task GetDeliveryJourney_WithClientTimeZone_AppliesTenantTimeZoneOverride()
+    {
+        // The client passes its known-good window.TimeZone so the journey converts
+        // correctly even when the server-side TimeZone claim is missing on this request.
+        const int jobId = 1;
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)
+            .Returns(new List<DeliveryJourneyViewModel>());
+
+        var controller = CreateController();
+
+        await controller.GetDeliveryJourney(jobId, "New Zealand Standard Time");
+
+        _tenantInfoServiceMock.Received(1).SetTenantTimeZoneOverride("New Zealand Standard Time");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourney_WithoutClientTimeZone_PassesNullOverride()
+    {
+        // No client tz supplied — the override is a no-op (null is ignored by the service),
+        // leaving the existing claim-based resolution untouched.
+        const int jobId = 1;
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)
+            .Returns(new List<DeliveryJourneyViewModel>());
+
+        var controller = CreateController();
+
+        await controller.GetDeliveryJourney(jobId);
+
+        _tenantInfoServiceMock.Received(1).SetTenantTimeZoneOverride(null);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobDeliveryJourney_WithClientTimeZone_AppliesTenantTimeZoneOverride()
+    {
+        const int bookingId = 7;
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForRecurringBookingAsync(bookingId, Arg.Any<int>())
+            .Returns(new RecurringJourneyDto());
+
+        var controller = CreateController();
+
+        await controller.GetRecurringJobDeliveryJourney(bookingId, "New Zealand Standard Time");
+
+        _tenantInfoServiceMock.Received(1).SetTenantTimeZoneOverride("New Zealand Standard Time");
+    }
+
+    [Fact]
     public async Task GetTimeZoneOptions_ReturnsTimeZones()
     {
         // Arrange

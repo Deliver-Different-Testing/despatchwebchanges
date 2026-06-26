@@ -62,4 +62,14 @@ public interface ITenantInfoService : IDisposable
     Task<Suggestion?> GetStaffInfoAsync();
     string GetTenantTimeZone();
     DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime);
+
+    /// <summary>
+    /// Supplies a tenant timezone for this request when the <c>TimeZone</c> claim
+    /// is missing or empty. The claim still takes precedence when present; this is
+    /// purely a fallback. Callers that have a reliable timezone the server-side
+    /// claim may lack (e.g. the client's <c>window.TimeZone</c>, passed on the
+    /// request) use this so timezone-converting features never silently degrade to
+    /// UTC. A null/whitespace value is ignored.
+    /// </summary>
+    void SetTenantTimeZoneOverride(string? timeZone);
 }
