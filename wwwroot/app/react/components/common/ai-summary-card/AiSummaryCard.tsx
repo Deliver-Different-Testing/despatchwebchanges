@@ -54,6 +54,13 @@ interface AiSummaryCardProps {
      * overview, and driver compliance call sites.
      */
     collapsible?: boolean;
+    /**
+     * When true (and `collapsible`), the card starts expanded and fetches on
+     * mount instead of waiting for the user to open it. Driven by the user's
+     * "Open automatically" Auto-mate setting. Ignored for non-collapsible cards
+     * (they're always expanded anyway).
+     */
+    autoOpen?: boolean;
 }
 
 interface SeverityVisuals {
@@ -138,7 +145,7 @@ function buildPlainTextCopy(summary: StructuredSummaryResponse): string {
     return lines.join('\n');
 }
 
-export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary, collapsible}) => {
+export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary, collapsible, autoOpen}) => {
     const [loading, setLoading] = useState(false);
     const [summary, setSummary] = useState<StructuredSummaryResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -147,8 +154,9 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
     const [, setTick] = useState(0);
     const [copyTooltip, setCopyTooltip] = useState('Copy briefing');
     // In collapsible mode the card starts collapsed; the first expand kicks
-    // off the fetch. Non-collapsible callers stay always-open.
-    const [expanded, setExpanded] = useState(!collapsible);
+    // off the fetch. Non-collapsible callers stay always-open. With autoOpen
+    // a collapsible card starts expanded and fetches on mount.
+    const [expanded, setExpanded] = useState(!collapsible || !!autoOpen);
     const hasFetchedRef = useRef(false);
     const abortRef = useRef<AbortController | null>(null);
 
@@ -192,9 +200,9 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
         setLoading(false);
     }, []);
 
-    const handleRefresh = useCallback((e: React.MouseEvent) => {
+    const handleRefresh = useCallback(async (e: React.MouseEvent) => {
         e.stopPropagation();
-        loadSummary();
+        await loadSummary();
     }, [loadSummary]);
 
     const handleCopy = useCallback(async (e: React.MouseEvent) => {
@@ -217,8 +225,8 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
         if (!expanded) return;
         if (hasFetchedRef.current) return;
         hasFetchedRef.current = true;
-        loadSummary();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        
+        void loadSummary();
     }, [expanded]);
 
     // Abort any in-flight fetch on unmount.
@@ -495,17 +503,6 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                                     </Stack>
                                 </Collapse>
                             </Box>
-                        )}
-
-                        {summary.usage && (summary.usage.inputTokens > 0 || summary.usage.outputTokens > 0) && (
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    color: "text.disabled",
-                                    mt: 0.5
-                                }}>
-                                {summary.usage.inputTokens} input / {summary.usage.outputTokens} output tokens
-                            </Typography>
                         )}
                     </>
                 )}

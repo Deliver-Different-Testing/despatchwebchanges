@@ -86,22 +86,27 @@ describe('JobSearchPage', () => {
         mockPanel.updateParams = {};
     });
 
-    it('renders the search criteria panel, main job list, and bulk job list', () => {
+    it('renders the default layout: panels, lists, map, box headers, and empty placeholders', () => {
         renderPage();
+
+        // Panels and lists
         expect(screen.getByTestId('mock-search-panel')).toBeInTheDocument();
         expect(screen.getByTestId('mock-job-list-jobSearchJobList')).toBeInTheDocument();
         expect(screen.getByTestId('mock-job-list-jobSearchBulkList')).toBeInTheDocument();
-    });
+        expect(screen.getByTestId('mock-dispatch-map')).toBeInTheDocument();
 
-    it('shows placeholder text for the job detail and delivery journey when no job is selected', () => {
-        renderPage();
+        // Box headers
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+        expect(screen.getByText('Live Job Data')).toBeInTheDocument();
+        expect(screen.getByText('Bulk Job Data')).toBeInTheDocument();
+        expect(screen.getByText('Detail')).toBeInTheDocument();
+        expect(screen.getByText('Scan Detail')).toBeInTheDocument();
+        expect(screen.getByText('Map')).toBeInTheDocument();
+        expect(screen.getByText('Delivery Journey')).toBeInTheDocument();
+
+        // Empty-state placeholders
         expect(screen.getByText(/select a job from the list/i)).toBeInTheDocument();
         expect(screen.getByText(/select a job to see its delivery journey/i)).toBeInTheDocument();
-    });
-
-    it('renders the DispatchMap in the map box', () => {
-        renderPage();
-        expect(screen.getByTestId('mock-dispatch-map')).toBeInTheDocument();
     });
 
     it('disables the bulk list when searching by a specific job id', () => {
@@ -132,17 +137,6 @@ describe('JobSearchPage', () => {
         const bulkCall = mockPanel.updateParams.jobSearchBulkList.mock.calls.at(-1)?.[0];
         expect(mainCall).toMatchObject({disabled: true});
         expect(bulkCall).toMatchObject({bulkJobId: 999, disabled: false});
-    });
-
-    it('renders each default-layout box header with its title', () => {
-        renderPage();
-        expect(screen.getByText('Filters')).toBeInTheDocument();
-        expect(screen.getByText('Live Job Data')).toBeInTheDocument();
-        expect(screen.getByText('Bulk Job Data')).toBeInTheDocument();
-        expect(screen.getByText('Detail')).toBeInTheDocument();
-        expect(screen.getByText('Scan Detail')).toBeInTheDocument();
-        expect(screen.getByText('Map')).toBeInTheDocument();
-        expect(screen.getByText('Delivery Journey')).toBeInTheDocument();
     });
 
     it('downloads via the real PodSearchDownload endpoint in a new tab', () => {

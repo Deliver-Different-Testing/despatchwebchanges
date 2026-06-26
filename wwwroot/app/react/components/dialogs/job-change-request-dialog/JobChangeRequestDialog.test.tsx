@@ -99,9 +99,7 @@ describe('JobChangeRequestDialog', () => {
         // while the request is in flight.
         expect(onClose).toHaveBeenCalled();
         // The result lands as a toast (standalone toastService mounts to document.body).
-        await waitFor(() => {
-            expect(screen.getByText(/Change applied/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/Change applied/)).toBeInTheDocument();
     });
 
     it('renders the Speed dropdown from getSpeedList when Service Speed is picked', async () => {
@@ -395,8 +393,6 @@ describe('JobChangeRequestDialog', () => {
         await waitFor(() => {
             expect(onClose).toHaveBeenCalled();
         });
-        await waitFor(() => {
-            expect(screen.getByText(/already exists/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/already exists/)).toBeInTheDocument();
     });
 });

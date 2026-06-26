@@ -28,82 +28,42 @@ describe('SideNav', () => {
     };
 
     describe('Rendering', () => {
-        it('should render when open is true', () => {
+        it('renders the user name, default company name, and copyright', () => {
             renderWithTheme(<SideNav {...defaultProps} />);
             expect(screen.getByText('John Doe')).toBeInTheDocument();
+            expect(screen.getByText('DFRNT')).toBeInTheDocument();
+            expect(screen.getByText(/Deliver DFRNT/)).toBeInTheDocument();
         });
 
-        it('should render user name', () => {
+        it('should render a custom user name', () => {
             renderWithTheme(<SideNav {...defaultProps} userName="Jane Smith" />);
             expect(screen.getByText('Jane Smith')).toBeInTheDocument();
         });
 
-        it('should render company name', () => {
+        it('should render a custom company name', () => {
             renderWithTheme(
                 <SideNav {...defaultProps} companyName="Test Company" />
             );
             expect(screen.getByText('Test Company')).toBeInTheDocument();
         });
-
-        it('should use default company name when not provided', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
-            expect(screen.getByText('DFRNT')).toBeInTheDocument();
-        });
-
-        it('should render copyright', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
-            expect(screen.getByText(/Deliver DFRNT/)).toBeInTheDocument();
-        });
     });
 
     describe('Navigation Items', () => {
-        it('should render Dashboard navigation item', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
+        it('renders the standard navigation items for non-US customers', () => {
+            renderWithTheme(<SideNav {...defaultProps} isUsCustomer={false} />);
             expect(screen.getByText('Dashboard')).toBeInTheDocument();
-        });
-
-        it('should render Nationwide for non-US customers', () => {
-            renderWithTheme(<SideNav {...defaultProps} isUsCustomer={false} />);
             expect(screen.getByText('Nationwide')).toBeInTheDocument();
-        });
-
-        it('should render Domestic for US customers', () => {
-            renderWithTheme(<SideNav {...defaultProps} isUsCustomer={true} />);
-            expect(screen.getByText('Domestic')).toBeInTheDocument();
-        });
-
-        it('should render Overview navigation item', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
             expect(screen.getByText('Overview')).toBeInTheDocument();
-        });
-
-        it('should render Tasks navigation item', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
             expect(screen.getByText('Tasks')).toBeInTheDocument();
-        });
-
-        it('should render Job Search navigation item', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
             expect(screen.getByText('Job Search')).toBeInTheDocument();
-        });
-
-        it('should render Recurring Jobs navigation item', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
             expect(screen.getByText('Recurring Jobs')).toBeInTheDocument();
-        });
-
-        it('should render Courier Map navigation item', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
             expect(screen.getByText('Courier Map')).toBeInTheDocument();
-        });
-
-        it('should render Driver Management for non-US customers', () => {
-            renderWithTheme(<SideNav {...defaultProps} isUsCustomer={false} />);
             expect(screen.getByText('Driver Management')).toBeInTheDocument();
         });
 
-        it('should not render Driver Management for US customers', () => {
+        it('renders Domestic and hides Driver Management for US customers', () => {
             renderWithTheme(<SideNav {...defaultProps} isUsCustomer={true} />);
+            expect(screen.getByText('Domestic')).toBeInTheDocument();
             expect(screen.queryByText('Driver Management')).not.toBeInTheDocument();
         });
     });

@@ -14,8 +14,23 @@ import {
     loadBoxVisibility,
     saveBoxVisibility,
     mergeBoxVisibility,
+    renameLayoutInStorage,
 } from './react/pages/job-search/lib/layoutPersistence';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './react/pages/job-search/lib/boxDefinitions';
+import {
+    getDispatchBetaEnabled,
+    setDispatchBetaEnabled,
+} from './react/pages/dispatch/lib/betaPreference';
+import {createDefaultDispatchLayout, createDispatchBoxes} from './react/pages/dispatch/lib/boxDefinitions';
+import {
+    loadDateFilter as loadDispatchDateFilter,
+    SELECTED_VIEWS_KEY as DISPATCH_SELECTED_VIEWS_KEY,
+    DATE_FILTER_KEY as DISPATCH_DATE_FILTER_KEY,
+    REFRESH_INTERVAL_KEY as DISPATCH_REFRESH_INTERVAL_KEY,
+    DRIVER_LOCATION_REFRESH_KEY as DISPATCH_DRIVER_LOC_REFRESH_KEY,
+} from './react/pages/dispatch/lib/dispatchFilters';
+import type {DfrntPageViewModel} from './interfaces/dfrnt-page-view-model.interface';
+import type IDateFilterData from './interfaces/date-filter-data.interface';
 import type {IBox, ILayout} from './interfaces/layout.interfaces';
 import {AppPage} from './enums/app-pages.enum';
 import {isAiEnabled, setAiEnabled} from './functions/aiSettings';
@@ -38,6 +53,7 @@ class RouterConfig {
 
         // Configure routes
         this.configureHomeState()
+            .configureDispatchV2State()
             .configureNationwideState()
             .configureCSState()
             .configureJobSearchState()
@@ -59,6 +75,16 @@ class RouterConfig {
                     value: null,
                     squash: true
                 }
+            },
+            // Phase 4: the React dispatch page is the default. Redirect to
+            // /dispatchV2 unless the operator explicitly opted out — in which
+            // case we fall through and load the classic AngularJS home below.
+            // Handled at the route level so the home bundle isn't loaded for
+            // React users. The AngularJS module is intentionally retained.
+            redirectTo: (trans: any) => {
+                if (!getDispatchBetaEnabled()) return undefined;
+                const jobId = trans.params()?.jobId;
+                return {state: 'dispatchV2', params: jobId ? {jobId} : {}};
             },
             resolve: {
                 jobId: ['$stateParams', ($stateParams: IDfrntStateParams) => {
@@ -102,6 +128,512 @@ class RouterConfig {
                 }]
             },
             component: "homeComponent"
+        });
+        return this;
+    }
+
+    private configureDispatchV2State(): this {
+        // Parallel React rebuild of the main dispatch page (`home`/`/`). Lives
+        // alongside the AngularJS `home` state so we can QA the React shell
+        // against staging data before cutting over. Per-user opt-in via the
+        // dashboard settings dialog (see
+        // `wwwroot/app/react/pages/dispatch/lib/betaPreference.ts`); the home
+        // controller redirects opted-in operators here.
+        this.$stateProvider.state("dispatchV2", {
+            url: "/dispatchV2?jobId",
+            params: {
+                jobId: {value: null, squash: true}
+            },
+            template: `
+                <md-content class="md-dense dispatch-view" style="height: 100%;">
+                    <react-app-shell
+                            section="Dashboards"
+                            title="Dispatch"
+                            beta="true"
+                            messages-count="ctrl.unreadMessageCount"
+                            on-messages-click="ctrl.openMessagingDialog($event)"
+                            views="ctrl.views"
+                            views-loading="!ctrl.viewsInitialized"
+                            on-toggle-view="ctrl.toggleView(view)"
+                            on-clear-all-views="ctrl.clearAllViews()"
+                            layouts="ctrl.layouts"
+                            current-layout-name="ctrl.currentLayoutName"
+                            on-save-layout="ctrl.saveLayout()"
+                            on-load-layout="ctrl.loadLayout(index)"
+                            on-delete-layout="ctrl.deleteLayout(index)"
+                            on-rename-layout="ctrl.renameLayout(index)"
+                            on-import-layouts="ctrl.importLayouts()"
+                            on-settings-click="ctrl.openSettingsDialog($event)"
+                            on-customize-panels="ctrl.openCustomizePanelsDialog()"
+                            edit-mode="ctrl.editMode"
+                            on-toggle-edit-mode="ctrl.toggleEditMode()"
+                            date-filter-data="ctrl.dateFilterData"
+                            app-page="home"
+                            on-date-filter-refresh="ctrl.refreshDataTimeSpan(dateFilterData)"
+                            on-create-new-job="ctrl.createNewJob($event)"
+                            on-inter-courier-charge="ctrl.interCourierCharge($event)">
+                    </react-app-shell>
+                    <div style="height: calc(100vh - 64px); overflow: hidden;">
+                        <div id="react-dispatch-v2" style="height: 100%; overflow: hidden;"></div>
+                    </div>
+                </md-content>
+            `,
+            resolve: {
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for dispatchV2 state, using fallback names');
+                        return {
+                            'vendor-react.js': 'vendor-react.js',
+                            'dispatchReact.js': 'dispatchReact.js',
+                            'jobDetailsReact.js': 'jobDetailsReact.js',
+                            'messagingDialogReact.js': 'messagingDialogReact.js',
+                            'createJobDialogReact.js': 'createJobDialogReact.js',
+                            'dashboardSettingsDialogReact.js': 'dashboardSettingsDialogReact.js',
+                            'accessorialChargesDialogReact.js': 'accessorialChargesDialogReact.js',
+                            'jobFileUploadDialogReact.js': 'jobFileUploadDialogReact.js',
+                            'swapPodsDialogReact.js': 'swapPodsDialogReact.js'
+                        };
+                    }
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+                    if (!window.React) {
+                        await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    }
+                    const lazyLoads = [
+                        {name: 'uDispatch.jobDetailsReact', file: 'jobDetailsReact.js'},
+                        {name: 'uDispatch.messagingDialogReact', file: 'messagingDialogReact.js'},
+                        {name: 'uDispatch.createJobDialogReact', file: 'createJobDialogReact.js'},
+                        {name: 'uDispatch.dashboardSettingsDialogReact', file: 'dashboardSettingsDialogReact.js'},
+                        {name: 'uDispatch.accessorialChargesDialogReact', file: 'accessorialChargesDialogReact.js'},
+                        {name: 'uDispatch.jobFileUploadDialogReact', file: 'jobFileUploadDialogReact.js'},
+                        {name: 'uDispatch.swapPodsDialogReact', file: 'swapPodsDialogReact.js'},
+                    ];
+                    await Promise.all(lazyLoads.map(d => $ocLazyLoad.load({
+                        name: d.name,
+                        files: [getAssetPath(d.file)],
+                    })));
+                    const dispatchFiles = [getAssetPath('dispatchReact.js')];
+                    if (manifest['dispatchReact.css']) {
+                        dispatchFiles.push(getAssetPath('dispatchReact.css'));
+                    }
+                    await $ocLazyLoad.load({
+                        name: 'uDispatch.dispatchReact',
+                        files: dispatchFiles
+                    });
+                }]
+            },
+            controller: ['$scope', '$stateParams', 'toastrService', 'APP_CONFIG', 'DispatchData', '$http', '$interval',
+                function (
+                    $scope: angular.IScope,
+                    $stateParams: angular.ui.IStateParamsService,
+                    toastrService: {
+                        showSuccessToast: (m: string) => void;
+                        showWarningToast: (m: string) => void;
+                        showErrorToast: (m: string) => void;
+                        showInfoToast: (m: string) => void;
+                    },
+                    appConfig: { US_Customer: boolean },
+                    dispatchData: {
+                        getSelectedViews: (pageId: number) => Promise<DfrntPageViewModel[]>;
+                    },
+                    $http: angular.IHttpService,
+                    $interval: angular.IIntervalService
+                ) {
+                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+                        switch (type) {
+                            case 'success': toastrService.showSuccessToast(message); break;
+                            case 'warning': toastrService.showWarningToast(message); break;
+                            case 'error': toastrService.showErrorToast(message); break;
+                            case 'info': toastrService.showInfoToast(message); break;
+                        }
+                    };
+
+                    // ── Layout storage keys — must match useBoxLayout in DispatchPage ──
+                    const layoutStorageKeys = {
+                        layoutsKey: `layoutV2-${window.ContactID}`,
+                        lastActiveLayoutKey: `lastActiveLayoutV2-${window.ContactID}`,
+                        boxVisibilityKeyBase: `boxVisibilityV2-${AppPage.Dispatch}-${window.ContactID}`,
+                    };
+                    const defaultLayout = createDefaultDispatchLayout();
+
+                    const readLayouts = (): ILayout[] => loadLayouts(layoutStorageKeys, defaultLayout);
+
+                    // ── Views + date filter — scope the job list & driver
+                    // locations, pushed into React via window.ReactDispatch.updateFilters.
+                    // Persisted under the same keys V1 home uses (shared selection). ──
+                    const initialDate = loadDispatchDateFilter();
+                    const persistSelectedViews = (views: DfrntPageViewModel[]) => {
+                        try {
+                            localStorage.setItem(DISPATCH_SELECTED_VIEWS_KEY, JSON.stringify(views));
+                        } catch { /* private browsing — ignore */ }
+                    };
+                    const pushFilters = () => {
+                        const selected = (ctrl.views ?? []).filter(v => v.selected);
+                        window.ReactDispatch?.updateFilters({
+                            despatchViewIds: selected.map(v => v.id),
+                            startDate: ctrl.dateFilterData.startDate,
+                            endDate: ctrl.dateFilterData.endDate,
+                            useTime: ctrl.dateFilterData.useTime,
+                        });
+                    };
+
+                    const ctrl = {
+                        layouts: [] as ILayout[],
+                        currentLayoutName: undefined as string | undefined,
+                        views: [] as DfrntPageViewModel[],
+                        viewsInitialized: false,
+                        unreadMessageCount: 0,
+                        editMode: false,
+
+                        toggleEditMode: () => {
+                            ctrl.editMode = !ctrl.editMode;
+                            window.ReactDispatch?.setEditMode(ctrl.editMode);
+                        },
+
+                        interCourierCharge: ($event: MouseEvent) => {
+                            void $event;
+                            window.ReactDispatch?.openInterCourierCharge();
+                        },
+                        dateFilterData: {
+                            startDate: initialDate.startDate,
+                            endDate: initialDate.endDate,
+                            useTime: initialDate.useTime,
+                        } as IDateFilterData,
+
+                        toggleView: (_view: DfrntPageViewModel) => {
+                            // The directive has already flipped `selected` on the
+                            // matching ctrl.views item; persist + push.
+                            persistSelectedViews(ctrl.views.filter(v => v.selected));
+                            pushFilters();
+                        },
+
+                        clearAllViews: () => {
+                            ctrl.views.forEach(v => {
+                                v.selected = false;
+                            });
+                            persistSelectedViews([]);
+                            pushFilters();
+                        },
+
+                        refreshDataTimeSpan: (dateFilterData: IDateFilterData) => {
+                            ctrl.dateFilterData = dateFilterData;
+                            try {
+                                localStorage.setItem(DISPATCH_DATE_FILTER_KEY, JSON.stringify(dateFilterData));
+                            } catch { /* ignore */ }
+                            pushFilters();
+                        },
+
+                        openMessagingDialog: ($event: MouseEvent) => {
+                            const w = window as unknown as {
+                                ReactMessagingDialog?: { open: (opts?: unknown) => Promise<void> };
+                            };
+                            void $event;
+                            if (w.ReactMessagingDialog) {
+                                w.ReactMessagingDialog.open().catch(err =>
+                                    console.error('[dispatchV2] messaging dialog error', err)
+                                );
+                            } else {
+                                toastrService.showErrorToast('Messaging dialog is not loaded.');
+                            }
+                        },
+
+                        openSettingsDialog: async ($event: MouseEvent) => {
+                            void $event;
+                            const w = window as unknown as {
+                                ReactDashboardSettingsDialog?: {
+                                    open: (
+                                        config: {
+                                            title: string;
+                                            showRefreshInterval?: boolean;
+                                            showDriverLocationRefresh?: boolean;
+                                            showDashboards?: boolean;
+                                            showAiToggle?: boolean;
+                                            showDispatchBetaToggle?: boolean;
+                                            panelsMovedNotice?: boolean;
+                                        },
+                                        boxes: Record<string, IBox>,
+                                        selectedRefreshInterval?: {id: number; text: string},
+                                        selectedDriverLocationRefreshInterval?: {id: number; text: string},
+                                        aiEnabled?: boolean,
+                                        jobSearchBetaEnabled?: boolean,
+                                        dispatchBetaEnabled?: boolean,
+                                    ) => Promise<{
+                                        dispatchBetaEnabled?: boolean;
+                                        aiEnabled?: boolean;
+                                        boxes?: Record<string, IBox>;
+                                        selectedRefreshInterval?: {id: number; text: string};
+                                        selectedDriverLocationRefreshInterval?: {id: number; text: string};
+                                    } | null>;
+                                };
+                            };
+                            if (!w.ReactDashboardSettingsDialog) {
+                                toastrService.showErrorToast('Settings dialog is not loaded.');
+                                return;
+                            }
+                            const readIntervalSeconds = (key: string): number => {
+                                const raw = localStorage.getItem(key);
+                                const n = raw == null ? 0 : parseInt(raw, 10);
+                                return Number.isFinite(n) && n > 0 ? n : 0;
+                            };
+                            try {
+                                const wasOn = getDispatchBetaEnabled();
+                                const result = await w.ReactDashboardSettingsDialog.open(
+                                    {
+                                        title: 'Dispatch Dashboard Settings',
+                                        showRefreshInterval: true,
+                                        showDriverLocationRefresh: true,
+                                        showAiToggle: true,
+                                        showDispatchBetaToggle: true,
+                                        panelsMovedNotice: true,
+                                    },
+                                    {},
+                                    {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
+                                    {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
+                                    isAiEnabled(),
+                                    undefined,
+                                    wasOn,
+                                );
+                                if (!result) return;
+
+                                if (result.aiEnabled !== undefined) {
+                                    setAiEnabled(result.aiEnabled);
+                                }
+
+                                // Persist + apply auto-refresh intervals (seconds in
+                                // storage; React Query uses ms, 0 = off).
+                                const toMs = (secs?: number) => (secs && secs > 0 ? secs * 1000 : false);
+                                if (result.selectedRefreshInterval) {
+                                    localStorage.setItem(DISPATCH_REFRESH_INTERVAL_KEY, String(result.selectedRefreshInterval.id));
+                                }
+                                if (result.selectedDriverLocationRefreshInterval) {
+                                    localStorage.setItem(DISPATCH_DRIVER_LOC_REFRESH_KEY, String(result.selectedDriverLocationRefreshInterval.id));
+                                }
+                                window.ReactDispatch?.updateRefreshIntervals({
+                                    jobsMs: toMs(result.selectedRefreshInterval?.id),
+                                    driverLocationsMs: toMs(result.selectedDriverLocationRefreshInterval?.id),
+                                });
+
+                                if (result.dispatchBetaEnabled !== undefined
+                                    && result.dispatchBetaEnabled !== wasOn) {
+                                    setDispatchBetaEnabled(result.dispatchBetaEnabled);
+                                    if (!result.dispatchBetaEnabled) {
+                                        // Operator turned beta OFF — send them back to /.
+                                        const injector = (window as unknown as {
+                                            angular?: {
+                                                element: (el: Element) => {
+                                                    injector: () => {
+                                                        get: (name: string) => angular.ui.IStateService;
+                                                    };
+                                                };
+                                            };
+                                        }).angular?.element(document.body).injector();
+                                        injector?.get('$state').go('home');
+                                    }
+                                }
+                            } catch (err) {
+                                console.error('[dispatchV2] settings dialog error', err);
+                            }
+                        },
+
+                        openCustomizePanelsDialog: async () => {
+                            const w = window as unknown as {
+                                ReactCustomizePanelsDialog?: {
+                                    open: (
+                                        boxes: Record<string, IBox>,
+                                        layoutEditable?: boolean,
+                                        title?: string,
+                                    ) => Promise<Record<string, IBox> | null>;
+                                };
+                            };
+                            if (!w.ReactCustomizePanelsDialog) {
+                                toastrService.showErrorToast('Customize panels dialog is not loaded.');
+                                return;
+                            }
+                            try {
+                                const layoutName = ctrl.currentLayoutName ?? 'Default';
+                                const boxes = mergeBoxVisibility(
+                                    createDispatchBoxes(),
+                                    loadBoxVisibility(layoutStorageKeys, layoutName),
+                                );
+                                const result = await w.ReactCustomizePanelsDialog.open(
+                                    boxes,
+                                    !isDefaultLayout(layoutName),
+                                    layoutName,
+                                );
+                                if (!result) return;
+
+                                saveBoxVisibility(layoutStorageKeys, layoutName, result);
+                                window.ReactDispatch?.reloadLayoutsFromStorage();
+                            } catch (err) {
+                                console.error('[dispatchV2] customize panels dialog error', err);
+                            }
+                        },
+
+                        createNewJob: ($event: MouseEvent) => {
+                            const w = window as unknown as {
+                                ReactCreateJobDialog?: {
+                                    open: (isUsTenant?: boolean, toastService?: unknown) => Promise<number | null>;
+                                };
+                            };
+                            void $event;
+                            if (w.ReactCreateJobDialog) {
+                                w.ReactCreateJobDialog.open(appConfig.US_Customer).then(newJobId => {
+                                    if (newJobId) window.ReactDispatch?.jobCreated(newJobId);
+                                }).catch(err =>
+                                    console.error('[dispatchV2] create job dialog error', err)
+                                );
+                            } else {
+                                toastrService.showErrorToast('Create job dialog is not loaded.');
+                            }
+                        },
+
+                        saveLayout: async () => {
+                            const name = await window.ReactDispatch?.promptSaveLayout();
+                            if (!name) return;
+                            const layouts = readLayouts();
+                            const sourceLayout = layouts.find(l => l.name === ctrl.currentLayoutName);
+                            const payload = sourceLayout?.layout ?? defaultLayout.layout;
+                            const next: ILayout = {name, layout: JSON.parse(JSON.stringify(payload))};
+                            const updated = [...layouts, next];
+                            saveLayouts(layoutStorageKeys, updated);
+                            saveLastActiveLayoutName(layoutStorageKeys, name);
+                            ctrl.layouts = readLayouts();
+                            ctrl.currentLayoutName = name;
+                            window.ReactDispatch?.setCurrentLayoutName(name);
+                            window.ReactDispatch?.reloadLayoutsFromStorage();
+                            toastrService.showSuccessToast('Layout saved successfully');
+                        },
+
+                        loadLayout: (index: number) => {
+                            const layouts = readLayouts();
+                            const target = layouts[index];
+                            if (!target) return;
+                            saveLastActiveLayoutName(layoutStorageKeys, target.name);
+                            ctrl.currentLayoutName = target.name;
+                            window.ReactDispatch?.setCurrentLayoutName(target.name);
+                        },
+
+                        deleteLayout: async (index: number) => {
+                            const layouts = readLayouts();
+                            const target = layouts[index];
+                            if (!target) return;
+                            if (target.name === 'Default') return;
+                            const confirmed = await window.ReactDispatch?.promptDeleteLayout(target.name);
+                            if (!confirmed) return;
+                            const updated = layouts.filter((_, i) => i !== index);
+                            saveLayouts(layoutStorageKeys, updated);
+                            saveLastActiveLayoutName(layoutStorageKeys, 'Default');
+                            ctrl.layouts = readLayouts();
+                            ctrl.currentLayoutName = 'Default';
+                            window.ReactDispatch?.setCurrentLayoutName('Default');
+                            window.ReactDispatch?.reloadLayoutsFromStorage();
+                            toastrService.showSuccessToast('Layout deleted successfully');
+                        },
+
+                        importLayouts: () => {
+                            const result = window.ReactDispatch?.importLegacyLayouts();
+                            const imported = result?.imported.length ?? 0;
+                            ctrl.layouts = readLayouts();
+                            if (imported > 0) {
+                                toastrService.showSuccessToast(
+                                    `Imported ${imported} V1 layout${imported === 1 ? '' : 's'}`,
+                                );
+                            } else {
+                                toastrService.showInfoToast('No V1 layouts to import');
+                            }
+                        },
+
+                        renameLayout: async (index: number) => {
+                            const target = readLayouts()[index];
+                            if (!target || target.name === 'Default') return;
+                            const newName = await window.ReactDispatch?.promptRenameLayout(target.name);
+                            if (!newName || newName === target.name) return;
+                            if (!renameLayoutInStorage(layoutStorageKeys, target.name, newName, defaultLayout)) {
+                                toastrService.showErrorToast('Could not rename layout');
+                                return;
+                            }
+                            ctrl.layouts = readLayouts();
+                            ctrl.currentLayoutName = loadLastActiveLayoutName(layoutStorageKeys) ?? 'Default';
+                            window.ReactDispatch?.setCurrentLayoutName(ctrl.currentLayoutName);
+                            window.ReactDispatch?.reloadLayoutsFromStorage();
+                            toastrService.showSuccessToast('Layout renamed successfully');
+                        },
+                    };
+
+                    ctrl.layouts = readLayouts();
+                    ctrl.currentLayoutName = loadLastActiveLayoutName(layoutStorageKeys) ?? 'Default';
+
+                    ($scope as angular.IScope & {ctrl: typeof ctrl}).ctrl = ctrl;
+
+                    const deepLinkJobId = $stateParams.jobId
+                        ? parseInt($stateParams.jobId as string, 10)
+                        : undefined;
+
+                    window.ReactDispatch!.mount('react-dispatch-v2', {
+                        showToast,
+                        isUsCustomer: appConfig.US_Customer,
+                        timeZone: window.TimeZone || 'New Zealand Standard Time',
+                        timeZoneShort: undefined,
+                        deepLinkJobId,
+                        onExitEditMode: () => {
+                            ctrl.editMode = false;
+                            window.ReactDispatch?.setEditMode(false);
+                            $scope.$applyAsync();
+                        },
+                    });
+
+                    // Load the dispatcher's page views, mark the persisted
+                    // selection, and seed the toolbar. Mirrors home.controller's
+                    // loadPageViews/initializeViews; then pushes the resolved
+                    // view + date filters into React.
+                    const initViews = async () => {
+                        try {
+                            const serverViews = await dispatchData.getSelectedViews(AppPage.Dispatch);
+                            const hasSavedState = localStorage.getItem(DISPATCH_SELECTED_VIEWS_KEY) !== null;
+                            let savedIds = new Set<number>();
+                            try {
+                                const saved = JSON.parse(localStorage.getItem(DISPATCH_SELECTED_VIEWS_KEY) ?? '[]') as DfrntPageViewModel[];
+                                if (Array.isArray(saved)) savedIds = new Set(saved.map(v => v.id));
+                            } catch { /* ignore */ }
+
+                            const views = (serverViews ?? []).map(v => ({...v, selected: savedIds.has(v.id)}));
+                            // First visit (no saved state): default to the first view.
+                            if (views.length > 0 && !views.some(v => v.selected) && !hasSavedState) {
+                                views[0].selected = true;
+                                persistSelectedViews(views.filter(v => v.selected));
+                            }
+                            ctrl.views = views;
+                        } catch (err) {
+                            console.error('[dispatchV2] failed to load page views', err);
+                            ctrl.views = [];
+                        } finally {
+                            ctrl.viewsInitialized = true;
+                            $scope.$applyAsync();
+                            pushFilters();
+                        }
+                    };
+                    void initViews();
+
+                    // Unread-messages badge — poll every 60s (mirrors home's
+                    // getUnreadMessageCount interval).
+                    const pollUnreadCount = () => {
+                        $http.get<number>('messages/GetUnreadMessageCount').then(res => {
+                            ctrl.unreadMessageCount = res.data ?? 0;
+                        }).catch(err => console.error('[dispatchV2] unread count error', err));
+                    };
+                    pollUnreadCount();
+                    const unreadPoll = $interval(pollUnreadCount, 60000);
+
+                    $scope.$on('$destroy', () => {
+                        $interval.cancel(unreadPoll);
+                        window.ReactDispatch!.unmount();
+                    });
+                }
+            ],
         });
         return this;
     }
@@ -221,6 +753,7 @@ class RouterConfig {
                     <react-app-shell
                             section="Dashboards"
                             title="Search"
+                            beta="true"
                             messages-count="0"
                             on-messages-click="ctrl.openMessagingDialog($event)"
                             layouts="ctrl.layouts"
@@ -228,8 +761,12 @@ class RouterConfig {
                             on-save-layout="ctrl.saveLayout()"
                             on-load-layout="ctrl.loadLayout(index)"
                             on-delete-layout="ctrl.deleteLayout(index)"
+                            on-rename-layout="ctrl.renameLayout(index)"
+                            on-import-layouts="ctrl.importLayouts()"
                             on-settings-click="ctrl.openSettingsDialog($event)"
                             on-customize-panels="ctrl.openCustomizePanelsDialog()"
+                            edit-mode="ctrl.editMode"
+                            on-toggle-edit-mode="ctrl.toggleEditMode()"
                             on-create-new-job="ctrl.createNewJob($event)"
                             on-inter-courier-charge="ctrl.interCourierCharge($event)">
                     </react-app-shell>
@@ -317,9 +854,9 @@ class RouterConfig {
 
                     // ── Layout storage keys — must match useBoxLayout in JobSearchPage ──
                     const layoutStorageKeys = {
-                        layoutsKey: `layoutsCS-${window.ContactID}`,
-                        lastActiveLayoutKey: `lastActiveLayoutCS-${window.ContactID}`,
-                        boxVisibilityKeyBase: `boxVisibility-${AppPage.JobSearch}-${window.ContactID}`,
+                        layoutsKey: `layoutsCSV2-${window.ContactID}`,
+                        lastActiveLayoutKey: `lastActiveLayoutCSV2-${window.ContactID}`,
+                        boxVisibilityKeyBase: `boxVisibilityV2-${AppPage.JobSearch}-${window.ContactID}`,
                     };
                     const defaultLayout = createDefaultJobSearchLayout();
 
@@ -331,6 +868,12 @@ class RouterConfig {
                     const ctrl = {
                         layouts: [] as ILayout[],
                         currentLayoutName: undefined as string | undefined,
+                        editMode: false,
+
+                        toggleEditMode: () => {
+                            ctrl.editMode = !ctrl.editMode;
+                            window.ReactJobSearch?.setEditMode(ctrl.editMode);
+                        },
 
                         openMessagingDialog: ($event: MouseEvent) => {
                             const w = window as unknown as {
@@ -538,6 +1081,35 @@ class RouterConfig {
                             window.ReactJobSearch?.reloadLayoutsFromStorage();
                             toastrService.showSuccessToast('Layout deleted successfully');
                         },
+
+                        importLayouts: () => {
+                            const result = window.ReactJobSearch?.importLegacyLayouts();
+                            const imported = result?.imported.length ?? 0;
+                            ctrl.layouts = readLayouts();
+                            if (imported > 0) {
+                                toastrService.showSuccessToast(
+                                    `Imported ${imported} V1 layout${imported === 1 ? '' : 's'}`,
+                                );
+                            } else {
+                                toastrService.showInfoToast('No V1 layouts to import');
+                            }
+                        },
+
+                        renameLayout: async (index: number) => {
+                            const target = readLayouts()[index];
+                            if (!target || target.name === 'Default') return;
+                            const newName = await window.ReactJobSearch?.promptRenameLayout(target.name);
+                            if (!newName || newName === target.name) return;
+                            if (!renameLayoutInStorage(layoutStorageKeys, target.name, newName, defaultLayout)) {
+                                toastrService.showErrorToast('Could not rename layout');
+                                return;
+                            }
+                            ctrl.layouts = readLayouts();
+                            ctrl.currentLayoutName = loadLastActiveLayoutName(layoutStorageKeys) ?? 'Default';
+                            window.ReactJobSearch?.setCurrentLayoutName(ctrl.currentLayoutName);
+                            window.ReactJobSearch?.reloadLayoutsFromStorage();
+                            toastrService.showSuccessToast('Layout renamed successfully');
+                        },
                     };
 
                     // Seed the toolbar from localStorage on mount. `readLayouts`
@@ -557,6 +1129,11 @@ class RouterConfig {
                         timeZone: window.TimeZone || 'New Zealand Standard Time',
                         timeZoneShort: undefined,
                         deepLinkJobId,
+                        onExitEditMode: () => {
+                            ctrl.editMode = false;
+                            window.ReactJobSearch?.setEditMode(false);
+                            $scope.$applyAsync();
+                        },
                     });
 
                     $scope.$on('$destroy', () => {

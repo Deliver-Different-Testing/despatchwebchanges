@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createMockJob, createMockReadTracker} from './__testUtils__/mockJob';
@@ -311,9 +311,7 @@ describe('JobDetails', () => {
             setupDefaultMocks({photosLoading: true});
             renderJobDetails();
 
-            await waitFor(() => {
-                expect(screen.getByTestId('pod-photos-section')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('pod-photos-section')).toBeInTheDocument();
         });
 
         it('does not render PodPhotosSection when no photos and not loading', () => {
@@ -327,9 +325,7 @@ describe('JobDetails', () => {
             setupDefaultMocks();
             renderJobDetails({isRecurringJob: true});
 
-            await waitFor(() => {
-                expect(screen.getByTestId('recurring-job-fields')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('recurring-job-fields')).toBeInTheDocument();
         });
 
         it('does not render RecurringJobFields for non-recurring jobs', () => {

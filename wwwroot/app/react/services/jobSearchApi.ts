@@ -158,6 +158,25 @@ export async function fetchClearListJobs(
     return transformResult(dto);
 }
 
+// ── Current Work (Home page) ─────────────────────────────────────────
+
+/**
+ * Fetch a courier's current work list. Mirrors the V1
+ * DispatchCoreService.getJobsCurrent (`job/GetCurrentWorkList`).
+ */
+export async function fetchCurrentWorkJobs(
+    params: JobListSearchParams,
+    options?: RequestOptions,
+): Promise<JobSearchResult> {
+    const dto = await apiClient.get<IJobSearchResultDto>('/job/GetCurrentWorkList', {
+        courierId: params.courierId,
+        startDate: formatDate(params.startDate),
+        endDate: formatDate(params.endDate),
+    }, options);
+
+    return transformResult(dto);
+}
+
 // ── Nationwide Jobs (Domestic page) ──────────────────────────────────
 
 async function fetchNationwideJobs(

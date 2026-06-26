@@ -1,6 +1,8 @@
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
 import {
+    ImportLayoutsResult,
+    importLayoutsFrom,
     LayoutStorageKeys,
     loadBoxVisibility,
     loadLastActiveLayoutName,
@@ -10,12 +12,37 @@ import {
     saveLastActiveLayoutName,
     saveLayouts,
 } from '../lib/layoutPersistence';
+import {loadRemoteIntoLocal, queueRemotePush, readLocalRows} from '../lib/layoutSync';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from '../lib/boxDefinitions';
+import {addColumnToPayload, MAX_COLUMNS, removeLastColumnFromPayload} from '../lib/columnLayout';
 
 const DEFAULT_LAYOUT_NAME = 'Default';
 
+export {MAX_COLUMNS};
+
 export interface UseBoxLayoutOptions {
     storageKeys: LayoutStorageKeys;
+    /**
+     * Factory for the box metadata map. Defaults to the Job Search boxes so
+     * existing callers are unaffected; the Dispatch page passes its own.
+     */
+    createBoxes?: () => Record<string, IBox>;
+    /**
+     * Factory for the read-only Default layout. Defaults to the Job Search
+     * Default layout; the Dispatch page passes its own.
+     */
+    createDefaultLayout?: () => ILayout;
+    /**
+     * Page identifier used to sync layouts to the database (e.g. 'JobSearch',
+     * 'Dispatch'). When provided, the layout is pulled from the server on mount
+     * and local changes are pushed back (debounced). Omit to stay localStorage-only.
+     */
+    page?: string;
+    /**
+     * Storage keys for the legacy (V1) layouts, used as the source for
+     * `importLegacyLayouts`. Omit when there is no V1 layout store to import from.
+     */
+    legacyStorageKeys?: LayoutStorageKeys;
 }
 
 export interface UseBoxLayoutResult {
@@ -40,10 +67,22 @@ export interface UseBoxLayoutResult {
     setBoxHeights: (columnId: string, heights: number[], visibleBoxNames: string[]) => void;
     /** Move a box within or between columns. Source/target are array indices into the layout's columns[].boxes. */
     moveBox: (sourceColumnId: string, sourceIndex: number, targetColumnId: string, targetIndex: number) => void;
+    /** Append an empty column to the current layout (no-op at MAX_COLUMNS or on Default). */
+    addColumn: () => void;
+    /** Remove the rightmost column, moving its boxes into the neighbour (no-op at 1 column or on Default). */
+    removeColumn: () => void;
+    /** Copy custom layouts from the legacy (V1) store into this page's store. */
+    importLegacyLayouts: () => ImportLayoutsResult;
 }
 
-export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutResult {
-    const defaultLayout = useMemo(() => createDefaultJobSearchLayout(), []);
+export function useBoxLayout({
+    storageKeys,
+    createBoxes = createJobSearchBoxes,
+    createDefaultLayout = createDefaultJobSearchLayout,
+    page,
+    legacyStorageKeys,
+}: UseBoxLayoutOptions): UseBoxLayoutResult {
+    const defaultLayout = useMemo(() => createDefaultLayout(), [createDefaultLayout]);
 
     const [layouts, setLayouts] = useState<ILayout[]>(() => loadLayouts(storageKeys, defaultLayout));
     const [currentLayoutName, setCurrentLayoutName] = useState<string>(() => {
@@ -53,7 +92,7 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
             : DEFAULT_LAYOUT_NAME;
     });
     const [boxes, setBoxes] = useState<Record<string, IBox>>(() => {
-        const initial = createJobSearchBoxes();
+        const initial = createBoxes();
         const saved = loadBoxVisibility(storageKeys, currentLayoutName);
         return mergeBoxVisibility(initial, saved);
     });
@@ -72,19 +111,60 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
         setLayoutVersion(v => v + 1);
     }, []);
 
+    // ── Cross-device sync (DB-authoritative, localStorage as offline cache) ──
+    //
+    // On mount, pull the layout from the server into localStorage and rehydrate
+    // from it. After that initial pull, mirror any local change back to the
+    // server (debounced). The server holds the source of truth; localStorage
+    // remains the synchronous working cache so the load paths above are unchanged.
+    const remoteReadyRef = useRef(false);
+    const lastSyncedRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!page) return undefined;
+        let cancelled = false;
+        loadRemoteIntoLocal(storageKeys, page, defaultLayout)
+            .then(() => {
+                if (!cancelled) reloadFromStorage();
+            })
+            .catch(error => {
+                if (!cancelled) console.error('Failed to load dispatch layouts from server:', error);
+            })
+            .finally(() => {
+                if (cancelled) return;
+                lastSyncedRef.current = JSON.stringify(readLocalRows(storageKeys, defaultLayout));
+                remoteReadyRef.current = true;
+            });
+        return () => {
+            cancelled = true;
+        };
+        // reloadFromStorage is declared below; it is stable (useCallback) so the
+        // ref is captured correctly without re-running this mount-only effect.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, storageKeys, defaultLayout]);
+
+    useEffect(() => {
+        if (!page || !remoteReadyRef.current) return;
+        const rows = readLocalRows(storageKeys, defaultLayout);
+        const rowsJson = JSON.stringify(rows);
+        if (rowsJson === lastSyncedRef.current) return;
+        lastSyncedRef.current = rowsJson;
+        queueRemotePush(page, rows);
+    }, [page, storageKeys, defaultLayout, layouts, boxes, currentLayoutName, layoutVersion]);
+
     const loadLayoutByIndex = useCallback((index: number) => {
         setLayouts(prev => {
             const layout = prev[index] ?? prev[0];
             if (!layout) return prev;
             setCurrentLayoutName(layout.name);
             setBoxes(mergeBoxVisibility(
-                createJobSearchBoxes(),
+                createBoxes(),
                 loadBoxVisibility(storageKeys, layout.name),
             ));
             return prev;
         });
         bumpVersion();
-    }, [storageKeys, bumpVersion]);
+    }, [storageKeys, bumpVersion, createBoxes]);
 
     const setCurrentLayoutByName = useCallback((name: string) => {
         setLayouts(prev => {
@@ -92,13 +172,13 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
             const targetName = exists ? name : DEFAULT_LAYOUT_NAME;
             setCurrentLayoutName(targetName);
             setBoxes(mergeBoxVisibility(
-                createJobSearchBoxes(),
+                createBoxes(),
                 loadBoxVisibility(storageKeys, targetName),
             ));
             return prev;
         });
         bumpVersion();
-    }, [storageKeys, bumpVersion]);
+    }, [storageKeys, bumpVersion, createBoxes]);
 
     const reloadFromStorage = useCallback(() => {
         const fresh = loadLayouts(storageKeys, defaultLayout);
@@ -109,11 +189,11 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
             : DEFAULT_LAYOUT_NAME;
         setCurrentLayoutName(targetName);
         setBoxes(mergeBoxVisibility(
-            createJobSearchBoxes(),
+            createBoxes(),
             loadBoxVisibility(storageKeys, targetName),
         ));
         bumpVersion();
-    }, [storageKeys, defaultLayout, bumpVersion]);
+    }, [storageKeys, defaultLayout, bumpVersion, createBoxes]);
 
     const addLayout = useCallback((name: string) => {
         if (!name) return;
@@ -261,6 +341,23 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
         bumpVersion();
     }, [writeCurrentLayout, bumpVersion]);
 
+    const addColumn = useCallback(() => {
+        writeCurrentLayout(addColumnToPayload);
+        bumpVersion();
+    }, [writeCurrentLayout, bumpVersion]);
+
+    const removeColumn = useCallback(() => {
+        writeCurrentLayout(removeLastColumnFromPayload);
+        bumpVersion();
+    }, [writeCurrentLayout, bumpVersion]);
+
+    const importLegacyLayouts = useCallback((): ImportLayoutsResult => {
+        if (!legacyStorageKeys) return {imported: [], skipped: []};
+        const result = importLayoutsFrom(legacyStorageKeys, storageKeys, defaultLayout);
+        if (result.imported.length > 0) reloadFromStorage();
+        return result;
+    }, [legacyStorageKeys, storageKeys, defaultLayout, reloadFromStorage]);
+
     return {
         layouts,
         currentLayoutName,
@@ -279,6 +376,9 @@ export function useBoxLayout({storageKeys}: UseBoxLayoutOptions): UseBoxLayoutRe
         setColumnSizes,
         setBoxHeights,
         moveBox,
+        addColumn,
+        removeColumn,
+        importLegacyLayouts,
     };
 }
 

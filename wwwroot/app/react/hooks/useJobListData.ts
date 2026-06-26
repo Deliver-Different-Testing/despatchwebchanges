@@ -62,6 +62,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         initialPageParam: 0,
         getNextPageParam: (lastPage, allPages) => lastPage.hasMore ? allPages.length : undefined,
         staleTime: 15_000,
+        refetchInterval: fetchConfig?.refetchInterval ?? false,
         enabled: !!fetchConfig && !isDisabled,
     });
 

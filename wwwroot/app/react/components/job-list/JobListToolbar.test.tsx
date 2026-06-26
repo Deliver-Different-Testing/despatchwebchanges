@@ -65,6 +65,14 @@ describe('JobListToolbar', () => {
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();
     });
 
+    it('omits the view options (density / logged-in) when they are relocated to the header', () => {
+        renderWithTheme(<JobListToolbar {...createDefaultProps()} renderViewOptions={false}/>);
+        // Category tabs + search stay; view options move to the panel header.
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Row density')).not.toBeInTheDocument();
+    });
+
     it('shows logged-in only toggle on job search page', () => {
         renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})}/>);
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();

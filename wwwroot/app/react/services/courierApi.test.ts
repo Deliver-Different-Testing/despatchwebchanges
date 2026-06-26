@@ -3,7 +3,7 @@
  * Courier API Service Tests
  */
 
-import {courierApi, getAvailableCourierLocations, getAllFleetOptions, getClearListEnvelope, searchActiveCouriersExtended} from './courierApi';
+import {courierApi, getAvailableCourierLocations, getAllFleetOptions, getClearListEnvelope, searchActiveCouriersExtended, fetchDriverWorkOverview} from './courierApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
 
@@ -59,6 +59,20 @@ describe('courierApi', () => {
         ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.get.mockRejectedValueOnce(error);
             await expect(courierApi.searchActiveCouriers('test')).rejects.toEqual(error);
+        });
+    });
+
+    describe('fetchDriverWorkOverview', () => {
+        it('should call GET courier/GetDriverWorkOverview and return the rows', async () => {
+            const rows = [
+                {courierId: 1, name: 'Driver A', vehicleType: 'Van', jobCount: 3, driverStatusText: 'Active'},
+            ];
+            mockApiClient.get.mockResolvedValueOnce(rows);
+
+            const result = await fetchDriverWorkOverview();
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetDriverWorkOverview', undefined, undefined);
+            expect(result).toEqual(rows);
         });
     });
 

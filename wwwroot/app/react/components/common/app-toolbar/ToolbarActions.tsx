@@ -27,12 +27,16 @@ import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import DeleteIcon from '@mui/icons-material/Delete';
-import GridViewIcon from '@mui/icons-material/GridView';
+import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SettingsIcon from '@mui/icons-material/Settings';
+import EditIcon from '@mui/icons-material/Edit';
+import DoneIcon from '@mui/icons-material/Done';
 import SmsIcon from '@mui/icons-material/Sms';
-import ViewListIcon from '@mui/icons-material/ViewList';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type {SxProps, Theme} from '@mui/material/styles';
 
@@ -179,7 +183,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                                     },
                                 }}
                             >
-                                <ViewListIcon sx={{fontSize: 22}}/>
+                                <VisibilityIcon sx={{fontSize: 22}}/>
                             </Badge>
                         )}
                     </IconButton>
@@ -255,8 +259,16 @@ export interface LayoutsMenuProps {
     onSaveLayout: () => void;
     onLoadLayout: (index: number) => void;
     onDeleteLayout: (index: number) => void;
+    /** Optional: rename a custom layout. When provided, a rename control appears on each custom row. */
+    onRenameLayout?: (index: number) => void;
+    /** Optional: copy the user's legacy (V1) layouts into this page's store. */
+    onImportLayouts?: () => void;
     /** Optional: opens the panel-visibility settings (cross-link to the organiser). */
     onCustomizePanels?: () => void;
+    /** Optional: current layout edit-mode state (drag/collapse/resize enabled). */
+    editMode?: boolean;
+    /** Optional: toggle layout edit mode. When provided, an Edit/Done item is shown. */
+    onToggleEditMode?: () => void;
 }
 
 const DEFAULT_LAYOUT_NAME = 'Default';
@@ -267,7 +279,11 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                                             onSaveLayout,
                                                             onLoadLayout,
                                                             onDeleteLayout,
+                                                            onRenameLayout,
+                                                            onImportLayouts,
                                                             onCustomizePanels,
+                                                            editMode,
+                                                            onToggleEditMode,
                                                         }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
@@ -297,8 +313,25 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
         onDeleteLayout(index);
     };
 
+    const handleRename = (event: React.MouseEvent, index: number) => {
+        // Keep the row's load action from firing; the rename dialog owns the change.
+        event.stopPropagation();
+        onRenameLayout?.(index);
+        handleClose();
+    };
+
     const handleCustomize = () => {
         onCustomizePanels?.();
+        handleClose();
+    };
+
+    const handleToggleEditMode = () => {
+        onToggleEditMode?.();
+        handleClose();
+    };
+
+    const handleImportLayouts = () => {
+        onImportLayouts?.();
         handleClose();
     };
 
@@ -314,7 +347,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
         <>
             <Tooltip title={tooltip}>
                 <IconButton color="inherit" onClick={handleClick} sx={toolbarIconButtonSx}>
-                    <GridViewIcon sx={{fontSize: 22}}/>
+                    <DashboardCustomizeIcon sx={{fontSize: 22}}/>
                 </IconButton>
             </Tooltip>
             <Popover
@@ -364,22 +397,38 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                 key={index}
                                 disablePadding
                                 secondaryAction={isDefault ? undefined : (
-                                    <Tooltip title="Delete layout">
-                                        <IconButton
-                                            className="layout-delete"
-                                            edge="end"
-                                            size="small"
-                                            aria-label={`Delete ${layout.name}`}
-                                            onClick={(e) => handleDelete(e, index)}
-                                            sx={{'&:hover': {color: 'error.main'}}}
-                                        >
-                                            <DeleteIcon fontSize="small"/>
-                                        </IconButton>
-                                    </Tooltip>
+                                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                        {onRenameLayout && (
+                                            <Tooltip title="Rename layout">
+                                                <IconButton
+                                                    className="layout-action"
+                                                    edge="end"
+                                                    size="small"
+                                                    aria-label={`Rename ${layout.name}`}
+                                                    onClick={(e) => handleRename(e, index)}
+                                                    sx={{'&:hover': {color: 'primary.main'}}}
+                                                >
+                                                    <DriveFileRenameOutlineIcon fontSize="small"/>
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                        <Tooltip title="Delete layout">
+                                            <IconButton
+                                                className="layout-action"
+                                                edge="end"
+                                                size="small"
+                                                aria-label={`Delete ${layout.name}`}
+                                                onClick={(e) => handleDelete(e, index)}
+                                                sx={{'&:hover': {color: 'error.main'}}}
+                                            >
+                                                <DeleteIcon fontSize="small"/>
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
                                 )}
                                 sx={{
-                                    '& .layout-delete': {opacity: 0, transition: 'opacity 0.15s'},
-                                    '&:hover .layout-delete, &:focus-within .layout-delete': {opacity: 1},
+                                    '& .layout-action': {opacity: 0, transition: 'opacity 0.15s'},
+                                    '&:hover .layout-action, &:focus-within .layout-action': {opacity: 1},
                                 }}
                             >
                                 <ListItemButton selected={isActive} onClick={() => handleLoad(index)}>
@@ -399,6 +448,30 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                             </ListItem>
                         );
                     })}
+
+                    {onToggleEditMode && [
+                        <Divider key="edit-divider" sx={{my: 0.5}}/>,
+                        <Tooltip
+                            key="edit-mode"
+                            title={isDefaultLayout ? 'Save a layout to rearrange panels' : ''}
+                            placement="left"
+                        >
+                            <Box component="span" sx={{display: 'block'}}>
+                                <ListItemButton
+                                    onClick={handleToggleEditMode}
+                                    disabled={isDefaultLayout}
+                                    selected={editMode}
+                                >
+                                    <ListItemIcon sx={{minWidth: 36}}>
+                                        {editMode ? <DoneIcon fontSize="small"/> : <EditIcon fontSize="small"/>}
+                                    </ListItemIcon>
+                                    <ListItemText slotProps={{primary: {variant: 'body2'}}}>
+                                        {editMode ? 'Done editing' : 'Edit layout'}
+                                    </ListItemText>
+                                </ListItemButton>
+                            </Box>
+                        </Tooltip>,
+                    ]}
 
                     {onCustomizePanels && [
                         <Divider key="customize-divider" sx={{my: 0.5}}/>,
@@ -422,6 +495,18 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                 </ListItemButton>
                             </Box>
                         </Tooltip>,
+                    ]}
+
+                    {onImportLayouts && [
+                        <Divider key="import-divider" sx={{my: 0.5}}/>,
+                        <ListItemButton key="import" onClick={handleImportLayouts}>
+                            <ListItemIcon sx={{minWidth: 36}}>
+                                <FileDownloadIcon fontSize="small"/>
+                            </ListItemIcon>
+                            <ListItemText slotProps={{primary: {variant: 'body2'}}}>
+                                Import V1 layouts
+                            </ListItemText>
+                        </ListItemButton>,
                     ]}
                 </List>
             </Popover>

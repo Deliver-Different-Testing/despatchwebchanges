@@ -127,6 +127,13 @@ describe('EditableField', () => {
             expect(container.querySelector('.MuiListItemIcon-root')).not.toBeNull();
         });
 
+        it('renders the badge icon for the courier number field', () => {
+            const {container} = renderWithTheme(
+                <EditableField label="Courier Number" value="ABC123" icon="badge" dense={false} />
+            );
+            expect(container.querySelector('.MuiListItemIcon-root')).not.toBeNull();
+        });
+
         it('renders label and value but hides field when not visible', () => {
             const {unmount} = renderWithTheme(<EditableField label="Weight" value="5 kg" dense />);
             expect(screen.getByText('Weight')).toBeInTheDocument();

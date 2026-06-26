@@ -33,7 +33,8 @@ describe('SaveLayoutDialog', () => {
         const addButton = screen.getByRole('button', {name: /add layout/i});
         expect(addButton).toBeDisabled();
 
-        await user.type(screen.getByLabelText('Layout name'), 'My Layout');
+        await user.click(screen.getByLabelText('Layout name'));
+        await user.paste('My Layout');
         expect(addButton).not.toBeDisabled();
     });
 
@@ -41,7 +42,8 @@ describe('SaveLayoutDialog', () => {
         const user = userEvent.setup();
         setup({existingNames: ['Default', 'Dispatch']});
 
-        await user.type(screen.getByLabelText('Layout name'), 'dispatch');
+        await user.click(screen.getByLabelText('Layout name'));
+        await user.paste('dispatch');
 
         expect(screen.getByText('A layout with this name already exists.')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /add layout/i})).toBeDisabled();
@@ -51,7 +53,8 @@ describe('SaveLayoutDialog', () => {
         const user = userEvent.setup();
         const {onConfirm} = setup();
 
-        await user.type(screen.getByLabelText('Layout name'), '  Night Shift  ');
+        await user.click(screen.getByLabelText('Layout name'));
+        await user.paste('  Night Shift  ');
         await user.click(screen.getByRole('button', {name: /add layout/i}));
 
         expect(onConfirm).toHaveBeenCalledWith('Night Shift');
@@ -61,7 +64,9 @@ describe('SaveLayoutDialog', () => {
         const user = userEvent.setup();
         const {onConfirm} = setup();
 
-        await user.type(screen.getByLabelText('Layout name'), 'Quick{Enter}');
+        await user.click(screen.getByLabelText('Layout name'));
+        await user.paste('Quick');
+        await user.keyboard('{Enter}');
 
         expect(onConfirm).toHaveBeenCalledWith('Quick');
     });

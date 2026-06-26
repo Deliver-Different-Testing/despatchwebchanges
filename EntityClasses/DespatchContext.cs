@@ -61,6 +61,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<Route> Routes { get; set; }
 
+    public virtual DbSet<StaffDispatchLayout> StaffDispatchLayouts { get; set; }
+
     public virtual DbSet<TblAfterHour> TblAfterHours { get; set; }
 
     public virtual DbSet<TblAfterhoursCourier> TblAfterhoursCouriers { get; set; }
@@ -1329,6 +1331,31 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.DefaultCourier).WithMany(p => p.Routes)
                 .HasForeignKey(d => d.DefaultCourierId)
                 .HasConstraintName("FK_Routes_tucCourier");
+        });
+
+        modelBuilder.Entity<StaffDispatchLayout>(entity =>
+        {
+            entity.ToTable("StaffDispatchLayout");
+
+            entity.HasIndex(e => new { e.StaffId, e.Page }, "IX_StaffDispatchLayout_StaffId_Page");
+
+            entity.HasIndex(e => new { e.StaffId, e.Page, e.Name }, "UQ_StaffDispatchLayout_Staff_Page_Name").IsUnique();
+
+            entity.Property(e => e.Id).HasDefaultValueSql("(newsequentialid())", "DF_StaffDispatchLayout_Id");
+            entity.Property(e => e.CreatedUtc).HasDefaultValueSql("(sysutcdatetime())", "DF_StaffDispatchLayout_CreatedUtc");
+            entity.Property(e => e.LastModifiedUtc).HasDefaultValueSql("(sysutcdatetime())", "DF_StaffDispatchLayout_LastModifiedUtc");
+            entity.Property(e => e.LayoutJson).IsRequired();
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.Page)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasOne(d => d.Staff).WithMany(p => p.StaffDispatchLayouts)
+                .HasForeignKey(d => d.StaffId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StaffDispatchLayout_Staff");
         });
 
         modelBuilder.Entity<TblAfterHour>(entity =>

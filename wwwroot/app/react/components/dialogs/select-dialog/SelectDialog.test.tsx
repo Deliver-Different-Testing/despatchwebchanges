@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import { SelectDialog } from './SelectDialog';
@@ -144,13 +144,11 @@ describe('SelectDialog', () => {
             // Submit
             fireEvent.click(screen.getByRole('button', { name: /Save/i }));
 
-            await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        checkboxValue: true,
-                    })
-                );
-            });
+            expect(onSubmit).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    checkboxValue: true,
+                })
+            );
         });
     });
 
@@ -166,13 +164,11 @@ describe('SelectDialog', () => {
 
             fireEvent.click(screen.getByRole('button', { name: /Save/i }));
 
-            await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalledWith({
-                    fieldName: 'SpeedID',
-                    value: 2,
-                    text: 'Option B',
-                    checkboxValue: undefined,
-                });
+            expect(onSubmit).toHaveBeenCalledWith({
+                fieldName: 'SpeedID',
+                value: 2,
+                text: 'Option B',
+                checkboxValue: undefined,
             });
         });
 

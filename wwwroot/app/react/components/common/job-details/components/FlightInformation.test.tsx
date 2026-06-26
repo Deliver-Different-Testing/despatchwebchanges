@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {FlightInformation} from './FlightInformation';
@@ -124,9 +124,7 @@ describe('FlightInformation', () => {
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        await waitFor(() => {
-            expect(screen.getByText('Webhooks Active')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Webhooks Active')).toBeInTheDocument();
         expect(mockGetFlightWebhookStatus).toHaveBeenCalledWith(42);
     });
 
@@ -137,9 +135,7 @@ describe('FlightInformation', () => {
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        await waitFor(() => {
-            expect(screen.getByText('Webhooks Inactive')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Webhooks Inactive')).toBeInTheDocument();
         expect(mockGetFlightWebhookStatus).toHaveBeenCalledWith(7);
     });
 
@@ -150,9 +146,7 @@ describe('FlightInformation', () => {
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        await waitFor(() => {
-            expect(screen.getByText('Webhooks Inactive')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Webhooks Inactive')).toBeInTheDocument();
     });
 
     it('shows loading state while checking webhooks', async () => {
@@ -168,8 +162,6 @@ describe('FlightInformation', () => {
         expect(screen.getByRole('button', {name: /checking/i})).toBeDisabled();
 
         resolve!({active: true});
-        await waitFor(() => {
-            expect(screen.getByText('Webhooks Active')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Webhooks Active')).toBeInTheDocument();
     });
 });

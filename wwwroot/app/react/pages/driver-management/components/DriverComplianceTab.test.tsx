@@ -2,7 +2,7 @@
  * Optimised: read-only tests consolidated to reduce render count.
  */
 import React from 'react';
-import {fireEvent, render, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -136,7 +136,9 @@ describe('DriverComplianceTab', () => {
 
             await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
-            await waitForElementToBeRemoved(() => screen.queryByText('Send Bulk Reminders'));
+            await waitFor(() =>
+                expect(screen.queryByText('Send Bulk Reminders')).not.toBeInTheDocument(),
+            );
         });
     });
 

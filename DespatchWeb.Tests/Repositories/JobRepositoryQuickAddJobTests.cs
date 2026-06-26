@@ -37,19 +37,19 @@ public class JobRepositoryQuickAddJobTests
     public async Task QuickAddJobAsync_DelegatesToJobApiClient_AndReturnsJobId()
     {
         var request = Request();
-        _jobApiClient.QuickCreateAsync(request).Returns(987);
+        _jobApiClient.QuickCreateAsync(request, Arg.Any<CancellationToken>()).Returns(987);
 
         var result = await CreateRepository().QuickAddJobAsync(request);
 
         Assert.Equal(987, result);
-        await _jobApiClient.Received(1).QuickCreateAsync(request);
+        await _jobApiClient.Received(1).QuickCreateAsync(request, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task QuickAddJobAsync_WhenApiClientThrows_Rethrows()
     {
         var request = Request();
-        _jobApiClient.QuickCreateAsync(request)
+        _jobApiClient.QuickCreateAsync(request, Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("Job API rejected request"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(

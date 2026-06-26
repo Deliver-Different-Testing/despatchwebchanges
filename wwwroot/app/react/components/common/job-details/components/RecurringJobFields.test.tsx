@@ -5,17 +5,16 @@
 import React from 'react';
 import {render, screen, fireEvent, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import {RecurringJobFields} from './RecurringJobFields';
 import {createMockJob} from '../__testUtils__/mockJob';
+import {testTheme} from '../../../../__testUtils__';
 import {DaysOfWeek} from '../../../../../enums/days-of-week.enum';
 import {Frequency} from '../../../../../enums/frequency.enum';
 
-const theme = createTheme();
-
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    return render(<ThemeProvider theme={testTheme}>{ui}</ThemeProvider>);
 }
 
 function createDefaultProps(overrides?: Record<string, any>) {
@@ -40,12 +39,6 @@ describe('RecurringJobFields', () => {
             <RecurringJobFields {...createDefaultProps({job})} />
         );
         expect(container.firstChild).toBeNull();
-    });
-
-    it('renders both card titles', () => {
-        renderWithTheme(<RecurringJobFields {...createDefaultProps()} />);
-        expect(screen.getByText('Recurring Schedule')).toBeInTheDocument();
-        expect(screen.getByText('Schedule Dates')).toBeInTheDocument();
     });
 
     it('renders day-of-week chips with correct selection state and weekend coloring', () => {
@@ -102,6 +95,8 @@ describe('RecurringJobFields', () => {
         const user = userEvent.setup();
         const onHolidayOptionChange = jest.fn();
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onHolidayOptionChange})} />);
+        expect(screen.getByText('Recurring Schedule')).toBeInTheDocument();
+        expect(screen.getByText('Schedule Dates')).toBeInTheDocument();
         expect(screen.getByText('First Due')).toBeInTheDocument();
         expect(screen.getByText('Stop Date')).toBeInTheDocument();
         expect(screen.getByText('Restart Date')).toBeInTheDocument();

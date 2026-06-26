@@ -12,16 +12,9 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
-import Tooltip from '@mui/material/Tooltip';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import SearchIcon from '@mui/icons-material/Search';
-import ViewCompactIcon from '@mui/icons-material/ViewCompact';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import DensitySmallIcon from '@mui/icons-material/DensitySmall';
-import ViewWeekIcon from '@mui/icons-material/ViewWeek';
 import CloseIcon from '@mui/icons-material/Close';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RestoreIcon from '@mui/icons-material/Restore';
@@ -30,6 +23,7 @@ import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import type {SxProps, Theme} from '@mui/material';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
+import {JobListViewOptions} from './JobListViewOptions';
 
 interface JobListToolbarProps {
     selectedCategory: JobCategory;
@@ -50,6 +44,12 @@ interface JobListToolbarProps {
     onBulkMarkRead?: () => void;
     onBulkMarkUnread?: () => void;
     hideLoggedInSwitch?: boolean;
+    /**
+     * Render the view options (density / reset columns / logged-in toggle) inline
+     * in the toolbar. Set false when they're relocated to the panel header.
+     * Defaults to true.
+     */
+    renderViewOptions?: boolean;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -135,6 +135,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     onBulkMarkRead,
     onBulkMarkUnread,
     hideLoggedInSwitch,
+    renderViewOptions = true,
 }) => {
     const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -166,15 +167,6 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
             }
         },
         [onCategoryChange],
-    );
-
-    const handleDensityChange = useCallback(
-        (_: React.MouseEvent<HTMLElement>, newMode: DensityMode | null) => {
-            if (newMode !== null) {
-                onDensityModeChange(newMode);
-            }
-        },
-        [onDensityModeChange],
     );
 
     // Selection action bar
@@ -259,49 +251,20 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 sx={styles.searchField}
             />
 
-            {/* Logged-in couriers only toggle - only shown when dispatching is enabled */}
-            {allowDispatch && !hideLoggedInSwitch && (
-                <FormControlLabel
-                    control={
-                        <Switch
-                            size="small"
-                            checked={loggedInCouriersOnly}
-                            onChange={(_, checked) => onLoggedInCouriersOnlyChange(checked)}
-                        />
-                    }
-                    label="Logged-in only"
-                    slotProps={{typography: {variant: 'body2', sx: {fontSize: '0.75rem', whiteSpace: 'nowrap'}}}}
-                    sx={{ml: 0, mr: 0}}
-                />
-            )}
-
             <Box sx={{flex: 1}}/>
 
-            {/* Density toggle */}
-            <ToggleButtonGroup
-                value={densityMode}
-                exclusive
-                onChange={handleDensityChange}
-                size="small"
-                sx={styles.densityToggle}
-            >
-                <ToggleButton value="normal">
-                    <Tooltip title="Normal"><ViewListIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-                <ToggleButton value="dense">
-                    <Tooltip title="Dense"><ViewCompactIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-                <ToggleButton value="ultra-dense">
-                    <Tooltip title="Ultra Dense"><DensitySmallIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-            </ToggleButtonGroup>
-
-            {/* Reset columns */}
-            <Tooltip title="Reset column widths">
-                <IconButton size="small" onClick={onResetColumns} sx={{color: 'text.secondary'}}>
-                    <ViewWeekIcon fontSize="small"/>
-                </IconButton>
-            </Tooltip>
+            {/* View options — relocated to the panel header on the dispatch page
+                (renderViewOptions=false); rendered inline elsewhere. */}
+            {renderViewOptions && (
+                <JobListViewOptions
+                    densityMode={densityMode}
+                    onDensityModeChange={onDensityModeChange}
+                    onResetColumns={onResetColumns}
+                    loggedInCouriersOnly={loggedInCouriersOnly}
+                    onLoggedInCouriersOnlyChange={onLoggedInCouriersOnlyChange}
+                    showLoggedInSwitch={allowDispatch && !hideLoggedInSwitch}
+                />
+            )}
         </Box>
     );
 };

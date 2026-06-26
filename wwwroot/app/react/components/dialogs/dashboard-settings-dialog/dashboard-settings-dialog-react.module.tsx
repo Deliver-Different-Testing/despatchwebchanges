@@ -19,6 +19,7 @@ import {
 import {CustomizePanelsDialog} from '../customize-panels-dialog/CustomizePanelsDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
+import {isAiAutoOpenEnabled, setAiAutoOpenEnabled} from '../../../../functions/aiSettings';
 
 // State management for the dialogue
 interface DialogState {
@@ -29,7 +30,9 @@ interface DialogState {
     selectedDriverLocationRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
+    aiAutoOpen?: boolean;
     jobSearchBetaEnabled?: boolean;
+    dispatchBetaEnabled?: boolean;
     resolve?: (value: DashboardSettingsResult | null) => void;
 }
 
@@ -92,6 +95,12 @@ function renderDialog(): void {
     };
 
     const handleSave = (result: DashboardSettingsResult) => {
+        // The "Open automatically" preference is owned by this bridge: seeded
+        // from localStorage and persisted here so the AngularJS callers don't
+        // need to know about it.
+        if (result.aiAutoOpen !== undefined) {
+            setAiAutoOpenEnabled(result.aiAutoOpen);
+        }
         dialogState.open = false;
         dialogState.resolve?.(result);
         dialogState.resolve = undefined;
@@ -113,7 +122,9 @@ function renderDialog(): void {
                     selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
                     refreshOptions={dialogState.refreshOptions}
                     aiEnabled={dialogState.aiEnabled}
+                    aiAutoOpen={dialogState.aiAutoOpen}
                     jobSearchBetaEnabled={dialogState.jobSearchBetaEnabled}
+                    dispatchBetaEnabled={dialogState.dispatchBetaEnabled}
                     onClose={handleClose}
                     onSave={handleSave}
                 />
@@ -141,6 +152,7 @@ export function openDashboardSettingsDialog(
     selectedDriverLocationRefreshInterval?: RefreshOption,
     aiEnabled?: boolean,
     jobSearchBetaEnabled?: boolean,
+    dispatchBetaEnabled?: boolean,
 ): Promise<DashboardSettingsResult | null> {
     initializeDialogRoot();
 
@@ -159,7 +171,9 @@ export function openDashboardSettingsDialog(
             selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? {id: 0, text: 'Disabled'},
             refreshOptions,
             aiEnabled,
+            aiAutoOpen: isAiAutoOpenEnabled(),
             jobSearchBetaEnabled,
+            dispatchBetaEnabled,
             resolve,
         };
         renderDialog();

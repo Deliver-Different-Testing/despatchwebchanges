@@ -62,7 +62,11 @@ export interface ToolbarActionsConfig {
         onSaveLayout: () => void;
         onLoadLayout: (index: number) => void;
         onDeleteLayout: (index: number) => void;
+        onRenameLayout?: (index: number) => void;
+        onImportLayouts?: () => void;
         onCustomizePanels?: () => void;
+        editMode?: boolean;
+        onToggleEditMode?: () => void;
     };
     // Date Filter - React component
     dateFilter?: {
@@ -100,6 +104,7 @@ interface AppShellState {
     companyName?: string;
     onLogoClick?: () => void;
     onNavigate: (state: string) => void;
+    beta?: boolean;
 }
 
 let shellRoot: Root | null = null;
@@ -205,7 +210,11 @@ function buildToolbarChildren(): React.ReactNode {
                     onSaveLayout={toolbarActions.layouts.onSaveLayout}
                     onLoadLayout={toolbarActions.layouts.onLoadLayout}
                     onDeleteLayout={toolbarActions.layouts.onDeleteLayout}
+                    onRenameLayout={toolbarActions.layouts.onRenameLayout}
+                    onImportLayouts={toolbarActions.layouts.onImportLayouts}
                     onCustomizePanels={toolbarActions.layouts.onCustomizePanels}
+                    editMode={toolbarActions.layouts.editMode}
+                    onToggleEditMode={toolbarActions.layouts.onToggleEditMode}
                 />
             ),
         });
@@ -273,6 +282,7 @@ function renderShell(): void {
                 companyName={shellState.companyName}
                 onLogoClick={shellState.onLogoClick}
                 onNavigate={shellState.onNavigate}
+                beta={shellState.beta}
             >
                 {children}
             </AppShell>
@@ -296,6 +306,7 @@ export function mountAppShell(
         companyName?: string;
         onLogoClick?: () => void;
         onNavigate: (state: string) => void;
+        beta?: boolean;
     }
 ): void {
     console.log('[AppShellReact] Mounting to container:', containerId);

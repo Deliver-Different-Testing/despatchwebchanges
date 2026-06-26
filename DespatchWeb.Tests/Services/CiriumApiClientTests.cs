@@ -45,7 +45,7 @@ public class CiriumApiClientTests
             Content = new StringContent("""{"flights":[],"message":"No flights found."}""", Encoding.UTF8, "application/json")
         });
 
-        var result = await CreateClient().SearchFlightsAsync(new CiriumFlightSearchRequestDto {JobId = 1});
+        var result = await CreateClient().SearchFlightsAsync(new CiriumFlightSearchRequestDto {JobId = 1}, TestContext.Current.CancellationToken);
 
         Assert.Equal("No flights found.", result.Message);
         var request = Assert.Single(_handler.Requests);
@@ -64,7 +64,7 @@ public class CiriumApiClientTests
         });
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
-            CreateClient().SearchFlightsAsync(new CiriumFlightSearchRequestDto {JobId = 1}));
+            CreateClient().SearchFlightsAsync(new CiriumFlightSearchRequestDto {JobId = 1}, TestContext.Current.CancellationToken));
 
         Assert.Contains("Departure airport not found", ex.Message);
     }
@@ -81,7 +81,7 @@ public class CiriumApiClientTests
         {
             CompleteFlightNumber = "NZ123",
             DepartureAirportCode = "AKL"
-        });
+        }, TestContext.Current.CancellationToken);
 
         Assert.Equal("RULE-7", ruleId);
         Assert.Contains("/api/v1/admin/cirium/alerts", _handler.Requests[0].RequestUri!.ToString());

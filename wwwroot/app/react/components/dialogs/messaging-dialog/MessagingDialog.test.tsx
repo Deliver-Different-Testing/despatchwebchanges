@@ -9,6 +9,7 @@ import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {MessagingDialog, isNearBottom} from './MessagingDialog';
+import {dayjs} from '../../../utils/dateUtils';
 import {messagingApi} from '../../../services/messagingApi';
 import {suppressConsoleError} from '../../../__testUtils__';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
@@ -483,7 +484,11 @@ describe('MessagingDialog', () => {
     // ── Relative date separator ─────────────────────────────────────
     it('labels the date separator "Today" for messages sent today', async () => {
         const user = userEvent.setup();
-        const today = new Date().toISOString().slice(0, 10);
+        // Build "today" from the same clock the component uses (dayjs, local
+        // wall-clock) — not new Date().toISOString() (UTC), which is the
+        // previous calendar day during NZ morning hours and mislabels the
+        // separator as "Yesterday".
+        const today = dayjs().format('YYYY-MM-DD');
         setupApiDefaults([createConversation({otherPartyId: 10})]);
         mockApi.getMessages.mockResolvedValue([
             createMessage({messageId: 1, message: 'Hi today', messageTime: `${today}T10:00:00`}),

@@ -22,6 +22,8 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
 
         Connection.CreateFunction("getdate", () => TestDates.Now);
         Connection.CreateFunction("getutcdate", () => TestDates.UtcNow);
+        Connection.CreateFunction("sysutcdatetime", () => TestDates.UtcNow);
+        Connection.CreateFunction("newsequentialid", () => Guid.NewGuid());
         Connection.RegisterDateDiffMinute();
 
         using var cmd = Connection.CreateCommand();

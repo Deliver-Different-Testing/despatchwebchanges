@@ -87,7 +87,8 @@ describe('TextInputDialog', () => {
         renderWithTheme(<TextInputDialog {...defaultProps} required={true} initialValue="" />);
 
         const input = screen.getByRole('textbox');
-        await user.type(input, '{Enter}');
+        await user.click(input);
+        await user.keyboard('{Enter}');
 
         expect(defaultProps.onSubmit).not.toHaveBeenCalled();
     });
@@ -97,7 +98,8 @@ describe('TextInputDialog', () => {
         renderWithTheme(<TextInputDialog {...defaultProps} />);
 
         const input = screen.getByDisplayValue('REF-001');
-        await user.type(input, '{Enter}');
+        await user.click(input);
+        await user.keyboard('{Enter}');
 
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('REF-001');
     });

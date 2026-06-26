@@ -40,7 +40,7 @@ import {RelatedJobTabs} from './components/RelatedJobTabs';
 import {JobDetailHeader} from './components/JobDetailHeader';
 import {AiSummaryCard} from '../ai-summary-card/AiSummaryCard';
 import {summarizeJob} from '../../../services/aiAssistantApi';
-import {isAiEnabled} from '../../../../functions/aiSettings';
+import {isAiAutoOpenEnabled, isAiEnabled} from '../../../../functions/aiSettings';
 import {MetricsGrid} from './components/MetricsGrid';
 import {RateAcceptanceBanner} from './components/RateAcceptanceBanner';
 import {AddressSection} from './components/AddressSection';
@@ -228,6 +228,7 @@ export function JobDetails({config}: JobDetailsProps) {
     // below MetricsGrid and renders in collapsible mode so it stays closed
     // until the user expands it (first expand triggers summarizeJob).
     const aiEnabled = useMemo(() => isAiEnabled(), []);
+    const aiAutoOpen = useMemo(() => isAiAutoOpenEnabled(), []);
     // Keep jobRef synchronously current so handlers never read a stale job
     const job: IJob | undefined = sortedRelatedJobs[selectedTabIndex] ?? sortedRelatedJobs[0];
 
@@ -501,6 +502,7 @@ export function JobDetails({config}: JobDetailsProps) {
                             title="Auto-mate Job Briefing"
                             fetchSummary={(signal) => summarizeJob(job.id, {signal})}
                             collapsible
+                            autoOpen={aiAutoOpen}
                         />
                     </Box>
                 )}

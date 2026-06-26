@@ -43,6 +43,14 @@ export interface BoxHeaderProps {
     /** Called once the handle has been re-focused, so the shell can clear its pending flag. */
     onHandleFocused?: () => void;
     rightSlot?: React.ReactNode;
+    /**
+     * Ref callback for a per-card header slot DOM node. A box body can render its
+     * own header controls into this node via `createPortal`, keeping the control's
+     * state local while it visually lives in the gradient header. The node uses
+     * `display: contents` so an empty slot adds no spacing and portaled controls
+     * sit naturally alongside the refresh/collapse/drag actions.
+     */
+    headerSlotRef?: (el: HTMLElement | null) => void;
 }
 
 const actionButtonSx = {
@@ -69,6 +77,7 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
     focusHandleOnMount,
     onHandleFocused,
     rightSlot,
+    headerSlotRef,
 }) => {
     // Subtitle (typically the selected jobNo) lives in the title itself so
     // it picks up PanelHeader's existing truncation + contrast handling.
@@ -100,6 +109,7 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
 
     const action = (
         <>
+            {headerSlotRef ? <span ref={headerSlotRef} style={{display: 'contents'}} /> : null}
             {rightSlot}
             {showRefresh && onRefresh ? (
                 <Tooltip title="Refresh">

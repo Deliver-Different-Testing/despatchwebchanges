@@ -398,9 +398,7 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
 
-            await waitFor(() => {
-                expect(screen.getByText('Price update failed')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Price update failed')).toBeInTheDocument();
         });
 
         it('uses fallback message when error has no message', async () => {

@@ -31,12 +31,14 @@ export function useTasks(
     filters?: TaskFiltersRequest,
     options?: {
         enabled?: boolean;
+        refetchInterval?: number | false;
     }
 ) {
     return useQuery<Task[], Error>({
         queryKey: queryKeys.tasks.list(filters || {}),
         queryFn: ({signal}) => tasksApi.getAllTasks(filters, {signal}),
         enabled: options?.enabled ?? true,
+        refetchInterval: options?.refetchInterval ?? false,
     });
 }
 

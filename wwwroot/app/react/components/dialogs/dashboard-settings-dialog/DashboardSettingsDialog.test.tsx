@@ -245,6 +245,105 @@ describe('DashboardSettingsDialog', () => {
         });
     });
 
+    // ── Dispatch BETA toggle ────────────────────────────────────────
+    describe('Dispatch BETA toggle', () => {
+        it('is hidden unless showDispatchBetaToggle is set', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
+            expect(screen.queryByText('Try the new Dispatch')).not.toBeInTheDocument();
+        });
+
+        it('renders the toggle and emits dispatchBetaEnabled on save when enabled', async () => {
+            const user = userEvent.setup();
+            const onSave = jest.fn();
+            renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({
+                        config: {...mockConfig, showDispatchBetaToggle: true},
+                        dispatchBetaEnabled: false,
+                        onSave,
+                    })}
+                />,
+            );
+
+            expect(screen.getByText('Try the new Dispatch')).toBeInTheDocument();
+
+            const betaRow = screen.getByText('Use the new Dispatch').closest('div[class*="Paper"]') as HTMLElement;
+            await user.click(within(betaRow).getByRole('switch'));
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave).toHaveBeenCalledWith(
+                expect.objectContaining({dispatchBetaEnabled: true}),
+            );
+        });
+
+        it('omits dispatchBetaEnabled from the result when the toggle is not shown', async () => {
+            const user = userEvent.setup();
+            const onSave = jest.fn();
+            renderWithTheme(
+                <DashboardSettingsDialog {...createMockProps({onSave})} />,
+            );
+
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave).toHaveBeenCalledWith(
+                expect.objectContaining({dispatchBetaEnabled: undefined}),
+            );
+        });
+    });
+
+    // ── Auto-mate Settings section ──────────────────────────────────
+    describe('Auto-mate Settings', () => {
+        const aiConfig: DashboardSettingsConfig = {...mockConfig, showAiToggle: true};
+
+        it('renders the renamed section with both toggles', () => {
+            renderWithTheme(
+                <DashboardSettingsDialog {...createMockProps({config: aiConfig, aiEnabled: true})} />,
+            );
+
+            expect(screen.getByText('Auto-mate Settings')).toBeInTheDocument();
+            expect(screen.queryByText('Auto-mate Briefings')).not.toBeInTheDocument();
+            expect(screen.getByText('Show Auto-mate briefings')).toBeInTheDocument();
+            expect(screen.getByText('Open automatically')).toBeInTheDocument();
+        });
+
+        it('disables "Open automatically" while briefings are off, enables it once on', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(
+                <DashboardSettingsDialog {...createMockProps({config: aiConfig, aiEnabled: false})} />,
+            );
+
+            const autoOpenRow = screen.getByText('Open automatically').closest('div[class*="Paper"]') as HTMLElement;
+            const autoOpenSwitch = within(autoOpenRow).getByRole('switch');
+            expect(autoOpenSwitch).toBeDisabled();
+
+            // Turning briefings on re-enables the auto-open toggle.
+            const briefingsRow = screen.getByText('Show Auto-mate briefings').closest('div[class*="Paper"]') as HTMLElement;
+            await user.click(within(briefingsRow).getByRole('switch'));
+            expect(autoOpenSwitch).toBeEnabled();
+        });
+
+        it('reflects the aiAutoOpen prop and emits it on save', async () => {
+            const user = userEvent.setup();
+            const onSave = jest.fn();
+            renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({config: aiConfig, aiEnabled: true, aiAutoOpen: false, onSave})}
+                />,
+            );
+
+            const autoOpenRow = screen.getByText('Open automatically').closest('div[class*="Paper"]') as HTMLElement;
+            const autoOpenSwitch = within(autoOpenRow).getByRole('switch') as HTMLInputElement;
+            expect(autoOpenSwitch.checked).toBe(false);
+
+            await user.click(autoOpenSwitch);
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave).toHaveBeenCalledWith(
+                expect.objectContaining({aiEnabled: true, aiAutoOpen: true}),
+            );
+        });
+    });
+
     // ── Edge Cases ──────────────────────────────────────────────────
     describe('Edge Cases', () => {
         it('renders without error when boxes is empty', () => {

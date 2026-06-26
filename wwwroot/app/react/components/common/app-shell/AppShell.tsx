@@ -23,6 +23,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     children,
     onLogoClick,
     onNavigate,
+    beta,
 }) => {
     const [sidenavOpen, setSidenavOpen] = useState(false);
     const closeTimeoutRef = useRef<number | null>(null);
@@ -69,6 +70,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 logoUrl={logoUrl}
                 onLogoClick={onLogoClick}
                 onMenuHover={handleMenuHover}
+                beta={beta}
             >
                 {children}
             </AppToolbar>

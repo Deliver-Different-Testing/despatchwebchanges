@@ -175,6 +175,11 @@ export const queryKeys = {
         jobs: (params: JobListSearchParams) => ['dispatch', 'jobs', params] as const,
         clearList: (params: JobListSearchParams) => ['dispatch', 'clearList', params] as const,
         clearListEnvelope: (clearListId: number) => ['dispatch', 'clearListEnvelope', clearListId] as const,
+        currentWork: (params: JobListSearchParams) => ['dispatch', 'currentWork', params] as const,
+        driverOverview: ['dispatch', 'driverOverview'] as const,
+        driverLocations: (viewIds: number[], startDate?: string, endDate?: string) =>
+            ['dispatch', 'driverLocations', viewIds, startDate, endDate] as const,
+        truckCourierStatus: (courierId: number) => ['dispatch', 'truckCourierStatus', courierId] as const,
     },
     nationwide: {
         all: ['nationwide'] as const,

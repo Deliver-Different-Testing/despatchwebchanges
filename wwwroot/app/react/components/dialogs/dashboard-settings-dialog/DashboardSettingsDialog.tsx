@@ -53,6 +53,8 @@ export interface DashboardSettingsConfig {
     showAiToggle?: boolean;
     /** Show the "Try the React (BETA) Job Search" toggle. Job Search settings only. */
     showJobSearchBetaToggle?: boolean;
+    /** Show the "Try the React (BETA) Dispatch" toggle. Dispatch settings only. */
+    showDispatchBetaToggle?: boolean;
     /**
      * Replace the Dashboard panels section with a notice that panel options have
      * moved to the Layouts menu → Customize panels. Set where the dedicated
@@ -66,8 +68,12 @@ export interface DashboardSettingsResult {
     selectedDriverLocationRefreshInterval?: RefreshOption;
     boxes?: Record<string, DashboardBox>;
     aiEnabled?: boolean;
+    /** When true, the Auto-mate briefing opens expanded automatically instead of click-to-open. */
+    aiAutoOpen?: boolean;
     /** Set when `showJobSearchBetaToggle` is true; the caller persists + redirects. */
     jobSearchBetaEnabled?: boolean;
+    /** Set when `showDispatchBetaToggle` is true; the caller persists + redirects. */
+    dispatchBetaEnabled?: boolean;
 }
 
 export interface DashboardSettingsDialogProps {
@@ -78,7 +84,9 @@ export interface DashboardSettingsDialogProps {
     selectedDriverLocationRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
+    aiAutoOpen?: boolean;
     jobSearchBetaEnabled?: boolean;
+    dispatchBetaEnabled?: boolean;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
 }
@@ -91,7 +99,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     selectedDriverLocationRefreshInterval: initialDriverInterval,
     refreshOptions,
     aiEnabled: initialAiEnabled,
+    aiAutoOpen: initialAiAutoOpen,
     jobSearchBetaEnabled: initialJobSearchBetaEnabled,
+    dispatchBetaEnabled: initialDispatchBetaEnabled,
     onClose,
     onSave,
 }) => {
@@ -102,8 +112,12 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
         initialDriverInterval ?? {id: 0, text: 'Disabled'}
     );
     const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? false);
+    const [aiAutoOpen, setAiAutoOpen] = useState<boolean>(initialAiAutoOpen ?? false);
     const [jobSearchBetaEnabled, setJobSearchBetaEnabled] = useState<boolean>(
         initialJobSearchBetaEnabled ?? false,
+    );
+    const [dispatchBetaEnabled, setDispatchBetaEnabled] = useState<boolean>(
+        initialDispatchBetaEnabled ?? false,
     );
     const [boxes, setBoxes] = useState<Record<string, DashboardBox>>(() => {
         // Deep clone the boxes
@@ -137,7 +151,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             selectedDriverLocationRefreshInterval: driverLocationInterval,
             boxes,
             aiEnabled,
+            aiAutoOpen,
             jobSearchBetaEnabled: config.showJobSearchBetaToggle ? jobSearchBetaEnabled : undefined,
+            dispatchBetaEnabled: config.showDispatchBetaToggle ? dispatchBetaEnabled : undefined,
         });
     };
 
@@ -364,74 +380,134 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             <Typography variant="h6" sx={{
                                 fontWeight: 600
                             }}>
-                                Auto-mate Briefings
+                                Auto-mate Settings
                             </Typography>
                         </Stack>
 
-                        <Paper
-                            elevation={0}
-                            onClick={() => setAiEnabled((prev) => !prev)}
-                            sx={(theme) => ({
-                                p: 2,
-                                borderRadius: 2,
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'white',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                '&:hover': {
-                                    borderColor: aiAccentColor,
-                                    bgcolor: alpha(aiAccentColor, 0.02),
-                                },
-                            })}
-                        >
-                            <Stack
-                                direction="row"
-                                sx={{
-                                    alignItems: "center",
-                                    justifyContent: "space-between"
-                                }}>
-                                <Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Stack spacing={2}>
+                            <Paper
+                                elevation={0}
+                                onClick={() => setAiEnabled((prev) => !prev)}
+                                sx={(theme) => ({
+                                    p: 2,
+                                    borderRadius: 2,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    bgcolor: 'white',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        borderColor: aiAccentColor,
+                                        bgcolor: alpha(aiAccentColor, 0.02),
+                                    },
+                                })}
+                            >
+                                <Stack
+                                    direction="row"
+                                    sx={{
+                                        alignItems: "center",
+                                        justifyContent: "space-between"
+                                    }}>
+                                    <Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Typography variant="subtitle2" sx={{
+                                                fontWeight: 600
+                                            }}>
+                                                Show Auto-mate briefings
+                                            </Typography>
+                                            <Chip
+                                                label="BETA"
+                                                size="small"
+                                                sx={{
+                                                    height: 18,
+                                                    fontSize: '0.625rem',
+                                                    fontWeight: 700,
+                                                    bgcolor: aiAccentColor,
+                                                    color: '#fff',
+                                                }}
+                                            />
+                                        </Box>
+                                        <Typography variant="body2" sx={{
+                                            color: "text.secondary"
+                                        }}>
+                                            Adds a short AI briefing — verdict, what needs attention, and key facts —
+                                            to the job details, task dashboard, operations, and driver compliance pages.
+                                            Applies to your account only.
+                                        </Typography>
+                                    </Box>
+                                    <Switch
+                                        checked={aiEnabled}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={() => setAiEnabled((prev) => !prev)}
+                                        sx={{
+                                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                                color: aiAccentColor,
+                                            },
+                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                backgroundColor: aiAccentColor,
+                                            },
+                                        }}
+                                    />
+                                </Stack>
+                            </Paper>
+
+                            {/* Open automatically — only meaningful while briefings are on,
+                                so the row is disabled/dimmed when "Show Auto-mate briefings"
+                                is off. */}
+                            <Paper
+                                elevation={0}
+                                onClick={aiEnabled ? () => setAiAutoOpen((prev) => !prev) : undefined}
+                                sx={(theme) => ({
+                                    p: 2,
+                                    borderRadius: 2,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    bgcolor: 'white',
+                                    cursor: aiEnabled ? 'pointer' : 'default',
+                                    opacity: aiEnabled ? 1 : 0.5,
+                                    transition: 'all 0.2s ease',
+                                    ...(aiEnabled && {
+                                        '&:hover': {
+                                            borderColor: aiAccentColor,
+                                            bgcolor: alpha(aiAccentColor, 0.02),
+                                        },
+                                    }),
+                                })}
+                            >
+                                <Stack
+                                    direction="row"
+                                    sx={{
+                                        alignItems: "center",
+                                        justifyContent: "space-between"
+                                    }}>
+                                    <Box>
                                         <Typography variant="subtitle2" sx={{
                                             fontWeight: 600
                                         }}>
-                                            Show Auto-mate briefings
+                                            Open automatically
                                         </Typography>
-                                        <Chip
-                                            label="BETA"
-                                            size="small"
-                                            sx={{
-                                                height: 18,
-                                                fontSize: '0.625rem',
-                                                fontWeight: 700,
-                                                bgcolor: aiAccentColor,
-                                                color: '#fff',
-                                            }}
-                                        />
+                                        <Typography variant="body2" sx={{
+                                            color: "text.secondary"
+                                        }}>
+                                            Opens the Auto-mate briefing expanded instead of waiting for a click.
+                                            Applies to your account only.
+                                        </Typography>
                                     </Box>
-                                    <Typography variant="body2" sx={{
-                                        color: "text.secondary"
-                                    }}>
-                                        Adds a short AI briefing — verdict, what needs attention, and key facts —
-                                        to the job details, task dashboard, operations, and driver compliance pages.
-                                        Applies to your account only.
-                                    </Typography>
-                                </Box>
-                                <Switch
-                                    checked={aiEnabled}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={() => setAiEnabled((prev) => !prev)}
-                                    sx={{
-                                        '& .MuiSwitch-switchBase.Mui-checked': {
-                                            color: aiAccentColor,
-                                        },
-                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                            backgroundColor: aiAccentColor,
-                                        },
-                                    }}
-                                />
-                            </Stack>
-                        </Paper>
+                                    <Switch
+                                        checked={aiAutoOpen}
+                                        disabled={!aiEnabled}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={() => setAiAutoOpen((prev) => !prev)}
+                                        sx={{
+                                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                                color: aiAccentColor,
+                                            },
+                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                backgroundColor: aiAccentColor,
+                                            },
+                                        }}
+                                    />
+                                </Stack>
+                            </Paper>
+                        </Stack>
                     </Box>
                 )}
 
@@ -487,13 +563,13 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                         <Chip
                                             label="BETA"
                                             size="small"
-                                            sx={(theme) => ({
+                                            sx={{
                                                 height: 18,
                                                 fontSize: '0.625rem',
                                                 fontWeight: 700,
-                                                bgcolor: theme.palette.primary.main,
+                                                bgcolor: aiAccentColor,
                                                 color: '#fff',
-                                            })}
+                                            }}
                                         />
                                     </Box>
                                     <Typography variant="body2" sx={{color: 'text.secondary'}}>
@@ -513,6 +589,85 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                 )}
 
                 {config.showJobSearchBetaToggle && <Divider />}
+
+                {/* Dispatch BETA toggle — opt-in for the React rebuild of the
+                    home/dispatch page. Only rendered when the caller (home
+                    controller / dispatchV2 route) sets `showDispatchBetaToggle:
+                    true`. Caller persists localStorage and triggers the route
+                    redirect after Save. */}
+                {config.showDispatchBetaToggle && (
+                    <Box sx={{p: 3}}>
+                        <Stack direction="row" spacing={1.5} sx={{alignItems: 'center', mb: 2}}>
+                            <Box
+                                sx={(theme) => ({
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 1.5,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                })}
+                            >
+                                <ScienceIcon color="primary" />
+                            </Box>
+                            <Typography variant="h6" sx={{fontWeight: 600}}>
+                                Try the new Dispatch
+                            </Typography>
+                        </Stack>
+
+                        <Paper
+                            elevation={0}
+                            onClick={() => setDispatchBetaEnabled((prev) => !prev)}
+                            sx={(theme) => ({
+                                p: 2,
+                                borderRadius: 2,
+                                border: `1px solid ${theme.palette.divider}`,
+                                bgcolor: 'white',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    borderColor: theme.palette.primary.main,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.02),
+                                },
+                            })}
+                        >
+                            <Stack direction="row" sx={{alignItems: 'center', justifyContent: 'space-between'}}>
+                                <Box>
+                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                        <Typography variant="subtitle2" sx={{fontWeight: 600}}>
+                                            Use the new Dispatch
+                                        </Typography>
+                                        <Chip
+                                            label="BETA"
+                                            size="small"
+                                            sx={{
+                                                height: 18,
+                                                fontSize: '0.625rem',
+                                                fontWeight: 700,
+                                                bgcolor: aiAccentColor,
+                                                color: '#fff',
+                                            }}
+                                        />
+                                    </Box>
+                                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                                        Opens the rebuilt Dispatch page — faster loads, modern dialogs, and more
+                                        customisation options like choosing your columns. Saved layouts follow your
+                                        account, so they persist across browsers and computers. Switch back to the
+                                        classic page any time. Applies to your account only.
+                                    </Typography>
+                                </Box>
+                                <Switch
+                                    checked={dispatchBetaEnabled}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={() => setDispatchBetaEnabled((prev) => !prev)}
+                                />
+                            </Stack>
+                        </Paper>
+                    </Box>
+                )}
+
+                {config.showDispatchBetaToggle && <Divider />}
 
                 {/* Dashboard Panels Section */}
                 <Box sx={{p: 3}}>

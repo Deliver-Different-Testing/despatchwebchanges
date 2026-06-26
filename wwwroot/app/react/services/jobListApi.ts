@@ -8,6 +8,22 @@
 import {apiClient} from './apiClient';
 import {JobStatus} from '../../enums/job-status.enum';
 import InternalJobStatus from "../../enums/job-internal-status.enum";
+import type {EditAddressDialogViewModel} from '../interfaces';
+
+// ── Add Stop ─────────────────────────────────────────────────────────
+
+/**
+ * Add a pick-up or delivery stop to a job, creating a linked job. Mirrors
+ * V1 DispatchCoreService.addStopToJob (`POST job/AddStopToJob`). Returns the
+ * new (linked) job id.
+ */
+export async function addStopToJob(
+    jobId: number,
+    pickUpAddress?: EditAddressDialogViewModel,
+    deliveryAddress?: EditAddressDialogViewModel,
+): Promise<number> {
+    return apiClient.post<number>('job/AddStopToJob', {jobId, pickUpAddress, deliveryAddress});
+}
 
 // ── Read Status ──────────────────────────────────────────────────────
 
