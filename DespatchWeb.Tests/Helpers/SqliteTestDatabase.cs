@@ -1,7 +1,6 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Moq;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Helpers;
@@ -23,7 +22,7 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
         Connection.CreateFunction("getdate", () => TestDates.Now);
         Connection.CreateFunction("getutcdate", () => TestDates.UtcNow);
         Connection.CreateFunction("sysutcdatetime", () => TestDates.UtcNow);
-        Connection.CreateFunction("newsequentialid", () => Guid.NewGuid());
+        Connection.CreateFunction("newsequentialid", Guid.NewGuid);
         Connection.RegisterDateDiffMinute();
 
         using var cmd = Connection.CreateCommand();
@@ -65,34 +64,6 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
             .Returns(sharedContext);
         mock.CreateDbContextAsync(Arg.Any<CancellationToken>())
             .Returns(sharedContext);
-        return mock;
-    }
-
-    /// <summary>
-    /// Creates a Moq factory mock that returns a new context per call.
-    /// Used by repository tests that still use Moq.
-    /// </summary>
-    public Mock<IDbContextFactory<DespatchContext>> CreateMoqFactoryMock()
-    {
-        var mock = new Mock<IDbContextFactory<DespatchContext>>();
-        mock.Setup(f => f.CreateDbContext())
-            .Returns(() => new DespatchContext(Options));
-        mock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(Options));
-        return mock;
-    }
-
-    /// <summary>
-    /// Creates a Moq factory mock that always returns the same context instance.
-    /// Used by repository tests that still use Moq.
-    /// </summary>
-    public static Mock<IDbContextFactory<DespatchContext>> CreateMoqFactoryMock(DespatchContext sharedContext)
-    {
-        var mock = new Mock<IDbContextFactory<DespatchContext>>();
-        mock.Setup(f => f.CreateDbContext())
-            .Returns(sharedContext);
-        mock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(sharedContext);
         return mock;
     }
 

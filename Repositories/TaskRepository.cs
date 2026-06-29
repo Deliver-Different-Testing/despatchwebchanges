@@ -7,6 +7,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace DespatchWeb.Repositories;
 
@@ -20,6 +21,30 @@ public class TaskRepository(
     private static readonly HashSet<string> AutoResponseTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "Web", "Email", "Text"
+    };
+
+    internal static readonly Expression<Func<TucEvent, TaskViewModel>> ProjectToTaskViewModel = e => new TaskViewModel
+    {
+        Id = e.UcevId,
+        Assignee = e.UcevStaffIdinNavigation != null
+            ? new Suggestion
+            {
+                Id = e.UcevStaffIdinNavigation.UcstId,
+                Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+            }
+            : null,
+        Description = e.UcevNotes,
+        JobId = e.UcevJobId ?? 0,
+        Closed = e.UcevClosed,
+        DueDate = e.UcevDueTime,
+        Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
+        EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
+        JobNumber = e.UcevJob.UcjbNumber,
+        CourierCode = e.UcevJob.UcjbCourier != null ? e.UcevJob.UcjbCourier.Code : null,
+        CourierName = e.UcevJob.UcjbCourier != null
+            ? e.UcevJob.UcjbCourier.UccrName + " " + e.UcevJob.UcjbCourier.UccrSurname
+            : null,
+        ClientCode = e.UcevJob.UcjbClientCode
     };
 
     public async Task<IReadOnlyList<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
@@ -43,28 +68,7 @@ public class TaskRepository(
         query = query.Take(filters?.Limit is > 0 ? filters.Limit.Value : 500);
 
         var tasks = await query
-            .Select(e => new TaskViewModel
-            {
-                Id = e.UcevId,
-                Assignee = e.UcevStaffIdinNavigation != null
-                    ? new Suggestion
-                    {
-                        Id = e.UcevStaffIdinNavigation.UcstId,
-                        Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
-                    }
-                    : null,
-                Description = e.UcevNotes,
-                JobId = e.UcevJobId ?? 0,
-                Closed = e.UcevClosed,
-                DueDate = e.UcevDueTime,
-                Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
-                EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
-                JobNumber = e.UcevJob.UcjbNumber,
-                CourierCode = e.UcevJob.UcjbCourier != null ? e.UcevJob.UcjbCourier.Code : null,
-                CourierName = e.UcevJob.UcjbCourier != null
-                    ? e.UcevJob.UcjbCourier.UccrName + " " + e.UcevJob.UcjbCourier.UccrSurname
-                    : null
-            })
+            .Select(ProjectToTaskViewModel)
             .ToListAsync();
 
         foreach (var task in tasks)

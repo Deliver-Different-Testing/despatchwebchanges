@@ -9,7 +9,12 @@ namespace DespatchWeb.Interfaces;
 
 public interface IJobCommandRepository
 {
-    Task UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data);
+    /// <summary>
+    /// Updates pricing for the given jobs and returns the set of job IDs that were actually
+    /// updated. Jobs that could not be found/updated (e.g. locked or invoiced) are omitted from
+    /// the returned set so callers can surface them rather than report a false success.
+    /// </summary>
+    Task<IReadOnlySet<int>> UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data);
     Task UpdateJobVoidStatusAsync(IReadOnlyList<int> jobIds);
 
     Task SwapPodAsync(string job1, string job2);

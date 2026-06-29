@@ -40,6 +40,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckIcon from '@mui/icons-material/Check';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ErrorIcon from '@mui/icons-material/Error';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
     BulkPriceUploadDialogProps,
     BulkPricePreviewRow,
@@ -66,6 +67,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
     const [filteredRows, setFilteredRows] = useState<BulkPricePreviewRow[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [totalJobs, setTotalJobs] = useState(0);
+    const [skippedJobs, setSkippedJobs] = useState(0);
     const [totalOldAmount, setTotalOldAmount] = useState(0);
     const [totalNewAmount, setTotalNewAmount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +85,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             setFilteredRows([]);
             setSearchTerm('');
             setTotalJobs(0);
+            setSkippedJobs(0);
             setTotalOldAmount(0);
             setTotalNewAmount(0);
             setIsLoading(false);
@@ -189,13 +192,26 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             setResultRows(response.rows);
             setFilteredRows([...response.rows]);
             setTotalJobs(response.totalJobs);
+            setSkippedJobs(response.skippedJobs);
             setTotalOldAmount(response.totalOldAmount);
             setTotalNewAmount(response.totalNewAmount);
             setCurrentState('result');
             setIsLoading(false);
             setLoadingMessage('');
 
-            showToast(`Successfully updated prices for ${response.totalJobs} jobs.`, 'success');
+            if (response.totalJobs === 0 && response.skippedJobs > 0) {
+                showToast(
+                    `No prices were updated. ${response.skippedJobs} ${response.skippedJobs === 1 ? 'job' : 'jobs'} could not be updated.`,
+                    'error',
+                );
+            } else if (response.skippedJobs > 0) {
+                showToast(
+                    `Updated ${response.totalJobs} ${response.totalJobs === 1 ? 'job' : 'jobs'}; ${response.skippedJobs} skipped.`,
+                    'warning',
+                );
+            } else {
+                showToast(`Successfully updated prices for ${response.totalJobs} jobs.`, 'success');
+            }
         } catch (error: unknown) {
             console.error('Error applying prices:', error);
             const msg = error instanceof Error ? error.message : 'Failed to apply prices. Please try again.';
@@ -626,9 +642,20 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
     };
 
     const renderResultState = (): React.ReactNode => {
+        const noneUpdated = totalJobs === 0 && skippedJobs > 0;
+        const partial = totalJobs > 0 && skippedJobs > 0;
+        const headerColor = noneUpdated ? 'error.main' : partial ? 'warning.main' : 'success.main';
+        const headerBg = noneUpdated
+            ? 'rgba(211, 47, 47, 0.12)'
+            : partial
+                ? 'rgba(237, 108, 2, 0.12)'
+                : 'rgba(76, 175, 80, 0.12)';
+        const headerTitle = noneUpdated ? 'No Prices Updated' : partial ? 'Partially Updated' : 'Prices Updated';
+        const HeaderIcon = noneUpdated ? ErrorIcon : partial ? WarningAmberIcon : CheckCircleIcon;
+
         return (
             <Box sx={{ p: 2 }}>
-                {/* Success header */}
+                {/* Result header */}
                 <Box
                     sx={{
                         display: 'flex',
@@ -642,20 +669,25 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                             width: 56,
                             height: 56,
                             borderRadius: '50%',
-                            bgcolor: 'rgba(76, 175, 80, 0.12)',
+                            bgcolor: headerBg,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             mb: 1.5,
                         }}
                     >
-                        <CheckCircleIcon sx={{ fontSize: 32, color: 'success.main' }} />
+                        <HeaderIcon sx={{ fontSize: 32, color: headerColor }} />
                     </Box>
                     <Typography variant="h6" sx={{
                         fontWeight: 600
                     }}>
-                        Prices Updated
+                        {headerTitle}
                     </Typography>
+                    {skippedJobs > 0 && (
+                        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                            {skippedJobs} {skippedJobs === 1 ? 'job' : 'jobs'} could not be updated — see the highlighted rows below.
+                        </Typography>
+                    )}
                 </Box>
                 {/* Summary stats */}
                 <Box
@@ -682,6 +714,21 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                             Jobs Updated
                         </Typography>
                     </Box>
+                    {skippedJobs > 0 && (
+                        <Box sx={{ textAlign: 'center', flex: 1 }}>
+                            <Typography variant="subtitle1" sx={{
+                                fontWeight: 600,
+                                color: 'warning.main'
+                            }}>
+                                {skippedJobs}
+                            </Typography>
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
+                                Skipped
+                            </Typography>
+                        </Box>
+                    )}
                     <Box sx={{ textAlign: 'center', flex: 1 }}>
                         <Typography variant="subtitle1" sx={{
                             fontWeight: 600
@@ -802,11 +849,26 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                         key={`${row.jobId}_${row.field}`}
                                         hover
                                         sx={{
-                                            bgcolor: row.error ? 'rgba(211, 47, 47, 0.05)' : undefined,
+                                            bgcolor: row.skipped ? 'rgba(237, 108, 2, 0.08)' : undefined,
                                         }}
                                     >
-                                        <TableCell sx={{ fontWeight: 500 }}>{row.jobNo}</TableCell>
-                                        <TableCell>{row.field}</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                {row.skipped && (
+                                                    <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                                                )}
+                                                {row.jobNo}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            {row.skipped ? (
+                                                <Typography variant="caption" sx={{ color: 'warning.dark' }}>
+                                                    {row.error || 'Skipped'}
+                                                </Typography>
+                                            ) : (
+                                                row.field
+                                            )}
+                                        </TableCell>
                                         <TableCell
                                             align="right"
                                             sx={{ fontFamily: '"Roboto Mono", monospace' }}
@@ -817,16 +879,18 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                             align="right"
                                             sx={{ fontFamily: '"Roboto Mono", monospace' }}
                                         >
-                                            {formatCurrency(row.newAmount)}
+                                            {row.skipped ? '—' : formatCurrency(row.newAmount)}
                                         </TableCell>
                                         <TableCell
                                             align="right"
                                             sx={{
                                                 fontFamily: '"Roboto Mono", monospace',
-                                                color: rowChange > 0 ? 'success.main' : rowChange < 0 ? 'error.main' : 'inherit',
+                                                color: row.skipped
+                                                    ? 'warning.main'
+                                                    : rowChange > 0 ? 'success.main' : rowChange < 0 ? 'error.main' : 'inherit',
                                             }}
                                         >
-                                            {formatChange(rowChange)}
+                                            {row.skipped ? 'Skipped' : formatChange(rowChange)}
                                         </TableCell>
                                     </TableRow>
                                 );

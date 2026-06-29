@@ -23,4 +23,6 @@ public sealed class TaskViewModel
     public string CourierCode { get; init; }
 
     public string CourierName { get; init; }
+
+    public string ClientCode { get; init; }
 }

@@ -1,4 +1,4 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -6,7 +6,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -18,17 +18,16 @@ public class CourierRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private readonly MemoryCache _cache;
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private readonly FakeTenantClock _clock = new(new DateTime(2024, 1, 15, 10, 0, 0));
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public CourierRepositoryTests()
     {
-        _contextFactoryMock = _db.CreateMoqFactoryMock();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
-        _tenantInfoServiceMock
-            .Setup(x => x.GetTenantTimeZone())
+        _tenantInfoServiceMock.GetTenantTimeZone()
             .Returns("New Zealand Standard Time");
 
         _cache = new MemoryCache(new MemoryCacheOptions());
@@ -42,10 +41,10 @@ public class CourierRepositoryTests : IAsyncDisposable
     }
 
     private CourierRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object,
+        _clearListEnvelopeServiceMock,
         _cache
     );
 

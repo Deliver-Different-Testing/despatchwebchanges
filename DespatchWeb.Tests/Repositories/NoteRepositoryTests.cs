@@ -1,10 +1,10 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -16,21 +16,21 @@ public class NoteRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public NoteRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
-            .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.FromHours(12)));
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
+        _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(ci => new DateTimeOffset(ci.Arg<DateTime>(), TimeSpan.FromHours(12)));
     }
 
     public async ValueTask DisposeAsync()
@@ -41,8 +41,8 @@ public class NoteRepositoryTests : IAsyncDisposable
     }
 
     private NoteRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock
     );
 

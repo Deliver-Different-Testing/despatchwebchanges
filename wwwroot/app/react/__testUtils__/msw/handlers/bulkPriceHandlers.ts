@@ -36,6 +36,7 @@ export const mockBulkPricePreviewResponse: BulkPricePreviewResponse = {
         },
     ],
     totalJobs: 3,
+    skippedJobs: 0,
     totalOldAmount: 165.0,
     totalNewAmount: 180.0,
 };

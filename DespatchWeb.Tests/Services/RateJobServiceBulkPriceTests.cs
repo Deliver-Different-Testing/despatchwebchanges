@@ -29,6 +29,12 @@ public class RateJobServiceBulkPriceTests : IDisposable
         // By default, allow all job access in tests (internal user behavior)
         _pricingPermissionServiceMock.ValidateJobsAccessAsync(Arg.Any<IReadOnlyList<int>>())
             .Returns(new List<int>()); // Empty list = all jobs accessible
+
+        // By default, the repository reports every requested job as updated. Individual tests
+        // override this to simulate jobs that were skipped (not found / locked).
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(ci => (IReadOnlySet<int>)ci.Arg<IReadOnlyList<JobManualPriceModel>>()
+                .Select(m => m.Id).ToHashSet());
     }
 
     public void Dispose() => _httpClient.Dispose();
@@ -65,7 +71,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyBulkPriceUpdateAsync_JobsNotFoundInDatabase_SkipsThoseJobs()
+    public async Task ApplyBulkPriceUpdateAsync_JobsNotFoundInDatabase_SurfacesThemAsSkipped()
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", "id,amount\n999,100");
@@ -75,14 +81,22 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
             .Returns(new Dictionary<int, JobCurrentAmountInfo>()); // Empty - job not found
 
+        // The repository reports that nothing was actually updated.
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns((IReadOnlySet<int>)new HashSet<int>());
+
         var service = CreateService();
 
         // Act
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
-        // Assert
-        Assert.Empty(result.Rows);
+        // Assert - the job is surfaced as skipped rather than silently dropped (no false success).
         Assert.Equal(0, result.TotalJobs);
+        Assert.Equal(1, result.SkippedJobs);
+        var row = Assert.Single(result.Rows);
+        Assert.Equal(999, row.JobId);
+        Assert.True(row.Skipped);
+        Assert.False(string.IsNullOrEmpty(row.Error));
     }
 
     [Fact]
@@ -119,6 +133,51 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // Verify UpdateManualPriceAsync was called for gross mode
         await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(parsedData);
+    }
+
+    [Fact]
+    public async Task ApplyBulkPriceUpdateAsync_GrossMode_SurfacesJobsTheRepositoryDidNotUpdate()
+    {
+        // Arrange - two jobs uploaded, but the repository only manages to update one of them
+        // (the other is locked / not found). The response must reflect the partial result.
+        var fileMock = CreateMockFile("test.csv", string.Empty);
+        var parsedData = new List<JobManualPriceModel>
+        {
+            new() { Id = 1, Amount = 0m },
+            new() { Id = 2, Amount = 0m }
+        };
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock).Returns(parsedData);
+
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
+            {
+                [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false },
+                [2] = new() { JobId = 2, JobNo = "JOB-002", Amount = 150m, IsPrebook = false }
+            });
+
+        // Only job 1 was actually updated.
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns((IReadOnlySet<int>)new HashSet<int> { 1 });
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
+
+        // Assert
+        Assert.Equal(1, result.TotalJobs);
+        Assert.Equal(1, result.SkippedJobs);
+        Assert.Equal(100m, result.TotalOldAmount); // only the updated job counts toward totals
+        Assert.Equal(0m, result.TotalNewAmount);
+
+        var updated = Assert.Single(result.Rows, r => !r.Skipped);
+        Assert.Equal(1, updated.JobId);
+        Assert.Equal(0m, updated.NewAmount);
+
+        var skipped = Assert.Single(result.Rows, r => r.Skipped);
+        Assert.Equal(2, skipped.JobId);
+        Assert.Equal(150m, skipped.OldAmount); // skipped jobs keep their old amount
+        Assert.False(string.IsNullOrEmpty(skipped.Error));
     }
 
     [Fact]
@@ -173,7 +232,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return Task.CompletedTask;
+                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -303,7 +362,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return Task.CompletedTask;
+                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -355,7 +414,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return Task.CompletedTask;
+                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -402,7 +461,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return Task.CompletedTask;
+                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -446,7 +505,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return Task.CompletedTask;
+                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -498,7 +557,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return Task.CompletedTask;
+                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -539,9 +598,12 @@ public class RateJobServiceBulkPriceTests : IDisposable
         // Act - should not throw
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
-        // Assert - row still returned with the calculated amount from before failure
-        Assert.Single(result.Rows);
-        Assert.Equal(120m, result.Rows[0].NewAmount); // From GetTotalAmountFromBaseAsync
+        // Assert - the failed prebook reprice is surfaced as skipped, not reported as a success.
+        var row = Assert.Single(result.Rows);
+        Assert.True(row.Skipped);
+        Assert.Equal(50m, row.NewAmount); // Falls back to the old amount; no change was applied
+        Assert.Equal(0, result.TotalJobs);
+        Assert.Equal(1, result.SkippedJobs);
     }
 
     [Fact]
@@ -569,7 +631,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return Task.CompletedTask;
+                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -637,7 +699,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return Task.CompletedTask;
+                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();

@@ -721,9 +721,11 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                         return (
                                                             <Box
                                                                 key={task.id}
+                                                                component="li"
                                                                 sx={{
                                                                     animation: `fadeInUp 200ms ease ${animIndex * 30}ms both`,
                                                                     mb: 0.5,
+                                                                    listStyle: 'none',
                                                                 }}
                                                             >
                                                                 <TaskItem

@@ -44,6 +44,9 @@ const createMockTask = (overrides?: Partial<Task>): Task => ({
     jobId: 12345,
     eventType: 'pickup',
     jobNumber: 'JOB-001',
+    courierCode: 'ABC123',
+    courierName: 'John Smith',
+    clientCode: 'ACME',
     priority: 'high',
     _dueDateString: 'Jan 15, 2025',
     _dueTimeString: '2:00 PM',
@@ -116,6 +119,44 @@ describe('TaskItem', () => {
             renderWithProviders(<TaskItem {...props} />);
 
             expect(screen.getByText('Pickup')).toBeInTheDocument();
+        });
+
+        it('renders the courier code and name', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.getByText('Courier: ABC123 — John Smith')).toBeInTheDocument();
+        });
+
+        it('renders the courier code without name when name is missing', () => {
+            const task = createMockTask({courierName: undefined});
+            const props = createDefaultProps({task});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.getByText('Courier: ABC123')).toBeInTheDocument();
+        });
+
+        it('does not render the courier chip when courier code is absent', () => {
+            const task = createMockTask({courierCode: undefined, courierName: undefined});
+            const props = createDefaultProps({task});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.queryByText(/Courier:/)).not.toBeInTheDocument();
+        });
+
+        it('renders the client code', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.getByText('Client: ACME')).toBeInTheDocument();
+        });
+
+        it('does not render the client chip when client code is absent', () => {
+            const task = createMockTask({clientCode: undefined});
+            const props = createDefaultProps({task});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.queryByText(/Client:/)).not.toBeInTheDocument();
         });
 
         it('renders the due date and time', () => {
@@ -210,6 +251,20 @@ describe('TaskItem', () => {
             renderWithProviders(<TaskItem {...props} />);
 
             expect(screen.queryByText('Pickup')).not.toBeInTheDocument();
+        });
+
+        it('hides courier when showCourierCode is false', () => {
+            const props = createDefaultProps({config: {showCourierCode: false}});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.queryByText(/Courier:/)).not.toBeInTheDocument();
+        });
+
+        it('hides client when showClientCode is false', () => {
+            const props = createDefaultProps({config: {showClientCode: false}});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.queryByText(/Client:/)).not.toBeInTheDocument();
         });
 
         it('hides date/time when showDateTime is false', () => {
@@ -379,7 +434,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const dateButton = screen.getByText(/Jan 15, 2025/).closest('button');
+            const dateButton = screen.getByRole('button', {name: /Jan 15, 2025/});
             await userEvent.click(dateButton!);
 
             // DateCalendar should be visible in the popover
@@ -390,7 +445,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const dateButton = screen.getByText(/Jan 15, 2025/).closest('button');
+            const dateButton = screen.getByRole('button', {name: /Jan 15, 2025/});
             await userEvent.click(dateButton!);
 
             // Wait for calendar to open
@@ -409,7 +464,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const dateButton = screen.getByText(/Jan 15, 2025/).closest('button');
+            const dateButton = screen.getByRole('button', {name: /Jan 15, 2025/});
             await userEvent.click(dateButton!);
 
             expect(await screen.findByRole('grid')).toBeInTheDocument();
@@ -428,7 +483,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const timeButton = screen.getByText(/2:00 PM/).closest('button');
+            const timeButton = screen.getByRole('button', {name: /2:00 PM/});
             await userEvent.click(timeButton!);
 
             // TimeClock should be visible in the popover
@@ -441,7 +496,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const assigneeButton = screen.getByText('John Doe').closest('button');
+            const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
             await waitFor(() => {
@@ -453,20 +508,18 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const assigneeButton = screen.getByText('John Doe').closest('button');
+            const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
-            await waitFor(() => {
-                expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-                expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
+            expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
         });
 
         it('calls tasksService.reassignTaskToStaff when staff is selected', async () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const assigneeButton = screen.getByText('John Doe').closest('button');
+            const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
             expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
@@ -482,7 +535,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const assigneeButton = screen.getByText('John Doe').closest('button');
+            const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
             expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
@@ -498,7 +551,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const assigneeButton = screen.getByText('John Doe').closest('button');
+            const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
             expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
@@ -516,7 +569,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const assigneeButton = screen.getByText('John Doe').closest('button');
+            const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
             expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
@@ -539,7 +592,7 @@ describe('TaskItem', () => {
             });
             renderWithProviders(<TaskItem {...props} />);
 
-            const assigneeButton = screen.getByText('John Doe').closest('button');
+            const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -553,37 +606,68 @@ describe('TaskItem', () => {
     });
 
     describe('Priority Indicator', () => {
-        it('renders priority indicator for high priority task', () => {
-            const task = createMockTask({priority: 'high'});
+        it.each(['high', 'medium', 'low'] as const)('renders a priority flag for %s priority', (priority) => {
+            const task = createMockTask({priority});
             const props = createDefaultProps({task});
             renderWithProviders(<TaskItem {...props} />);
 
-            // Verify task renders with priority - the indicator is a colored bar
-            expect(screen.getByText('Test Task')).toBeInTheDocument();
+            expect(screen.getByTitle(`Priority: ${priority}`)).toBeInTheDocument();
         });
 
-        it('renders priority indicator for medium priority task', () => {
-            const task = createMockTask({priority: 'medium'});
-            const props = createDefaultProps({task});
-            renderWithProviders(<TaskItem {...props} />);
-
-            expect(screen.getByText('Test Task')).toBeInTheDocument();
-        });
-
-        it('renders priority indicator for low priority task', () => {
-            const task = createMockTask({priority: 'low'});
-            const props = createDefaultProps({task});
-            renderWithProviders(<TaskItem {...props} />);
-
-            expect(screen.getByText('Test Task')).toBeInTheDocument();
-        });
-
-        it('renders without priority indicator when priority is undefined', () => {
+        it('renders no priority flag when priority is undefined', () => {
             const task = createMockTask({priority: undefined});
             const props = createDefaultProps({task});
             renderWithProviders(<TaskItem {...props} />);
 
+            expect(screen.queryByTitle(/Priority:/)).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Assignee Avatar', () => {
+        it('renders the assignee initials in the avatar', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.getByText('JD')).toBeInTheDocument();
+        });
+
+        it('renders no avatar initials for an unassigned task', () => {
+            const task = createMockTask({assignee: {id: 0, text: ''}});
+            const props = createDefaultProps({task});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.getByText('Unassigned')).toBeInTheDocument();
+            expect(screen.queryByText('JD')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Compact View', () => {
+        it('hides the description in compact view', () => {
+            const props = createDefaultProps({config: {compactView: true}});
+            renderWithProviders(<TaskItem {...props} />);
+
             expect(screen.getByText('Test Task')).toBeInTheDocument();
+            expect(screen.queryByText('This is a test task description')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Accessibility', () => {
+        it('labels the completion checkbox with the task title', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.getByRole('checkbox', {name: 'Mark "Test Task" complete'})).toBeInTheDocument();
+        });
+
+        it('activates the task from the keyboard via the title', async () => {
+            const props = createDefaultProps({config: {onTaskClick: true}});
+            renderWithProviders(<TaskItem {...props} />);
+
+            const title = screen.getByRole('button', {name: 'Open task: Test Task'});
+            title.focus();
+            await userEvent.keyboard('{Enter}');
+
+            expect(props.onTaskClick).toHaveBeenCalledWith(props.task);
         });
     });
 
@@ -646,7 +730,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps({config: {onTaskClick: true}});
             renderWithProviders(<TaskItem {...props} />);
 
-            const assigneeButton = screen.getByText('John Doe').closest('button');
+            const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
             // Should open popover, not trigger task click

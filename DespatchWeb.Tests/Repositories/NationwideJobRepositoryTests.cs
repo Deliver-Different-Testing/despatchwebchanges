@@ -1,10 +1,10 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Repositories;
@@ -17,20 +17,20 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private FakeTenantClock _clock = new(TestDates.Now);
 
     public NationwideJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
     }
 
     public async ValueTask DisposeAsync()
@@ -41,10 +41,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     private NationwideJobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock
     );
 
     [Fact]
@@ -929,7 +929,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_UpdatesPickupJobDeliverByTime()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -969,7 +969,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_UpdatesDeliveryJobProperties()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1274,7 +1274,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_UsesPickupJobSuffixConstant()
     {
         // Arrange - verifies the '1' suffix is used for pickup jobs
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1322,7 +1322,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_UsesDeliveryJobSuffixConstant()
     {
         // Arrange - verifies the '3' suffix is used for delivery jobs
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1478,7 +1478,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WhenNoPackageReadyTime_SetsDeliveryJobStartTimeToArrivalPlusProcessingTime()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1524,7 +1524,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WhenPackageReadyTimeProvided_UsesProvidedTimeInsteadOfCalculated()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1568,7 +1568,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WithCustomAirportProcessingTime_UsesAirportSpecificProcessingTime()
     {
         // Arrange - Test with a non-default processing time (90 minutes)
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1611,7 +1611,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WhenAirportHasNoProcessingTime_DefaultsTo60Minutes()
     {
         // Arrange - Airport without processing time set (should default to 60)
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1668,7 +1668,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_MultiSegmentFlight_UsesLastSegmentArrivalTimeForFinalMileStart()
     {
         // Arrange - Multi-segment flight where last leg arrival time matters
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime1 = new DateTimeOffset(2024, 6, 15, 8, 0, 0, TimeSpan.Zero);
         var arrivalTime1 = new DateTimeOffset(2024, 6, 15, 11, 0, 0, TimeSpan.Zero); // First leg arrival
@@ -1731,7 +1731,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Arrange - This test verifies that when both job '2' and job '3' exist,
         // the query specifically selects job '3' (the drop-off job) for the delivery time update.
         // Previously, the OR condition would find job '2' first due to ordering.
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1791,7 +1791,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_SetsPickupJobDeliverByTime_ToDepartureMinusProcessingTime()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 18, 0, 0, TimeSpan.Zero);
@@ -1832,7 +1832,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WithCustomDepartureAirportProcessingTime_AppliesCorrectProcessingTime()
     {
         // Arrange - Departure airport with 90 minute processing time
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 18, 0, 0, TimeSpan.Zero);
@@ -1873,7 +1873,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WhenNoPickupJob_DoesNotThrowAndFlightAssignmentSucceeds()
     {
         // Arrange - Flight job without associated pickup job
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 18, 0, 0, TimeSpan.Zero);
@@ -1914,7 +1914,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_SetsPickupJobDeliverByTimeZone_ToFirstSegmentDepartureTimeZone()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 18, 0, 0, TimeSpan.Zero);
@@ -1954,7 +1954,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_BothPickupAndDeliveryJobs_SetsBothDeliverByTimes()
     {
         // Arrange - Complete nationwide job with pickup, flight, and delivery
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2776,7 +2776,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_WhenToAirportIdSet_DeliveryJobIsUpdated()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2824,7 +2824,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_WhenDeliveryJobHasWrongGrouping_DeliveryJobNotUpdated()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2871,7 +2871,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_WhenOnlyRequestToAirportIdSet_DeliveryJobIsUpdated()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2919,7 +2919,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_NZTenant_UsesNationwideAgentGrouping()
     {
         // Arrange - NZ tenant
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -3043,7 +3043,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_NZTenant_WithUSGrouping_DeliveryJobNotFound()
     {
         // Arrange - NZ tenant
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);

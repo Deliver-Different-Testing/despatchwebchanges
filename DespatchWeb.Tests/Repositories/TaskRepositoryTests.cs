@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
-/// Tests for the static ApplyFilters method in TaskRepository.
+/// Tests for the static ApplyFilters method and ProjectToTaskViewModel projection in TaskRepository.
 /// Date filter tests use in-memory queryable (SQLite cannot translate DateTimeOffset-to-DateTime
 /// comparisons that SQL Server handles implicitly).
 /// SearchText tests use SQLite since EF.Functions.Like requires a real database provider.
@@ -58,6 +59,49 @@ public class TaskRepositoryTests : IAsyncDisposable
         };
         configure?.Invoke(ev);
         return ev;
+    }
+
+    private static TaskViewModel ProjectInMemory(TucEvent ev) =>
+        new[] { ev }.AsQueryable().Select(TaskRepository.ProjectToTaskViewModel).Single();
+
+    [Fact]
+    public void ProjectToTaskViewModel_MapsCourierAndClientCodeFromJob()
+    {
+        var ev = CreateEvent(1, e => e.UcevJob = new TucJob
+        {
+            UcjbNumber = "JOB-001",
+            UcjbClientCode = "ACME",
+            UcjbCourier = new TucCourier
+            {
+                Code = "ABC123",
+                UccrName = "John",
+                UccrSurname = "Smith"
+            }
+        });
+
+        var task = ProjectInMemory(ev);
+
+        Assert.Equal("ABC123", task.CourierCode);
+        Assert.Equal("John Smith", task.CourierName);
+        Assert.Equal("ACME", task.ClientCode);
+        Assert.Equal("JOB-001", task.JobNumber);
+    }
+
+    [Fact]
+    public void ProjectToTaskViewModel_NullCourierAndClientCode_MapToNull()
+    {
+        var ev = CreateEvent(1, e => e.UcevJob = new TucJob
+        {
+            UcjbNumber = "JOB-001",
+            UcjbClientCode = null,
+            UcjbCourier = null
+        });
+
+        var task = ProjectInMemory(ev);
+
+        Assert.Null(task.CourierCode);
+        Assert.Null(task.CourierName);
+        Assert.Null(task.ClientCode);
     }
 
     [Fact]

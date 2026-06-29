@@ -336,8 +336,24 @@ public sealed class RateJobService(
         var currentAmounts = await jobQueryRepository.GetJobCurrentAmountsAsync(jobIds);
 
         var resultRows = new List<BulkPricePreviewRow>();
-        decimal totalOldAmount = 0;
-        decimal totalNewAmount = 0;
+
+        // Reason shown when a job in the file could not actually be updated, so the UI surfaces it
+        // instead of reporting a false success.
+        const string notUpdatedReason =
+            "Could not be updated — the job was not found, is locked, or has already been invoiced.";
+
+        static BulkPricePreviewRow SkippedRow(int jobId, string jobNo, decimal oldAmount, bool isPrebook, string reason) =>
+            new()
+            {
+                JobId = jobId,
+                JobNo = jobNo,
+                Field = "Amount",
+                OldAmount = oldAmount,
+                NewAmount = oldAmount,
+                IsPrebook = isPrebook,
+                Skipped = true,
+                Error = reason
+            };
 
         switch (pricingMode)
         {
@@ -348,11 +364,13 @@ public sealed class RateJobService(
                 {
                     if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
                     {
+                        resultRows.Add(SkippedRow(data.Id, $"#{data.Id}", 0, false, notUpdatedReason));
                         continue;
                     }
 
                     var oldAmount = jobInfo.Amount;
                     var newAmount = oldAmount;
+                    string error = null;
 
                     try
                     {
@@ -367,6 +385,7 @@ public sealed class RateJobService(
                     catch (Exception ex)
                     {
                         Log.Warning(ex, "Failed to recalculate rate for job {JobId}", data.Id);
+                        error = "Could not recalculate price.";
                     }
 
                     resultRows.Add(new BulkPricePreviewRow
@@ -375,12 +394,11 @@ public sealed class RateJobService(
                         JobNo = jobInfo.JobNo,
                         Field = "Amount",
                         OldAmount = oldAmount,
-                        NewAmount = newAmount,
-                        IsPrebook = jobInfo.IsPrebook
+                        NewAmount = error == null ? newAmount : oldAmount,
+                        IsPrebook = jobInfo.IsPrebook,
+                        Skipped = error != null,
+                        Error = error
                     });
-
-                    totalOldAmount += oldAmount;
-                    totalNewAmount += newAmount;
                 }
 
                 break;
@@ -389,11 +407,14 @@ public sealed class RateJobService(
             {
                 // For base mode, calculate fuel surcharge and update all pricing fields
                 var updateModels = new List<JobManualPriceModel>();
+                // Non-prebook rows are pending until the batch update reports which jobs it touched.
+                var pendingBaseRows = new List<BulkPricePreviewRow>();
 
                 foreach (var data in parsedData)
                 {
                     if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
                     {
+                        resultRows.Add(SkippedRow(data.Id, $"#{data.Id}", 0, false, notUpdatedReason));
                         continue;
                     }
 
@@ -417,6 +438,7 @@ public sealed class RateJobService(
                     // For prebook jobs, use existing RepriceJobWithBaseAmountAsync (TucJobBooking lacks RawBaseAmount field)
                     if (jobInfo.IsPrebook)
                     {
+                        string error = null;
                         try
                         {
                             newAmount = await jobCommandRepository.RepriceJobWithBaseAmountAsync(
@@ -430,7 +452,20 @@ public sealed class RateJobService(
                         catch (Exception ex)
                         {
                             Log.Warning(ex, "Failed to reprice prebook job with base amount for job {JobId}", data.Id);
+                            error = "Could not reprice prebook job.";
                         }
+
+                        resultRows.Add(new BulkPricePreviewRow
+                        {
+                            JobId = data.Id,
+                            JobNo = jobInfo.JobNo,
+                            Field = "Amount",
+                            OldAmount = oldAmount,
+                            NewAmount = error == null ? newAmount : oldAmount,
+                            IsPrebook = true,
+                            Skipped = error != null,
+                            Error = error
+                        });
                     }
                     else
                     {
@@ -447,84 +482,82 @@ public sealed class RateJobService(
                             CourierFuel = data.CourierFuel ?? jobInfo.CourierFuel,
                             CourierBonus = data.CourierBonus ?? jobInfo.CourierBonus
                         });
+
+                        pendingBaseRows.Add(new BulkPricePreviewRow
+                        {
+                            JobId = data.Id,
+                            JobNo = jobInfo.JobNo,
+                            Field = "Amount",
+                            OldAmount = oldAmount,
+                            NewAmount = newAmount,
+                            IsPrebook = false
+                        });
                     }
-
-                    resultRows.Add(new BulkPricePreviewRow
-                    {
-                        JobId = data.Id,
-                        JobNo = jobInfo.JobNo,
-                        Field = "Amount",
-                        OldAmount = oldAmount,
-                        NewAmount = newAmount,
-                        IsPrebook = jobInfo.IsPrebook
-                    });
-
-                    totalOldAmount += oldAmount;
-                    totalNewAmount += newAmount;
                 }
 
-                // Batch update non-prebook jobs using existing robust logic
-                if (updateModels.Count > 0)
+                // Batch update non-prebook jobs using existing robust logic, then resolve each
+                // pending row against the set of jobs that were actually updated.
+                var updatedIds = updateModels.Count > 0
+                    ? await jobCommandRepository.UpdateManualPriceAsync(updateModels)
+                    : (IReadOnlySet<int>)new HashSet<int>();
+
+                foreach (var row in pendingBaseRows)
                 {
-                    await jobCommandRepository.UpdateManualPriceAsync(updateModels);
+                    resultRows.Add(updatedIds.Contains(row.JobId)
+                        ? row
+                        : row with { Skipped = true, NewAmount = row.OldAmount, Error = notUpdatedReason });
                 }
 
                 break;
             }
             default:
             {
-                // For gross mode, use existing UpdateManualPriceAsync and track results
+                // Gross mode: amounts are applied directly. The update covers live AND archived
+                // jobs, so drive the rows off what was actually updated rather than the live-only
+                // preview snapshot.
+                var updatedIds = await jobCommandRepository.UpdateManualPriceAsync(parsedData);
+
                 foreach (var data in parsedData)
                 {
-                    if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
-                    {
-                        continue;
-                    }
+                    currentAmounts.TryGetValue(data.Id, out var jobInfo);
+                    var updated = updatedIds.Contains(data.Id);
 
-                    var oldAmount = jobInfo.Amount;
-                    var newAmount = data.Amount ?? oldAmount;
+                    var oldAmount = jobInfo?.Amount ?? 0;
+                    var newAmount = updated ? data.Amount ?? oldAmount : oldAmount;
 
                     resultRows.Add(new BulkPricePreviewRow
                     {
                         JobId = data.Id,
-                        JobNo = jobInfo.JobNo,
+                        JobNo = jobInfo?.JobNo ?? $"#{data.Id}",
                         Field = "Amount",
                         OldAmount = oldAmount,
                         NewAmount = newAmount,
-                        IsPrebook = jobInfo.IsPrebook
+                        IsPrebook = jobInfo?.IsPrebook ?? false,
+                        Skipped = !updated,
+                        Error = updated ? null : notUpdatedReason
                     });
-
-                    totalOldAmount += oldAmount;
-                    totalNewAmount += newAmount;
                 }
 
-                await jobCommandRepository.UpdateManualPriceAsync(parsedData);
                 break;
             }
         }
 
         // Handle Void field for all pricing modes - apply void status regardless of pricing mode selected
         var jobsToVoid = parsedData.Where(d => d.Void == true).Select(d => d.Id).ToList();
-        if (jobsToVoid.Count <= 0)
+        if (jobsToVoid.Count > 0)
         {
-            return new BulkPricePreviewResponse
-            {
-                Rows = resultRows,
-                TotalJobs = resultRows.Count,
-                TotalOldAmount = totalOldAmount,
-                TotalNewAmount = totalNewAmount
-            };
+            await jobCommandRepository.UpdateJobVoidStatusAsync(jobsToVoid);
+            Log.Information("Voided {Count} jobs via bulk upload", jobsToVoid.Count);
         }
 
-        await jobCommandRepository.UpdateJobVoidStatusAsync(jobsToVoid);
-        Log.Information("Voided {Count} jobs via bulk upload", jobsToVoid.Count);
-
+        var updatedRows = resultRows.Where(r => !r.Skipped).ToList();
         return new BulkPricePreviewResponse
         {
             Rows = resultRows,
-            TotalJobs = resultRows.Count,
-            TotalOldAmount = totalOldAmount,
-            TotalNewAmount = totalNewAmount
+            TotalJobs = updatedRows.Count,
+            SkippedJobs = resultRows.Count - updatedRows.Count,
+            TotalOldAmount = updatedRows.Sum(r => r.OldAmount),
+            TotalNewAmount = updatedRows.Sum(r => r.NewAmount)
         };
     }
 

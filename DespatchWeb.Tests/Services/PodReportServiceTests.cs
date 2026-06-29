@@ -3,6 +3,23 @@ using DespatchWeb.Services;
 
 namespace DespatchWeb.Tests.Services;
 
+file static class PodTestData
+{
+    public static S3PhotoInfo DeliveryPhoto(byte[] bytes, string fileName = "delivery.jpg") => new()
+    {
+        S3Key = $"DeliveryPhotos/{fileName}",
+        FileName = fileName,
+        Data = Convert.ToBase64String(bytes)
+    };
+
+    public static S3PhotoInfo SignaturePhoto(byte[] bytes, string fileName = "sig.png") => new()
+    {
+        S3Key = $"DeliverySignatures/{fileName}",
+        FileName = fileName,
+        Data = Convert.ToBase64String(bytes)
+    };
+}
+
 /// <summary>
 /// Tests for the internal static mapping methods in PodReportService.
 /// </summary>
@@ -116,5 +133,59 @@ public class PodReportServiceTests
 
         Assert.Single(result);
         Assert.Equal(2, result[0].Photos.Count);
+    }
+
+    [Fact]
+    public void MapToPodData_NoSignaturePhoto_ReturnsNullSignatureImageWithoutThrowing()
+    {
+        var job = new JobViewModel { JobNo = "JOB-1" };
+        var photos = new List<S3PhotoInfo>
+        {
+            PodTestData.DeliveryPhoto([1, 2, 3])
+        };
+
+        var result = PodReportService.MapToPodData(job, photos);
+
+        Assert.Null(result.SignatureImage);
+    }
+
+    [Fact]
+    public void MapToPodData_NoPhotosAtAll_ReturnsNullSignatureImageWithoutThrowing()
+    {
+        var job = new JobViewModel { JobNo = "JOB-2" };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Null(result.SignatureImage);
+    }
+
+    [Fact]
+    public void MapToPodData_SignaturePhotoWithEmptyData_ReturnsNullSignatureImage()
+    {
+        var job = new JobViewModel { JobNo = "JOB-3" };
+        var photos = new List<S3PhotoInfo>
+        {
+            new() { S3Key = "DeliverySignatures/sig.png", FileName = "sig.png", Data = "" }
+        };
+
+        var result = PodReportService.MapToPodData(job, photos);
+
+        Assert.Null(result.SignatureImage);
+    }
+
+    [Fact]
+    public void MapToPodData_WithSignaturePhoto_DecodesSignatureBytes()
+    {
+        var signatureBytes = new byte[] { 9, 8, 7, 6 };
+        var job = new JobViewModel { JobNo = "JOB-4" };
+        var photos = new List<S3PhotoInfo>
+        {
+            PodTestData.SignaturePhoto(signatureBytes),
+            PodTestData.DeliveryPhoto([1, 2, 3])
+        };
+
+        var result = PodReportService.MapToPodData(job, photos);
+
+        Assert.Equal(signatureBytes, result.SignatureImage);
     }
 }

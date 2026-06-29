@@ -1,9 +1,9 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -16,13 +16,13 @@ public class DispatchLayoutRepositoryTests : IAsyncDisposable
     private const int StaffId = 123;
 
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public DispatchLayoutRepositoryTests()
     {
-        _contextFactoryMock = _db.CreateMoqFactoryMock();
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(StaffId);
+        _contextFactoryMock = _db.CreateFactoryMock();
+        _tenantInfoServiceMock.GetStaffId().Returns(StaffId);
     }
 
     public async ValueTask DisposeAsync()
@@ -32,8 +32,8 @@ public class DispatchLayoutRepositoryTests : IAsyncDisposable
     }
 
     private DispatchLayoutRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object);
+        _contextFactoryMock,
+        _tenantInfoServiceMock);
 
     private static DispatchLayoutDto Layout(string name, string json = "{}", bool isActive = false) =>
         new() { Name = name, LayoutJson = json, IsActive = isActive };

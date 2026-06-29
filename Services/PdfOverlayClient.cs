@@ -42,10 +42,8 @@ public sealed class PdfOverlayClient(
 
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Post, url)
-            {
-                Content = new StringContent(payload, Encoding.UTF8, "application/json"),
-            };
+            using var req = new HttpRequestMessage(HttpMethod.Post, url);
+            req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
             req.Headers.Add("X-Api-Key", apiKey);
 
             using var res = await httpClient.SendAsync(req, ct);
@@ -56,14 +54,10 @@ public sealed class PdfOverlayClient(
                 return null;
             }
 
-            if (!res.IsSuccessStatusCode)
-            {
-                Log.Warning("PDF Overlay render-job for job {JobId} ({DocType}) returned {Status} — falling back",
-                    jobId, documentType, (int)res.StatusCode);
-                return null;
-            }
-
-            return await res.Content.ReadAsByteArrayAsync(ct);
+            if (res.IsSuccessStatusCode) return await res.Content.ReadAsByteArrayAsync(ct);
+            Log.Warning("PDF Overlay render-job for job {JobId} ({DocType}) returned {Status} — falling back",
+                jobId, documentType, (int)res.StatusCode);
+            return null;
         }
         catch (Exception ex)
         {

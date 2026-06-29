@@ -1,10 +1,10 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -15,22 +15,22 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class BaseJobRepositoryTests : IAsyncDisposable
 {
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private FakeTenantClock _clock = new(new DateTime(2024, 6, 15, 10, 0, 0));
 
     public BaseJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
     }
 
     public async ValueTask DisposeAsync()
@@ -41,10 +41,10 @@ public class BaseJobRepositoryTests : IAsyncDisposable
     }
 
     private TestableBaseJobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock
     );
 
     [Fact]
@@ -402,7 +402,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         // Arrange
         const int staffId = 42;
         var currentTime = new DateTime(2024, 8, 20, 15, 30, 0);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(staffId);
+        _tenantInfoServiceMock.GetStaffId().Returns(staffId);
         _clock = new FakeTenantClock(currentTime);
 
         _context.TucNoteTypes.Add(new TucNoteType
