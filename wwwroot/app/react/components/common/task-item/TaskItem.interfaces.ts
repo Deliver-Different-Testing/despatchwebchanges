@@ -21,6 +21,9 @@ export interface Task {
     jobId: number;
     eventType: string;
     jobNumber: string;
+    courierCode?: string;
+    courierName?: string;
+    clientCode?: string;
     priority?: 'high' | 'medium' | 'low';
     _dueDateString?: string;
     _dueTimeString?: string;
@@ -30,6 +33,8 @@ export interface TaskItemConfig {
     showJobId?: boolean;
     showAssignee?: boolean;
     showJobType?: boolean;
+    showCourierCode?: boolean;
+    showClientCode?: boolean;
     showDateTime?: boolean;
     showDescription?: boolean;
     showStatusIndicators?: boolean;

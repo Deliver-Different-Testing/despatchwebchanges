@@ -1,19 +1,21 @@
 /**
  * React Task Item Component
  *
- * A modern replacement for the AngularJS task-item-component using MUI components.
- * Displays a task with its metadata and provides actions for completion, reassignment,
- * and date/time editing.
+ * A Material Design 3 list-item for a dispatch task, built from MUI primitives.
+ * Anatomy: leading completion control, headline (priority + title + status),
+ * supporting description text, metadata chips, and trailing date/time supporting text.
  */
 
 import React, {useState, useMemo, useCallback} from 'react';
 import {alpha} from '@mui/material/styles';
-import type {Theme} from '@mui/material/styles';
+import type {SxProps, Theme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
+import ButtonBase from '@mui/material/ButtonBase';
 import Chip from '@mui/material/Chip';
+import Avatar from '@mui/material/Avatar';
+import Tooltip from '@mui/material/Tooltip';
 import Popover from '@mui/material/Popover';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -25,6 +27,9 @@ import PersonIcon from '@mui/icons-material/Person';
 import CalendarIcon from '@mui/icons-material/CalendarToday';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SearchIcon from '@mui/icons-material/Search';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import BusinessIcon from '@mui/icons-material/Business';
+import FlagIcon from '@mui/icons-material/Flag';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
@@ -37,6 +42,8 @@ const defaultConfig: TaskItemConfig = {
     showJobId: true,
     showAssignee: true,
     showJobType: true,
+    showCourierCode: true,
+    showClientCode: true,
     showDateTime: true,
     showStatusIndicators: true,
     allowCompletion: true,
@@ -58,6 +65,39 @@ const getStatusBorderColor = (theme: Theme, task: Task, isOverdue: boolean): str
     return theme.palette.primary.main;
 };
 
+const priorityColor: Record<NonNullable<Task['priority']>, string> = {
+    high: 'error.main',
+    medium: 'warning.main',
+    low: 'info.main',
+};
+
+/** First letters of up to two name words, e.g. "John Doe" -> "JD". */
+const getInitials = (name: string): string => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
+
+/** Deterministic, readable avatar background derived from the assignee name. */
+const getAvatarColor = (name: string): string => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `hsl(${Math.abs(hash) % 360}, 42%, 42%)`;
+};
+
+// Shared grey metadata-chip styling (matches the app's chip convention).
+const metadataChipSx = {
+    bgcolor: 'grey.100',
+    border: 1,
+    borderColor: 'divider',
+    color: 'text.secondary',
+    fontWeight: 500,
+    '& .MuiChip-icon': {color: 'text.secondary'},
+} satisfies SxProps<Theme>;
+
 // Compute timezone abbreviation once at module level (it doesn't change per-render)
 const ianaTimeZone = getIanaTimezone(getTenantTimezone());
 const timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
@@ -76,6 +116,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     } = props;
 
     const config = useMemo(() => ({...defaultConfig, ...configOverrides}), [configOverrides]);
+    const compact = config.compactView === true;
 
     // State
     const [popoverType, setPopoverType] = useState<PopoverType>(null);
@@ -99,6 +140,8 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     }, [staffList, staffSearchText]);
 
     const statusChip = useMemo(() => getStatusChip(task, isOverdue), [task, isOverdue]);
+    const assigneeName = task.assignee?.text || '';
+    const hasAssignee = Boolean(task.assignee?.id);
 
     // Handlers
     const closePopover = useCallback(() => {
@@ -148,21 +191,21 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         }
     }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
 
-    const openDatePopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    const openDatePopover = useCallback((event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
         setAnchorEl(event.currentTarget);
         setSelectedDate(task.dueDate);
         setPopoverType('date');
     }, [task.dueDate]);
 
-    const openTimePopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    const openTimePopover = useCallback((event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
         setAnchorEl(event.currentTarget);
         setSelectedDate(task.dueDate);
         setPopoverType('time');
     }, [task.dueDate]);
 
-    const openAssigneePopover = useCallback(async (event: React.MouseEvent<HTMLButtonElement>) => {
+    const openAssigneePopover = useCallback(async (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
         setAnchorEl(event.currentTarget);
         setPopoverType('assignee');
@@ -224,16 +267,31 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         setStaffSearchText(event.target.value);
     }, []);
 
+    const titleTypography = (
+        <Typography
+            className="task-title"
+            variant="subtitle2"
+            sx={{
+                fontWeight: 600,
+                color: task.closed ? 'text.disabled' : 'text.primary',
+                textDecoration: task.closed ? 'line-through' : 'none',
+                transition: (theme) => `color ${theme.transitions.duration.short}ms ease`,
+            }}
+        >
+            {task.title}
+        </Typography>
+    );
+
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box
                 onClick={handleTaskClick}
                 sx={(theme) => ({
                     display: 'flex',
-                    alignItems: 'flex-start',
-                    py: 1.5,
+                    alignItems: compact ? 'center' : 'flex-start',
+                    py: compact ? 1 : 1.5,
                     px: 2,
-                    minHeight: 64,
+                    minHeight: compact ? 44 : 64,
                     borderRadius: 1.5,
                     mb: 0.25,
                     bgcolor: task.closed ? 'grey.50' : 'background.paper',
@@ -253,6 +311,9 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                         '& .task-title': {
                             color: 'primary.main',
                         },
+                        '@media (prefers-reduced-motion: reduce)': {
+                            transform: 'none',
+                        },
                     } : {},
                 })}
             >
@@ -264,58 +325,67 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                         onChange={handleCheckboxChange}
                         onClick={(e) => e.stopPropagation()}
                         disabled={isCompleting}
+                        slotProps={{input: {'aria-label': `Mark "${task.title}" complete`}}}
                         sx={{
                             marginRight: 1.5,
-                            marginTop: -0.5,
+                            marginTop: compact ? 0 : -0.5,
                             padding: 0.5,
                         }}
                     />
                 )}
 
                 {/* Task Content */}
-                <Box sx={{flex: 1, minWidth: 0, mb: 1.25}}>
-                    {/* Title with Status Chips */}
+                <Box sx={{flex: 1, minWidth: 0, mb: compact ? 0 : 1.25}}>
+                    {/* Headline: priority + title + status */}
                     <Box
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
                             flexWrap: 'wrap',
                             gap: 1,
-                            mb: 0.5,
+                            mb: compact ? 0 : 0.5,
                         }}
                     >
-                        <Typography
-                            className="task-title"
-                            variant="subtitle2"
-                            sx={{
-                                fontWeight: 600,
-                                color: 'text.primary',
-                                textDecoration: task.closed ? 'line-through' : 'none',
-                                transition: (theme) => `color ${theme.transitions.duration.short}ms ease`,
-                            }}
-                        >
-                            {task.title}
-                        </Typography>
+                        {task.priority && (
+                            <Tooltip title={`Priority: ${task.priority}`}>
+                                <FlagIcon
+                                    titleAccess={`Priority: ${task.priority}`}
+                                    sx={{fontSize: 16, color: priorityColor[task.priority]}}
+                                />
+                            </Tooltip>
+                        )}
+
+                        {config.onTaskClick ? (
+                            <ButtonBase
+                                onClick={handleTaskClick}
+                                aria-label={`Open task: ${task.title}`}
+                                sx={{
+                                    borderRadius: 0.5,
+                                    textAlign: 'left',
+                                    '&:focus-visible': {
+                                        outline: '2px solid',
+                                        outlineColor: 'primary.main',
+                                        outlineOffset: 2,
+                                    },
+                                }}
+                            >
+                                {titleTypography}
+                            </ButtonBase>
+                        ) : titleTypography}
 
                         {config.showStatusIndicators !== false && (
                             <Chip
                                 label={statusChip.label}
                                 color={statusChip.color}
                                 size="small"
-                                sx={{
-                                    height: 20,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    textTransform: 'uppercase',
-                                }}
                             />
                         )}
                     </Box>
 
-                    {/* Description */}
-                    {config.showDescription !== false && task.description && (
+                    {/* Supporting text */}
+                    {config.showDescription !== false && !compact && task.description && (
                         <Typography
-                            variant="caption"
+                            variant="body2"
                             sx={{
                                 display: '-webkit-box',
                                 color: task.closed ? 'text.disabled' : 'text.secondary',
@@ -329,58 +399,42 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                         </Typography>
                     )}
 
-                    {/* Metadata */}
+                    {/* Metadata chips */}
                     <Box
                         sx={{
                             display: 'flex',
                             flexWrap: 'wrap',
                             alignItems: 'center',
                             gap: 1,
-                            mt: 0.5,
+                            mt: compact ? 0 : 0.5,
                         }}
                     >
-                        {/* Assignee Button */}
+                        {/* Assignee */}
                         {config.showAssignee !== false && (
-                            <Button
+                            <Chip
                                 size="small"
                                 onClick={openAssigneePopover}
-                                startIcon={<PersonIcon sx={{fontSize: 14}} />}
-                                sx={{
-                                    height: 24,
-                                    py: 0.25,
-                                    px: 1.25,
-                                    borderRadius: 9999,
-                                    bgcolor: 'grey.100',
-                                    border: 1,
-                                    borderColor: 'divider',
-                                    color: 'text.primary',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 500,
-                                    textTransform: 'none',
-                                    '&:hover': {
-                                        bgcolor: 'grey.200',
-                                        borderColor: 'grey.300',
-                                    },
-                                    '& .MuiButton-startIcon': {
-                                        mr: 0.5,
-                                    },
-                                }}
-                            >
-                                {task.assignee?.text || 'Unassigned'}
-                            </Button>
+                                avatar={hasAssignee ? (
+                                    <Avatar sx={{bgcolor: getAvatarColor(assigneeName), color: 'common.white'}}>
+                                        {getInitials(assigneeName)}
+                                    </Avatar>
+                                ) : undefined}
+                                icon={hasAssignee ? undefined : <PersonIcon />}
+                                label={assigneeName || 'Unassigned'}
+                                variant={hasAssignee ? 'filled' : 'outlined'}
+                                sx={hasAssignee ? metadataChipSx : undefined}
+                            />
                         )}
 
-                        {/* Job ID Chip */}
+                        {/* Job ID */}
                         {config.showJobId !== false && (
                             <Chip
                                 label={`Job #${task.jobNumber}`}
                                 size="small"
                                 sx={(theme) => ({
-                                    height: 24,
                                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                                     border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                                     color: 'primary.dark',
-                                    fontSize: '0.75rem',
                                     fontWeight: 600,
                                     fontFamily: '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace',
                                 })}
@@ -392,96 +446,62 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                             <Chip
                                 label={task.eventType.charAt(0).toUpperCase() + task.eventType.slice(1)}
                                 size="small"
-                                sx={{
-                                    height: 24,
-                                    bgcolor: 'grey.100',
-                                    border: 1,
-                                    borderColor: 'divider',
-                                    color: 'text.secondary',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 500,
-                                }}
+                                sx={metadataChipSx}
+                            />
+                        )}
+
+                        {/* Courier */}
+                        {config.showCourierCode !== false && task.courierCode && (
+                            <Chip
+                                icon={<LocalShippingIcon />}
+                                label={`Courier: ${task.courierCode}${task.courierName ? ` — ${task.courierName}` : ''}`}
+                                size="small"
+                                sx={metadataChipSx}
+                            />
+                        )}
+
+                        {/* Client */}
+                        {config.showClientCode !== false && task.clientCode && (
+                            <Chip
+                                icon={<BusinessIcon />}
+                                label={`Client: ${task.clientCode}`}
+                                size="small"
+                                sx={metadataChipSx}
                             />
                         )}
                     </Box>
                 </Box>
 
-                {/* Date/Time Section */}
+                {/* Trailing supporting text: due date / time */}
                 {config.showDateTime !== false && (
                     <Box
                         sx={{
-                            minWidth: 130,
-                            maxWidth: 160,
                             pl: 1.5,
                             display: 'flex',
-                            flexDirection: 'column',
+                            flexDirection: compact ? 'row' : 'column',
+                            alignItems: compact ? 'center' : 'stretch',
                             gap: 0.5,
                             flexShrink: 0,
                         }}
                     >
-                        {/* Date Button */}
-                        <Button
+                        <Chip
                             size="small"
                             onClick={openDatePopover}
-                            startIcon={<CalendarIcon sx={{fontSize: 14}} />}
-                            sx={(theme) => ({
-                                width: '100%',
-                                height: 28,
-                                justifyContent: 'flex-start',
-                                px: 1,
-                                py: 0,
-                                borderRadius: 1,
-                                bgcolor: isOverdue ? alpha(theme.palette.error.main, 0.08) : 'grey.100',
-                                border: 1,
-                                borderColor: isOverdue ? alpha(theme.palette.error.main, 0.2) : 'divider',
-                                color: isOverdue ? 'error.dark' : 'text.primary',
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                textTransform: 'none',
-                                '&:hover': {
-                                    bgcolor: isOverdue ? alpha(theme.palette.error.main, 0.12) : 'grey.200',
-                                    borderColor: isOverdue ? alpha(theme.palette.error.main, 0.3) : 'grey.300',
-                                },
-                                '& .MuiButton-startIcon': {
-                                    mr: 1,
-                                    color: isOverdue ? 'error.main' : 'text.secondary',
-                                },
-                            })}
-                        >
-                            {task._dueDateString} {timeZoneShort}
-                        </Button>
-
-                        {/* Time Button */}
-                        <Button
+                            icon={<CalendarIcon />}
+                            label={`${task._dueDateString} ${timeZoneShort}`}
+                            color={isOverdue ? 'error' : 'default'}
+                            variant={isOverdue ? 'outlined' : 'filled'}
+                            sx={isOverdue ? undefined : metadataChipSx}
+                        />
+                        <Chip
                             size="small"
                             onClick={openTimePopover}
-                            startIcon={<ScheduleIcon sx={{fontSize: 14}} />}
-                            sx={(theme) => ({
-                                width: '100%',
-                                height: 28,
-                                justifyContent: 'flex-start',
-                                px: 1,
-                                py: 0,
-                                borderRadius: 1,
-                                bgcolor: isOverdue ? alpha(theme.palette.error.main, 0.08) : 'grey.100',
-                                border: 1,
-                                borderColor: isOverdue ? alpha(theme.palette.error.main, 0.2) : 'divider',
-                                color: isOverdue ? 'error.dark' : 'text.primary',
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                textTransform: 'none',
-                                '&:hover': {
-                                    bgcolor: isOverdue ? alpha(theme.palette.error.main, 0.12) : 'grey.200',
-                                    borderColor: isOverdue ? alpha(theme.palette.error.main, 0.3) : 'grey.300',
-                                },
-                                '& .MuiButton-startIcon': {
-                                    mr: 1,
-                                    color: isOverdue ? 'error.main' : 'text.secondary',
-                                },
-                            })}
-                        >
-                            {task._dueTimeString} {timeZoneShort}
-                        </Button>
+                            icon={<ScheduleIcon />}
+                            label={`${task._dueTimeString} ${timeZoneShort}`}
+                            color={isOverdue ? 'error' : 'default'}
+                            variant={isOverdue ? 'outlined' : 'filled'}
+                            sx={isOverdue ? undefined : metadataChipSx}
+                        />
                     </Box>
                 )}
             </Box>

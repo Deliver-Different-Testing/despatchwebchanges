@@ -35,7 +35,8 @@ public partial class JobRepository(
     /// Handles both active and archived jobs, updates parent job totals, and manages pricing breakdowns.
     /// </summary>
     /// <param name="data">List of job pricing updates to apply.</param>
-    public async Task UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data)
+    /// <returns>The set of job IDs that were actually found and updated.</returns>
+    public async Task<IReadOnlySet<int>> UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data)
     {
         data = data.Select(item => new JobManualPriceModel
         {
@@ -91,16 +92,26 @@ public partial class JobRepository(
 
         if (jobIds.Count == 0)
         {
-            return;
+            return new HashSet<int>();
         }
 
-        var idData = await Context
-            .TblJobs.Where(j =>
-                jobIds.Contains(j.JobId)
-                || (j.ParentId.HasValue && jobIds.Contains(j.ParentId.Value))
-            )
-            .Select(j => new { j.JobId, ParentId = j.ParentId ?? j.JobId })
-            .ToListAsync();
+        // Discover the input jobs plus their parents/children directly from the real job tables
+        // (live + archived). The legacy tblJob view was unreliable here: any job it failed to
+        // surface was silently dropped from the id set, so the UPDATE below matched nothing and
+        // the caller saw a "success" with no actual change.
+        var activeIdData = Context.TucJobs
+            .Where(j =>
+                jobIds.Contains(j.UcjbId)
+                || (j.ParentId.HasValue && jobIds.Contains(j.ParentId.Value)))
+            .Select(j => new { JobId = j.UcjbId, ParentId = j.ParentId ?? j.UcjbId });
+
+        var archivedIdData = Context.TucJobArchives
+            .Where(j =>
+                jobIds.Contains(j.UcjbId)
+                || (j.ParentId.HasValue && jobIds.Contains(j.ParentId.Value)))
+            .Select(j => new { JobId = j.UcjbId, ParentId = j.ParentId ?? j.UcjbId });
+
+        var idData = await activeIdData.Concat(archivedIdData).ToListAsync();
 
         var ids = idData
             .Select(j => j.JobId)
@@ -414,6 +425,12 @@ public partial class JobRepository(
 
             throw;
         }
+
+        // Report which of the requested jobs were actually found and updated, so the caller can
+        // surface the rest instead of reporting a false success. Parent jobs pulled in for total
+        // recomputation are intersected out (only caller-requested IDs are returned).
+        processedJobIds.IntersectWith(jobIds);
+        return processedJobIds;
     }
 
     /// <summary>

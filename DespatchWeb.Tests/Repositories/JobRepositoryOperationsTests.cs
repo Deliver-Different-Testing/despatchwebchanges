@@ -1,11 +1,11 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -18,22 +18,22 @@ namespace DespatchWeb.Tests.Repositories;
 public class JobRepositoryOperationsTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
-    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
-    private readonly Mock<IJobApiClient> _jobApiClientMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
+    private readonly IJobApiClient _jobApiClientMock = Substitute.For<IJobApiClient>();
     private FakeTenantClock _clock = new(TestDates.Now);
     private static readonly int[] SourceArray = [100, 101];
 
     public JobRepositoryOperationsTests()
     {
-        _contextFactoryMock = _db.CreateMoqFactoryMock();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         // Default tenant setup
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
     }
 
     public async ValueTask DisposeAsync()
@@ -45,12 +45,12 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
     private DespatchContext CreateContext() => _db.CreateContext();
 
     private JobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        _jobApiClientMock.Object
+        _clearListEnvelopeServiceMock,
+        _createJobServiceMock,
+        _jobApiClientMock
     );
 
     [Fact]
@@ -348,6 +348,110 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
 
         // Act - no matching jobs should not throw
         await repository.UpdateJobVoidStatusAsync([999, 998]);
+    }
+
+    [Fact]
+    public async Task UpdateManualPriceAsync_LiveJob_SetAmountToZero_PersistsZero()
+    {
+        // Reproduces the bulk-price "set price to 0" scenario for a live job. The update must
+        // discover the job and persist 0, without depending on the legacy tblJob view (which is
+        // unseedable here and silently excludes jobs it does not surface in production).
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 100,
+                UcjbNumber = "JOB100",
+                UcjbAmount = 120m,
+                FuelSurchargeAmount = 0m,
+                PpdexclusiveAmount = 0m,
+                UcjbLocked = false
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        var updated = await repository.UpdateManualPriceAsync([
+            new JobManualPriceModel
+            {
+                Id = 100, Amount = 0m, Fuel = 0m, Ppd = 0m,
+                CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m
+            }
+        ]);
+
+        Assert.Contains(100, updated);
+
+        await using var verifyContext = CreateContext();
+        var job = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        Assert.NotNull(job);
+        Assert.Equal(0m, job!.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task UpdateManualPriceAsync_JobNotFound_IsExcludedFromReturnedSet()
+    {
+        // A job that does not exist in either job table must NOT be reported as updated, so the
+        // caller can surface it instead of claiming a false success.
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 100,
+                UcjbNumber = "JOB100",
+                UcjbAmount = 50m,
+                FuelSurchargeAmount = 0m,
+                PpdexclusiveAmount = 0m,
+                UcjbLocked = false
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        var updated = await repository.UpdateManualPriceAsync([
+            new JobManualPriceModel { Id = 100, Amount = 0m, Fuel = 0m, Ppd = 0m, CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m },
+            new JobManualPriceModel { Id = 777, Amount = 0m, Fuel = 0m, Ppd = 0m, CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m }
+        ]);
+
+        Assert.Contains(100, updated);
+        Assert.DoesNotContain(777, updated);
+    }
+
+    [Fact]
+    public async Task UpdateManualPriceAsync_ArchivedJob_SetAmountToZero_PersistsZero()
+    {
+        // Archived (completed) jobs must also be repriced to 0. This is the path most likely to
+        // have been failing for the reported Toyota June invoices.
+        await using (var context = CreateContext())
+        {
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 200,
+                UcjbNumber = "ARCH200",
+                UcjbAmount = 95m,
+                FuelSurchargeAmount = 0m,
+                PpdexclusiveAmount = 0m,
+                UcjbLocked = 0,
+                UcjbInvoiceNo = null
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        await repository.UpdateManualPriceAsync([
+            new JobManualPriceModel
+            {
+                Id = 200, Amount = 0m, Fuel = 0m, Ppd = 0m,
+                CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m
+            }
+        ]);
+
+        await using var verifyContext = CreateContext();
+        var job = await verifyContext.TucJobArchives.FindAsync([200], TestContext.Current.CancellationToken);
+        Assert.NotNull(job);
+        Assert.Equal(0m, job!.UcjbAmount);
     }
 
     [Fact]
@@ -664,7 +768,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
     public async Task AssignCourierToJobAsync_WithNoStaffClaim_LeavesDispatcherNull()
     {
         // Arrange - no staff claim, so GetStaffId() returns 0
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(0);
+        _tenantInfoServiceMock.GetStaffId().Returns(0);
         await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJob(100, "JOB001"));

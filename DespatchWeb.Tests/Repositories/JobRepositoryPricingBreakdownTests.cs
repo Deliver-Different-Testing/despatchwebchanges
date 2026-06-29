@@ -1,9 +1,9 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -15,22 +15,22 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
-    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
-    private readonly Mock<IJobApiClient> _jobApiClientMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
+    private readonly IJobApiClient _jobApiClientMock = Substitute.For<IJobApiClient>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryPricingBreakdownTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
 
         // Add required note type for note creation
         _context.TucNoteTypes.Add(new TucNoteType
@@ -52,12 +52,12 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
     }
 
     private JobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        _jobApiClientMock.Object
+        _clearListEnvelopeServiceMock,
+        _createJobServiceMock,
+        _jobApiClientMock
     );
 
     [Fact]

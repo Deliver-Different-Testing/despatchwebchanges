@@ -39,8 +39,55 @@ const mockResponse: BulkPricePreviewResponse = {
         },
     ],
     totalJobs: 2,
+    skippedJobs: 0,
     totalOldAmount: 300.00,
     totalNewAmount: 330.00,
+};
+
+const mockPartialResponse: BulkPricePreviewResponse = {
+    rows: [
+        {
+            jobId: 1,
+            jobNo: 'JOB-001',
+            field: 'Amount',
+            oldAmount: 100.00,
+            newAmount: 0.00,
+            isPrebook: false,
+        },
+        {
+            jobId: 2,
+            jobNo: 'JOB-002',
+            field: 'Amount',
+            oldAmount: 200.00,
+            newAmount: 200.00,
+            isPrebook: false,
+            skipped: true,
+            error: 'Could not be updated — the job was not found, is locked, or has already been invoiced.',
+        },
+    ],
+    totalJobs: 1,
+    skippedJobs: 1,
+    totalOldAmount: 100.00,
+    totalNewAmount: 0.00,
+};
+
+const mockNoneUpdatedResponse: BulkPricePreviewResponse = {
+    rows: [
+        {
+            jobId: 1,
+            jobNo: 'JOB-001',
+            field: 'Amount',
+            oldAmount: 100.00,
+            newAmount: 100.00,
+            isPrebook: false,
+            skipped: true,
+            error: 'Could not be updated — the job was not found, is locked, or has already been invoiced.',
+        },
+    ],
+    totalJobs: 0,
+    skippedJobs: 1,
+    totalOldAmount: 0.00,
+    totalNewAmount: 0.00,
 };
 
 const createMockProps = (overrides = {}) => ({
@@ -305,6 +352,42 @@ describe('BulkPriceUploadDialog', () => {
             });
         });
 
+        it('should show a warning toast when some jobs are skipped', async () => {
+            const props = createMockProps({
+                onSubmit: jest.fn().mockResolvedValue(mockPartialResponse),
+            });
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
+            await userEvent.click(applyButton);
+
+            await waitFor(() => {
+                expect(props.showToast).toHaveBeenCalledWith(
+                    'Updated 1 job; 1 skipped.',
+                    'warning'
+                );
+            });
+        });
+
+        it('should show an error toast when no jobs are updated', async () => {
+            const props = createMockProps({
+                onSubmit: jest.fn().mockResolvedValue(mockNoneUpdatedResponse),
+            });
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
+            await userEvent.click(applyButton);
+
+            await waitFor(() => {
+                expect(props.showToast).toHaveBeenCalledWith(
+                    'No prices were updated. 1 job could not be updated.',
+                    'error'
+                );
+            });
+        });
+
         it('should show error toast on failure', async () => {
             const props = createMockProps({
                 onSubmit: jest.fn().mockRejectedValue(new Error('Upload failed')),
@@ -358,6 +441,26 @@ describe('BulkPriceUploadDialog', () => {
             await uploadAndApply(props);
 
             expect(screen.getByText('Prices Updated')).toBeInTheDocument();
+        });
+
+        it('should show a "Partially Updated" header and the skip reason when some jobs are skipped', async () => {
+            const props = createMockProps({
+                onSubmit: jest.fn().mockResolvedValue(mockPartialResponse),
+            });
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+
+            const file = createMockFile();
+            const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+            await userEvent.upload(input, file);
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
+            await userEvent.click(screen.getByRole('button', { name: /recalculate & save/i }));
+
+            expect(await screen.findByText('Partially Updated')).toBeInTheDocument();
+            expect(screen.getByText(/1 job could not be updated/i)).toBeInTheDocument();
+            // The per-row skip reason is surfaced in the results table.
+            expect(
+                screen.getByText(/not found, is locked, or has already been invoiced/i)
+            ).toBeInTheDocument();
         });
 
         it('should display summary statistics', async () => {

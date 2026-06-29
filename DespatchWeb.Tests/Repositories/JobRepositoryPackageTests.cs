@@ -1,9 +1,9 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -15,20 +15,20 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryPackageTests : IAsyncDisposable
 {
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
-    private readonly Mock<IJobApiClient> _jobApiClientMock = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
+    private readonly IJobApiClient _jobApiClientMock = Substitute.For<IJobApiClient>();
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public JobRepositoryPackageTests()
     {
-        _contextFactoryMock = _db.CreateMoqFactoryMock();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
     }
 
     public async ValueTask DisposeAsync()
@@ -40,12 +40,12 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     private DespatchContext CreateContext() => _db.CreateContext();
 
     private JobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         new FakeTenantClock(TestDates.Now),
-        _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        _jobApiClientMock.Object
+        _clearListEnvelopeServiceMock,
+        _createJobServiceMock,
+        _jobApiClientMock
     );
 
     // ── UpdatePackagesForJobAsync ────────────────────────────────────

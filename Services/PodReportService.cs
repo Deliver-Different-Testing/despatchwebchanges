@@ -136,7 +136,7 @@ public sealed class PodReportService(
         return tenantId;
     }
 
-    private static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos)
+    internal static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos)
     {
         // Separate signatures from delivery photos
         var signaturePhotos = s3Photos
@@ -147,9 +147,14 @@ public sealed class PodReportService(
             .Where(p => p.S3Key.Contains("DeliveryPhotos/", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        // Get signature bytes from the first signature image
+        // Get signature bytes from the first signature image. S3PhotoInfo is a struct, so
+        // FirstOrDefault yields default(S3PhotoInfo) with a null Data when no signature exists —
+        // decode only when data is present, otherwise leave the (nullable) signature unset so a
+        // POD without a signature still renders instead of throwing.
         var firstSignature = signaturePhotos.FirstOrDefault(p => !string.IsNullOrEmpty(p.Data));
-        var signatureBytes = Convert.FromBase64String(firstSignature.Data);
+        var signatureBytes = string.IsNullOrEmpty(firstSignature.Data)
+            ? null
+            : Convert.FromBase64String(firstSignature.Data);
 
         return new PodData
         {

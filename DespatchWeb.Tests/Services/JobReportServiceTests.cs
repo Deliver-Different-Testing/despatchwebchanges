@@ -176,6 +176,32 @@ public class JobReportServiceTests
     }
 
     [Fact]
+    public async Task ParseBulkPriceFileAsync_CsvWithZeroValues_ParsesAsZeroNotNull()
+    {
+        // Arrange - a user setting a price to 0 must be preserved as 0, not collapsed to null
+        // (null means "leave unchanged" in the update pipeline, which would silently drop the edit).
+        const string csvContent = "Id,Amount,Fuel,RawBaseAmount\n1,0,0,0\n2,0.00,5,10";
+        var fileMock = CreateMockCsvFile("test.csv", csvContent);
+        var service = CreateService();
+
+        // Act
+        var result = await service.ParseBulkPriceFileAsync(fileMock);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+
+        Assert.Equal(1, result[0].Id);
+        Assert.Equal(0m, result[0].Amount);
+        Assert.Equal(0m, result[0].Fuel);
+        Assert.Equal(0m, result[0].RawBaseAmount);
+
+        Assert.Equal(2, result[1].Id);
+        Assert.Equal(0m, result[1].Amount);
+        Assert.Equal(5m, result[1].Fuel);
+        Assert.Equal(10m, result[1].RawBaseAmount);
+    }
+
+    [Fact]
     public async Task ParseBulkPriceFileAsync_CsvWithAllFields_ParsesAllFields()
     {
         // Arrange

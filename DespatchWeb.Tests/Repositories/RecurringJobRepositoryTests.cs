@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -7,7 +7,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -19,15 +19,15 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public RecurringJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
     }
 
     public async ValueTask DisposeAsync()
@@ -38,10 +38,10 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     }
 
     private RecurringJobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock
     );
 
     [Fact]
@@ -357,8 +357,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
             id: 100,
@@ -390,8 +390,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Arrange - Job with null date/time will use SqlMinDateTime (1753-01-01) as fallback
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
             id: 100,
@@ -425,8 +425,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // when converted to DateTimeOffset with positive timezone offset (like NZ +12/+13)
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         // Add job with dates that would result in SqlMinDateTime fallback
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
@@ -459,8 +459,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var nextDue = new DateTime(2024, 6, 22, 9, 0, 0);
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
             id: 100,
@@ -495,8 +495,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
             id: 100,
@@ -526,8 +526,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Arrange
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         // No jobs added
         var repository = CreateRepository();
@@ -549,8 +549,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, validDate, validTime, validDate.AddDays(7), true, false),
@@ -1096,8 +1096,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false),
@@ -1129,8 +1129,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSpeed(100, 1, true),
@@ -1155,8 +1155,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithCourier(100, 10, true),
@@ -1180,8 +1180,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithAddress(100, "123 Queen St", true),
@@ -1205,8 +1205,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false), // Recurring
@@ -1234,8 +1234,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, new DateTime(2024, 1, 1), null, null, true, false),
@@ -1264,8 +1264,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSearchFields(100, clientCode: "ACME01", active: true),
@@ -1291,8 +1291,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSearchFields(100, pickupContact: "John Smith", active: true),
@@ -1318,8 +1318,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSearchFields(100, clientRefA: "PO-12345", active: true),
@@ -1345,8 +1345,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSearchFields(100, connote: "CN-ABC-001", active: true),
@@ -1376,7 +1376,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var middleDate = new DateTime(2024, 6, 15, 14, 30, 0);
         var newestDate = new DateTime(2024, 12, 31, 23, 59, 0);
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
 
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TucJobBookings.Add(CreateJobBooking(jobBookingId));
@@ -1404,8 +1404,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         // Monday = 1, Tuesday = 2, Wednesday = 4
         _context.TucJobBookings.AddRange(
@@ -1431,8 +1431,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "Pacific Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false),

@@ -1,9 +1,9 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Repositories;
@@ -22,11 +22,11 @@ namespace DespatchWeb.Tests.Repositories;
 public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
-    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
-    private readonly Mock<IJobApiClient> _jobApiClientMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
+    private readonly IJobApiClient _jobApiClientMock = Substitute.For<IJobApiClient>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     // Timezone records seeded in the database
@@ -37,7 +37,7 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 
     public JobRepositoryEditCompletedTimeTests()
     {
-        _contextFactoryMock = _db.CreateMoqFactoryMock();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         // Seed timezone records for entity-based tests
         using var context = _db.CreateContext();
@@ -47,21 +47,21 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         );
         context.SaveChanges();
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
 
         // Mock GetCurrentTimeFromTimeZone for specific timezones
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTimeFromTimeZone(
-                It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)))
+        _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(
+                Arg.Is<TimeZone>(tz => tz.Name == PstTimezoneName))
             .Returns(new DateTime(2024, 6, 15, 9, 37, 0));
 
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTimeFromTimeZone(
-                It.Is<TimeZone>(tz => tz.Name == EstTimezoneName)))
+        _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(
+                Arg.Is<TimeZone>(tz => tz.Name == EstTimezoneName))
             .Returns(new DateTime(2024, 6, 15, 12, 37, 0));
 
         // Null timezone falls back to tenant time
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTimeFromTimeZone(null!))
+        _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(null!)
             .Returns(TestDates.Now);
     }
 
@@ -74,12 +74,12 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
     private DespatchContext CreateContext() => _db.CreateContext();
 
     private JobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        _jobApiClientMock.Object
+        _clearListEnvelopeServiceMock,
+        _createJobServiceMock,
+        _jobApiClientMock
     );
 
     [Fact]
@@ -177,10 +177,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.Completed, updatedJob.UcjbStatus);
         Assert.Equal(new DateTime(2024, 6, 15, 9, 37, 0), updatedJob.UcjbComplTime); // CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)
 
-        _tenantInfoServiceMock.Verify(
-            x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)),
-            Times.Once,
-            "should call GetCurrentTimeFromTimeZone with the delivery timezone");
+        _tenantInfoServiceMock.Received(1)
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz.Name == PstTimezoneName));
     }
 
     [Fact]
@@ -215,10 +213,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.Undeliverable, updatedJob.UcjbStatus);
         Assert.Equal(new DateTime(2024, 6, 15, 12, 37, 0), updatedJob.UcjbComplTime); // CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(EST)
 
-        _tenantInfoServiceMock.Verify(
-            x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == EstTimezoneName)),
-            Times.Once,
-            "should call GetCurrentTimeFromTimeZone with the delivery timezone");
+        _tenantInfoServiceMock.Received(1)
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz.Name == EstTimezoneName));
     }
 
     [Fact]
@@ -251,10 +247,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.PickedUp, updatedJob.UcjbStatus);
         Assert.Equal(new DateTime(2024, 6, 15, 9, 37, 0), updatedJob.PickUpTime); // PickUpTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)
 
-        _tenantInfoServiceMock.Verify(
-            x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)),
-            Times.Once,
-            "should call GetCurrentTimeFromTimeZone with the pickup timezone");
+        _tenantInfoServiceMock.Received(1)
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz.Name == PstTimezoneName));
     }
 
     [Fact]
@@ -288,10 +282,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.PickedUp, updatedJob.UcjbStatus);
         Assert.Equal(TestDates.Now, updatedJob.PickUpTime); // with null pickup timezone, GetCurrentTimeFromTimeZone(null) should return tenant time
 
-        _tenantInfoServiceMock.Verify(
-            x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz == null)),
-            Times.Once,
-            "should call GetCurrentTimeFromTimeZone with null (no pickup timezone)");
+        _tenantInfoServiceMock.Received(1)
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz == null));
     }
 
     [Fact]
