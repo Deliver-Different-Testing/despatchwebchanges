@@ -168,6 +168,7 @@ export function MapZoomViewControls({
                     bottom: 20,
                     ...(isLeft ? { left: 10 } : { right: 10 }),
                     zIndex: 10,
+                    pointerEvents: 'auto',
                     display: 'flex',
                     flexDirection: 'column',
                     borderRadius: 1,

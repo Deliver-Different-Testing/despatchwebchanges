@@ -14,20 +14,35 @@ public class JobApiClientTests
     private readonly IDespatchApiClient _despatchApi = Substitute.For<IDespatchApiClient>();
     private readonly IHttpContextAccessor _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
 
+    private void SetTenantCountry(string countryCode)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, "testuser"),
+            new("Connection", "TestConnection"),
+            new("CurrentTenantID", "1"),
+            new("TimeZone", "Pacific/Auckland"),
+            new("ContactID", "99")
+        };
+        if (countryCode is not null)
+        {
+            claims.Add(new Claim("CountryCode", countryCode));
+        }
+
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims));
+        _httpContextAccessor.HttpContext.Returns(new DefaultHttpContext { User = user });
+    }
+
     public JobApiClientTests()
     {
-        var user = new ClaimsPrincipal(new ClaimsIdentity([
-            new Claim(ClaimTypes.Name, "testuser"),
-            new Claim("Connection", "TestConnection"),
-            new Claim("CurrentTenantID", "1"),
-            new Claim("TimeZone", "Pacific/Auckland"),
-            new Claim("ContactID", "99")
-        ]));
-        _httpContextAccessor.HttpContext.Returns(new DefaultHttpContext { User = user });
+        SetTenantCountry("NZ");
     }
 
     private JobApiClient CreateClient() => new(_despatchApi, _httpContextAccessor);
 
+    // Address lines follow the frontend's documented semantics:
+    // L1 company, L3 street number, L4 street name, L5 city(US)/suburb(NZ),
+    // L6 state(US)/city(NZ), L7 zip(US)/postcode(NZ), L8 country NAME (free-form notes).
     private static JobCreateViewModel SampleRequest(decimal? weightKg = null, decimal? weightLb = null, int? vehicleId = null) => new()
     {
         ClientId = 42,
@@ -35,8 +50,8 @@ public class JobApiClientTests
         VehicleId = vehicleId,
         FromContactName = "Alice",
         DeliverToContact = "Bob",
-        PickUpAddress = new AddressViewModel { AddressLine1 = "Acme Co", AddressLine3 = "12 Main", AddressLine5 = "Auckland", AddressLine6 = "1010", AddressLine8 = "NZ", Latitude = -36.84m, Longitude = 174.76m },
-        DeliveryAddress = new AddressViewModel { AddressLine1 = "Beta Co", AddressLine3 = "34 High", AddressLine5 = "Wellington", AddressLine6 = "6011", AddressLine8 = "NZ" },
+        PickUpAddress = new AddressViewModel { AddressLine1 = "Acme Co", AddressLine3 = "12", AddressLine4 = "Main St", AddressLine5 = "Ponsonby", AddressLine6 = "Auckland", AddressLine7 = "1011", AddressLine8 = "New Zealand", Latitude = -36.84m, Longitude = 174.76m },
+        DeliveryAddress = new AddressViewModel { AddressLine1 = "Beta Co", AddressLine3 = "34", AddressLine4 = "High St", AddressLine5 = "Te Aro", AddressLine6 = "Wellington", AddressLine7 = "6011", AddressLine8 = "New Zealand" },
         Date = new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero),
         RefA = "RA-1",
         RefB = "RB-2",
@@ -44,6 +59,19 @@ public class JobApiClientTests
         Charge = 25.50m,
         WeightKg = weightKg,
         WeightLb = weightLb
+    };
+
+    private static JobCreateViewModel UsSampleRequest() => new()
+    {
+        ClientId = 42,
+        SpeedId = 7,
+        FromContactName = "Alice",
+        DeliverToContact = "Bob",
+        PickUpAddress = new AddressViewModel { AddressLine1 = "Acme Co", AddressLine3 = "500", AddressLine4 = "Market St", AddressLine5 = "San Francisco", AddressLine6 = "California", AddressLine7 = "94105", AddressLine8 = "United States" },
+        DeliveryAddress = new AddressViewModel { AddressLine1 = "Beta Co", AddressLine3 = "1", AddressLine4 = "Apple Park Way", AddressLine5 = "Cupertino", AddressLine6 = "California", AddressLine7 = "95014", AddressLine8 = "United States" },
+        Date = new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero),
+        Charge = 25.50m,
+        WeightLb = 11m
     };
 
     [Fact]
@@ -99,14 +127,55 @@ public class JobApiClientTests
         Assert.Equal(25.50m, captured.FixedAmount);
         Assert.True(captured.IsSignatureRequired);
         Assert.Equal("Alice", captured.Pickup.ContactPerson);
-        Assert.Equal("12 Main", captured.Pickup.From.StreetAddress);
-        Assert.Equal("Auckland", captured.Pickup.From.City);
-        Assert.Equal("NZ", captured.Pickup.From.CountryCode);
+        Assert.Equal("12 Main St", captured.Pickup.From.StreetAddress);
         Assert.Equal("Bob", captured.Delivery.ContactPerson);
-        Assert.Equal("34 High", captured.Delivery.To.StreetAddress);
-        Assert.Equal("NZ", captured.Delivery.To.CountryCode);
+        Assert.Equal("34 High St", captured.Delivery.To.StreetAddress);
         Assert.Single(captured.Packages);
         Assert.Equal(1, captured.Packages[0].Units);
+    }
+
+    [Fact]
+    public async Task QuickCreateAsync_NzTenant_MapsAddressLinesToNzFields()
+    {
+        BookPickupDto? captured = null;
+        _despatchApi.BookPickupAsync(
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<int>(),
+                Arg.Do<BookPickupDto>(d => captured = d), Arg.Any<CancellationToken>())
+            .Returns(new JobResponseDto { JobId = 1 });
+
+        await CreateClient().QuickCreateAsync(SampleRequest(), TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        var from = captured.Pickup.From;
+        // ISO-2 country comes from the tenant claim, NOT the free-form country name in AddressLine8.
+        Assert.Equal("NZ", from.CountryCode);
+        Assert.Equal("Ponsonby", from.Suburb);
+        Assert.Equal("Auckland", from.City);
+        Assert.Equal("1011", from.PostCode);
+        Assert.Null(from.State);
+        Assert.Null(from.ZipCode);
+    }
+
+    [Fact]
+    public async Task QuickCreateAsync_UsTenant_MapsAddressLinesToUsFields()
+    {
+        SetTenantCountry("US");
+        BookPickupDto? captured = null;
+        _despatchApi.BookPickupAsync(
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<int>(),
+                Arg.Do<BookPickupDto>(d => captured = d), Arg.Any<CancellationToken>())
+            .Returns(new JobResponseDto { JobId = 1 });
+
+        await CreateClient().QuickCreateAsync(UsSampleRequest(), TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        var from = captured.Pickup.From;
+        Assert.Equal("US", from.CountryCode);
+        Assert.Equal("San Francisco", from.City);
+        Assert.Equal("California", from.State);
+        Assert.Equal("94105", from.ZipCode);
+        Assert.Null(from.Suburb);
+        Assert.Null(from.PostCode);
     }
 
     [Fact]

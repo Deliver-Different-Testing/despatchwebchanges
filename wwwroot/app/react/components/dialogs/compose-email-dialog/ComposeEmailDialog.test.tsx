@@ -11,6 +11,14 @@ import userEvent from '@testing-library/user-event';
 import {ComposeEmailDialog} from './ComposeEmailDialog';
 import {renderWithTheme} from '../../../__testUtils__';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
+import {draftEmail} from '../../../services/aiAssistantApi';
+import {isAiEnabled} from '../../../../functions/aiSettings';
+
+jest.mock('../../../services/aiAssistantApi', () => ({draftEmail: jest.fn()}));
+jest.mock('../../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));
+
+const mockDraftEmail = draftEmail as jest.Mock;
+const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 const createMockCouriers = (): DriverEmail[] => [
     {courierId: 1, code: 'C01', name: 'Alice Smith', email: 'alice@test.com', phone: '111', fleet: 'Alpha'},
@@ -400,6 +408,38 @@ describe('ComposeEmailDialog', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
             expect(defaultProps.onSend).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('AI draft', () => {
+        beforeEach(() => jest.clearAllMocks());
+
+        it('hides the Draft button when AI is disabled', () => {
+            mockIsAiEnabled.mockReturnValue(false);
+
+            renderDialog();
+
+            expect(screen.queryByRole('button', {name: /^draft$/i})).not.toBeInTheDocument();
+        });
+
+        it('fills subject and body from the AI draft', async () => {
+            mockIsAiEnabled.mockReturnValue(true);
+            mockDraftEmail.mockResolvedValueOnce({
+                subject: 'Drafted subject',
+                body: 'Drafted body',
+                usage: {inputTokens: 1, outputTokens: 1},
+            });
+            renderDialog();
+            const user = userEvent.setup();
+
+            await user.click(screen.getByRole('button', {name: /^draft$/i}));
+
+            expect(await screen.findByDisplayValue('Drafted subject')).toBeInTheDocument();
+            expect(await screen.findByDisplayValue('Drafted body')).toBeInTheDocument();
+            expect(mockDraftEmail).toHaveBeenCalledWith(
+                expect.objectContaining({recipientNames: ['Alice Smith', 'Bob Jones', 'Charlie Brown']}),
+                expect.anything(),
+            );
         });
     });
 });

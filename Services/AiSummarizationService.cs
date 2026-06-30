@@ -952,18 +952,21 @@ public sealed class AiSummarizationService(
     private static List<JobSignal> BuildTaskDashboardSignals(int overdue, int dueToday, int upcoming, int total)
     {
         var signals = new List<JobSignal>();
-        if (overdue == 0 && dueToday == 0)
+        switch (overdue)
         {
-            signals.Add(new JobSignal(SummarySeverity.Ok, $"{total} open task(s); none overdue or due today"));
-            return signals;
+            case 0 when dueToday == 0:
+                signals.Add(new JobSignal(SummarySeverity.Ok, $"{total} open task(s); none overdue or due today"));
+                return signals;
+            case > 0:
+            {
+                var severity = overdue >= 5 ? SummarySeverity.Critical
+                    : overdue >= 2 ? SummarySeverity.Urgent
+                    : SummarySeverity.Caution;
+                signals.Add(new JobSignal(severity, $"{overdue} task(s) overdue across all open jobs"));
+                break;
+            }
         }
-        if (overdue > 0)
-        {
-            var severity = overdue >= 5 ? SummarySeverity.Critical
-                : overdue >= 2 ? SummarySeverity.Urgent
-                : SummarySeverity.Caution;
-            signals.Add(new JobSignal(severity, $"{overdue} task(s) overdue across all open jobs"));
-        }
+
         if (dueToday > 0)
         {
             signals.Add(new JobSignal(SummarySeverity.Caution, $"{dueToday} task(s) due today"));

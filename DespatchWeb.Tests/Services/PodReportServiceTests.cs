@@ -188,4 +188,24 @@ public class PodReportServiceTests
 
         Assert.Equal(signatureBytes, result.SignatureImage);
     }
+
+    [Fact]
+    public void MapToPodData_WithPodNotes_SetsPodNotes()
+    {
+        var job = new JobViewModel { JobNo = "JOB-5" };
+
+        var result = PodReportService.MapToPodData(job, [], "Pickup at rear dock");
+
+        Assert.Equal("Pickup at rear dock", result.PodNotes);
+    }
+
+    [Fact]
+    public void MapToPodData_WithoutPodNotes_PodNotesIsNull()
+    {
+        var job = new JobViewModel { JobNo = "JOB-6" };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Null(result.PodNotes);
+    }
 }

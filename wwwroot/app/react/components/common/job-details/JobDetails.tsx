@@ -39,7 +39,8 @@ import {WarningBanner} from './components/WarningBanner';
 import {RelatedJobTabs} from './components/RelatedJobTabs';
 import {JobDetailHeader} from './components/JobDetailHeader';
 import {AiSummaryCard} from '../ai-summary-card/AiSummaryCard';
-import {summarizeJob} from '../../../services/aiAssistantApi';
+import {AiBlockersCard} from '../ai-blockers-card/AiBlockersCard';
+import {summarizeJob, extractBlockers} from '../../../services/aiAssistantApi';
 import {isAiAutoOpenEnabled, isAiEnabled} from '../../../../functions/aiSettings';
 import {MetricsGrid} from './components/MetricsGrid';
 import {RateAcceptanceBanner} from './components/RateAcceptanceBanner';
@@ -501,6 +502,18 @@ export function JobDetails({config}: JobDetailsProps) {
                             key={job.id}
                             title="Auto-mate Job Briefing"
                             fetchSummary={(signal) => summarizeJob(job.id, {signal})}
+                            collapsible
+                            autoOpen={aiAutoOpen}
+                        />
+                    </Box>
+                )}
+
+                {aiEnabled && (
+                    <Box sx={{mx: 1.5, mt: 1}}>
+                        <AiBlockersCard
+                            key={job.id}
+                            title="Auto-mate Blockers"
+                            fetchBlockers={(signal) => extractBlockers(job.id, {signal})}
                             collapsible
                             autoOpen={aiAutoOpen}
                         />

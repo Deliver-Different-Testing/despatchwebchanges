@@ -113,6 +113,146 @@ public class NoteRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetNotesByJobIdAsync_NoTucNoteRows_FallsBackToUcjbNotesColumn()
+    {
+        // Arrange — a job whose pickup note only ever landed in the UcjbNotes column
+        // (no tucNote row), e.g. a programmatically created return job.
+        const int jobId = 100;
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = jobId,
+            UcjbNumber = "JOB001",
+            UcjbNotes = "Pickup at rear dock",
+            UcjbTime = new DateTime(2024, 6, 15, 9, 0, 0)
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNotesByJobIdAsync(jobId);
+
+        // Assert — the column note is surfaced as a single synthesized pickup note
+        Assert.Single(result);
+        Assert.Equal("Pickup at rear dock", result[0].NoteText);
+        Assert.Equal((int)NoteType.PickupNotes, result[0].NoteTypeId);
+    }
+
+    [Fact]
+    public async Task GetNotesByJobIdAsync_WithTucNoteRows_DoesNotAddUcjbNotesFallback()
+    {
+        // Arrange — a real tucNote row exists; the UcjbNotes column mirror must not be duplicated
+        const int jobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = jobId,
+            UcjbNumber = "JOB001",
+            UcjbNotes = "Mirrored column text"
+        });
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = 1,
+            JobId = jobId,
+            NoteText = "Real tucNote",
+            NoteTypeId = 1,
+            IsImportant = false,
+            CreatedDate = TestDates.Now
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNotesByJobIdAsync(jobId);
+
+        // Assert — only the real note, no synthesized fallback
+        Assert.Single(result);
+        Assert.Equal("Real tucNote", result[0].NoteText);
+    }
+
+    [Fact]
+    public async Task GetNotesByJobIdAsync_ChildReturnJobWithNoNotes_FallsBackToRootUcjbNotes()
+    {
+        // Arrange — child return job (ParentId set) with no notes anywhere; the original
+        // job's pickup note lives in the parent's UcjbNotes column.
+        const int parentJobId = 100;
+        const int childJobId = 500;
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = parentJobId,
+            UcjbNumber = "PARENT001",
+            UcjbNotes = "Original pickup note"
+        });
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = childJobId,
+            UcjbNumber = "CHILD001",
+            ParentId = parentJobId
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act — read notes for the child return job
+        var result = await repository.GetNotesByJobIdAsync(childJobId);
+
+        // Assert — the root's pickup note is surfaced
+        Assert.Single(result);
+        Assert.Equal("Original pickup note", result[0].NoteText);
+        Assert.Equal((int)NoteType.PickupNotes, result[0].NoteTypeId);
+    }
+
+    [Fact]
+    public async Task GetNotesByJobIdAsync_NoNotesAndWhitespaceUcjbNotes_ReturnsEmpty()
+    {
+        // Arrange — no tucNote row and a blank UcjbNotes column → nothing to surface
+        const int jobId = 100;
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = jobId,
+            UcjbNumber = "JOB001",
+            UcjbNotes = "   "
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNotesByJobIdAsync(jobId);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetNotesByJobIdAsync_ArchivedJobNoNotes_FallsBackToUcjbNotesColumn()
+    {
+        // Arrange — archived job whose pickup note only exists in the UcjbNotes column
+        const int jobId = 200;
+        _context.TucJobArchives.Add(new TucJobArchive
+        {
+            UcjbId = jobId,
+            UcjbNumber = "ARCH001",
+            UcjbNotes = "Archived pickup note",
+            UcjbDate = new DateTime(2024, 1, 1),
+            UcjbTime = new DateTime(2024, 1, 1, 8, 0, 0)
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetNotesByJobIdAsync(jobId);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Archived pickup note", result[0].NoteText);
+        Assert.Equal((int)NoteType.PickupNotes, result[0].NoteTypeId);
+    }
+
+    [Fact]
     public async Task AddNewTucNoteTypeAsync_CreatesNewNoteType()
     {
         // Arrange

@@ -83,6 +83,7 @@ export function MapControlButtons({
                 bottom: 20,
                 left: 10,
                 zIndex: 10,
+                pointerEvents: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
                 borderRadius: 1,

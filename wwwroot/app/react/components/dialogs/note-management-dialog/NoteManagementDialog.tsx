@@ -45,6 +45,9 @@ import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {NoteManagementDialogProps} from "./types";
 import {useNoteHistory} from '../../../hooks/useNotesApi';
 import {NoteHistory} from './NoteHistory';
+import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {draftNote} from '../../../services/aiAssistantApi';
 
 const MAX_NOTE_LENGTH = 1000;
 const MAX_DESCRIPTION_LENGTH = 500;
@@ -64,6 +67,25 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     const [noteText, setNoteText] = useState('');
     const [noteTypeId, setNoteTypeId] = useState<number>(0);
     const [isImportant, setIsImportant] = useState(false);
+    const {runDraft, isDrafting} = useAiDraft();
+
+    const handleDraftNote = async () => {
+        const result = await runDraft((signal) =>
+            draftNote(
+                {
+                    jobId: note?.jobId,
+                    jobBookingId: note?.jobBookingId,
+                    bulkJobId: note?.bulkJobId,
+                    noteTypeId,
+                    seed: noteText,
+                },
+                {signal},
+            ),
+        );
+        if (result) {
+            setNoteText(result.draft.slice(0, MAX_NOTE_LENGTH));
+        }
+    };
 
     // Note types state
     const [noteTypes, setNoteTypes] = useState<NoteType[]>([]);
@@ -487,14 +509,18 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
                 {/* Note Content Section */}
                 <Box sx={{mb: 3}}>
-                    <Typography
-                        variant="subtitle1"
-                        sx={{
-                            fontWeight: 600,
-                            mb: 1.5
-                        }}>
-                        Note Content
-                    </Typography>
+                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5}}>
+                        <Typography
+                            variant="subtitle1"
+                            sx={{fontWeight: 600}}>
+                            Note Content
+                        </Typography>
+                        <AiDraftButton
+                            onClick={handleDraftNote}
+                            isDrafting={isDrafting}
+                            disabled={noteTypeId <= 0}
+                        />
+                    </Box>
                     <TextField
                         label="Write your note"
                         value={noteText}

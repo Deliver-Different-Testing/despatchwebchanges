@@ -11,6 +11,9 @@ import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
+import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {draftEmail} from '../../../services/aiAssistantApi';
 
 interface ComposeEmailDialogProps {
     open: boolean;
@@ -106,12 +109,32 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
     const [body, setBody] = useState('');
     const [subjectError, setSubjectError] = useState(false);
     const [bodyError, setBodyError] = useState(false);
+    const {runDraft, isDrafting} = useAiDraft();
 
     const applyTemplate = (template: EmailTemplate) => {
         setSubject(template.subject);
         setBody(template.body);
         setSubjectError(false);
         setBodyError(false);
+    };
+
+    const handleDraft = async () => {
+        const result = await runDraft((signal) =>
+            draftEmail(
+                {
+                    recipientNames: selectedCouriers.map(c => c.name),
+                    seedSubject: subject,
+                    seedBody: body,
+                },
+                {signal},
+            ),
+        );
+        if (result) {
+            setSubject(result.subject);
+            setBody(result.body);
+            setSubjectError(false);
+            setBodyError(false);
+        }
     };
 
     const handleSend = () => {
@@ -198,12 +221,13 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                         }}>
                         Quick Templates
                     </Typography>
-                    <Box sx={{display: 'flex', gap: 1, flexWrap: 'wrap'}}>
+                    <Box sx={{display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center'}}>
                         {EMAIL_TEMPLATES.map(t => (
                             <Button key={t.key} variant="outlined" size="small" onClick={() => applyTemplate(t)}>
                                 {t.label}
                             </Button>
                         ))}
+                        <AiDraftButton onClick={handleDraft} isDrafting={isDrafting} />
                     </Box>
                 </Box>
 

@@ -17,6 +17,7 @@ public sealed class PodReportService(
     IHttpContextAccessor httpContextAccessor,
     ITenantBrandingService tenantBrandingService,
     IJobQueryRepository jobRepository,
+    INoteRepository noteRepository,
     IJobPhotoService jobPhotoService,
     IDbContextFactory<DespatchContext> contextFactory
 ) : IPodReportService
@@ -42,7 +43,7 @@ public sealed class PodReportService(
             s3Photos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
         }
 
-        var podData = MapToPodData(job, s3Photos);
+        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(jobId));
         var document = new PodDocument(podData, branding);
 
         using var stream = new MemoryStream();
@@ -66,7 +67,7 @@ public sealed class PodReportService(
             s3Photos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
         }
 
-        var podData = MapToPodData(job, s3Photos);
+        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(jobId));
         var spreadsheet = new PodSpreadsheet(podData, branding);
 
         using var stream = new MemoryStream();
@@ -136,7 +137,14 @@ public sealed class PodReportService(
         return tenantId;
     }
 
-    internal static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos)
+    private async Task<string?> GetPodNotesAsync(int jobId)
+    {
+        var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
+        return notes?.FirstOrDefault()?.NoteText;
+    }
+
+    internal static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos,
+        string? podNotes = null)
     {
         // Separate signatures from delivery photos
         var signaturePhotos = s3Photos
@@ -177,7 +185,7 @@ public sealed class PodReportService(
             GpsLongitude = job.DeliveryLongitude.HasValue ? (double)job.DeliveryLongitude.Value : null,
             PodName = job.PodName,
             PodDate = job.CompletedTime,
-            PodNotes = job.Notes?.FirstOrDefault()?.NoteText,
+            PodNotes = podNotes,
             SignatureImage = signatureBytes,
             Items = MapItems(job.ParcelDimensions),
             PhotoCategories = MapPhotoCategories(deliveryPhotos)
