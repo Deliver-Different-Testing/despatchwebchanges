@@ -23,7 +23,7 @@ public sealed class JobApiClient(
         ArgumentNullException.ThrowIfNull(request);
 
         var context = ResolveTenantContext(request.ClientId);
-        var payload = MapToBookPickup(request);
+        var payload = MapToBookPickup(request, context.CountryCode);
 
         JobResponseDto response;
         try
@@ -68,6 +68,7 @@ public sealed class JobApiClient(
         var tenantId = user?.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
         var timeZone = user?.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
         var contactIdClaim = user?.Claims.FirstOrDefault(x => x.Type == "ContactID")?.Value;
+        var countryCode = user?.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
         var userName = user?.FindFirst(ClaimTypes.Name)?.Value;
 
         if (string.IsNullOrEmpty(connection) ||
@@ -84,13 +85,15 @@ public sealed class JobApiClient(
             Connection: connection,
             TimeZone: timeZone,
             ClientId: requestClientId > 0 ? requestClientId : null,
-            ContactId: string.IsNullOrEmpty(contactIdClaim) ? 0 : int.Parse(contactIdClaim));
+            ContactId: string.IsNullOrEmpty(contactIdClaim) ? 0 : int.Parse(contactIdClaim),
+            CountryCode: countryCode);
     }
 
-    private static BookPickupDto MapToBookPickup(JobCreateViewModel request)
+    private static BookPickupDto MapToBookPickup(JobCreateViewModel request, string countryCode)
     {
-        var pickupAddress = MapAddress(request.PickUpAddress);
-        var deliveryAddress = MapAddress(request.DeliveryAddress);
+        var isUs = string.Equals(countryCode, "US", StringComparison.OrdinalIgnoreCase);
+        var pickupAddress = MapAddress(request.PickUpAddress, countryCode, isUs);
+        var deliveryAddress = MapAddress(request.DeliveryAddress, countryCode, isUs);
 
         return new BookPickupDto
         {
@@ -132,25 +135,41 @@ public sealed class JobApiClient(
         };
     }
 
-    private static AddressDto MapAddress(AddressViewModel address)
+    /// <summary>
+    /// Maps the 8-line <see cref="AddressViewModel"/> to the api's <see cref="AddressDto"/>.
+    /// Line meaning is country-specific (matching the frontend create-job dialog):
+    /// L1 company, L2 unit, L3 street number, L4 street name, then
+    /// L5/L6/L7 = city/state/zip for US, suburb/city/postcode for NZ. L8 holds a free-form
+    /// country name and is intentionally ignored — the ISO-2 <paramref name="countryCode"/>
+    /// comes from the tenant claim, which is what the api validates against.
+    /// </summary>
+    private static AddressDto MapAddress(AddressViewModel address, string countryCode, bool isUs)
     {
         if (address is null)
         {
-            return new AddressDto { City = string.Empty };
+            return new AddressDto { City = string.Empty, CountryCode = countryCode };
         }
 
         return new AddressDto
         {
             CompanyName = address.AddressLine1,
             BuildingName = address.AddressLine2,
-            StreetAddress = address.AddressLine3,
-            Suburb = address.AddressLine4,
-            City = NonEmpty(address.AddressLine5) ?? NonEmpty(address.AddressLine4) ?? string.Empty,
-            PostCode = address.AddressLine6,
-            CountryCode = address.AddressLine8,
+            StreetAddress = JoinStreet(address.AddressLine3, address.AddressLine4),
+            Suburb = isUs ? null : NonEmpty(address.AddressLine5),
+            City = (isUs ? NonEmpty(address.AddressLine5) : NonEmpty(address.AddressLine6)) ?? string.Empty,
+            State = isUs ? NonEmpty(address.AddressLine6) : null,
+            ZipCode = isUs ? NonEmpty(address.AddressLine7) : null,
+            PostCode = isUs ? null : NonEmpty(address.AddressLine7),
+            CountryCode = countryCode,
             Latitude = address.Latitude,
             Longitude = address.Longitude
         };
+    }
+
+    private static string JoinStreet(string number, string street)
+    {
+        var joined = string.Join(" ", new[] { number, street }.Where(p => !string.IsNullOrWhiteSpace(p)));
+        return NonEmpty(joined);
     }
 
     private static string NonEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
@@ -170,5 +189,6 @@ public sealed class JobApiClient(
         string Connection,
         string TimeZone,
         int? ClientId,
-        int ContactId);
+        int ContactId,
+        string CountryCode);
 }

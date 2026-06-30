@@ -1,5 +1,6 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,8 @@ public class AiControllerTests
 {
     private readonly IAiRateLimiter _rateLimiter = Substitute.For<IAiRateLimiter>();
     private readonly IAiSummarizationService _summarizationService = Substitute.For<IAiSummarizationService>();
+    private readonly IAiDraftingService _draftingService = Substitute.For<IAiDraftingService>();
+    private readonly IAiInsightsService _insightsService = Substitute.For<IAiInsightsService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
 
     public AiControllerTests()
@@ -35,6 +38,8 @@ public class AiControllerTests
 
     private AiController CreateController() => new(
         _summarizationService,
+        _draftingService,
+        _insightsService,
         _rateLimiter,
         _tenantInfo);
 
@@ -325,6 +330,238 @@ public class AiControllerTests
         var controller = CreateController();
 
         var result = await controller.SummarizeCompliance(TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(499, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task DraftMessage_RateLimited_Returns429()
+    {
+        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
+        var controller = CreateController();
+
+        var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(429, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task DraftMessage_ValidRequest_ReturnsJsonAndRecordsUsage()
+    {
+        _draftingService.DraftCourierMessageAsync(Arg.Any<DraftMessageRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new AiDraftResponse
+            {
+                Draft = "Hi Dave, the pickup is running 30 minutes late.",
+                Usage = new AiUsageInfo { InputTokens = 70, OutputTokens = 18 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland", 70, 18);
+    }
+
+    [Fact]
+    public async Task DraftMessage_Cancelled_Returns499()
+    {
+        _draftingService.DraftCourierMessageAsync(Arg.Any<DraftMessageRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        var controller = CreateController();
+
+        var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(499, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task DraftMessage_ServiceThrows_Returns500()
+    {
+        _draftingService.DraftCourierMessageAsync(Arg.Any<DraftMessageRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("AI error"));
+
+        var controller = CreateController();
+
+        var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(500, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task DraftEmail_ValidRequest_ReturnsJson()
+    {
+        _draftingService.DraftEmailAsync(Arg.Any<DraftEmailRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new AiEmailDraftResponse
+            {
+                Subject = "Schedule change",
+                Body = "Hi team, please note the schedule change.",
+                Usage = new AiUsageInfo { InputTokens = 60, OutputTokens = 22 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.DraftEmail(new DraftEmailRequest(), TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task DraftPodEmail_RateLimited_Returns429()
+    {
+        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
+        var controller = CreateController();
+
+        var result = await controller.DraftPodEmail(1, TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(429, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task DraftPodEmail_ValidRequest_ReturnsJson()
+    {
+        _draftingService.DraftPodEmailAsync(1, Arg.Any<CancellationToken>())
+            .Returns(new AiEmailDraftResponse
+            {
+                Subject = "Proof of Delivery - J12345",
+                Body = "Your shipment was delivered.",
+                Usage = new AiUsageInfo { InputTokens = 110, OutputTokens = 40 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.DraftPodEmail(1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task DraftNote_ValidRequest_ReturnsJson()
+    {
+        _draftingService.DraftNoteAsync(Arg.Any<DraftNoteRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new AiDraftResponse
+            {
+                Draft = "Customer requested a call before delivery.",
+                Usage = new AiUsageInfo { InputTokens = 50, OutputTokens = 12 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.DraftNote(new DraftNoteRequest(), TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task DraftNote_ServiceThrows_Returns500()
+    {
+        _draftingService.DraftNoteAsync(Arg.Any<DraftNoteRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("AI error"));
+
+        var controller = CreateController();
+
+        var result = await controller.DraftNote(new DraftNoteRequest(), TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(500, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExtractBlockers_RateLimited_Returns429()
+    {
+        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
+        var controller = CreateController();
+
+        var result = await controller.ExtractBlockers(1, TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(429, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExtractBlockers_ValidRequest_ReturnsJsonAndRecordsUsage()
+    {
+        _insightsService.ExtractBlockersAsync(1, Arg.Any<CancellationToken>())
+            .Returns(new ExtractBlockersResponse
+            {
+                Summary = "2 blockers",
+                Severity = SummarySeverity.Caution,
+                Usage = new AiUsageInfo { InputTokens = 90, OutputTokens = 25 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.ExtractBlockers(1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland", 90, 25);
+    }
+
+    [Fact]
+    public async Task AnalyzePricing_ValidRequest_ReturnsJson()
+    {
+        _insightsService.AnalyzePricingAsync(1, 5, Arg.Any<CancellationToken>())
+            .Returns(new PricingAnalysisResponse
+            {
+                Anomaly = new PricingAnomaly { StoredCharge = 95, RecomputedRate = 145, DeltaPercent = -34.5m, IsOutlier = true },
+                Usage = new AiUsageInfo { InputTokens = 120, OutputTokens = 30 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.AnalyzePricing(1, 5, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task AnalyzePricing_ServiceThrows_Returns500()
+    {
+        _insightsService.AnalyzePricingAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("AI error"));
+
+        var controller = CreateController();
+
+        var result = await controller.AnalyzePricing(1, 5, TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(500, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task TriageChangeRequest_ValidRequest_ReturnsJson()
+    {
+        _insightsService.TriageChangeRequestAsync(42, 1, Arg.Any<CancellationToken>())
+            .Returns(new ChangeRequestTriageResponse
+            {
+                RecommendedAction = "approve",
+                Confidence = 0.8,
+                Rationale = "Reasonable rate change.",
+                Usage = new AiUsageInfo { InputTokens = 70, OutputTokens = 20 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.TriageChangeRequest(42, 1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task TriageChangeRequest_Cancelled_Returns499()
+    {
+        _insightsService.TriageChangeRequestAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        var controller = CreateController();
+
+        var result = await controller.TriageChangeRequest(42, 1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
         Assert.Equal(499, statusResult!.StatusCode);

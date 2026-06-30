@@ -15,6 +15,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
     private readonly ITenantBrandingService _tenantBrandingServiceMock = Substitute.For<ITenantBrandingService>();
     private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
 
     public async ValueTask DisposeAsync()
@@ -27,6 +28,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         _httpContextAccessorMock,
         _tenantBrandingServiceMock,
         _jobRepositoryMock,
+        _noteRepositoryMock,
         _jobPhotoServiceMock,
         _db.CreateFactoryMock()
     );

@@ -8,6 +8,7 @@
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {formatCurrencyOrDash as formatCurrency} from '../../../utils/currencyUtils';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -43,6 +44,9 @@ import {
     PortionJobInfo,
 } from './types';
 import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
+import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {analyzePricing, PricingAnalysisResponse} from '../../../services/aiAssistantApi';
 
 interface AppliedRowState {
     inputValue: string;
@@ -181,6 +185,10 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     const [isLoadingApplied, setIsLoadingApplied] = useState(false);
     const [isAddingCharges, setIsAddingCharges] = useState(false);
     const [activePortionJobId, setActivePortionJobId] = useState<number | null>(null);
+
+    // Auto-Mate pricing analysis (anomaly + suggested charges).
+    const {runDraft: runSuggest, isDrafting: isSuggesting} = useAiDraft();
+    const [pricingResult, setPricingResult] = useState<PricingAnalysisResponse | null>(null);
 
     // ── Refs (instance fields) ────────────────────────────────────────────────
 
@@ -560,6 +568,33 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
         pendingLoadRef.current = true;
     }, [resetAndLoad]);
 
+    // Ask Auto-Mate for a re-rate anomaly + suggested charges, then pre-select the
+    // suggested charges in the Add table so the operator reviews and confirms via
+    // the existing "Add Selected Charges" flow (nothing is applied automatically).
+    const handleSuggestCharges = useCallback(async (): Promise<void> => {
+        const activeJobId = getActiveJobId();
+        const activeGroupId = getActiveGroupId();
+        if (!activeJobId || !activeGroupId) return;
+
+        const result = await runSuggest((signal) => analyzePricing(activeJobId, activeGroupId, {signal}));
+        if (!result) return;
+        setPricingResult(result);
+
+        const available = availableChargesRef.current;
+        const applyIds = new Set<number>();
+        const inputs: Record<number, string> = {};
+        for (const s of result.suggestions) {
+            const charge = available.find(c => c.accessorialChargeId === s.accessorialChargeId && !c.alreadyApplied);
+            if (!charge) continue;
+            applyIds.add(s.accessorialChargeId);
+            if (s.suggestedInputValue != null) inputs[s.accessorialChargeId] = String(s.suggestedInputValue);
+        }
+        if (applyIds.size > 0) {
+            setSelectedIds(prev => new Set([...prev, ...applyIds]));
+            setAvailableInputMap(prev => ({...prev, ...inputs}));
+        }
+    }, [getActiveJobId, getActiveGroupId, runSuggest]);
+
     // ── Applied row handlers ──────────────────────────────────────────────────
 
     const setRowField = useCallback((id: number, field: keyof AppliedRowState, value: AppliedRowState[keyof AppliedRowState]): void => {
@@ -857,6 +892,32 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     </Box>
                 ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {/* Auto-Mate pricing assist — hidden unless AI is enabled */}
+                        <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: pricingResult ? 1 : 0 }}>
+                                <AiDraftButton onClick={handleSuggestCharges} isDrafting={isSuggesting} label="Suggest charges" />
+                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                    Auto-Mate reviews this job's notes &amp; flags and checks the price.
+                                </Typography>
+                            </Box>
+                            {pricingResult?.anomaly?.isOutlier && (
+                                <Alert severity="warning" sx={{ mb: 1 }}>
+                                    Charged {formatCurrency(pricingResult.anomaly.storedCharge)} but a re-rate gives{' '}
+                                    {formatCurrency(pricingResult.anomaly.recomputedRate)} ({pricingResult.anomaly.deltaPercent > 0 ? '+' : ''}
+                                    {pricingResult.anomaly.deltaPercent}%) — review before invoicing.
+                                </Alert>
+                            )}
+                            {pricingResult && pricingResult.suggestions.length > 0 && (
+                                <Alert severity="info">
+                                    Suggested {pricingResult.suggestions.length} charge(s), pre-selected below for review:{' '}
+                                    {pricingResult.suggestions.map(s => s.name).join(', ')}
+                                </Alert>
+                            )}
+                            {pricingResult && pricingResult.suggestions.length === 0 && !pricingResult.anomaly?.isOutlier && (
+                                <Alert severity="success">No additional charges or pricing issues detected.</Alert>
+                            )}
+                        </Box>
+
                         {/* Section 1 — Applied Charges */}
                         <Box>
                             <Typography

@@ -6,6 +6,7 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {useQuery} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -76,6 +77,33 @@ export function DispatchMap({
     useEffect(() => {
         mapInstanceRef.current = map;
     }, [map]);
+
+    // Mount a host element *inside* the HERE map container and portal the control
+    // rails into it, so they render within the map's own (isolated) stacking context.
+    // This is the documented best practice for custom map controls — placing them in
+    // the map's control layer rather than as an absolutely-positioned external sibling
+    // — and reliably keeps them above HERE's ~1001 info-bubble overlays instead of
+    // fighting sibling z-index ordering. The host is pointer-events:none so map
+    // gestures pass through; each control rail re-enables pointer events on itself.
+    const [controlsHost, setControlsHost] = useState<HTMLDivElement | null>(null);
+    useEffect(() => {
+        const container = mapContainerRef.current;
+        if (!isReady || !container) return undefined;
+
+        const host = document.createElement('div');
+        host.setAttribute('data-testid', 'dispatch-map-controls-host');
+        host.style.position = 'absolute';
+        host.style.inset = '0';
+        host.style.zIndex = '1002'; // above HERE's info-bubble / tooltip overlays (~1001)
+        host.style.pointerEvents = 'none';
+        container.appendChild(host);
+        setControlsHost(host);
+
+        return () => {
+            host.remove();
+            setControlsHost(null);
+        };
+    }, [isReady]);
 
     // Get map bounds for courier query
     const getMapBounds = useCallback(() => {
@@ -231,25 +259,32 @@ export function DispatchMap({
         <Box className={styles.dispatchMapComponent}>
             {isLoading && <LinearProgress className={styles.loadingBar} />}
             <Box className={styles.dispatchMapContainer}>
-                {/* HERE Maps renders info bubbles / tooltips inside this wrapper at a
-                    high z-index (~1001). Isolate the wrapper's stacking context so those
-                    overlays stay contained below the sibling control rails (zIndex 10)
-                    instead of painting over them and hiding the buttons. */}
-                <Box className={styles.mapWrapper} data-testid="dispatch-map-wrapper" sx={{isolation: 'isolate'}}>
-                    <div ref={mapContainerRef} className={styles.mapContainer} />
-                </Box>
-                {isReady && (
-                    <>
-                        <MapZoomViewControls map={map} platform={platformInstance} defaultLayers={defaultLayers}/>
-                        <MapControlButtons
-                            controlState={controlState}
-                            onToggleAutoZoom={toggleAutoZoom}
-                            onToggleCouriersOnly={toggleCouriersOnly}
-                            onToggleUrgentArmyOnly={toggleUrgentArmyOnly}
-                            onToggleCouriersLargeView={toggleCouriersLargeView}
-                        />
-                    </>
-                )}
+                {/* HERE Maps renders info bubbles / tooltips inside this container at a
+                    high z-index (~1001). Isolate its stacking context so those overlays
+                    can never paint over the surrounding app chrome, and host the control
+                    rails inside it via a portal (see the controlsHost effect above) so
+                    they sit above HERE's overlays within the same context. position is
+                    relative so the portal host anchors to this element. */}
+                <Box
+                    ref={mapContainerRef}
+                    className={styles.mapContainer}
+                    data-testid="dispatch-map-wrapper"
+                    sx={{isolation: 'isolate', position: 'relative'}}
+                />
+                {controlsHost &&
+                    createPortal(
+                        <>
+                            <MapZoomViewControls map={map} platform={platformInstance} defaultLayers={defaultLayers}/>
+                            <MapControlButtons
+                                controlState={controlState}
+                                onToggleAutoZoom={toggleAutoZoom}
+                                onToggleCouriersOnly={toggleCouriersOnly}
+                                onToggleUrgentArmyOnly={toggleUrgentArmyOnly}
+                                onToggleCouriersLargeView={toggleCouriersLargeView}
+                            />
+                        </>,
+                        controlsHost
+                    )}
             </Box>
         </Box>
     );

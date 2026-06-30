@@ -51,6 +51,7 @@ import {
     relativeAgeShort,
     type JobChangeRequestCategory,
 } from './jobChangeRequestFormatting';
+import {ChangeRequestTriage} from './ChangeRequestTriage';
 
 export interface JobChangeRequestsForJobProps {
     jobId: number;
@@ -525,6 +526,7 @@ function ChangeRequestCard({
                     </Box>
                 ) : (
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap'}}>
+                        {canApprove && <ChangeRequestTriage requestId={row.id} jobId={row.jobId} />}
                         <Chip
                             size="small"
                             label={row.origin === 'Local' ? 'You requested' : 'Partner requested'}

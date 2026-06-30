@@ -519,6 +519,15 @@ public class NoteRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
         var notes = await Context.GetActiveNotesByJobIdAsync(effectiveJobId);
+        if (notes.Count == 0)
+        {
+            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, false, tenantTimeZone);
+            if (fallback != null)
+            {
+                return [fallback];
+            }
+        }
+
         UpdateNoteDate(notes, tenantTimeZone);
         return notes;
     }
@@ -532,10 +541,78 @@ public class NoteRepository(
             .Where(note => note.JobId == effectiveJobId || note.JobBookingId == effectiveJobId);
 
         var notes = await query.ToListAsync();
+        if (notes.Count == 0)
+        {
+            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, true, tenantTimeZone);
+            if (fallback != null)
+            {
+                return [fallback];
+            }
+        }
+
         // Order in memory as TucNoteViewModel.CreatedDate is DateTimeOffset which some providers don't support in ORDER BY
         notes = notes.OrderByDescending(note => note.CreatedDate).ToList();
         UpdateNoteDate(notes, tenantTimeZone);
         return notes;
+    }
+
+    /// <summary>
+    /// Notes captured at booking (the pickup/courier note) are written only to the
+    /// tucJob.UcjbNotes column, never as a tucNote row — most visibly on programmatically
+    /// created return jobs. When no tucNote row exists for the job, surface that column
+    /// as a single synthesized pickup note so it still appears on the POD page and mobile app.
+    /// Prefers the requested job's own UcjbNotes, falling back to the family root's.
+    /// </summary>
+    private async Task<TucNoteViewModel> BuildUcjbNotesFallbackAsync(
+        int jobId, int effectiveJobId, bool isArchived, string tenantTimeZone)
+    {
+        var candidates = isArchived
+            ? await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId || j.UcjbId == effectiveJobId)
+                .Select(j => new UcjbNotesFallbackRow
+                {
+                    JobId = j.UcjbId,
+                    Notes = j.UcjbNotes,
+                    BookingDate = j.UcjbTime ?? j.UcjbDate
+                })
+                .ToListAsync()
+            : await Context.TucJobs
+                .Where(j => j.UcjbId == jobId || j.UcjbId == effectiveJobId)
+                .Select(j => new UcjbNotesFallbackRow
+                {
+                    JobId = j.UcjbId,
+                    Notes = j.UcjbNotes,
+                    BookingDate = j.UcjbTime ?? j.UcjbDate
+                })
+                .ToListAsync();
+
+        var source = candidates.FirstOrDefault(j => j.JobId == jobId && !string.IsNullOrWhiteSpace(j.Notes))
+                     ?? candidates.FirstOrDefault(j => !string.IsNullOrWhiteSpace(j.Notes));
+
+        if (source == null)
+        {
+            return null;
+        }
+
+        // UcjbNotes is stored as tenant wall-clock; surface the booking time as-is (no shift).
+        var bookingDate = source.BookingDate ?? clock.TenantNow;
+        return new TucNoteViewModel
+        {
+            NoteId = 0,
+            JobId = jobId,
+            NoteText = source.Notes,
+            NoteTypeId = (int)NoteType.PickupNotes,
+            NoteTypeName = "Pickup Notes",
+            IsImportant = false,
+            CreatedDate = new DateTimeOffset(DateTime.SpecifyKind(bookingDate, DateTimeKind.Unspecified), TimeSpan.Zero)
+        };
+    }
+
+    private sealed class UcjbNotesFallbackRow
+    {
+        public int JobId { get; init; }
+        public string Notes { get; init; }
+        public DateTime? BookingDate { get; init; }
     }
 
     private IQueryable<TucNoteViewModel> CreateArchivedNoteQuery() => CreateArchivedNoteQuery(Context);

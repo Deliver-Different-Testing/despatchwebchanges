@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {alpha, useTheme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -9,14 +9,17 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import SendIcon from '@mui/icons-material/Send';
 import DescriptionIcon from '@mui/icons-material/Description';
-import LockIcon from '@mui/icons-material/Lock';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {draftPodEmail} from '../../../services/aiAssistantApi';
 
 export interface SendPodJobData {
     jobId: number;
@@ -90,8 +93,23 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
     const [freeInput, setFreeInput] = useState('');
     const [freeError, setFreeError] = useState('');
 
-    const subject = buildSubject(jobData);
-    const body = buildBody(jobData);
+    const [subject, setSubject] = useState(() => buildSubject(jobData));
+    const [body, setBody] = useState(() => buildBody(jobData));
+    const {runDraft, isDrafting} = useAiDraft();
+
+    // Reset to the template whenever a different job is shown.
+    useEffect(() => {
+        setSubject(buildSubject(jobData));
+        setBody(buildBody(jobData));
+    }, [jobData]);
+
+    const handleDraft = async () => {
+        const result = await runDraft((signal) => draftPodEmail(jobData.jobId, {signal}));
+        if (result) {
+            setSubject(result.subject);
+            setBody(result.body);
+        }
+    };
 
     const bookingEmails = parseEmailField(jobData.bookingContactEmail);
     const trackingEmails = parseEmailField(jobData.trackingEmail);
@@ -447,18 +465,20 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
 
                 {/* Email preview */}
                 <Box sx={{mb: '14px'}}>
-                    <Typography
-                        sx={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                            color: 'text.secondary',
-                            mb: '6px',
-                        }}
-                    >
-                        Email preview
-                    </Typography>
+                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '6px'}}>
+                        <Typography
+                            sx={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.08em',
+                                color: 'text.secondary',
+                            }}
+                        >
+                            Email preview
+                        </Typography>
+                        <AiDraftButton onClick={handleDraft} isDrafting={isDrafting} />
+                    </Box>
 
                     <Box
                         sx={{
@@ -486,9 +506,13 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                             >
                                 Subject
                             </Typography>
-                            <Typography sx={{fontSize: 13, fontWeight: 600, color: 'text.primary', lineHeight: 1.45}}>
-                                {subject}
-                            </Typography>
+                            <InputBase
+                                value={subject}
+                                onChange={(e) => setSubject(e.target.value)}
+                                inputProps={{'aria-label': 'Email subject'}}
+                                multiline
+                                sx={{fontSize: 13, fontWeight: 600, color: 'text.primary', lineHeight: 1.45, flex: 1, p: 0}}
+                            />
                         </Box>
                         <Box sx={{borderTop: '1px solid', borderColor: 'grey.300', mx: '14px'}}/>
 
@@ -530,36 +554,19 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                         <Box sx={{borderTop: '1px solid', borderColor: 'grey.300', mx: '14px'}}/>
 
                         {/* Body */}
-                        <Box
+                        <InputBase
+                            value={body}
+                            onChange={(e) => setBody(e.target.value)}
+                            inputProps={{'aria-label': 'Email body'}}
+                            multiline
+                            fullWidth
                             sx={{
-                                p: '12px 14px 40px',
+                                p: '12px 14px',
                                 fontSize: 13,
                                 color: 'text.primary',
                                 lineHeight: 1.7,
-                                whiteSpace: 'pre-wrap',
                             }}
-                        >
-                            {body}
-                        </Box>
-
-                        {/* Lock badge */}
-                        <Box
-                            sx={{
-                                position: 'absolute',
-                                bottom: 10,
-                                right: 12,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                fontSize: 11,
-                                color: 'text.disabled',
-                                fontWeight: 600,
-                                letterSpacing: '0.04em',
-                            }}
-                        >
-                            <LockIcon sx={{fontSize: 11}}/>
-                            Read-only template
-                        </Box>
+                        />
                     </Box>
                 </Box>
             </DialogContent>

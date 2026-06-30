@@ -56,6 +56,9 @@ import {
 } from './types';
 import {messagingApi} from '../../../services/messagingApi';
 import {dayjs, parseDateFromApi} from '../../../utils/dateUtils';
+import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {draftCourierMessage} from '../../../services/aiAssistantApi';
 import {
     useAutoRefresh,
     useContactSearch,
@@ -416,6 +419,32 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         setShowQuickResponses(false);
     };
 
+    const {runDraft: runMessageDraft, isDrafting: isMessageDrafting} = useAiDraft();
+
+    const handleDraftMessage = async () => {
+        if (!selectedConversation) {
+            return;
+        }
+        const recentMessages = messages
+            .slice(-8)
+            .map((m) => `${m.isSender ? 'Me' : selectedConversation.otherPartyName}: ${m.message}`);
+        const result = await runMessageDraft((signal) =>
+            draftCourierMessage(
+                {
+                    recipientName: selectedConversation.otherPartyName,
+                    recipientType: selectedConversation.otherPartyType,
+                    messageType: messageDeliveryType,
+                    seed: newMessage,
+                    recentMessages,
+                },
+                {signal},
+            ),
+        );
+        if (result) {
+            setNewMessage(result.draft);
+        }
+    };
+
     const handleMarkConversationRead = useCallback(async (conv: RecentConversation) => {
         try {
             await messagingApi.markMessagesAsRead(conv.otherPartyId, conv.otherPartyType);
@@ -523,6 +552,8 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                 messagesContainerRef={messagesContainerRef}
                                 onMessagesScroll={handleMessagesScroll}
                                 onRetryMessage={handleRetryMessage}
+                                onDraft={handleDraftMessage}
+                                isDrafting={isMessageDrafting}
                             />
                         </Box>
                     )}
@@ -912,6 +943,8 @@ interface ChatPanelProps {
     messagesContainerRef: React.RefObject<HTMLDivElement | null>;
     onMessagesScroll: () => void;
     onRetryMessage: (message: ChatMessage) => void;
+    onDraft: () => void;
+    isDrafting: boolean;
 }
 
 function ChatPanel({
@@ -934,6 +967,8 @@ function ChatPanel({
                        messagesContainerRef,
                        onMessagesScroll,
                        onRetryMessage,
+                       onDraft,
+                       isDrafting,
                    }: ChatPanelProps) {
     if (!selectedConversation) {
         return (
@@ -1137,6 +1172,7 @@ function ChatPanel({
                         },
                     }}
                 />
+                <AiDraftButton onClick={onDraft} isDrafting={isDrafting} />
                 {selectedConversation.otherPartyType === OtherMessagePartyType.Courier && (
                     <FormControl size="small" sx={{minWidth: 80}}>
                         <Select
