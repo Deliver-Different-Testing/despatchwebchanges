@@ -123,9 +123,16 @@ export function useBoxLayout({
     useEffect(() => {
         if (!page) return undefined;
         let cancelled = false;
+        // Snapshot what we already render from localStorage so we only force a
+        // remount (reloadFromStorage bumps layoutVersion, which re-keys the
+        // PanelGroup and re-initialises the HERE map) when the server actually
+        // brought down different layouts. An identical remote sync is a no-op.
+        const before = JSON.stringify(readLocalRows(storageKeys, defaultLayout));
         loadRemoteIntoLocal(storageKeys, page, defaultLayout)
             .then(() => {
-                if (!cancelled) reloadFromStorage();
+                if (cancelled) return;
+                const after = JSON.stringify(readLocalRows(storageKeys, defaultLayout));
+                if (after !== before) reloadFromStorage();
             })
             .catch(error => {
                 if (!cancelled) console.error('Failed to load dispatch layouts from server:', error);

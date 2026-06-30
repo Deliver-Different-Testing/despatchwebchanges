@@ -33,7 +33,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         // By default, the repository reports every requested job as updated. Individual tests
         // override this to simulate jobs that were skipped (not found / locked).
         _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(ci => (IReadOnlySet<int>)ci.Arg<IReadOnlyList<JobManualPriceModel>>()
+            .Returns(ci => ci.Arg<IReadOnlyList<JobManualPriceModel>>()
                 .Select(m => m.Id).ToHashSet());
     }
 
@@ -83,7 +83,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // The repository reports that nothing was actually updated.
         _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns((IReadOnlySet<int>)new HashSet<int>());
+            .Returns(new HashSet<int>());
 
         var service = CreateService();
 
@@ -157,7 +157,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // Only job 1 was actually updated.
         _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns((IReadOnlySet<int>)new HashSet<int> { 1 });
+            .Returns(new HashSet<int> { 1 });
 
         var service = CreateService();
 
@@ -232,7 +232,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -362,7 +362,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -414,7 +414,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -461,7 +461,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -505,7 +505,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -557,7 +557,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -631,7 +631,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -699,7 +699,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return (IReadOnlySet<int>)capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();

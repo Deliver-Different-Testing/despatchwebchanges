@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using DeliverDifferentReporting.Models;
 using DeliverDifferentReporting.Services;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -89,6 +90,55 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.GeneratePodReportAsync(1));
+    }
+
+    private static JobViewModel JobWithItems(int itemCount)
+    {
+        var items = Enumerable.Range(1, itemCount)
+            .Select(i => new ParcelDimensions
+            {
+                ItemId = i,
+                Barcode = $"BC-{i:000}",
+                ItemName = $"Item {i}"
+            })
+            .ToList();
+
+        return new JobViewModel
+        {
+            JobNo = "JOB-100",
+            CompletedTime = null,
+            ParcelDimensions = items
+        };
+    }
+
+    [Fact]
+    public async Task GeneratePodReportAsync_JobWithMultipleItems_ReturnsNonEmptyPdf()
+    {
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42).Returns(new ReportBranding());
+        _jobRepositoryMock.GetSingleJobById(1).Returns(JobWithItems(2));
+
+        var service = CreateService();
+
+        var (bytes, fileName) = await service.GeneratePodReportAsync(1);
+
+        Assert.NotEmpty(bytes);
+        Assert.StartsWith("POD-", fileName);
+    }
+
+    [Fact]
+    public async Task GeneratePodReportAsync_JobWithSingleItem_ReturnsNonEmptyPdf()
+    {
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42).Returns(new ReportBranding());
+        _jobRepositoryMock.GetSingleJobById(1).Returns(JobWithItems(1));
+
+        var service = CreateService();
+
+        var (bytes, fileName) = await service.GeneratePodReportAsync(1);
+
+        Assert.NotEmpty(bytes);
+        Assert.StartsWith("POD-", fileName);
     }
 
     [Fact]

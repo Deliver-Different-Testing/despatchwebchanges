@@ -1803,15 +1803,20 @@ public class CourierRepository(
         try
         {
             var currentDate = clock.TenantNow;
+            var todayStart = clock.TenantToday;
+            var tomorrowStart = todayStart.AddDays(1);
 
             var query = Context.TucCouriers
-                .Where(c => c.CourierFleetId != (int)CourierFleet.ClientDriver &&
+                .Where(c => c.Active &&
+                            c.CourierFleetId != (int)CourierFleet.ClientDriver &&
                             c.CourierGps != null &&
                             c.CourierGps.Longitude >= data.MinLng &&
                             c.CourierGps.Longitude <= data.MaxLng &&
                             c.CourierGps.Latitude >= data.MinLat &&
                             c.CourierGps.Latitude <= data.MaxLat &&
                             c.CourierLogInOut != null &&
+                            c.CourierLogInOut.LogInTime >= todayStart &&
+                            c.CourierLogInOut.LogInTime < tomorrowStart &&
                             c.CourierLogInOut.LogOutTime == null);
 
             if (data.CourierFleetIds is { Count: > 0 })
@@ -1913,9 +1918,14 @@ public class CourierRepository(
         try
         {
             var now = clock.TenantNow;
+            var todayStart = clock.TenantToday;
+            var tomorrowStart = todayStart.AddDays(1);
 
             var query = Context.TucCouriers
-                .Where(c => c.CourierLogInOut != null &&
+                .Where(c => c.Active &&
+                            c.CourierLogInOut != null &&
+                            c.CourierLogInOut.LogInTime >= todayStart &&
+                            c.CourierLogInOut.LogInTime < tomorrowStart &&
                             c.CourierLogInOut.LogOutTime == null &&
                             c.CourierGps != null &&
                             c.CourierGps.Longitude >= data.MinLng &&

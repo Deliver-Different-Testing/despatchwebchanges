@@ -499,14 +499,11 @@ public sealed class RateJobService(
                 // pending row against the set of jobs that were actually updated.
                 var updatedIds = updateModels.Count > 0
                     ? await jobCommandRepository.UpdateManualPriceAsync(updateModels)
-                    : (IReadOnlySet<int>)new HashSet<int>();
+                    : new HashSet<int>();
 
-                foreach (var row in pendingBaseRows)
-                {
-                    resultRows.Add(updatedIds.Contains(row.JobId)
-                        ? row
-                        : row with { Skipped = true, NewAmount = row.OldAmount, Error = notUpdatedReason });
-                }
+                resultRows.AddRange(pendingBaseRows.Select(row => updatedIds.Contains(row.JobId)
+                    ? row
+                    : row with { Skipped = true, NewAmount = row.OldAmount, Error = notUpdatedReason }));
 
                 break;
             }

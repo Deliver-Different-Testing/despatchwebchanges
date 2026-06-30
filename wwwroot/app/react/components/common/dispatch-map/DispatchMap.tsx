@@ -231,7 +231,11 @@ export function DispatchMap({
         <Box className={styles.dispatchMapComponent}>
             {isLoading && <LinearProgress className={styles.loadingBar} />}
             <Box className={styles.dispatchMapContainer}>
-                <Box className={styles.mapWrapper}>
+                {/* HERE Maps renders info bubbles / tooltips inside this wrapper at a
+                    high z-index (~1001). Isolate the wrapper's stacking context so those
+                    overlays stay contained below the sibling control rails (zIndex 10)
+                    instead of painting over them and hiding the buttons. */}
+                <Box className={styles.mapWrapper} data-testid="dispatch-map-wrapper" sx={{isolation: 'isolate'}}>
                     <div ref={mapContainerRef} className={styles.mapContainer} />
                 </Box>
                 {isReady && (

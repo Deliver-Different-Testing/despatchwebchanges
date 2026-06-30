@@ -382,6 +382,33 @@ describe('DispatchMap Loading State', () => {
 });
 
 describe('DispatchMap Control Buttons', () => {
+    it('isolates the map wrapper stacking context so HERE overlays cannot cover the control rails', () => {
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: {},
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const props = createDefaultProps();
+        renderWithProviders(<DispatchMap {...props} />);
+
+        // The control rails are siblings of the map wrapper at zIndex 10. HERE Maps
+        // renders info bubbles / tooltips inside the wrapper at a far higher z-index
+        // (~1001); unless the wrapper establishes its own stacking context those
+        // overlays paint over the buttons and they "disappear". Isolating the wrapper
+        // keeps HERE's internal stacking contained below the sibling control rails.
+        const wrapper = screen.getByTestId('dispatch-map-wrapper');
+        expect(wrapper).toHaveStyle({isolation: 'isolate'});
+
+        // The controls themselves are present once the map is ready.
+        expect(screen.getByLabelText('Toggle Auto Zoom')).toBeInTheDocument();
+    });
+
     it('shows control buttons when map is ready', () => {
         const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
         useHereMapMock.mockReturnValue({

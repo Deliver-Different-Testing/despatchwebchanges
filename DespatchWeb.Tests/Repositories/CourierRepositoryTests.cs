@@ -1113,7 +1113,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         string fleetName,
         bool displayOnClearlistsDespatch,
         decimal lat,
-        decimal lng)
+        decimal lng,
+        bool active = true,
+        DateTime? logInTime = null)
     {
         await using var context = CreateContext();
 
@@ -1135,7 +1137,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         {
             CourierLogInOutId = courierId,
             CourierId = courierId,
-            LogInTime = new DateTime(2024, 1, 15, 8, 0, 0),
+            LogInTime = logInTime ?? new DateTime(2024, 1, 15, 8, 0, 0),
             LogOutTime = null,
             Created = TestDates.Now,
             CreatedBy = "Test",
@@ -1159,7 +1161,7 @@ public class CourierRepositoryTests : IAsyncDisposable
             Code = $"C{courierId:D3}",
             UccrName = $"Driver{courierId}",
             UccrSurname = "Test",
-            Active = true,
+            Active = active,
             CourierFleetId = fleetId,
             CourierLogInOutId = courierId,
             CourierGpsid = courierId,
@@ -1310,6 +1312,105 @@ public class CourierRepositoryTests : IAsyncDisposable
         var driver = Assert.Single(result);
         Assert.Equal((int)CourierFleet.AucklandCool, driver.CourierFleetId);
         Assert.Equal("Auckland Cool", driver.CourierFleetName);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_ExcludesInactiveCouriers()
+    {
+        // Arrange - an inactive courier that is otherwise logged in today with valid GPS
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m,
+            active: false);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert - inactive couriers must not appear on the map
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_ExcludesCourierLoggedInOnPriorDay()
+    {
+        // Arrange - active courier whose open session began the day before "today"
+        // (clock is 2024-01-15); a stale never-logged-out session must be excluded.
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m,
+            logInTime: new DateTime(2024, 1, 14, 8, 0, 0));
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert - only couriers logged in today should appear
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_IncludesActiveCourierLoggedInToday()
+    {
+        // Arrange - active courier logged in today (clock is 2024-01-15) with valid GPS
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(1, driver.CourierId);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_UsTenant_ExcludesInactiveCouriers()
+    {
+        // Arrange - the US tenant path uses a separate query that must also filter Active
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m,
+            active: false);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(result);
     }
 
     /// <summary>
