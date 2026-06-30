@@ -187,8 +187,11 @@ describe('DashboardSettingsDialog', () => {
             const select = within(jobListSection!.parentElement!).getByRole('combobox');
 
             await user.click(select);
-            await user.click(screen.getByText('5 minutes'));
-            expect(screen.getByText('5 minutes')).toBeInTheDocument();
+            await user.click(await screen.findByRole('option', {name: '5 minutes'}));
+            // Assert against the combobox itself: once selected, "5 minutes" appears
+            // both as the combobox value and (briefly) as the lingering menu option,
+            // so a bare getByText('5 minutes') matches multiple elements on slow CI.
+            expect(select).toHaveTextContent('5 minutes');
         });
     });
 

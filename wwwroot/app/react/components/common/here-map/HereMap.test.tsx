@@ -113,6 +113,19 @@ describe('HereMap Component', () => {
             expect(document.getElementById('test-map')).toBeInTheDocument();
         });
 
+        it('isolates the map container stacking context so HERE overlays cannot cover the control rail', () => {
+            // The MapZoomViewControls rail is a sibling of the map container at
+            // zIndex 10. HERE Maps renders info bubbles / tooltips inside the
+            // container at a far higher z-index (~1001); unless the container
+            // establishes its own stacking context those overlays paint over the
+            // rail and it "disappears". Isolating the container keeps HERE's
+            // internal stacking contained below the sibling controls.
+            const props = createDefaultProps({credentials: undefined});
+            renderWithProviders(<HereMap {...props} />);
+
+            expect(document.getElementById('test-map')).toHaveStyle({isolation: 'isolate'});
+        });
+
         it('renders the zoom/traffic/layers control buttons', () => {
             const props = createDefaultProps({credentials: undefined});
             renderWithProviders(<HereMap {...props} />);

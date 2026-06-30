@@ -151,6 +151,19 @@ describe('CourierMapPage Component', () => {
             expect(refreshButtons[0]).toHaveAccessibleName('Refresh data');
         });
 
+        it('isolates the map container stacking context so HERE overlays cannot cover the controls or panel', () => {
+            // MapControls / MapZoomViewControls (zIndex 10) and the DriversPanel
+            // (zIndex 50) are siblings of the map container. HERE Maps renders info
+            // bubbles / tooltips inside the container at a far higher z-index (~1001);
+            // unless the container establishes its own stacking context those overlays
+            // paint over the controls and panel. Isolating the container keeps HERE's
+            // internal stacking contained below the sibling overlays.
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            expect(screen.getByTestId('courier-map-container')).toHaveStyle({isolation: 'isolate'});
+        });
+
         it('renders the shared zoom/layer rail once the map is ready', () => {
             const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
             useCourierMapMock.mockReturnValue({

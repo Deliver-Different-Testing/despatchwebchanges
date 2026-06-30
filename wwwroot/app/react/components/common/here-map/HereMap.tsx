@@ -46,6 +46,11 @@ export const HereMap: React.FC<HereMapProps> = ({
                 sx={{
                     width: '100%',
                     height: '100%',
+                    // HERE Maps renders info bubbles / tooltips inside this container
+                    // at a high z-index (~1001). Isolate the stacking context so those
+                    // overlays stay below the sibling MapZoomViewControls rail (zIndex
+                    // 10) instead of painting over it and hiding the buttons.
+                    isolation: 'isolate',
                 }}
             />
             <MapZoomViewControls

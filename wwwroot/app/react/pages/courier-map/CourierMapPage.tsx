@@ -142,8 +142,15 @@ export function CourierMapPage({
     return (
         <Box sx={{ position: 'relative', width: '100%', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
             <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-                {/* Map Container */}
-                <Box ref={mapContainerRef} sx={{ width: '100%', height: '100%' }} />
+                {/* Map Container — isolate the stacking context so HERE Maps' info
+                    bubbles / tooltips (rendered inside at z-index ~1001) stay below the
+                    sibling map controls (zIndex 10) and drivers panel (zIndex 50)
+                    instead of painting over them. */}
+                <Box
+                    ref={mapContainerRef}
+                    data-testid="courier-map-container"
+                    sx={{ width: '100%', height: '100%', isolation: 'isolate' }}
+                />
 
                 {/* Drivers Panel */}
                 <DriversPanel

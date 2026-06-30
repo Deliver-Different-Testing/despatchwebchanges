@@ -14,7 +14,7 @@
         <PackageVersion Include="coverlet.collector" Version="10.0.1"/>
         <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0"/>
         <PackageVersion Include="Magick.NET-Q8-AnyCPU" Version="14.14.0"/>
-        <PackageVersion Include="DeliverDifferentReporting" Version="1.1.0"/>
+        <PackageVersion Include="DeliverDifferentReporting" Version="2.0.34"/>
         <PackageVersion Include="ExcelDataReader" Version="$(ExcelDataReaderVersion)"/>
         <PackageVersion Include="ExcelDataReader.DataSet" Version="$(ExcelDataReaderVersion)"/>
         <PackageVersion Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="$(MicrosoftRuntimeVersion)"/>

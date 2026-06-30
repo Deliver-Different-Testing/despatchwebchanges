@@ -15,6 +15,6 @@ public sealed record ApiRerate
 
 public sealed record RerateApiResponse
 {
-    public ApiRerate Rerate { get; init; } 
+    public ApiRerate? Rerate { get; init; } 
     public Errors Errors { get; init; }
 }
