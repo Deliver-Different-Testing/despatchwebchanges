@@ -1,5 +1,3 @@
-using DespatchWeb.Models;
-
 namespace DespatchWeb.Models.RequestModels;
 
 public sealed class SaveDispatchLayoutsRequest

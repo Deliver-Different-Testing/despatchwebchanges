@@ -22,6 +22,7 @@ public class AiInsightsServiceTests
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings { MaxTokensPerSummary = 1024 });
+    private static readonly string[] StringArray = ["3% below rate card"];
 
     private AiInsightsService CreateService() => new(
         _aiClient, _noteRepository, _jobRepository, _accessorialService,
@@ -51,11 +52,11 @@ public class AiInsightsServiceTests
         _noteRepository.GetNotesByJobIdAsync(1).Returns(new List<TucNoteViewModel>());
         var service = CreateService();
 
-        var result = await service.ExtractBlockersAsync(1);
+        var result = await service.ExtractBlockersAsync(1, TestContext.Current.CancellationToken);
 
         Assert.Empty(result.Blockers);
         Assert.Equal(SummarySeverity.Ok, result.Severity);
-        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(default!, default!, default, default, default, default, default);
+        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(null!, null!, 0, null, null, false, CancellationToken.None);
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public class AiInsightsServiceTests
         });
         var service = CreateService();
 
-        var result = await service.ExtractBlockersAsync(1);
+        var result = await service.ExtractBlockersAsync(1, TestContext.Current.CancellationToken);
 
         Assert.Single(result.Blockers);
         Assert.Equal("gate-code-needed", result.Blockers[0].Tag);
@@ -93,7 +94,7 @@ public class AiInsightsServiceTests
             .Returns(new List<AccessorialChargeDto>()); // empty catalog → no AI suggestions
         var service = CreateService();
 
-        var result = await service.AnalyzePricingAsync(1, 5);
+        var result = await service.AnalyzePricingAsync(1, 5, TestContext.Current.CancellationToken);
 
         Assert.NotNull(result.Anomaly);
         Assert.Equal(95m, result.Anomaly!.StoredCharge);
@@ -112,7 +113,7 @@ public class AiInsightsServiceTests
             .Returns(new List<AccessorialChargeDto>());
         var service = CreateService();
 
-        var result = await service.AnalyzePricingAsync(1, 5);
+        var result = await service.AnalyzePricingAsync(1, 5, TestContext.Current.CancellationToken);
 
         Assert.Null(result.Anomaly);
     }
@@ -137,7 +138,7 @@ public class AiInsightsServiceTests
         });
         var service = CreateService();
 
-        var result = await service.AnalyzePricingAsync(1, 5);
+        var result = await service.AnalyzePricingAsync(1, 5, TestContext.Current.CancellationToken);
 
         Assert.Single(result.Suggestions);
         Assert.Equal(5, result.Suggestions[0].AccessorialChargeId);
@@ -159,11 +160,11 @@ public class AiInsightsServiceTests
             recommendedAction = "approve",
             confidence = 0.82,
             rationale = "Rate change aligns with volume.",
-            riskFactors = new[] { "3% below rate card" }
+            riskFactors = StringArray
         });
         var service = CreateService();
 
-        var result = await service.TriageChangeRequestAsync(42, 1);
+        var result = await service.TriageChangeRequestAsync(42, 1, TestContext.Current.CancellationToken);
 
         Assert.Equal("approve", result.RecommendedAction);
         Assert.Equal(0.82, result.Confidence, 3);
@@ -177,9 +178,9 @@ public class AiInsightsServiceTests
             .Returns(new List<JobChangeRequestDto>());
         var service = CreateService();
 
-        var result = await service.TriageChangeRequestAsync(42, 1);
+        var result = await service.TriageChangeRequestAsync(42, 1, TestContext.Current.CancellationToken);
 
         Assert.Equal("clarify", result.RecommendedAction);
-        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(default!, default!, default, default, default, default, default);
+        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(null!, null!, 0, null, null, false, CancellationToken.None);
     }
 }

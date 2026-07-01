@@ -141,6 +141,15 @@ export interface GetFlightOptionsParams {
     includeNearbyAirports?: boolean;
 }
 
+export interface GetRecurringFlightOptionsParams {
+    bookingId: number;
+    departureDate: string;
+    departureAirportId?: number;
+    arrivalAirportId?: number;
+    minimumLayoverMinutes?: number;
+    includeNearbyAirports?: boolean;
+}
+
 interface FlightSearchResponseDto {
     flights: FlightViewModelDto[];
     message?: string;
@@ -277,6 +286,37 @@ export class NationwideApiService {
             };
         } catch (error) {
             console.error('Error fetching scheduled flight options:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get flight options for a recurring booking's "saved flight" picker.
+     * Route-based (airports supplied directly) and rate-free — the dialog only
+     * needs to pick a flight number.
+     */
+    async getRecurringFlightOptions(params: GetRecurringFlightOptionsParams): Promise<FlightSearchResult> {
+        try {
+            const response = await apiClient.get<FlightSearchResponseDto>(
+                'nationwideJob/GetRecurringFlightOptions',
+                {
+                    departureDate: params.departureDate,
+                    bookingId: params.bookingId,
+                    ...(params.departureAirportId !== undefined && { departureAirportId: params.departureAirportId }),
+                    ...(params.arrivalAirportId !== undefined && { arrivalAirportId: params.arrivalAirportId }),
+                    minimumLayoverMinutes: params.minimumLayoverMinutes ?? 60,
+                    includeNearbyAirports: params.includeNearbyAirports ?? false,
+                }
+            );
+
+            const flightDtos = response.flights ?? [];
+
+            return {
+                flights: flightDtos.map((dto) => this.transformFlightDto(dto)),
+                message: response.message,
+            };
+        } catch (error) {
+            console.error('Error fetching recurring flight options:', error);
             throw error;
         }
     }

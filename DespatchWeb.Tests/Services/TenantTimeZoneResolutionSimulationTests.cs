@@ -1,11 +1,8 @@
 using System.Security.Claims;
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using NSubstitute;
-using Xunit;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -23,7 +20,7 @@ namespace DespatchWeb.Tests.Services;
 /// formats convert correctly versus which silently/loudly fail. The goal is to
 /// reproduce the exact condition under which an NZ tenant ends up displayed as UTC.
 /// </summary>
-public sealed class TenantTimeZoneResolutionSimulationTests : IAsyncDisposable
+public sealed class TenantTimeZoneResolutionSimulationTests(ITestOutputHelper output) : IAsyncDisposable
 {
     // 03:00 UTC on 2026-06-18 — matches the temporary [TZDIAG] probe in
     // DeliveryJourneyService so the test mirrors what production will log.
@@ -32,9 +29,6 @@ public sealed class TenantTimeZoneResolutionSimulationTests : IAsyncDisposable
     private readonly SqliteTestDatabase _db = new();
     private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
     private readonly MemoryCache _memoryCache = new(new MemoryCacheOptions());
-    private readonly ITestOutputHelper _output;
-
-    public TenantTimeZoneResolutionSimulationTests(ITestOutputHelper output) => _output = output;
 
     public async ValueTask DisposeAsync()
     {
@@ -74,7 +68,7 @@ public sealed class TenantTimeZoneResolutionSimulationTests : IAsyncDisposable
             outcome = $"THREW {ex.GetType().Name}: {ex.Message}";
         }
 
-        _output.WriteLine($"claim='{timeZoneClaim ?? "<null>"}'  =>  {outcome}");
+        output.WriteLine($"claim='{timeZoneClaim ?? "<null>"}'  =>  {outcome}");
     }
 
     [Fact]

@@ -72,7 +72,7 @@ public class AiDraftingServiceTests
             RecipientType = OtherMessagePartyType.Courier,
             MessageType = 2,
             Seed = "pu delayed 30min"
-        });
+        }, TestContext.Current.CancellationToken);
 
         Assert.Equal("Hi Dave, pickup is running 30 min late.", result.Draft);
         Assert.Equal(70, result.Usage.InputTokens);
@@ -85,7 +85,7 @@ public class AiDraftingServiceTests
         StubTextResponse("ok");
         var service = CreateService();
 
-        await service.DraftCourierMessageAsync(new DraftMessageRequest { Seed = "hi" });
+        await service.DraftCourierMessageAsync(new DraftMessageRequest { Seed = "hi" }, TestContext.Current.CancellationToken);
 
         await _aiClientMock.Received(1).SendMessageAsync(
             Arg.Any<string>(), Arg.Any<List<AiMessage>>(), 512,
@@ -108,7 +108,7 @@ public class AiDraftingServiceTests
         {
             Seed = "call me on 021 555 1234",
             RecentMessages = ["email me at dave@example.com"]
-        });
+        }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(capturedUserMessage);
         Assert.Contains("[PHONE]", capturedUserMessage);
@@ -129,7 +129,7 @@ public class AiDraftingServiceTests
             .Returns(new AiClientResponse { TextContent = "ok" });
         var service = CreateService();
 
-        await service.DraftCourierMessageAsync(new DraftMessageRequest { Seed = "hi" });
+        await service.DraftCourierMessageAsync(new DraftMessageRequest { Seed = "hi" }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(capturedSystem);
         Assert.Contains("US-based", capturedSystem);
@@ -152,7 +152,7 @@ public class AiDraftingServiceTests
         {
             NoteTypeId = (int)NoteType.ClientNote,
             Seed = "cust wants call b4 delivery"
-        });
+        }, TestContext.Current.CancellationToken);
 
         Assert.Equal("Customer requested a call.", result.Draft);
         Assert.NotNull(capturedSystem);
@@ -175,7 +175,7 @@ public class AiDraftingServiceTests
         StubEmailToolResponse("Proof of Delivery - J12345", "Your shipment was delivered.", 110, 40);
         var service = CreateService();
 
-        var result = await service.DraftPodEmailAsync(1);
+        var result = await service.DraftPodEmailAsync(1, TestContext.Current.CancellationToken);
 
         Assert.Equal("Proof of Delivery - J12345", result.Subject);
         Assert.Equal("Your shipment was delivered.", result.Body);
@@ -188,11 +188,11 @@ public class AiDraftingServiceTests
         _jobRepositoryMock.GetSingleJobById(Arg.Any<int>()).Returns((JobViewModel?)null);
         var service = CreateService();
 
-        var result = await service.DraftPodEmailAsync(999);
+        var result = await service.DraftPodEmailAsync(999, TestContext.Current.CancellationToken);
 
         Assert.Equal("Job not found.", result.Body);
         await _aiClientMock.DidNotReceiveWithAnyArgs().SendMessageAsync(
-            default!, default!, default, default, default, default, default);
+            null!, null!, 0, null, null, false, CancellationToken.None);
     }
 
     // ----- Compose email ----------------------------------------------------
@@ -207,7 +207,7 @@ public class AiDraftingServiceTests
         {
             RecipientNames = ["Dave", "Sam"],
             SeedBody = "schedule changed"
-        });
+        }, TestContext.Current.CancellationToken);
 
         Assert.Equal("Schedule change", result.Subject);
         Assert.Equal("Hi team, please note the change.", result.Body);

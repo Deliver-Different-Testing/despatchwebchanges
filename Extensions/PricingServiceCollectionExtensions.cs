@@ -11,6 +11,7 @@ public static class PricingServiceCollectionExtensions
         services.AddScoped<IRateJobService, RateJobService>();
         services.AddScoped<IFlightRateService, FlightRateService>();
         services.AddScoped<IFlightStatsService, FlightStatsService>();
+        services.AddScoped<IFlightAssignmentService, FlightAssignmentService>();
         services.AddScoped<IPricingPermissionService, PricingPermissionService>();
 
         // DespatchWeb -> Integration Manager Cirium gateway (used when Cirium:UseIntegrationManager is on).

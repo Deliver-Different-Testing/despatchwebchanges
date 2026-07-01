@@ -158,6 +158,9 @@ export interface IJob {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
+    // Recurring flight: complete flight number (e.g. "NZ123") saved against the
+    // booking so the same flight auto-assigns on each push-to-live.
+    savedFlightNumber?: string;
     assignedFlight?: IAssignedFlight;
     assignedAgent?: IAgent;
     assignedCourier?: ISuggestion;
@@ -367,6 +370,7 @@ export interface IJobDto {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
+    savedFlightNumber?: string;
     assignedFlight?: IAssignedFlightDto;
     assignedAgent?: IAgent;
     assignedCourier?: ISuggestion;

@@ -596,6 +596,52 @@ public class NationwideJobRepository(
             .Distinct()
             .ToListAsync();
 
+    // Live jobs (among jobIds) whose source booking template carries a saved
+    // flight number and both airports — the candidates for auto-assigning the
+    // recurring flight on push-to-live. The template is joined via the new
+    // job's BookingParentID (which points back to the booking it materialised
+    // from). Date + time are combined client-side to keep the wall-clock value.
+    public async Task<IReadOnlyList<SavedFlightCandidate>> GetSavedFlightCandidatesAsync(IReadOnlyList<int> jobIds)
+    {
+        if (jobIds is null || jobIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await (
+            from j in Context.TucJobs
+            where jobIds.Contains(j.UcjbId) && j.BookingParentId != null
+            join b in Context.TucJobBookings on j.BookingParentId equals b.UcbkId
+            where b.SavedFlightNumber != null && b.SavedFlightNumber != ""
+                  && b.FromAirportId != null && b.ToAirportId != null
+            select new
+            {
+                JobId = j.UcjbId,
+                b.FromAirportId,
+                b.ToAirportId,
+                b.SavedFlightNumber,
+                j.UcjbDate,
+                j.UcjbTime
+            }).ToListAsync();
+
+        return rows
+            .Select(r => new SavedFlightCandidate
+            {
+                JobId = r.JobId,
+                FromAirportId = r.FromAirportId,
+                ToAirportId = r.ToAirportId,
+                SavedFlightNumber = r.SavedFlightNumber,
+                // Wall-clock departure: date column + time-of-day column, zero
+                // offset so the search keys off the right calendar date.
+                DepartureDate = new DateTimeOffset(
+                    r.UcjbTime.HasValue
+                        ? r.UcjbDate.Date.Add(r.UcjbTime.Value.TimeOfDay)
+                        : r.UcjbDate,
+                    TimeSpan.Zero)
+            })
+            .ToList();
+    }
+
     public async Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId) =>
         await Context.TucAgents
             .Where(a => a.UcagId == agentId)

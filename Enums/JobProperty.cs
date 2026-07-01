@@ -86,5 +86,10 @@ public enum JobProperty
     // and is kept in sync by the update branch per Steve's compatibility rule
     // (Active/Inactive map 1:1, Manual maps to ucbkActive=1 so it stays
     // visible in legacy active-only screens during rollout).
-    RecurringMode
+    RecurringMode,
+
+    // Complete flight number (e.g. "NZ123") saved on a recurring flight
+    // booking. Single-row write on tucJobBooking.SavedFlightNumber; empty
+    // string clears it.
+    SavedFlightNumber
 }

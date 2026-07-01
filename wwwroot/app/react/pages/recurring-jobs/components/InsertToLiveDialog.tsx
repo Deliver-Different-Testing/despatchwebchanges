@@ -95,10 +95,15 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
             });
 
             const dateLabel = insertDate.format('YYYY-MM-DD');
-            showToast(
-                `Inserted ${result.jobsInserted} job(s) from ${result.bookingsMaterialised} parent booking(s) for ${dateLabel}.`,
-                'success'
-            );
+            let message =
+                `Inserted ${result.jobsInserted} job(s) from ${result.bookingsMaterialised} parent booking(s) for ${dateLabel}.`;
+            if (result.flightsAutoAssigned > 0) {
+                message += ` ${result.flightsAutoAssigned} flight(s) auto-assigned.`;
+            }
+            if (result.flightsUnmatched > 0) {
+                message += ` ${result.flightsUnmatched} saved flight(s) couldn't be matched — assign manually.`;
+            }
+            showToast(message, result.flightsUnmatched > 0 ? 'warning' : 'success');
             onSuccess(result);
         } catch (error) {
             // Backend returns 400 with the validation message for

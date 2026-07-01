@@ -35,6 +35,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
     private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
+    private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
 
     public JobRepositoryBulkSearchTests()
     {
@@ -73,7 +74,8 @@ public class JobRepositoryBulkSearchTests : IDisposable
         _pdfOverlayClientMock,
         _splitJobServiceMock,
         _sendToPartnerServiceMock,
-        _partnerJobGateMock);
+        _partnerJobGateMock,
+        _flightAssignmentServiceMock);
 
     [Fact]
     public async Task BulkSearch_WithBulkJobId_IgnoresOtherFilters()

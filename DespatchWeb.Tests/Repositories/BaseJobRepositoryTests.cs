@@ -463,6 +463,143 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         Assert.All(notes, n => Assert.True(n.IsImportant));
     }
 
+    // ---- Sargable date filters (fix: avoid .Date/.TimeOfDay on the column) ----
+    // These predicates are tested in-memory (LINQ-to-objects) because SQLite cannot translate the
+    // legacy .Date/.TimeOfDay forms; the rewrite must preserve the original calendar-day semantics.
+
+    [Fact]
+    public void JobDateOnOrAfter_IncludesStartDayMidnightAndLater_ExcludesPriorDay()
+    {
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 14, 23, 59, 0)),
+            JobOn(2, new DateTime(2024, 6, 15, 0, 0, 0)),
+            JobOn(3, new DateTime(2024, 6, 15, 9, 0, 0)),
+            JobOn(4, new DateTime(2024, 6, 16, 0, 0, 0))
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.JobDateOnOrAfter(new DateTime(2024, 6, 15)))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([2, 3, 4], result);
+    }
+
+    [Fact]
+    public void JobDateOnOrBefore_IncludesWholeCutoffDay_ExcludesNextDay()
+    {
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 14, 0, 0, 0)),
+            JobOn(2, new DateTime(2024, 6, 15, 0, 0, 0)),
+            // Late on the cutoff day: the old `.Date <=` kept it, the `< nextMidnight` rewrite must too.
+            JobOn(3, new DateTime(2024, 6, 15, 23, 59, 0)),
+            JobOn(4, new DateTime(2024, 6, 16, 0, 0, 0))
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.JobDateOnOrBefore(new DateTime(2024, 6, 15)))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2, 3], result);
+    }
+
+    [Fact]
+    public void JobDateTimeOnOrBefore_FiltersByDateThenTime()
+    {
+        var filter = new DateTime(2024, 6, 15, 14, 30, 0);
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 14), new DateTime(1, 1, 1, 23, 0, 0)), // earlier day, any time
+            JobOn(2, new DateTime(2024, 6, 15), new DateTime(1, 1, 1, 14, 0, 0)), // same day, before
+            JobOn(3, new DateTime(2024, 6, 15), new DateTime(1, 1, 1, 14, 30, 0)), // same day, exact
+            JobOn(4, new DateTime(2024, 6, 15), new DateTime(1, 1, 1, 15, 0, 0)), // same day, after
+            JobOn(5, new DateTime(2024, 6, 15), time: null), // same day, no time
+            JobOn(6, new DateTime(2024, 6, 16), new DateTime(1, 1, 1, 0, 0, 0)) // later day
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.JobDateTimeOnOrBefore(filter))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2, 3, 5], result);
+    }
+
+    // ---- Bounded pagination helper (fix: non-paginated path must not be unbounded) ----
+
+    [Fact]
+    public async Task ResolveJobIdPageAsync_NonPaginatedUnderCap_ReturnsAllAndHasMoreFalse()
+    {
+        await SeedJobIdsAsync(1, 2, 3, 4, 5);
+        var distinctIds = _context.TucJobs.Select(j => j.UcjbId).Distinct();
+
+        var result = await BaseJobRepository.ResolveJobIdPageAsync(
+            distinctIds, requestedPage: 0, pageSize: 500, nonPaginatedCap: 10,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(5, result.JobIds.Count);
+        Assert.Equal(5, result.TotalCount);
+        Assert.False(result.HasMore);
+    }
+
+    [Fact]
+    public async Task ResolveJobIdPageAsync_NonPaginatedOverCap_TruncatesAndReportsTrueTotal()
+    {
+        await SeedJobIdsAsync(1, 2, 3, 4, 5);
+        var distinctIds = _context.TucJobs.Select(j => j.UcjbId).Distinct();
+
+        var result = await BaseJobRepository.ResolveJobIdPageAsync(
+            distinctIds, requestedPage: 0, pageSize: 500, nonPaginatedCap: 3,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal([1, 2, 3], result.JobIds); // capped to the first 3 by id order
+        Assert.Equal(5, result.TotalCount); // true total still reported
+        Assert.True(result.HasMore);
+    }
+
+    [Fact]
+    public async Task ResolveJobIdPageAsync_RequestedPage_ReturnsThatPageAndHasMoreWhenMoreRemain()
+    {
+        await SeedJobIdsAsync(1, 2, 3, 4, 5);
+        var distinctIds = _context.TucJobs.Select(j => j.UcjbId).Distinct();
+
+        var result = await BaseJobRepository.ResolveJobIdPageAsync(
+            distinctIds, requestedPage: 2, pageSize: 2,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal([3, 4], result.JobIds);
+        Assert.Equal(5, result.TotalCount);
+        Assert.True(result.HasMore);
+    }
+
+    [Fact]
+    public async Task ResolveJobIdPageAsync_LastPage_HasMoreFalse()
+    {
+        await SeedJobIdsAsync(1, 2, 3, 4, 5);
+        var distinctIds = _context.TucJobs.Select(j => j.UcjbId).Distinct();
+
+        var result = await BaseJobRepository.ResolveJobIdPageAsync(
+            distinctIds, requestedPage: 3, pageSize: 2,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal([5], result.JobIds);
+        Assert.False(result.HasMore);
+    }
+
+    private async Task SeedJobIdsAsync(params int[] ids)
+    {
+        _context.TucJobs.AddRange(ids.Select(id => CreateJob(id, $"JOB{id:000}")));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static TucJob JobOn(int id, DateTime date, DateTime? time = null) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = $"JOB{id:000}",
+        UcjbDate = date,
+        UcjbTime = time
+    };
+
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
         UcjbId = id,

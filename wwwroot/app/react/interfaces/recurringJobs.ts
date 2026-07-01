@@ -67,6 +67,9 @@ export interface InsertRecurringToLiveResult {
     jobsRepriced: number;
     insertedJobIds: number[];
     parentBookingIds: number[];
+    // Saved-flight auto-assignment outcome on push-to-live.
+    flightsAutoAssigned: number;
+    flightsUnmatched: number;
 }
 
 /**

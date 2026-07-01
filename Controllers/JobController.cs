@@ -38,7 +38,8 @@ public class JobController(
     IPdfOverlayClient pdfOverlay,
     ISplitJobService splitJobService,
     ISendToPartnerService sendToPartnerService,
-    IPartnerJobGate partnerJobGate
+    IPartnerJobGate partnerJobGate,
+    IFlightAssignmentService flightAssignmentService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -376,6 +377,14 @@ public class JobController(
         try
         {
             var result = await recurringJobRepository.InsertRecurringToLiveAsync(request);
+
+            // Best-effort: auto-assign saved flights onto the freshly
+            // materialised jobs. Failures here never fail the push — they're
+            // surfaced as the unmatched count for the operator to action.
+            var flightSummary = await flightAssignmentService.AutoAssignSavedFlightsAsync(result.InsertedJobIds);
+            result.FlightsAutoAssigned = flightSummary.Assigned;
+            result.FlightsUnmatched = flightSummary.Unmatched;
+
             return Json(result);
         }
         catch (InvalidOperationException ex)
