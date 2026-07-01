@@ -1621,6 +1621,32 @@ public class JobController(
         }
     }
 
+    // Atomically save a recurring booking's route airports + saved flight
+    // number. Used by the "add flight" flow for recurring bookings created
+    // without airports — all three are needed together for push-to-live flight
+    // auto-assign to match, so they're written in one call rather than via
+    // three UpdateRecurringJob round-trips. No rate recalc: airports/flight
+    // don't affect pricing.
+    [HttpPost]
+    public async Task<IActionResult> SaveRecurringFlight(
+        int jobId,
+        int fromAirportId,
+        int toAirportId,
+        string flightNumber
+    )
+    {
+        try
+        {
+            await recurringJobRepository.SaveRecurringFlightAsync(jobId, fromAirportId, toAirportId, flightNumber);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An error occured saving recurring flight {Flight} for job {JobId}", flightNumber, jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> UpdateJob(
         int jobId,

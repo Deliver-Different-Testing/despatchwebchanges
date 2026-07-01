@@ -6,11 +6,11 @@
     </PropertyGroup>
     <ItemGroup>
         <PackageVersion Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.3"/>
-        <PackageVersion Include="Anthropic" Version="12.30.0"/>
+        <PackageVersion Include="Anthropic" Version="12.34.0"/>
         <PackageVersion Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0"/>
-        <PackageVersion Include="AWSSDK.S3" Version="4.0.25.3"/>
-        <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.7.8"/>
-        <PackageVersion Include="AWSSDK.SSO" Version="4.0.3.8"/>
+        <PackageVersion Include="AWSSDK.S3" Version="4.0.100"/>
+        <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.100"/>
+        <PackageVersion Include="AWSSDK.SSO" Version="4.0.100"/>
         <PackageVersion Include="coverlet.collector" Version="10.0.1"/>
         <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0"/>
         <PackageVersion Include="Magick.NET-Q8-AnyCPU" Version="14.14.0"/>

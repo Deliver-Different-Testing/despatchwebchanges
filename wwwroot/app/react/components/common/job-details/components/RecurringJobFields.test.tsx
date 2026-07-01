@@ -29,6 +29,7 @@ function createDefaultProps(overrides?: Record<string, any>) {
         onEditStopDate: jest.fn(),
         onEditRestartDate: jest.fn(),
         onEditSavedFlight: jest.fn(),
+        onAddFlight: jest.fn(),
         ...overrides,
     };
 }
@@ -177,10 +178,17 @@ describe('RecurringJobFields', () => {
         expect(tip.textContent).toMatch(/Stop Date/);
     });
 
-    it('does not render the Flight card for a non-flight booking (no airports)', () => {
+    it('renders an Add-flight card (not the saved-flight editor) for a non-flight booking and fires onAddFlight', () => {
+        const onAddFlight = jest.fn();
         const job = createMockJob({preBook: true, fromAirportId: undefined, toAirportId: undefined});
-        renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onAddFlight})} />);
+
+        // The editable saved-flight card is absent; the add-flight prompt is shown.
         expect(screen.queryByText('Saved Flight')).not.toBeInTheDocument();
+        expect(screen.getByText('Add flight')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Add flight'));
+        expect(onAddFlight).toHaveBeenCalled();
     });
 
     it('renders the Flight card with the saved flight number for a flight booking', () => {

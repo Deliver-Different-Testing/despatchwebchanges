@@ -345,6 +345,26 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SaveRecurringFlightAsync_StampsAirportsAndUpcasedFlight()
+    {
+        // A recurring booking created without a route — the "add flight" flow
+        // supplies airports + flight together so push-to-live auto-assign (which
+        // needs both airports non-null) can match.
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.SaveRecurringFlightAsync(jobId, fromAirportId: 150, toAirportId: 96, flightNumber: "nz 123");
+
+        _context.ChangeTracker.Clear();
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal(150, updatedJob!.FromAirportId);
+        Assert.Equal(96, updatedJob.ToAirportId);
+        Assert.Equal("NZ 123", updatedJob.SavedFlightNumber);
+    }
+
+    [Fact]
     public async Task UpdateRecurringJobAsync_BookedTime_UpdatesBothUcbkDateAndUcbkTime()
     {
         // Arrange — the Ready card reads UcbkDate.CombineWithTime(UcbkTime),

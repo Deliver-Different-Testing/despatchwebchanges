@@ -1,3 +1,4 @@
+#nullable enable annotations
 namespace DespatchWeb.Models.Response;
 
 // ---- Note blocker extraction --------------------------------------------

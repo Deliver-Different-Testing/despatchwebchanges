@@ -1251,6 +1251,24 @@ public class RecurringJobRepository(
         throw new ArgumentException($"Invalid value '{value}' for property {property}. Expected type: {typeof(T).Name}.", nameof(value));
     }
 
+    public async Task SaveRecurringFlightAsync(int jobId, int fromAirportId, int toAirportId, string flightNumber)
+    {
+        // Single-row, atomic write of the three fields the push-to-live flight
+        // auto-assign depends on. Flight number is normalised the same way as
+        // the SavedFlightNumber case above (trim + upper + truncate; blank →
+        // NULL). Airports are always set here — the "add flight" flow requires
+        // both before it can call this.
+        var savedFlight = string.IsNullOrWhiteSpace(flightNumber)
+            ? null
+            : Truncate(flightNumber.Trim().ToUpperInvariant(), MaxSavedFlightNumberLength);
+
+        await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.FromAirportId, fromAirportId)
+                .SetProperty(j => j.ToAirportId, toAirportId)
+                .SetProperty(j => j.SavedFlightNumber, savedFlight));
+    }
+
     private static string Truncate(string value, int maxLength) =>
         string.IsNullOrEmpty(value) ? value : value[..Math.Min(value.Length, maxLength)];
 

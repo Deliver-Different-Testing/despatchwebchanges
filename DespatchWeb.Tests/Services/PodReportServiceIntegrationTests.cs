@@ -117,7 +117,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     public async Task GeneratePodReportAsync_JobWithMultipleItems_ReturnsNonEmptyPdf()
     {
         SetupHttpContext();
-        _tenantBrandingServiceMock.GetBrandingAsync(42).Returns(new ReportBranding());
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>()).Returns(new ReportBranding());
         _jobRepositoryMock.GetSingleJobById(1).Returns(JobWithItems(2));
 
         var service = CreateService();
@@ -132,7 +132,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     public async Task GeneratePodReportAsync_JobWithSingleItem_ReturnsNonEmptyPdf()
     {
         SetupHttpContext();
-        _tenantBrandingServiceMock.GetBrandingAsync(42).Returns(new ReportBranding());
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>()).Returns(new ReportBranding());
         _jobRepositoryMock.GetSingleJobById(1).Returns(JobWithItems(1));
 
         var service = CreateService();

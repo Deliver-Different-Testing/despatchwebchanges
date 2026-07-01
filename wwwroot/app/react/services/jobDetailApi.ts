@@ -71,6 +71,23 @@ export function updateJobDetail(
     });
 }
 
+/**
+ * Atomically save a recurring booking's route airports + saved flight number.
+ * The push-to-live flight auto-assign only picks up bookings with both airports
+ * set, so the "add flight" flow writes all three together via this dedicated
+ * endpoint rather than three UpdateRecurringJob calls.
+ */
+export function saveRecurringFlight(
+    jobId: number,
+    fromAirportId: number,
+    toAirportId: number,
+    flightNumber: string
+): Promise<void> {
+    return apiClient.post<void>('job/SaveRecurringFlight', null, {
+        params: {jobId, fromAirportId, toAirportId, flightNumber},
+    });
+}
+
 export function updateBulkJobDetail(
     bulkJobId: number,
     field: string,
