@@ -29,6 +29,7 @@ public class RecurringJobRepository(
     private const int MaxTrackingLength = 100;
     private const int MaxCustomNameLength = 100;
     private const int MaxConNoteLength = 100;
+    private const int MaxSavedFlightNumberLength = 16;
 
     /// <summary>
     /// SQL Server minimum date — values at or below this are treated as "no date" and skipped during timezone conversion.
@@ -113,7 +114,8 @@ public class RecurringJobRepository(
                     JobProperty.StopDate or JobProperty.RestartDate or
                     JobProperty.CourierId or JobProperty.InactiveBy or
                     JobProperty.RouteId or
-                    JobProperty.AgentId or JobProperty.NpAgentId
+                    JobProperty.AgentId or JobProperty.NpAgentId or
+                    JobProperty.SavedFlightNumber
                     => await UpdateSimplePropertyAsync(jobId, property, value),
 
                 // Parent + children updates (no note)
@@ -958,6 +960,18 @@ public class RecurringJobRepository(
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(j => j.AgentId, npAgentIdValue)
                         .SetProperty(j => j.NpAgentId, npAgentIdValue));
+                break;
+
+            case JobProperty.SavedFlightNumber:
+                // Single-row write — the saved flight only matters on the
+                // template the operator is editing. Empty/whitespace clears it
+                // (operator removes the saved flight) and is stored as NULL.
+                var savedFlight = string.IsNullOrWhiteSpace(value)
+                    ? null
+                    : Truncate(value.Trim().ToUpperInvariant(), MaxSavedFlightNumberLength);
+
+                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.SavedFlightNumber, savedFlight));
                 break;
 
             default:

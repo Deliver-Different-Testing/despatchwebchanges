@@ -1521,6 +1521,7 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tblBulkJob", tb =>
                 {
+                    tb.HasTrigger("tblBulkJob_AI_StampWindowCols");
                     tb.HasTrigger("tblBulkJob_Insert");
                     tb.HasTrigger("tblBulkJob_Update");
                     tb.HasTrigger("trg_TblBulkJob_Notes_Update");
@@ -1589,6 +1590,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DeliveryAddressLine8).HasMaxLength(255);
             entity.Property(e => e.DeliveryLatitude).HasMaxLength(50);
             entity.Property(e => e.DeliveryLongitude).HasMaxLength(50);
+            entity.Property(e => e.DeliveryWindowEnd).HasColumnType("datetime");
+            entity.Property(e => e.DeliveryWindowStart).HasColumnType("datetime");
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.FromAddress).HasMaxLength(150);
             entity.Property(e => e.FromCompany).HasMaxLength(150);
@@ -1624,6 +1627,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
             entity.Property(e => e.PickupReadyDateTime).HasColumnType("datetime");
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
+            entity.Property(e => e.PickupWindowEnd).HasColumnType("datetime");
+            entity.Property(e => e.PickupWindowStart).HasColumnType("datetime");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(500);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
             entity.Property(e => e.RegionId).HasColumnName("RegionID");
@@ -5572,6 +5577,7 @@ public partial class DespatchContext : DbContext
                     tb.HasTrigger("TR_tucJob_PricingBreakdown_Sync");
                     tb.HasTrigger("trg_TucJob_Notes_Update");
                     tb.HasTrigger("trg_tucJob_Update");
+                    tb.HasTrigger("tucJob_AI_StampWindowCols");
                     tb.HasTrigger("tucJob_ChangeAmount");
                     tb.HasTrigger("tucJob_ChangeWeight");
                     tb.HasTrigger("tucJob_InsertJob");
@@ -5752,6 +5758,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.DeliveryPhoto).HasColumnType("image");
             entity.Property(e => e.DeliverySignature).HasColumnType("image");
+            entity.Property(e => e.DeliveryWindowEnd).HasColumnType("datetime");
+            entity.Property(e => e.DeliveryWindowStart).HasColumnType("datetime");
             entity.Property(e => e.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
@@ -5829,6 +5837,8 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PickupGPS");
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
+            entity.Property(e => e.PickupWindowEnd).HasColumnType("datetime");
+            entity.Property(e => e.PickupWindowStart).HasColumnType("datetime");
             entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
             entity.Property(e => e.Ppdamount)
                 .HasColumnType("money")
@@ -6291,6 +6301,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.DeliveryPhoto).HasColumnType("image");
             entity.Property(e => e.DeliverySignature).HasColumnType("image");
+            entity.Property(e => e.DeliveryWindowEnd).HasColumnType("datetime");
+            entity.Property(e => e.DeliveryWindowStart).HasColumnType("datetime");
             entity.Property(e => e.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
@@ -6379,6 +6391,8 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PickupGPS");
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
+            entity.Property(e => e.PickupWindowEnd).HasColumnType("datetime");
+            entity.Property(e => e.PickupWindowStart).HasColumnType("datetime");
             entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
             entity.Property(e => e.Ppdamount)
                 .HasColumnType("money")
@@ -6596,7 +6610,11 @@ public partial class DespatchContext : DbContext
                 .IsClustered(false)
                 .HasFillFactor(80);
 
-            entity.ToTable("tucJobBooking", tb => tb.HasTrigger("trg_TucJobBooking_Notes_Update"));
+            entity.ToTable("tucJobBooking", tb =>
+                {
+                    tb.HasTrigger("trg_TucJobBooking_Notes_Update");
+                    tb.HasTrigger("tucJobBooking_AI_StampWindowCols");
+                });
 
             entity.HasIndex(e => e.BookingInformationParentId, "BookingInformationParentID");
 
@@ -6617,6 +6635,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
 
             entity.HasIndex(e => e.LinehaulRunId, "IX_tucJobBooking_LinehaulRunId");
+
+            entity.HasIndex(e => new { e.LinehaulRunId, e.IsLinehaulMaster }, "IX_tucJobBooking_LinehaulRun_Master");
 
             entity.HasIndex(e => e.NpAgentId, "IX_tucJobBooking_NpAgentId");
 
@@ -6673,6 +6693,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DeliveryAddressLine8).HasMaxLength(255);
             entity.Property(e => e.DeliveryLatitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.DeliveryWindowEnd).HasColumnType("datetime");
+            entity.Property(e => e.DeliveryWindowStart).HasColumnType("datetime");
             entity.Property(e => e.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
@@ -6730,6 +6752,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
             entity.Property(e => e.PickupRawAmount).HasColumnType("money");
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
+            entity.Property(e => e.PickupWindowEnd).HasColumnType("datetime");
+            entity.Property(e => e.PickupWindowStart).HasColumnType("datetime");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
             entity.Property(e => e.PumpPrice).HasColumnType("decimal(10, 4)");
@@ -6741,6 +6765,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.RestartDate).HasColumnType("datetime");
             entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
             entity.Property(e => e.RunName).HasMaxLength(50);
+            entity.Property(e => e.SavedFlightNumber).HasMaxLength(16);
             entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
             entity.Property(e => e.ScheduleName).HasMaxLength(200);
             entity.Property(e => e.ShopRef1).HasMaxLength(50);

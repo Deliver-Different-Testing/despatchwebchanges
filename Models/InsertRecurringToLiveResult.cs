@@ -12,4 +12,12 @@ public sealed class InsertRecurringToLiveResult
     public int JobsRepriced { get; init; }
     public IReadOnlyList<int> InsertedJobIds { get; init; } = [];
     public IReadOnlyList<int> ParentBookingIds { get; init; } = [];
+
+    // Saved-flight auto-assignment outcome (set after the push, post-materialise).
+    // FlightsAutoAssigned: jobs whose saved flight number matched a flight on
+    // the day and got webhooks + assignment. FlightsUnmatched: jobs that had a
+    // saved flight number but no match (schedule change / custom number / no
+    // results) — left for the operator to assign manually.
+    public int FlightsAutoAssigned { get; set; }
+    public int FlightsUnmatched { get; set; }
 }

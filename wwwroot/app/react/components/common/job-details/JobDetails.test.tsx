@@ -206,6 +206,12 @@ const defaultActions = {
     closeDispatchDialog: jest.fn(),
     dispatchDialogConfirmCourier: jest.fn().mockResolvedValue(undefined),
     dispatchDialogConfirmPartner: jest.fn().mockResolvedValue(undefined),
+
+    // Saved-flight dialog wiring.
+    handleEditSavedFlight: jest.fn(),
+    savedFlightDialog: {open: false, bookingId: 0},
+    closeSavedFlightDialog: jest.fn(),
+    savedFlightDialogConfirm: jest.fn().mockResolvedValue(undefined),
 };
 
 function setupDefaultMocks(overrides?: {

@@ -14,6 +14,7 @@ namespace DespatchWeb.Controllers;
 public class NationwideJobController(
     INationwideJobRepository repository,
     IFlightStatsService flightService,
+    IFlightAssignmentService flightAssignmentService,
     IClientAccessValidatorService clientAccessValidator,
     ITenantInfoService infoService,
     IFlightRateService flightRateService,
@@ -191,6 +192,76 @@ public class NationwideJobController(
         }
     }
 
+    // Lightweight flight search for a recurring booking's "saved flight"
+    // picker. Unlike GetScheduledFlightOptions this takes the route airports
+    // directly (a recurring booking is not a live job) and skips per-flight
+    // rate calculation — the dialog only needs to pick a flight number.
+    public async Task<IActionResult> GetRecurringFlightOptions(
+        DateTimeOffset departureDate,
+        int bookingId,
+        int? departureAirportId,
+        int? arrivalAirportId,
+        int minimumLayoverMinutes = 60,
+        bool includeNearbyAirports = false)
+    {
+        try
+        {
+            if (departureAirportId is null || arrivalAirportId is null)
+            {
+                return Json(new FlightSearchResponse
+                {
+                    Flights = [],
+                    Message = "This recurring booking has no departure/arrival airports set, so flights can't be searched."
+                });
+            }
+
+            var flights = await flightService.GetFlightsAsync(
+                bookingId,
+                departureDate,
+                airlineId: null,
+                departureAirportId: departureAirportId,
+                arrivalAirportId: arrivalAirportId,
+                codeType: "FS",
+                extendedOptions: null,
+                minimumLayoverMinutes: minimumLayoverMinutes,
+                allowNearbyDepartures: includeNearbyAirports,
+                allowNearbyArrivals: includeNearbyAirports);
+
+            if (flights is null || flights.Count == 0)
+            {
+                return Json(new FlightSearchResponse
+                {
+                    Flights = [],
+                    Message = "No flights found for the selected route and date. Try a different date, or enter the flight number manually."
+                });
+            }
+
+            return Json(new FlightSearchResponse { Flights = flights.ToList() });
+        }
+        catch (ArgumentException e)
+        {
+            Log.Warning(e, "Recurring flight search validation failed for booking {BookingId}: {Message}", bookingId,
+                e.Message);
+            return Json(new FlightSearchResponse { Flights = [], Message = e.Message });
+        }
+        catch (HttpRequestException e)
+        {
+            Log.Error(e, "FlightStats API error for booking {BookingId}", bookingId);
+            return Json(new FlightSearchResponse
+            {
+                Flights = [],
+                Message = "Flight search service is currently unavailable. Please try again later."
+            });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(GetRecurringFlightOptions)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobRequest request)
     {
@@ -198,11 +269,7 @@ public class NationwideJobController(
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            // Create webhooks for flight segments
-            var webhookIds = await CreateWebhooks(request.FlightSegments);
-
-            // Save job assignment
-            await repository.AddJobNationwideAsync(request, webhookIds);
+            await flightAssignmentService.AssignFlightAsync(request);
 
             return Ok();
         }
@@ -217,36 +284,6 @@ public class NationwideJobController(
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
                     nameof(AssignFlightToJob)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    private async Task<List<string>> CreateWebhooks(List<FlightSegmentViewModel> flightSegments)
-    {
-        var webhookIds = new List<string>();
-
-        try
-        {
-            foreach (var segment in flightSegments)
-            {
-                var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
-                    $"{segment.CarrierFsCode}{segment.FlightNumber}",
-                    segment.DepartureTime,
-                    segment.DepartureAirportFsCode) ?? string.Empty;
-
-                if (!string.IsNullOrEmpty(webhookId))
-                {
-                    webhookIds.Add(webhookId);
-                }
-            }
-
-            return webhookIds;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
-                    nameof(CreateWebhooks)));
-            throw;
         }
     }
 

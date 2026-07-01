@@ -177,6 +177,21 @@ export function useJobActions({
         setDispatchDialog((s) => ({...s, open: false}));
     }, []);
 
+    // Saved-flight dialog state (recurring flight bookings only). JobDetails
+    // renders the dialog inline and wires `closeSavedFlightDialog` /
+    // `savedFlightDialogConfirm` back to the hook.
+    const [savedFlightDialog, setSavedFlightDialog] = useState<{
+        open: boolean;
+        bookingId: number;
+        fromAirportId?: number;
+        toAirportId?: number;
+        currentValue?: string;
+        departureDate?: Dayjs;
+    }>({open: false, bookingId: 0});
+    const closeSavedFlightDialog = useCallback(() => {
+        setSavedFlightDialog((s) => ({...s, open: false}));
+    }, []);
+
     // Stable ref for job so callbacks don't recreate on every job change.
     // Assigned synchronously (not via useEffect) so it's never one render behind.
     const jobRef = useRef(job);
@@ -1036,6 +1051,29 @@ export function useJobActions({
         return editDate(JobProperty.RestartDate, 'Restart Date', j.restartDate);
     }, [editDate]);
 
+    // ── Saved Flight (recurring flight bookings) ───────────────────
+
+    const handleEditSavedFlight = useCallback(() => {
+        const j = jobRef.current;
+        if (!j) return;
+        setSavedFlightDialog({
+            open: true,
+            bookingId: j.id,
+            fromAirportId: j.fromAirportId,
+            toAirportId: j.toAirportId,
+            currentValue: j.savedFlightNumber,
+            departureDate: j.nextDue ?? j.firstDue,
+        });
+    }, []);
+
+    const savedFlightDialogConfirm = useCallback(async (flightNumber: string) => {
+        const j = jobRef.current;
+        setSavedFlightDialog((s) => ({...s, open: false}));
+        if (!j) return;
+        await updateField({job: j, field: JobProperty.SavedFlightNumber, value: flightNumber, isRecurring: true});
+        await refreshAndNotify();
+    }, [updateField, refreshAndNotify]);
+
     // ── Missing Field Edit Handlers ────────────────────────────────
 
     const handleEditAmount = useCallback(() => {
@@ -1207,6 +1245,12 @@ export function useJobActions({
         handleEditFirstDue,
         handleEditStopDate,
         handleEditRestartDate,
+        handleEditSavedFlight,
+
+        // Saved-flight dialog — JobDetails renders the dialog and wires these back.
+        savedFlightDialog,
+        closeSavedFlightDialog,
+        savedFlightDialogConfirm,
 
         // Missing field editors
         handleEditAmount,

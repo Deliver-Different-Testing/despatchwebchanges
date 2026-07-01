@@ -28,6 +28,7 @@ function createDefaultProps(overrides?: Record<string, any>) {
         onEditFirstDue: jest.fn(),
         onEditStopDate: jest.fn(),
         onEditRestartDate: jest.fn(),
+        onEditSavedFlight: jest.fn(),
         ...overrides,
     };
 }
@@ -174,5 +175,30 @@ describe('RecurringJobFields', () => {
         // ICU timezone short names follow DST — PST in winter, PDT in summer.
         expect(tip.textContent).toMatch(/\(P[SD]T\)/);
         expect(tip.textContent).toMatch(/Stop Date/);
+    });
+
+    it('does not render the Flight card for a non-flight booking (no airports)', () => {
+        const job = createMockJob({preBook: true, fromAirportId: undefined, toAirportId: undefined});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
+        expect(screen.queryByText('Saved Flight')).not.toBeInTheDocument();
+    });
+
+    it('renders the Flight card with the saved flight number for a flight booking', () => {
+        const job = createMockJob({preBook: true, fromAirportId: 1, toAirportId: 2, savedFlightNumber: 'NZ123'});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
+        expect(screen.getByText('Saved Flight')).toBeInTheDocument();
+        expect(screen.getByText('NZ123')).toBeInTheDocument();
+    });
+
+    it('shows "Not set" and fires onEditSavedFlight when the Flight card is clicked', () => {
+        const onEditSavedFlight = jest.fn();
+        const job = createMockJob({preBook: true, fromAirportId: 1, toAirportId: 2, savedFlightNumber: undefined});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onEditSavedFlight})} />);
+
+        // The Flight card's row shows "Not set" (date rows may too — scope to this row).
+        const flightRow = screen.getByText('Saved Flight').closest('[role="button"]') as HTMLElement;
+        expect(within(flightRow).getByText('Not set')).toBeInTheDocument();
+        fireEvent.click(screen.getByText('Saved Flight'));
+        expect(onEditSavedFlight).toHaveBeenCalled();
     });
 });

@@ -21,6 +21,7 @@ import RepeatIcon from '@mui/icons-material/Repeat';
 import EventIcon from '@mui/icons-material/Event';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import {alpha} from '@mui/material/styles';
 import type {SxProps, Theme} from '@mui/material/styles';
@@ -44,6 +45,7 @@ interface RecurringJobFieldsProps {
     onEditFirstDue: () => void;
     onEditStopDate: () => void;
     onEditRestartDate: () => void;
+    onEditSavedFlight: () => void;
 }
 
 const dayOptions = DaysOfWeekHelpers.allDays.map(day => ({
@@ -136,8 +138,13 @@ export function RecurringJobFields({
     onEditFirstDue,
     onEditStopDate,
     onEditRestartDate,
+    onEditSavedFlight,
 }: RecurringJobFieldsProps) {
     if (!job.preBook) return null;
+
+    // Flight bookings are those with a departure/arrival airport set — only
+    // they get the saved-flight picker.
+    const isFlight = job.fromAirportId != null || job.toAirportId != null;
 
     const toggleDay = (day: DaysOfWeek) => {
         const newDays = daysOfWeekArray.includes(day)
@@ -269,6 +276,38 @@ export function RecurringJobFields({
                     );
                 })}
             </Box>
+
+            {/* Card 3 — Saved Flight (flight bookings only) */}
+            {isFlight && (
+                <Box sx={cardContainerSx}>
+                    <SectionHeader
+                        icon={FlightTakeoffIcon}
+                        title="Flight"
+                        subtitle="Auto-assigned on push to live"
+                        dense={dense}
+                    />
+                    <Tooltip
+                        title={job.savedFlightNumber
+                            ? `Saved flight ${job.savedFlightNumber} — re-assigned each push`
+                            : 'No saved flight — set one to auto-assign on push'}
+                        placement="top-start"
+                        arrow
+                    >
+                        <ListItemButton onClick={onEditSavedFlight} sx={dateRowSx(dense)}>
+                            <Box sx={dateAvatarSx}>
+                                <FlightTakeoffIcon sx={{fontSize: 20}} />
+                            </Box>
+                            <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
+                                <Typography sx={dateLabelSx}>Saved Flight</Typography>
+                                <Typography sx={job.savedFlightNumber ? dateValueSetSx : dateValueUnsetSx}>
+                                    {job.savedFlightNumber || 'Not set'}
+                                </Typography>
+                            </Box>
+                            <ChevronRightIcon sx={{color: 'text.secondary', fontSize: 20, flexShrink: 0}} />
+                        </ListItemButton>
+                    </Tooltip>
+                </Box>
+            )}
         </Stack>
     );
 }

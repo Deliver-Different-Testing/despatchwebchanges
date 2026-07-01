@@ -85,6 +85,7 @@ public static partial class JobMappings
 
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId,
+            SavedFlightNumber = j.SavedFlightNumber,
 
             AssignedFlight = null,
 

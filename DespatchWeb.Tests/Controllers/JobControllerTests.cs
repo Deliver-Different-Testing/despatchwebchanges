@@ -43,6 +43,7 @@ public class JobControllerTests : IDisposable
     private readonly IPdfOverlayClient _pdfOverlayClientMock = Substitute.For<IPdfOverlayClient>();
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
     private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
+    private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
 
     public JobControllerTests()
     {
@@ -93,7 +94,8 @@ public class JobControllerTests : IDisposable
             _pdfOverlayClientMock,
             _splitJobServiceMock,
             _sendToPartnerServiceMock,
-            _partnerJobGateMock);
+            _partnerJobGateMock,
+            _flightAssignmentServiceMock);
     }
 
     /// <summary>

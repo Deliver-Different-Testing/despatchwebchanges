@@ -57,6 +57,7 @@ import {getActivePartnerOptions, getPartnerRateForJob} from '../../../services/j
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
 import {JobChangeRequestsForJob} from '../../job-change-requests/JobChangeRequestsForJob';
 import {JobChangeRequestDialog} from '../../dialogs/job-change-request-dialog/JobChangeRequestDialog';
+import {EditSavedFlightDialog} from '../../dialogs/edit-saved-flight-dialog';
 import {PartnerJobBanner} from './components/PartnerJobBanner';
 
 import type {IJob, MountJobDetailsConfig} from './JobDetails.types';
@@ -647,6 +648,7 @@ export function JobDetails({config}: JobDetailsProps) {
                                 onEditFirstDue={actions.handleEditFirstDue}
                                 onEditStopDate={actions.handleEditStopDate}
                                 onEditRestartDate={actions.handleEditRestartDate}
+                                onEditSavedFlight={actions.handleEditSavedFlight}
                             />
                         </Suspense>
                     )}
@@ -785,6 +787,18 @@ export function JobDetails({config}: JobDetailsProps) {
                 onSendToPartner={actions.dispatchDialogConfirmPartner}
                 fetchRate={getPartnerRateForJob}
                 getPartnerOptions={getActivePartnerOptions}
+            />
+
+            {/* Saved-flight picker for recurring flight bookings. */}
+            <EditSavedFlightDialog
+                open={actions.savedFlightDialog.open}
+                bookingId={actions.savedFlightDialog.bookingId}
+                fromAirportId={actions.savedFlightDialog.fromAirportId}
+                toAirportId={actions.savedFlightDialog.toAirportId}
+                currentValue={actions.savedFlightDialog.currentValue}
+                departureDate={actions.savedFlightDialog.departureDate}
+                onClose={actions.closeSavedFlightDialog}
+                onSubmit={actions.savedFlightDialogConfirm}
             />
         </Box>
     );

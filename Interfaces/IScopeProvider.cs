@@ -11,5 +11,5 @@ namespace DespatchWeb.Interfaces;
 /// </summary>
 public interface IScopeProvider
 {
-    ScopeContext Scope { get; }
+    ScopeContext? Scope { get; }
 }

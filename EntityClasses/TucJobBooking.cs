@@ -398,6 +398,26 @@ public partial class TucJobBooking
 
     public int? LinehaulRunId { get; set; }
 
+    public bool IsLinehaulMaster { get; set; }
+
+    public int? PickupWindowMinutesBefore { get; set; }
+
+    public int? PickupWindowMinutesAfter { get; set; }
+
+    public int? DeliveryWindowMinutesBefore { get; set; }
+
+    public int? DeliveryWindowMinutesAfter { get; set; }
+
+    public DateTime? PickupWindowStart { get; set; }
+
+    public DateTime? PickupWindowEnd { get; set; }
+
+    public DateTime? DeliveryWindowStart { get; set; }
+
+    public DateTime? DeliveryWindowEnd { get; set; }
+
+    public string SavedFlightNumber { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucJobBooking BookingParent { get; set; }

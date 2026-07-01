@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -107,12 +108,12 @@ public partial class BaseJobRepository(
                 case AppPage.Dispatch:
                     if (queryParams.DateCutoff.HasValue)
                     {
-                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+                        query = query.Where(JobDateOnOrBefore(queryParams.DateCutoff.Value));
                     }
 
                     if (queryParams.StartDate.HasValue)
                     {
-                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+                        query = query.Where(JobDateOnOrAfter(queryParams.StartDate.Value));
                     }
 
                     query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
@@ -138,44 +139,23 @@ public partial class BaseJobRepository(
                     };
             }
 
-            // Apply server-side pagination when Page is provided
+            // Resolve the distinct job IDs for this page up-front. Paginating over distinct IDs
+            // keeps page sizes consistent and lets us project only the page's jobs (no duplicate
+            // rows). Even when the caller omits Page, the non-paginated path is bounded by a safety
+            // ceiling so this query can never materialise an unbounded view.
             var requestedPage = queryParams.Page ?? 0;
             var pageSize = queryParams.PageSize ?? 500;
-            int? totalCount = null;
-            var hasMore = false;
 
-            List<DispatchJobViewModel> allJobs;
+            var (pageJobIds, totalCount, hasMore) = await ResolveJobIdPageAsync(
+                query.Select(j => j.UcjbId).Distinct(),
+                requestedPage,
+                pageSize,
+                cancellationToken: cancellationToken);
 
-            if (requestedPage > 0)
-            {
-                // Paginate over distinct job IDs to ensure consistent page sizes,
-                // then project only the page's jobs to avoid transferring duplicate rows
-                var distinctIdsQuery = query.Select(j => j.UcjbId).Distinct();
-                totalCount = await distinctIdsQuery.CountAsync(cancellationToken);
-
-                var pageJobIds = await distinctIdsQuery
-                    .OrderBy(id => id)
-                    .Skip((requestedPage - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync(cancellationToken);
-
-                hasMore = totalCount > requestedPage * pageSize;
-
-                allJobs = await Context.TucJobs
-                    .Where(j => pageJobIds.Contains(j.UcjbId))
-                    .Select(JobMappings.JobDispatchMapping(isUsTenant, infoService.GetCurrentTenantId()))
-                    .ToListAsync(cancellationToken);
-            }
-            else
-            {
-                allJobs = await query
-                    .Select(JobMappings.JobDispatchMapping(isUsTenant, infoService.GetCurrentTenantId()))
-                    .ToListAsync(cancellationToken);
-
-                allJobs = allJobs.DistinctBy(j => j.Id).ToList();
-            }
-
-            totalCount ??= allJobs.Count;
+            var allJobs = await Context.TucJobs
+                .Where(j => pageJobIds.Contains(j.UcjbId))
+                .Select(JobMappings.JobDispatchMapping(isUsTenant, infoService.GetCurrentTenantId()))
+                .ToListAsync(cancellationToken);
 
             // Populate Children on parent jobs so the frontend can track grouping via _groupChildren.
             // All jobs stay in the flat list the template renders them as flat rows.
@@ -218,7 +198,7 @@ public partial class BaseJobRepository(
             return new JobSearchResult
             {
                 Jobs = allJobs,
-                TotalCount = totalCount.Value,
+                TotalCount = totalCount,
                 HasMore = hasMore,
                 MapItems = page == AppPage.Dispatch ? mapItems : null
             };
@@ -470,12 +450,12 @@ public partial class BaseJobRepository(
         // Filter dates
         if (queryParams.StartDate != null)
         {
-            query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+            query = query.Where(JobDateOnOrAfter(queryParams.StartDate.Value));
         }
 
         if (queryParams.DateCutoff != null)
         {
-            query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+            query = query.Where(JobDateOnOrBefore(queryParams.DateCutoff.Value));
         }
 
         query = ApplyEndDateFilter(query, queryParams.DateCutoff, queryParams.UseTime);
@@ -527,19 +507,96 @@ public partial class BaseJobRepository(
             return query;
         }
 
-        if (!useTime)
+        return useTime
+            ? query.Where(JobDateTimeOnOrBefore(endDate.Value))
+            : query.Where(JobDateOnOrBefore(endDate.Value));
+    }
+
+    /// <summary>
+    /// Sargable equivalent of <c>j.UcjbDate.Date &gt;= date.Date</c>. Wrapping the column in
+    /// <c>.Date</c> stops the optimiser seeking an index on UcjbDate, so the bound is normalised
+    /// in C# and compared against the bare column instead.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> JobDateOnOrAfter(DateTimeOffset date)
+    {
+        var startInclusive = date.Date;
+        return j => j.UcjbDate >= startInclusive;
+    }
+
+    /// <summary>
+    /// Sargable equivalent of <c>j.UcjbDate.Date &lt;= date.Date</c> (on or before the given
+    /// calendar day), expressed as <c>UcjbDate &lt; nextMidnight</c> so an index can seek.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> JobDateOnOrBefore(DateTimeOffset date)
+    {
+        var exclusiveEnd = date.Date.AddDays(1);
+        return j => j.UcjbDate < exclusiveEnd;
+    }
+
+    /// <summary>
+    /// Sargable equivalent of the date-then-time end filter: jobs booked before the filter day, or
+    /// on the filter day at or before the filter time. The UcjbDate comparisons avoid <c>.Date</c>
+    /// so the index range can seek; the intra-day time check on the separate UcjbTime column only
+    /// applies within the single matching day.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> JobDateTimeOnOrBefore(DateTimeOffset endDate)
+    {
+        var filterDate = endDate.Date;
+        var nextDay = filterDate.AddDays(1);
+        var filterTime = endDate.TimeOfDay;
+
+        return j =>
+            j.UcjbDate < filterDate
+            || (j.UcjbDate >= filterDate
+                && j.UcjbDate < nextDay
+                && (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime));
+    }
+
+    internal const int DefaultNonPaginatedJobCap = 2000;
+
+    internal readonly record struct PagedJobIds(IReadOnlyList<int> JobIds, int TotalCount, bool HasMore);
+
+    /// <summary>
+    /// Resolves the distinct job IDs for the requested page. When <paramref name="requestedPage"/>
+    /// is not positive the caller did not ask for a specific page, so the result is bounded by
+    /// <paramref name="nonPaginatedCap"/> to avoid materialising an unbounded view; a warning is
+    /// logged (and <see cref="PagedJobIds.HasMore"/> set) when the cap truncates the result.
+    /// </summary>
+    internal static async Task<PagedJobIds> ResolveJobIdPageAsync(
+        IQueryable<int> distinctJobIdQuery,
+        int requestedPage,
+        int pageSize,
+        int nonPaginatedCap = DefaultNonPaginatedJobCap,
+        CancellationToken cancellationToken = default)
+    {
+        var totalCount = await distinctJobIdQuery.CountAsync(cancellationToken);
+
+        if (requestedPage > 0)
         {
-            return query.Where(j => j.UcjbDate.Date <= endDate.Value.Date);
+            var pageIds = await distinctJobIdQuery
+                .OrderBy(id => id)
+                .Skip((requestedPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return new PagedJobIds(pageIds, totalCount, totalCount > requestedPage * pageSize);
         }
 
-        // Compare full datetime by checking date first, then time
-        var filterDate = endDate.Value.Date;
-        var filterTime = endDate.Value.TimeOfDay;
+        var cappedIds = await distinctJobIdQuery
+            .OrderBy(id => id)
+            .Take(nonPaginatedCap)
+            .ToListAsync(cancellationToken);
 
-        return query.Where(j =>
-            j.UcjbDate.Date < filterDate ||
-            (j.UcjbDate.Date == filterDate &&
-             (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime)));
+        var capped = totalCount > nonPaginatedCap;
+        if (capped)
+        {
+            Log.Warning(
+                "DespatchQry returned {Returned} of {Total} jobs without pagination; capped at {Cap}. " +
+                "The caller should request paged results.",
+                cappedIds.Count, totalCount, nonPaginatedCap);
+        }
+
+        return new PagedJobIds(cappedIds, totalCount, capped);
     }
 
     protected async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,

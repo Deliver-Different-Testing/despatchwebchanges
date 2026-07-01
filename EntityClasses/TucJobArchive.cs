@@ -523,6 +523,22 @@ public partial class TucJobArchive
 
     public int? LinehaulRunId { get; set; }
 
+    public int? PickupWindowMinutesBefore { get; set; }
+
+    public int? PickupWindowMinutesAfter { get; set; }
+
+    public int? DeliveryWindowMinutesBefore { get; set; }
+
+    public int? DeliveryWindowMinutesAfter { get; set; }
+
+    public DateTime? PickupWindowStart { get; set; }
+
+    public DateTime? PickupWindowEnd { get; set; }
+
+    public DateTime? DeliveryWindowStart { get; set; }
+
+    public DateTime? DeliveryWindowEnd { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucAgent Agent { get; set; }

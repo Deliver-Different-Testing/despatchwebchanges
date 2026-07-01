@@ -87,6 +87,10 @@ public class DispatchJobViewModel
     public int? ToAirportId { get; set; }
     public int? FromAirportId { get; set; }
 
+    // Recurring flight: the complete flight number (e.g. "NZ123") saved against
+    // a recurring booking so the same flight auto-assigns each push-to-live.
+    public string SavedFlightNumber { get; set; }
+
     public AssignedFlight AssignedFlight { get; set; }
     public AgentViewModel AssignedAgent { get; set; }
     public bool IsAgentAssigned { get; set; }

@@ -69,4 +69,8 @@ export enum JobProperty {
     // RecurringJobRepository.UpdateSimplePropertyAsync.
     AgentId = 'AgentId',
     NpAgentId = 'NpAgentId',
+    // Complete flight number (e.g. 'NZ123') saved on a recurring flight
+    // booking. Single-row write on tucJobBooking.SavedFlightNumber; empty
+    // string clears it. Auto-assigned on push-to-live.
+    SavedFlightNumber = 'SavedFlightNumber',
 }

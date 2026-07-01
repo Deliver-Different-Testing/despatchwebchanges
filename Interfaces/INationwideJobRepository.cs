@@ -17,6 +17,8 @@ public interface INationwideJobRepository
     Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, IReadOnlyList<string> webhookIds,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SavedFlightCandidate>> GetSavedFlightCandidatesAsync(IReadOnlyList<int>? jobIds);
+
     Task<IReadOnlyList<AgentViewModel>> GetAgentsAsync(int jobId);
 
     Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false);

@@ -15,7 +15,7 @@ public partial class DespatchContext
     // claims. When null (options-only ctor — scaffolding, design-time, tests
     // not exercising scope) every Current* property below short-circuits so
     // global filters pass every row.
-    private readonly IScopeProvider _scopeProvider;
+    private readonly IScopeProvider? _scopeProvider;
 
     private ScopeContext CurrentScope =>
         _scopeProvider?.Scope ?? ScopeContext.BackgroundContext;

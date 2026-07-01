@@ -313,6 +313,38 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdateRecurringJobAsync_SavedFlightNumber_UpcasesAndStores()
+    {
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.SavedFlightNumber, "nz123");
+
+        _context.ChangeTracker.Clear();
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal("NZ123", updatedJob!.SavedFlightNumber);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_SavedFlightNumber_EmptyClearsToNull()
+    {
+        const int jobId = 100;
+        var booking = CreateJobBooking(jobId);
+        booking.SavedFlightNumber = "NZ123";
+        _context.TucJobBookings.Add(booking);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.SavedFlightNumber, "");
+
+        _context.ChangeTracker.Clear();
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Null(updatedJob!.SavedFlightNumber);
+    }
+
+    [Fact]
     public async Task UpdateRecurringJobAsync_BookedTime_UpdatesBothUcbkDateAndUcbkTime()
     {
         // Arrange — the Ready card reads UcbkDate.CombineWithTime(UcbkTime),
