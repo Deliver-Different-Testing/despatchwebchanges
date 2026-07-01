@@ -46,6 +46,9 @@ interface RecurringJobFieldsProps {
     onEditStopDate: () => void;
     onEditRestartDate: () => void;
     onEditSavedFlight: () => void;
+    /** Opens the add-flight dialog (with airport pickers) for recurring
+     *  bookings that have no route airports yet. */
+    onAddFlight: () => void;
 }
 
 const dayOptions = DaysOfWeekHelpers.allDays.map(day => ({
@@ -139,6 +142,7 @@ export function RecurringJobFields({
     onEditStopDate,
     onEditRestartDate,
     onEditSavedFlight,
+    onAddFlight,
 }: RecurringJobFieldsProps) {
     if (!job.preBook) return null;
 
@@ -302,6 +306,37 @@ export function RecurringJobFields({
                                 <Typography sx={job.savedFlightNumber ? dateValueSetSx : dateValueUnsetSx}>
                                     {job.savedFlightNumber || 'Not set'}
                                 </Typography>
+                            </Box>
+                            <ChevronRightIcon sx={{color: 'text.secondary', fontSize: 20, flexShrink: 0}} />
+                        </ListItemButton>
+                    </Tooltip>
+                </Box>
+            )}
+
+            {/* Card 3 (no route yet) — Add Flight. Lets the operator attach a
+                flight to a recurring booking that was created without airports:
+                the dialog collects From/To airports + flight number and the
+                push-to-live auto-assign takes over from there. */}
+            {!isFlight && (
+                <Box sx={cardContainerSx}>
+                    <SectionHeader
+                        icon={FlightTakeoffIcon}
+                        title="Flight"
+                        subtitle="Auto-assigned on push to live"
+                        dense={dense}
+                    />
+                    <Tooltip
+                        title="Add a flight — pick the route airports and flight number to auto-assign on push"
+                        placement="top-start"
+                        arrow
+                    >
+                        <ListItemButton onClick={onAddFlight} sx={dateRowSx(dense)}>
+                            <Box sx={dateAvatarSx}>
+                                <FlightTakeoffIcon sx={{fontSize: 20}} />
+                            </Box>
+                            <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
+                                <Typography sx={dateLabelSx}>Flight</Typography>
+                                <Typography sx={dateValueUnsetSx}>Add flight</Typography>
                             </Box>
                             <ChevronRightIcon sx={{color: 'text.secondary', fontSize: 20, flexShrink: 0}} />
                         </ListItemButton>

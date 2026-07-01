@@ -649,6 +649,7 @@ export function JobDetails({config}: JobDetailsProps) {
                                 onEditStopDate={actions.handleEditStopDate}
                                 onEditRestartDate={actions.handleEditRestartDate}
                                 onEditSavedFlight={actions.handleEditSavedFlight}
+                                onAddFlight={actions.handleAddFlight}
                             />
                         </Suspense>
                     )}
@@ -797,6 +798,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 toAirportId={actions.savedFlightDialog.toAirportId}
                 currentValue={actions.savedFlightDialog.currentValue}
                 departureDate={actions.savedFlightDialog.departureDate}
+                showAirportPickers={actions.savedFlightDialog.showAirportPickers}
                 onClose={actions.closeSavedFlightDialog}
                 onSubmit={actions.savedFlightDialogConfirm}
             />

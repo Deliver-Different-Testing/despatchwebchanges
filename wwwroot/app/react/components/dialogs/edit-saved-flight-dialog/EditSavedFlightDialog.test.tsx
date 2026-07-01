@@ -12,7 +12,7 @@ import {testTheme} from '../../../__testUtils__';
 import {nationwideApi} from '../../../services/nationwideApi';
 
 jest.mock('../../../services/nationwideApi', () => ({
-    nationwideApi: {getRecurringFlightOptions: jest.fn()},
+    nationwideApi: {getRecurringFlightOptions: jest.fn(), getAllActiveAirports: jest.fn()},
 }));
 
 const mockedApi = nationwideApi as jest.Mocked<typeof nationwideApi>;
@@ -55,6 +55,10 @@ beforeEach(() => {
             flight('NZ', '455', 'AKL', 'WLG', '2026-07-08T10:30:00'),
         ],
     });
+    mockedApi.getAllActiveAirports.mockResolvedValue([
+        {id: 10, text: 'AKL - Auckland'},
+        {id: 20, text: 'WLG - Wellington'},
+    ]);
 });
 
 describe('EditSavedFlightDialog', () => {
@@ -116,5 +120,94 @@ describe('EditSavedFlightDialog', () => {
         await user.type(input, 'nz500');
         await user.click(screen.getByRole('button', {name: /save/i}));
         expect(onSubmit).toHaveBeenCalledWith('NZ500');
+    });
+
+    describe('add-flight mode (showAirportPickers)', () => {
+        it('picks airports, searches that route, and submits flight + airports', async () => {
+            const user = userEvent.setup();
+            const onSubmit = jest.fn();
+            renderWithTheme(
+                <EditSavedFlightDialog
+                    {...defaultProps({
+                        fromAirportId: undefined,
+                        toAirportId: undefined,
+                        showAirportPickers: true,
+                        onSubmit,
+                    })}
+                />
+            );
+
+            // Airport list loads and Save is blocked until a route + flight are chosen.
+            await waitFor(() => expect(mockedApi.getAllActiveAirports).toHaveBeenCalled());
+            expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
+
+            // Choose the From airport.
+            await user.click(screen.getByPlaceholderText(/select departure airport/i));
+            await user.click(await screen.findByText('AKL - Auckland'));
+
+            // Choose the To airport.
+            await user.click(screen.getByPlaceholderText(/select arrival airport/i));
+            await user.click(await screen.findByText('WLG - Wellington'));
+
+            // Flight search runs against the chosen route.
+            await waitFor(() =>
+                expect(mockedApi.getRecurringFlightOptions).toHaveBeenCalledWith(
+                    expect.objectContaining({departureAirportId: 10, arrivalAirportId: 20})
+                )
+            );
+
+            // Pick a flight and save — airports travel with the flight number.
+            await user.click(screen.getByPlaceholderText(/search flights or type a number/i));
+            await user.click(await screen.findByText(/NZ123/));
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSubmit).toHaveBeenCalledWith('NZ123', {fromAirportId: 10, toAirportId: 20});
+        });
+
+        it('disables Save until a route and flight are chosen, then enables it', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(
+                <EditSavedFlightDialog
+                    {...defaultProps({fromAirportId: undefined, toAirportId: undefined, showAirportPickers: true})}
+                />
+            );
+
+            await waitFor(() => expect(mockedApi.getAllActiveAirports).toHaveBeenCalled());
+            expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
+
+            await user.click(screen.getByPlaceholderText(/select departure airport/i));
+            await user.click(await screen.findByText('AKL - Auckland'));
+            await user.click(screen.getByPlaceholderText(/select arrival airport/i));
+            await user.click(await screen.findByText('WLG - Wellington'));
+            await user.click(screen.getByPlaceholderText(/search flights or type a number/i));
+            await user.click(await screen.findByText(/NZ123/));
+
+            expect(screen.getByRole('button', {name: /save/i})).toBeEnabled();
+        });
+    });
+
+    describe('accessibility', () => {
+        it('gives the dialog and its fields accessible names', async () => {
+            renderWithTheme(
+                <EditSavedFlightDialog
+                    {...defaultProps({fromAirportId: undefined, toAirportId: undefined, showAirportPickers: true})}
+                />
+            );
+
+            await waitFor(() => expect(mockedApi.getAllActiveAirports).toHaveBeenCalled());
+
+            // Dialog is named by its header title (aria-labelledby).
+            expect(screen.getByRole('dialog', {name: /add flight/i})).toBeInTheDocument();
+            // Each input carries a real accessible name, not just a placeholder.
+            expect(screen.getByRole('combobox', {name: /from airport/i})).toBeInTheDocument();
+            expect(screen.getByRole('combobox', {name: /to airport/i})).toBeInTheDocument();
+            expect(screen.getByRole('combobox', {name: /flight number/i})).toBeInTheDocument();
+        });
+
+        it('names the dialog "Saved Flight" for an existing flight booking', async () => {
+            renderWithTheme(<EditSavedFlightDialog {...defaultProps()} />);
+            await waitFor(() => expect(mockedApi.getRecurringFlightOptions).toHaveBeenCalled());
+            expect(screen.getByRole('dialog', {name: /saved flight/i})).toBeInTheDocument();
+        });
     });
 });

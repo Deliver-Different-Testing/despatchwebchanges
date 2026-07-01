@@ -27,6 +27,7 @@ import {
     autocompleteSearch,
     getPodReportUrl,
     getPodSpreadsheetUrl,
+    saveRecurringFlight,
 } from '../../../../services/jobDetailApi';
 import {
     sendToPartner,
@@ -187,6 +188,7 @@ export function useJobActions({
         toAirportId?: number;
         currentValue?: string;
         departureDate?: Dayjs;
+        showAirportPickers?: boolean;
     }>({open: false, bookingId: 0});
     const closeSavedFlightDialog = useCallback(() => {
         setSavedFlightDialog((s) => ({...s, open: false}));
@@ -1066,11 +1068,36 @@ export function useJobActions({
         });
     }, []);
 
-    const savedFlightDialogConfirm = useCallback(async (flightNumber: string) => {
+    // Opens the add-flight dialog for a recurring booking with no route yet.
+    // The dialog collects From/To airports + flight number; on confirm we
+    // persist all three so push-to-live auto-assign can match.
+    const handleAddFlight = useCallback(() => {
+        const j = jobRef.current;
+        if (!j) return;
+        setSavedFlightDialog({
+            open: true,
+            bookingId: j.id,
+            fromAirportId: j.fromAirportId,
+            toAirportId: j.toAirportId,
+            currentValue: j.savedFlightNumber,
+            departureDate: j.nextDue ?? j.firstDue,
+            showAirportPickers: true,
+        });
+    }, []);
+
+    const savedFlightDialogConfirm = useCallback(async (
+        flightNumber: string,
+        airports?: {fromAirportId: number; toAirportId: number},
+    ) => {
         const j = jobRef.current;
         setSavedFlightDialog((s) => ({...s, open: false}));
         if (!j) return;
-        await updateField({job: j, field: JobProperty.SavedFlightNumber, value: flightNumber, isRecurring: true});
+        if (airports) {
+            // Route + flight saved together via the dedicated atomic endpoint.
+            await saveRecurringFlight(j.id, airports.fromAirportId, airports.toAirportId, flightNumber);
+        } else {
+            await updateField({job: j, field: JobProperty.SavedFlightNumber, value: flightNumber, isRecurring: true});
+        }
         await refreshAndNotify();
     }, [updateField, refreshAndNotify]);
 
@@ -1246,6 +1273,7 @@ export function useJobActions({
         handleEditStopDate,
         handleEditRestartDate,
         handleEditSavedFlight,
+        handleAddFlight,
 
         // Saved-flight dialog — JobDetails renders the dialog and wires these back.
         savedFlightDialog,

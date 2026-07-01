@@ -1,3 +1,4 @@
+#nullable enable annotations
 using System.Globalization;
 using System.Text;
 using System.Text.Json;

@@ -6,10 +6,15 @@
  * a custom flight number — which shows a "can't guarantee auto-assign" warning.
  * The saved number is matched and auto-assigned on each push-to-live.
  *
+ * When `showAirportPickers` is set (recurring bookings created without a route),
+ * the dialog also renders From/To airport autocompletes sourced from the airport
+ * table; the flight search runs off that selection and the chosen airports are
+ * returned to `onSubmit` so they can be persisted with the flight number.
+ *
  * Follows the canonical job-detail edit-dialog design language.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
@@ -21,12 +26,13 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Alert from '@mui/material/Alert';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import CloseIcon from '@mui/icons-material/Close';
 import dayjs from 'dayjs';
 
-import { EditSavedFlightDialogProps, FlightOption } from './types';
+import { EditSavedFlightDialogProps, FlightOption, AirportOption } from './types';
 import { nationwideApi, FlightViewModel } from '../../../services/nationwideApi';
 
 function normalizeFlightNumber(value: string): string {
@@ -57,9 +63,16 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
     toAirportId,
     currentValue,
     departureDate,
+    showAirportPickers = false,
     onClose,
     onSubmit,
 }) => {
+    // Explicit ids so the dialog gets an accessible name/description — the
+    // custom Box header means MUI can't auto-wire aria-labelledby from a
+    // <DialogTitle>. (WAI-ARIA / MD3 dialog guidance.)
+    const titleId = useId();
+    const descriptionId = useId();
+
     const [inputValue, setInputValue] = useState('');
     const [savedValue, setSavedValue] = useState('');
     const [isCustom, setIsCustom] = useState(false);
@@ -68,14 +81,25 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
     const [message, setMessage] = useState<string | undefined>(undefined);
     const [isSaving, setIsSaving] = useState(false);
 
+    // Airport-picker state (only used when showAirportPickers is set).
+    const [airportOptions, setAirportOptions] = useState<AirportOption[]>([]);
+    const [airportsLoading, setAirportsLoading] = useState(false);
+    const [selectedFrom, setSelectedFrom] = useState<AirportOption | null>(null);
+    const [selectedTo, setSelectedTo] = useState<AirportOption | null>(null);
+
     const searchDate = useMemo(
         () => (departureDate?.isValid?.() ? departureDate : dayjs().add(1, 'day')),
         [departureDate]
     );
 
-    // Load the route's flights once when the dialog opens. The list is small,
-    // so the Autocomplete filters it locally as the user types; freeSolo lets
-    // them enter a custom number not in the list.
+    // Airports driving the flight search: the operator's picker selection when
+    // pickers are shown, otherwise the airports passed in for a flight booking.
+    const effectiveFromId = showAirportPickers ? selectedFrom?.id : fromAirportId;
+    const effectiveToId = showAirportPickers ? selectedTo?.id : toAirportId;
+    const hasAirports = effectiveFromId != null && effectiveToId != null;
+
+    // Reset per-open, and (picker mode) load the airport list and seed any
+    // airports already on the booking.
     useEffect(() => {
         if (!open) return;
 
@@ -85,6 +109,50 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         setIsCustom(false);
         setOptions([]);
         setMessage(undefined);
+        setSelectedFrom(null);
+        setSelectedTo(null);
+
+        if (!showAirportPickers) return;
+
+        let cancelled = false;
+        setAirportsLoading(true);
+        nationwideApi
+            .getAllActiveAirports()
+            .then((suggestions) => {
+                if (cancelled) return;
+                const opts = suggestions.map((s) => ({ id: s.id, label: s.text }));
+                setAirportOptions(opts);
+                if (fromAirportId != null) {
+                    setSelectedFrom(opts.find((o) => o.id === fromAirportId) ?? null);
+                }
+                if (toAirportId != null) {
+                    setSelectedTo(opts.find((o) => o.id === toAirportId) ?? null);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setAirportOptions([]);
+            })
+            .finally(() => {
+                if (!cancelled) setAirportsLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [open, showAirportPickers, currentValue, fromAirportId, toAirportId]);
+
+    // Search the route's flights whenever both airports are known. In picker
+    // mode this re-runs as the operator changes the From/To selection.
+    useEffect(() => {
+        if (!open) return;
+
+        if (effectiveFromId == null || effectiveToId == null) {
+            setOptions([]);
+            if (showAirportPickers) {
+                setMessage('Select departure and arrival airports to search flights.');
+            }
+            return;
+        }
 
         let cancelled = false;
         setLoading(true);
@@ -92,8 +160,8 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
             .getRecurringFlightOptions({
                 bookingId,
                 departureDate: searchDate.format('YYYY-MM-DD'),
-                departureAirportId: fromAirportId,
-                arrivalAirportId: toAirportId,
+                departureAirportId: effectiveFromId,
+                arrivalAirportId: effectiveToId,
             })
             .then((result) => {
                 if (cancelled) return;
@@ -102,7 +170,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                 setMessage(result.message);
                 // Flag a pre-existing saved value as custom if the route search
                 // doesn't surface it (schedule change / manual entry).
-                const normalizedInitial = normalizeFlightNumber(initial);
+                const normalizedInitial = normalizeFlightNumber(currentValue ?? '');
                 if (normalizedInitial && !opts.some((o) => o.value === normalizedInitial)) {
                     setIsCustom(true);
                 }
@@ -119,7 +187,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [open, bookingId, fromAirportId, toAirportId, currentValue, searchDate]);
+    }, [open, bookingId, effectiveFromId, effectiveToId, searchDate, showAirportPickers, currentValue]);
 
     const applyTypedValue = useCallback(
         (text: string) => {
@@ -131,16 +199,36 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         [options]
     );
 
+    // In picker mode the route airports must be chosen and a flight number
+    // entered before we can save — the auto-assign needs all three.
+    const missingRoute = showAirportPickers && (selectedFrom == null || selectedTo == null);
+    const missingFlight = showAirportPickers && savedValue.length === 0;
+    const submitDisabled = isSaving || missingRoute || missingFlight;
+
+    // Explain why Save is unavailable — a disabled button gives no feedback on
+    // its own. Matches the disabled-Save tooltip used by the dimensions dialog.
+    const saveHint = missingRoute
+        ? 'Select departure and arrival airports first'
+        : missingFlight
+            ? 'Enter a flight number to save'
+            : '';
+
     const handleSubmit = useCallback(async () => {
         try {
             setIsSaving(true);
-            await onSubmit(savedValue);
+            if (showAirportPickers) {
+                if (selectedFrom == null || selectedTo == null) return;
+                await onSubmit(savedValue, {
+                    fromAirportId: selectedFrom.id,
+                    toAirportId: selectedTo.id,
+                });
+            } else {
+                await onSubmit(savedValue);
+            }
         } finally {
             setIsSaving(false);
         }
-    }, [onSubmit, savedValue]);
-
-    const hasAirports = fromAirportId != null && toAirportId != null;
+    }, [onSubmit, savedValue, showAirportPickers, selectedFrom, selectedTo]);
 
     return (
         <Dialog
@@ -148,6 +236,8 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
             onClose={onClose}
             maxWidth="sm"
             fullWidth
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
             slotProps={{
                 paper: {
                     elevation: 24,
@@ -181,10 +271,10 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                     <FlightTakeoffIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Saved Flight
+                    <Typography id={titleId} variant="h6" sx={{ fontWeight: 600 }}>
+                        {showAirportPickers ? 'Add Flight' : 'Saved Flight'}
                     </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                    <Typography id={descriptionId} variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
                         Auto-assigned each time this booking is pushed live
                     </Typography>
                 </Box>
@@ -201,6 +291,84 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
             {/* Content */}
             <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {showAirportPickers && (
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                bgcolor: 'white',
+                                borderRadius: 3,
+                                p: 2.5,
+                                border: '1px solid',
+                                borderColor: 'grey.200',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 2,
+                            }}
+                        >
+                            <Box>
+                                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 1 }}>
+                                    From airport
+                                </Typography>
+                                <Autocomplete
+                                    disabled={isSaving}
+                                    options={airportOptions}
+                                    loading={airportsLoading}
+                                    value={selectedFrom}
+                                    getOptionLabel={(option) => option.label}
+                                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                                    onChange={(_event, newValue) => setSelectedFrom(newValue)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            autoFocus
+                                            size="small"
+                                            fullWidth
+                                            placeholder="Select departure airport…"
+                                            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
+                                            slotProps={{
+                                                ...params.slotProps,
+                                                htmlInput: {
+                                                    ...params.slotProps?.htmlInput,
+                                                    'aria-label': 'From airport',
+                                                },
+                                            }}
+                                        />
+                                    )}
+                                />
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 1 }}>
+                                    To airport
+                                </Typography>
+                                <Autocomplete
+                                    disabled={isSaving}
+                                    options={airportOptions}
+                                    loading={airportsLoading}
+                                    value={selectedTo}
+                                    getOptionLabel={(option) => option.label}
+                                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                                    onChange={(_event, newValue) => setSelectedTo(newValue)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            size="small"
+                                            fullWidth
+                                            placeholder="Select arrival airport…"
+                                            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
+                                            slotProps={{
+                                                ...params.slotProps,
+                                                htmlInput: {
+                                                    ...params.slotProps?.htmlInput,
+                                                    'aria-label': 'To airport',
+                                                },
+                                            }}
+                                        />
+                                    )}
+                                />
+                            </Box>
+                        </Paper>
+                    )}
+
                     <Paper
                         elevation={0}
                         sx={{
@@ -250,12 +418,17 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
+                                    autoFocus={!showAirportPickers}
                                     size="small"
                                     fullWidth
                                     placeholder={hasAirports ? 'Search flights or type a number…' : 'Enter a flight number…'}
                                     sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
                                     slotProps={{
                                         ...params.slotProps,
+                                        htmlInput: {
+                                            ...params.slotProps?.htmlInput,
+                                            'aria-label': 'Flight number',
+                                        },
                                         input: {
                                             ...params.slotProps.input,
                                             endAdornment: (
@@ -298,16 +471,21 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                 <Button onClick={onClose} variant="outlined" disabled={isSaving} sx={{ minWidth: 100 }}>
                     Cancel
                 </Button>
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    color="primary"
-                    disabled={isSaving}
-                    startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : undefined}
-                    sx={{ minWidth: 100 }}
-                >
-                    {isSaving ? 'Saving…' : 'Save'}
-                </Button>
+                <Tooltip title={saveHint}>
+                    {/* span so the tooltip still fires while the button is disabled */}
+                    <span>
+                        <Button
+                            onClick={handleSubmit}
+                            variant="contained"
+                            color="primary"
+                            disabled={submitDisabled}
+                            startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : undefined}
+                            sx={{ minWidth: 100 }}
+                        >
+                            {isSaving ? 'Saving…' : 'Save'}
+                        </Button>
+                    </span>
+                </Tooltip>
             </DialogActions>
         </Dialog>
     );
