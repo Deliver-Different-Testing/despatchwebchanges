@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {screen, waitFor, within} from '@testing-library/react';
+import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DispatchDialog} from './DispatchDialog';
 import type {DispatchDialogProps, DispatchMode} from './types';
@@ -81,13 +81,13 @@ function makeProps(overrides: Partial<DispatchDialogProps> = {}): DispatchDialog
 
 // Drives the dialog through the Courier path: type into the search box,
 // pick the first matching courier, and click Confirm.
-async function pickCourierAndConfirm(user: ReturnType<typeof userEvent.setup>) {
+async function pickCourierAndConfirm() {
     const search = screen.getByPlaceholderText(/Search courier/);
-    await user.click(search);
-    await user.paste('ABC');
+    fireEvent.focus(search);
+    fireEvent.change(search, {target: {value: 'ABC'}});
     const option = await screen.findByRole('option', {name: /ABC Couriers/});
-    await user.click(option);
-    await user.click(screen.getByRole('button', {name: /Dispatch/}));
+    fireEvent.click(option);
+    fireEvent.click(screen.getByRole('button', {name: /Dispatch/}));
 }
 
 beforeEach(() => {
@@ -233,12 +233,11 @@ describe('DispatchDialog', () => {
 
     describe('Destination panels', () => {
         it('shows the Courier autocomplete by default and fires the courier search backend', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<DispatchDialog {...makeProps()} />);
 
             const search = screen.getByPlaceholderText(/Search courier/);
-            await user.click(search);
-            await user.paste('ABC');
+            fireEvent.focus(search);
+            fireEvent.change(search, {target: {value: 'ABC'}});
 
             await waitFor(() => {
                 expect(mockedAutocompleteSearch).toHaveBeenCalledWith('ABC', '/courier/AllActiveSearch');
@@ -246,13 +245,12 @@ describe('DispatchDialog', () => {
         });
 
         it('switches to the Agent search backend when the Agent radio is selected', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<DispatchDialog {...makeProps()} />);
 
-            await user.click(screen.getByRole('radio', {name: /Agent/}));
+            fireEvent.click(screen.getByRole('radio', {name: /Agent/}));
             const search = screen.getByPlaceholderText(/Search agent/);
-            await user.click(search);
-            await user.paste('One');
+            fireEvent.focus(search);
+            fireEvent.change(search, {target: {value: 'One'}});
 
             await waitFor(() => {
                 expect(mockedApiClientGet).toHaveBeenCalledWith(
@@ -263,13 +261,12 @@ describe('DispatchDialog', () => {
         });
 
         it('switches to the NP search backend when the NP radio is selected', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<DispatchDialog {...makeProps()} />);
 
-            await user.click(screen.getByRole('radio', {name: /^NP$/}));
+            fireEvent.click(screen.getByRole('radio', {name: /^NP$/}));
             const search = screen.getByPlaceholderText(/Search Network Partner/);
-            await user.click(search);
-            await user.paste('Net');
+            fireEvent.focus(search);
+            fireEvent.change(search, {target: {value: 'Net'}});
 
             await waitFor(() => {
                 expect(mockedApiClientGet).toHaveBeenCalledWith(
@@ -279,8 +276,7 @@ describe('DispatchDialog', () => {
             });
         });
 
-        it('switching radio clears the previous destination so we never submit the wrong column', async () => {
-            const user = userEvent.setup();
+        it('switching radio clears the previous destination so we never submit the wrong column', () => {
             renderWithTheme(
                 <DispatchDialog
                     {...makeProps({existingDestination: {id: 50, text: 'ABC Couriers'}})}
@@ -290,17 +286,16 @@ describe('DispatchDialog', () => {
             const search = screen.getByPlaceholderText(/Search courier/) as HTMLInputElement;
             expect(search.value).toBe('ABC Couriers');
 
-            await user.click(screen.getByRole('radio', {name: /Agent/}));
+            fireEvent.click(screen.getByRole('radio', {name: /Agent/}));
             const newSearch = screen.getByPlaceholderText(/Search agent/) as HTMLInputElement;
             expect(newSearch.value).toBe('');
         });
 
         it('shows the partner select + lazy-loads partners when DFRNT Partner is selected', async () => {
-            const user = userEvent.setup();
             const getPartnerOptions = jest.fn().mockResolvedValue(mockPartners);
             renderWithTheme(<DispatchDialog {...makeProps({getPartnerOptions})} />);
 
-            await user.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
+            fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
 
             await waitFor(() => {
                 expect(getPartnerOptions).toHaveBeenCalled();
@@ -312,11 +307,10 @@ describe('DispatchDialog', () => {
 
     describe('Confirm callbacks', () => {
         it('calls onDispatchCourier with the picked courier when Confirm is clicked', async () => {
-            const user = userEvent.setup();
             const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
-            await pickCourierAndConfirm(user);
+            await pickCourierAndConfirm();
 
             await waitFor(() => {
                 expect(onDispatchCourier).toHaveBeenCalledWith('Courier', {id: 101, text: 'ABC Couriers'});
@@ -330,11 +324,10 @@ describe('DispatchDialog', () => {
         });
 
         it('surfaces an error from onDispatchCourier inline without closing the dialog', async () => {
-            const user = userEvent.setup();
             const onDispatchCourier = jest.fn().mockRejectedValue(new Error('server-side failure'));
             renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
-            await pickCourierAndConfirm(user);
+            await pickCourierAndConfirm();
 
             expect(await screen.findByText(/server-side failure/)).toBeInTheDocument();
             // Dialog is still open.
@@ -346,12 +339,12 @@ describe('DispatchDialog', () => {
             const onSendToPartner = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<DispatchDialog {...makeProps({onSendToPartner})} />);
 
-            await user.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
+            fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
 
             // Wait for the partner dropdown to load.
             const select = await screen.findByLabelText('Partner');
 
-            // Open the Select and choose PartnerCo.
+            // Open the Select (MUI Select requires click on the combobox wrapper) and choose PartnerCo.
             await user.click(select);
             const partnerOption = await screen.findByRole('option', {name: 'PartnerCo'});
             await user.click(partnerOption);
@@ -360,19 +353,18 @@ describe('DispatchDialog', () => {
             const rateInput = await screen.findByLabelText(/Agreed Rate/) as HTMLInputElement;
             await waitFor(() => expect(rateInput.value).toBe('85.00'));
 
-            await user.click(screen.getByRole('button', {name: /Send to Partner/}));
+            fireEvent.click(screen.getByRole('button', {name: /Send to Partner/}));
 
             await waitFor(() => {
                 expect(onSendToPartner).toHaveBeenCalledWith({id: 7, text: 'PartnerCo'}, 85);
             });
         });
 
-        it('Cancel button calls onClose', async () => {
-            const user = userEvent.setup();
+        it('Cancel button calls onClose', () => {
             const onClose = jest.fn();
             renderWithTheme(<DispatchDialog {...makeProps({onClose})} />);
 
-            await user.click(screen.getByRole('button', {name: /Cancel/}));
+            fireEvent.click(screen.getByRole('button', {name: /Cancel/}));
             expect(onClose).toHaveBeenCalled();
         });
     });
@@ -383,27 +375,24 @@ describe('DispatchDialog', () => {
             expect(screen.getByRole('button', {name: /^Dispatch$/})).toBeInTheDocument();
         });
 
-        it('reads "Send to Agent" when the Agent radio is selected', async () => {
-            const user = userEvent.setup();
+        it('reads "Send to Agent" when the Agent radio is selected', () => {
             renderWithTheme(<DispatchDialog {...makeProps()} />);
 
-            await user.click(screen.getByRole('radio', {name: /Agent/}));
+            fireEvent.click(screen.getByRole('radio', {name: /Agent/}));
             expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/})).toBeInTheDocument();
         });
 
-        it('reads "Send to NP" when the NP radio is selected', async () => {
-            const user = userEvent.setup();
+        it('reads "Send to NP" when the NP radio is selected', () => {
             renderWithTheme(<DispatchDialog {...makeProps()} />);
 
-            await user.click(screen.getByRole('radio', {name: /^NP$/}));
+            fireEvent.click(screen.getByRole('radio', {name: /^NP$/}));
             expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to NP$/})).toBeInTheDocument();
         });
 
-        it('reads "Send to Partner" when the DFRNT Partner radio is selected', async () => {
-            const user = userEvent.setup();
+        it('reads "Send to Partner" when the DFRNT Partner radio is selected', () => {
             renderWithTheme(<DispatchDialog {...makeProps()} />);
 
-            await user.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
+            fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
             // The footer button label is the disabled state until a partner is picked.
             expect(within(screen.getByRole('dialog')).getByRole('button', {name: /Send to Partner/})).toBeInTheDocument();
         });

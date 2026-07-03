@@ -817,6 +817,16 @@ public class NationwideJobRepository(
             })
             .ToListAsync();
 
+    public async Task<IReadOnlyList<Suggestion>> GetAllActiveAirportSuggestionsAsync() =>
+        await Context.TblAirports
+            .Where(a => a.Active)
+            .Select(a => new Suggestion
+            {
+                Id = a.AirportId,
+                Text = a.Name
+            })
+            .ToListAsync();
+
     public async Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request)
     {
         var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(request.RecoveryId);

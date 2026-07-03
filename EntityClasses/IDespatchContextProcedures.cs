@@ -27,12 +27,11 @@ namespace DespatchWeb.EntityClasses
         Task<int> GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(OutputParameter<int?> maxAutoLateDeliveryAlert, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> GEN_qdfSetting_GetMaxAutoLatePickupAlertAsync(OutputParameter<int?> maxAutoLatePickupAlert, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> NET_stpJob_Insert_JobNumberAsync(int? staffID, int? jobTypeID, OutputParameter<string> jobNumber, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<int> RVW_stpActivateJobAsync(int? jobID, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<sp_AddJobAccessorialResult>> sp_AddJobAccessorialAsync(int? jobId, int? accessorialChargeId, decimal? inputValue, int? itemCount, string addedAtStage, string userName, string notes, OutputParameter<decimal?> newJobTotal, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReDespatchJobByCourierIDAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<int> uspRestoreJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> uspRestoreJobsAsync(string jobIDs, bool? forceRestoreCompleted, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<UTL_stpJob_InsertFromTblBulkJobResult>> UTL_stpJob_InsertFromTblBulkJobAsync(int? bulkJobID, string runName, int? courierID, int? runStatus, int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? clientID, decimal? amount, OutputParameter<decimal?> pPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }

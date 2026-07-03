@@ -406,6 +406,23 @@ describe('BulkPriceUploadDialog', () => {
             });
         });
 
+        it('should not report a failure when the response body is malformed', async () => {
+            // A successful (2xx) request whose body is missing/misshaped must not be thrown into the
+            // error path: the server has already committed the update, so reporting it as failed
+            // (the reported bug) is wrong. Reading the response defensively keeps us on the result
+            // screen and out of the error toast.
+            const props = createMockProps({
+                onSubmit: jest.fn().mockResolvedValue({} as BulkPricePreviewResponse),
+            });
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            await userEvent.click(screen.getByRole('button', { name: /recalculate & save/i }));
+
+            expect(await screen.findByText('Prices Updated')).toBeInTheDocument();
+            expect(props.showToast).not.toHaveBeenCalledWith(expect.anything(), 'error');
+        });
+
         it('should return to mode-select state on error', async () => {
             const props = createMockProps({
                 onSubmit: jest.fn().mockRejectedValue(new Error('Upload failed')),
@@ -498,10 +515,8 @@ describe('BulkPriceUploadDialog', () => {
             const searchInput = screen.getByPlaceholderText('Search by job number...');
             fireEvent.change(searchInput, { target: { value: 'JOB-001' } });
 
-            await waitFor(() => {
-                expect(screen.getByText('JOB-001')).toBeInTheDocument();
-                expect(screen.queryByText('JOB-002')).not.toBeInTheDocument();
-            });
+            expect(await screen.findByText('JOB-001')).toBeInTheDocument();
+            expect(screen.queryByText('JOB-002')).not.toBeInTheDocument();
         });
 
         it('should show result count', async () => {

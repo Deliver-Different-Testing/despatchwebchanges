@@ -119,28 +119,24 @@ public partial class JobRepository(
             .Distinct()
             .ToList();
 
-        // Run TucJobs and TucJobArchives queries in parallel with separate contexts
-        await using var activeJobsContext = CreateNewContext();
-        await using var archivedJobsContext = CreateNewContext();
-
-        var dbDataTask = activeJobsContext
+        // Load the live and archived jobs to mutate on the single repository context so that every
+        // write below (job amounts, courier/status changes, and pricing breakdowns) shares one
+        // transaction and commits atomically. Previously these saves ran on separate connections,
+        // which allowed one to commit while another failed or deadlocked — leaving the price changed
+        // while the request reported failure.
+        var dbData = await Context
             .TucJobs.AsTracking().Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
                 && j.UcjbLocked != true
             )
             .ToListAsync();
 
-        var dbDataArchiveTask = archivedJobsContext
+        var dbDataArchive = await Context
             .TucJobArchives.AsTracking().Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
                 && (j.UcjbLocked != 1 || !j.UcjbInvoiceNo.HasValue)
             )
             .ToListAsync();
-
-        await Task.WhenAll(dbDataTask, dbDataArchiveTask);
-
-        var dbData = await dbDataTask;
-        var dbDataArchive = await dbDataArchiveTask;
 
         // Create dictionaries for O(1) lookups instead of O(n) list searches
         var dbDataDict = dbData.ToDictionary(j => j.UcjbId);
@@ -402,29 +398,31 @@ public partial class JobRepository(
             d.UcjbLocked = 1;
         }
 
-        try
+        // Persist every change (job amounts, courier/status updates, pricing breakdowns) inside a
+        // single transaction so the batch is all-or-nothing. If any write fails the whole batch rolls
+        // back, so callers never observe a job whose price changed while the request reported failure.
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            // Save job entity changes on the contexts that own them
-            var activeChangesTask = activeJobsContext.SaveChangesAsync();
-            var archiveChangesTask = archivedJobsContext.SaveChangesAsync();
-            // Save pricing breakdown changes on the main context
-            var mainChangesTask = Context.SaveChangesAsync();
-
-            await Task.WhenAll(activeChangesTask, archiveChangesTask, mainChangesTask);
-
-            var changesCount = await activeChangesTask + await archiveChangesTask + await mainChangesTask;
-            Log.Information("Successfully saved {ChangesCount} changes", changesCount);
-        }
-        catch (DbUpdateException ex)
-        {
-            Log.Error("Error saving changes: {ExMessage}", ex.Message);
-            if (ex.InnerException != null)
+            await using var transaction = await Context.Database.BeginTransactionAsync();
+            try
             {
-                Log.Error("Inner exception: {InnerExceptionMessage}", ex.InnerException.Message);
+                var changesCount = await Context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                Log.Information("Successfully saved {ChangesCount} changes", changesCount);
             }
+            catch (DbUpdateException ex)
+            {
+                await transaction.RollbackAsync();
+                Log.Error("Error saving changes: {ExMessage}", ex.Message);
+                if (ex.InnerException != null)
+                {
+                    Log.Error("Inner exception: {InnerExceptionMessage}", ex.InnerException.Message);
+                }
 
-            throw;
-        }
+                throw;
+            }
+        });
 
         // Report which of the requested jobs were actually found and updated, so the caller can
         // surface the rest instead of reporting a false success. Parent jobs pulled in for total
@@ -483,7 +481,7 @@ public partial class JobRepository(
     {
         try
         {
-            await RestoreOrActivateJobsAsync(jobIds);
+            await RestoreNonCompletedJobsAsync(jobIds);
         }
         catch (Exception e)
         {
@@ -801,14 +799,15 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Restores voided or completed jobs back to active dispatch status.
+    /// Restores voided or not-yet-done jobs back to active dispatch status.
+    /// Genuinely-completed jobs are guarded and skipped (see <see cref="RestoreNonCompletedJobsAsync"/>).
     /// </summary>
     /// <param name="jobIds">List of job IDs to restore.</param>
     public async Task RestoreJobsAsync(IReadOnlyList<int> jobIds)
     {
         try
         {
-            await RestoreOrActivateJobsAsync(jobIds);
+            await RestoreNonCompletedJobsAsync(jobIds);
         }
         catch (Exception e)
         {
@@ -819,42 +818,29 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Brings the given jobs back onto the dispatch board, routing each to the correct procedure.
-    /// Genuinely-completed jobs (done and not void) are re-opened via RVW_stpActivateJob, which clears
-    /// the POD name, completion time and job-done flag — without that, the DESWEB_qryDespatch view filters
-    /// the job out and it never reappears. uspRestoreJob deliberately no-ops on a completed job (see the
-    /// GuardCompletedJobsAgainstSilentRestore migration), so voided or not-yet-done jobs continue to use it.
+    /// Maximum job IDs per uspRestoreJobs call. UTL_fncCSV_ToTable and the proc
+    /// parameter are nvarchar(4000); chunking keeps a large selection well under
+    /// that so it can never silently truncate and drop jobs.
     /// </summary>
-    private async Task RestoreOrActivateJobsAsync(IReadOnlyList<int> jobIds)
+    private const int RestoreJobsBatchSize = 300;
+
+    /// <summary>
+    /// Restores the given jobs via uspRestoreJobs (one batch call per chunk). The
+    /// proc skips genuinely-completed jobs (done and not void) per row — re-opening
+    /// one would leave stale POD/completion evidence that DESWEB_qryDespatch filters
+    /// out — and sets DisplayInDespatch = 1 on each restored job so it reappears on
+    /// the board.
+    /// </summary>
+    private async Task RestoreNonCompletedJobsAsync(IReadOnlyList<int> jobIds)
     {
         if (jobIds is null or { Count: 0 })
         {
             return;
         }
 
-        var completedJobIds = (await Context.TucJobs
-                .Where(j => jobIds.Contains(j.UcjbId) && j.UcjbJobDone && !j.UcjbVoid)
-                .Select(j => j.UcjbId)
-                .ToListAsync())
-            .ToHashSet();
-
-        string activatedByUserName = null;
-        if (completedJobIds.Count != 0)
+        foreach (var chunk in jobIds.Chunk(RestoreJobsBatchSize))
         {
-            // RVW_stpActivateJob stamps a "Job Restored ... via RunViewer User <name>" note.
-            activatedByUserName = (await _infoService.GetStaffInfoAsync())?.Text;
-        }
-
-        foreach (var jobId in jobIds)
-        {
-            if (completedJobIds.Contains(jobId))
-            {
-                await Context.Procedures.RVW_stpActivateJobAsync(jobId, activatedByUserName);
-            }
-            else
-            {
-                await Context.Procedures.uspRestoreJobAsync(jobId);
-            }
+            await Context.Procedures.uspRestoreJobsAsync(string.Join(',', chunk), forceRestoreCompleted: false);
         }
     }
 

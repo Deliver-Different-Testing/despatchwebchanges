@@ -1006,8 +1006,7 @@ public class RateJobServiceTests : IDisposable
         fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
-                stream.CopyTo(callInfo.Arg<Stream>());
-                return Task.CompletedTask;
+                return stream.CopyToAsync(callInfo.Arg<Stream>());
             });
 
         return fileMock;

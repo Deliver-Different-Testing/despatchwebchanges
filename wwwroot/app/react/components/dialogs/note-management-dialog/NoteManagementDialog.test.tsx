@@ -87,11 +87,9 @@ describe('NoteManagementDialog', () => {
             renderWithTheme(<NoteManagementDialog {...props} />);
         });
 
-        await waitFor(() => {
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Add Note')).toBeInTheDocument();
-            expect(props.onLoadNoteTypes).toHaveBeenCalled();
-        });
+        expect(await screen.findByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Add Note')).toBeInTheDocument();
+        expect(props.onLoadNoteTypes).toHaveBeenCalled();
 
         // No metadata section for new notes
         expect(screen.queryByText('Note Information')).not.toBeInTheDocument();
@@ -123,10 +121,8 @@ describe('NoteManagementDialog', () => {
         expect(await screen.findByText('Edit Note')).toBeInTheDocument();
         expect(screen.getByDisplayValue('This is an existing note')).toBeInTheDocument();
 
-        await waitFor(() => {
-            expect(screen.getByText('Note Information')).toBeInTheDocument();
-            expect(screen.getByText('John Doe')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Note Information')).toBeInTheDocument();
+        expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
 
     // ── Note type selection: public warning + description toggle (single render) ─

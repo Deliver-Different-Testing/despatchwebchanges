@@ -150,3 +150,19 @@ export function useReassignTask() {
         },
     });
 }
+
+/**
+ * Hook to unassign a task, clearing its assigned staff member
+ *
+ * @returns Mutation for unassigning tasks
+ */
+export function useUnassignTask() {
+    const queryClient = useQueryClient();
+
+    return useMutation<void, Error, {eventId: number}>({
+        mutationFn: ({eventId}) => tasksApi.unassignTask(eventId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
+        },
+    });
+}

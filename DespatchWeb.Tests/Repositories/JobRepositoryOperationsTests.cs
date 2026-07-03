@@ -455,6 +455,44 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdateManualPriceAsync_MixedLiveAndArchivedJobs_PersistsBothAtomically()
+    {
+        // The prices for a batch spanning both job tables are now written inside a single
+        // transaction. Verify every change commits together (the refactor that fixed the
+        // "committed but reported as failed" bug must not drop the live or archived side).
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 100, UcjbNumber = "JOB100", UcjbAmount = 120m,
+                FuelSurchargeAmount = 0m, PpdexclusiveAmount = 0m, UcjbLocked = false
+            });
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 200, UcjbNumber = "ARCH200", UcjbAmount = 95m,
+                FuelSurchargeAmount = 0m, PpdexclusiveAmount = 0m, UcjbLocked = 0, UcjbInvoiceNo = null
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        var updated = await repository.UpdateManualPriceAsync([
+            new JobManualPriceModel { Id = 100, Amount = 0m, Fuel = 0m, Ppd = 0m, CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m },
+            new JobManualPriceModel { Id = 200, Amount = 0m, Fuel = 0m, Ppd = 0m, CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m }
+        ]);
+
+        Assert.Contains(100, updated);
+        Assert.Contains(200, updated);
+
+        await using var verifyContext = CreateContext();
+        var live = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        var archived = await verifyContext.TucJobArchives.FindAsync([200], TestContext.Current.CancellationToken);
+        Assert.Equal(0m, live!.UcjbAmount);
+        Assert.Equal(0m, archived!.UcjbAmount);
+    }
+
+    [Fact]
     public async Task SimpleRepriceJobManualAsync_WithRegularJob_UpdatesPriceAndMarksManual()
     {
         // Arrange

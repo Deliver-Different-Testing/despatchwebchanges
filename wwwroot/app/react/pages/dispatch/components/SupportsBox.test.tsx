@@ -15,6 +15,7 @@ jest.mock('../../../hooks/useTasksApi', () => ({
     useUpdateTaskDate: () => noopMutation(),
     useUpdateTaskTime: () => noopMutation(),
     useReassignTask: () => noopMutation(),
+    useUnassignTask: () => noopMutation(),
 }));
 
 jest.mock('../../../services/tasksApi', () => ({

@@ -205,6 +205,43 @@ public class NoteRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetNotesByJobIdAsync_ActiveReturnLegWithArchivedParent_FallsBackToArchivedRootUcjbNotes()
+    {
+        // Arrange — a still-active return leg (ParentId set) whose original/parent job has
+        // already been completed and archived. The original's pickup note lives only in the
+        // parent's UcjbNotes column, which now sits in TucJobArchives. The return leg has no
+        // notes of its own. Before this fix the note only surfaced once the return leg itself
+        // was completed (archived read), so notes appeared to "only show when completed".
+        const int parentJobId = 100;
+        const int returnLegId = 500;
+        _context.TucJobArchives.Add(new TucJobArchive
+        {
+            UcjbId = parentJobId,
+            UcjbNumber = "PARENT001",
+            UcjbNotes = "Original pickup note",
+            UcjbDate = new DateTime(2024, 1, 1),
+            UcjbTime = new DateTime(2024, 1, 1, 8, 0, 0)
+        });
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = returnLegId,
+            UcjbNumber = "RETURN001",
+            ParentId = parentJobId
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act — read notes for the active return leg
+        var result = await repository.GetNotesByJobIdAsync(returnLegId);
+
+        // Assert — the archived root's pickup note is surfaced even though the return leg is live
+        Assert.Single(result);
+        Assert.Equal("Original pickup note", result[0].NoteText);
+        Assert.Equal((int)NoteType.PickupNotes, result[0].NoteTypeId);
+    }
+
+    [Fact]
     public async Task GetNotesByJobIdAsync_NoNotesAndWhitespaceUcjbNotes_ReturnsEmpty()
     {
         // Arrange — no tucNote row and a blank UcjbNotes column → nothing to surface

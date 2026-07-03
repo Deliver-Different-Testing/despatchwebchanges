@@ -547,6 +547,22 @@ public class NationwideJobController(
         }
     }
 
+    public async Task<IActionResult> GetAllActiveAirportSuggestions()
+    {
+        try
+        {
+            var airports = await repository.GetAllActiveAirportSuggestionsAsync();
+            return Json(airports);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(GetAllActiveAirportSuggestions)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> UpdateAgentRecoveryJob([FromBody] UpdateAgentRecoveryRequest request)
     {

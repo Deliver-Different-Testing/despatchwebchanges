@@ -178,10 +178,11 @@ public sealed class CourierReportService(
             return string.Empty;
         }
 
-        var escaped = str.Replace("\"", "\"\"").Replace("\n", "\\n").Replace("\r", "");
+        var escaped = str.Replace(",", string.Empty)
+            .Replace("\"", "\"\"")
+            .Replace("\n", "\\n")
+            .Replace("\r", string.Empty);
 
-        return escaped.Contains('"') || escaped.Contains(',')
-            ? $"\"{escaped}\""
-            : escaped;
+        return escaped.Contains('"') ? $"\"{escaped}\"" : escaped;
     }
 }

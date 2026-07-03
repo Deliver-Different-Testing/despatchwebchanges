@@ -363,13 +363,13 @@ public class CourierRepository(
 
             await Task.WhenAll(clearListsTask, courierDataTask);
 
-            var clearLists = clearListsTask.Result;
+            var clearLists = await clearListsTask;
             if (clearLists.Count == 0)
             {
                 return new ClearListViewModel();
             }
 
-            var allCourierData = courierDataTask.Result;
+            var allCourierData = await courierDataTask;
             var clearListAreaIds = clearLists.Select(cl => cl.ClearListAreaId).ToList();
             var courierIds = allCourierData.Select(c => c.UccrId).ToList();
 
@@ -390,11 +390,11 @@ public class CourierRepository(
             await Task.WhenAll(polygonMappingsTask, hasAreaFiltersTask, displayOrdersTask, jobsTask,
                 courierStatusJobsTask);
 
-            var allValidCourierGpsIds = polygonMappingsTask.Result;
-            var hasAreaFilters = hasAreaFiltersTask.Result;
-            var displayOrders = displayOrdersTask.Result;
-            var allJobs = jobsTask.Result;
-            var courierStatusJobs = courierStatusJobsTask.Result;
+            var allValidCourierGpsIds = await polygonMappingsTask;
+            var hasAreaFilters = await hasAreaFiltersTask;
+            var displayOrders = await displayOrdersTask;
+            var allJobs = await jobsTask;
+            var courierStatusJobs = await courierStatusJobsTask;
 
             Log.Information("Wave 2 complete: {PolygonCount} polygon mappings, {JobCount} jobs",
                 allValidCourierGpsIds.Count, allJobs.Count);
@@ -466,11 +466,11 @@ public class CourierRepository(
 
                 var coordinateMappingsTask = GetCoordinateMappingsAsync(allCoordinates, cancellationToken);
                 await Task.WhenAll(coordinateMappingsTask, areaRemainingTask);
-                coordinateLookup = coordinateMappingsTask.Result;
+                coordinateLookup = await coordinateMappingsTask;
 
                 Log.Information(
                     "Wave 3 complete (US): {CoordinateCount} coordinate mappings, {AreaCount} area remaining counts",
-                    coordinateLookup.Count, areaRemainingTask.Result.Count);
+                    coordinateLookup.Count, (await areaRemainingTask).Count);
             }
             else
             {
@@ -482,14 +482,14 @@ public class CourierRepository(
 
                 var suburbMappingsTask = GetSuburbMappingsAsync(allSuburbIds, cancellationToken);
                 await Task.WhenAll(suburbMappingsTask, areaRemainingTask);
-                suburbLookup = suburbMappingsTask.Result;
+                suburbLookup = await suburbMappingsTask;
 
                 Log.Information(
                     "Wave 3 complete (NZ): {SuburbCount} suburb mappings, {AreaCount} area remaining counts",
-                    suburbLookup.Count, areaRemainingTask.Result.Count);
+                    suburbLookup.Count, (await areaRemainingTask).Count);
             }
 
-            var areaRemainingCounts = areaRemainingTask.Result;
+            var areaRemainingCounts = await areaRemainingTask;
 
             // ===================================================================
             // IN-MEMORY PROCESSING: Build clear lists for each area

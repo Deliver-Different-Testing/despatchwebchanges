@@ -220,8 +220,7 @@ describe('JobListPanel', () => {
     });
 
     describe('Category Filtering', () => {
-        it('filters by category and calls onCategoryChange', async () => {
-            const user = userEvent.setup();
+        it('filters by category and calls onCategoryChange', () => {
             const onCategoryChange = jest.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'UNASSIGNED-1', statusId: 0}),
@@ -234,19 +233,19 @@ describe('JobListPanel', () => {
             renderAndPushJobs(jobs, {onCategoryChange});
 
             // Unassigned filter
-            await user.click(screen.getByText('Unassigned'));
+            fireEvent.click(screen.getByText('Unassigned'));
             expect(onCategoryChange).toHaveBeenCalledWith('needs-dispatch');
             expect(screen.getByText('UNASSIGNED-1')).toBeInTheDocument();
             expect(screen.queryByText('DISPATCHED-1')).not.toBeInTheDocument();
             expect(screen.queryByText('DONE-1')).not.toBeInTheDocument();
 
             // Done filter
-            await user.click(screen.getByRole('button', {name: 'Done'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Done'}));
             expect(screen.getByText('DONE-1')).toBeInTheDocument();
             expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
             // All filter (switch away and back)
-            await user.click(screen.getByRole('button', {name: 'All'}));
+            fireEvent.click(screen.getByRole('button', {name: 'All'}));
             expect(screen.getByText('UNASSIGNED-1')).toBeInTheDocument();
             expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
             expect(screen.getByText('DONE-1')).toBeInTheDocument();
@@ -346,8 +345,7 @@ describe('JobListPanel', () => {
     });
 
     describe('Stats, Footer, and Job Selection', () => {
-        it('computes stats, shows footer counts, and selects job on click', async () => {
-            const user = userEvent.setup();
+        it('computes stats, shows footer counts, and selects job on click', () => {
             const onJobSelect = jest.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'J1', statusId: 0}),
@@ -367,7 +365,7 @@ describe('JobListPanel', () => {
             expect(screen.getByText(/Last updated:/)).toBeInTheDocument();
 
             // Job selection
-            await user.click(screen.getByText('J1'));
+            fireEvent.click(screen.getByText('J1'));
             expect(onJobSelect).toHaveBeenCalledWith(
                 expect.objectContaining({id: 1, jobNo: 'J1'})
             );
@@ -394,24 +392,23 @@ describe('JobListPanel', () => {
             expect(toggle).toBeChecked();
         });
 
-        it('persists density mode, loggedInCouriersOnly, and sort state to localStorage', async () => {
-            const user = userEvent.setup();
+        it('persists density mode, loggedInCouriersOnly, and sort state to localStorage', () => {
             renderAndPushJobs([createMockDispatchJob()], {storagePrefix});
 
             // Persist density mode
             const buttons = screen.getAllByRole('button');
             const normalButton = buttons.find(b => b.getAttribute('value') === 'normal');
             expect(normalButton).toBeTruthy();
-            await user.click(normalButton!);
+            fireEvent.click(normalButton!);
             expect(localStorage.getItem(key('densityMode'))).toBe('normal');
 
             // Persist loggedInCouriersOnly
             const toggle = screen.getByRole('switch');
-            await user.click(toggle);
+            fireEvent.click(toggle);
             expect(localStorage.getItem(key('loggedInCouriersOnly'))).toBe('true');
 
             // Persist sort state
-            await user.click(screen.getByText('Job No'));
+            fireEvent.click(screen.getByText('Job No'));
             const saved = JSON.parse(localStorage.getItem(key('sortState'))!);
             expect(saved).toEqual({column: 'jobNo', direction: 'asc'});
         });
@@ -433,8 +430,7 @@ describe('JobListPanel', () => {
     });
 
     describe('Sorting', () => {
-        it('toggles sort direction and calls onBackendFilter', async () => {
-            const user = userEvent.setup();
+        it('toggles sort direction and calls onBackendFilter', () => {
             const storagePrefix = 'sortTest';
             const onBackendFilter = jest.fn();
             renderAndPushJobs([createMockDispatchJob()], {storagePrefix, onBackendFilter});
@@ -442,19 +438,18 @@ describe('JobListPanel', () => {
             const header = screen.getByText('Job No');
 
             // First click → asc
-            await user.click(header);
+            fireEvent.click(header);
             let saved = JSON.parse(localStorage.getItem(`${storagePrefix}_sortState_42`)!);
             expect(saved).toEqual({column: 'jobNo', direction: 'asc'});
             expect(onBackendFilter).toHaveBeenCalledWith('jobNo', 'asc');
 
             // Second click → desc
-            await user.click(header);
+            fireEvent.click(header);
             saved = JSON.parse(localStorage.getItem(`${storagePrefix}_sortState_42`)!);
             expect(saved).toEqual({column: 'jobNo', direction: 'desc'});
         });
 
-        it('sorts jobs correctly by job number column', async () => {
-            const user = userEvent.setup();
+        it('sorts jobs correctly by job number column', () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'C-003'}),
                 createMockDispatchJob({id: 2, jobNo: 'A-001'}),
@@ -463,14 +458,13 @@ describe('JobListPanel', () => {
             renderAndPushJobs(jobs);
 
             // Click Job No header to sort asc
-            await user.click(screen.getByText('Job No'));
+            fireEvent.click(screen.getByText('Job No'));
 
             const rows = screen.getAllByText(/^[A-C]-00\d$/);
             expect(rows.map(el => el.textContent)).toEqual(['A-001', 'B-002', 'C-003']);
         });
 
-        it('sorts jobs correctly by delivery address column', async () => {
-            const user = userEvent.setup();
+        it('sorts jobs correctly by delivery address column', () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'J1', deliveryAddress: {addressLine5: 'Zebra Town'} as any}),
                 createMockDispatchJob({id: 2, jobNo: 'J2', deliveryAddress: {addressLine5: 'Alpha City'} as any}),
@@ -479,7 +473,7 @@ describe('JobListPanel', () => {
             renderAndPushJobs(jobs);
 
             // Click Delivery header to sort asc
-            await user.click(screen.getByText('Delivery'));
+            fireEvent.click(screen.getByText('Delivery'));
 
             const rows = screen.getAllByText(/^(Alpha City|Middle Park|Zebra Town)$/);
             expect(rows.map(el => el.textContent)).toEqual(['Alpha City', 'Middle Park', 'Zebra Town']);
@@ -595,8 +589,7 @@ describe('JobListPanel', () => {
     });
 
     describe('Logged-in Couriers Toggle', () => {
-        it('defaults to unchecked and can be toggled on and off', async () => {
-            const user = userEvent.setup();
+        it('defaults to unchecked and can be toggled on and off', () => {
             renderWithProviders(<JobListPanel {...createDefaultProps()}/>);
 
             expect(screen.getByText('Logged-in only')).toBeInTheDocument();
@@ -604,10 +597,10 @@ describe('JobListPanel', () => {
             expect(toggle).toBeInTheDocument();
             expect(toggle).not.toBeChecked();
 
-            await user.click(toggle);
+            fireEvent.click(toggle);
             expect(toggle).toBeChecked();
 
-            await user.click(toggle);
+            fireEvent.click(toggle);
             expect(toggle).not.toBeChecked();
         });
     });
@@ -727,7 +720,6 @@ describe('JobListPanel', () => {
         });
 
         it('updates sort via hookData when column header is clicked', async () => {
-            const user = userEvent.setup();
             const fetchConfig = createMockFetchConfig();
             const onBackendFilter = jest.fn();
 
@@ -742,7 +734,7 @@ describe('JobListPanel', () => {
 
             (fetchConfig.fetchFn as jest.Mock).mockClear();
 
-            await user.click(screen.getByText('Job No'));
+            fireEvent.click(screen.getByText('Job No'));
 
             await waitFor(() => {
                 expect(fetchConfig.fetchFn).toHaveBeenCalledWith(
@@ -947,26 +939,24 @@ describe('JobListPanel', () => {
             mockedUpdateJobReadStatus.mockClear();
         });
 
-        it('calls updateJobReadStatus when clicking an unread job', async () => {
-            const user = userEvent.setup();
+        it('calls updateJobReadStatus when clicking an unread job', () => {
             const jobs = [
                 createMockDispatchJob({id: 10, jobNo: 'UNREAD1', hasBeenRead: false}),
             ];
             renderAndPushJobs(jobs);
 
-            await user.click(screen.getByText('UNREAD1'));
+            fireEvent.click(screen.getByText('UNREAD1'));
 
             expect(mockedUpdateJobReadStatus).toHaveBeenCalledWith(10, true);
         });
 
-        it('does not call updateJobReadStatus when clicking an already-read job', async () => {
-            const user = userEvent.setup();
+        it('does not call updateJobReadStatus when clicking an already-read job', () => {
             const jobs = [
                 createMockDispatchJob({id: 20, jobNo: 'READ1', hasBeenRead: true}),
             ];
             renderAndPushJobs(jobs);
 
-            await user.click(screen.getByText('READ1'));
+            fireEvent.click(screen.getByText('READ1'));
 
             expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
         });

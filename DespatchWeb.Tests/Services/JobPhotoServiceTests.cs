@@ -410,8 +410,7 @@ public class JobPhotoServiceTests
             .Returns(callInfo =>
             {
                 stream.Position = 0;
-                stream.CopyTo(callInfo.Arg<Stream>());
-                return Task.CompletedTask;
+                return stream.CopyToAsync(callInfo.Arg<Stream>());
             });
 
         return fileMock;

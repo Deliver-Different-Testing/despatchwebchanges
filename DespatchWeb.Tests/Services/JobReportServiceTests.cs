@@ -3,6 +3,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
@@ -316,6 +317,30 @@ public class JobReportServiceTests
 
         // Assert - should not call update when no data
         await _jobCommandRepositoryMock.DidNotReceive().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
+    }
+
+    [Fact]
+    public async Task GenerateRecurringJobsCsvAsync_ClientWithComma_StripsComma()
+    {
+        // Arrange - a client name with a comma must not break the column structure
+        var data = new List<PrebookListViewModel>
+        {
+            new() { JobNo = "J001", Client = "Acme, Inc", Courier = "C1", Speed = "Standard" }
+        };
+        _recurringJobRepositoryMock.GetAllRecurringJobsForExportAsync(Arg.Any<RecurringJobQueryRequest>())
+            .Returns(data);
+
+        var service = CreateService();
+
+        // Act
+        var (fileBytes, _) = await service.GenerateRecurringJobsCsvAsync(new RecurringJobQueryRequest());
+
+        // Assert - comma removed from the client name, column count preserved, no quoting introduced
+        var lines = Encoding.UTF8.GetString(fileBytes).TrimEnd('\r', '\n').Split('\n');
+        var headerColumns = lines[0].TrimEnd('\r').Split(',').Length;
+        var dataRow = lines[1].TrimEnd('\r');
+        Assert.Contains("Acme Inc", dataRow);
+        Assert.Equal(headerColumns, dataRow.Split(',').Length);
     }
 
     private static IFormFile CreateMockFile(string fileName, string content)

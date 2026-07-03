@@ -5,8 +5,7 @@
  */
 
 import React from 'react';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
 import {PriceBreakdown, PriceBreakdownDialog, PriceBreakdownDialogProps} from './PriceBreakdownDialog';
 import {createProps, renderWithTheme} from '../../../__testUtils__';
 
@@ -146,10 +145,9 @@ describe('PriceBreakdownDialog', () => {
     // ── Add Item ─────────────────────────────────────────────────────
     describe('Add Item', () => {
         it('shows add form with fields when Add Item is clicked', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<PriceBreakdownDialog {...createMockProps()} />);
 
-            await user.click(screen.getByRole('button', {name: /add item/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add item/i}));
 
             expect(screen.getByText('Add New Price Item')).toBeInTheDocument();
             expect(screen.getByLabelText(/item name/i)).toBeInTheDocument();
@@ -160,18 +158,14 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('calls onAddItem when form is submitted', async () => {
-            const user = userEvent.setup();
             const onAddItem = jest.fn().mockResolvedValue(4);
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onAddItem, priceBreakdowns: []})} />);
 
-            await user.click(screen.getByRole('button', {name: /add first item/i}));
-            await user.click(screen.getByLabelText(/item name/i));
-            await user.paste('New Charge');
-            await user.click(screen.getByLabelText(/revenue amount/i));
-            await user.paste('50');
-            await user.click(screen.getByLabelText(/cost amount/i));
-            await user.paste('30');
-            await user.click(screen.getByRole('button', {name: /add item/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add first item/i}));
+            fireEvent.change(screen.getByLabelText(/item name/i), {target: {value: 'New Charge'}});
+            fireEvent.change(screen.getByLabelText(/revenue amount/i), {target: {value: '50'}});
+            fireEvent.change(screen.getByLabelText(/cost amount/i), {target: {value: '30'}});
+            fireEvent.click(screen.getByRole('button', {name: /add item/i}));
 
             await waitFor(() => {
                 expect(onAddItem).toHaveBeenCalled();
@@ -179,13 +173,12 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('cancels add mode when Cancel is clicked', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<PriceBreakdownDialog {...createMockProps()} />);
 
-            await user.click(screen.getByRole('button', {name: /add item/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add item/i}));
             expect(screen.getByText('Add New Price Item')).toBeInTheDocument();
 
-            await user.click(screen.getByRole('button', {name: /^cancel$/i}));
+            fireEvent.click(screen.getByRole('button', {name: /^cancel$/i}));
             expect(screen.queryByText('Add New Price Item')).not.toBeInTheDocument();
         });
     });
@@ -193,10 +186,9 @@ describe('PriceBreakdownDialog', () => {
     // ── Edit Item ────────────────────────────────────────────────────
     describe('Edit Item', () => {
         it('shows edit form populated with item values', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<PriceBreakdownDialog {...createMockProps()} />);
 
-            await user.click(screen.getAllByTestId('EditIcon')[0].closest('button')!);
+            fireEvent.click(screen.getAllByTestId('EditIcon')[0].closest('button')!);
 
             expect(screen.getByText('Edit Price Item')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Base Charge')).toBeInTheDocument();
@@ -206,15 +198,13 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('calls onUpdateItem when form is submitted', async () => {
-            const user = userEvent.setup();
             const onUpdateItem = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onUpdateItem})} />);
 
-            await user.click(screen.getAllByTestId('EditIcon')[0].closest('button')!);
+            fireEvent.click(screen.getAllByTestId('EditIcon')[0].closest('button')!);
             const nameInput = screen.getByDisplayValue('Base Charge');
-            await user.clear(nameInput);
-            await user.paste('Updated Charge');
-            await user.click(screen.getByRole('button', {name: /save changes/i}));
+            fireEvent.change(nameInput, {target: {value: 'Updated Charge'}});
+            fireEvent.click(screen.getByRole('button', {name: /save changes/i}));
 
             await waitFor(() => {
                 expect(onUpdateItem).toHaveBeenCalled();
@@ -225,16 +215,15 @@ describe('PriceBreakdownDialog', () => {
     // ── Delete Item ──────────────────────────────────────────────────
     describe('Delete Item', () => {
         it('opens in-dialog confirmation and calls onDeleteItem when confirmed', async () => {
-            const user = userEvent.setup();
             const onDeleteItem = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem})} />);
 
-            await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            fireEvent.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
 
             expect(screen.getByText('Delete price item?')).toBeInTheDocument();
             expect(screen.getByText(/Base Charge.*will be removed/)).toBeInTheDocument();
 
-            await user.click(screen.getByRole('button', {name: /^delete$/i}));
+            fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
 
             await waitFor(() => {
                 expect(onDeleteItem).toHaveBeenCalledWith(1, 100, false);
@@ -242,15 +231,14 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('does not delete when Cancel is clicked on the confirmation', async () => {
-            const user = userEvent.setup();
             const onDeleteItem = jest.fn();
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem})} />);
 
-            await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            fireEvent.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
             expect(screen.getByText('Delete price item?')).toBeInTheDocument();
 
             const cancelButtons = screen.getAllByRole('button', {name: /^cancel$/i});
-            await user.click(cancelButtons[cancelButtons.length - 1]);
+            fireEvent.click(cancelButtons[cancelButtons.length - 1]);
 
             expect(onDeleteItem).not.toHaveBeenCalled();
             await waitFor(() => {
@@ -259,12 +247,11 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('passes isArchived to onDeleteItem', async () => {
-            const user = userEvent.setup();
             const onDeleteItem = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem, isArchived: true})} />);
 
-            await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
-            await user.click(screen.getByRole('button', {name: /^delete$/i}));
+            fireEvent.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
 
             await waitFor(() => {
                 expect(onDeleteItem).toHaveBeenCalledWith(1, 100, true);
@@ -275,13 +262,12 @@ describe('PriceBreakdownDialog', () => {
     // ── Toast Notifications ──────────────────────────────────────────
     describe('Toast Notifications', () => {
         it('fires success toast on delete', async () => {
-            const user = userEvent.setup();
             const showToast = jest.fn();
             const onDeleteItem = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem, showToast})} />);
 
-            await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
-            await user.click(screen.getByRole('button', {name: /^delete$/i}));
+            fireEvent.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/Deleted.*Base Charge/), 'success');
@@ -289,13 +275,12 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('fires error toast on delete failure', async () => {
-            const user = userEvent.setup();
             const showToast = jest.fn();
             const onDeleteItem = jest.fn().mockRejectedValue(new Error('boom'));
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem, showToast})} />);
 
-            await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
-            await user.click(screen.getByRole('button', {name: /^delete$/i}));
+            fireEvent.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith('boom', 'error');
@@ -303,15 +288,13 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('fires success toast on add', async () => {
-            const user = userEvent.setup();
             const showToast = jest.fn();
             const onAddItem = jest.fn().mockResolvedValue(99);
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onAddItem, showToast, priceBreakdowns: []})} />);
 
-            await user.click(screen.getByRole('button', {name: /add first item/i}));
-            await user.click(screen.getByLabelText(/item name/i));
-            await user.paste('New Charge');
-            await user.click(screen.getByRole('button', {name: /add item/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add first item/i}));
+            fireEvent.change(screen.getByLabelText(/item name/i), {target: {value: 'New Charge'}});
+            fireEvent.click(screen.getByRole('button', {name: /add item/i}));
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/Added.*New Charge/), 'success');
@@ -319,15 +302,13 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('fires error toast on add failure', async () => {
-            const user = userEvent.setup();
             const showToast = jest.fn();
             const onAddItem = jest.fn().mockRejectedValue(new Error('nope'));
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onAddItem, showToast, priceBreakdowns: []})} />);
 
-            await user.click(screen.getByRole('button', {name: /add first item/i}));
-            await user.click(screen.getByLabelText(/item name/i));
-            await user.paste('New Charge');
-            await user.click(screen.getByRole('button', {name: /add item/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add first item/i}));
+            fireEvent.change(screen.getByLabelText(/item name/i), {target: {value: 'New Charge'}});
+            fireEvent.click(screen.getByRole('button', {name: /add item/i}));
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith('nope', 'error');
@@ -338,26 +319,24 @@ describe('PriceBreakdownDialog', () => {
     // ── Close / Save ─────────────────────────────────────────────────
     describe('Close Functionality', () => {
         it('calls onClose when close button or Cancel is clicked', async () => {
-            const user = userEvent.setup();
             const onClose = jest.fn();
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onClose})} />);
 
-            await user.click(screen.getByTestId('CloseIcon').closest('button')!);
+            fireEvent.click(screen.getByTestId('CloseIcon').closest('button')!);
             expect(onClose).toHaveBeenCalledTimes(1);
 
             onClose.mockClear();
-            await user.click(screen.getByRole('button', {name: /cancel/i}));
+            fireEvent.click(screen.getByRole('button', {name: /cancel/i}));
             expect(onClose).toHaveBeenCalledTimes(1);
         });
     });
 
     describe('Save Functionality', () => {
         it('calls onSave with total revenue when Save & Close is clicked', async () => {
-            const user = userEvent.setup();
             const onSave = jest.fn();
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onSave})} />);
 
-            await user.click(screen.getByRole('button', {name: /save & close/i}));
+            fireEvent.click(screen.getByRole('button', {name: /save & close/i}));
             expect(onSave).toHaveBeenCalledWith(140);
         });
     });
@@ -365,14 +344,11 @@ describe('PriceBreakdownDialog', () => {
     // ── Live Preview ─────────────────────────────────────────────────
     describe('Live Preview', () => {
         it('displays live preview with calculated profit', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({priceBreakdowns: []})} />);
 
-            await user.click(screen.getByRole('button', {name: /add first item/i}));
-            await user.click(screen.getByLabelText(/revenue amount/i));
-            await user.paste('100');
-            await user.click(screen.getByLabelText(/cost amount/i));
-            await user.paste('60');
+            fireEvent.click(screen.getByRole('button', {name: /add first item/i}));
+            fireEvent.change(screen.getByLabelText(/revenue amount/i), {target: {value: '100'}});
+            fireEvent.change(screen.getByLabelText(/cost amount/i), {target: {value: '60'}});
 
             expect(screen.getByText('Live Preview')).toBeInTheDocument();
             // Profit should be 100 - 60 = 40
@@ -383,26 +359,22 @@ describe('PriceBreakdownDialog', () => {
     // ── Form Validation ──────────────────────────────────────────────
     describe('Form Validation', () => {
         it('requires only item name; cost defaults to 0', async () => {
-            const user = userEvent.setup();
             const onAddItem = jest.fn().mockResolvedValue(99);
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onAddItem, priceBreakdowns: []})} />);
 
-            await user.click(screen.getByRole('button', {name: /add first item/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add first item/i}));
 
             // Submit button disabled when name is missing, even with cost filled
-            await user.click(screen.getByLabelText(/cost amount/i));
-            await user.paste('30');
+            fireEvent.change(screen.getByLabelText(/cost amount/i), {target: {value: '30'}});
             expect(screen.getByRole('button', {name: /add item/i})).toBeDisabled();
 
             // With a name filled and cost cleared, submit becomes enabled
-            const costInput = screen.getByLabelText(/cost amount/i) as HTMLInputElement;
-            await user.clear(costInput);
-            await user.click(screen.getByLabelText(/item name/i));
-            await user.paste('Only Name');
+            fireEvent.change(screen.getByLabelText(/cost amount/i), {target: {value: ''}});
+            fireEvent.change(screen.getByLabelText(/item name/i), {target: {value: 'Only Name'}});
             const submit = screen.getByRole('button', {name: /add item/i});
             expect(submit).toBeEnabled();
 
-            await user.click(submit);
+            fireEvent.click(submit);
             await waitFor(() => {
                 expect(onAddItem).toHaveBeenCalledWith(expect.objectContaining({
                     name: 'Only Name',

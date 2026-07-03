@@ -555,10 +555,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[RVW_stpActivateJob]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[sp_AddJobAccessorial]",
          "ObjectType": 1
       },
@@ -575,7 +571,7 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[uspRestoreJob]",
+         "Name": "[dbo].[uspRestoreJobs]",
          "ObjectType": 1
       },
       {

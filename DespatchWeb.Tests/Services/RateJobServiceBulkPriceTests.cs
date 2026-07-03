@@ -181,6 +181,32 @@ public class RateJobServiceBulkPriceTests : IDisposable
     }
 
     [Fact]
+    public async Task ApplyBulkPriceUpdateAsync_GrossMode_WhenRepositoryThrows_PropagatesFailure()
+    {
+        // With the atomic write, a failed update commits nothing. The service must surface the
+        // failure (so the endpoint returns an error) rather than swallow it and report a false
+        // success — this is the "reported failure even though it worked" bug turned inside out:
+        // a genuine failure must be reported as a failure, and a success as a success.
+        var fileMock = CreateMockFile("test.csv", string.Empty);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, Amount = 200m }]);
+
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
+            {
+                [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false }
+            });
+
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns<IReadOnlySet<int>>(_ => throw new Exception("DB write failed"));
+
+        var service = CreateService();
+
+        // Act / Assert - the write failure propagates; no partial/false success response is returned.
+        await Assert.ThrowsAsync<Exception>(() => service.ApplyBulkPriceUpdateAsync(fileMock, "gross"));
+    }
+
+    [Fact]
     public async Task ApplyBulkPriceUpdateAsync_GrossMode_RetainsOldAmountWhenNewIsNull()
     {
         // Arrange
@@ -887,8 +913,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
-                stream.CopyTo(callInfo.Arg<Stream>());
-                return Task.CompletedTask;
+                return stream.CopyToAsync(callInfo.Arg<Stream>());
             });
 
         return fileMock;

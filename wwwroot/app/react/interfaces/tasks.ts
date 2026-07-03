@@ -73,6 +73,10 @@ export interface TaskAssignStaffRequest {
     staffId: number;
 }
 
+export interface TaskUnassignRequest {
+    eventId: number;
+}
+
 export interface TaskApiResponse {
     id: number;
     title: string;

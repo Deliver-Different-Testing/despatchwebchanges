@@ -108,6 +108,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         config: configOverrides,
         onTaskUpdated,
         onTaskClick,
+        onContextMenu,
         currentUserId,
         tasksService,
         dispatchService,
@@ -173,6 +174,13 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
 
         onTaskClick?.(task);
     }, [config.onTaskClick, config.autoAssignOnClick, onTaskClick, task, currentUserId, assignToCurrentUser]);
+
+    const handleContextMenu = useCallback((event: React.MouseEvent) => {
+        if (!onContextMenu) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onContextMenu(task, event);
+    }, [onContextMenu, task]);
 
     const handleCheckboxChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         event.stopPropagation();
@@ -286,6 +294,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box
                 onClick={handleTaskClick}
+                onContextMenu={handleContextMenu}
                 sx={(theme) => ({
                     display: 'flex',
                     alignItems: compact ? 'center' : 'flex-start',

@@ -178,9 +178,9 @@ describe('RecurringJobFields', () => {
         expect(tip.textContent).toMatch(/Stop Date/);
     });
 
-    it('renders an Add-flight card (not the saved-flight editor) for a non-flight booking and fires onAddFlight', () => {
+    it('renders an Add-flight card (not the saved-flight editor) for a flight job with no route yet and fires onAddFlight', () => {
         const onAddFlight = jest.fn();
-        const job = createMockJob({preBook: true, fromAirportId: undefined, toAirportId: undefined});
+        const job = createMockJob({preBook: true, isFlightJob: true, fromAirportId: undefined, toAirportId: undefined});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onAddFlight})} />);
 
         // The editable saved-flight card is absent; the add-flight prompt is shown.
@@ -191,8 +191,8 @@ describe('RecurringJobFields', () => {
         expect(onAddFlight).toHaveBeenCalled();
     });
 
-    it('renders the Flight card with the saved flight number for a flight booking', () => {
-        const job = createMockJob({preBook: true, fromAirportId: 1, toAirportId: 2, savedFlightNumber: 'NZ123'});
+    it('renders the Flight card with the saved flight number for a flight job with a route', () => {
+        const job = createMockJob({preBook: true, isFlightJob: true, fromAirportId: 1, toAirportId: 2, savedFlightNumber: 'NZ123'});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
         expect(screen.getByText('Saved Flight')).toBeInTheDocument();
         expect(screen.getByText('NZ123')).toBeInTheDocument();
@@ -200,7 +200,7 @@ describe('RecurringJobFields', () => {
 
     it('shows "Not set" and fires onEditSavedFlight when the Flight card is clicked', () => {
         const onEditSavedFlight = jest.fn();
-        const job = createMockJob({preBook: true, fromAirportId: 1, toAirportId: 2, savedFlightNumber: undefined});
+        const job = createMockJob({preBook: true, isFlightJob: true, fromAirportId: 1, toAirportId: 2, savedFlightNumber: undefined});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onEditSavedFlight})} />);
 
         // The Flight card's row shows "Not set" (date rows may too — scope to this row).
@@ -208,5 +208,12 @@ describe('RecurringJobFields', () => {
         expect(within(flightRow).getByText('Not set')).toBeInTheDocument();
         fireEvent.click(screen.getByText('Saved Flight'));
         expect(onEditSavedFlight).toHaveBeenCalled();
+    });
+
+    it('shows no flight card for a non-flight job, even when airports are set', () => {
+        const job = createMockJob({preBook: true, isFlightJob: false, fromAirportId: 1, toAirportId: 2, savedFlightNumber: 'NZ123'});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
+        expect(screen.queryByText('Saved Flight')).not.toBeInTheDocument();
+        expect(screen.queryByText('Add flight')).not.toBeInTheDocument();
     });
 });

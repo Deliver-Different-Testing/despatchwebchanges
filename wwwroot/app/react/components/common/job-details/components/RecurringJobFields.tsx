@@ -146,9 +146,12 @@ export function RecurringJobFields({
 }: RecurringJobFieldsProps) {
     if (!job.preBook) return null;
 
-    // Flight bookings are those with a departure/arrival airport set — only
-    // they get the saved-flight picker.
-    const isFlight = job.fromAirportId != null || job.toAirportId != null;
+    // Flight jobs are identified by speed grouping (same rule as live jobs) —
+    // only they get the flight picker. Within a flight job, a set from/to
+    // airport means a route already exists (edit the saved flight); otherwise
+    // the operator adds a flight (which also collects the route airports).
+    const isFlightJob = job.isFlightJob === true;
+    const hasRoute = job.fromAirportId != null || job.toAirportId != null;
 
     const toggleDay = (day: DaysOfWeek) => {
         const newDays = daysOfWeekArray.includes(day)
@@ -282,7 +285,7 @@ export function RecurringJobFields({
             </Box>
 
             {/* Card 3 — Saved Flight (flight bookings only) */}
-            {isFlight && (
+            {isFlightJob && hasRoute && (
                 <Box sx={cardContainerSx}>
                     <SectionHeader
                         icon={FlightTakeoffIcon}
@@ -317,7 +320,7 @@ export function RecurringJobFields({
                 flight to a recurring booking that was created without airports:
                 the dialog collects From/To airports + flight number and the
                 push-to-live auto-assign takes over from there. */}
-            {!isFlight && (
+            {isFlightJob && !hasRoute && (
                 <Box sx={cardContainerSx}>
                     <SectionHeader
                         icon={FlightTakeoffIcon}

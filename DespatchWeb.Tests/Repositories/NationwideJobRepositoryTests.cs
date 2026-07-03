@@ -674,6 +674,69 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetAllActiveAirportSuggestionsAsync_IncludesAirportsWithoutAgents()
+    {
+        // Arrange
+        _context.TblAirports.AddRange(
+            CreateAirport(1, "Airport With Agents", -37.0082m, 174.7850m, true),
+            CreateAirport(2, "Airport Without Agents", -33.9399m, 151.1753m, true)
+        );
+
+        _context.TucAgents.Add(CreateAgent(1, "Test Agent"));
+        _context.AgentVehicles.Add(new AgentVehicle
+        {
+            AgentVehicleId = 1,
+            AgentId = 1,
+            AirportId = 1,
+            VehicleSizeId = 1
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAllActiveAirportSuggestionsAsync();
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, a => a.Text == "Airport With Agents");
+        Assert.Contains(result, a => a.Text == "Airport Without Agents");
+    }
+
+    [Fact]
+    public async Task GetAllActiveAirportSuggestionsAsync_ExcludesInactiveAirports()
+    {
+        // Arrange
+        _context.TblAirports.AddRange(
+            CreateAirport(1, "Active Airport", -37.0082m, 174.7850m, true),
+            CreateAirport(2, "Inactive Airport", -33.9399m, 151.1753m, false)
+        );
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAllActiveAirportSuggestionsAsync();
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Active Airport", result[0].Text);
+    }
+
+    [Fact]
+    public async Task GetAllActiveAirportSuggestionsAsync_WithNoAirports_ReturnsEmptyList()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAllActiveAirportSuggestionsAsync();
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async Task RestoreNationwideJobAsync_WithExistingJob_DoesNotThrow()
     {
         // Arrange

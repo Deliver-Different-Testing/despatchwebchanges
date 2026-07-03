@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {screen, waitFor, act} from '@testing-library/react';
+import {fireEvent, screen, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithTheme} from '../../__testUtils__';
 import {JobListContextMenu} from './JobListContextMenu';
@@ -386,11 +386,10 @@ describe('JobListContextMenu', () => {
 
     describe('Action Handlers — Direct API Calls', () => {
         it('Mark as Unread calls updateJobReadStatus and shows success toast', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({job: createMockJob({hasBeenRead: true})});
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Mark as Unread'));
+            fireEvent.click(screen.getByText('Mark as Unread'));
 
             await waitFor(() => {
                 expect(mockedApi.updateJobReadStatus).toHaveBeenCalledWith(1, false);
@@ -400,11 +399,10 @@ describe('JobListContextMenu', () => {
         });
 
         it('Mark as Read calls updateJobReadStatus with true', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({job: createMockJob({hasBeenRead: false})});
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Mark as Read'));
+            fireEvent.click(screen.getByText('Mark as Read'));
 
             await waitFor(() => {
                 expect(mockedApi.updateJobReadStatus).toHaveBeenCalledWith(1, true);
@@ -414,11 +412,10 @@ describe('JobListContextMenu', () => {
 
         it('Mark Read/Unread error shows error toast', async () => {
             mockedApi.updateJobReadStatus.mockRejectedValueOnce(new Error('Network error'));
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Mark as Unread'));
+            fireEvent.click(screen.getByText('Mark as Unread'));
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith('Error marking job as read/unread', 'error');
@@ -426,13 +423,12 @@ describe('JobListContextMenu', () => {
         });
 
         it('Reprice calls moveJobToReprice with toast and refresh', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({speedId: 415, internalStatusId: 1, preBook: false}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Reprice Job'));
+            fireEvent.click(screen.getByText('Reprice Job'));
 
             await waitFor(() => {
                 expect(mockedApi.moveJobToReprice).toHaveBeenCalledWith(1);
@@ -442,13 +438,12 @@ describe('JobListContextMenu', () => {
         });
 
         it('Re-Dispatch opens the universal dispatch dialog with Courier pre-selected', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({assignedCourier: {id: 5, text: 'Courier A'}}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Re-Dispatch'));
+            fireEvent.click(screen.getByText('Re-Dispatch'));
 
             const dialog = await screen.findByTestId('dispatch-dialog');
             expect(dialog).toHaveAttribute('data-initial-type', 'Courier');
@@ -459,14 +454,13 @@ describe('JobListContextMenu', () => {
         it('Re-Dispatch confirm invalidates job detail cache so detail panel refreshes', async () => {
             const {queryClient: qc} = await import('../../query/queryClient');
             const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({assignedCourier: {id: 5, text: 'Courier A'}}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Re-Dispatch'));
-            await user.click(await screen.findByText('Stub Dispatch Courier'));
+            fireEvent.click(screen.getByText('Re-Dispatch'));
+            fireEvent.click(await screen.findByText('Stub Dispatch Courier'));
 
             await waitFor(() => {
                 expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs']});
@@ -475,11 +469,10 @@ describe('JobListContextMenu', () => {
         });
 
         it('Restore calls restoreJobs with jobId array and refreshes', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Restore'));
+            fireEvent.click(screen.getByText('Restore'));
 
             await waitFor(() => {
                 expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1]);
@@ -488,11 +481,10 @@ describe('JobListContextMenu', () => {
         });
 
         it('Mark Missing calls markJobMissing with toast and refresh', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Mark Missing'));
+            fireEvent.click(screen.getByText('Mark Missing'));
 
             await waitFor(() => {
                 expect(mockedApi.markJobMissing).toHaveBeenCalledWith(1);
@@ -502,13 +494,12 @@ describe('JobListContextMenu', () => {
         });
 
         it('Add Task Other calls openAddEventDialog with correct shape and refreshes', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({id: 42, jobNo: 'J042', client: 'Acme', clientId: 200}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Add Task - Other'));
+            fireEvent.click(screen.getByText('Add Task - Other'));
 
             await waitFor(() => {
                 expect(mockedOpenAddEventDialog).toHaveBeenCalledWith({
@@ -524,34 +515,30 @@ describe('JobListContextMenu', () => {
 
     describe('Late Call Dialog', () => {
         it('clicking Late Pickup opens dialog with "Late Pickup" title', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
 
-            await user.click(screen.getByText('Late Pickup'));
+            fireEvent.click(screen.getByText('Late Pickup'));
 
             expect(screen.getByText('Late Pickup', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
         });
 
         it('clicking Late Delivery opens dialog with "Late Delivery" title', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
 
-            await user.click(screen.getByText('Late Delivery'));
+            fireEvent.click(screen.getByText('Late Delivery'));
 
             expect(screen.getByText('Late Delivery', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
         });
 
         it('submitting with valid minutes calls lateCall with lateType=1 for pickup', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Late Pickup'));
+            fireEvent.click(screen.getByText('Late Pickup'));
 
             const input = screen.getByLabelText('Minutes');
-            await user.click(input);
-            await user.paste('15');
-            await user.click(screen.getByText('Save'));
+            fireEvent.change(input, {target: {value: '15'}});
+            fireEvent.click(screen.getByText('Save'));
 
             await waitFor(() => {
                 expect(mockedApi.lateCall).toHaveBeenCalledWith({
@@ -566,16 +553,14 @@ describe('JobListContextMenu', () => {
         });
 
         it('submitting with valid minutes calls lateCall with lateType=2 for delivery', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Late Delivery'));
+            fireEvent.click(screen.getByText('Late Delivery'));
 
             const input = screen.getByLabelText('Minutes');
-            await user.click(input);
-            await user.paste('30');
-            await user.click(screen.getByText('Save'));
+            fireEvent.change(input, {target: {value: '30'}});
+            fireEvent.click(screen.getByText('Save'));
 
             await waitFor(() => {
                 expect(mockedApi.lateCall).toHaveBeenCalledWith({
@@ -588,15 +573,15 @@ describe('JobListContextMenu', () => {
         });
 
         it('Enter key submits the dialog', async () => {
+            // Kept as userEvent: asserts keyboard submission behaviour
             const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Late Pickup'));
+            fireEvent.click(screen.getByText('Late Pickup'));
 
             const input = screen.getByLabelText('Minutes');
-            await user.click(input);
-            await user.paste('10');
+            fireEvent.change(input, {target: {value: '10'}});
             await user.keyboard('{Enter}');
 
             await waitFor(() => {
@@ -607,13 +592,12 @@ describe('JobListContextMenu', () => {
         });
 
         it('Cancel closes dialog without API call', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
 
-            await user.click(screen.getByText('Late Pickup'));
+            fireEvent.click(screen.getByText('Late Pickup'));
             expect(screen.getByLabelText('Minutes')).toBeInTheDocument();
 
-            await user.click(screen.getByText('Cancel'));
+            fireEvent.click(screen.getByText('Cancel'));
 
             await waitFor(() => {
                 expect(screen.queryByLabelText('Minutes')).not.toBeInTheDocument();
@@ -621,11 +605,10 @@ describe('JobListContextMenu', () => {
             expect(mockedApi.lateCall).not.toHaveBeenCalled();
         });
 
-        it('empty minutes disables the Save button', async () => {
-            const user = userEvent.setup();
+        it('empty minutes disables the Save button', () => {
             renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
 
-            await user.click(screen.getByText('Late Pickup'));
+            fireEvent.click(screen.getByText('Late Pickup'));
 
             // Save button should be disabled when input is empty
             const saveButton = screen.getByRole('button', {name: 'Save'});
@@ -635,15 +618,13 @@ describe('JobListContextMenu', () => {
 
         it('API error shows error toast', async () => {
             mockedApi.lateCall.mockRejectedValueOnce(new Error('Server error'));
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Late Pickup'));
+            fireEvent.click(screen.getByText('Late Pickup'));
             const input = screen.getByLabelText('Minutes');
-            await user.click(input);
-            await user.paste('5');
-            await user.click(screen.getByText('Save'));
+            fireEvent.change(input, {target: {value: '5'}});
+            fireEvent.click(screen.getByText('Save'));
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith('Error applying late pickup', 'error');
@@ -655,7 +636,6 @@ describe('JobListContextMenu', () => {
 
     describe('Confirmation Dialogs', () => {
         it('Unassign Flight: shows confirmation, OK calls restoreNationwideJob', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 appPage: AppPageEnum.Domestic,
                 job: createMockJob({
@@ -670,12 +650,12 @@ describe('JobListContextMenu', () => {
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Unassign Flight'));
+            fireEvent.click(screen.getByText('Unassign Flight'));
 
             // Confirmation dialog should be visible
             expect(screen.getByText('Unassign Flight?')).toBeInTheDocument();
 
-            await user.click(screen.getByText('OK'));
+            fireEvent.click(screen.getByText('OK'));
 
             await waitFor(() => {
                 expect(mockedApi.restoreNationwideJob).toHaveBeenCalledWith(1);
@@ -684,8 +664,7 @@ describe('JobListContextMenu', () => {
             expect(props.onRefresh).toHaveBeenCalled();
         });
 
-        it('Unassign Flight: cancel does not call API', async () => {
-            const user = userEvent.setup();
+        it('Unassign Flight: cancel does not call API', () => {
             renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Domestic,
                 job: createMockJob({
@@ -699,14 +678,13 @@ describe('JobListContextMenu', () => {
                 }),
             })} />);
 
-            await user.click(screen.getByText('Unassign Flight'));
-            await user.click(screen.getByText('Cancel'));
+            fireEvent.click(screen.getByText('Unassign Flight'));
+            fireEvent.click(screen.getByText('Cancel'));
 
             expect(mockedApi.restoreNationwideJob).not.toHaveBeenCalled();
         });
 
         it('Unassign Agent: shows confirmation, OK calls restoreNationwideJob', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 appPage: AppPageEnum.Domestic,
                 job: createMockJob({
@@ -718,10 +696,10 @@ describe('JobListContextMenu', () => {
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Unassign Agent'));
+            fireEvent.click(screen.getByText('Unassign Agent'));
             expect(screen.getByText('Unassign Agent?')).toBeInTheDocument();
 
-            await user.click(screen.getByText('OK'));
+            fireEvent.click(screen.getByText('OK'));
 
             await waitFor(() => {
                 expect(mockedApi.restoreNationwideJob).toHaveBeenCalledWith(1);
@@ -730,17 +708,16 @@ describe('JobListContextMenu', () => {
         });
 
         it('Send to Live: shows confirmation, confirm calls releaseBulkJob', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: false}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to Live'));
+            fireEvent.click(screen.getByText('Send to Live'));
             expect(screen.getByRole('heading', {name: /send to live/i})).toBeInTheDocument();
             expect(screen.getByText(/Release bulk job J001 to the live dispatch screen/)).toBeInTheDocument();
 
-            await user.click(screen.getByRole('button', {name: /^send to live$/i}));
+            fireEvent.click(screen.getByRole('button', {name: /^send to live$/i}));
 
             await waitFor(() => {
                 expect(mockedApi.releaseBulkJob).toHaveBeenCalledWith(1);
@@ -758,7 +735,6 @@ describe('JobListContextMenu', () => {
         });
 
         it('Send to Live: surfaces the server error message instead of a generic failure', async () => {
-            const user = userEvent.setup();
             mockedApi.releaseBulkJob.mockRejectedValueOnce({
                 message: 'Bulk job 1 not found — no parent or child rows matched.',
             });
@@ -767,8 +743,8 @@ describe('JobListContextMenu', () => {
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to Live'));
-            await user.click(screen.getByRole('button', {name: /^send to live$/i}));
+            fireEvent.click(screen.getByText('Send to Live'));
+            fireEvent.click(screen.getByRole('button', {name: /^send to live$/i}));
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith(
@@ -779,16 +755,15 @@ describe('JobListContextMenu', () => {
         });
 
         it('Set First Job: shows confirmation, OK calls setFirstJob with jobId and courierId', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({courierData: {courierId: 77, courierNumber: 'C77', courier: 'Test'} as any}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Set First Job'));
+            fireEvent.click(screen.getByText('Set First Job'));
             expect(screen.getByText('Set First Job?')).toBeInTheDocument();
 
-            await user.click(screen.getByText('OK'));
+            fireEvent.click(screen.getByText('OK'));
 
             await waitFor(() => {
                 expect(mockedApi.setFirstJob).toHaveBeenCalledWith(1, 77);
@@ -800,30 +775,28 @@ describe('JobListContextMenu', () => {
     // ── 5. Callback-Based Actions ───────────────────────────────────────
 
     describe('Callback-Based Actions', () => {
-        it('Add Stop calls onAddStop prop with the job', async () => {
-            const user = userEvent.setup();
+        it('Add Stop calls onAddStop prop with the job', () => {
             const job = createMockJob({isAgentJob: true});
             const props = createDefaultProps({job});
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Add Delivery Stop'));
+            fireEvent.click(screen.getByText('Add Delivery Stop'));
 
             expect(props.onAddStop).toHaveBeenCalledWith(job);
         });
 
         it('Split Job shows confirmation dialog, OK calls executeSplitJobFlow', async () => {
-            const user = userEvent.setup();
             const job = createMockJob({allowSplit: true, _groupChildren: []});
             const props = createDefaultProps({job});
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Split Job'));
+            fireEvent.click(screen.getByText('Split Job'));
 
             // Confirmation dialog should be visible
             expect(screen.getByText('Split Job', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
             expect(screen.getByText('Are you sure you wish to split this job?')).toBeInTheDocument();
 
-            await user.click(screen.getByText('OK'));
+            fireEvent.click(screen.getByText('OK'));
 
             await waitFor(() => {
                 expect(mockedExecuteSplitJobFlow).toHaveBeenCalledWith(
@@ -835,14 +808,13 @@ describe('JobListContextMenu', () => {
             });
         });
 
-        it('Split Job cancel does not call executeSplitJobFlow', async () => {
-            const user = userEvent.setup();
+        it('Split Job cancel does not call executeSplitJobFlow', () => {
             const job = createMockJob({allowSplit: true, _groupChildren: []});
             const props = createDefaultProps({job});
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Split Job'));
-            await user.click(screen.getByText('Cancel'));
+            fireEvent.click(screen.getByText('Split Job'));
+            fireEvent.click(screen.getByText('Cancel'));
 
             expect(mockedExecuteSplitJobFlow).not.toHaveBeenCalled();
         });
@@ -852,11 +824,10 @@ describe('JobListContextMenu', () => {
 
     describe('Window Global Dialogs', () => {
         it('Void Job calls window.ReactVoidJobConfirmationDialog.open and refreshes on success', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Void Job'));
+            fireEvent.click(screen.getByText('Void Job'));
 
             await waitFor(() => {
                 expect((window as any).ReactVoidJobConfirmationDialog.open).toHaveBeenCalledWith(
@@ -870,11 +841,10 @@ describe('JobListContextMenu', () => {
         it('Void Job invalidates job list cache so list refreshes after void', async () => {
             const {queryClient: qc} = await import('../../query/queryClient');
             const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Void Job'));
+            fireEvent.click(screen.getByText('Void Job'));
 
             await waitFor(() => {
                 expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs']});
@@ -886,11 +856,10 @@ describe('JobListContextMenu', () => {
             (window as any).ReactVoidJobConfirmationDialog = {open: jest.fn().mockResolvedValue(null)};
             const {queryClient: qc} = await import('../../query/queryClient');
             const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Void Job'));
+            fireEvent.click(screen.getByText('Void Job'));
 
             await waitFor(() => {
                 expect((window as any).ReactVoidJobConfirmationDialog.open).toHaveBeenCalled();
@@ -901,13 +870,12 @@ describe('JobListContextMenu', () => {
         });
 
         it('Swap PODs calls window.ReactSwapPodsDialog.open and refreshes on success', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({done: true, isBulkJob: false, preBook: false}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Swap PODs'));
+            fireEvent.click(screen.getByText('Swap PODs'));
 
             await waitFor(() => {
                 expect((window as any).ReactSwapPodsDialog.open).toHaveBeenCalledWith(
@@ -929,28 +897,25 @@ describe('JobListContextMenu', () => {
         // behavior: that groups appear in the submenu and clicking them works.
 
         it('clicking Task Groups opens submenu with group items', async () => {
-            const user = userEvent.setup();
             renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
 
             // Allow useEffect to settle (may or may not call API depending on cache)
             await act(async () => {});
 
-            await user.click(screen.getByText('Task Groups'));
+            fireEvent.click(screen.getByText('Task Groups'));
 
             expect(await screen.findByText('Pickup Events')).toBeInTheDocument();
             expect(screen.getByText('Delivery Events')).toBeInTheDocument();
         });
 
         it('clicking a group calls openEventGroupDialog with correct groupId/jobId', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
             await act(async () => {});
 
-            await user.click(screen.getByText('Task Groups'));
-
-            await user.click(await screen.findByText('Pickup Events'));
+            fireEvent.click(screen.getByText('Task Groups'));
+            fireEvent.click(await screen.findByText('Pickup Events'));
 
             await waitFor(() => {
                 expect(mockedOpenEventGroupDialog).toHaveBeenCalledWith({
@@ -967,18 +932,16 @@ describe('JobListContextMenu', () => {
 
     describe('Send to Partner (post-confirm)', () => {
         it('opens the dispatch dialog with DFRNT Partner pre-selected', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to Partner'));
+            fireEvent.click(screen.getByText('Send to Partner'));
 
             const dialog = await screen.findByTestId('dispatch-dialog');
             expect(dialog).toHaveAttribute('data-initial-type', 'DfrntPartner');
         });
 
         it('copies the job number, surfaces an Open toast action, and opens the job in search when clicked', async () => {
-            const user = userEvent.setup();
             const writeTextMock = jest.fn().mockResolvedValue(undefined);
             Object.defineProperty(navigator, 'clipboard', {
                 value: {writeText: writeTextMock},
@@ -996,8 +959,8 @@ describe('JobListContextMenu', () => {
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to Partner'));
-            await user.click(await screen.findByText('Stub Send To Partner'));
+            fireEvent.click(screen.getByText('Send to Partner'));
+            fireEvent.click(await screen.findByText('Stub Send To Partner'));
 
             await waitFor(() => {
                 expect(mockedApi.sendToPartner).toHaveBeenCalledWith(42, 7, 100);
@@ -1025,7 +988,6 @@ describe('JobListContextMenu', () => {
 
     describe('Re-Dispatch (universal dialog)', () => {
         it('opens the dispatch dialog and re-allocates when a courier is picked', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({
                     id: 11,
@@ -1035,11 +997,11 @@ describe('JobListContextMenu', () => {
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Re-Dispatch'));
+            fireEvent.click(screen.getByText('Re-Dispatch'));
             const dialog = await screen.findByTestId('dispatch-dialog');
             expect(dialog).toHaveAttribute('data-initial-type', 'Courier');
 
-            await user.click(screen.getByText('Stub Dispatch Courier'));
+            fireEvent.click(screen.getByText('Stub Dispatch Courier'));
 
             await waitFor(() => {
                 expect(mockedApi.reAllocateJobs).toHaveBeenCalledWith(99, [11]);
@@ -1047,17 +1009,16 @@ describe('JobListContextMenu', () => {
         });
 
         it('allocates (not reallocates) when the job has no courier yet', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({id: 22, jobNo: 'J022'}),
             });
             mockedApi.allocateJobs.mockResolvedValue(undefined);
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to Partner'));
+            fireEvent.click(screen.getByText('Send to Partner'));
 
             // Switch the dialog stub to Courier dispatch using the same Stub button.
-            await user.click(screen.getByText('Stub Dispatch Courier'));
+            fireEvent.click(screen.getByText('Stub Dispatch Courier'));
 
             await waitFor(() => {
                 expect(mockedApi.allocateJobs).toHaveBeenCalledWith(99, [22]);
@@ -1069,37 +1030,34 @@ describe('JobListContextMenu', () => {
     // ── 8. Menu Closing ─────────────────────────────────────────────────
 
     describe('Menu Closing', () => {
-        it('action handlers call onClose before their action', async () => {
-            const user = userEvent.setup();
+        it('action handlers call onClose before their action', () => {
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Mark as Unread'));
+            fireEvent.click(screen.getByText('Mark as Unread'));
 
             // onClose should have been called
             expect(props.onClose).toHaveBeenCalled();
         });
 
-        it('callback-based actions call onClose', async () => {
-            const user = userEvent.setup();
+        it('callback-based actions call onClose', () => {
             const props = createDefaultProps({
                 job: createMockJob({isAgentJob: true}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Add Delivery Stop'));
+            fireEvent.click(screen.getByText('Add Delivery Stop'));
 
             expect(props.onClose).toHaveBeenCalled();
         });
 
-        it('confirmation dialog actions call onClose', async () => {
-            const user = userEvent.setup();
+        it('confirmation dialog actions call onClose', () => {
             const props = createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: false}),
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to Live'));
+            fireEvent.click(screen.getByText('Send to Live'));
 
             expect(props.onClose).toHaveBeenCalled();
         });

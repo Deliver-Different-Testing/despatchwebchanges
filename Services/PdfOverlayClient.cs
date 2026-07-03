@@ -54,7 +54,11 @@ public sealed class PdfOverlayClient(
                 return null;
             }
 
-            if (res.IsSuccessStatusCode) return await res.Content.ReadAsByteArrayAsync(ct);
+            if (res.IsSuccessStatusCode)
+            {
+                return await res.Content.ReadAsByteArrayAsync(ct);
+            }
+
             Log.Warning("PDF Overlay render-job for job {JobId} ({DocType}) returned {Status} — falling back",
                 jobId, documentType, (int)res.StatusCode);
             return null;

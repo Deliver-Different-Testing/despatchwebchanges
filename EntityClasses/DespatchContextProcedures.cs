@@ -922,39 +922,6 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> RVW_stpActivateJobAsync(int? jobID, string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "JobID",
-                    Value = jobID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "UserName",
-                    Size = 150,
-                    Value = userName ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[RVW_stpActivateJob] @JobID = @JobID, @UserName = @UserName", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
         public virtual async Task<List<sp_AddJobAccessorialResult>> sp_AddJobAccessorialAsync(int? jobId, int? accessorialChargeId, decimal? inputValue, int? itemCount, string addedAtStage, string userName, string notes, OutputParameter<decimal?> newJobTotal, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterNewJobTotal = new SqlParameter
@@ -1111,7 +1078,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> uspRestoreJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> uspRestoreJobsAsync(string jobIDs, bool? forceRestoreCompleted, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1124,13 +1091,20 @@ namespace DespatchWeb.EntityClasses
             {
                 new SqlParameter
                 {
-                    ParameterName = "intJobID",
-                    Value = intJobID ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
+                    ParameterName = "JobIDs",
+                    Size = 8000,
+                    Value = jobIDs ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ForceRestoreCompleted",
+                    Value = forceRestoreCompleted ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[uspRestoreJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[uspRestoreJobs] @JobIDs = @JobIDs, @ForceRestoreCompleted = @ForceRestoreCompleted", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

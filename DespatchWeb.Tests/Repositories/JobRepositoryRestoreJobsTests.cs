@@ -1,6 +1,5 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -9,12 +8,6 @@ namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
 /// Tests for restoring/re-dispatching jobs back onto the dispatch board.
-///
-/// Regression cover for the GuardCompletedJobsAgainstSilentRestore migration: uspRestoreJob
-/// now no-ops on a genuinely-completed job (ucjbJobDone = 1 AND ucjbVoid = 0), leaving its
-/// POD/completion-time evidence in place, which the DESWEB_qryDespatch view filters out. So a
-/// completed job restored via uspRestoreJob never reappears on dispatch. Completed jobs must be
-/// re-opened via RVW_stpActivateJob instead, which clears that evidence.
 /// </summary>
 public class JobRepositoryRestoreJobsTests : IAsyncDisposable
 {
@@ -51,84 +44,34 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         _jobApiClient
     );
 
-    private Task<int> AssertActivated(int jobId) =>
-        _procedures.Received(1).RVW_stpActivateJobAsync(jobId, Arg.Any<string>(),
-            Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
-
-    private Task<int> AssertNotActivated(int jobId) =>
-        _procedures.DidNotReceive().RVW_stpActivateJobAsync(jobId, Arg.Any<string>(),
-            Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
-
-    private Task<int> AssertRestored(int jobId) =>
-        _procedures.Received(1).uspRestoreJobAsync(jobId,
-            Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
-
-    private Task<int> AssertNotRestored(int jobId) =>
-        _procedures.DidNotReceive().uspRestoreJobAsync(jobId,
+    private Task<int> AssertRestoredBatch(string csv) =>
+        _procedures.Received(1).uspRestoreJobsAsync(csv, false,
             Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
 
     [Fact]
-    public async Task RestoreJobsAsync_CompletedJob_ActivatesInsteadOfRestore()
+    public async Task RestoreJobsAsync_ForwardsAllIdsAsCsv_WithForceFalse()
     {
-        _context.TucJobs.Add(new TucJob
-        {
-            UcjbId = 100, UcjbNumber = "JOB-100", UcjbJobDone = true, UcjbVoid = false
-        });
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await CreateRepository().RestoreJobsAsync([201, 202, 203]);
 
-        await CreateRepository().RestoreJobsAsync([100]);
-
-        await AssertActivated(100);
-        await AssertNotRestored(100);
+        await AssertRestoredBatch("201,202,203");
     }
 
     [Fact]
-    public async Task RestoreJobsAsync_VoidedJob_UsesRestore()
+    public async Task RestoreJobsAsync_ForwardsCompletedIds_GuardIsProcSide()
     {
-        // A voided job is still restorable via uspRestoreJob (that path reverts the void).
-        _context.TucJobs.Add(new TucJob
-        {
-            UcjbId = 101, UcjbNumber = "JOB-101", UcjbJobDone = true, UcjbVoid = true
-        });
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        await CreateRepository().RestoreJobsAsync([101]);
-
-        await AssertRestored(101);
-        await AssertNotActivated(101);
-    }
-
-    [Fact]
-    public async Task RestoreJobsAsync_ActiveNotDoneJob_UsesRestore()
-    {
-        _context.TucJobs.Add(new TucJob
-        {
-            UcjbId = 102, UcjbNumber = "JOB-102", UcjbJobDone = false, UcjbVoid = false
-        });
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        await CreateRepository().RestoreJobsAsync([102]);
-
-        await AssertRestored(102);
-        await AssertNotActivated(102);
-    }
-
-    [Fact]
-    public async Task RestoreJobsAsync_MixedJobs_RoutesEachToCorrectProcedure()
-    {
-        _context.TucJobs.AddRange(
-            new TucJob { UcjbId = 200, UcjbNumber = "DONE", UcjbJobDone = true, UcjbVoid = false },
-            new TucJob { UcjbId = 201, UcjbNumber = "VOID", UcjbJobDone = true, UcjbVoid = true },
-            new TucJob { UcjbId = 202, UcjbNumber = "ACTIVE", UcjbJobDone = false, UcjbVoid = false }
-        );
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
+        // C# no longer pre-filters completed jobs; the whole selection is forwarded
+        // and uspRestoreJobs skips genuinely-completed rows itself.
         await CreateRepository().RestoreJobsAsync([200, 201, 202]);
 
-        await AssertActivated(200);
-        await AssertNotRestored(200);
-        await AssertRestored(201);
-        await AssertRestored(202);
+        await AssertRestoredBatch("200,201,202");
+    }
+
+    [Fact]
+    public async Task ReDispatchSelectedJobsAsync_ForwardsAllIdsAsCsv_WithForceFalse()
+    {
+        await CreateRepository().ReDispatchSelectedJobsAsync([300, 301]);
+
+        await AssertRestoredBatch("300,301");
     }
 
     [Fact]
@@ -136,38 +79,25 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
     {
         await CreateRepository().RestoreJobsAsync([]);
 
-        await _procedures.DidNotReceiveWithAnyArgs().RVW_stpActivateJobAsync(null, null, null, TestContext.Current.CancellationToken);
-        await _procedures.DidNotReceiveWithAnyArgs().uspRestoreJobAsync(null, null, TestContext.Current.CancellationToken);
+        await _procedures.DidNotReceiveWithAnyArgs().uspRestoreJobsAsync(
+            null, null, null, TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task RestoreJobsAsync_CompletedJob_PassesStaffNameToActivate()
+    public async Task RestoreJobsAsync_LargeSelection_ChunksIntoMultipleCalls()
     {
-        _tenantInfoService.GetStaffInfoAsync().Returns(new Suggestion { Id = 7, Text = "Jane Dispatcher" });
-        _context.TucJobs.Add(new TucJob
-        {
-            UcjbId = 400, UcjbNumber = "JOB-400", UcjbJobDone = true, UcjbVoid = false
-        });
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        // 301 ids > the 300-per-call batch size, so it splits into a 300-id chunk
+        // and a 1-id chunk rather than overflowing the nvarchar(4000) CSV.
+        var jobIds = Enumerable.Range(1, 301).ToList();
 
-        await CreateRepository().RestoreJobsAsync([400]);
+        await CreateRepository().RestoreJobsAsync(jobIds);
 
-        await _procedures.Received(1).RVW_stpActivateJobAsync(400, "Jane Dispatcher",
+        await _procedures.Received(2).uspRestoreJobsAsync(Arg.Any<string>(), false,
             Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ReDispatchSelectedJobsAsync_CompletedJob_ActivatesInsteadOfRestore()
-    {
-        _context.TucJobs.Add(new TucJob
-        {
-            UcjbId = 300, UcjbNumber = "JOB-300", UcjbJobDone = true, UcjbVoid = false
-        });
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        await CreateRepository().ReDispatchSelectedJobsAsync([300]);
-
-        await AssertActivated(300);
-        await AssertNotRestored(300);
+        await _procedures.Received(1).uspRestoreJobsAsync(
+            Arg.Is<string>(csv => csv.Split(',').Length == 300), false,
+            Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+        await _procedures.Received(1).uspRestoreJobsAsync("301", false,
+            Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
     }
 }
