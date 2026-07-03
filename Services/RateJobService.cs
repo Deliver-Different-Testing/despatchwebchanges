@@ -746,9 +746,6 @@ public sealed class RateJobService(
             var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")
                 ?.Value;
             ArgumentException.ThrowIfNullOrEmpty(tenantId);
-            var clientId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "ClientID")
-                ?.Value;
-            ArgumentException.ThrowIfNullOrEmpty(clientId);
             var timeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
             ArgumentException.ThrowIfNullOrEmpty(timeZone);
             var userName = contextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)?.Value;
@@ -758,7 +755,7 @@ public sealed class RateJobService(
                 int.Parse(tenantId),
                 connectionString,
                 timeZone,
-                int.Parse(clientId));
+                jobDetails.ClientId.Value);
 
             var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
 
