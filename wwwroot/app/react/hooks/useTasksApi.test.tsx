@@ -15,6 +15,7 @@ import {
     useUpdateTaskDate,
     useUpdateTaskTime,
     useReassignTask,
+    useUnassignTask,
 } from './useTasksApi';
 import {tasksApi} from '../services/tasksApi';
 import {Task, StaffSuggestion, EventTypeSuggestion} from '../interfaces';
@@ -31,6 +32,7 @@ jest.mock('../services/tasksApi', () => ({
         updateTaskDate: jest.fn(),
         updateTaskTime: jest.fn(),
         reassignTaskToStaff: jest.fn(),
+        unassignTask: jest.fn(),
     },
 }));
 
@@ -469,6 +471,41 @@ describe('useTasksApi Hooks', () => {
             });
 
             result.current.mutate({eventId: 123, staffId: 456});
+
+            await waitFor(() => {
+                expect(result.current.isError).toBe(true);
+            });
+
+            expect(result.current.error).toEqual(error);
+        });
+    });
+
+    describe('useUnassignTask', () => {
+        it('should unassign task successfully', async () => {
+            mockTasksApi.unassignTask.mockResolvedValueOnce(undefined);
+
+            const {result} = renderHook(() => useUnassignTask(), {
+                wrapper: createWrapper(),
+            });
+
+            result.current.mutate({eventId: 123});
+
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+
+            expect(mockTasksApi.unassignTask).toHaveBeenCalledWith(123);
+        });
+
+        it('should handle errors', async () => {
+            const error = new Error('Failed to unassign task');
+            mockTasksApi.unassignTask.mockRejectedValueOnce(error);
+
+            const {result} = renderHook(() => useUnassignTask(), {
+                wrapper: createWrapper(),
+            });
+
+            result.current.mutate({eventId: 123});
 
             await waitFor(() => {
                 expect(result.current.isError).toBe(true);

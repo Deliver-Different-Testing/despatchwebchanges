@@ -41,6 +41,7 @@ import {
     useUpdateTaskDate,
     useUpdateTaskTime,
     useReassignTask,
+    useUnassignTask,
 } from '../../../hooks/useTasksApi';
 import {tasksApi} from '../../../services/tasksApi';
 
@@ -116,6 +117,7 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
     const updateTaskDateMutation = useUpdateTaskDate();
     const updateTaskTimeMutation = useUpdateTaskTime();
     const reassignTaskMutation = useReassignTask();
+    const unassignTaskMutation = useUnassignTask();
 
     const tasksServiceForComponents = useMemo(() => ({
         markTaskAsClosed: async (eventId: number, closed: boolean) => {
@@ -130,7 +132,10 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
         reassignTaskToStaff: async (eventId: number, staffId: number) => {
             await reassignTaskMutation.mutateAsync({eventId, staffId});
         },
-    }), [markTaskAsClosedMutation, updateTaskDateMutation, updateTaskTimeMutation, reassignTaskMutation]);
+        unassignTask: async (eventId: number) => {
+            await unassignTaskMutation.mutateAsync({eventId});
+        },
+    }), [markTaskAsClosedMutation, updateTaskDateMutation, updateTaskTimeMutation, reassignTaskMutation, unassignTaskMutation]);
 
     const dispatchServiceForComponents = useMemo(() => ({
         getActiveStaff: () => tasksApi.getActiveStaff(),

@@ -170,6 +170,9 @@ public sealed partial class DeliveryJourneyService(
                 case RecurringJourneyStatus.Voided: voidedCount++; break;
                 case RecurringJourneyStatus.Pending:
                 case RecurringJourneyStatus.InProgress: pendingCount++; break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(status), status,
+                        "Unhandled recurring journey status.");
             }
 
             RecurringJourneyPodDto pod = null;

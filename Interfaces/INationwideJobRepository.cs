@@ -36,6 +36,7 @@ public interface INationwideJobRepository
     Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId);
     Task<IReadOnlyList<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
     Task<IReadOnlyList<Suggestion>> GetAllActiveAirportsWithAgentsAsync();
+    Task<IReadOnlyList<Suggestion>> GetAllActiveAirportSuggestionsAsync();
     Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request);
     Task RemoveRecoveryAgentAsync(int recoveryId);
     Task<string> GetWebhookEventsAsStringAsync();

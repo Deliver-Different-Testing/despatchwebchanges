@@ -117,7 +117,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         let cancelled = false;
         setAirportsLoading(true);
         nationwideApi
-            .getAllActiveAirports()
+            .getAllActiveAirportSuggestions()
             .then((suggestions) => {
                 if (cancelled) return;
                 const opts = suggestions.map((s) => ({ id: s.id, label: s.text }));

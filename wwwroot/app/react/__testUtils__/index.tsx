@@ -22,6 +22,9 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 export function createTestTheme() {
     return createTheme({
         transitions: {
+            // See setup.ts: collapse transition strings to 'none' in addition to
+            // zeroing durations.
+            create: () => 'none',
             duration: {
                 shortest: 0, shorter: 0, short: 0,
                 standard: 0, complex: 0,
@@ -29,6 +32,8 @@ export function createTestTheme() {
             },
         },
         components: {
+            // TouchRipple is a timer-driven animation fired on every ButtonBase click.
+            MuiButtonBase: {defaultProps: {disableRipple: true}},
             MuiDialog: {defaultProps: {transitionDuration: 0}},
             MuiBackdrop: {defaultProps: {transitionDuration: 0}},
             MuiMenu: {defaultProps: {transitionDuration: 0}},

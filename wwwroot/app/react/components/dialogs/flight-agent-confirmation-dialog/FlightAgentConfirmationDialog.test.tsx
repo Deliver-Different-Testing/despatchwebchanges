@@ -146,10 +146,8 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('AKL')).toBeInTheDocument();
-                expect(screen.getByText('SYD')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('AKL')).toBeInTheDocument();
+            expect(screen.getByText('SYD')).toBeInTheDocument();
         });
 
         it('calls onCalculateCargoTimes when flight is provided', async () => {

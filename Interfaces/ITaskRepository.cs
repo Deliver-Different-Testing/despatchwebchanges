@@ -9,6 +9,7 @@ public interface ITaskRepository
     Task SetEventAsClosedAsync(int eventId, bool closed);
     Task UpdateEventDueTimeAsync(int eventId, DateTimeOffset dueTime);
     Task ReassignEventToUserAsync(int eventId, int staffId);
+    Task UnassignEventAsync(int eventId);
     Task<IReadOnlyList<Suggestion>> GetEventGroupsAsync();
     Task<IReadOnlyList<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId);
 

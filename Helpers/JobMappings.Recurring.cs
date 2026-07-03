@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
 using DespatchWeb.Models;
 
@@ -7,7 +8,7 @@ namespace DespatchWeb.Helpers;
 
 public static partial class JobMappings
 {
-    public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobRecurringMapping = j =>
+    public static Expression<Func<TucJobBooking, JobViewModel>> JobRecurringMapping(bool isUsCustomer) => j =>
         new JobRecurringViewModel
         {
             AngularId = Guid.NewGuid(),
@@ -118,6 +119,14 @@ public static partial class JobMappings
             Weight = j.UcbkWeight,
             Speed = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
             SpeedName = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
+
+            // Flight card — same speed-grouping rule live jobs use (JobMappings.Core.cs).
+            IsFlightJob = j.UcbkSpeedNavigation != null
+                          && j.UcbkSpeedNavigation.GroupingId ==
+                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+            IsAgentJob = j.UcbkSpeedNavigation != null
+                         && j.UcbkSpeedNavigation.GroupingId !=
+                         (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
             CalculateDimsOncePerJob = j.DimensionsType == 1,
             ToAddress = j.UcbkToAddr,
             JobType = j.UcbkType,
@@ -271,12 +280,10 @@ public static partial class JobMappings
             CustomJobName = j.CustomJobName,
             RouteId = j.RouteId,
             RouteName = j.Route != null ? j.Route.Name : null,
-            RecurringMode = (Enums.RecurringMode)j.RecurringMode,
+            RecurringMode = (RecurringMode)j.RecurringMode,
             RawBaseAmount = j.RawBaseAmount,
             FuelSurchargeAmount = j.FuelSurchargeAmount,
             UcbkAmount = j.UcbkAmount,
-            // BookingParentID = self (or NULL) means parent / standalone;
-            // otherwise this row is a child in a family.
             IsChild = j.BookingParentId.HasValue && j.BookingParentId.Value != j.UcbkId
         };
 }

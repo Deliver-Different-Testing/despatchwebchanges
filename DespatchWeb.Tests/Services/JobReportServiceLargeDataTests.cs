@@ -289,9 +289,11 @@ public class JobReportServiceLargeDataTests
         Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
 
-        // Fields with commas should be quoted
-        Assert.Contains("\"TEST,001\"", csvContent);
-        Assert.Contains("\"Ref,With,Commas\"", csvContent);
+        // Commas are stripped from string fields so they can never break the column structure
+        Assert.Contains("TEST001", csvContent);
+        Assert.Contains("RefWithCommas", csvContent);
+        // Embedded quotes are still escaped and the field wrapped
+        Assert.Contains("\"123 \"\"Main\"\" Street\"", csvContent);
     }
 
     [Fact]

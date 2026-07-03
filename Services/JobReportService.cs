@@ -404,7 +404,8 @@ public sealed class JobReportService(
     }
 
     /// <summary>
-    /// Formats a field value for CSV, escaping quotes and handling special characters.
+    /// Formats a field value for CSV, stripping commas so they can never break the
+    /// column structure, escaping quotes, and handling special characters.
     /// </summary>
     private static string FormatCsvField(object value)
     {
@@ -419,11 +420,12 @@ public sealed class JobReportService(
             return string.Empty;
         }
 
-        var escaped = str.Replace("\"", "\"\"").Replace("\n", "\\n").Replace("\r", string.Empty);
+        var escaped = str.Replace(",", string.Empty)
+            .Replace("\"", "\"\"")
+            .Replace("\n", "\\n")
+            .Replace("\r", string.Empty);
 
-        return escaped.Contains('"') || escaped.Contains(',')
-            ? $"\"{escaped}\""
-            : escaped;
+        return escaped.Contains('"') ? $"\"{escaped}\"" : escaped;
     }
 
     /// <summary>

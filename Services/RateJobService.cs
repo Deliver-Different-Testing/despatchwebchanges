@@ -606,8 +606,8 @@ public sealed class RateJobService(
                 request.DeliveryLat ?? 0,
                 request.DeliveryLong ?? 0);
             await Task.WhenAll(fromAirportsTask, toAirportsTask);
-            var closestFromAirports = fromAirportsTask.Result;
-            var closestToAirports = toAirportsTask.Result;
+            var closestFromAirports = await fromAirportsTask;
+            var closestToAirports = await toAirportsTask;
 
             result.FromAirport = closestFromAirports[0];
             result.ToAirport = closestToAirports[0];
@@ -625,8 +625,8 @@ public sealed class RateJobService(
                 request.DeliveryLong);
             await Task.WhenAll(fromMilesTask, toMilesTask);
 
-            result.FromMiles = fromMilesTask.Result;
-            result.ToMiles = toMilesTask.Result;
+            result.FromMiles = await fromMilesTask;
+            result.ToMiles = await toMilesTask;
         }
 
         return result;

@@ -297,6 +297,7 @@
     <PackageReference Include="Magick.NET-Q8-AnyCPU" />
     <PackageReference Include="DeliverDifferentReporting" />
     <PackageReference Include="ExcelDataReader" />
+    <PackageReference Include="PdfSharp" />
     <PackageReference Include="ExcelDataReader.DataSet" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">

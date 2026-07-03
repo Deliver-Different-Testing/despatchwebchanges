@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
@@ -2741,5 +2742,41 @@ public class JobMappingsTests
         var result = JobMappings.JobMappingCore(false).Compile()(job);
 
         Assert.Null(result.PartnerTenantName);
+    }
+
+    // Recurring bookings classify flight jobs by speed grouping, mirroring live
+    // jobs (JobMappingCore): grouping == Flight → flight job, otherwise agent job.
+    // NZ Flight = UrgentSpeedGrouping.Flight (5); US Flight = SpeedGrouping.Flight (2).
+    [Theory]
+    [InlineData(false, (int)UrgentSpeedGrouping.Flight, true, false)]   // NZ flight speed
+    [InlineData(false, (int)UrgentSpeedGrouping.NationwideAgent, false, true)] // NZ non-flight
+    [InlineData(true, (int)SpeedGrouping.Flight, true, false)]          // US flight speed
+    [InlineData(true, (int)SpeedGrouping.Agent, false, true)]           // US non-flight
+    public void JobRecurringMapping_SetsFlightAndAgentFlags_BySpeedGrouping(
+        bool isUsCustomer, int groupingId, bool expectedFlight, bool expectedAgent)
+    {
+        var booking = new TucJobBooking
+        {
+            UcbkId = 1,
+            UcbkSpeedNavigation = new TucJobType { GroupingId = groupingId, UcjtName = "Speed" }
+        };
+
+        var result = JobMappings.JobRecurringMapping(isUsCustomer).Compile()(booking);
+
+        Assert.Equal(expectedFlight, result.IsFlightJob);
+        Assert.Equal(expectedAgent, result.IsAgentJob);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobRecurringMapping_NoSpeed_IsNeitherFlightNorAgent(bool isUsCustomer)
+    {
+        var booking = new TucJobBooking { UcbkId = 1, UcbkSpeedNavigation = null };
+
+        var result = JobMappings.JobRecurringMapping(isUsCustomer).Compile()(booking);
+
+        Assert.False(result.IsFlightJob);
+        Assert.False(result.IsAgentJob);
     }
 }

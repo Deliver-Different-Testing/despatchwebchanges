@@ -158,6 +158,9 @@ export interface IJob {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
+    // Speed-grouping classification (mirrors live jobs). Gates the flight UI.
+    isFlightJob?: boolean;
+    isAgentJob?: boolean;
     // Recurring flight: complete flight number (e.g. "NZ123") saved against the
     // booking so the same flight auto-assigns on each push-to-live.
     savedFlightNumber?: string;
@@ -370,6 +373,8 @@ export interface IJobDto {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
+    isFlightJob?: boolean;
+    isAgentJob?: boolean;
     savedFlightNumber?: string;
     assignedFlight?: IAssignedFlightDto;
     assignedAgent?: IAgent;

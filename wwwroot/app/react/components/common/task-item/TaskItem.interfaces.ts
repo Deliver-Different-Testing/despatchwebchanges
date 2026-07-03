@@ -4,6 +4,7 @@
  * Type definitions for the React TaskItem component.
  */
 
+import type React from 'react';
 import {Dayjs} from 'dayjs';
 
 export interface TaskAssignee {
@@ -55,6 +56,7 @@ export interface TasksServiceInterface {
     updateTaskDate(eventId: number, date: Dayjs): Promise<void>;
     updateTaskTime(eventId: number, time: Dayjs): Promise<void>;
     reassignTaskToStaff(eventId: number, staffId: number): Promise<void>;
+    unassignTask(eventId: number): Promise<void>;
 }
 
 export interface DispatchServiceInterface {
@@ -66,6 +68,8 @@ export interface TaskItemProps {
     config?: TaskItemConfig;
     onTaskUpdated?: () => void;
     onTaskClick?: (task: Task) => void;
+    /** Fired on right-click; the parent opens a context menu at the pointer position. */
+    onContextMenu?: (task: Task, event: React.MouseEvent) => void;
     /** Current user's staff id; required for `config.autoAssignOnClick` to take effect. */
     currentUserId?: number;
     tasksService: TasksServiceInterface;

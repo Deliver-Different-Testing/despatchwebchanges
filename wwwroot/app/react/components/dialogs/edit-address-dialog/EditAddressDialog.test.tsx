@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EditAddressDialog, EditAddressDialogProps} from './EditAddressDialog';
@@ -322,7 +321,6 @@ describe('EditAddressDialog', () => {
         });
 
         it('shows section with contacts, US dimensions, and supports expand/collapse', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps({showContactInfo: true, isUsTenant: true});
             renderWithProviders(props);
 
@@ -343,7 +341,7 @@ describe('EditAddressDialog', () => {
             expect(screen.getByLabelText(/Contact Name/)).toBeVisible();
 
             // Click to collapse
-            await user.click(screen.getByText('Shipment Details'));
+            fireEvent.click(screen.getByText('Shipment Details'));
             await waitFor(() => {
                 expect(screen.queryByLabelText(/Contact Name/)).not.toBeVisible();
             });
@@ -416,13 +414,12 @@ describe('EditAddressDialog', () => {
                 error: null,
             } as any);
 
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('123 Main');
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123 Main'}});
 
             expect(await screen.findByText('123 Main Street, New York, NY 10001')).toBeInTheDocument();
         });
@@ -440,15 +437,13 @@ describe('EditAddressDialog', () => {
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
         });
 
-        it('shows "Type at least 3 characters" message for short input', async () => {
-            const user = userEvent.setup();
+        it('shows "Type at least 3 characters" message for short input', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('ab');
-            await user.click(searchInput);
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: 'ab'}});
 
             expect(screen.getByPlaceholderText(/Type at least 3 characters/)).toBeInTheDocument();
         });
@@ -467,7 +462,6 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponse);
 
-            const user = userEvent.setup();
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
@@ -477,11 +471,11 @@ describe('EditAddressDialog', () => {
 
             // Select address
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('123');
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123'}});
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect(mockAddressApi.getLocationDetailsById).toHaveBeenCalledWith('here:af:address:123');
@@ -516,7 +510,6 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponse);
 
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 isUsTenant: true,
                 addressDetails: existingAddress,
@@ -526,11 +519,12 @@ describe('EditAddressDialog', () => {
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Empire State Building');
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.clear(searchInput);
-            await user.paste('123');
+            fireEvent.change(searchInput, {target: {value: ''}});
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123'}});
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('123');
@@ -555,7 +549,6 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockResolvedValue(lookupWithBuilding);
 
-            const user = userEvent.setup();
             const props = createDefaultProps({
                 isUsTenant: true,
                 addressDetails: existingAddress,
@@ -563,11 +556,12 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.clear(searchInput);
-            await user.paste('123');
+            fireEvent.change(searchInput, {target: {value: ''}});
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123'}});
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Freedom Tower');
@@ -599,16 +593,15 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockResolvedValue(placeLookupResponse);
 
-            const user = userEvent.setup();
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('123');
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123'}});
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Starbucks Coffee');
@@ -646,16 +639,15 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockResolvedValue(placeWithBuildingName);
 
-            const user = userEvent.setup();
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('123');
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123'}});
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Main Street Plaza');
@@ -670,18 +662,17 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockResolvedValue(nzLookupResponse);
 
-            const user = userEvent.setup();
             const props = createDefaultProps({isUsTenant: false});
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('10 Queen');
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '10 Queen'}});
 
             const option = await screen.findByRole('option', {
                 name: /10 Queen Street, Auckland/,
             });
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('10');
@@ -701,16 +692,15 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponseWithStreetInfo);
 
-            const user = userEvent.setup();
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('123');
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123'}});
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('North Main Street');
@@ -725,17 +715,16 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockRejectedValue(new Error('Network error'));
 
-            const user = userEvent.setup();
             const showToast = jest.fn();
             const props = createDefaultProps({showToast});
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('123');
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123'}});
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith('Error processing selected address.', 'error');
@@ -750,16 +739,15 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockResolvedValue(null as any);
 
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.click(searchInput);
-            await user.paste('123');
+            fireEvent.focus(searchInput);
+            fireEvent.change(searchInput, {target: {value: '123'}});
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
+            fireEvent.click(option);
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('40.7128');
@@ -772,20 +760,18 @@ describe('EditAddressDialog', () => {
 
     describe('Form Validation', () => {
         it('shows error for missing city', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithProviders(props);
 
             fireEvent.change(screen.getByLabelText(/Street Name/), {target: {value: 'Main Street'}});
             fireEvent.change(screen.getByLabelText(/ZIP Code/), {target: {value: '10001'}});
 
-            await user.click(screen.getByRole('button', {name: /Save/i}));
+            fireEvent.click(screen.getByRole('button', {name: /Save/i}));
 
             expect(await screen.findByText(/City is required/)).toBeInTheDocument();
         });
 
         it('shows error for missing street name', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithProviders(props);
 
@@ -793,21 +779,20 @@ describe('EditAddressDialog', () => {
             fireEvent.change(screen.getByLabelText(/City/), {target: {value: 'New York'}});
             fireEvent.change(screen.getByLabelText(/ZIP Code/), {target: {value: '10001'}});
 
-            await user.click(screen.getByRole('button', {name: /Save/i}));
+            fireEvent.click(screen.getByRole('button', {name: /Save/i}));
 
             expect(await screen.findByText(/Street name is required/)).toBeInTheDocument();
         });
     });
 
     describe('Dialog Actions', () => {
-        it('calls onClose via cancel and close icon buttons', async () => {
-            const user = userEvent.setup();
+        it('calls onClose via cancel and close icon buttons', () => {
             const onClose = jest.fn();
             const props = createDefaultProps({onClose});
             renderWithProviders(props);
 
             // Cancel button
-            await user.click(screen.getByRole('button', {name: 'Cancel'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
             expect(onClose).toHaveBeenCalledTimes(1);
 
             // Close icon
@@ -816,13 +801,12 @@ describe('EditAddressDialog', () => {
                 btn => btn.querySelector('svg[data-testid="CloseIcon"]')
             );
             if (closeIconButton) {
-                await user.click(closeIconButton);
+                fireEvent.click(closeIconButton);
                 expect(onClose).toHaveBeenCalledTimes(2);
             }
         });
 
         it('calls onSave with address data when form is valid', async () => {
-            const user = userEvent.setup();
             const onSave = jest.fn();
             const props = createDefaultProps({
                 addressDetails: existingAddress,
@@ -830,7 +814,7 @@ describe('EditAddressDialog', () => {
             });
             renderWithProviders(props);
 
-            await user.click(screen.getByRole('button', {name: /Save/i}));
+            fireEvent.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
                 expect(onSave).toHaveBeenCalledWith(
@@ -846,7 +830,6 @@ describe('EditAddressDialog', () => {
         });
 
         it('includes shipment details in save when showContactInfo is true', async () => {
-            const user = userEvent.setup();
             const onSave = jest.fn();
             const props = createDefaultProps({
                 addressDetails: existingAddressWithShipment,
@@ -855,7 +838,7 @@ describe('EditAddressDialog', () => {
             });
             renderWithProviders(props);
 
-            await user.click(screen.getByRole('button', {name: /Save/i}));
+            fireEvent.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
                 expect(onSave).toHaveBeenCalledWith(

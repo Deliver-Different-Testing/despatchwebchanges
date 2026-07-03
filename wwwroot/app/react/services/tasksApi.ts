@@ -14,6 +14,7 @@ import {
     TaskDateRequest,
     TaskTimeRequest,
     TaskAssignStaffRequest,
+    TaskUnassignRequest,
     StaffSuggestion,
     EventTypeSuggestion,
     EventGroupViewModel,
@@ -96,6 +97,14 @@ export async function reassignTaskToStaff(eventId: number, staffId: number): Pro
 }
 
 /**
+ * Unassign a task, clearing its assigned staff member
+ */
+export async function unassignTask(eventId: number): Promise<void> {
+    const data: TaskUnassignRequest = {eventId};
+    await apiClient.post('task/UnassignTask', data);
+}
+
+/**
  * Get list of active staff members
  */
 export async function getActiveStaff(options?: RequestOptions): Promise<StaffSuggestion[]> {
@@ -156,6 +165,7 @@ export const tasksApi = {
     updateTaskDate,
     updateTaskTime,
     reassignTaskToStaff,
+    unassignTask,
     getActiveStaff,
     getEventTypes,
     getDeliveryJourney,

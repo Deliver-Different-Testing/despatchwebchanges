@@ -12,7 +12,7 @@ import {testTheme} from '../../../__testUtils__';
 import {nationwideApi} from '../../../services/nationwideApi';
 
 jest.mock('../../../services/nationwideApi', () => ({
-    nationwideApi: {getRecurringFlightOptions: jest.fn(), getAllActiveAirports: jest.fn()},
+    nationwideApi: {getRecurringFlightOptions: jest.fn(), getAllActiveAirportSuggestions: jest.fn()},
 }));
 
 const mockedApi = nationwideApi as jest.Mocked<typeof nationwideApi>;
@@ -55,7 +55,7 @@ beforeEach(() => {
             flight('NZ', '455', 'AKL', 'WLG', '2026-07-08T10:30:00'),
         ],
     });
-    mockedApi.getAllActiveAirports.mockResolvedValue([
+    mockedApi.getAllActiveAirportSuggestions.mockResolvedValue([
         {id: 10, text: 'AKL - Auckland'},
         {id: 20, text: 'WLG - Wellington'},
     ]);
@@ -138,7 +138,7 @@ describe('EditSavedFlightDialog', () => {
             );
 
             // Airport list loads and Save is blocked until a route + flight are chosen.
-            await waitFor(() => expect(mockedApi.getAllActiveAirports).toHaveBeenCalled());
+            await waitFor(() => expect(mockedApi.getAllActiveAirportSuggestions).toHaveBeenCalled());
             expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
 
             // Choose the From airport.
@@ -172,7 +172,7 @@ describe('EditSavedFlightDialog', () => {
                 />
             );
 
-            await waitFor(() => expect(mockedApi.getAllActiveAirports).toHaveBeenCalled());
+            await waitFor(() => expect(mockedApi.getAllActiveAirportSuggestions).toHaveBeenCalled());
             expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
 
             await user.click(screen.getByPlaceholderText(/select departure airport/i));
@@ -194,7 +194,7 @@ describe('EditSavedFlightDialog', () => {
                 />
             );
 
-            await waitFor(() => expect(mockedApi.getAllActiveAirports).toHaveBeenCalled());
+            await waitFor(() => expect(mockedApi.getAllActiveAirportSuggestions).toHaveBeenCalled());
 
             // Dialog is named by its header title (aria-labelledby).
             expect(screen.getByRole('dialog', {name: /add flight/i})).toBeInTheDocument();

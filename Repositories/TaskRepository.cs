@@ -183,7 +183,15 @@ public class TaskRepository(
             {
                 var existingEvent = await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
-                    .Select(e => new { e.UcevStaffIdin })
+                    .Select(e => new
+                    {
+                        e.UcevStaffIdin,
+                        e.UcevJobId,
+                        OldStaffName = e.UcevStaffIdinNavigation != null
+                            ? e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+                            : null,
+                        TaskTitle = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : null
+                    })
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
@@ -193,6 +201,8 @@ public class TaskRepository(
 
                 if (existingEvent.UcevStaffIdin != staffId)
                 {
+                    var oldStaffName = existingEvent.OldStaffName?.Trim();
+
                     await Context.TucEvents
                         .Where(e => e.UcevId == eventId)
                         .ExecuteUpdateAsync(setters => setters
@@ -206,6 +216,106 @@ public class TaskRepository(
                         existingEvent.UcevStaffIdin?.ToString() ?? "null",
                         staffId.ToString()
                     );
+
+                    if (existingEvent.UcevJobId.HasValue)
+                    {
+                        var newStaffName = (await Context.TucStaffs
+                            .Where(s => s.UcstId == staffId)
+                            .Select(s => s.UcstFirstName + " " + s.UcstLastName)
+                            .FirstOrDefaultAsync())?.Trim();
+
+                        var comments = string.IsNullOrEmpty(oldStaffName)
+                            ? $"Task '{existingEvent.TaskTitle}' assigned to {newStaffName}"
+                            : $"Task '{existingEvent.TaskTitle}' reassigned from {oldStaffName} to {newStaffName}";
+
+                        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
+                        {
+                            JobId = existingEvent.UcevJobId.Value,
+                            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                            FieldName = "TaskAssignment",
+                            OldValue = oldStaffName,
+                            NewValue = newStaffName,
+                            StaffId = infoService.GetStaffId(),
+                            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff),
+                            UpdatedAt = DateTime.UtcNow,
+                            Comments = comments
+                        });
+                        await Context.SaveChangesAsync();
+                    }
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
+    }
+
+    public async Task UnassignEventAsync(int eventId)
+    {
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await Context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var existingEvent = await Context.TucEvents
+                    .Where(e => e.UcevId == eventId)
+                    .Select(e => new
+                    {
+                        e.UcevStaffIdin,
+                        e.UcevJobId,
+                        StaffName = e.UcevStaffIdinNavigation != null
+                            ? e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+                            : null,
+                        TaskTitle = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : null
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (existingEvent == null)
+                {
+                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+                }
+
+                if (existingEvent.UcevStaffIdin != null)
+                {
+                    var oldStaffId = existingEvent.UcevStaffIdin.Value;
+                    var oldStaffName = existingEvent.StaffName?.Trim();
+
+                    await Context.TucEvents
+                        .Where(e => e.UcevId == eventId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(e => e.UcevStaffIdin, (int?)null));
+
+                    await CreateEventAuditRecord(
+                        eventId,
+                        infoService.GetStaffId(),
+                        TucEventChangeType.Update,
+                        "UcevStaffIdin",
+                        oldStaffId.ToString(),
+                        "null"
+                    );
+
+                    if (existingEvent.UcevJobId.HasValue)
+                    {
+                        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
+                        {
+                            JobId = existingEvent.UcevJobId.Value,
+                            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                            FieldName = "TaskAssignment",
+                            OldValue = oldStaffName,
+                            NewValue = null,
+                            StaffId = infoService.GetStaffId(),
+                            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff),
+                            UpdatedAt = DateTime.UtcNow,
+                            Comments = $"Task '{existingEvent.TaskTitle}' unassigned from {oldStaffName}"
+                        });
+                        await Context.SaveChangesAsync();
+                    }
                 }
 
                 await transaction.CommitAsync();

@@ -2,10 +2,9 @@
 using DeliverDifferentReporting.Documents;
 using DeliverDifferentReporting.Models;
 using DeliverDifferentReporting.Services;
-using DespatchWeb.EntityClasses;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using Microsoft.EntityFrameworkCore;
 using QuestPDF;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
@@ -19,7 +18,7 @@ public sealed class PodReportService(
     IJobQueryRepository jobRepository,
     INoteRepository noteRepository,
     IJobPhotoService jobPhotoService,
-    IDbContextFactory<DespatchContext> contextFactory
+    IEmailSender emailSender
 ) : IPodReportService
 {
     private static bool _questPdfInitialized;
@@ -34,14 +33,7 @@ public sealed class PodReportService(
         var job = await jobRepository.GetSingleJobById(jobId)
                   ?? throw new InvalidOperationException($"Job {jobId} not found");
 
-        // Get S3 photos if the job is completed
-        IReadOnlyList<S3PhotoInfo> s3Photos = [];
-        if (job.CompletedTime.HasValue)
-        {
-            var year = job.CompletedTime.Value.Year;
-            var month = job.CompletedTime.Value.Month;
-            s3Photos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
-        }
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, jobId);
 
         var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(jobId));
         var document = new PodDocument(podData, branding);
@@ -59,13 +51,7 @@ public sealed class PodReportService(
         var job = await jobRepository.GetSingleJobById(jobId)
                   ?? throw new InvalidOperationException($"Job {jobId} not found");
 
-        IReadOnlyList<S3PhotoInfo> s3Photos = [];
-        if (job.CompletedTime.HasValue)
-        {
-            var year = job.CompletedTime.Value.Year;
-            var month = job.CompletedTime.Value.Month;
-            s3Photos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
-        }
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, jobId);
 
         var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(jobId));
         var spreadsheet = new PodSpreadsheet(podData, branding);
@@ -76,32 +62,66 @@ public sealed class PodReportService(
         return (stream.ToArray(), $"POD-{job.JobNo}.xlsx");
     }
 
-    public async Task QueuePodEmailAsync(int jobId, List<string> recipients, string subject, string body)
+    public async Task SendPodEmailAsync(int jobId, List<string> recipients, string subject, string body)
     {
         var (pdfBytes, fileName) = await GeneratePodReportAsync(jobId);
 
         var replyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
                       ?? "support@deliverdifferent.com";
 
-        var messages = recipients.Select(email => new TucManualMessage
+        var htmlBody = body.Replace("\n", "<br>");
+        var attachment = new EmailAttachment(fileName, "application/pdf", pdfBytes);
+
+        foreach (var recipient in recipients)
         {
-            SendToEmailAddress = email,
-            ReplyToEmailAddress = replyTo,
-            Subject = subject,
-            UcmmMessage = body.Replace("\n", "<br>"),
-            JobId = jobId,
-            HasAttachment = true,
-            FileName = fileName,
-            FileType = "application/pdf",
-            FileContent = pdfBytes
-        }).ToList();
+            await emailSender.SendAsync(recipient, subject, htmlBody, replyTo, attachment);
+        }
 
-        await using var context = await contextFactory.CreateDbContextAsync();
-        await context.TucManualMessages.AddRangeAsync(messages);
-        await context.SaveChangesAsync();
-
-        Log.Information("Queued POD email for job {JobId} to {RecipientCount} recipients: {Recipients}",
+        Log.Information("Sent POD email for job {JobId} to {RecipientCount} recipients: {Recipients}",
             jobId, recipients.Count, string.Join(", ", recipients));
+    }
+
+    public async Task<byte[]> AppendDeliveryPhotosAsync(byte[] pdfBytes, int jobId)
+    {
+        var job = await jobRepository.GetSingleJobById(jobId);
+        if (job is null)
+        {
+            return pdfBytes;
+        }
+
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, jobId);
+        return PdfImageAppender.Append(pdfBytes, ExtractDeliveryImages(s3Photos));
+    }
+
+    // Delivery photos/signatures live in S3 keyed by the completion month, so they
+    // only exist once the job is completed.
+    private async Task<IReadOnlyList<S3PhotoInfo>> GetDeliveryPhotosForJobAsync(JobViewModel job, int jobId)
+    {
+        if (!job.CompletedTime.HasValue)
+        {
+            return [];
+        }
+
+        var year = job.CompletedTime.Value.Year;
+        var month = job.CompletedTime.Value.Month;
+        return await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
+    }
+
+    // Decodes the delivery photos then the signature(s) into raw image bytes.
+    // Non-image entries (e.g. PDFs) carry no Data and are skipped.
+    internal static List<byte[]> ExtractDeliveryImages(IReadOnlyList<S3PhotoInfo> s3Photos)
+    {
+        var deliveryPhotos = s3Photos
+            .Where(p => p.S3Key.Contains("DeliveryPhotos/", StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrEmpty(p.Data));
+
+        var signatures = s3Photos
+            .Where(p => p.S3Key.Contains("DeliverySignatures/", StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrEmpty(p.Data));
+
+        return deliveryPhotos.Concat(signatures)
+            .Select(p => Convert.FromBase64String(p.Data))
+            .ToList();
     }
 
     private static void EnsureQuestPdfInitialized()

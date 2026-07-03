@@ -37,6 +37,7 @@ jest.mock('../../services/tasksApi', () => ({
         updateTaskDate: jest.fn(),
         updateTaskTime: jest.fn(),
         reassignTaskToStaff: jest.fn(),
+        unassignTask: jest.fn(),
     },
 }));
 

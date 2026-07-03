@@ -41,6 +41,8 @@ import {
 } from './TaskDashboardPage.interfaces';
 import {TaskFiltersRequest} from '../../interfaces';
 import {TaskItem} from '../../components/common/task-item/TaskItem';
+import {TaskListContextMenu} from '../../components/common/task-item/TaskListContextMenu';
+import type {Task as TaskItemTask} from '../../components/common/task-item/TaskItem.interfaces';
 import {TaskCalendarView} from '../../components/common/task-calendar-view/TaskCalendarView';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
 import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
@@ -51,6 +53,7 @@ import {
     useEventTypes,
     useMarkTaskAsClosed,
     useReassignTask,
+    useUnassignTask,
     useTasks,
     useUpdateTaskDate,
     useUpdateTaskTime,
@@ -214,6 +217,20 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     const updateTaskDateMutation = useUpdateTaskDate();
     const updateTaskTimeMutation = useUpdateTaskTime();
     const reassignTaskMutation = useReassignTask();
+    const unassignTaskMutation = useUnassignTask();
+
+    // Right-click context menu state for task rows
+    const [contextMenuTask, setContextMenuTask] = useState<TaskItemTask | null>(null);
+    const [contextMenuPos, setContextMenuPos] = useState<{mouseX: number; mouseY: number} | null>(null);
+
+    const handleTaskContextMenu = useCallback((task: TaskItemTask, event: React.MouseEvent) => {
+        setContextMenuTask(task);
+        setContextMenuPos({mouseX: event.clientX, mouseY: event.clientY});
+    }, []);
+
+    const handleCloseContextMenu = useCallback(() => {
+        setContextMenuPos(null);
+    }, []);
 
     // Initialize time strings for tasks
     const tasks = useMemo((): ExtendedTask[] => {
@@ -423,7 +440,10 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
         reassignTaskToStaff: async (eventId: number, staffId: number) => {
             await reassignTaskMutation.mutateAsync({eventId, staffId});
         },
-    }), [markTaskAsClosedMutation, updateTaskDateMutation, updateTaskTimeMutation, reassignTaskMutation]);
+        unassignTask: async (eventId: number) => {
+            await unassignTaskMutation.mutateAsync({eventId});
+        },
+    }), [markTaskAsClosedMutation, updateTaskDateMutation, updateTaskTimeMutation, reassignTaskMutation, unassignTaskMutation]);
 
     // Create a dispatch service interface for child components
     const dispatchServiceForComponents = useMemo(() => ({
@@ -744,6 +764,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                                     currentUserId={getCurrentUserId()}
                                                                     onTaskUpdated={() => refetchTasks()}
                                                                     onTaskClick={() => selectTaskForHistory(task)}
+                                                                    onContextMenu={handleTaskContextMenu}
                                                                     tasksService={tasksServiceForComponents}
                                                                     dispatchService={dispatchServiceForComponents}
                                                                     showSuccessToast={showSuccessToast}
@@ -784,6 +805,16 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     </Card>
                 </Box>
             </Box>
+
+            <TaskListContextMenu
+                task={contextMenuTask}
+                position={contextMenuPos}
+                onClose={handleCloseContextMenu}
+                tasksService={tasksServiceForComponents}
+                onTaskUpdated={() => refetchTasks()}
+                showSuccessToast={showSuccessToast}
+                showErrorToast={showErrorToast}
+            />
         </Box>
     );
 };

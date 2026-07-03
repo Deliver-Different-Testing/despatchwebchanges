@@ -708,7 +708,10 @@ public class JobController(
             var overlayPdf = await pdfOverlay.TryRenderJobAsync(jobId, "ProofOfDelivery", HttpContext.RequestAborted);
             if (overlayPdf is not null)
             {
-                return File(overlayPdf, "application/pdf", $"POD-{jobId}.pdf");
+                // The overlay template stamps job fields but can't fetch the S3 delivery
+                // photos/signature — append them so the download matches the built-in report.
+                var overlayWithPhotos = await podReportService.AppendDeliveryPhotosAsync(overlayPdf, jobId);
+                return File(overlayWithPhotos, "application/pdf", $"POD-{jobId}.pdf");
             }
 
             var (bytes, fileName) = await podReportService.GeneratePodReportAsync(jobId);
@@ -777,7 +780,7 @@ public class JobController(
                 return BadRequest("No valid email addresses provided.");
             }
 
-            await podReportService.QueuePodEmailAsync(request.JobId, validRecipients, request.Subject, request.Body);
+            await podReportService.SendPodEmailAsync(request.JobId, validRecipients, request.Subject, request.Body);
 
             return Ok();
         }

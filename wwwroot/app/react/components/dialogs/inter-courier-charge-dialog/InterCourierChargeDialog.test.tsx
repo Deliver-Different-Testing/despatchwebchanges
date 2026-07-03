@@ -139,13 +139,12 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Courier Search', () => {
         it('searches couriers after typing at least 2 characters with debounce', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const input = screen.getByLabelText(/from courier/i);
-            await user.click(input);
-            await user.type(input, 'Co');
+            fireEvent.focus(input);
+            fireEvent.change(input, {target: {value: 'Co'}});
 
             await act(async () => {
                 jest.advanceTimersByTime(350);
@@ -157,12 +156,11 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('does not search couriers with fewer than 2 characters', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const input = screen.getByLabelText(/from courier/i);
-            await user.click(input);
-            await user.type(input, 'C');
+            fireEvent.focus(input);
+            fireEvent.change(input, {target: {value: 'C'}});
 
             await act(async () => {
                 jest.advanceTimersByTime(350);
@@ -174,13 +172,12 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Client Search', () => {
         it('searches clients after typing at least 2 characters', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             mockSearchActiveClients.mockResolvedValue(clientSuggestions);
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const input = screen.getByLabelText(/client/i);
-            await user.click(input);
-            await user.type(input, 'Cl');
+            fireEvent.focus(input);
+            fireEvent.change(input, {target: {value: 'Cl'}});
 
             await act(async () => {
                 jest.advanceTimersByTime(350);
@@ -192,62 +189,54 @@ describe('InterCourierChargeDialog', () => {
     });
 
     describe('Zones and Amount Calculation', () => {
-        it('auto-calculates amount as zones * 7 when zones is changed', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        it('auto-calculates amount as zones * 7 when zones is changed', () => {
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const zonesInput = screen.getByLabelText(/zones/i);
-            await user.click(zonesInput);
-            await user.paste('3');
+            fireEvent.change(zonesInput, {target: {value: '3'}});
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
             expect(amountInput.value).toBe('21');
         });
 
-        it('sets amount to 0 when zones is cleared', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        it('sets amount to 0 when zones is cleared', () => {
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const zonesInput = screen.getByLabelText(/zones/i);
-            await user.click(zonesInput);
-            await user.paste('5');
+            fireEvent.change(zonesInput, {target: {value: '5'}});
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
             expect(amountInput.value).toBe('35');
 
-            await user.clear(zonesInput);
+            fireEvent.change(zonesInput, {target: {value: ''}});
             expect(amountInput.value).toBe('0');
         });
 
-        it('allows manual editing of the amount field', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        it('allows manual editing of the amount field', () => {
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
-            await user.click(amountInput);
-            await user.paste('99.5');
+            fireEvent.change(amountInput, {target: {value: '99.5'}});
 
             expect(amountInput.value).toBe('99.5');
         });
     });
 
     describe('Validation', () => {
-        it('shows warning toast and does not submit when form is incomplete', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        it('shows warning toast and does not submit when form is incomplete', () => {
             const showToast = jest.fn();
             renderWithTheme(<InterCourierChargeDialog {...createMockProps({showToast})} />);
 
-            await user.click(screen.getByRole('button', {name: /add charge/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
 
             expect(showToast).toHaveBeenCalledWith('Please complete all the required fields', 'warning');
             expect(mockCreateInterCourierCharge).not.toHaveBeenCalled();
         });
 
-        it('shows required error messages on fields after submit attempt', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        it('shows required error messages on fields after submit attempt', () => {
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
-            await user.click(screen.getByRole('button', {name: /add charge/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
 
             const requiredMessages = screen.getAllByText('This field is required.');
             // From Courier, To Courier, Client, Reference, Zones, Amount = 6 fields
@@ -257,14 +246,13 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Successful Submission', () => {
         it('submits form data and shows success toast', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             const onClose = jest.fn();
             const showToast = jest.fn();
             renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
 
             await fillForm();
 
-            await user.click(screen.getByRole('button', {name: /add charge/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
 
             await waitFor(() => {
                 expect(mockCreateInterCourierCharge).toHaveBeenCalledWith({
@@ -284,7 +272,6 @@ describe('InterCourierChargeDialog', () => {
     describe('Failed Submission', () => {
         it('shows error toast and does not close on API failure', async () => {
             const errorSpy = suppressConsoleError();
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             const onClose = jest.fn();
             const showToast = jest.fn();
             mockCreateInterCourierCharge.mockRejectedValueOnce(new Error('Server error'));
@@ -292,7 +279,7 @@ describe('InterCourierChargeDialog', () => {
 
             await fillForm();
 
-            await user.click(screen.getByRole('button', {name: /add charge/i}));
+            fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
 
             // Drain the microtask queue so the rejected promise's catch + finally run.
             // waitFor + fake timers is unreliable under CI load here.
@@ -307,16 +294,14 @@ describe('InterCourierChargeDialog', () => {
     });
 
     describe('State Reset', () => {
-        it('resets all fields when dialog is reopened', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        it('resets all fields when dialog is reopened', () => {
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
             const props = createMockProps();
             const {rerender} = renderWithTheme(<InterCourierChargeDialog {...props} />);
 
             // Type into reference field
             const referenceInput = screen.getByLabelText(/reference/i);
-            await user.click(referenceInput);
-            await user.paste('REF-TEST');
+            fireEvent.change(referenceInput, {target: {value: 'REF-TEST'}});
             expect(referenceInput).toHaveValue('REF-TEST');
 
             // Close and reopen

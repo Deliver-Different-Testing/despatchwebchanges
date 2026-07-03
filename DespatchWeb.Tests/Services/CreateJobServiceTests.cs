@@ -213,7 +213,12 @@ public class CreateJobServiceTests : IAsyncDisposable
     {
         using var cmd = _db.Connection.CreateCommand();
         cmd.CommandText =
-            $"INSERT INTO tblReference (ReferenceID, ClientID, Name, Grouping, ucrfID, ucrfClientID, ucrfName) VALUES ({referenceId}, {clientId}, '{name}', '{grouping}', {referenceId}, {clientId}, '{name}')";
+            "INSERT INTO tblReference (ReferenceID, ClientID, Name, Grouping, ucrfID, ucrfClientID, ucrfName) " +
+            "VALUES ($id, $clientId, $name, $grouping, $id, $clientId, $name)";
+        cmd.Parameters.AddWithValue("$id", referenceId);
+        cmd.Parameters.AddWithValue("$clientId", clientId);
+        cmd.Parameters.AddWithValue("$name", name);
+        cmd.Parameters.AddWithValue("$grouping", grouping);
         cmd.ExecuteNonQuery();
     }
 

@@ -25,3 +25,7 @@ public sealed class TaskAssignStaffRequest : TaskUpdateBaseRequest
     public int StaffId { get; init; }
 }
 
+public sealed class TaskUnassignRequest : TaskUpdateBaseRequest
+{
+}
+

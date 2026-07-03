@@ -154,4 +154,20 @@ public class TaskController(ITaskRepository taskRepository) : Controller
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
+
+    [HttpPost]
+    public async Task<IActionResult> UnassignTask([FromBody] TaskUnassignRequest data)
+    {
+        try
+        {
+            await taskRepository.UnassignEventAsync(data.EventId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(UnassignTask)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
 }

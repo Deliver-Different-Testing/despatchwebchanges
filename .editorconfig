@@ -2,3 +2,18 @@ root = true
 
 [*.cs]
 dotnet_diagnostic.RS0030.severity = error
+
+# --- Tier 1: correctness analyzers (catch real bugs) ---
+dotnet_diagnostic.CA2016.severity = warning   # forward CancellationToken to methods that accept one
+dotnet_diagnostic.CA1849.severity = warning   # call the async variant when already in an async method
+dotnet_diagnostic.CA2012.severity = warning   # use ValueTask correctly (do not await twice)
+dotnet_diagnostic.CA1806.severity = warning   # do not ignore method return values
+dotnet_diagnostic.CA2100.severity = warning   # review SQL queries for injection vulnerabilities
+dotnet_diagnostic.CA1854.severity = warning   # prefer TryGetValue over ContainsKey + indexer
+dotnet_diagnostic.CA1863.severity = warning   # use CompositeFormat / cache formatting state
+
+# --- Tier 2: modernization / cleanliness ---
+dotnet_diagnostic.IDE0005.severity = suggestion   # remove unnecessary usings
+dotnet_diagnostic.CA1860.severity = suggestion    # prefer Length/Count > 0 over Any()
+dotnet_diagnostic.CA1859.severity = suggestion    # use concrete types for improved performance
+dotnet_diagnostic.IDE0090.severity = suggestion   # simplify 'new' expression (target-typed new)

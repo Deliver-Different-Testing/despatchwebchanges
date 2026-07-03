@@ -332,10 +332,19 @@ export class NationwideApiService {
     }
 
     /**
-     * Get the active airports available for recovery assignment
+     * Get the active airports that have at least one agent — used for recovery
+     * agent assignment, where only airports with agents are selectable.
      */
     async getAllActiveAirports(): Promise<Suggestion[]> {
         return apiClient.get<Suggestion[]>('nationwideJob/GetAllActiveAirports');
+    }
+
+    /**
+     * Get all active airports (no agent filter) — used by the flight From/To
+     * pickers, which must list every active airport.
+     */
+    async getAllActiveAirportSuggestions(): Promise<Suggestion[]> {
+        return apiClient.get<Suggestion[]>('nationwideJob/GetAllActiveAirportSuggestions');
     }
 
     /**

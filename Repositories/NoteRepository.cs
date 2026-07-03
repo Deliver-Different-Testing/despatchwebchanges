@@ -567,27 +567,20 @@ public class NoteRepository(
         int jobId, int effectiveJobId, bool isArchived, string tenantTimeZone)
     {
         var candidates = isArchived
-            ? await Context.TucJobArchives
-                .Where(j => j.UcjbId == jobId || j.UcjbId == effectiveJobId)
-                .Select(j => new UcjbNotesFallbackRow
-                {
-                    JobId = j.UcjbId,
-                    Notes = j.UcjbNotes,
-                    BookingDate = j.UcjbTime ?? j.UcjbDate
-                })
-                .ToListAsync()
-            : await Context.TucJobs
-                .Where(j => j.UcjbId == jobId || j.UcjbId == effectiveJobId)
-                .Select(j => new UcjbNotesFallbackRow
-                {
-                    JobId = j.UcjbId,
-                    Notes = j.UcjbNotes,
-                    BookingDate = j.UcjbTime ?? j.UcjbDate
-                })
-                .ToListAsync();
+            ? await GetArchivedUcjbNotesCandidatesAsync(jobId, effectiveJobId)
+            : await GetActiveUcjbNotesCandidatesAsync(jobId, effectiveJobId);
 
-        var source = candidates.FirstOrDefault(j => j.JobId == jobId && !string.IsNullOrWhiteSpace(j.Notes))
-                     ?? candidates.FirstOrDefault(j => !string.IsNullOrWhiteSpace(j.Notes));
+        var source = SelectUcjbNotesSource(candidates, jobId);
+
+        // A still-active return leg whose original/parent job has already been completed no
+        // longer has that parent in TucJobs — the pickup note now lives in the archived
+        // parent's UcjbNotes column. Consult the archive so the note surfaces on the live leg
+        // rather than only appearing once the leg itself is completed.
+        if (source == null && !isArchived)
+        {
+            var archivedCandidates = await GetArchivedUcjbNotesCandidatesAsync(jobId, effectiveJobId);
+            source = SelectUcjbNotesSource(archivedCandidates, jobId);
+        }
 
         if (source == null)
         {
@@ -607,6 +600,32 @@ public class NoteRepository(
             CreatedDate = new DateTimeOffset(DateTime.SpecifyKind(bookingDate, DateTimeKind.Unspecified), TimeSpan.Zero)
         };
     }
+
+    private async Task<List<UcjbNotesFallbackRow>> GetActiveUcjbNotesCandidatesAsync(int jobId, int effectiveJobId) =>
+        await Context.TucJobs
+            .Where(j => j.UcjbId == jobId || j.UcjbId == effectiveJobId)
+            .Select(j => new UcjbNotesFallbackRow
+            {
+                JobId = j.UcjbId,
+                Notes = j.UcjbNotes,
+                BookingDate = j.UcjbTime ?? j.UcjbDate
+            })
+            .ToListAsync();
+
+    private async Task<List<UcjbNotesFallbackRow>> GetArchivedUcjbNotesCandidatesAsync(int jobId, int effectiveJobId) =>
+        await Context.TucJobArchives
+            .Where(j => j.UcjbId == jobId || j.UcjbId == effectiveJobId)
+            .Select(j => new UcjbNotesFallbackRow
+            {
+                JobId = j.UcjbId,
+                Notes = j.UcjbNotes,
+                BookingDate = j.UcjbTime ?? j.UcjbDate
+            })
+            .ToListAsync();
+
+    private static UcjbNotesFallbackRow SelectUcjbNotesSource(List<UcjbNotesFallbackRow> candidates, int jobId) =>
+        candidates.FirstOrDefault(j => j.JobId == jobId && !string.IsNullOrWhiteSpace(j.Notes))
+        ?? candidates.FirstOrDefault(j => !string.IsNullOrWhiteSpace(j.Notes));
 
     private sealed class UcjbNotesFallbackRow
     {

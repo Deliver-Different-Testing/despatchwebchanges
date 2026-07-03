@@ -189,28 +189,35 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         try {
             const response: BulkPricePreviewResponse = await onSubmit(uploadedFile, selectedMode);
 
-            setResultRows(response.rows);
-            setFilteredRows([...response.rows]);
-            setTotalJobs(response.totalJobs);
-            setSkippedJobs(response.skippedJobs);
-            setTotalOldAmount(response.totalOldAmount);
-            setTotalNewAmount(response.totalNewAmount);
+            // The request succeeded, so treat it as applied. Read defensively: a missing or
+            // misshaped body must not throw here, or the update would be wrongly reported as a
+            // failure even though the server already committed the price changes.
+            const rows = response?.rows ?? [];
+            const updatedCount = response?.totalJobs ?? 0;
+            const skippedCount = response?.skippedJobs ?? 0;
+
+            setResultRows(rows);
+            setFilteredRows([...rows]);
+            setTotalJobs(updatedCount);
+            setSkippedJobs(skippedCount);
+            setTotalOldAmount(response?.totalOldAmount ?? 0);
+            setTotalNewAmount(response?.totalNewAmount ?? 0);
             setCurrentState('result');
             setIsLoading(false);
             setLoadingMessage('');
 
-            if (response.totalJobs === 0 && response.skippedJobs > 0) {
+            if (updatedCount === 0 && skippedCount > 0) {
                 showToast(
-                    `No prices were updated. ${response.skippedJobs} ${response.skippedJobs === 1 ? 'job' : 'jobs'} could not be updated.`,
+                    `No prices were updated. ${skippedCount} ${skippedCount === 1 ? 'job' : 'jobs'} could not be updated.`,
                     'error',
                 );
-            } else if (response.skippedJobs > 0) {
+            } else if (skippedCount > 0) {
                 showToast(
-                    `Updated ${response.totalJobs} ${response.totalJobs === 1 ? 'job' : 'jobs'}; ${response.skippedJobs} skipped.`,
+                    `Updated ${updatedCount} ${updatedCount === 1 ? 'job' : 'jobs'}; ${skippedCount} skipped.`,
                     'warning',
                 );
             } else {
-                showToast(`Successfully updated prices for ${response.totalJobs} jobs.`, 'success');
+                showToast(`Successfully updated prices for ${updatedCount} jobs.`, 'success');
             }
         } catch (error: unknown) {
             console.error('Error applying prices:', error);

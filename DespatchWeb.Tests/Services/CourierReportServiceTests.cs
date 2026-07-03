@@ -306,14 +306,14 @@ public class CourierReportServiceTests
         Assert.Contains("John Doe", lines[1]);
         Assert.Contains("C001", lines[1]);
         Assert.Contains("4 hours", lines[1]);
-        // Days should be joined with comma-space (and thus CSV-quoted since it contains commas)
-        Assert.Contains("Monday", lines[1]);
+        // Days are joined and commas stripped, so they appear space-separated and unquoted
+        Assert.Contains("Monday Wednesday Friday", lines[1]);
 
         Assert.Equal("after-hours-schedule-2026-02-18-1430.csv", fileName);
     }
 
     [Fact]
-    public async Task GenerateAfterHoursScheduleCsvAsync_MultipleDays_JoinedAndQuoted()
+    public async Task GenerateAfterHoursScheduleCsvAsync_MultipleDays_JoinedWithoutCommas()
     {
         // Arrange
         var data = new List<AfterHoursCourierScheduleViewModel>
@@ -336,9 +336,10 @@ public class CourierReportServiceTests
         // Act
         var (fileBytes, _) = await service.GenerateAfterHoursScheduleCsvAsync(new CourierAfterHoursFilterRequest());
 
-        // Assert - "Monday, Tuesday" contains a comma, so it should be quoted
-        var csv = DecodeCsv(fileBytes);
-        Assert.Contains("\"Monday, Tuesday\"", csv);
+        // Assert - the joining comma is stripped, so days are space-separated and unquoted
+        var lines = GetCsvLines(fileBytes);
+        Assert.Contains("Monday Tuesday", lines[1]);
+        Assert.Equal(6, lines[1].Split(',').Length); // header has 6 columns; data row must keep the same count
     }
 
     [Fact]
@@ -580,7 +581,7 @@ public class CourierReportServiceTests
     }
 
     [Fact]
-    public async Task CsvExport_FieldWithComma_IsQuoted()
+    public async Task CsvExport_FieldWithComma_HasCommaStripped()
     {
         // Arrange
         var data = new List<CourierEmailViewModel>
@@ -599,9 +600,11 @@ public class CourierReportServiceTests
         // Act
         var (fileBytes, _) = await service.GenerateDriverEmailsCsvAsync(new PaginatedRequest());
 
-        // Assert
-        var csv = DecodeCsv(fileBytes);
-        Assert.Contains("\"Doe, John\"", csv);
+        // Assert - comma stripped, no quoting introduced, column count preserved
+        var lines = GetCsvLines(fileBytes);
+        Assert.Contains("Doe John", lines[1]);
+        Assert.DoesNotContain("\"", lines[1]);
+        Assert.Equal(5, lines[1].Split(',').Length);
     }
 
     [Fact]

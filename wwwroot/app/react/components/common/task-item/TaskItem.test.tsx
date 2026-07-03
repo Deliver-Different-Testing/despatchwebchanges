@@ -59,6 +59,7 @@ const createMockServices = () => ({
         updateTaskDate: jest.fn().mockResolvedValue(undefined),
         updateTaskTime: jest.fn().mockResolvedValue(undefined),
         reassignTaskToStaff: jest.fn().mockResolvedValue(undefined),
+        unassignTask: jest.fn().mockResolvedValue(undefined),
     },
     dispatchService: {
         getActiveStaff: jest.fn().mockResolvedValue([
@@ -429,6 +430,28 @@ describe('TaskItem', () => {
         });
     });
 
+    describe('Context menu', () => {
+        it('invokes onContextMenu with the task and prevents the default menu on right-click', () => {
+            const onContextMenu = jest.fn();
+            const props = createDefaultProps({onContextMenu});
+            renderWithProviders(<TaskItem {...props} />);
+
+            const event = fireEvent.contextMenu(screen.getByText('Test Task'));
+
+            expect(onContextMenu).toHaveBeenCalledTimes(1);
+            expect(onContextMenu.mock.calls[0][0]).toEqual(props.task);
+            // fireEvent returns false when a handler called preventDefault()
+            expect(event).toBe(false);
+        });
+
+        it('does nothing on right-click when no onContextMenu handler is provided', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(() => fireEvent.contextMenu(screen.getByText('Test Task'))).not.toThrow();
+        });
+    });
+
     describe('Date Picker', () => {
         it('opens date popover when date button is clicked', async () => {
             const props = createDefaultProps();
@@ -559,10 +582,8 @@ describe('TaskItem', () => {
             const searchInput = screen.getByPlaceholderText('Search staff...');
             fireEvent.change(searchInput, { target: { value: 'Jane' } });
 
-            await waitFor(() => {
-                expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-                expect(screen.queryByText('Bob Johnson')).not.toBeInTheDocument();
-            });
+            expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
+            expect(screen.queryByText('Bob Johnson')).not.toBeInTheDocument();
         });
 
         it('shows "No staff found" when search has no results', async () => {

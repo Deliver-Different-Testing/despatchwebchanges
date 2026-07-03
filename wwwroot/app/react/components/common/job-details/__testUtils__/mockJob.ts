@@ -157,6 +157,7 @@ export function createMockJob(overrides?: Partial<IJob>): IJob {
         parcelDimensions: [],
         isActive: true,
         isArchived: false,
+        isFlightJob: false,
         preBook: false,
         isBulkJob: false,
         van: false,

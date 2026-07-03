@@ -6,6 +6,14 @@
  */
 
 import '@testing-library/jest-dom';
+import {configure} from '@testing-library/react';
+
+// waitFor/findBy default to a 1000ms timeout, which is too tight for react-query
+// state transitions on a loaded/GC-starved CI worker (a mocked-promise resolution
+// that settles in ~13ms locally can exceed 1s under load, flaking isSuccess/isError
+// assertions — see useAddressApi.test.tsx, 2026-07-03). Genuine hangs are still
+// bounded by jest.config.js testTimeout (30s).
+configure({asyncUtilTimeout: 5000});
 
 // Disable MUI enter/exit animations globally in tests. Dialog/Menu/Popover/
 // Collapse/Tooltip transitions run on real timers and add hundreds of ms per
@@ -17,6 +25,10 @@ jest.mock('@mui/material/styles', () => {
     const actual = jest.requireActual('@mui/material/styles');
     const noAnimationOverrides = {
         transitions: {
+            // Zero durations AND collapse the transition CSS string to 'none' so no
+            // transition property is emitted at all (durations alone still leave the
+            // property present, which some MUI surfaces schedule timers around).
+            create: () => 'none',
             duration: {
                 shortest: 0, shorter: 0, short: 0,
                 standard: 0, complex: 0,
@@ -24,6 +36,10 @@ jest.mock('@mui/material/styles', () => {
             },
         },
         components: {
+            // TouchRipple is a timer-driven animation fired on every ButtonBase click
+            // (Button/IconButton/MenuItem/Tab/...). Disabling it removes that per-click
+            // cost across the whole suite.
+            MuiButtonBase: {defaultProps: {disableRipple: true}},
             MuiDialog: {defaultProps: {transitionDuration: 0}},
             MuiBackdrop: {defaultProps: {transitionDuration: 0}},
             MuiMenu: {defaultProps: {transitionDuration: 0}},

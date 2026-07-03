@@ -171,10 +171,8 @@ describe('MessagingDialog', () => {
         await user.click(await screen.findByText('John Driver'));
 
         // Both bubbles render…
-        await waitFor(() => {
-            expect(screen.getByText('First')).toBeInTheDocument();
-            expect(screen.getByText('Second')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('First')).toBeInTheDocument();
+        expect(screen.getByText('Second')).toBeInTheDocument();
         // …but the grouped run shows a single message timestamp (the last bubble's),
         // not one per message. (The "Jan 15, 2020" date separator is excluded by
         // matching the HH:mm time portion.)
@@ -192,11 +190,9 @@ describe('MessagingDialog', () => {
         setupApiDefaults(conversations);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
-        await waitFor(() => {
-            expect(screen.getByText('Alice Cooper')).toBeInTheDocument();
-            expect(screen.getByText('Bob Smith')).toBeInTheDocument();
-            expect(screen.getByText('Spammer')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Alice Cooper')).toBeInTheDocument();
+        expect(screen.getByText('Bob Smith')).toBeInTheDocument();
+        expect(screen.getByText('Spammer')).toBeInTheDocument();
 
         // Unread count chips
         expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1);
@@ -219,10 +215,8 @@ describe('MessagingDialog', () => {
         setupApiDefaults([]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
-        await waitFor(() => {
-            expect(screen.getByText('No conversations yet')).toBeInTheDocument();
-            expect(screen.getByText('Start Conversation')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('No conversations yet')).toBeInTheDocument();
+        expect(screen.getByText('Start Conversation')).toBeInTheDocument();
 
         await user.click(screen.getByText('Start Conversation'));
         expect(await screen.findByText('Search to start a conversation')).toBeInTheDocument();
@@ -235,10 +229,8 @@ describe('MessagingDialog', () => {
         mockApi.getQuickResponses.mockResolvedValue([]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
-        await waitFor(() => {
-            expect(screen.getByText('Unable to load messages')).toBeInTheDocument();
-            expect(screen.getByText('Server error')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Unable to load messages')).toBeInTheDocument();
+        expect(screen.getByText('Server error')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /Retry/i})).toBeInTheDocument();
 
         // Retry
@@ -306,14 +298,12 @@ describe('MessagingDialog', () => {
         });
 
         // Message bubbles
-        await waitFor(() => {
-            expect(screen.getByText('Read message')).toBeInTheDocument();
-            expect(screen.getByText('Sent unread')).toBeInTheDocument();
-            expect(screen.getByText('They sent this')).toBeInTheDocument();
-            // DoneAllIcon for read, DoneIcon for sent-unread
-            expect(screen.getByTestId('DoneAllIcon')).toBeInTheDocument();
-            expect(screen.getByTestId('DoneIcon')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Read message')).toBeInTheDocument();
+        expect(screen.getByText('Sent unread')).toBeInTheDocument();
+        expect(screen.getByText('They sent this')).toBeInTheDocument();
+        // DoneAllIcon for read, DoneIcon for sent-unread
+        expect(screen.getByTestId('DoneAllIcon')).toBeInTheDocument();
+        expect(screen.getByTestId('DoneIcon')).toBeInTheDocument();
     });
 
     // ── Sending messages + empty check (single render) ──────────────
@@ -421,11 +411,9 @@ describe('MessagingDialog', () => {
         );
         await user.click(addChatButton!);
 
-        await waitFor(() => {
-            expect(screen.getByText('New Conversation')).toBeInTheDocument();
-            expect(screen.getByPlaceholderText('Search by name or ID...')).toBeInTheDocument();
-            expect(screen.getByText('Multi')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('New Conversation')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search by name or ID...')).toBeInTheDocument();
+        expect(screen.getByText('Multi')).toBeInTheDocument();
 
         // Recent conversations shown
         expect(screen.getByText('Recent')).toBeInTheDocument();

@@ -282,10 +282,8 @@ describe('TaskCalendarView', () => {
 
             await user.click(screen.getByRole('button', {name: /week view/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText('12 AM')).toBeInTheDocument();
-                expect(screen.getByText('12 PM')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('12 AM')).toBeInTheDocument();
+            expect(screen.getByText('12 PM')).toBeInTheDocument();
         });
 
         it('shows day headers for the week', async () => {
@@ -309,12 +307,10 @@ describe('TaskCalendarView', () => {
 
             await user.click(screen.getByRole('button', {name: /day view/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText('12 AM')).toBeInTheDocument();
-                expect(screen.getByText('6 AM')).toBeInTheDocument();
-                expect(screen.getByText('12 PM')).toBeInTheDocument();
-                expect(screen.getByText('6 PM')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('12 AM')).toBeInTheDocument();
+            expect(screen.getByText('6 AM')).toBeInTheDocument();
+            expect(screen.getByText('12 PM')).toBeInTheDocument();
+            expect(screen.getByText('6 PM')).toBeInTheDocument();
         });
 
         it('shows overdue tasks sidebar when there are overdue tasks', async () => {
