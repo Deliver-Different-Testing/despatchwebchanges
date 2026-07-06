@@ -21,6 +21,7 @@ import {PanelHeader} from '../../../components/common/panel-header';
 import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
 import {FleetOption} from '../../../interfaces';
 import type {ShowToastFn} from '../../../services/toastService';
+import {headerAccentColor, headerBadgeSx, headerSurfaceSx} from '../../../components/dialogs/shared/styles';
 import dayjs from 'dayjs';
 
 interface DriverDetailsTabProps {
@@ -114,13 +115,12 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                     <Toolbar
                         variant="dense"
                         sx={(theme) => ({
-                            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                            color: theme.palette.primary.contrastText,
+                            ...headerSurfaceSx(theme),
                             minHeight: 48,
                             gap: 2,
                         })}
                     >
-                        <BadgeIcon sx={{fontSize: 20}} />
+                        <BadgeIcon sx={(theme) => ({fontSize: 20, color: headerAccentColor(theme)})}/>
                         <Typography variant="subtitle2" sx={{fontWeight: 600}}>
                             {driver.basicInformation.code}
                         </Typography>
@@ -132,11 +132,10 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                                 icon={<EmailIcon sx={{fontSize: 16, color: 'inherit !important'}} />}
                                 label={driver.basicInformation.email}
                                 size="small"
-                                sx={{
-                                    bgcolor: 'rgba(255,255,255,0.15)',
-                                    color: 'inherit',
+                                sx={(theme) => ({
+                                    ...headerBadgeSx(theme),
                                     '& .MuiChip-icon': {color: 'inherit'},
-                                }}
+                                })}
                             />
                         )}
                     </Toolbar>

@@ -6,7 +6,9 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import type {Theme} from '@mui/material/styles';
 import {accentPalette, sharedColors} from '../../../theme/muiTheme';
+import {headerChromeSx, headerChipSx, headerOnColor} from '../shared/styles';
 import Drawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -70,7 +72,7 @@ import {
 // Static sx values hoisted to module scope. Hot paths inside .map() loops
 // (conversations list, messages list) and the message bubble re-create these
 // on every render; pinning them avoids redundant emotion cache lookups.
-const SX_WHITE_TEXT = {color: 'white'} as const;
+const SX_HEADER_ON = (theme: Theme) => ({color: headerOnColor(theme)});
 const SX_FLEX_1 = {flex: 1} as const;
 const SX_MR_1 = {mr: 1} as const;
 const SX_PRIMARY_AVATAR = {bgcolor: 'primary.main'} as const;
@@ -607,21 +609,21 @@ function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: Dialog
     return (
         <Box
             sx={(theme) => ({
-                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                color: 'white',
+                ...headerChromeSx(theme),
                 px: 2,
-                py: 1.5,
-                display: 'flex',
-                alignItems: 'center',
                 gap: 1,
             })}
         >
             {showBackButton && (
-                <IconButton onClick={onBack} sx={SX_WHITE_TEXT} aria-label="Back">
+                <IconButton onClick={onBack} sx={SX_HEADER_ON} aria-label="Back">
                     <ArrowBackIcon/>
                 </IconButton>
             )}
-            {!showBackButton && <ChatIcon sx={SX_MR_1}/>}
+            {!showBackButton && (
+                <Box sx={(theme) => headerChipSx(theme, 'primary', 36)}>
+                    <ChatIcon/>
+                </Box>
+            )}
             <Box sx={SX_FLEX_1}>
                 <Typography variant="h6" sx={{
                     fontWeight: 600
@@ -634,7 +636,7 @@ function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: Dialog
                     </Typography>
                 )}
             </Box>
-            <IconButton onClick={onClose} sx={SX_WHITE_TEXT} aria-label="Close message center">
+            <IconButton onClick={onClose} sx={SX_HEADER_ON} aria-label="Close message center">
                 <CloseIcon/>
             </IconButton>
         </Box>
@@ -1133,7 +1135,7 @@ function ChatPanel({
                                 sx={{
                                     '&:hover': {
                                         bgcolor: 'primary.main',
-                                        color: 'white',
+                                        color: 'primary.contrastText',
                                         borderColor: 'primary.main',
                                     },
                                 }}

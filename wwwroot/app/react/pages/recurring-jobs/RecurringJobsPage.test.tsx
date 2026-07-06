@@ -222,6 +222,29 @@ describe('RecurringJobsPage', () => {
         });
     });
 
+    // ── Refresh feedback ────────────────────────────────────────────
+    // A background refetch keeps `isLoading` false (placeholderData:
+    // keepPreviousData) and only flips `isFetching`. The toolbar refresh
+    // button must reflect that fetch so the click doesn't read as a no-op.
+    it('shows the refresh button spinning while a background refetch is in flight', () => {
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse([createMockJob(1)]),
+            isLoading: false,
+            isFetching: true,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
+
+        renderWithProviders(createDefaultProps());
+
+        // The toolbar refresh icon is swapped for a spinner (the only
+        // progressbar in this render — the journey panel keeps its own
+        // static refresh icon) and its button is disabled.
+        const progressBars = screen.getAllByRole('progressbar');
+        expect(progressBars).toHaveLength(1);
+        expect(progressBars[0].closest('button')).toBeDisabled();
+    });
+
     // ── Loading state ───────────────────────────────────────────────
     it('should show loading indicator', () => {
         mockUseRecurringJobsList.mockReturnValue({

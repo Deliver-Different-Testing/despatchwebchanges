@@ -25,6 +25,7 @@ interface DialogState {
     parcels: ParcelDimensions[];
     jobId?: number;
     bulkJobId?: number;
+    jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;
     partnerMode?: boolean;
@@ -88,6 +89,7 @@ class EditParcelDimensionsDialogManager {
                         parcels={this.dialogState.parcels}
                         jobId={this.dialogState.jobId}
                         bulkJobId={this.dialogState.bulkJobId}
+                        jobNumber={this.dialogState.jobNumber}
                         isUsCustomer={this.dialogState.isUsCustomer}
                         jobWeight={this.dialogState.jobWeight}
                         partnerMode={this.dialogState.partnerMode}
@@ -109,6 +111,7 @@ class EditParcelDimensionsDialogManager {
                 parcels: options.parcels,
                 jobId: options.jobId,
                 bulkJobId: options.bulkJobId,
+                jobNumber: options.jobNumber,
                 isUsCustomer: options.isUsCustomer,
                 jobWeight: options.jobWeight,
                 partnerMode: options.partnerMode,

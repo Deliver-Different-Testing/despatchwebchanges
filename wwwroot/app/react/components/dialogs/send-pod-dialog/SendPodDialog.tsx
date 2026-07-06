@@ -1,22 +1,19 @@
 import React, {useEffect, useState} from 'react';
-import {alpha, useTheme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
+import Divider from '@mui/material/Divider';
 import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import SendIcon from '@mui/icons-material/Send';
 import DescriptionIcon from '@mui/icons-material/Description';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import {DialogShell, DialogHeader, DialogFooter, sectionPaperSx, sectionLabelSx, dialogFieldSx} from '../shared';
 import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
 import {useAiDraft} from '../../../hooks/useAiDraft';
 import {draftPodEmail} from '../../../services/aiAssistantApi';
@@ -86,7 +83,6 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
     sending,
     sent,
 }) => {
-    const theme = useTheme();
     const [recipients, setRecipients] = useState<string[]>([]);
     const [useBooking, setUseBooking] = useState(false);
     const [useTracking, setUseTracking] = useState(false);
@@ -200,441 +196,164 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    sx: {
-                        borderRadius: 3.5,
-                        overflow: 'hidden',
-                        maxHeight: 'calc(100vh - 48px)',
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <DialogTitle
-                sx={{
-                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                    p: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                }}
-            >
-                <Box sx={{display: 'flex', alignItems: 'center', gap: '14px'}}>
-                    <Box
-                        sx={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 2.5,
-                            background: alpha(theme.palette.primary.contrastText, 0.15),
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                        }}
-                    >
-                        <DescriptionIcon sx={{color: theme.palette.primary.contrastText, fontSize: 20}}/>
-                    </Box>
+        <DialogShell open={open} onClose={handleClose}>
+            <DialogHeader
+                icon={<DescriptionIcon/>}
+                title="Send Proof of Delivery"
+                subtitle={<>Booking {jobData.jobNo} &middot; {jobData.clientName}</>}
+                onClose={handleClose}
+            />
+
+            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
+                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
+                    {/* Recipients */}
                     <Box>
-                        <Typography
-                            sx={{
-                                color: theme.palette.primary.contrastText,
-                                fontWeight: 700,
-                                fontSize: 17,
-                                letterSpacing: '-0.2px',
-                            }}
-                        >
-                            Send Proof of Delivery
+                        <Typography variant="body2" sx={sectionLabelSx}>
+                            Recipients
                         </Typography>
-                        <Typography
-                            sx={{
-                                color: alpha(theme.palette.primary.contrastText, 0.65),
-                                fontSize: 13,
-                                mt: '2px',
-                            }}
-                        >
-                            Booking {jobData.jobNo} &middot; {jobData.clientName}
-                        </Typography>
-                    </Box>
-                </Box>
-                <IconButton
-                    onClick={handleClose}
-                    sx={{
-                        background: alpha(theme.palette.primary.contrastText, 0.15),
-                        color: alpha(theme.palette.primary.contrastText, 0.8),
-                        width: 34,
-                        height: 34,
-                        '&:hover': {background: alpha(theme.palette.primary.contrastText, 0.25)},
-                    }}
-                >
-                    <CloseIcon sx={{fontSize: 18}}/>
-                </IconButton>
-            </DialogTitle>
+                        <Paper elevation={0} sx={sectionPaperSx}>
+                            {showBookingCheckbox && (
+                                <Box
+                                    onClick={toggleBooking}
+                                    sx={{display: 'flex', alignItems: 'center', gap: 1.5, py: 1, cursor: 'pointer', userSelect: 'none'}}
+                                >
+                                    <Checkbox checked={useBooking} size="small" sx={{p: 0}}/>
+                                    <Box>
+                                        <Typography sx={{fontWeight: 500}}>
+                                            Booking {bookingEmails.length > 1 ? 'emails' : 'email'}
+                                        </Typography>
+                                        {bookingEmails.map((email) => (
+                                            <Typography key={email} variant="caption" sx={{display: 'block', color: 'text.secondary', fontFamily: 'monospace'}}>
+                                                {email}
+                                            </Typography>
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
 
-            {/* Body */}
-            <DialogContent sx={{p: '20px 22px 8px', display: 'flex', flexDirection: 'column', gap: '4px'}}>
-                {/* Recipients section */}
-                <Box sx={{mb: '14px'}}>
-                    <Typography
-                        sx={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                            color: 'text.secondary',
-                            mb: 0,
-                        }}
-                    >
-                        Recipients
-                    </Typography>
+                            {showTrackingCheckbox && (
+                                <Box
+                                    onClick={toggleTracking}
+                                    sx={{display: 'flex', alignItems: 'center', gap: 1.5, py: 1, cursor: 'pointer', userSelect: 'none'}}
+                                >
+                                    <Checkbox checked={useTracking} size="small" sx={{p: 0}}/>
+                                    <Box>
+                                        <Typography sx={{fontWeight: 500}}>
+                                            Tracking {uniqueTrackingEmails.length > 1 ? 'emails' : 'email'}
+                                        </Typography>
+                                        {uniqueTrackingEmails.map((email) => (
+                                            <Typography key={email} variant="caption" sx={{display: 'block', color: 'text.secondary', fontFamily: 'monospace'}}>
+                                                {email}
+                                            </Typography>
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
 
-                    {showBookingCheckbox && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                p: '9px 12px',
-                                borderRadius: 2,
-                                cursor: 'pointer',
-                                userSelect: 'none',
-                                border: '1.5px solid',
-                                borderColor: 'grey.200',
-                                mb: '6px',
-                                background: 'grey.50',
-                            }}
-                            onClick={toggleBooking}
-                        >
-                            <Checkbox
-                                checked={useBooking}
-                                size="small"
-                                sx={{
-                                    p: 0,
-                                    color: 'text.disabled',
-                                    '&.Mui-checked': {color: theme.palette.primary.main},
-                                }}
-                            />
-                            <Box>
-                                <Typography sx={{fontSize: 14, fontWeight: 500, color: 'text.primary'}}>
-                                    Booking {bookingEmails.length > 1 ? 'emails' : 'email'}
-                                </Typography>
-                                {bookingEmails.map((email) => (
-                                    <Typography key={email} sx={{fontSize: 12, color: 'text.secondary', fontFamily: 'monospace'}}>
-                                        {email}
-                                    </Typography>
-                                ))}
-                            </Box>
-                        </Box>
-                    )}
+                            {(showBookingCheckbox || showTrackingCheckbox) && <Divider sx={{my: 1.5}}/>}
 
-                    {showTrackingCheckbox && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                p: '9px 12px',
-                                borderRadius: 2,
-                                cursor: 'pointer',
-                                userSelect: 'none',
-                                border: '1.5px solid',
-                                borderColor: 'grey.200',
-                                mb: '6px',
-                                background: 'grey.50',
-                            }}
-                            onClick={toggleTracking}
-                        >
-                            <Checkbox
-                                checked={useTracking}
-                                size="small"
-                                sx={{
-                                    p: 0,
-                                    color: 'text.disabled',
-                                    '&.Mui-checked': {color: theme.palette.primary.main},
-                                }}
-                            />
-                            <Box>
-                                <Typography sx={{fontSize: 14, fontWeight: 500, color: 'text.primary'}}>
-                                    Tracking {uniqueTrackingEmails.length > 1 ? 'emails' : 'email'}
-                                </Typography>
-                                {uniqueTrackingEmails.map((email) => (
-                                    <Typography key={email} sx={{fontSize: 12, color: 'text.secondary', fontFamily: 'monospace'}}>
-                                        {email}
-                                    </Typography>
-                                ))}
-                            </Box>
-                        </Box>
-                    )}
-
-                    <Box sx={{borderTop: '1px solid', borderColor: 'grey.200', my: '10px'}}/>
-
-                    <Box sx={{display: 'flex', gap: '8px'}}>
-                        <TextField
-                            size="small"
-                            type="email"
-                            placeholder="Add another email address\u2026"
-                            value={freeInput}
-                            onChange={(e) => {
-                                setFreeInput(e.target.value);
-                                setFreeError('');
-                            }}
-                            onKeyDown={handleFreeKeyDown}
-                            error={!!freeError}
-                            sx={{
-                                flex: 1,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    background: 'grey.50',
-                                    fontSize: 14,
-                                },
-                            }}
-                        />
-                        <Button
-                            variant="outlined"
-                            onClick={addFreeEmail}
-                            sx={{
-                                borderRadius: 2,
-                                border: '1.5px solid',
-                                borderColor: 'grey.300',
-                                background: 'grey.100',
-                                color: 'text.primary',
-                                fontSize: 14,
-                                fontWeight: 600,
-                                textTransform: 'none',
-                                whiteSpace: 'nowrap',
-                                '&:hover': {background: 'grey.200', borderColor: 'grey.300'},
-                            }}
-                        >
-                            Add
-                        </Button>
-                    </Box>
-                    {freeError ? (
-                        <Typography sx={{fontSize: 12, color: 'error.main', mt: '5px'}}>
-                            {freeError}
-                        </Typography>
-                    ) : (
-                        <Typography sx={{fontSize: 12, color: 'text.disabled', mt: '5px'}}>
-                            Press Enter or comma to add multiple
-                        </Typography>
-                    )}
-                </Box>
-
-                {/* Recipient chips */}
-                {recipients.length > 0 && (
-                    <Box sx={{mb: '14px'}}>
-                        <Typography
-                            sx={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.08em',
-                                color: 'text.secondary',
-                                mb: '6px',
-                            }}
-                        >
-                            Sending to ({recipients.length})
-                        </Typography>
-                        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: '6px'}}>
-                            {recipients.map((r) => (
-                                <Chip
-                                    key={r}
-                                    label={r}
-                                    onDelete={() => removeRecipient(r)}
-                                    sx={{
-                                        background: alpha(theme.palette.primary.main, 0.08),
-                                        color: theme.palette.primary.dark,
-                                        border: `1.5px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                                        borderRadius: 5,
-                                        fontSize: 13,
-                                        fontWeight: 500,
-                                        '& .MuiChip-deleteIcon': {
-                                            color: theme.palette.primary.dark,
-                                            '&:hover': {color: theme.palette.primary.main},
-                                        },
+                            <Box sx={{display: 'flex', gap: 1}}>
+                                <TextField
+                                    size="small"
+                                    fullWidth
+                                    type="email"
+                                    placeholder="Add another email address\u2026"
+                                    value={freeInput}
+                                    onChange={(e) => {
+                                        setFreeInput(e.target.value);
+                                        setFreeError('');
                                     }}
+                                    onKeyDown={handleFreeKeyDown}
+                                    error={!!freeError}
+                                    sx={dialogFieldSx}
                                 />
-                            ))}
-                        </Box>
-                    </Box>
-                )}
-
-                {/* Email preview */}
-                <Box sx={{mb: '14px'}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '6px'}}>
-                        <Typography
-                            sx={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.08em',
-                                color: 'text.secondary',
-                            }}
-                        >
-                            Email preview
-                        </Typography>
-                        <AiDraftButton onClick={handleDraft} isDrafting={isDrafting} />
+                                <Button variant="outlined" onClick={addFreeEmail} sx={{whiteSpace: 'nowrap'}}>
+                                    Add
+                                </Button>
+                            </Box>
+                            <Typography variant="caption" sx={{display: 'block', mt: 0.75, color: freeError ? 'error.main' : 'text.disabled'}}>
+                                {freeError || 'Press Enter or comma to add multiple'}
+                            </Typography>
+                        </Paper>
                     </Box>
 
-                    <Box
-                        sx={{
-                            border: '1.5px solid',
-                            borderColor: 'grey.300',
-                            borderRadius: 2.5,
-                            background: 'grey.50',
-                            overflow: 'hidden',
-                            position: 'relative',
-                        }}
-                    >
-                        {/* Subject */}
-                        <Box sx={{display: 'flex', alignItems: 'flex-start', gap: '12px', p: '10px 14px'}}>
-                            <Typography
-                                sx={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.07em',
-                                    color: 'text.disabled',
-                                    minWidth: 72,
-                                    pt: '1px',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                Subject
+                    {/* Recipient chips */}
+                    {recipients.length > 0 && (
+                        <Box>
+                            <Typography variant="body2" sx={sectionLabelSx}>
+                                Sending to ({recipients.length})
                             </Typography>
-                            <InputBase
-                                value={subject}
-                                onChange={(e) => setSubject(e.target.value)}
-                                inputProps={{'aria-label': 'Email subject'}}
-                                multiline
-                                sx={{fontSize: 13, fontWeight: 600, color: 'text.primary', lineHeight: 1.45, flex: 1, p: 0}}
-                            />
-                        </Box>
-                        <Box sx={{borderTop: '1px solid', borderColor: 'grey.300', mx: '14px'}}/>
-
-                        {/* Attachment */}
-                        <Box sx={{display: 'flex', alignItems: 'flex-start', gap: '12px', p: '10px 14px'}}>
-                            <Typography
-                                sx={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.07em',
-                                    color: 'text.disabled',
-                                    minWidth: 72,
-                                    pt: '1px',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                Attachment
-                            </Typography>
-                            <Box
-                                sx={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    background: 'background.paper',
-                                    border: '1.5px solid',
-                                    borderColor: 'grey.300',
-                                    borderRadius: 1.5,
-                                    p: '3px 9px',
-                                    fontSize: 12,
-                                    fontWeight: 500,
-                                    color: 'text.primary',
-                                }}
-                            >
-                                <AttachFileIcon sx={{fontSize: 13}}/>
-                                POD_{jobData.jobNo}.pdf
+                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
+                                {recipients.map((r) => (
+                                    <Chip
+                                        key={r}
+                                        label={r}
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                        onDelete={() => removeRecipient(r)}
+                                    />
+                                ))}
                             </Box>
                         </Box>
-                        <Box sx={{borderTop: '1px solid', borderColor: 'grey.300', mx: '14px'}}/>
+                    )}
 
-                        {/* Body */}
-                        <InputBase
-                            value={body}
-                            onChange={(e) => setBody(e.target.value)}
-                            inputProps={{'aria-label': 'Email body'}}
-                            multiline
-                            fullWidth
-                            sx={{
-                                p: '12px 14px',
-                                fontSize: 13,
-                                color: 'text.primary',
-                                lineHeight: 1.7,
-                            }}
-                        />
+                    {/* Email preview */}
+                    <Box>
+                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1}}>
+                            <Typography variant="body2" sx={{...sectionLabelSx, mb: 0}}>
+                                Email preview
+                            </Typography>
+                            <AiDraftButton onClick={handleDraft} isDrafting={isDrafting}/>
+                        </Box>
+                        <Paper elevation={0} sx={{...sectionPaperSx, p: 0, overflow: 'hidden'}}>
+                            {/* Subject */}
+                            <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5, py: 1.25, px: 1.75}}>
+                                <Typography variant="caption" sx={{fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'text.disabled', minWidth: 72, pt: '2px', flexShrink: 0}}>
+                                    Subject
+                                </Typography>
+                                <InputBase
+                                    value={subject}
+                                    onChange={(e) => setSubject(e.target.value)}
+                                    inputProps={{'aria-label': 'Email subject'}}
+                                    multiline
+                                    sx={{fontSize: 13, fontWeight: 600, color: 'text.primary', lineHeight: 1.45, flex: 1, p: 0}}
+                                />
+                            </Box>
+                            <Divider/>
+
+                            {/* Attachment */}
+                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, px: 1.75}}>
+                                <Typography variant="caption" sx={{fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'text.disabled', minWidth: 72, flexShrink: 0}}>
+                                    Attachment
+                                </Typography>
+                                <Chip size="small" variant="outlined" icon={<AttachFileIcon/>} label={`POD_${jobData.jobNo}.pdf`}/>
+                            </Box>
+                            <Divider/>
+
+                            {/* Body */}
+                            <InputBase
+                                value={body}
+                                onChange={(e) => setBody(e.target.value)}
+                                inputProps={{'aria-label': 'Email body'}}
+                                multiline
+                                fullWidth
+                                sx={{py: 1.5, px: 1.75, fontSize: 13, color: 'text.primary', lineHeight: 1.7}}
+                            />
+                        </Paper>
                     </Box>
                 </Box>
             </DialogContent>
 
-            {/* Footer */}
-            <DialogActions
-                sx={{
-                    p: '14px 22px 18px',
-                    borderTop: '1px solid',
-                    borderColor: 'grey.200',
-                }}
-            >
-                <Button
-                    onClick={handleClose}
-                    sx={{
-                        borderRadius: 2,
-                        border: '1.5px solid',
-                        borderColor: 'grey.300',
-                        background: 'transparent',
-                        color: 'text.secondary',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        px: '18px',
-                    }}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSend}
-                    disabled={recipients.length === 0 || sending}
-                    sx={{
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                        color: theme.palette.primary.contrastText,
-                        fontSize: 14,
-                        fontWeight: 700,
-                        textTransform: 'none',
-                        px: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        '&:hover': {
-                            background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
-                        },
-                        '&.Mui-disabled': {
-                            background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                            color: theme.palette.primary.contrastText,
-                            opacity: 0.55,
-                        },
-                    }}
-                >
-                    {sent ? (
-                        <>
-                            <CheckIcon sx={{fontSize: 16}}/>
-                            Sent!
-                        </>
-                    ) : sending ? (
-                        'Sending\u2026'
-                    ) : (
-                        <>
-                            <SendIcon sx={{fontSize: 16}}/>
-                            Send POD PDF
-                        </>
-                    )}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={handleClose}
+                onConfirm={handleSend}
+                confirmLabel={sent ? 'Sent!' : 'Send POD PDF'}
+                confirmIcon={sent ? <CheckIcon/> : <SendIcon/>}
+                confirmDisabled={recipients.length === 0}
+                submitting={sending}
+            />
+        </DialogShell>
     );
 };
 

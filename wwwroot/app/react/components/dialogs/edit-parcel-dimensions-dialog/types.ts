@@ -27,6 +27,8 @@ export interface EditParcelDimensionsDialogProps {
     parcels: ParcelDimensions[];
     jobId?: number;
     bulkJobId?: number;
+    /** Human-facing job number, used to auto-fill barcodes as `{jobNumber}-N` when items are added. */
+    jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;
     /**
@@ -48,6 +50,7 @@ export interface EditParcelDimensionsDialogOptions {
     parcels: ParcelDimensions[];
     jobId?: number;
     bulkJobId?: number;
+    jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;
     partnerMode?: boolean;

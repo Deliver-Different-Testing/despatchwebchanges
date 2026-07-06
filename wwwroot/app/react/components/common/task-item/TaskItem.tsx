@@ -320,9 +320,6 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                         '& .task-title': {
                             color: 'primary.main',
                         },
-                        '@media (prefers-reduced-motion: reduce)': {
-                            transform: 'none',
-                        },
                     } : {},
                 })}
             >

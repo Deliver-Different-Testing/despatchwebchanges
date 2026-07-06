@@ -13,6 +13,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 export interface PriceChangeModalProps {
     open: boolean;
@@ -56,32 +57,31 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
             slotProps={{
                 paper: {
                     elevation: 24,
-                    sx: {borderRadius: 2, overflow: 'hidden', width: 400, maxWidth: '95vw'},
+                    sx: {overflow: 'hidden', width: 400, maxWidth: '95vw'},
                 },
             }}
         >
             {/* Header */}
             <Box sx={(theme) => ({
-                background: `linear-gradient(135deg, ${theme.palette.warning.dark} 0%, ${theme.palette.warning.main} 100%)`,
-                color: 'white',
-                px: 3,
-                py: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                minHeight: 56,
+                ...headerChromeSx(theme, 'warning'),
+                minHeight: 48,
             })}>
-                <NotificationsActiveIcon sx={{fontSize: 24}} />
+                <Box sx={(theme) => headerChipSx(theme, 'warning')}>
+                    <NotificationsActiveIcon/>
+                </Box>
                 <Box sx={{flex: 1}}>
                     <Typography variant="h6" sx={{
                         fontWeight: 600
                     }}>Price Change</Typography>
-                    <Typography variant="body2" sx={{opacity: 0.9, mt: 0.25}}>{jobNumber}</Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>{jobNumber}</Typography>
                 </Box>
                 <IconButton
                     onClick={onKeep}
                     disabled={isApplying}
-                    sx={(theme) => ({color: 'white', '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.15)}})}>
+                    sx={(theme) => ({
+                        color: headerOnColor(theme, 'warning'),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.15, 'warning')}
+                    })}>
                     <CloseIcon />
                 </IconButton>
             </Box>

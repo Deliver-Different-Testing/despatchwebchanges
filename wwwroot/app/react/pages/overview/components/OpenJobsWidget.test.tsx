@@ -148,7 +148,7 @@ describe('OpenJobsWidget', () => {
             renderWithTheme(<OpenJobsWidget openJobs={[]} isLoading={false} />);
 
             // The collapse button is the IconButton in the toolbar
-            const collapseButton = screen.getByText('expand_less').closest('button')!;
+            const collapseButton = screen.getByRole('button', {name: 'Collapse open jobs'});
             fireEvent.click(collapseButton);
 
             // Verify state was persisted

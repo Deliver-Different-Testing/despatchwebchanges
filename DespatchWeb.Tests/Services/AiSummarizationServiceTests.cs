@@ -55,7 +55,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(new AiClientResponse
             {
                 TextContent = text,
@@ -80,7 +80,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(response);
     }
 
@@ -97,7 +97,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 captured = call.ArgAt<List<AiMessage>>(1);
@@ -152,7 +152,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 captured = call.ArgAt<List<AiMessage>>(1);
@@ -278,7 +278,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 captured = call.ArgAt<List<AiMessage>>(1);
@@ -315,7 +315,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 capturedTools = call.ArgAt<List<AiToolDefinition>>(3);
@@ -347,7 +347,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(new AiClientResponse { InputTokens = 10, OutputTokens = 0 });
 
         var result = await CreateService().SummarizeJobAsync(1, TestContext.Current.CancellationToken);
@@ -371,7 +371,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(response);
 
         var result = await CreateService().SummarizeJobAsync(1, TestContext.Current.CancellationToken);
@@ -398,7 +398,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 captured = call.ArgAt<List<AiMessage>>(1);
@@ -514,7 +514,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 capturedSystemPrompt = call.ArgAt<string>(0);
@@ -544,7 +544,7 @@ public class AiSummarizationServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 capturedSystem = call.ArgAt<string>(0);

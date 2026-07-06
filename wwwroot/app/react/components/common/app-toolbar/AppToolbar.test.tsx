@@ -6,6 +6,7 @@ import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {AppToolbar} from './AppToolbar';
+import {displayFontFamily} from '../../../theme/muiTheme';
 
 // Create a default theme for tests
 const theme = createTheme();
@@ -35,6 +36,12 @@ describe('AppToolbar', () => {
             renderWithTheme(<AppToolbar {...defaultProps} />);
             const heading = screen.getByRole('heading', {level: 1, name: 'Test Dashboard'});
             expect(heading).toBeInTheDocument();
+        });
+
+        it('should render the active page title in the display face', () => {
+            renderWithTheme(<AppToolbar {...defaultProps} />);
+            const heading = screen.getByRole('heading', {level: 1, name: 'Test Dashboard'});
+            expect(heading).toHaveStyle({fontFamily: displayFontFamily});
         });
 
         it('should render section + page when breadcrumbs are provided', () => {
@@ -163,6 +170,17 @@ describe('AppToolbar', () => {
             fireEvent.mouseEnter(avatarButton);
 
             expect(onMenuHover).toHaveBeenCalledTimes(1);
+        });
+
+        it('should call onMenuClick when the menu button is tapped (touch-accessible path)', () => {
+            const onMenuClick = jest.fn();
+            renderWithTheme(
+                <AppToolbar {...defaultProps} onMenuClick={onMenuClick} />
+            );
+
+            fireEvent.click(screen.getByRole('button', {name: /navigation menu/i}));
+
+            expect(onMenuClick).toHaveBeenCalledTimes(1);
         });
     });
 

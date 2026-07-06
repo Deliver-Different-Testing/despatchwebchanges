@@ -9,11 +9,7 @@
 
 import React, {useState, useCallback, useEffect, useMemo} from 'react';
 import {alpha} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -30,7 +26,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import type {SelectChangeEvent} from '@mui/material/Select';
-import CloseIcon from '@mui/icons-material/Close';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import PersonIcon from '@mui/icons-material/Person';
 import TimerIcon from '@mui/icons-material/Timer';
@@ -46,6 +41,7 @@ import {
 } from '../../../interfaces';
 import {useCourierSearch, useTimeZoneOptions} from '../../../hooks/useCourierApi';
 import type {ShowToastFn} from '../../../services/toastService';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 
 export interface EditAfterhoursDialogProps {
     open: boolean;
@@ -294,16 +290,12 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
     if (!open) return null;
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={onClose}
-            maxWidth="sm"
-            fullWidth
             slotProps={{
                 paper: {
-                    elevation: 24,
                     sx: {
-                        borderRadius: 2,
                         overflow: 'hidden',
                         minWidth: 500,
                         maxWidth: 600,
@@ -311,52 +303,13 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                 },
             }}
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <ScheduleIcon sx={{fontSize: 24}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>
-                        {isNewSchedule ? 'Create' : 'Edit'} Afterhours Schedule
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Set courier availability outside business hours
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    disabled={isSubmitting}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<ScheduleIcon />}
+                title={`${isNewSchedule ? 'Create' : 'Edit'} Afterhours Schedule`}
+                subtitle="Set courier availability outside business hours"
+                onClose={onClose}
+                closeDisabled={isSubmitting}
+            />
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Driver Selection Section */}
@@ -368,7 +321,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                         borderRadius: 2,
                         border: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                     }}
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
@@ -459,7 +412,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                         borderRadius: 2,
                         border: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                     }}
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 3}}>
@@ -611,36 +564,15 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                     )}
                 </Paper>
             </DialogContent>
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'background.default',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button
-                    onClick={onClose}
-                    variant="outlined"
-                    disabled={isSubmitting}
-                    sx={{minWidth: 100}}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSave}
-                    variant="contained"
-                    color="primary"
-                    disabled={!isFormValid || isSubmitting}
-                    startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
-                    sx={{minWidth: 140}}
-                >
-                    {isSubmitting ? 'Saving...' : `${isNewSchedule ? 'Create' : 'Save'} Schedule`}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSave}
+                confirmLabel={isSubmitting ? 'Saving...' : `${isNewSchedule ? 'Create' : 'Save'} Schedule`}
+                confirmIcon={<SaveIcon />}
+                confirmDisabled={!isFormValid || isSubmitting}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

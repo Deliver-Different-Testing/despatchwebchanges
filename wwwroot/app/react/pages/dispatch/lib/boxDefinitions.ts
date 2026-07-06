@@ -35,7 +35,7 @@ export function createDispatchBoxes(): Record<string, IBox> {
         },
         [DispatchBoxes.Supports]: {
             name: DispatchBoxes.Supports,
-            title: 'Supports',
+            title: 'Tasks',
             icon: 'support_agent',
             showRefresh: false,
             visible: true,

@@ -14,7 +14,6 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import Divider from '@mui/material/Divider';
@@ -46,6 +45,8 @@ import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
 import SaveIcon from '@mui/icons-material/Save';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import WarningIcon from '@mui/icons-material/Warning';
+import {DialogShell} from '../shared';
+import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor, headerSurfaceSx} from '../shared/styles';
 import type {ShowToastFn} from '../../../services/toastService';
 import type {
     AddAgentRecoveryRequest,
@@ -305,18 +306,15 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     const isFormOpen = showAssignForm || showEditForm;
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={(_event, reason) => {
                 if (reason !== 'escapeKeyDown') handleCancel();
             }}
             maxWidth="md"
-            fullWidth
             slotProps={{
                 paper: {
-                    elevation: 24,
                     sx: {
-                        borderRadius: 3,
                         overflow: 'hidden',
                         minWidth: {xs: '95%', sm: '90%', md: 800},
                         maxWidth: 1100,
@@ -327,28 +325,10 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
         >
             {/* Header */}
             <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
+                sx={(theme) => headerChromeSx(theme)}
             >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <GroupIcon sx={{fontSize: 28}} />
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <GroupIcon/>
                 </Box>
                 <Box sx={{flex: 1}}>
                     <Typography variant="h5" sx={{
@@ -365,10 +345,10 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                 <IconButton
                     onClick={handleCancel}
                     aria-label="Cancel"
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
+                    })}
                 >
                     <CloseIcon />
                 </IconButton>
@@ -413,24 +393,23 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                 <Box
                                     sx={(theme) => ({
                                         p: 3,
-                                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                                        color: 'white',
+                                        ...headerSurfaceSx(theme),
                                     })}
                                 >
                                     <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 2, mb: 1.5}}>
                                         <Box
-                                            sx={{
+                                            sx={(theme) => ({
                                                 width: 32,
                                                 height: 32,
                                                 borderRadius: 1,
-                                                bgcolor: 'rgba(255,255,255,0.2)',
+                                                bgcolor: headerOverlayColor(theme, 0.2),
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 flexShrink: 0,
-                                            }}
+                                            })}
                                         >
-                                            <RadioButtonCheckedIcon sx={{color: 'white', fontSize: 18}} />
+                                            <RadioButtonCheckedIcon sx={{color: 'inherit', fontSize: 18}} />
                                         </Box>
                                         <Box sx={{flex: 1, minWidth: 0}}>
                                             <Typography variant="caption" sx={{opacity: 0.85, textTransform: 'uppercase', letterSpacing: 0.5}}>
@@ -443,18 +422,18 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     </Box>
                                     <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 2}}>
                                         <Box
-                                            sx={{
+                                            sx={(theme) => ({
                                                 width: 32,
                                                 height: 32,
                                                 borderRadius: 1,
-                                                bgcolor: 'rgba(255,255,255,0.2)',
+                                                bgcolor: headerOverlayColor(theme, 0.2),
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 flexShrink: 0,
-                                            }}
+                                            })}
                                         >
-                                            <LocationOnIcon sx={{color: 'white', fontSize: 18}} />
+                                            <LocationOnIcon sx={{color: 'inherit', fontSize: 18}} />
                                         </Box>
                                         <Box sx={{flex: 1, minWidth: 0}}>
                                             <Typography variant="caption" sx={{opacity: 0.85, textTransform: 'uppercase', letterSpacing: 0.5}}>
@@ -920,7 +899,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                     </>
                 )}
             </DialogActions>
-        </Dialog>
+        </DialogShell>
     );
 };
 

@@ -15,11 +15,7 @@
  */
 
 import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -28,9 +24,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
-import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 import {jobChangeRequestApi, type JobChangeRequestResult} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
 import {toastService} from '../../../services/toastService';
@@ -263,69 +259,13 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             : `Requires ${partnerLabel} to approve before it applies`;
 
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            maxWidth="sm"
-            fullWidth
-            disableEnforceFocus
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        minWidth: 480,
-                        maxWidth: 600,
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <SyncAltIcon sx={{fontSize: 24}}/>
-                </Box>
-                <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="h6" noWrap sx={{
-                        fontWeight: 600
-                    }}>
-                        {lockedField ? `Confirm ${meta.label} change` : `Request change to ${meta.label}`}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Job {jobNo} · {subtitle}
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={handleClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon/>
-                </IconButton>
-            </Box>
+        <DialogShell open={open} onClose={handleClose} disableEnforceFocus>
+            <DialogHeader
+                icon={<SyncAltIcon/>}
+                title={lockedField ? `Confirm ${meta.label} change` : `Request change to ${meta.label}`}
+                subtitle={`Job ${jobNo} · ${subtitle}`}
+                onClose={handleClose}
+            />
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box
@@ -336,7 +276,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                         gap: 2,
                         // Surface the form controls against the muted content
                         // background — matches SelectDialog / EditDateTimeDialog.
-                        '& .MuiOutlinedInput-root': {bgcolor: 'white'},
+                        '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'},
                     }}
                 >
                     {lockedField ? (
@@ -392,33 +332,13 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                 </Box>
             </DialogContent>
             {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'white',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button
-                    onClick={handleClose}
-                    variant="outlined"
-                    sx={{minWidth: 100}}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SendIcon/>}
-                    sx={{minWidth: 100}}
-                >
-                    {meta.mode === 'auto' ? 'Apply' : 'Submit'}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={handleClose}
+                onConfirm={handleSubmit}
+                confirmLabel={meta.mode === 'auto' ? 'Apply' : 'Submit'}
+                confirmIcon={<SendIcon/>}
+            />
+        </DialogShell>
     );
 };
 

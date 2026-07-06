@@ -7,7 +7,8 @@
  * These re-export values from muiTheme.ts to keep a single source of truth.
  */
 
-import {accentPalette, sharedColors} from './muiTheme';
+import {sharedColors} from './muiTheme';
+import {accentPalette, aiColors, grossModeColor} from './palettes';
 
 /** Toolbar / dark-accent color (#57534e) */
 export const toolbarColor = accentPalette[600];
@@ -15,8 +16,15 @@ export const toolbarColor = accentPalette[600];
 /** Surface / dialog body background (#FAFAFA) */
 export const surfaceDefault = sharedColors.surface.default;
 
-/** AI feature accent color (deep purple) */
-export const aiAccentColor = '#7c4dff';
+/**
+ * AI + gross-mode accents now live in the framework-free palettes.ts (the single
+ * source, shared with the MUI theme's `ai` palette role); re-exported here so
+ * existing `designTokens` call sites keep working.
+ */
+export {aiColors, grossModeColor};
+
+/** AI feature accent color (deep purple). Kept for existing call sites. */
+export const aiAccentColor = aiColors.main;
 
 /** Status palette for feature-specific status indicators */
 export const statusColors = {

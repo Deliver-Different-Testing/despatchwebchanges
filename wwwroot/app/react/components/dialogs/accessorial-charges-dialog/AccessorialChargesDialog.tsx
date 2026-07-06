@@ -44,6 +44,7 @@ import {
     PortionJobInfo,
 } from './types';
 import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
+import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
 import {useAiDraft} from '../../../hooks/useAiDraft';
 import {analyzePricing, PricingAnalysisResponse} from '../../../services/aiAssistantApi';
@@ -491,7 +492,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     useEffect(() => {
         if (pendingLoadRef.current) {
             pendingLoadRef.current = false;
-            loadAllRef.current();
+            void loadAllRef.current();
         }
     }, [activePortionJobId]);
 
@@ -806,34 +807,14 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             slotProps={{
                 paper: {
                     elevation: 24,
-                    sx: { borderRadius: 2, overflow: 'hidden', minWidth: 700 },
+                    sx: { overflow: 'hidden', minWidth: 700 },
                 },
             }}
         >
             {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <ReceiptIcon sx={{ fontSize: 24 }} />
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <ReceiptIcon/>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h6" sx={{
@@ -848,14 +829,20 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                 <IconButton
                     onClick={handleRefresh}
                     disabled={isLoading || isAddingCharges}
-                    sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                    })}
                     title="Refresh"
                 >
                     <RefreshIcon />
                 </IconButton>
                 <IconButton
                     onClick={onClose}
-                    sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                    })}
                     title="Close"
                 >
                     <CloseIcon />
@@ -1369,7 +1356,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     sx={(theme) => ({
                         px: 3,
                         py: 2,
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                         borderTop: `1px solid ${theme.palette.divider}`,
                         gap: 1,
                     })}

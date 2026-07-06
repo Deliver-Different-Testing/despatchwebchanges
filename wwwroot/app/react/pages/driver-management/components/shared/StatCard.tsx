@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
+import {monoFontFamily} from '../../../../theme/muiTheme';
 
 interface StatCardProps {
     value: string | number;
@@ -18,7 +19,9 @@ export const StatCard: React.FC<StatCardProps> = ({value, label, color, icon}) =
             <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                 {icon && React.cloneElement(icon as React.ReactElement<Record<string, unknown>>, {sx: {fontSize: 28, color, ...(icon.props as Record<string, unknown>)?.sx as object}})}
                 <Typography variant="h5" color={color} sx={{
-                    fontWeight: 700
+                    fontFamily: monoFontFamily,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums'
                 }}>{value}</Typography>
             </Box>
             <Typography variant="caption" sx={{

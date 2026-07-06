@@ -43,6 +43,7 @@ import {
     getFieldMeta,
     relativeAgeShort,
 } from '../../components/job-change-requests/jobChangeRequestFormatting';
+import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../../components/dialogs/shared/styles';
 
 export interface PartnerApprovalsInboxProps {
     /** Optional callback fired when the user clicks "View job" on a row. */
@@ -118,28 +119,12 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                 than a bolted-on panel. */}
             <Box
                 sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
+                    ...headerChromeSx(theme),
                     flexShrink: 0,
                 })}
             >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <HandshakeIcon sx={{fontSize: 24}}/>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <HandshakeIcon/>
                 </Box>
                 <Box sx={{flex: 1, minWidth: 0}}>
                     <Typography variant="h6" noWrap sx={{
@@ -156,11 +141,11 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                         <IconButton
                             onClick={() => refetch()}
                             disabled={isFetching}
-                            sx={{
-                                color: 'white',
-                                '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                                '&.Mui-disabled': {color: 'rgba(255,255,255,0.4)'},
-                            }}
+                            sx={(theme) => ({
+                                color: headerOnColor(theme),
+                                '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
+                                '&.Mui-disabled': {color: headerOverlayColor(theme, 0.4)},
+                            })}
                         >
                             <RefreshIcon/>
                         </IconButton>

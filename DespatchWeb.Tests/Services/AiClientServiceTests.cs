@@ -1,12 +1,61 @@
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Services;
+using Microsoft.Extensions.Options;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
 /// <summary>
-/// Tests for the internal static parsing methods in AiClientService.
+/// Tests for AiClientService: tool-schema parsing and response-cache behavior.
 /// </summary>
 public class AiClientServiceTests
 {
+    private readonly IAiResponseCache _responseCache = Substitute.For<IAiResponseCache>();
+
+    private readonly IOptions<AnthropicSettings> _settings =
+        Options.Create(new AnthropicSettings { Model = "claude-haiku-4-5" });
+
+    public AiClientServiceTests()
+    {
+        // AnthropicClient's default constructor reads the API key from the env.
+        Environment.SetEnvironmentVariable("ANTHROPIC_API_KEY", "test-key");
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_ServesFromCache_WithoutApiCall_AndZeroesUsage()
+    {
+        var cached = new AiClientResponse
+        {
+            TextContent = "cached summary",
+            InputTokens = 100,
+            OutputTokens = 50
+        };
+        _responseCache.Enabled.Returns(true);
+        _responseCache.BuildKey(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessage>>(),
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<AiToolDefinition>>())
+            .Returns("cache-key");
+        _responseCache.GetAsync("cache-key", Arg.Any<CancellationToken>()).Returns(cached);
+
+        var service = new AiClientService(_settings, _responseCache);
+
+        var result = await service.SendMessageAsync(
+            "system",
+            [new AiMessage { Role = "user", Content = "hi" }],
+            1024,
+            cacheResponse: true);
+
+        Assert.True(result.ServedFromCache);
+        Assert.Equal("cached summary", result.TextContent);
+        // A cache hit costs nothing, so usage is reported as zero.
+        Assert.Equal(0, result.InputTokens);
+        Assert.Equal(0, result.OutputTokens);
+        // On a hit we neither overwrite nor re-store the cache entry.
+        await _responseCache.DidNotReceive()
+            .SetAsync(Arg.Any<string>(), Arg.Any<AiClientResponse>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public void ParseToolProperties_ValidJson_ReturnsDictionaryWithCorrectKeys()
     {

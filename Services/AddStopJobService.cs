@@ -235,7 +235,6 @@ public sealed class AddStopJobService(
             DeliverToPhone = extras?.ContactMobile ?? job.DeliverToPhone,
             Dgclass = job.Dgclass,
             Dgdocument = job.Dgdocument,
-            // RawAmount = await CalculateRawAmountAsync(job),
             PickUpLatitude = job.PickUpLatitude,
             PickUpLongitude = job.PickUpLongitude,
             DeliveryLatitude = job.DeliveryLatitude,

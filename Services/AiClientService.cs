@@ -8,7 +8,8 @@ using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Services;
 
-public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiClientService
+public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiResponseCache responseCache)
+    : IAiClientService
 {
     private readonly AnthropicClient _client = new();
     private readonly AnthropicSettings _settings = settings.Value;
@@ -20,8 +21,26 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         List<AiToolDefinition> tools = null,
         string forceToolName = null,
         bool enableCaching = false,
+        bool cacheResponse = false,
         CancellationToken ct = default)
     {
+        string cacheKey = null;
+        if (cacheResponse && responseCache.Enabled)
+        {
+            cacheKey = responseCache.BuildKey(_settings.Model, systemPrompt, messages, maxTokens, forceToolName, tools);
+            var cached = await responseCache.GetAsync(cacheKey, ct);
+            if (cached != null)
+            {
+                // Served from cache — zero API spend, so report zero usage.
+                return new AiClientResponse
+                {
+                    TextContent = cached.TextContent,
+                    ToolCalls = cached.ToolCalls,
+                    ServedFromCache = true
+                };
+            }
+        }
+
         var messageParams = BuildMessageParameters(systemPrompt, messages, maxTokens, tools, forceToolName, enableCaching);
 
         var response = await _client.Messages.Create(messageParams, ct);
@@ -29,7 +48,9 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         var result = new AiClientResponse
         {
             InputTokens = (int)response.Usage.InputTokens,
-            OutputTokens = (int)response.Usage.OutputTokens
+            OutputTokens = (int)response.Usage.OutputTokens,
+            CacheReadInputTokens = (int)(response.Usage.CacheReadInputTokens ?? 0),
+            CacheCreationInputTokens = (int)(response.Usage.CacheCreationInputTokens ?? 0)
         };
 
         foreach (var block in response.Content)
@@ -47,6 +68,11 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
                     ArgumentsJson = JsonSerializer.Serialize(toolUse.Input)
                 });
             }
+        }
+
+        if (cacheKey != null)
+        {
+            await responseCache.SetAsync(cacheKey, result, ct);
         }
 
         return result;
@@ -87,11 +113,24 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
             Content = msg.Content
         }).ToList();
 
+        // Put the cache breakpoint on the system prompt. Rendering order is
+        // tools -> system -> messages, so a breakpoint on the system block
+        // caches the whole stable prefix (tool schemas + system prompt) for
+        // reuse across calls, rather than the volatile trailing user message.
+        MessageCreateParamsSystem system = systemPrompt;
+        if (enableCaching)
+        {
+            system = new List<TextBlockParam>
+            {
+                new() { Text = systemPrompt, CacheControl = new CacheControlEphemeral() }
+            };
+        }
+
         return new MessageCreateParams
         {
             Model = _settings.Model,
             MaxTokens = maxTokens,
-            System = systemPrompt,
+            System = system,
             Messages = anthropicMessages,
             Tools = tools is { Count: > 0 }
                 ? tools.Select(t => (ToolUnion)new Tool
@@ -107,8 +146,7 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
                 : null,
             ToolChoice = string.IsNullOrEmpty(forceToolName)
                 ? null
-                : new ToolChoiceTool { Name = forceToolName },
-            CacheControl = enableCaching ? new CacheControlEphemeral() : null
+                : new ToolChoiceTool { Name = forceToolName }
         };
     }
 

@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.Models;
+using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -95,6 +96,7 @@ public class AiRateLimiterTests
         var service = CreateService();
 
         // Act & Assert - should complete without error (logging only)
-        await service.RecordTokenUsageAsync(1, "nz", 100, 50);
+        await service.RecordTokenUsageAsync(1, "nz",
+            new AiUsageInfo { InputTokens = 100, OutputTokens = 50 });
     }
 }

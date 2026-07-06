@@ -6,11 +6,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
@@ -22,12 +18,12 @@ import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
 import Avatar from '@mui/material/Avatar';
-import CloseIcon from '@mui/icons-material/Close';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import SaveIcon from '@mui/icons-material/Save';
+import EventBusyOutlinedIcon from '@mui/icons-material/EventBusyOutlined';
+import { DialogShell, DialogHeader, DialogFooter } from '../shared';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -123,16 +119,13 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Dialog
+            <DialogShell
                 open={open}
                 onClose={onClose}
                 maxWidth="lg"
-                fullWidth
                 slotProps={{
                     paper: {
-                        elevation: 24,
                         sx: {
-                            borderRadius: 2,
                             overflow: 'hidden',
                             width: '85%',
                             maxWidth: 1200,
@@ -140,52 +133,13 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                     },
                 }}
             >
-                {/* Header */}
-                <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                        color: 'white',
-                        px: 3,
-                        py: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    })}
-                >
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 1.5,
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <ChecklistIcon sx={{ fontSize: 24 }} />
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" sx={{
-                            fontWeight: 600
-                        }}>
-                            Task Groups Management
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                            Manage task group assignments for jobs
-                        </Typography>
-                    </Box>
-                    <IconButton
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                        sx={{
-                            color: 'white',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
+                <DialogHeader
+                    icon={<ChecklistIcon/>}
+                    title="Task Groups Management"
+                    subtitle="Manage task group assignments for jobs"
+                    onClose={onClose}
+                    closeDisabled={isSubmitting}
+                />
 
                 {/* Content */}
                 <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
@@ -193,7 +147,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                         <Box
                             sx={{
                                 p: 3,
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                                 borderRadius: 2,
                                 boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                             }}
@@ -321,7 +275,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                                                             textField: {
                                                                 size: 'small',
                                                                 fullWidth: true,
-                                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
+                                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } },
                                                             },
                                                         }}
                                                     />
@@ -339,7 +293,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                                                             <TextField
                                                                 {...params}
                                                                 placeholder="Search User..."
-                                                                sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
+                                                                sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
                                                             />
                                                         )}
                                                     />
@@ -362,7 +316,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                         <NoData
                             title="No Task Groups Found"
                             message="Get started by adding task types in the Admin Manager to create your first task group."
-                            icon="event_busy"
+                            icon={<EventBusyOutlinedIcon/>}
                             showAction={true}
                             actionText="Open Admin Manager"
                             onAction={onOpenAdminManager}
@@ -370,36 +324,15 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                     )}
                 </DialogContent>
 
-                {/* Actions */}
-                <DialogActions
-                    sx={(theme) => ({
-                        px: 3,
-                        py: 2,
-                        bgcolor: 'white',
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                        gap: 1,
-                    })}
-                >
-                    <Button
-                        onClick={onClose}
-                        variant="outlined"
-                        disabled={isSubmitting}
-                        sx={{ minWidth: 120 }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSave}
-                        variant="contained"
-                        color="primary"
-                        disabled={!hasEvents || isSubmitting}
-                        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
-                        sx={{ minWidth: 120 }}
-                    >
-                        {isSubmitting ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                <DialogFooter
+                    onCancel={onClose}
+                    onConfirm={handleSave}
+                    confirmLabel={isSubmitting ? 'Saving...' : 'Save Changes'}
+                    confirmIcon={<SaveIcon />}
+                    confirmDisabled={!hasEvents}
+                    submitting={isSubmitting}
+                />
+            </DialogShell>
         </LocalizationProvider>
     );
 };

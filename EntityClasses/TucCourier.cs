@@ -281,6 +281,12 @@ public partial class TucCourier
 
     public DateTime? PortalTokenLastUsedAt { get; set; }
 
+    public bool MobileVerified { get; set; }
+
+    public DateTime? MobileVerifiedDate { get; set; }
+
+    public bool MobileNeedsReview { get; set; }
+
     public virtual TucCourierFleet CourierFleet { get; set; }
 
     public virtual TblCourierGp CourierGps { get; set; }

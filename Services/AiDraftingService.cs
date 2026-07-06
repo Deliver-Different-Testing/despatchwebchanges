@@ -363,9 +363,5 @@ public sealed class AiDraftingService(
             _ => ("internal note", "Audience: dispatch staff. Concise operational shorthand is fine.")
         };
 
-    private static AiUsageInfo ToUsage(AiClientResponse response) => new()
-    {
-        InputTokens = response.InputTokens,
-        OutputTokens = response.OutputTokens
-    };
+    private static AiUsageInfo ToUsage(AiClientResponse response) => AiUsageInfo.From(response);
 }

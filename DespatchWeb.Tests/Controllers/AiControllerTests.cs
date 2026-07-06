@@ -31,8 +31,7 @@ public class AiControllerTests
             .RecordTokenUsageAsync(
                 Arg.Any<int>(),
                 Arg.Any<string>(),
-                Arg.Any<int>(),
-                Arg.Any<int>())
+                Arg.Any<AiUsageInfo>())
             .Returns(Task.CompletedTask);
     }
 
@@ -146,7 +145,8 @@ public class AiControllerTests
 
         await _rateLimiter
             .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", 100, 25);
+            .RecordTokenUsageAsync(1, "Pacific/Auckland",
+                Arg.Is<AiUsageInfo>(u => u.InputTokens == 100 && u.OutputTokens == 25));
     }
 
     [Fact]
@@ -262,7 +262,8 @@ public class AiControllerTests
 
         await _rateLimiter
             .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", 90, 15);
+            .RecordTokenUsageAsync(1, "Pacific/Auckland",
+                Arg.Is<AiUsageInfo>(u => u.InputTokens == 90 && u.OutputTokens == 15));
     }
 
     [Fact]
@@ -362,7 +363,8 @@ public class AiControllerTests
         var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
 
         Assert.IsType<JsonResult>(result);
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland", 70, 18);
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland",
+            Arg.Is<AiUsageInfo>(u => u.InputTokens == 70 && u.OutputTokens == 18));
     }
 
     [Fact]
@@ -500,7 +502,8 @@ public class AiControllerTests
         var result = await controller.ExtractBlockers(1, TestContext.Current.CancellationToken);
 
         Assert.IsType<JsonResult>(result);
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland", 90, 25);
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland",
+            Arg.Is<AiUsageInfo>(u => u.InputTokens == 90 && u.OutputTokens == 25));
     }
 
     [Fact]

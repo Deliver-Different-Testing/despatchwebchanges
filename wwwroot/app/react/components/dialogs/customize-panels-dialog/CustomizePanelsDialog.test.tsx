@@ -33,9 +33,11 @@ describe('CustomizePanelsDialog', () => {
     it("renders each panel's own icon glyph", () => {
         renderWithTheme(<CustomizePanelsDialog {...createMockProps()} />);
 
-        // Material Symbols render the glyph name as ligature text content.
-        expect(screen.getByText('filter_list')).toBeInTheDocument();
-        expect(screen.getByText('map')).toBeInTheDocument();
+        // Each panel row renders its glyph as an MUI SvgIcon.
+        const jobListRow = screen.getByText('Live Job Data').closest('li')!;
+        const mapRow = screen.getByText('Map').closest('li')!;
+        expect(jobListRow.querySelector('svg')).toBeInTheDocument();
+        expect(mapRow.querySelector('svg')).toBeInTheDocument();
     });
 
     it('toggles a panel and returns the updated boxes on Save', async () => {

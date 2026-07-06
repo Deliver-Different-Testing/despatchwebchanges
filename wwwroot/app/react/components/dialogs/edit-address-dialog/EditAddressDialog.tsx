@@ -10,21 +10,16 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Collapse from '@mui/material/Collapse';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import FormControl from '@mui/material/FormControl';
-import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ShippingIcon from '@mui/icons-material/LocalShipping';
@@ -45,6 +40,7 @@ import type {ShowToastFn} from '../../../services/toastService';
 import {MapZoomViewControls} from '../../common/dispatch-map';
 import {safeRemoveObject} from '../../common/here-map/hereMapUtils';
 import {AddressType} from '../../../../enums/address-type.enum';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 
 // Match the pickup/delivery flag colors used on the other maps so the pin
 // inherits the same visual language as the job-detail headers.
@@ -597,16 +593,13 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     };
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={onClose}
             maxWidth="md"
-            fullWidth
             slotProps={{
                 paper: {
-                    elevation: 24,
                     sx: {
-                        borderRadius: 2,
                         overflow: 'hidden',
                         maxWidth: 800,
                     },
@@ -616,52 +609,13 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 },
             }}
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <LocationIcon sx={{fontSize: 24}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>
-                        {title}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Search and update the address details
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    disabled={isSubmitting}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<LocationIcon />}
+                title={title}
+                subtitle="Search and update the address details"
+                onClose={onClose}
+                closeDisabled={isSubmitting}
+            />
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Address Search Section */}
@@ -673,7 +627,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         borderRadius: 2,
                         border: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                     }}
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
@@ -743,7 +697,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         borderRadius: 2,
                         border: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                     }}
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
@@ -910,19 +864,19 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             borderRadius: 2,
                             border: '1px solid',
                             borderColor: 'divider',
-                            bgcolor: 'white',
+                            bgcolor: 'background.paper',
                             overflow: 'hidden',
                         }}
                     >
                         <Box
-                            sx={{
+                            sx={(theme) => ({
                                 px: 2.5,
                                 py: 1.5,
                                 display: 'flex',
                                 alignItems: 'center',
                                 cursor: 'pointer',
-                                '&:hover': {bgcolor: alpha('#000', 0.02)},
-                            }}
+                                '&:hover': {bgcolor: alpha(theme.palette.common.black, 0.02)},
+                            })}
                             onClick={() => setIsContactCardExpanded(!isContactCardExpanded)}
                         >
                             <ShippingIcon sx={{color: 'text.secondary', mr: 1}} />
@@ -1028,7 +982,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         borderRadius: 2,
                         border: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                     }}
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
@@ -1071,36 +1025,15 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     </Box>
                 </Paper>
             </DialogContent>
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'background.default',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button
-                    onClick={onClose}
-                    variant="outlined"
-                    disabled={isSubmitting}
-                    sx={{minWidth: 100}}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSave}
-                    variant="contained"
-                    color="primary"
-                    disabled={isSubmitting}
-                    startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
-                    sx={{minWidth: 140}}
-                >
-                    {isSubmitting ? 'Saving...' : submitLabel}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSave}
+                confirmLabel={isSubmitting ? 'Saving...' : submitLabel}
+                confirmIcon={<SaveIcon />}
+                confirmDisabled={isSubmitting}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

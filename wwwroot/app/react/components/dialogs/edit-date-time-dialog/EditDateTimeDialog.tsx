@@ -28,6 +28,7 @@ import timezone from 'dayjs/plugin/timezone';
 
 import { EditDateTimeDialogProps, EditDateTimeDialogResult } from './types';
 import { getIanaTimezone, getTimezoneName } from '../../../utils/dateUtils';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -158,7 +159,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             slotProps: {
                 textField: {
                     fullWidth: true,
-                    sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
+                    sx: { '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } },
                 },
             },
         };
@@ -197,7 +198,6 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                     paper: {
                         elevation: 24,
                         sx: {
-                            borderRadius: 2,
                             overflow: 'hidden',
                             minWidth: 480,
                             maxWidth: 600,
@@ -206,29 +206,9 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                 }}
             >
                 {/* Header */}
-                <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                        color: 'white',
-                        px: 3,
-                        py: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    })}
-                >
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 1.5,
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <TodayIcon sx={{ fontSize: 24 }} />
+                <Box sx={(theme) => headerChromeSx(theme)}>
+                    <Box sx={(theme) => headerChipSx(theme)}>
+                        <TodayIcon/>
                     </Box>
                     <Box sx={{ flex: 1 }}>
                         <Typography variant="h6" sx={{
@@ -243,10 +223,10 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                     <IconButton
                         onClick={onClose}
                         disabled={isLoading}
-                        sx={{
-                            color: 'white',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                        }}
+                        sx={(theme) => ({
+                            color: headerOnColor(theme),
+                            '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
+                        })}
                     >
                         <CloseIcon />
                     </IconButton>
@@ -273,7 +253,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         slotProps={{
                                             textField: {
                                                 fullWidth: true,
-                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
+                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } },
                                             },
                                         }}
                                     />
@@ -288,7 +268,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         slotProps={{
                                             textField: {
                                                 fullWidth: true,
-                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
+                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } },
                                             },
                                         }}
                                     />
@@ -303,7 +283,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                             <Paper
                                 elevation={0}
                                 sx={{
-                                    bgcolor: 'white',
+                                    bgcolor: 'background.paper',
                                     borderRadius: 3,
                                     p: 2.5,
                                     border: '1px solid',
@@ -340,7 +320,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                     sx={(theme) => ({
                         px: 3,
                         py: 2,
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                         borderTop: `1px solid ${theme.palette.divider}`,
                         gap: 1,
                     })}

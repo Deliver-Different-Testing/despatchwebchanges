@@ -14,6 +14,7 @@ public static class AiServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddSingleton<IAiResponseCache, AiResponseCache>();
         services.AddSingleton<IAiClientService, AiClientService>();
         services.AddSingleton<IAiRateLimiter, AiRateLimiter>();
         services.AddScoped<IAiSummarizationService, AiSummarizationService>();

@@ -12,9 +12,7 @@
 import React from 'react';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import {alpha, useTheme} from '@mui/material/styles';
-import type {SxProps, Theme} from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Box from '@mui/material/Box';
@@ -37,6 +35,8 @@ import PlaceIcon from '@mui/icons-material/Place';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { AgentInfo, AirportViewModel, AddressViewModel } from '../../../interfaces';
+import {DialogShell, sectionPaperSx, sectionLabelSx} from '../shared';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 // Re-export interfaces for backward compatibility
 export type { AgentInfo, AirportViewModel, AddressViewModel };
@@ -49,21 +49,6 @@ export interface AgentInfoDialogProps {
     isLoading: boolean;
     onClose: () => void;
 }
-
-// Canonical section Paper (matches the project's dialog design language).
-const sectionPaperSx = {
-    bgcolor: 'white',
-    borderRadius: 3,
-    p: 2.5,
-    border: '1px solid',
-    borderColor: 'grey.200',
-} satisfies SxProps<Theme>;
-
-const fieldLabelSx = {
-    color: 'text.secondary',
-    fontWeight: 500,
-    mb: 1,
-} satisfies SxProps<Theme>;
 
 // Helper functions
 function formatPhone(phone: string | undefined): string {
@@ -100,44 +85,22 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
     const rankingValue = getRankingValue(agent?.agentRanking);
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={onClose}
             maxWidth="md"
-            fullWidth
             fullScreen={fullScreen}
             aria-labelledby={TITLE_ID}
             slotProps={{
                 paper: {
-                    elevation: 24,
-                    sx: { borderRadius: fullScreen ? 0 : 2, overflow: 'hidden' },
+                    sx: { borderRadius: fullScreen ? 0 : 3.5, overflow: 'hidden' },
                 },
             }}
         >
             {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <EngineeringIcon sx={{ fontSize: 24 }} />
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <EngineeringIcon/>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography id={TITLE_ID} variant="h6" sx={{ fontWeight: 600 }}>
@@ -152,10 +115,10 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                 <IconButton
                     onClick={onClose}
                     aria-label="Close dialog"
-                    sx={{
-                        color: 'white',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                    }}
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
+                    })}
                 >
                     <CloseIcon />
                 </IconButton>
@@ -179,7 +142,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                         <Box sx={{ flex: '1 1 60%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {/* Basic Information */}
                             <Box>
-                                <Typography variant="body2" sx={fieldLabelSx}>
+                                <Typography variant="body2" sx={sectionLabelSx}>
                                     Basic Information
                                 </Typography>
                                 <Paper
@@ -276,7 +239,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
 
                             {/* Notes */}
                             <Box>
-                                <Typography variant="body2" sx={fieldLabelSx}>
+                                <Typography variant="body2" sx={sectionLabelSx}>
                                     Notes
                                 </Typography>
                                 <Paper elevation={0} sx={sectionPaperSx}>
@@ -422,7 +385,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                     sx={(theme) => ({
                         px: 3,
                         py: 2,
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                         borderTop: `1px solid ${theme.palette.divider}`,
                         gap: 1,
                     })}
@@ -432,7 +395,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                     </Button>
                 </DialogActions>
             )}
-        </Dialog>
+        </DialogShell>
     );
 };
 

@@ -319,14 +319,14 @@ public partial class JobRepository
     /// </summary>
     private static bool IsDateProperty(JobProperty property) =>
         property is JobProperty.Date
-                 or JobProperty.Time
-                 or JobProperty.BookedTime
-                 or JobProperty.PuTime
-                 or JobProperty.DeliverBy
-                 or JobProperty.PickupArrivalTime
-                 or JobProperty.DeliveryArrivalTime
-                 or JobProperty.CompletedTime
-                 or JobProperty.FollowupTime;
+            or JobProperty.Time
+            or JobProperty.BookedTime
+            or JobProperty.PuTime
+            or JobProperty.DeliverBy
+            or JobProperty.PickupArrivalTime
+            or JobProperty.DeliveryArrivalTime
+            or JobProperty.CompletedTime
+            or JobProperty.FollowupTime;
 
     /// <summary>
     /// Updates a job using entity tracking for complex cases requiring includes,
@@ -523,6 +523,58 @@ public partial class JobRepository
                 }
 
                 break;
+            case JobProperty.Time:
+            case JobProperty.Date:
+            case JobProperty.Items:
+            case JobProperty.AcceptedJobTypeID:
+            case JobProperty.ClientCode:
+            case JobProperty.Pedal:
+            case JobProperty.Attention:
+            case JobProperty.Reprice:
+            case JobProperty.Truck:
+            case JobProperty.Van:
+            case JobProperty.VanOK:
+            case JobProperty.InternalStatusID:
+            case JobProperty.RefA:
+            case JobProperty.RefB:
+            case JobProperty.OurRef:
+            case JobProperty.FromContactName:
+            case JobProperty.ToContactName:
+            case JobProperty.FromContactPhone:
+            case JobProperty.ToContactPhone:
+            case JobProperty.DeliverToLeaveID:
+            case JobProperty.CompletedTime:
+            case JobProperty.DGClass:
+            case JobProperty.DGDocumentation:
+            case JobProperty.TrackingMethod:
+            case JobProperty.Direct:
+            case JobProperty.TrackingMobile:
+            case JobProperty.TrackingEmail:
+            case JobProperty.PODName:
+            case JobProperty.PodName:
+            case JobProperty.Amount:
+            case JobProperty.Locked:
+            case JobProperty.PuTime:
+            case JobProperty.DeliverBy:
+            case JobProperty.BookedTime:
+            case JobProperty.FollowupTime:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
+            case JobProperty.Active:
+            case JobProperty.CustomJobName:
+            case JobProperty.Barcode:
+            case JobProperty.CourierId:
+            case JobProperty.InactiveBy:
+            case JobProperty.PickupArrivalTime:
+            case JobProperty.DeliveryArrivalTime:
+            case JobProperty.RouteId:
+            case JobProperty.AgentId:
+            case JobProperty.NpAgentId:
+            case JobProperty.RecurringMode:
+            case JobProperty.SavedFlightNumber:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
@@ -831,6 +883,24 @@ public partial class JobRepository
             case JobProperty.Barcode:
                 archive.Barcode = value[..Math.Min(value.Length, 20)];
                 break;
+            case JobProperty.FollowupTime:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
+            case JobProperty.Active:
+            case JobProperty.CustomJobName:
+            case JobProperty.TailLiftPu:
+            case JobProperty.TailLiftDo:
+            case JobProperty.DeliverToPrivateRes:
+            case JobProperty.CourierId:
+            case JobProperty.InactiveBy:
+            case JobProperty.RouteId:
+            case JobProperty.AgentId:
+            case JobProperty.NpAgentId:
+            case JobProperty.RecurringMode:
+            case JobProperty.SavedFlightNumber:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
@@ -959,6 +1029,54 @@ public partial class JobRepository
                 rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Void, voidJob));
                 break;
 
+            case JobProperty.ConNote:
+            case JobProperty.AirportOnly:
+            case JobProperty.AcceptedJobTypeID:
+            case JobProperty.ClientCode:
+            case JobProperty.ContactID:
+            case JobProperty.Pedal:
+            case JobProperty.Attention:
+            case JobProperty.Reprice:
+            case JobProperty.Truck:
+            case JobProperty.Van:
+            case JobProperty.VanOK:
+            case JobProperty.InternalStatusID:
+            case JobProperty.Status:
+            case JobProperty.FromContactPhone:
+            case JobProperty.UndeliverableLocationID:
+            case JobProperty.Delivered:
+            case JobProperty.CompletedTime:
+            case JobProperty.DGClass:
+            case JobProperty.DGDocumentation:
+            case JobProperty.Direct:
+            case JobProperty.PODName:
+            case JobProperty.PodName:
+            case JobProperty.NotifiedJobTypeID:
+            case JobProperty.Locked:
+            case JobProperty.PuTime:
+            case JobProperty.DeliverBy:
+            case JobProperty.BookedTime:
+            case JobProperty.FollowupTime:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
+            case JobProperty.Active:
+            case JobProperty.CustomJobName:
+            case JobProperty.TailLiftPu:
+            case JobProperty.TailLiftDo:
+            case JobProperty.DeliverToPrivateRes:
+            case JobProperty.Barcode:
+            case JobProperty.CourierId:
+            case JobProperty.InactiveBy:
+            case JobProperty.PickupArrivalTime:
+            case JobProperty.DeliveryArrivalTime:
+            case JobProperty.RouteId:
+            case JobProperty.AgentId:
+            case JobProperty.NpAgentId:
+            case JobProperty.RecurringMode:
+            case JobProperty.SavedFlightNumber:
             default:
                 // Property requires entity-based update
                 return false;
@@ -987,6 +1105,72 @@ public partial class JobRepository
                 bulkJob.ClientCode = value[..Math.Min(value.Length, 5)];
                 bulkJob.Client.UcclCode = value[..Math.Min(value.Length, 50)];
                 break;
+            case JobProperty.ConNote:
+            case JobProperty.AirportOnly:
+            case JobProperty.Time:
+            case JobProperty.Date:
+            case JobProperty.Size:
+            case JobProperty.Items:
+            case JobProperty.SpeedID:
+            case JobProperty.AcceptedJobTypeID:
+            case JobProperty.Weight:
+            case JobProperty.ClientID:
+            case JobProperty.ContactID:
+            case JobProperty.Pedal:
+            case JobProperty.Attention:
+            case JobProperty.Reprice:
+            case JobProperty.Truck:
+            case JobProperty.Van:
+            case JobProperty.VanOK:
+            case JobProperty.InternalStatusID:
+            case JobProperty.Status:
+            case JobProperty.RefA:
+            case JobProperty.RefB:
+            case JobProperty.OurRef:
+            case JobProperty.FromContactName:
+            case JobProperty.ToContactName:
+            case JobProperty.FromContactPhone:
+            case JobProperty.ToContactPhone:
+            case JobProperty.DeliverToLeaveID:
+            case JobProperty.UndeliverableLocationID:
+            case JobProperty.Delivered:
+            case JobProperty.CompletedTime:
+            case JobProperty.DGClass:
+            case JobProperty.DGDocumentation:
+            case JobProperty.TrackingMethod:
+            case JobProperty.Direct:
+            case JobProperty.Void:
+            case JobProperty.TrackingMobile:
+            case JobProperty.TrackingEmail:
+            case JobProperty.PODName:
+            case JobProperty.PodName:
+            case JobProperty.Amount:
+            case JobProperty.NotifiedJobTypeID:
+            case JobProperty.Locked:
+            case JobProperty.PuTime:
+            case JobProperty.DeliverBy:
+            case JobProperty.BookedTime:
+            case JobProperty.FollowupTime:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
+            case JobProperty.Active:
+            case JobProperty.CustomJobName:
+            case JobProperty.TailLiftPu:
+            case JobProperty.TailLiftDo:
+            case JobProperty.DeliverToPrivateRes:
+            case JobProperty.Barcode:
+            case JobProperty.CourierId:
+            case JobProperty.InactiveBy:
+            case JobProperty.PickupArrivalTime:
+            case JobProperty.DeliveryArrivalTime:
+            case JobProperty.RouteId:
+            case JobProperty.AgentId:
+            case JobProperty.NpAgentId:
+            case JobProperty.RecurringMode:
+            case JobProperty.SavedFlightNumber:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }

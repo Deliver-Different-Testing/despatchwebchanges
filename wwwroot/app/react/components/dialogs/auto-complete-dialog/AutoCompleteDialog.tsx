@@ -6,11 +6,7 @@
 
 import React, {useState, useCallback, useEffect} from 'react';
 import {alpha} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -21,10 +17,10 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
-import CloseIcon from '@mui/icons-material/Close';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import CheckIcon from '@mui/icons-material/Check';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 
 // Types
 export interface Suggestion {
@@ -162,66 +158,13 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <ManageSearchIcon sx={{fontSize: 28}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h5" sx={{
-                        fontWeight: 600
-                    }}>
-                        {title}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Search and select an option
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+        <DialogShell open={open} onClose={onClose}>
+            <DialogHeader
+                icon={<ManageSearchIcon />}
+                title={title}
+                subtitle="Search and select an option"
+                onClose={onClose}
+            />
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 <Paper
@@ -230,7 +173,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                         p: 3,
                         borderRadius: 2,
                         border: `1px solid ${theme.palette.divider}`,
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                     })}
                 >
                     {/* Type radio — only renders when typeOptions is supplied.
@@ -356,30 +299,14 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                     )}
                 </Paper>
             </DialogContent>
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'white',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={onClose} variant="outlined" sx={{minWidth: 100}}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    disabled={!selectedItem}
-                    startIcon={<CheckIcon />}
-                    sx={{minWidth: 100}}
-                >
-                    Save
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSubmit}
+                confirmLabel="Save"
+                confirmIcon={<CheckIcon />}
+                confirmDisabled={!selectedItem}
+            />
+        </DialogShell>
     );
 };
 

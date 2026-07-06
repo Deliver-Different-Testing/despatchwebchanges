@@ -19,6 +19,7 @@ import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import {formatMins} from '../../../utils/dateUtils';
 import {PanelHeader} from '../../../components/common/panel-header';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {DriverViewModel, IOpenJobResponse, TableSort, ViewJob,} from '../OverviewPage.interfaces';
 import {ContactID} from "../../../../contants";
 
@@ -207,15 +208,16 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
     return (
         <Card variant="outlined" sx={{mt: 2}}>
             <PanelHeader
-                icon={<span className="material-symbols-outlined">inventory_2</span>}
+                icon={<SymbolIcon name="inventory_2" />}
                 title="Open Jobs"
                 action={
                     <>
                         <Tooltip title={isTableView ? 'Card View' : 'Table View'}>
                             <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                <span className="material-symbols-outlined" style={{fontSize: 18, marginRight: 0.5}}>
-                                    {isTableView ? 'dashboard' : 'view_list'}
-                                </span>
+                                <SymbolIcon
+                                    name={isTableView ? 'dashboard' : 'view_list'}
+                                    sx={{fontSize: 18, mr: 0.5}}
+                                />
                                 <Switch
                                     checked={isTableView}
                                     onChange={toggleViewMode}
@@ -224,10 +226,13 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                             </Box>
                         </Tooltip>
 
-                        <IconButton size="small" onClick={toggleCollapse} sx={{color: 'inherit'}}>
-                            <span className="material-symbols-outlined">
-                                {isCollapsed ? 'expand_more' : 'expand_less'}
-                            </span>
+                        <IconButton
+                            size="small"
+                            onClick={toggleCollapse}
+                            aria-label={isCollapsed ? 'Expand open jobs' : 'Collapse open jobs'}
+                            sx={{color: 'inherit'}}
+                        >
+                            <SymbolIcon name={isCollapsed ? 'expand_more' : 'expand_less'} />
                         </IconButton>
                     </>
                 }
@@ -237,12 +242,7 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                     {/* Empty state */}
                     {viewJobs.length === 0 && !isLoading && (
                         <Box sx={{textAlign: 'center', py: 4, color: 'text.disabled'}}>
-                            <span
-                                className="material-symbols-outlined"
-                                style={{fontSize: 48, display: 'block'}}
-                            >
-                                inventory_2
-                            </span>
+                            <SymbolIcon name="inventory_2" sx={{fontSize: 48}} />
                             <Typography
                                 variant="body1"
                                 sx={{
@@ -420,9 +420,7 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = React.memo(({driver: ini
                     minHeight: 44,
                 }}
             >
-                <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                    {expanded ? 'expand_less' : 'expand_more'}
-                </span>
+                <SymbolIcon name={expanded ? 'expand_less' : 'expand_more'} sx={{fontSize: 20}} />
                 <Typography variant="subtitle2" sx={{ml: 1, fontWeight: 600}}>
                     {initialDriver.name || 'Unassigned'}
                 </Typography>
@@ -433,14 +431,7 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = React.memo(({driver: ini
 
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, color: initialDriver.completedToday > 0 ? 'success.main' : 'error.main'}}>
-                        <span
-                            className="material-symbols-outlined"
-                            style={{
-                                fontSize: 18,
-                            }}
-                        >
-                            check_circle
-                        </span>
+                        <SymbolIcon name="check_circle" sx={{fontSize: 18}} />
                         <Typography variant="caption">{initialDriver.completedToday} completed today</Typography>
                     </Box>
 
@@ -496,11 +487,7 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
                     <Typography variant="body2">{job.reference}</Typography>
                 </Box>
                 <Chip
-                    icon={
-                        <span className="material-symbols-outlined" style={{fontSize: 16}}>
-                            package_2
-                        </span>
-                    }
+                    icon={<SymbolIcon name="package_2" sx={{fontSize: 16}} />}
                     label={job.status}
                     size="small"
                     sx={{fontSize: '0.75rem'}}
@@ -513,9 +500,7 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
             <Box sx={{display: 'flex', gap: 2}}>
                 <Box sx={{flex: 1}}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: 'primary.main'}}>
-                        <span className="material-symbols-outlined" style={{fontSize: 16}}>
-                            pin_drop
-                        </span>
+                        <SymbolIcon name="pin_drop" sx={{fontSize: 16}} />
                         <Typography variant="body2" sx={{fontWeight: 500, color: 'text.primary'}}>
                             Pickup: {job.pickup.timeString}
                         </Typography>
@@ -534,9 +519,7 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
                 </Box>
                 <Box sx={{flex: 1}}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: 'primary.main'}}>
-                        <span className="material-symbols-outlined" style={{fontSize: 16}}>
-                            pin_drop
-                        </span>
+                        <SymbolIcon name="pin_drop" sx={{fontSize: 16}} />
                         <Typography variant="body2" sx={{fontWeight: 500, color: 'text.primary'}}>
                             Delivery: {job.delivery.timeString}
                         </Typography>
@@ -560,15 +543,11 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
             {/* Footer */}
             <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                    <span className="material-symbols-outlined" style={{fontSize: 16}}>
-                        directions_car
-                    </span>
+                    <SymbolIcon name="directions_car" sx={{fontSize: 16}} />
                     <Typography variant="caption">Mileage: {job.mileage}</Typography>
                 </Box>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                    <span className="material-symbols-outlined" style={{fontSize: 16}}>
-                        inventory_2
-                    </span>
+                    <SymbolIcon name="inventory_2" sx={{fontSize: 16}} />
                     <Typography variant="caption">
                         {job.quantity} {job.packageType}
                     </Typography>

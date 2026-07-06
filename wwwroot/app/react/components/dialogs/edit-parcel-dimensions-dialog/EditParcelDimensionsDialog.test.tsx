@@ -175,6 +175,75 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     });
 });
 
+// ── Barcode auto-fill from job number ──────────────────────────────
+
+describe('EditParcelDimensionsDialog barcode auto-fill', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    const savedParcels = () => {
+        const call = mockPost.mock.calls.find(c => c[0] === 'job/UpdateJobPackages');
+        return (call?.[1]?.parcels ?? []) as ParcelDimensions[];
+    };
+
+    it('auto-fills an added item barcode as {jobNumber}-N, continuing past existing barcodes and leaving them untouched', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                jobNumber={55}
+                parcels={[mockParcel({weight: 5, barcode: '55-3'})]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /increase quantity/i}));
+        await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        const barcodes = savedParcels().map(p => p.barcode);
+        expect(barcodes).toContain('55-3'); // existing barcode preserved
+        expect(barcodes).toContain('55-4'); // new item continues the sequence
+    });
+
+    it('auto-fills the first barcode of a newly added package type', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                jobNumber={55}
+                parcels={[mockParcel({weight: 5})]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /add package type/i}));
+
+        // Give the new type a weight so Save enables.
+        const weightInputs = screen.getAllByPlaceholderText('—');
+        await user.clear(weightInputs[weightInputs.length - 1]);
+        await user.paste('5');
+
+        await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        expect(savedParcels().map(p => p.barcode)).toContain('55-1');
+    });
+
+    it('leaves added barcodes empty when no jobNumber is provided', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                parcels={[mockParcel({weight: 5})]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /increase quantity/i}));
+        await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        expect(savedParcels().some(p => p.barcode)).toBe(false);
+    });
+});
+
 // ── Weight validation ──────────────────────────────────────────────
 
 describe('EditParcelDimensionsDialog weight validation', () => {

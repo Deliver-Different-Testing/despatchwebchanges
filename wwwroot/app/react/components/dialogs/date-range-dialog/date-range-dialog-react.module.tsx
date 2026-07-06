@@ -106,22 +106,6 @@ const dateRangeDialogReactModule = window.angular!.module(
     []
 );
 
-// Register a service that wraps the React dialog
-dateRangeDialogReactModule.service('dateRangeDialogReactService', [
-    function() {
-        return {
-            /**
-             * Opens the React date range dialog
-             * @param dateRange - Optional initial date range
-             * @returns Promise resolving to {start, end} or null if canceled
-             */
-            openDateRangeDialog: function(dateRange?: { start?: Date; end?: Date }) {
-                return openDateRangeDialog(dateRange);
-            }
-        };
-    }
-]);
-
 console.log('[DateRangeDialogReact] Module registered');
 
 export default dateRangeDialogReactModule;

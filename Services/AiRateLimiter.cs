@@ -1,5 +1,6 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Response;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -39,11 +40,21 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
         return false;
     }
 
-    public Task RecordTokenUsageAsync(int staffId, string tenantId, int inputTokens, int outputTokens)
+    public Task RecordTokenUsageAsync(int staffId, string tenantId, AiUsageInfo usage)
     {
+        var costUsd =
+            usage.InputTokens / 1_000_000m * _settings.InputPricePerMillion +
+            usage.OutputTokens / 1_000_000m * _settings.OutputPricePerMillion +
+            usage.CacheReadInputTokens / 1_000_000m * _settings.CacheReadPricePerMillion +
+            usage.CacheCreationInputTokens / 1_000_000m * _settings.CacheWritePricePerMillion;
+
         Log.Information(
-            "AI token usage - Staff: {StaffId}, Tenant: {TenantId}, Input: {InputTokens}, Output: {OutputTokens}",
-            staffId, tenantId, inputTokens, outputTokens);
+            "AI token usage - Staff: {StaffId}, Tenant: {TenantId}, Model: {Model}, " +
+            "Input: {InputTokens}, Output: {OutputTokens}, CacheRead: {CacheReadTokens}, " +
+            "CacheWrite: {CacheCreationTokens}, CostUsd: {CostUsd:F6}",
+            staffId, tenantId, _settings.Model,
+            usage.InputTokens, usage.OutputTokens,
+            usage.CacheReadInputTokens, usage.CacheCreationInputTokens, costUsd);
         return Task.CompletedTask;
     }
 

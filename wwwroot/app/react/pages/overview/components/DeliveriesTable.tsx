@@ -15,6 +15,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import {alpha, useTheme, type Theme} from '@mui/material/styles';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {OverviewTableParentJob, TableSort} from '../OverviewPage.interfaces';
 
 interface DeliveriesTableProps {
@@ -210,10 +211,9 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                                             <IconButton
                                                 size="small"
                                                 onClick={() => onToggleExpand(delivery.jobId)}
+                                                aria-label={delivery.expanded ? 'Collapse child jobs' : 'Expand child jobs'}
                                             >
-                                                <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                                    {delivery.expanded ? 'expand_more' : 'chevron_right'}
-                                                </span>
+                                                <SymbolIcon name={delivery.expanded ? 'expand_more' : 'chevron_right'} sx={{fontSize: 20}} />
                                             </IconButton>
                                         )}
                                     </TableCell>
@@ -230,17 +230,13 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                                     <TableCell sx={{py: 1}}>{delivery.region}</TableCell>
                                     <TableCell sx={{py: 1, whiteSpace: 'nowrap'}}>
                                         <Tooltip title="Open Map">
-                                            <IconButton size="small" onClick={() => onShowMap(delivery)}>
-                                                <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                                    map
-                                                </span>
+                                            <IconButton size="small" onClick={() => onShowMap(delivery)} aria-label="Open map">
+                                                <SymbolIcon name="map" sx={{fontSize: 20}} />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="View Job Details">
-                                            <IconButton size="small" onClick={() => onOpenJobDetail(delivery)}>
-                                                <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                                    visibility
-                                                </span>
+                                            <IconButton size="small" onClick={() => onOpenJobDetail(delivery)} aria-label="View job details">
+                                                <SymbolIcon name="visibility" sx={{fontSize: 20}} />
                                             </IconButton>
                                         </Tooltip>
                                     </TableCell>
@@ -273,12 +269,7 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
             {/* Empty state */}
             {deliveries.length === 0 && !isLoading && (
                 <Box sx={{textAlign: 'center', py: 6, color: 'text.disabled'}}>
-                    <span
-                        className="material-symbols-outlined"
-                        style={{fontSize: 48, display: 'block'}}
-                    >
-                        local_shipping
-                    </span>
+                    <SymbolIcon name="local_shipping" sx={{fontSize: 48}} />
                     <Typography
                         variant="body1"
                         sx={{

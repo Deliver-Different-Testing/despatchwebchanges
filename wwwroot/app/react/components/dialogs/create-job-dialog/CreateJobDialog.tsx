@@ -10,15 +10,12 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
-import CloseIcon from '@mui/icons-material/Close';
 import ContactIcon from '@mui/icons-material/ContactPhone';
 import RefIcon from '@mui/icons-material/Description';
 import VehicleIcon from '@mui/icons-material/DirectionsCar';
@@ -46,6 +43,7 @@ import {dayjs, formatDateForApi, getIanaTimezone} from '../../../utils/dateUtils
 import {getStateByAbbreviation} from '../../../utils/usStates';
 import type {Dayjs} from 'dayjs';
 import type {ShowToastFn} from '../../../services/toastService';
+import {DialogShell, DialogHeader} from '../shared';
 
 // Section wrapper component for consistent styling
 const FormSection: React.FC<{
@@ -62,7 +60,7 @@ const FormSection: React.FC<{
             borderRadius: 2,
             border: '1px solid',
             borderColor: 'divider',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
         }}
     >
         <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
@@ -409,68 +407,26 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
     if (!open) return null;
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={isLoading ? undefined : onClose}
             maxWidth="md"
-            fullWidth
             slotProps={{
                 paper: {
-                    elevation: 24,
                     sx: {
-                        borderRadius: 2,
                         overflow: 'hidden',
                         maxWidth: 900,
                     },
                 },
             }}
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <AddBusinessIcon sx={{fontSize: 24}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>
-                        Add New Job
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Create a new dispatch job
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    disabled={isLoading}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<AddBusinessIcon />}
+                title="Add New Job"
+                subtitle="Create a new dispatch job"
+                onClose={onClose}
+                closeDisabled={isLoading}
+            />
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Job Details Section */}
@@ -827,7 +783,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                     </>
                 )}
             </DialogActions>
-        </Dialog>
+        </DialogShell>
     );
 };
 

@@ -1,4 +1,4 @@
-﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,6 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly IJobApiClient _jobApiClientMock = Substitute.For<IJobApiClient>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryPodSearchDownloadTests()
@@ -41,8 +40,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         _tenantInfoServiceMock,
         _clock,
         _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        _jobApiClientMock
+        _createJobServiceMock
     );
 
     private DespatchContext CreateContext() => _db.CreateContext();

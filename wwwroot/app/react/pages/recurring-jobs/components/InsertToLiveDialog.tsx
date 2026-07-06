@@ -19,18 +19,22 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Alert from '@mui/material/Alert';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import FormHelperText from '@mui/material/FormHelperText';
 import FormLabel from '@mui/material/FormLabel';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, {Dayjs} from 'dayjs';
+import type {SxProps, Theme} from '@mui/material';
 import {recurringJobsApi} from '../../../services/recurringJobsApi';
 import {
     InsertRecurringToLiveResult,
@@ -38,6 +42,20 @@ import {
     PrebookListModel,
 } from '../../../interfaces';
 import type {ShowToastFn} from '../../../services/toastService';
+import {
+    headerChipSx,
+    headerChromeSx,
+    headerOnColor,
+    headerOverlayColor
+} from '../../../components/dialogs/shared/styles';
+
+const sectionPaperSx = {
+    bgcolor: 'white',
+    borderRadius: 3,
+    p: 2.5,
+    border: '1px solid',
+    borderColor: 'grey.200',
+} satisfies SxProps<Theme>;
 
 export interface InsertToLiveDialogProps {
     open: boolean;
@@ -123,66 +141,136 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
     }
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <DialogTitle>Insert to live</DialogTitle>
-            <DialogContent>
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, pt: 1}}>
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
+        <Dialog
+            open={open}
+            onClose={handleClose}
+            maxWidth="sm"
+            fullWidth
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: {
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        minWidth: 480,
+                        maxWidth: 600,
+                    },
+                },
+            }}
+        >
+            {/* Header */}
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <RocketLaunchIcon/>
+                </Box>
+                <Box sx={{flex: 1}}>
+                    <Typography variant="h6" sx={{fontWeight: 600}}>
+                        Insert to live
+                    </Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        {job.jobNo} &middot; {job.customJobName || job.client}
+                    </Typography>
+                </Box>
+                <IconButton
+                    onClick={handleClose}
+                    disabled={isSubmitting}
+                    aria-label="Close dialog"
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                    })}
+                >
+                    <CloseIcon/>
+                </IconButton>
+            </Box>
+
+            {/* Content */}
+            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
+                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
+                    {/* Booking */}
+                    <Paper elevation={0} sx={sectionPaperSx}>
+                        <Typography variant="body2" sx={{color: 'text.secondary', fontWeight: 500}}>
                             Booking
                         </Typography>
                         <Typography variant="body1">
                             {job.jobNo} — {job.customJobName || job.client}
                         </Typography>
                         {job.routeName && (
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{color: 'text.secondary', mt: 0.25}}>
                                 Route: {job.routeName}
                             </Typography>
                         )}
+                    </Paper>
+
+                    {/* Insert date */}
+                    <Box>
+                        <Typography variant="body2" sx={{color: 'text.secondary', fontWeight: 500, mb: 1}}>
+                            Insert date
+                        </Typography>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                label="Insert date"
+                                value={insertDate}
+                                onChange={(value) => setInsertDate(value)}
+                                disabled={isSubmitting}
+                                format="YYYY-MM-DD"
+                                slotProps={{
+                                    textField: {
+                                        required: true,
+                                        size: 'small',
+                                        fullWidth: true,
+                                        sx: {'& .MuiOutlinedInput-root': {bgcolor: 'white'}},
+                                    },
+                                }}
+                            />
+                        </LocalizationProvider>
                     </Box>
 
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            label="Insert date"
-                            value={insertDate}
-                            onChange={(value) => setInsertDate(value)}
-                            disabled={isSubmitting}
-                            format="YYYY-MM-DD"
-                            slotProps={{
-                                textField: {
-                                    required: true,
-                                    size: 'small',
-                                    fullWidth: true,
-                                },
-                            }}
-                        />
-                    </LocalizationProvider>
+                    {/* Scope */}
+                    <Paper elevation={0} sx={sectionPaperSx}>
+                        <FormControl disabled={isSubmitting}>
+                            <FormLabel>Scope</FormLabel>
+                            <RadioGroup value={scope} onChange={handleScopeChange}>
+                                <FormControlLabel
+                                    value={InsertToLiveScope.Group}
+                                    control={<Radio/>}
+                                    label="Selected booking (parent + any children)"
+                                />
+                                <FormControlLabel
+                                    value={InsertToLiveScope.Route}
+                                    control={<Radio/>}
+                                    label="All Manual bookings on the same route for that date"
+                                    disabled={!job.routeId}
+                                />
+                            </RadioGroup>
+                        </FormControl>
+                    </Paper>
 
-                    <FormControl disabled={isSubmitting}>
-                        <FormLabel>Scope</FormLabel>
-                        <RadioGroup value={scope} onChange={handleScopeChange}>
-                            <FormControlLabel
-                                value={InsertToLiveScope.Group}
-                                control={<Radio/>}
-                                label="Selected booking (parent + any children)"
-                            />
-                            <FormControlLabel
-                                value={InsertToLiveScope.Route}
-                                control={<Radio/>}
-                                label="All Manual bookings on the same route for that date"
-                                disabled={!job.routeId}
-                            />
-                        </RadioGroup>
-                        <FormHelperText>
-                            A fresh job number is minted per push (same logic as the nightly cron),
-                            so repeat pushes are always safe. Source bookings stay on Manual mode —
-                            use Activate from the row actions to opt into the nightly cron.
-                        </FormHelperText>
-                    </FormControl>
+                    {/* Guidance */}
+                    <Alert severity="info">
+                        A fresh job number is minted per push (same logic as the nightly cron),
+                        so repeat pushes are always safe. Source bookings stay on Manual mode —
+                        use Activate from the row actions to opt into the nightly cron.
+                    </Alert>
                 </Box>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={handleClose} disabled={isSubmitting}>
+
+            {/* Actions */}
+            <DialogActions
+                sx={(theme) => ({
+                    px: 3,
+                    py: 2,
+                    bgcolor: 'white',
+                    borderTop: `1px solid ${theme.palette.divider}`,
+                    gap: 1,
+                })}
+            >
+                <Button
+                    onClick={handleClose}
+                    variant="outlined"
+                    disabled={isSubmitting}
+                    sx={{minWidth: 100}}
+                >
                     Cancel
                 </Button>
                 <Button
@@ -190,7 +278,10 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
                     color="primary"
                     variant="contained"
                     disabled={isSubmitting || !insertDate}
-                    startIcon={isSubmitting ? <CircularProgress size={16} color="inherit"/> : undefined}
+                    startIcon={isSubmitting
+                        ? <CircularProgress size={16} color="inherit"/>
+                        : <RocketLaunchIcon/>}
+                    sx={{minWidth: 100}}
                 >
                     {isSubmitting ? 'Inserting...' : 'Insert to live'}
                 </Button>

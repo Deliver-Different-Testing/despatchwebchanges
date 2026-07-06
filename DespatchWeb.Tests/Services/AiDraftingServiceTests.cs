@@ -33,7 +33,7 @@ public class AiDraftingServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(new AiClientResponse
             {
                 TextContent = text,
@@ -54,7 +54,7 @@ public class AiDraftingServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(response);
     }
 
@@ -89,7 +89,7 @@ public class AiDraftingServiceTests
 
         await _aiClientMock.Received(1).SendMessageAsync(
             Arg.Any<string>(), Arg.Any<List<AiMessage>>(), 512,
-            null, null, true, Arg.Any<CancellationToken>());
+            null, null, true, false, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class AiDraftingServiceTests
                 Arg.Any<string>(),
                 Arg.Do<List<AiMessage>>(m => capturedUserMessage = m[0].Content),
                 Arg.Any<int>(), Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(new AiClientResponse { TextContent = "ok" });
         var service = CreateService();
 
@@ -125,7 +125,7 @@ public class AiDraftingServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Do<string>(s => capturedSystem = s),
                 Arg.Any<List<AiMessage>>(), Arg.Any<int>(), Arg.Any<List<AiToolDefinition>>(),
-                Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(new AiClientResponse { TextContent = "ok" });
         var service = CreateService();
 
@@ -144,7 +144,7 @@ public class AiDraftingServiceTests
         _aiClientMock.SendMessageAsync(
                 Arg.Do<string>(s => capturedSystem = s),
                 Arg.Any<List<AiMessage>>(), Arg.Any<int>(), Arg.Any<List<AiToolDefinition>>(),
-                Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(new AiClientResponse { TextContent = "Customer requested a call." });
         var service = CreateService();
 
@@ -192,7 +192,7 @@ public class AiDraftingServiceTests
 
         Assert.Equal("Job not found.", result.Body);
         await _aiClientMock.DidNotReceiveWithAnyArgs().SendMessageAsync(
-            null!, null!, 0, null, null, false, CancellationToken.None);
+            null!, null!, 0, null, null, false, false, CancellationToken.None);
     }
 
     // ----- Compose email ----------------------------------------------------

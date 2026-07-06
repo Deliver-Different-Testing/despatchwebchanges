@@ -29,8 +29,7 @@ public class AiController(
 
             var response = await summarizationService.SummarizeJobNotesAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -60,8 +59,7 @@ public class AiController(
 
             var response = await summarizationService.SummarizeJobEventsAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -91,8 +89,7 @@ public class AiController(
 
             var response = await summarizationService.SummarizeTaskDashboardAsync(ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -122,8 +119,7 @@ public class AiController(
 
             var response = await summarizationService.SummarizeJobAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -153,8 +149,7 @@ public class AiController(
 
             var response = await summarizationService.SummarizeOperationsAsync(ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -184,8 +179,7 @@ public class AiController(
 
             var response = await summarizationService.SummarizeComplianceAsync(ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -215,8 +209,7 @@ public class AiController(
 
             var response = await draftingService.DraftCourierMessageAsync(request, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -246,8 +239,7 @@ public class AiController(
 
             var response = await draftingService.DraftEmailAsync(request, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -277,8 +269,7 @@ public class AiController(
 
             var response = await draftingService.DraftPodEmailAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -308,8 +299,7 @@ public class AiController(
 
             var response = await draftingService.DraftNoteAsync(request, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -339,8 +329,7 @@ public class AiController(
 
             var response = await insightsService.ExtractBlockersAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -370,8 +359,7 @@ public class AiController(
 
             var response = await insightsService.AnalyzePricingAsync(jobId, accessorialChargeGroupId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }
@@ -401,8 +389,7 @@ public class AiController(
 
             var response = await insightsService.TriageChangeRequestAsync(requestId, jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, response.Usage.InputTokens, response.Usage.OutputTokens);
+            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
 
             return Json(response);
         }

@@ -1,7 +1,6 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using DespatchWeb.Services.JobApi;
 
 namespace DespatchWeb.Extensions;
 
@@ -22,11 +21,6 @@ public static class JobServiceCollectionExtensions
         services.AddScoped<IJobChangeRequestService, JobChangeRequestService>();
         services.AddScoped<IJobChangeRequestPartnerClient, JobChangeRequestPartnerClient>();
         services.AddScoped<IPartnerJobGate, PartnerJobGate>();
-
-        services.Configure<JobApiOptions>(configuration.GetSection("JobApi"));
-        services.AddScoped<IDespatchApiBaseUrlResolver, DespatchApiBaseUrlResolver>();
-        services.AddHttpClient<IDespatchApiClient, DespatchApiClient>();
-        services.AddScoped<IJobApiClient, JobApiClient>();
 
         return services;
     }

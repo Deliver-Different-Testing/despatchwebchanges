@@ -16,6 +16,7 @@ import Chip from '@mui/material/Chip';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import type {SxProps, Theme} from '@mui/material/styles';
+import {monoFontFamily} from '../../../../theme/muiTheme';
 import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import DensityMediumIcon from '@mui/icons-material/DensityMedium';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
@@ -75,6 +76,7 @@ const styles: Record<string, SxProps<Theme>> = {
         mr: 'auto',
     },
     jobNo: {
+        fontFamily: monoFontFamily,
         fontSize: '1.125rem',
         fontWeight: 700,
         color: 'text.primary',

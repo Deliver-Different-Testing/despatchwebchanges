@@ -14,6 +14,12 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import CloseIcon from '@mui/icons-material/Close';
 import {fetchTruckCourierStatus} from '../../../services/courierApi';
 import {queryKeys} from '../../../query/queryClient';
+import {
+    headerChipSx,
+    headerChromeSx,
+    headerOnColor,
+    headerOverlayColor
+} from '../../../components/dialogs/shared/styles';
 
 export interface TruckLoadingStatusDialogProps {
     open: boolean;
@@ -67,19 +73,9 @@ export const TruckLoadingStatusDialog: React.FC<TruckLoadingStatusDialogProps> =
             fullWidth
             slotProps={{paper: {elevation: 24, sx: {borderRadius: 2, overflow: 'hidden', minWidth: 480, maxWidth: 600}}}}
         >
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box sx={{width: 44, height: 44, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                    <LocalShippingIcon sx={{fontSize: 24}} />
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <LocalShippingIcon/>
                 </Box>
                 <Box sx={{flex: 1}}>
                     <Typography variant="h6" sx={{fontWeight: 600}}>Truck Loading Status</Typography>
@@ -87,7 +83,10 @@ export const TruckLoadingStatusDialog: React.FC<TruckLoadingStatusDialogProps> =
                         <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>{courierLabel}</Typography>
                     )}
                 </Box>
-                <IconButton onClick={onClose} aria-label="Close dialog" sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}>
+                <IconButton onClick={onClose} aria-label="Close dialog" sx={(theme) => ({
+                    color: headerOnColor(theme),
+                    '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                })}>
                     <CloseIcon />
                 </IconButton>
             </Box>

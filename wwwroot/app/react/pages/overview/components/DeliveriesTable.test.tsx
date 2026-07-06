@@ -162,8 +162,8 @@ describe('DeliveriesTable', () => {
                 <DeliveriesTable {...defaultProps} deliveries={[delivery]} total={1} />,
             );
 
-            // Find the expand button (chevron_right icon)
-            const expandButtons = screen.getAllByText('chevron_right');
+            // Find the expand button (collapsed row shows the "Expand child jobs" control)
+            const expandButtons = screen.getAllByRole('button', {name: 'Expand child jobs'});
             expect(expandButtons.length).toBeGreaterThanOrEqual(1);
         });
 
@@ -178,7 +178,7 @@ describe('DeliveriesTable', () => {
                 <DeliveriesTable {...defaultProps} deliveries={[delivery]} total={1} />,
             );
 
-            const expandButton = screen.getByText('chevron_right').closest('button')!;
+            const expandButton = screen.getByRole('button', {name: 'Expand child jobs'});
             fireEvent.click(expandButton);
 
             expect(defaultProps.onToggleExpand).toHaveBeenCalledWith(1);
@@ -207,7 +207,7 @@ describe('DeliveriesTable', () => {
                 <DeliveriesTable {...defaultProps} deliveries={[delivery]} total={1} />,
             );
 
-            const mapButton = screen.getByText('map').closest('button')!;
+            const mapButton = screen.getByRole('button', {name: 'Open map'});
             fireEvent.click(mapButton);
 
             expect(defaultProps.onShowMap).toHaveBeenCalledWith(delivery);
@@ -219,7 +219,7 @@ describe('DeliveriesTable', () => {
                 <DeliveriesTable {...defaultProps} deliveries={[delivery]} total={1} />,
             );
 
-            const viewButton = screen.getByText('visibility').closest('button')!;
+            const viewButton = screen.getByRole('button', {name: 'View job details'});
             fireEvent.click(viewButton);
 
             expect(defaultProps.onOpenJobDetail).toHaveBeenCalledWith(delivery);

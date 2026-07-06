@@ -102,6 +102,7 @@ export const metricValueSx: SxProps<Theme> = {
     fontWeight: 700,
     lineHeight: 1.2,
     color: 'text.primary',
+    fontVariantNumeric: 'tabular-nums',
 };
 
 /* ── Card content padding ────────────────────────────────────────── */

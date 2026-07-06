@@ -9,15 +9,11 @@
 
 import React from 'react';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import CloseIcon from '@mui/icons-material/Close';
 import type {SxProps, Theme} from '@mui/material/styles';
+import {DialogShell, DialogHeader, DialogFooter} from '../../dialogs/shared';
 
 interface OpenJobConfirmDialogProps {
     open: boolean;
@@ -28,44 +24,9 @@ interface OpenJobConfirmDialogProps {
 }
 
 const paperSx = {
-    borderRadius: 2,
-    overflow: 'hidden',
     minWidth: 420,
     maxWidth: 520,
 } satisfies SxProps<Theme>;
-
-const headerSx = ((theme: Theme) => ({
-    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-    color: 'white',
-    px: 3,
-    py: 2,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 2,
-})) satisfies SxProps<Theme>;
-
-const iconBadgeSx = {
-    width: 44,
-    height: 44,
-    borderRadius: 1.5,
-    bgcolor: 'rgba(255,255,255,0.15)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-} satisfies SxProps<Theme>;
-
-const closeButtonSx = {
-    color: 'white',
-    '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-} satisfies SxProps<Theme>;
-
-const actionsSx = ((theme: Theme) => ({
-    px: 3,
-    py: 2,
-    bgcolor: 'white',
-    borderTop: `1px solid ${theme.palette.divider}`,
-    gap: 1,
-})) satisfies SxProps<Theme>;
 
 export const OpenJobConfirmDialog: React.FC<OpenJobConfirmDialogProps> = ({
     open,
@@ -77,31 +38,18 @@ export const OpenJobConfirmDialog: React.FC<OpenJobConfirmDialogProps> = ({
     const displayNumber = jobNumber ?? (jobId != null ? `#${jobId}` : '');
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={onCancel}
             maxWidth="xs"
-            fullWidth
-            slotProps={{
-                paper: {elevation: 24, sx: paperSx},
-            }}
+            slotProps={{paper: {sx: paperSx}}}
         >
-            <Box sx={headerSx}>
-                <Box sx={iconBadgeSx}>
-                    <OpenInNewIcon sx={{fontSize: 24}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{fontWeight: 600}}>
-                        Open job {displayNumber}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Job Search will open in a new tab
-                    </Typography>
-                </Box>
-                <IconButton onClick={onCancel} sx={closeButtonSx} aria-label="Close dialog">
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<OpenInNewIcon/>}
+                title={`Open job ${displayNumber}`}
+                subtitle="Job Search will open in a new tab"
+                onClose={onCancel}
+            />
 
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box sx={{p: 3}}>
@@ -111,21 +59,13 @@ export const OpenJobConfirmDialog: React.FC<OpenJobConfirmDialogProps> = ({
                 </Box>
             </DialogContent>
 
-            <DialogActions sx={actionsSx}>
-                <Button onClick={onCancel} variant="outlined" sx={{minWidth: 100}}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={onConfirm}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<OpenInNewIcon />}
-                    sx={{minWidth: 100}}
-                >
-                    Open Job
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onCancel}
+                onConfirm={onConfirm}
+                confirmLabel="Open Job"
+                confirmIcon={<OpenInNewIcon/>}
+            />
+        </DialogShell>
     );
 };
 

@@ -5,6 +5,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
+import WorkOutlinedIcon from '@mui/icons-material/WorkOutlined';
 import { NoData } from './NoData';
 import type { NoDataProps } from './types';
 
@@ -45,7 +46,14 @@ describe('NoData', () => {
             expect(screen.getByText('Custom message text')).toBeInTheDocument();
         });
 
-        it('renders custom icon', () => {
+        it('renders a passed React icon element', () => {
+            const props = createDefaultProps({ icon: <WorkOutlinedIcon/> });
+            renderWithProviders(<NoData {...props} />);
+
+            expect(screen.getByTestId('WorkOutlinedIcon')).toBeInTheDocument();
+        });
+
+        it('renders a string icon via the Material Symbols font (AngularJS bridge)', () => {
             const props = createDefaultProps({ icon: 'warning' });
             renderWithProviders(<NoData {...props} />);
 
@@ -55,7 +63,7 @@ describe('NoData', () => {
         it('renders default icon when not specified', () => {
             renderWithProviders(<NoData />);
 
-            expect(screen.getByText('info')).toBeInTheDocument();
+            expect(screen.getByTestId('InfoOutlinedIcon')).toBeInTheDocument();
         });
     });
 

@@ -11,6 +11,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import ClearIcon from '@mui/icons-material/Clear';
+import PersonPinCircleOutlinedIcon from '@mui/icons-material/PersonPinCircleOutlined';
 import { NoData } from '../no-data/NoData';
 import { driverLocationColors } from '../../../theme/designTokens';
 import { ClearListDebugButton } from './ClearListDebugDialog';
@@ -308,7 +309,7 @@ export const DriverLocations = React.memo(function DriverLocations({
                 <NoData
                     title="No Driver Locations"
                     message="Please configure driver locations in Admin Manager to continue."
-                    icon="person_pin_circle"
+                    icon={<PersonPinCircleOutlinedIcon/>}
                 />
             )}
 

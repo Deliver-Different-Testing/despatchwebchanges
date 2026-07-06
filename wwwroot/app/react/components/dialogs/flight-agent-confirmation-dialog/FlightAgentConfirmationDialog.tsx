@@ -6,9 +6,7 @@
  */
 
 import React, {useState, useEffect, useCallback} from 'react';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -21,7 +19,6 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
-import CloseIcon from '@mui/icons-material/Close';
 import FlightIcon from '@mui/icons-material/Flight';
 import PersonIcon from '@mui/icons-material/Person';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -51,6 +48,7 @@ import {
     FlightAgentDialogResult,
     FlightSegment,
 } from './types';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 
 dayjs.extend(duration);
 dayjs.extend(utc);
@@ -487,69 +485,29 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Dialog
+            <DialogShell
                 open={open}
                 onClose={onClose}
                 maxWidth="md"
-                fullWidth
                 slotProps={{
                     paper: {
-                        elevation: 24,
                         sx: {
-                            borderRadius: 2,
                             overflow: 'hidden',
                             maxHeight: '90vh',
                         },
                     },
                 }}
             >
-                {/* Header */}
-                <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                        color: 'white',
-                        px: 3,
-                        py: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    })}
-                >
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 1.5,
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        {mode === 'flight' ? <FlightIcon sx={{fontSize: 24}}/> : <PersonIcon sx={{fontSize: 24}}/>}
-                    </Box>
-                    <Box sx={{flex: 1}}>
-                        <Typography variant="h6" sx={{
-                            fontWeight: 600
-                        }}>
-                            {dialogTitle}
-                        </Typography>
-                        {mode === 'flight' && departureAirport && arrivalAirport && (
-                            <Typography variant="body2" sx={{opacity: 0.9}}>
-                                {departureAirport} → {arrivalAirport}
-                            </Typography>
-                        )}
-                    </Box>
-                    <IconButton
-                        onClick={onClose}
-                        sx={{
-                            color: 'white',
-                            '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                        }}
-                    >
-                        <CloseIcon/>
-                    </IconButton>
-                </Box>
+                <DialogHeader
+                    icon={mode === 'flight' ? <FlightIcon/> : <PersonIcon/>}
+                    title={dialogTitle}
+                    subtitle={
+                        mode === 'flight' && departureAirport && arrivalAirport
+                            ? `${departureAirport} → ${arrivalAirport}`
+                            : undefined
+                    }
+                    onClose={onClose}
+                />
 
                 {/* Content */}
                 <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
@@ -828,7 +786,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                             placeholder="Add any delivery notes or instructions..."
                             value={deliveryNotes}
                             onChange={(e) => setDeliveryNotes(e.target.value)}
-                            sx={{'& .MuiOutlinedInput-root': {bgcolor: 'white'}}}
+                            sx={{'& .MuiOutlinedInput-root': {bgcolor: 'background.paper'}}}
                         />
 
                         {/* AWB and Stop Jobs */}
@@ -839,7 +797,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                 onChange={(e) => setAwb(e.target.value)}
                                 disabled={isAwbDisabled}
                                 size="small"
-                                sx={{flex: 1, '& .MuiOutlinedInput-root': {bgcolor: 'white'}}}
+                                sx={{flex: 1, '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'}}}
                             />
                             {showIncludeStopJobs && (
                                 <FormControlLabel
@@ -865,30 +823,13 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                     </Box>
                 </DialogContent>
 
-                {/* Actions */}
-                <DialogActions
-                    sx={(theme) => ({
-                        px: 3,
-                        py: 2,
-                        bgcolor: 'white',
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                        gap: 1,
-                    })}
-                >
-                    <Button onClick={onClose} variant="outlined" sx={{minWidth: 100}}>
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleConfirm}
-                        variant="contained"
-                        color="primary"
-                        disabled={mode === 'flight' && isCalculatingTimes}
-                        sx={{minWidth: 140}}
-                    >
-                        Confirm Assignment
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                <DialogFooter
+                    onCancel={onClose}
+                    onConfirm={handleConfirm}
+                    confirmLabel="Confirm Assignment"
+                    confirmDisabled={mode === 'flight' && isCalculatingTimes}
+                />
+            </DialogShell>
         </LocalizationProvider>
     );
 };

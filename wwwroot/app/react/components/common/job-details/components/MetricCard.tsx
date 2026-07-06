@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import ButtonBase from '@mui/material/ButtonBase';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {metricLabelSx, metricValueSx, getMetricLabelSx, getMetricValueSx} from '../JobDetails.styles';
+import {monoFontFamily} from '../../../../theme/muiTheme';
 
 export type MetricCategory = 'pricing' | 'time' | 'pod' | 'info';
 
@@ -75,6 +76,10 @@ export const MetricCard = React.memo(({
     const isClickable = onClick && !disabled;
     const accentColor = categoryAccentMap[category];
     const hasValue = !!value && value !== '-' && value !== '\u2014';
+    // Prices and times are numeric/identity data \u2014 set them in the mono face so
+    // they read as instrument readouts. POD names and free-text info stay in the
+    // proportional UI face.
+    const isNumericCategory = category === 'pricing' || category === 'time';
 
     const highlightSx = highlight
         ? {borderTop: 3, borderTopColor: accentColor}
@@ -117,6 +122,7 @@ export const MetricCard = React.memo(({
                 variant="body2"
                 sx={{
                     ...(dense ? getMetricValueSx(true) : metricValueSx) as object,
+                    ...(isNumericCategory && hasValue ? {fontFamily: monoFontFamily} : {}),
                     color: hasValue ? 'text.primary' : 'text.disabled',
                     fontWeight: hasValue ? 700 : 400,
                     wordBreak: 'break-word',

@@ -6,21 +6,17 @@
  */
 
 import React, {useState, useCallback, useEffect, useRef} from 'react';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
-import CloseIcon from '@mui/icons-material/Close';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import CheckIcon from '@mui/icons-material/Check';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 import {searchActiveCouriers} from '../../../services/courierApi';
 import {searchActiveClients} from '../../../services/jobApi';
 import {createInterCourierCharge} from '../../../services/dispatchExecutorApi';
@@ -253,67 +249,14 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <PaymentsIcon sx={{fontSize: 28}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h5" sx={{
-                        fontWeight: 600
-                    }}>
-                        Inter-Courier Charge
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Create a charge transfer between couriers
-                    </Typography>
-                </Box>
-                <IconButton
-                    aria-label="Close dialog"
-                    onClick={handleClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+        <DialogShell open={open} onClose={handleClose}>
+            <DialogHeader
+                icon={<PaymentsIcon />}
+                title="Inter-Courier Charge"
+                subtitle="Create a charge transfer between couriers"
+                onClose={handleClose}
+                closeDisabled={isSubmitting}
+            />
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 <Paper
@@ -383,30 +326,14 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                     </Box>
                 </Paper>
             </DialogContent>
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'background.paper',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={handleClose} variant="outlined" disabled={isSubmitting} sx={{minWidth: 100}}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    disabled={isSubmitting}
-                    startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <CheckIcon />}
-                    sx={{minWidth: 140}}
-                >
-                    Add Charge
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={handleClose}
+                onConfirm={handleSubmit}
+                confirmLabel="Add Charge"
+                confirmIcon={<CheckIcon />}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

@@ -40,6 +40,7 @@ export interface RecurringJobsToolbarProps {
     searchText: string;
     recurringMode: RecurringMode;
     isLoading: boolean;
+    isRefreshing: boolean;
     isExporting: boolean;
     filters: RecurringJobsFilters;
     onSearchChange: (searchText: string) => void;
@@ -67,6 +68,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                                                                               searchText,
                                                                               recurringMode,
                                                                               isLoading,
+                                                                              isRefreshing,
                                                                               isExporting,
                                                                               filters,
                                                                               onSearchChange,
@@ -333,7 +335,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     <span>
                         <IconButton
                             onClick={onRefresh}
-                            disabled={isLoading}
+                            disabled={isRefreshing}
                             size="small"
                             sx={{
                                 bgcolor: 'background.paper',
@@ -342,7 +344,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                                 '&:hover': {bgcolor: 'grey.100'},
                             }}
                         >
-                            {isLoading ? (
+                            {isRefreshing ? (
                                 <CircularProgress size={20}/>
                             ) : (
                                 <RefreshIcon/>

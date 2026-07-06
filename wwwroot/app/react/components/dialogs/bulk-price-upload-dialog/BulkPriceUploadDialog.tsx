@@ -48,6 +48,7 @@ import {
     PricingMode,
     DialogState,
 } from './types';
+import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 const VALID_EXTENSIONS = ['.xls', '.xlsx', '.csv'];
 
@@ -931,7 +932,6 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                 paper: {
                     elevation: 24,
                     sx: {
-                        borderRadius: 2,
                         overflow: 'hidden',
                         width: 600,
                         maxWidth: '95vw',
@@ -943,17 +943,13 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             {/* Header */}
             <Box
                 sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    minHeight: 56,
+                    ...headerChromeSx(theme),
+                    minHeight: 48,
                 })}
             >
-                <UploadFileIcon sx={{ fontSize: 24 }} />
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <UploadFileIcon/>
+                </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h6" sx={{
                         fontWeight: 500
@@ -967,10 +963,10 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                 <IconButton
                     onClick={onClose}
                     disabled={isLoading}
-                    sx={{
-                        color: 'white',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                    }}
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
+                    })}
                 >
                     <CloseIcon />
                 </IconButton>
@@ -987,7 +983,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                 sx={(theme) => ({
                     px: 2,
                     py: 2,
-                    bgcolor: 'white',
+                    bgcolor: 'background.paper',
                     borderTop: `1px solid ${theme.palette.divider}`,
                     gap: 1,
                 })}

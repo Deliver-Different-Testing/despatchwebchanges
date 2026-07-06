@@ -1,5 +1,59 @@
+import type {CSSProperties} from 'react';
 import {alpha, createTheme, Theme} from '@mui/material/styles';
-import Grow from '@mui/material/Grow';
+import {DialogTransition} from './DialogTransition';
+import {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette, aiColors} from './palettes';
+
+/**
+ * Material Design 3 typography role variants.
+ *
+ * MD3 names type by role (Display / Headline / Title / Body / Label, each in
+ * L/M/S) rather than the classic `h1`–`h6`. These are exposed *in addition to*
+ * the existing `h1`–`h6` (which stay the app default), so new UI can opt into
+ * MD3 roles — `<Typography variant="titleMedium">` — without disturbing
+ * anything already shipped. Roles are mapped onto the app's own typefaces:
+ * the display face (Space Grotesk) for Display/Headline/Title-large, the body
+ * face (Plus Jakarta Sans) for Title-medium/small, Body and Label.
+ */
+type Md3Role =
+    | 'displayLarge' | 'displayMedium' | 'displaySmall'
+    | 'headlineLarge' | 'headlineMedium' | 'headlineSmall'
+    | 'titleLarge' | 'titleMedium' | 'titleSmall'
+    | 'bodyLarge' | 'bodyMedium' | 'bodySmall'
+    | 'labelLarge' | 'labelMedium' | 'labelSmall';
+
+declare module '@mui/material/styles' {
+    interface TypographyVariants extends Record<Md3Role, CSSProperties> {}
+    interface TypographyVariantsOptions extends Partial<Record<Md3Role, CSSProperties>> {}
+}
+
+declare module '@mui/material/Typography' {
+    interface TypographyPropsVariantOverrides extends Record<Md3Role, true> {}
+}
+
+declare module '@mui/material/styles' {
+    // The AI accent as a first-class palette role (a tertiary-style accent) with
+    // its own on-colour, so AI surfaces use a proper token pair instead of a
+    // hardcoded hex + `'common.white'`.
+    interface Palette {
+        ai: Palette['primary'];
+    }
+    interface PaletteOptions {
+        ai?: PaletteOptions['primary'];
+    }
+    // MD3 tonal surface-container tiers, exposed on `background` so components
+    // can reference `background.surfaceContainer*` as the depth cue.
+    interface TypeBackground {
+        surfaceContainerLow: string;
+        surfaceContainer: string;
+        surfaceContainerHigh: string;
+        surfaceContainerHighest: string;
+    }
+}
+
+// Re-export the shared palette constants so existing imports from this module
+// keep working. The values themselves live in the framework-free palettes.ts,
+// which the AngularJS Material theme imports too — one source of truth.
+export {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette};
 
 /**
  * MUI Theme - Matching AngularJS Material Theme
@@ -12,65 +66,59 @@ import Grow from '@mui/material/Grow';
  * - Non-US customers: Yellow (urgentPrimary)
  */
 
-// Primary palette for US customers - matches professionalPrimary from AngularJS theme
-export const dfrntPrimaryPalette = {
-    50: '#e3f2fd',
-    100: '#bbdefb',
-    200: '#90caf9',
-    300: '#64b5f6',
-    400: '#42a5f5',
-    500: '#2196f3',  // Main color
-    600: '#1e88e5',
-    700: '#1976d2',
-    800: '#1565c0',
-    900: '#0d47a1',
-    A100: '#82b1ff',
-    A200: '#448aff',
-    A400: '#2979ff',
-    A700: '#2962ff',
-};
+/**
+ * Font families
+ *
+ * - body: Plus Jakarta Sans — the UI/body workhorse.
+ * - display: Space Grotesk — a technical geometric face used for headings and
+ *   page titles to give each screen a hierarchy anchor with real presence.
+ * - mono: Space Mono — the proportional sibling of Space Grotesk, reserved for
+ *   dense numeric/identity data (job IDs, prices, metric values) so the data
+ *   layer reads like an operational instrument, not prose.
+ */
+export const bodyFontFamily =
+    '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif';
+export const displayFontFamily =
+    '"Space Grotesk", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif';
+export const monoFontFamily =
+    '"Space Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
 
-// Primary palette for non-US customers - warm amber/gold (softened from original yellow)
-export const urgentPrimaryPalette = {
-    50: '#fef9e7',
-    100: '#fcefc4',
-    200: '#fae49d',
-    300: '#f8d976',
-    400: '#f6d058',
-    500: '#f4c430',  // Main color - warm amber gold
-    600: '#e5b52a',
-    700: '#d4a324',
-    800: '#c3911e',
-    900: '#a87614',
-    A100: '#fff8e1',
-    A200: '#ffecb3',
-    A400: '#ffd54f',
-    A700: '#ffc107',
-};
-
-// Accent palette - matches accent from AngularJS theme (warm grays)
-export const accentPalette = {
-    50: '#fafaf9',   // Warm white
-    100: '#f5f5f4',  // Very light warm gray
-    200: '#e7e5e4',  // Light warm gray
-    300: '#d6d3d1',  // Medium-light warm gray
-    400: '#a8a29e',  // Medium warm gray
-    500: '#78716c',  // Balanced warm gray - MAIN COLOR
-    600: '#57534e',  // Dark warm gray - TOOLBAR COLOR
-    700: '#44403c',  // Darker warm gray
-    800: '#292524',  // Very dark warm gray
-    900: '#1c1917',  // Deepest warm gray
+/**
+ * MD3 role type scale (see the augmentation above). Canonical MD3 proportions
+ * carried on the app's own typefaces and weights. Kept as a single frozen
+ * object because the roles don't vary by tenant.
+ */
+export const md3RoleTypography: Record<Md3Role, CSSProperties> = {
+    displayLarge: {fontFamily: displayFontFamily, fontWeight: 400, fontSize: '3.5625rem', lineHeight: 1.12, letterSpacing: '-0.015em'},
+    displayMedium: {fontFamily: displayFontFamily, fontWeight: 400, fontSize: '2.8125rem', lineHeight: 1.16, letterSpacing: '0em'},
+    displaySmall: {fontFamily: displayFontFamily, fontWeight: 400, fontSize: '2.25rem', lineHeight: 1.22, letterSpacing: '0em'},
+    headlineLarge: {fontFamily: displayFontFamily, fontWeight: 400, fontSize: '2rem', lineHeight: 1.25, letterSpacing: '0em'},
+    headlineMedium: {fontFamily: displayFontFamily, fontWeight: 400, fontSize: '1.75rem', lineHeight: 1.29, letterSpacing: '0em'},
+    headlineSmall: {fontFamily: displayFontFamily, fontWeight: 400, fontSize: '1.5rem', lineHeight: 1.33, letterSpacing: '0em'},
+    titleLarge: {fontFamily: displayFontFamily, fontWeight: 500, fontSize: '1.375rem', lineHeight: 1.27, letterSpacing: '0em'},
+    titleMedium: {fontFamily: bodyFontFamily, fontWeight: 500, fontSize: '1rem', lineHeight: 1.5, letterSpacing: '0.009em'},
+    titleSmall: {fontFamily: bodyFontFamily, fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.43, letterSpacing: '0.007em'},
+    bodyLarge: {fontFamily: bodyFontFamily, fontWeight: 400, fontSize: '1rem', lineHeight: 1.5, letterSpacing: '0.031em'},
+    bodyMedium: {fontFamily: bodyFontFamily, fontWeight: 400, fontSize: '0.875rem', lineHeight: 1.43, letterSpacing: '0.018em'},
+    bodySmall: {fontFamily: bodyFontFamily, fontWeight: 400, fontSize: '0.75rem', lineHeight: 1.33, letterSpacing: '0.033em'},
+    labelLarge: {fontFamily: bodyFontFamily, fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.43, letterSpacing: '0.007em'},
+    labelMedium: {fontFamily: bodyFontFamily, fontWeight: 500, fontSize: '0.75rem', lineHeight: 1.33, letterSpacing: '0.033em'},
+    labelSmall: {fontFamily: bodyFontFamily, fontWeight: 500, fontSize: '0.6875rem', lineHeight: 1.45, letterSpacing: '0.033em'},
 };
 
 // Design tokens
 export const tokens = {
+    // Corner radii on the MD3 shape scale (raw px, used in component styleOverrides).
+    // NB: the sx `borderRadius` multiplier base is pinned separately to 8 in
+    // `shape.borderRadius`, so these values do not shift existing `sx={{borderRadius:n}}`.
     radius: {
-        xs: 2,
-        sm: 6,
-        md: 8,
-        lg: 12,
-        xl: 16,
-        full: 9999,
+        none: 0,
+        xs: 4,   // extra-small — chips, snackbars, tooltips
+        sm: 8,   // small — text fields, menus
+        md: 12,  // medium — cards
+        lg: 16,  // large — nav drawer, sheets
+        xl: 28,  // extra-large — dialogs, bottom sheets
+        full: 9999, // pill — buttons, progress
     },
     duration: {
         instant: 100,
@@ -121,11 +169,22 @@ export const sharedColors = {
         default: '#FAFAFA',
         paper: '#FFFFFF',
         elevated: '#FFFFFF',
+        // MD3 tonal surface-container tiers (warm-neutral, derived from the
+        // accent ramp). These are the tonal depth cue that supplements shadows
+        // — menus/popovers sit on `container`, higher-emphasis chrome on the
+        // stronger tiers — so depth reads from surface colour, not just shadow.
+        containerLow: accentPalette[50],
+        container: accentPalette[100],
+        containerHigh: accentPalette[200],
+        containerHighest: accentPalette[300],
     },
     // Text hierarchy
     text: {
+        // 0.6 (not MD2's 0.54) so secondary text — section labels, table
+        // heads, dialog subtitles — clears WCAG AA 4.5:1 on the #FAFAFA
+        // surface; 0.54 (#767676) came in at 4.35:1.
         primary: 'rgba(0, 0, 0, 0.87)',
-        secondary: 'rgba(0, 0, 0, 0.54)',
+        secondary: 'rgba(0, 0, 0, 0.6)',
         disabled: 'rgba(0, 0, 0, 0.38)',
         hint: 'rgba(0, 0, 0, 0.38)',
     },
@@ -202,9 +261,19 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                 dark: colors.info.dark,
                 contrastText: colors.info.contrast,
             },
+            ai: {
+                main: aiColors.main,
+                light: aiColors.light,
+                dark: aiColors.dark,
+                contrastText: '#FFFFFF',
+            },
             background: {
                 default: colors.surface.default,
                 paper: colors.surface.paper,
+                surfaceContainerLow: colors.surface.containerLow,
+                surfaceContainer: colors.surface.container,
+                surfaceContainerHigh: colors.surface.containerHigh,
+                surfaceContainerHighest: colors.surface.containerHighest,
             },
             text: {
                 primary: colors.text.primary,
@@ -215,35 +284,42 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             grey: accentPalette,
         },
         typography: {
-            fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+            fontFamily: bodyFontFamily,
             fontSize: 14,
             fontWeightLight: 300,
             fontWeightRegular: 400,
             fontWeightMedium: 500,
             fontWeightBold: 700,
+            // Headings use the display face (Space Grotesk) with heavier weights
+            // and tighter tracking so titles carry presence instead of reading
+            // like scaled-up body copy.
             h1: {
+                fontFamily: displayFontFamily,
                 fontSize: '2.125rem',
-                fontWeight: 400,
+                fontWeight: 700,
                 lineHeight: 1.2,
-                letterSpacing: '-0.01562em',
+                letterSpacing: '-0.02em',
             },
             h2: {
+                fontFamily: displayFontFamily,
                 fontSize: '1.5rem',
-                fontWeight: 400,
+                fontWeight: 600,
                 lineHeight: 1.25,
-                letterSpacing: '0em',
+                letterSpacing: '-0.015em',
             },
             h3: {
+                fontFamily: displayFontFamily,
                 fontSize: '1.25rem',
-                fontWeight: 500,
+                fontWeight: 600,
                 lineHeight: 1.3,
-                letterSpacing: '0.0075em',
+                letterSpacing: '-0.01em',
             },
             h4: {
+                fontFamily: displayFontFamily,
                 fontSize: '1.125rem',
-                fontWeight: 500,
+                fontWeight: 600,
                 lineHeight: 1.35,
-                letterSpacing: '0.00735em',
+                letterSpacing: '-0.005em',
             },
             h5: {
                 fontSize: '1rem',
@@ -300,9 +376,14 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                 textTransform: 'none',
                 letterSpacing: '0.01em',
             },
+            // MD3 role variants (Display/Headline/Title/Body/Label), additive to h1–h6.
+            ...md3RoleTypography,
         },
         shape: {
-            borderRadius: tokens.radius.md,
+            // The sx `borderRadius` multiplier base. Pinned to 8 (decoupled from
+            // tokens.radius) so existing `sx={{borderRadius: n}}` values across the
+            // app keep their meaning while component shapes move to the MD3 scale.
+            borderRadius: 8,
         },
         spacing: 8,
         shadows: [
@@ -333,11 +414,38 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             tokens.shadow.xl,
         ],
         components: {
+            MuiTypography: {
+                defaultProps: {
+                    // Render MD3 role variants with semantically appropriate elements.
+                    variantMapping: {
+                        displayLarge: 'h1',
+                        displayMedium: 'h1',
+                        displaySmall: 'h1',
+                        headlineLarge: 'h2',
+                        headlineMedium: 'h2',
+                        headlineSmall: 'h3',
+                        titleLarge: 'h4',
+                        titleMedium: 'h5',
+                        titleSmall: 'h6',
+                        bodyLarge: 'p',
+                        bodyMedium: 'p',
+                        bodySmall: 'p',
+                        labelLarge: 'span',
+                        labelMedium: 'span',
+                        labelSmall: 'span',
+                    },
+                },
+            },
             MuiCssBaseline: {
                 styleOverrides: {
                     body: {
                         scrollbarWidth: 'thin',
                         scrollbarColor: `${accentPalette[400]} transparent`,
+                    },
+                    '@media (prefers-reduced-motion: reduce)': {
+                        html: {
+                            scrollBehavior: 'auto',
+                        },
                     },
                 },
             },
@@ -347,7 +455,8 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                 },
                 styleOverrides: {
                     root: {
-                        borderRadius: tokens.radius.sm,
+                        // MD3 buttons are fully rounded (pill).
+                        borderRadius: tokens.radius.full,
                         padding: '6px 16px',
                         fontWeight: 500,
                         fontSize: '0.875rem',
@@ -355,6 +464,10 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                         letterSpacing: '0.01em',
                         minHeight: 36,
                         transition: `all ${tokens.duration.normal}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                        '&:focus-visible': {
+                            outline: `2px solid ${colors.primary.main}`,
+                            outlineOffset: 2,
+                        },
                     },
                     sizeSmall: {
                         padding: '4px 12px',
@@ -384,10 +497,24 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                 styleOverrides: {
                     root: {
                         borderRadius: '50%',
+                        // Default icon buttons clear the ~44px accessible hit
+                        // target (MD recommends 48, iOS/pointer 44); the glyph
+                        // stays 24px, the padding grows the target. Dense
+                        // inline spots opt into `size="small"` below.
+                        minWidth: 44,
+                        minHeight: 44,
                         transition: `background-color ${tokens.duration.fast}ms`,
                         '&:hover': {
                             backgroundColor: alpha(colors.primary.main, 0.04),
                         },
+                        '&:focus-visible': {
+                            outline: `2px solid ${colors.primary.main}`,
+                            outlineOffset: 2,
+                        },
+                    },
+                    sizeSmall: {
+                        minWidth: 32,
+                        minHeight: 32,
                     },
                 },
             },
@@ -432,12 +559,14 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             },
             MuiDialog: {
                 defaultProps: {
-                    slots: { transition: Grow },
+                    slots: {transition: DialogTransition},
                 },
                 styleOverrides: {
                     paper: {
+                        // MD3 extra-large corner (28px) + a softer elevation-3
+                        // shadow instead of the previous oversized drop shadow.
                         borderRadius: tokens.radius.xl,
-                        boxShadow: '0 24px 48px -12px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04)',
+                        boxShadow: tokens.shadow.lg,
                     },
                 },
             },
@@ -472,7 +601,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                 styleOverrides: {
                     root: {
                         '& .MuiOutlinedInput-root': {
-                            borderRadius: tokens.radius.md,
+                            borderRadius: tokens.radius.sm,
                             '& fieldset': {
                                 borderColor: colors.divider,
                             },
@@ -490,7 +619,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiOutlinedInput: {
                 styleOverrides: {
                     root: {
-                        borderRadius: tokens.radius.md,
+                        borderRadius: tokens.radius.sm,
                         '& fieldset': {
                             borderColor: colors.divider,
                         },
@@ -516,7 +645,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiChip: {
                 styleOverrides: {
                     root: {
-                        borderRadius: 16,
+                        borderRadius: tokens.radius.sm,
                         fontWeight: 400,
                         fontSize: '0.8125rem',
                     },
@@ -550,6 +679,10 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                         fontSize: '0.8125rem',
                         padding: '12px 16px',
                         borderColor: colors.divider,
+                        // Align digits into columns so numeric data (IDs, prices,
+                        // times, distances) reads like an instrument panel and
+                        // doesn't jitter as values update.
+                        fontVariantNumeric: 'tabular-nums',
                     },
                     head: {
                         fontWeight: 600,
@@ -580,7 +713,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                         fontSize: '0.75rem',
                         fontWeight: 400,
                         padding: '6px 10px',
-                        borderRadius: tokens.radius.sm,
+                        borderRadius: tokens.radius.xs,
                     },
                 },
             },
@@ -594,8 +727,25 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiMenu: {
                 styleOverrides: {
                     paper: {
-                        borderRadius: tokens.radius.md,
-                        boxShadow: tokens.shadow.lg,
+                        borderRadius: tokens.radius.sm,
+                        // MD3: depth from a tonal surface-container tint, with a
+                        // lighter shadow than before rather than shadow alone.
+                        backgroundColor: colors.surface.container,
+                        boxShadow: tokens.shadow.md,
+                    },
+                },
+            },
+            MuiSelect: {
+                defaultProps: {
+                    // Cap the options menu so a long list scrolls instead of
+                    // filling the screen (~8 rows). MUI still shrinks it to fit
+                    // smaller viewports; per-Select MenuProps can override.
+                    MenuProps: {
+                        slotProps: {
+                            paper: {
+                                sx: {maxHeight: 320},
+                            },
+                        },
                     },
                 },
             },
@@ -622,7 +772,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiAlert: {
                 styleOverrides: {
                     root: {
-                        borderRadius: tokens.radius.md,
+                        borderRadius: tokens.radius.sm,
                     },
                 },
             },

@@ -17,7 +17,6 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
     private readonly ITenantInfoService _tenantInfoService = Substitute.For<ITenantInfoService>();
     private readonly IClearListEnvelopeService _clearListEnvelopeService = Substitute.For<IClearListEnvelopeService>();
     private readonly ICreateJobService _createJobService = Substitute.For<ICreateJobService>();
-    private readonly IJobApiClient _jobApiClient = Substitute.For<IJobApiClient>();
     private readonly IDespatchContextProcedures _procedures = Substitute.For<IDespatchContextProcedures>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
@@ -40,8 +39,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         _tenantInfoService,
         _clock,
         _clearListEnvelopeService,
-        _createJobService,
-        _jobApiClient
+        _createJobService
     );
 
     private Task<int> AssertRestoredBatch(string csv) =>

@@ -1,8 +1,9 @@
 /**
  * DriversPanel Component
  *
- * Glassmorphic sidebar panel with summary statistics, search,
- * and a status-coded driver list. Floats over the map.
+ * Sidebar panel with summary statistics, search, and a status-coded driver
+ * list. Floats over the map on an opaque surface with theme elevation, matching
+ * the app's MD3 surface language.
  */
 
 import React, { useMemo } from 'react';
@@ -22,6 +23,8 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import Close from '@mui/icons-material/Close';
 import Search from '@mui/icons-material/Search';
+import PersonOffOutlined from '@mui/icons-material/PersonOffOutlined';
+import SearchOffOutlined from '@mui/icons-material/SearchOffOutlined';
 import { NoData } from '../../../components/common/no-data';
 import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
@@ -138,17 +141,17 @@ export function DriversPanel({
                 right: 16,
                 width: PANEL_WIDTH,
                 maxHeight: 'calc(100% - 32px)',
-                borderRadius: '16px',
+                borderRadius: 2,
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'visible',
                 zIndex: 50,
-                bgcolor: 'rgba(255, 255, 255, 0.92)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.45)',
-                boxShadow:
-                    '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+                // Opaque surface + theme elevation to match the rest of the app;
+                // the shadow doubles as MD3 "busy background" protection over the map.
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: 8,
                 transform: isPanelHidden
                     ? 'translateX(calc(100% + 4px))'
                     : 'translateX(0)',
@@ -162,7 +165,7 @@ export function DriversPanel({
                     flexDirection: 'column',
                     minWidth: 0,
                     overflow: 'hidden',
-                    borderRadius: '16px',
+                    borderRadius: 2,
                 }}
             >
                 {/* ── Header ────────────────────────── */}
@@ -255,24 +258,7 @@ export function DriversPanel({
                                 aria-label="Filter by fleet"
                             />
                         )}
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 2.5,
-                                fontSize: 13,
-                                bgcolor: 'rgba(0, 0, 0, 0.03)',
-                                '& fieldset': { border: 'none' },
-                                '&:hover': {
-                                    bgcolor: 'rgba(0, 0, 0, 0.05)',
-                                },
-                                '&.Mui-focused': {
-                                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                                    '& fieldset': {
-                                        border: '1.5px solid',
-                                        borderColor: 'primary.main',
-                                    },
-                                },
-                            },
-                        }}
+                        sx={{ '& .MuiOutlinedInput-root': { fontSize: 13 } }}
                     />
                 </Box>
 
@@ -312,24 +298,7 @@ export function DriversPanel({
                                 ) : null,
                             },
                         }}
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 2.5,
-                                fontSize: 13,
-                                bgcolor: 'rgba(0, 0, 0, 0.03)',
-                                '& fieldset': { border: 'none' },
-                                '&:hover': {
-                                    bgcolor: 'rgba(0, 0, 0, 0.05)',
-                                },
-                                '&.Mui-focused': {
-                                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                                    '& fieldset': {
-                                        border: '1.5px solid',
-                                        borderColor: 'primary.main',
-                                    },
-                                },
-                            },
-                        }}
+                        sx={{ '& .MuiOutlinedInput-root': { fontSize: 13 } }}
                     />
                 </Box>
 
@@ -381,7 +350,7 @@ export function DriversPanel({
                     {/* Empty: no drivers at all */}
                     {!isLoading && drivers.length === 0 && (
                         <NoData
-                            icon="person_off"
+                            icon={<PersonOffOutlined/>}
                             title="No active drivers"
                             message="Drivers will appear when they log in"
                         />
@@ -392,7 +361,7 @@ export function DriversPanel({
                         drivers.length > 0 &&
                         filteredDrivers.length === 0 && (
                             <NoData
-                                icon="search_off"
+                                icon={<SearchOffOutlined/>}
                                 title="No matches found"
                                 message="Try a different name or code"
                             />
@@ -425,12 +394,11 @@ export function DriversPanel({
                     width: 22,
                     height: 52,
                     borderRadius: '10px 0 0 10px',
-                    bgcolor: 'rgba(255, 255, 255, 0.92)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.45)',
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRight: 'none',
-                    boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.04)',
+                    boxShadow: 4,
                     zIndex: 51,
                     // Keep the visual sliver narrow but extend the touch target to
                     // ≥44px in both axes (Material's accessibility minimum).
@@ -443,7 +411,7 @@ export function DriversPanel({
                         right: -8,
                     },
                     '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.98)',
+                        bgcolor: 'background.surfaceContainer',
                     },
                     '&:active': {
                         transform: 'translateY(-50%) scale(0.95)',
