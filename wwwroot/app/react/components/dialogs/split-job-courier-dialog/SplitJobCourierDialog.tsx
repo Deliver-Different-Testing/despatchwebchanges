@@ -26,6 +26,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import type {SxProps, Theme} from '@mui/material';
 import {useCourierSearch} from '../../../hooks/useCourierApi';
 import type {CourierSuggestion} from '../../../interfaces';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 export type SplitJobCourierResult =
     | {action: 'assign'; courierId: number}
@@ -57,19 +58,9 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
 
     return (
         <Dialog open={open} onClose={() => onClose({action: 'cancel'})} maxWidth="xs" fullWidth>
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <LocalShippingIcon sx={{ fontSize: 28 }} />
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <LocalShippingIcon/>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h5" sx={{
@@ -77,7 +68,10 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
                     }}>Assign Courier to Delivery Leg</Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>Optionally assign a courier for delivery</Typography>
                 </Box>
-                <IconButton onClick={() => onClose({action: 'cancel'})} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                <IconButton onClick={() => onClose({action: 'cancel'})} sx={(theme) => ({
+                    color: headerOnColor(theme),
+                    '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                })}>
                     <CloseIcon />
                 </IconButton>
             </Box>

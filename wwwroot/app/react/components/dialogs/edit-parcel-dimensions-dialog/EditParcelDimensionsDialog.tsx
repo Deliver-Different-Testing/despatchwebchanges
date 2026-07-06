@@ -27,6 +27,8 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import InfoIcon from '@mui/icons-material/Info';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
+import {alpha} from '@mui/material/styles';
+import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 import {apiClient} from '../../../services/apiClient';
 import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions} from './types';
 
@@ -66,6 +68,20 @@ function newGroup(): ParcelGroup {
         barcodes: [''],
         expandedBarcodes: false,
     };
+}
+
+function nextBarcodeStart(groups: ParcelGroup[], jobNumber: string | number): number {
+    const prefix = `${jobNumber}-`;
+    let max = 0;
+    for (const g of groups) {
+        for (const bc of g.barcodes) {
+            if (bc.startsWith(prefix)) {
+                const n = parseInt(bc.slice(prefix.length), 10);
+                if (!isNaN(n) && n > max) max = n;
+            }
+        }
+    }
+    return max + 1;
 }
 
 function parcelsToGroups(parcels: ParcelDimensions[]): ParcelGroup[] {
@@ -122,6 +138,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     parcels: initialParcels,
     jobId,
     bulkJobId,
+    jobNumber,
     isUsCustomer,
     jobWeight,
     partnerMode = false,
@@ -179,20 +196,23 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     }, []);
 
     const adjustQty = useCallback((id: string, delta: number) => {
-        setGroups(prev => prev.map(g => {
-            if (g.id !== id) return g;
-            const newQty = g.barcodes.length + delta;
-            if (newQty < 1) return g;
-            const barcodes = [...g.barcodes];
-            if (delta > 0) {
-                for (let i = 0; i < delta; i++) barcodes.push('');
-            } else {
-                barcodes.splice(barcodes.length + delta, -delta);
-            }
-            return {...g, barcodes};
-        }));
+        setGroups(prev => {
+            let next = jobNumber ? nextBarcodeStart(prev, jobNumber) : 0;
+            return prev.map(g => {
+                if (g.id !== id) return g;
+                const newQty = g.barcodes.length + delta;
+                if (newQty < 1) return g;
+                const barcodes = [...g.barcodes];
+                if (delta > 0) {
+                    for (let i = 0; i < delta; i++) barcodes.push(jobNumber ? `${jobNumber}-${next++}` : '');
+                } else {
+                    barcodes.splice(barcodes.length + delta, -delta);
+                }
+                return {...g, barcodes};
+            });
+        });
         setIsFormDirty(true);
-    }, []);
+    }, [jobNumber]);
 
     const updateBarcode = useCallback((id: string, index: number, value: string) => {
         setGroups(prev => prev.map(g => {
@@ -205,9 +225,13 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     }, []);
 
     const addGroup = useCallback(() => {
-        setGroups(prev => [...prev, newGroup()]);
+        setGroups(prev => {
+            const g = newGroup();
+            if (jobNumber) g.barcodes = [`${jobNumber}-${nextBarcodeStart(prev, jobNumber)}`];
+            return [...prev, g];
+        });
         setIsFormDirty(true);
-    }, []);
+    }, [jobNumber]);
 
     const deleteGroup = useCallback((id: string) => {
         setGroups(prev => {
@@ -305,28 +329,25 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             {/* Header */}
             <Box
                 sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
+                    ...headerChromeSx(theme),
                     flexShrink: 0,
                 })}
             >
-                <Box sx={{width: 44, height: 44, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                    <Inventory2OutlinedIcon sx={{fontSize: 24}} />
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <Inventory2OutlinedIcon/>
                 </Box>
                 <Box sx={{flex: 1}}>
                     <Typography variant="h6" sx={{
                         fontWeight: 600
-                    }}>Edit Dimensions</Typography>
+                    }}>Edit Quantity</Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
                         {groups.length} type{groups.length !== 1 ? 's' : ''} · {totalParcels} parcel{totalParcels !== 1 ? 's' : ''} total
                     </Typography>
                 </Box>
-                <IconButton onClick={handleCancel} disabled={isLoading} sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}>
+                <IconButton onClick={handleCancel} disabled={isLoading} sx={(theme) => ({
+                    color: headerOnColor(theme),
+                    '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                })}>
                     <CloseIcon />
                 </IconButton>
             </Box>
@@ -365,7 +386,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                         {g.representativeItemId != null && (itemTypesByItemId.get(g.representativeItemId) ?? []).length > 0 && (
                                             <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5}}>
                                                 {(itemTypesByItemId.get(g.representativeItemId) ?? []).map((t, i) => (
-                                                    <Box key={i} sx={{fontSize: 11, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', px: 0.75, py: 0.25, color: '#1e40af', whiteSpace: 'nowrap', lineHeight: 1.6}}>
+                                                    <Box key={i} sx={(theme) => ({fontSize: 11, bgcolor: alpha(theme.palette.info.main, 0.1), border: `1px solid ${alpha(theme.palette.info.main, 0.4)}`, borderRadius: 1.25, px: 0.75, py: 0.25, color: theme.palette.info.dark, whiteSpace: 'nowrap', lineHeight: 1.6})}>
                                                         {t.name} ×{t.quantity}
                                                     </Box>
                                                 ))}
@@ -555,18 +576,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                 fullWidth
             >
                 <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.dark} 100%)`,
-                        color: 'white',
-                        px: 3,
-                        py: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    })}
+                    sx={(theme) => headerChromeSx(theme, 'warning')}
                 >
-                    <Box sx={{width: 44, height: 44, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                        <WarningAmberIcon sx={{fontSize: 24}} />
+                    <Box sx={(theme) => headerChipSx(theme, 'warning')}>
+                        <WarningAmberIcon/>
                     </Box>
                     <Box sx={{flex: 1}}>
                         <Typography variant="h6" sx={{
@@ -574,7 +587,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         }}>Discard unsaved changes</Typography>
                         <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>Changes will be permanently lost</Typography>
                     </Box>
-                    <IconButton onClick={() => setDiscardDialogOpen(false)} sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}>
+                    <IconButton onClick={() => setDiscardDialogOpen(false)} sx={(theme) => ({
+                        color: headerOnColor(theme, 'warning'),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1, 'warning')}
+                    })}>
                         <CloseIcon />
                     </IconButton>
                 </Box>

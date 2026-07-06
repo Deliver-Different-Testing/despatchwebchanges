@@ -16,6 +16,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
+import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../../../dialogs/shared/styles';
 
 export interface TextInputDialogProps {
     open: boolean;
@@ -58,18 +59,10 @@ export function TextInputDialog({
     return (
         <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
             <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
+                sx={(theme) => headerChromeSx(theme)}
             >
-                <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <EditIcon sx={{ fontSize: 28 }} />
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <EditIcon/>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h5" sx={{
@@ -77,7 +70,10 @@ export function TextInputDialog({
                     }}>{title}</Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>Update the field value</Typography>
                 </Box>
-                <IconButton onClick={onCancel} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                <IconButton onClick={onCancel} sx={(theme) => ({
+                    color: headerOnColor(theme),
+                    '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                })}>
                     <CloseIcon />
                 </IconButton>
             </Box>

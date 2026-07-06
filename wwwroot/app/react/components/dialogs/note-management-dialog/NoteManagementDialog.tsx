@@ -13,10 +13,7 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import Collapse from '@mui/material/Collapse';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
@@ -27,7 +24,6 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
@@ -40,6 +36,7 @@ import NoteIcon from '@mui/icons-material/StickyNote2';
 import UpdateIcon from '@mui/icons-material/Update';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import WarningIcon from '@mui/icons-material/Warning';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 import {CreateNoteRequest, NoteType, UpdateNoteRequest} from '../../../interfaces';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {NoteManagementDialogProps} from "./types";
@@ -268,15 +265,12 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     const isFormValid = noteText.trim() && noteTypeId > 0;
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={onClose}
-            maxWidth="sm"
-            fullWidth
             slotProps={{
                 paper: {
                     sx: {
-                        borderRadius: 3,
                         overflow: 'hidden',
                         minWidth: {xs: 'auto', sm: 500},
                         maxWidth: 700,
@@ -284,51 +278,12 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                 },
             }}
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <NoteIcon sx={{fontSize: 24}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>
-                        {title}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        {isNew ? 'Create a new note for this job' : 'Update an existing note'}
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<NoteIcon/>}
+                title={title}
+                subtitle={isNew ? 'Create a new note for this job' : 'Update an existing note'}
+                onClose={onClose}
+            />
             <DialogContent sx={{p: 3}}>
                 {/* Note Type Section */}
                 <Box sx={{mb: 3}}>
@@ -643,21 +598,15 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     </Paper>
                 )}
             </DialogContent>
-            <Divider />
-            <DialogActions sx={{p: 2, gap: 1}}>
-                <Button onClick={onClose} disabled={isSubmitting}>
-                    Cancel
-                </Button>
-                <Button
-                    variant="contained"
-                    onClick={handleSave}
-                    disabled={!isFormValid || isSubmitting}
-                    startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
-                >
-                    Save Note
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSave}
+                confirmLabel="Save Note"
+                confirmIcon={<SaveIcon />}
+                confirmDisabled={!isFormValid}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

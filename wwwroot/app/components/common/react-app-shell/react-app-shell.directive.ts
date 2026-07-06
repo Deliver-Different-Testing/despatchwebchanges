@@ -1,5 +1,6 @@
 import angular from 'angular';
 import { openHubUrl, openJobInSearch } from '../../../react/services/navigationService';
+import type MessagingDialogService from '../../dialogs/messaging-dialog/messaging-dialog.service';
 /**
  * React App Shell Directive
  *
@@ -60,7 +61,9 @@ function reactAppShellDirective(
     $state: angular.ui.IStateService,
     APP_CONFIG: any,
     $rootScope: angular.IRootScopeService,
-    toastrService: any
+    toastrService: any,
+    $interval: angular.IIntervalService,
+    messagingDialogService: MessagingDialogService
 ): angular.IDirective<ReactAppShellScope> {
     return {
         restrict: 'E',
@@ -104,6 +107,36 @@ function reactAppShellDirective(
             let mounted = false;
             let stateChangeListener: (() => void) | null = null;
 
+            // Whether this page wires its own messages handler. When it does we
+            // defer entirely to the page (its click handler + `messages-count`);
+            // otherwise the directive self-wires the shared messaging dialog and
+            // polls the unread count so the button is present on every page.
+            const pageOwnsMessages = !!scope.onMessagesClick;
+            let selfUnreadCount = 0;
+            let unreadPoll: angular.IPromise<void> | null = null;
+
+            // Refresh the directive-owned unread badge (self-wired pages only).
+            const refreshSelfUnreadCount = async () => {
+                if (pageOwnsMessages) return;
+                try {
+                    selfUnreadCount = await messagingDialogService.getUnreadMessageCount();
+                    updateToolbarActions();
+                } catch (error) {
+                    console.error('[ReactAppShellDirective] Failed to fetch unread message count:', error);
+                }
+            };
+
+            // Open the shared messaging dialog, then refresh the badge on close.
+            const openSelfMessaging = async (event: MouseEvent) => {
+                try {
+                    await messagingDialogService.openMessagingDialog(event);
+                } catch (error) {
+                    console.error('[ReactAppShellDirective] Failed to open messaging dialog:', error);
+                } finally {
+                    void refreshSelfUnreadCount();
+                }
+            };
+
             // Create a unique container ID
             const containerId = 'react-app-shell-' + Math.random().toString(36).substring(2, 9);
             const containerEl = element.find('.react-app-shell-container')[0];
@@ -118,14 +151,24 @@ function reactAppShellDirective(
 
                 const actions: any = {};
 
-                // Messages
-                if (scope.onMessagesClick) {
+                // Messages — always available on every page. If the host page
+                // wires `on-messages-click`, defer to it (and its `messages-count`);
+                // otherwise the directive self-wires the shared messaging dialog
+                // and its own polled unread count.
+                if (pageOwnsMessages) {
                     actions.messages = {
                         unreadCount: scope.messagesCount || 0,
                         onClick: (event: MouseEvent) => {
                             scope.$apply(() => {
                                 scope.onMessagesClick!({ $event: event });
                             });
+                        },
+                    };
+                } else {
+                    actions.messages = {
+                        unreadCount: selfUnreadCount,
+                        onClick: (event: MouseEvent) => {
+                            void openSelfMessaging(event);
                         },
                     };
                 }
@@ -357,6 +400,15 @@ function reactAppShellDirective(
                     // Set up toolbar actions
                     updateToolbarActions();
 
+                    // For self-wired pages, seed the unread badge and poll it so
+                    // the messages button stays current on every page.
+                    if (!pageOwnsMessages) {
+                        void refreshSelfUnreadCount();
+                        unreadPoll = $interval(() => {
+                            void refreshSelfUnreadCount();
+                        }, 60000);
+                    }
+
                     // Listen for state changes
                     stateChangeListener = $rootScope.$on('$stateChangeSuccess', (
                         _event: any,
@@ -416,6 +468,11 @@ function reactAppShellDirective(
                     stateChangeListener();
                 }
 
+                if (unreadPoll) {
+                    $interval.cancel(unreadPoll);
+                    unreadPoll = null;
+                }
+
                 if (mounted) {
                     const ReactAppShell = (window as any).ReactAppShell;
                     if (ReactAppShell) {
@@ -427,6 +484,6 @@ function reactAppShellDirective(
     };
 }
 
-reactAppShellDirective.$inject = ['$ocLazyLoad', '$state', 'APP_CONFIG', '$rootScope', 'toastrService'];
+reactAppShellDirective.$inject = ['$ocLazyLoad', '$state', 'APP_CONFIG', '$rootScope', 'toastrService', '$interval', 'messagingDialogService'];
 
 export default reactAppShellDirective;

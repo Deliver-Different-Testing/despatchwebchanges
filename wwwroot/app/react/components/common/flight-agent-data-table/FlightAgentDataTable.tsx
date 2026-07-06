@@ -36,6 +36,9 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FlightIcon from '@mui/icons-material/Flight';
 import FlightLandIcon from '@mui/icons-material/FlightLand';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import FlightTakeoffOutlinedIcon from '@mui/icons-material/FlightTakeoffOutlined';
+import LocalAirportOutlinedIcon from '@mui/icons-material/LocalAirportOutlined';
+import EngineeringOutlinedIcon from '@mui/icons-material/EngineeringOutlined';
 import NearMeIcon from '@mui/icons-material/NearMe';
 import InfoIcon from '@mui/icons-material/Info';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
@@ -863,7 +866,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 <NoData
                     title="No Job Selected"
                     message="Please select a job to view available flights."
-                    icon="flight_takeoff"
+                    icon={<FlightTakeoffOutlinedIcon/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
                 />
@@ -875,7 +878,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 <NoData
                     title="Flight Already Assigned"
                     message="A flight has already been assigned to this job. This can be found in the job details widget."
-                    icon="flight_takeoff"
+                    icon={<FlightTakeoffOutlinedIcon/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
                 />
@@ -887,7 +890,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 <NoData
                     title="Missing Airport Info"
                     message="Airport information not applicable or not provided for this job."
-                    icon="local_airport"
+                    icon={<LocalAirportOutlinedIcon/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
                 />
@@ -915,7 +918,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                     <NoData
                         title="No Flights Available"
                         message={flightMessage || "No flights available for the specified criteria."}
-                        icon="flight_takeoff"
+                        icon={<FlightTakeoffOutlinedIcon/>}
                         showAction={false}
                         isUsCustomer={isUsCustomer}
                     />
@@ -1226,7 +1229,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 <NoData
                     title="No Job Selected"
                     message="Please select a job to view available agents."
-                    icon="engineering"
+                    icon={<EngineeringOutlinedIcon/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
                 />
@@ -1238,7 +1241,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 <NoData
                     title="Agent Already Assigned"
                     message="An agent has already been assigned to this job. This can be found in the job details widget."
-                    icon="engineering"
+                    icon={<EngineeringOutlinedIcon/>}
                     showAction={true}
                     actionText="Manage Recovery Agent(s)"
                     onAction={onOpenRecoveryAgentDialog}
@@ -1252,7 +1255,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 <NoData
                     title="Not a Delivery Job"
                     message="Agent information is not applicable for this job. This section is only relevant for delivery jobs."
-                    icon="engineering"
+                    icon={<EngineeringOutlinedIcon/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
                 />
@@ -1264,7 +1267,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                 <NoData
                     title="No Agents Available"
                     message={agentMessage || "No agents available for the specified criteria."}
-                    icon="engineering"
+                    icon={<EngineeringOutlinedIcon/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
                 />

@@ -11,9 +11,28 @@ namespace DespatchWeb.Services;
 /// </summary>
 public sealed class ClearListEnvelopeService(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantClock clock) : IClearListEnvelopeService
+    ITenantClock clock) : IClearListEnvelopeService, IDisposable, IAsyncDisposable
 {
-    private DespatchContext Context => field ??= contextFactory.CreateDbContext();
+    private DespatchContext? _context;
+    private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
+
+    /// <summary>
+    /// Disposes the context created from the factory. Implemented for synchronous scope teardown
+    /// (e.g. a DI container disposed synchronously); the async overload is preferred where available.
+    /// </summary>
+    public void Dispose() => _context?.Dispose();
+
+    /// <summary>
+    /// Disposes the context created from the factory. The scoped DI container invokes this at the
+    /// end of the request scope; the factory hands ownership of the context to this service.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_context is not null)
+        {
+            await _context.DisposeAsync();
+        }
+    }
 
     /// <summary>
     /// Calculates the bounding envelope (min/max lat/long) for a clear list area, optionally including courier and job positions.

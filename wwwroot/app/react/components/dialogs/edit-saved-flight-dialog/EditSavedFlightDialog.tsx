@@ -34,6 +34,7 @@ import dayjs from 'dayjs';
 
 import { EditSavedFlightDialogProps, FlightOption, AirportOption } from './types';
 import { nationwideApi, FlightViewModel } from '../../../services/nationwideApi';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 function normalizeFlightNumber(value: string): string {
     return (value ?? '').replace(/[\s-]/g, '').trim().toUpperCase();
@@ -241,34 +242,14 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
             slotProps={{
                 paper: {
                     elevation: 24,
-                    sx: { borderRadius: 2, overflow: 'hidden', minWidth: 480, maxWidth: 600 },
+                    sx: { overflow: 'hidden', minWidth: 480, maxWidth: 600 },
                 },
             }}
         >
             {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <FlightTakeoffIcon sx={{ fontSize: 24 }} />
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <FlightTakeoffIcon/>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography id={titleId} variant="h6" sx={{ fontWeight: 600 }}>
@@ -282,7 +263,10 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                     onClick={onClose}
                     disabled={isSaving}
                     aria-label="Close dialog"
-                    sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                    })}
                 >
                     <CloseIcon />
                 </IconButton>
@@ -295,7 +279,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                         <Paper
                             elevation={0}
                             sx={{
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                                 borderRadius: 3,
                                 p: 2.5,
                                 border: '1px solid',
@@ -324,7 +308,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                                             size="small"
                                             fullWidth
                                             placeholder="Select departure airport…"
-                                            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
+                                            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
                                             slotProps={{
                                                 ...params.slotProps,
                                                 htmlInput: {
@@ -354,7 +338,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                                             size="small"
                                             fullWidth
                                             placeholder="Select arrival airport…"
-                                            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
+                                            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
                                             slotProps={{
                                                 ...params.slotProps,
                                                 htmlInput: {
@@ -372,7 +356,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                     <Paper
                         elevation={0}
                         sx={{
-                            bgcolor: 'white',
+                            bgcolor: 'background.paper',
                             borderRadius: 3,
                             p: 2.5,
                             border: '1px solid',
@@ -422,7 +406,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                                     size="small"
                                     fullWidth
                                     placeholder={hasAirports ? 'Search flights or type a number…' : 'Enter a flight number…'}
-                                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
+                                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
                                     slotProps={{
                                         ...params.slotProps,
                                         htmlInput: {
@@ -463,7 +447,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                 sx={(theme) => ({
                     px: 3,
                     py: 2,
-                    bgcolor: 'white',
+                    bgcolor: 'background.paper',
                     borderTop: `1px solid ${theme.palette.divider}`,
                     gap: 1,
                 })}

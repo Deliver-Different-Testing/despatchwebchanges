@@ -42,6 +42,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import SavingsIcon from '@mui/icons-material/Savings';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import WorkIcon from '@mui/icons-material/Work';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 export interface PriceBreakdown {
     chargeId: number;
@@ -254,34 +255,14 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             slotProps={{
                 paper: {
                     elevation: 24,
-                    sx: { borderRadius: 3, overflow: 'hidden' },
+                    sx: { overflow: 'hidden' },
                 },
             }}
         >
             {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <ReceiptLongIcon sx={{ fontSize: 28 }} />
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <ReceiptLongIcon/>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h5" sx={{
@@ -295,10 +276,10 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                 </Box>
                 <IconButton
                     onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                    }}
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
+                    })}
                 >
                     <CloseIcon />
                 </IconButton>
@@ -728,7 +709,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                         width: 40,
                                         height: 40,
                                         borderRadius: 2,
-                                        bgcolor: 'white',
+                                        bgcolor: 'background.paper',
                                         border: `1px solid ${theme.palette.divider}`,
                                         display: 'flex',
                                         alignItems: 'center',
@@ -949,7 +930,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     sx={(theme) => ({
                         px: 3,
                         py: 2,
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                         borderTop: `1px solid ${theme.palette.divider}`,
                     })}
                 >

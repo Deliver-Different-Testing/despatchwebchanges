@@ -6,6 +6,7 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
 
 /**
@@ -46,7 +47,7 @@ const ACTIONS: JobAction[] = [
     {id: 'dispatch', label: 'Dispatch to Courier', icon: 'send_to_mobile',
         available: job => !job.bulkJob && !job.preBook},
     {id: 'addStop', label: 'Add Stop', icon: 'pin_drop',
-        available: job => !!job.isAgentJob},
+        available: job => job.isAgentJob},
     {id: 'accessorialCharges', label: 'Accessorial Charges', icon: 'receipt_long',
         available: job => !!job.accessorialChargeGroupId},
     {id: 'attachments', label: 'Attachments', icon: 'cloud_upload',
@@ -105,7 +106,7 @@ export const DispatchJobActionsMenu: React.FC<DispatchJobActionsMenuProps> = ({c
                         }}
                     >
                         <ListItemIcon>
-                            <span className="material-symbols-outlined" style={{fontSize: 20}} aria-hidden>{action.icon}</span>
+                            <SymbolIcon name={action.icon} sx={{fontSize: 20}} aria-hidden />
                         </ListItemIcon>
                         <ListItemText>{action.label}</ListItemText>
                     </MenuItem>

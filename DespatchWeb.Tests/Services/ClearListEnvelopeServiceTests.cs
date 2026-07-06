@@ -29,7 +29,7 @@ public class ClearListEnvelopeServiceTests : IAsyncDisposable
     [InlineData(-100)]
     public async Task GetClearListAreaEnvelopeAsync_InvalidClearListAreaId_ThrowsArgumentException(int invalidId)
     {
-        var service = CreateService();
+        await using var service = CreateService();
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => service.GetClearListAreaEnvelopeAsync(invalidId, Country.Nz));
@@ -40,7 +40,7 @@ public class ClearListEnvelopeServiceTests : IAsyncDisposable
     [Fact]
     public async Task GetClearListAreaEnvelopeAsync_InvalidCountry_ThrowsArgumentException()
     {
-        var service = CreateService();
+        await using var service = CreateService();
         const Country invalidCountry = (Country)999;
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
@@ -52,7 +52,7 @@ public class ClearListEnvelopeServiceTests : IAsyncDisposable
     [Fact]
     public async Task GetClearListAreaEnvelopeAsync_Nz_RoutesToNzLogic()
     {
-        var service = CreateService();
+        await using var service = CreateService();
 
         var result = await service.GetClearListAreaEnvelopeAsync(1, Country.Nz);
 
@@ -63,7 +63,7 @@ public class ClearListEnvelopeServiceTests : IAsyncDisposable
     [Fact]
     public async Task GetClearListAreaEnvelopeAsync_Us_RoutesToUsLogic()
     {
-        var service = CreateService();
+        await using var service = CreateService();
 
         var result = await service.GetClearListAreaEnvelopeAsync(1, Country.Us);
 
@@ -72,9 +72,44 @@ public class ClearListEnvelopeServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task DisposeAsync_DisposesContextCreatedFromFactory()
+    {
+        var context = _db.CreateContext();
+        var service = new ClearListEnvelopeService(
+            SqliteTestDatabase.CreateFactoryMock(context),
+            _clock);
+
+        // Trigger lazy creation of the cached context.
+        await service.GetClearListAreaEnvelopeAsync(1, Country.Nz);
+
+        await service.DisposeAsync();
+
+        Assert.Throws<ObjectDisposedException>(() => context.TucJobs.Any());
+    }
+
+    [Fact]
+    public async Task Dispose_DisposesContextCreatedFromFactory()
+    {
+        var context = _db.CreateContext();
+        var service = new ClearListEnvelopeService(
+            SqliteTestDatabase.CreateFactoryMock(context),
+            _clock);
+
+        // Trigger lazy creation of the cached context.
+        await service.GetClearListAreaEnvelopeAsync(1, Country.Nz);
+
+        // Exercising the synchronous Dispose() path is the point of this test.
+#pragma warning disable CA1849
+        service.Dispose();
+#pragma warning restore CA1849
+
+        Assert.Throws<ObjectDisposedException>(() => context.TucJobs.Any());
+    }
+
+    [Fact]
     public async Task GetClearListAreaEnvelopeAsync_NonExistingArea_ReturnsDefaultEnvelope()
     {
-        var service = CreateService();
+        await using var service = CreateService();
 
         var result = await service.GetClearListAreaEnvelopeAsync(9999, Country.Nz);
 

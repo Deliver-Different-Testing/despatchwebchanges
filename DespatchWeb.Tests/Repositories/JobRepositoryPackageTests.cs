@@ -1,4 +1,4 @@
-﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
@@ -18,7 +18,6 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly IJobApiClient _jobApiClientMock = Substitute.For<IJobApiClient>();
     private readonly SqliteTestDatabase _db = new();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
@@ -44,8 +43,7 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         _tenantInfoServiceMock,
         new FakeTenantClock(TestDates.Now),
         _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        _jobApiClientMock
+        _createJobServiceMock
     );
 
     // ── UpdatePackagesForJobAsync ────────────────────────────────────

@@ -1,4 +1,4 @@
-﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -21,7 +21,6 @@ public class JobRepositoryUpdateAddressTests : IAsyncDisposable
     private readonly DespatchContext _context;
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly IJobApiClient _jobApiClientMock = Substitute.For<IJobApiClient>();
     private readonly SqliteTestDatabase _db = new();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
@@ -44,8 +43,7 @@ public class JobRepositoryUpdateAddressTests : IAsyncDisposable
         _tenantInfoServiceMock,
         _clock,
         _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        _jobApiClientMock
+        _createJobServiceMock
     );
 
     private static AddressViewModel BuildAddress(string country) => new(

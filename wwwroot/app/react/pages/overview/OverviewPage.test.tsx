@@ -166,7 +166,7 @@ describe('OverviewPage', () => {
         it('saves collapse state when toggled', () => {
             renderOverviewPage();
 
-            const collapseButton = screen.getByText('expand_less').closest('button')!;
+            const collapseButton = screen.getByRole('button', {name: 'Collapse overview'});
             fireEvent.click(collapseButton);
 
             // Verify state was persisted to localStorage
@@ -174,12 +174,11 @@ describe('OverviewPage', () => {
             expect(saved.overview).toBe(true);
         });
 
-        it('shows expand_more icon when collapsed from localStorage', () => {
+        it('shows the expand affordance when collapsed from localStorage', () => {
             localStorage.setItem('cardCollapseStates', JSON.stringify({overview: true}));
             renderOverviewPage();
 
-            // When collapsed, the icon should show expand_more text
-            expect(screen.getByText('expand_more')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Expand overview'})).toBeInTheDocument();
         });
     });
 

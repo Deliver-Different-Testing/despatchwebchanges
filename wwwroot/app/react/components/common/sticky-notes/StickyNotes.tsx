@@ -25,6 +25,7 @@ import {notesApi} from '../../../services/notesApi';
 import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
 import {cardContainerSx} from '../../common/job-details/JobDetails.styles';
 import {SectionHeader} from '../job-details/components/SectionHeader';
+import {SymbolIcon} from '../symbol-icon';
 
 /**
  * Get note type color based on type name and importance
@@ -214,6 +215,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                                     size="small"
                                     onClick={(e) => setMenuAnchorEl(e.currentTarget)}
                                     disabled={categoriesLoading}
+                                    aria-label="Filter by category"
                                     sx={{color: 'inherit'}}
                                 >
                                     {categoriesLoading ? (
@@ -221,16 +223,14 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                                             <LinearProgress sx={{width: 18}} />
                                         </Box>
                                     ) : (
-                                        <span className="material-symbols-outlined" style={{fontSize: 18}}>
-                                            {isFilterActive ? 'filter_alt' : 'category'}
-                                        </span>
+                                        <SymbolIcon name={isFilterActive ? 'filter_alt' : 'category'} sx={{fontSize: 18}} />
                                     )}
                                 </IconButton>
                             </span>
                         </Tooltip>
                         <Tooltip title="Add Note">
-                            <IconButton size="small" onClick={handleAddNote} sx={{color: 'inherit'}}>
-                                <span className="material-symbols-outlined" style={{fontSize: 18}}>note_add</span>
+                            <IconButton size="small" onClick={handleAddNote} aria-label="Add note" sx={{color: 'inherit'}}>
+                                <SymbolIcon name="note_add" sx={{fontSize: 18}} />
                             </IconButton>
                         </Tooltip>
                     </>
@@ -253,7 +253,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                         selected={selectedCategory === 'all'}
                     >
                         <ListItemIcon>
-                            <span className="material-symbols-outlined">topic</span>
+                            <SymbolIcon name="topic" />
                         </ListItemIcon>
                         <ListItemText>All Categories</ListItemText>
                         <Typography
@@ -273,7 +273,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             selected={selectedCategory === category.id?.toString()}
                         >
                             <ListItemIcon>
-                                <span className="material-symbols-outlined">topic</span>
+                                <SymbolIcon name="topic" />
                             </ListItemIcon>
                             <ListItemText>{category.text}</ListItemText>
                             <Typography
@@ -344,12 +344,10 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                         {/* Note Header */}
                         <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 1}}>
                             <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                <span
-                                    className="material-symbols-outlined"
-                                    style={{marginRight: 8, color: 'rgba(0,0,0,0.6)', fontSize: 20}}
-                                >
-                                    {note.isImportant ? 'priority_high' : 'note'}
-                                </span>
+                                <SymbolIcon
+                                    name={note.isImportant ? 'priority_high' : 'note'}
+                                    sx={{mr: 1, color: 'rgba(0,0,0,0.6)', fontSize: 20}}
+                                />
                                 <Typography variant="body2" sx={{fontWeight: 500, color: 'rgba(0,0,0,0.7)'}}>
                                     {note.noteTypeName || 'Note'}
                                 </Typography>
@@ -394,10 +392,9 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                                 <IconButton
                                     size="small"
                                     onClick={(e) => handleDeleteNote(e, note)}
+                                    aria-label="Delete note"
                                 >
-                                    <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                        delete
-                                    </span>
+                                    <SymbolIcon name="delete" sx={{fontSize: 20}} />
                                 </IconButton>
                             </Tooltip>
                         </Box>
@@ -417,12 +414,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             color: 'text.secondary',
                         }}
                     >
-                        <span
-                            className="material-symbols-outlined"
-                            style={{fontSize: 48, marginBottom: 8, opacity: 0.5}}
-                        >
-                            sticky_note_2
-                        </span>
+                        <SymbolIcon name="sticky_note_2" sx={{fontSize: 48, mb: 1, opacity: 0.5}} />
                         <Typography variant="subtitle1" gutterBottom>
                             No Notes
                         </Typography>

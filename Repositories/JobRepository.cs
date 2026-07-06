@@ -20,8 +20,7 @@ public partial class JobRepository(
     ITenantInfoService infoService,
     ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
-    ICreateJobService createJobService,
-    IJobApiClient jobApiClient)
+    ICreateJobService createJobService)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobQueryRepository,
         IJobCommandRepository
 {
@@ -1616,10 +1615,10 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Creates a new job with minimal required information for quick entry.
-    /// Delegates to the sister api project (POST /api/Jobs via <see cref="IJobApiClient"/>),
-    /// which owns job-number generation, speed/rate resolution, geocoding, and the
-    /// authoritative tucJob insert. Pricing is passed through as a fixed amount.
+    /// Creates a new job with minimal required information for quick entry by running the
+    /// legacy DD_stpJob_InsertExcelerator stored procedure (source = DespatchWeb, not held).
+    /// Job-number generation and speed lookup happen here; the proc owns the authoritative
+    /// tucJob insert. Pricing is passed through as a fixed amount.
     /// </summary>
     /// <param name="request">Job creation request with addresses, client, and speed.</param>
     /// <returns>The ID of the newly created job.</returns>
@@ -1627,7 +1626,16 @@ public partial class JobRepository(
     {
         try
         {
-            return await jobApiClient.QuickCreateAsync(request);
+            var now = _infoService.GetCurrentTenantTime();
+            var staffInfo = await _infoService.GetStaffInfoAsync()
+                ?? throw new InvalidOperationException("Unable to resolve staff info for quick add job.");
+
+            var jobNumber = await GenerateJobNumberAsync(staffInfo.Id, request.SpeedId);
+            var speed = await GetJobTypeByIdAsync(request.SpeedId);
+
+            var jobInput = BuildQuickAddInputModel(request, staffInfo, jobNumber, speed.UcjtName, now);
+
+            return await InsertQuickAddJobViaProcAsync(jobInput);
         }
         catch (Exception e)
         {
@@ -1635,6 +1643,159 @@ public partial class JobRepository(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(QuickAddJobAsync)));
             throw;
         }
+    }
+
+    /// <summary>
+    /// Maps a quick-add <see cref="JobCreateViewModel"/> (plus the resolved staff, job number and
+    /// speed text) onto the <see cref="CreateMinimalTucJobInputModel"/> consumed by the proc.
+    /// Pure/static so the mapping is unit-testable without a database.
+    /// </summary>
+    internal static CreateMinimalTucJobInputModel BuildQuickAddInputModel(
+        JobCreateViewModel request, Suggestion staffInfo, string jobNumber, string speedText, DateTime now) =>
+        new()
+        {
+            JobNumber = jobNumber,
+            FromAddress = request.PickUpAddress,
+            ToAddress = request.DeliveryAddress,
+            BookedBy = staffInfo.Text,
+            ClientId = request.ClientId,
+            AgentCourierId = null,
+            Speed = speedText,
+            SpeedId = request.SpeedId,
+            Amount = request.Charge,
+            Reference = request.RefA,
+            ReferenceB = request.RefB,
+            Notes = request.JobNotes,
+            TenantCurrentTime = now,
+            LoggedInContactId = staffInfo.Id,
+            FromContactName = request.FromContactName,
+            ToContactName = request.DeliverToContact,
+            PickupNotes = request.PickupNotes,
+            DeliveryNotes = request.DeliveryNotes,
+            PickUpLatitude = request.PickUpAddress?.Latitude,
+            PickUpLongitude = request.PickUpAddress?.Longitude,
+            DeliveryLatitude = request.DeliveryAddress?.Latitude,
+            DeliveryLongitude = request.DeliveryAddress?.Longitude,
+            Pickup = request.Date.DateTime,
+            Hold = false
+        };
+
+    private async Task<int> InsertQuickAddJobViaProcAsync(
+        CreateMinimalTucJobInputModel data, CancellationToken cancellationToken = default)
+    {
+        var jobIdParam = new OutputParameter<int?>();
+        var messageParam = new OutputParameter<string>();
+        var returnValueParam = new OutputParameter<int>();
+
+        await Context.Procedures.DD_stpJob_InsertExceleratorAsync(
+            bookedBy: data.BookedBy,
+            fromAddress: data.FromAddress?.FullAddress,
+            fromStreet: data.FromAddress != null
+                ? (data.FromAddress.AddressLine3 + " " + data.FromAddress.AddressLine4).Trim()
+                : null,
+            fromBuilding: data.FromAddress?.AddressLine2,
+            fromCompany: data.FromAddress?.AddressLine1,
+            fromCity: data.FromAddress?.AddressLine5,
+            fromState: data.FromAddress?.AddressLine6,
+            fromZipCode: data.FromAddress != null ? SafeParseZipCode(data.FromAddress.AddressLine7) : null,
+            fromCountry: null,
+            speed: data.Speed,
+            speedID: data.SpeedId,
+            toAddress: data.ToAddress?.FullAddress,
+            toStreet: data.ToAddress != null
+                ? (data.ToAddress.AddressLine3 + " " + data.ToAddress.AddressLine4).Trim()
+                : null,
+            toBuilding: data.ToAddress?.AddressLine2,
+            toCompany: data.ToAddress?.AddressLine1,
+            toCity: data.ToAddress?.AddressLine5,
+            toState: data.ToAddress?.AddressLine6,
+            toZipCode: data.ToAddress != null ? SafeParseZipCode(data.ToAddress.AddressLine7) : null,
+            toCountry: null,
+            toAddressType: data.ToAddressType,
+            referenceA: data.Reference,
+            referenceB: data.ReferenceB,
+            vehicleSizeID: data.VehicleSizeId,
+            totalWeight: null,
+            totalDistance: null,
+            @return: null,
+            courierNotes: data.Notes,
+            clientNotes: data.Notes,
+            pickupNotes: data.PickupNotes,
+            deliveryNotes: data.DeliveryNotes,
+            fromContactName: data.FromContactName,
+            fromPhoneNumber: data.FromPhoneNumber,
+            toContactName: data.ToContactName,
+            toPhoneNumber: data.ToPhoneNumber,
+            type: data.Type,
+            pickUpFrom: null,
+            quantity: null,
+            leaveNotHome: null,
+            jobNotificationType: data.JobNotificationType,
+            jobNotificationEmail: data.JobNotificationEmail,
+            jobNotificationMobile: data.JobNotificationMobile,
+            toAddressCode: null,
+            fromAddressCode: null,
+            clientID: data.ClientId,
+            time: data.TenantCurrentTime,
+            hold: data.Hold,
+            fixedAmount: data.Amount,
+            agentAmount: null,
+            agentCourierID: data.AgentCourierId,
+            fuelSurchargeAmount: data.FuelSurchargeAmount,
+            ourRef: data.OurRef,
+            pickUpLatitude: SafeDecimalToString(data.PickUpLatitude),
+            pickUpLongitude: SafeDecimalToString(data.PickUpLongitude),
+            deliveryLatitude: SafeDecimalToString(data.DeliveryLatitude),
+            deliveryLongitude: SafeDecimalToString(data.DeliveryLongitude),
+            pickup: null,
+            dropoff: null,
+            privateRes: data.PrivateRes,
+            truckStartTime: null,
+            truckHours: null,
+            jobNumber: data.JobNumber,
+            storageState: null,
+            deliveryState: null,
+            sourceId: (int)JobSource.DespatchWeb,
+            totalPallets: data.TotalPallets,
+            extraStopOffs: null,
+            dryIceWeight: data.DryIceWeight,
+            cubic: data.Cubic,
+            waitTime: null,
+            dGClass: data.DgClass,
+            dGDocs: data.DgClass.HasValue,
+            loggedInContactId: data.LoggedInContactId,
+            accessorialChargeGroupId: data.AccessorialChargeGroupId,
+            deliverByDateTime: data.DeliverByDateTime,
+            pickupTimeZone: data.PickupTimeZone,
+            deliverByTimeZone: data.DeliverByTimeZone,
+            recurringName: data.RecurringName,
+            recurringDays: data.RecurringDays,
+            recurringFrequency: data.RecurringFrequency,
+            recurringHoliday: null,
+            recurringInitialDays: data.RecurringInitialDays,
+            tenantCurrentTime: data.TenantCurrentTime,
+            dimensionsType: null,
+            cubicList: data.CubicList,
+            weightList: data.WeightList,
+            barcodeList: data.BarcodeList,
+            forceTucJobPush: null,
+            jobBookingID: null,
+            pickupReadyDateTime: null,
+            jobID: jobIdParam,
+            message: messageParam,
+            returnValue: returnValueParam,
+            cancellationToken: cancellationToken);
+
+        var success = returnValueParam.Value == 0 || jobIdParam.Value.HasValue;
+        if (!success)
+            throw new InvalidOperationException($"Failed to create quick add job: {messageParam.Value}");
+
+        return jobIdParam.Value ?? throw new InvalidOperationException("Failed to get job id from quick add job");
+
+        static string SafeDecimalToString(decimal? value) => value?.ToString();
+
+        static int? SafeParseZipCode(string zipCode) =>
+            int.TryParse(zipCode, out var result) ? result : null;
     }
 
     /// <summary>

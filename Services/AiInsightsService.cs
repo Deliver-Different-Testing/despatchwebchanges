@@ -23,6 +23,77 @@ public sealed class AiInsightsService(
 {
     private const decimal OutlierThresholdPercent = 15m;
 
+    // ---- Blockers ---------------------------------------------------------
+
+    private const string EmitBlockersTool = "emit_blockers";
+
+    private const string EmitBlockersSchema = """
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "blockers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "tag": { "type": "string", "description": "Short kebab-case blocker name, e.g. 'call-before-delivery', 'gate-code-needed', 'tail-lift-required', 'dog-on-property', 'dg-handling'." },
+                                                        "severity": { "type": "string", "enum": ["Info", "Caution", "Urgent"], "description": "Operational urgency." },
+                                                        "evidence": { "type": "string", "description": "Quote the note phrase that supports this blocker." },
+                                                        "actionRequired": { "type": "boolean", "description": "True if the dispatcher/courier must do something before pickup/delivery." }
+                                                      },
+                                                      "required": ["tag", "severity", "evidence", "actionRequired"]
+                                                    }
+                                                  },
+                                                  "summary": { "type": "string", "description": "One-line summary, e.g. '3 blockers: call-before, gate-code, tail-lift'." },
+                                                  "severity": { "type": "string", "enum": ["Ok", "Info", "Caution", "Urgent", "Critical"], "description": "Highest blocker severity, or Ok if none." }
+                                                },
+                                                "required": ["blockers", "summary", "severity"]
+                                              }
+                                              """;
+
+    // ---- Pricing ----------------------------------------------------------
+
+    private const string EmitSuggestionsTool = "emit_accessorial_suggestions";
+
+    private const string EmitSuggestionsSchema = """
+                                                 {
+                                                   "type": "object",
+                                                   "properties": {
+                                                     "suggestions": {
+                                                       "type": "array",
+                                                       "items": {
+                                                         "type": "object",
+                                                         "properties": {
+                                                           "accessorialChargeId": { "type": "integer", "description": "MUST be an id from the supplied catalog." },
+                                                           "name": { "type": "string", "description": "The catalog charge name." },
+                                                           "reason": { "type": "string", "description": "Why it applies, citing the specific job flag or note phrase." },
+                                                           "suggestedInputValue": { "type": ["number", "null"], "description": "For per-unit/quote charges a value if implied by the notes (e.g. waiting minutes); otherwise null." }
+                                                         },
+                                                         "required": ["accessorialChargeId", "name", "reason"]
+                                                       }
+                                                     }
+                                                   },
+                                                   "required": ["suggestions"]
+                                                 }
+                                                 """;
+
+    // ---- Change-request triage -------------------------------------------
+
+    private const string EmitTriageTool = "emit_triage";
+
+    private const string EmitTriageSchema = """
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "recommendedAction": { "type": "string", "enum": ["approve", "reject", "clarify"], "description": "Advisory only — a human approver decides." },
+                                                "confidence": { "type": "number", "description": "0.0 to 1.0." },
+                                                "rationale": { "type": "string", "description": "One sentence explaining the recommendation." },
+                                                "riskFactors": { "type": "array", "items": { "type": "string" }, "description": "Short risk/consideration phrases. Empty if none." }
+                                              },
+                                              "required": ["recommendedAction", "confidence", "rationale", "riskFactors"]
+                                            }
+                                            """;
+
     private static readonly JsonSerializerOptions ToolJsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -31,34 +102,6 @@ public sealed class AiInsightsService(
     private string RegionContext => tenantInfo.IsUsTenant()
         ? "a US-based courier dispatch company"
         : "a New Zealand courier dispatch company";
-
-    // ---- Blockers ---------------------------------------------------------
-
-    private const string EmitBlockersTool = "emit_blockers";
-
-    private const string EmitBlockersSchema = """
-    {
-      "type": "object",
-      "properties": {
-        "blockers": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "tag": { "type": "string", "description": "Short kebab-case blocker name, e.g. 'call-before-delivery', 'gate-code-needed', 'tail-lift-required', 'dog-on-property', 'dg-handling'." },
-              "severity": { "type": "string", "enum": ["Info", "Caution", "Urgent"], "description": "Operational urgency." },
-              "evidence": { "type": "string", "description": "Quote the note phrase that supports this blocker." },
-              "actionRequired": { "type": "boolean", "description": "True if the dispatcher/courier must do something before pickup/delivery." }
-            },
-            "required": ["tag", "severity", "evidence", "actionRequired"]
-          }
-        },
-        "summary": { "type": "string", "description": "One-line summary, e.g. '3 blockers: call-before, gate-code, tail-lift'." },
-        "severity": { "type": "string", "enum": ["Ok", "Info", "Caution", "Urgent", "Critical"], "description": "Highest blocker severity, or Ok if none." }
-      },
-      "required": ["blockers", "summary", "severity"]
-    }
-    """;
 
     public async Task<ExtractBlockersResponse> ExtractBlockersAsync(int jobId, CancellationToken ct = default)
     {
@@ -94,10 +137,12 @@ public sealed class AiInsightsService(
         sb.AppendLine();
         AppendNotes(sb, notes);
 
-        var (json, usage) = await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitBlockersTool, EmitBlockersSchema, ct);
+        var (json, usage) =
+            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitBlockersTool, EmitBlockersSchema, ct);
         if (json == null)
         {
-            return new ExtractBlockersResponse { Blockers = [], Summary = "Unable to analyse notes.", Severity = SummarySeverity.Ok, Usage = usage };
+            return new ExtractBlockersResponse
+                { Blockers = [], Summary = "Unable to analyse notes.", Severity = SummarySeverity.Ok, Usage = usage };
         }
 
         try
@@ -107,39 +152,13 @@ public sealed class AiInsightsService(
         }
         catch (JsonException)
         {
-            return new ExtractBlockersResponse { Blockers = [], Summary = "Unable to parse blockers.", Severity = SummarySeverity.Ok, Usage = usage };
+            return new ExtractBlockersResponse
+                { Blockers = [], Summary = "Unable to parse blockers.", Severity = SummarySeverity.Ok, Usage = usage };
         }
     }
 
-    // ---- Pricing ----------------------------------------------------------
-
-    private const string EmitSuggestionsTool = "emit_accessorial_suggestions";
-
-    private const string EmitSuggestionsSchema = """
-    {
-      "type": "object",
-      "properties": {
-        "suggestions": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "accessorialChargeId": { "type": "integer", "description": "MUST be an id from the supplied catalog." },
-              "name": { "type": "string", "description": "The catalog charge name." },
-              "reason": { "type": "string", "description": "Why it applies, citing the specific job flag or note phrase." },
-              "suggestedInputValue": { "type": ["number", "null"], "description": "For per-unit/quote charges a value if implied by the notes (e.g. waiting minutes); otherwise null." }
-            },
-            "required": ["accessorialChargeId", "name", "reason"]
-          }
-        }
-      },
-      "required": ["suggestions"]
-    }
-    """;
-
-    private sealed record SuggestionWrapper(List<AccessorialSuggestion> Suggestions);
-
-    public async Task<PricingAnalysisResponse> AnalyzePricingAsync(int jobId, int accessorialChargeGroupId, CancellationToken ct = default)
+    public async Task<PricingAnalysisResponse> AnalyzePricingAsync(int jobId, int accessorialChargeGroupId,
+        CancellationToken ct = default)
     {
         var job = await jobRepository.GetSingleJobById(jobId);
         if (job == null)
@@ -183,27 +202,116 @@ public sealed class AiInsightsService(
             sb.AppendLine($"[id {c.AccessorialChargeId}] {c.Name} ({c.ChargeType}){desc}");
         }
 
-        var (json, usage) = await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitSuggestionsTool, EmitSuggestionsSchema, ct);
+        var (json, usage) =
+            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitSuggestionsTool, EmitSuggestionsSchema, ct);
 
         var suggestions = new List<AccessorialSuggestion>();
-        if (json != null)
+        if (json == null)
         {
-            try
-            {
-                var wrapper = JsonSerializer.Deserialize<SuggestionWrapper>(json, ToolJsonOptions);
-                var allowedIds = catalog.Select(c => c.AccessorialChargeId).ToHashSet();
-                // Guard: drop anything the model hallucinated outside the catalog.
-                suggestions = (wrapper?.Suggestions ?? [])
-                    .Where(s => allowedIds.Contains(s.AccessorialChargeId))
-                    .ToList();
-            }
-            catch (JsonException e)
-            {
-                Log.Warning(e, "Failed to parse accessorial suggestions for job {JobId}", jobId);
-            }
+            return new PricingAnalysisResponse { Anomaly = anomaly, Suggestions = suggestions, Usage = usage };
+        }
+
+        try
+        {
+            var wrapper = JsonSerializer.Deserialize<SuggestionWrapper>(json, ToolJsonOptions);
+            var allowedIds = catalog.Select(c => c.AccessorialChargeId).ToHashSet();
+            // Guard: drop anything the model hallucinated outside the catalog.
+            suggestions = (wrapper?.Suggestions ?? [])
+                .Where(s => allowedIds.Contains(s.AccessorialChargeId))
+                .ToList();
+        }
+        catch (JsonException e)
+        {
+            Log.Warning(e, "Failed to parse accessorial suggestions for job {JobId}", jobId);
         }
 
         return new PricingAnalysisResponse { Anomaly = anomaly, Suggestions = suggestions, Usage = usage };
+    }
+
+    public async Task<ChangeRequestTriageResponse> TriageChangeRequestAsync(int requestId, int jobId,
+        CancellationToken ct = default)
+    {
+        var requests = await changeRequestService.ListForJobAsync(jobId, ct);
+        var request = requests.FirstOrDefault(r => r.Id == requestId);
+        if (request == null)
+        {
+            return new ChangeRequestTriageResponse
+            {
+                RecommendedAction = "clarify",
+                Confidence = 0,
+                Rationale = "Change request not found.",
+                RiskFactors = [],
+                Usage = new AiUsageInfo()
+            };
+        }
+
+        var job = await jobRepository.GetSingleJobById(jobId);
+
+        var systemPrompt =
+            $"""
+             You are an advisory assistant helping an approver triage a job change request for {RegionContext}.
+             Your output is a SUGGESTION ONLY — a human approver always makes the final decision and clicks approve/reject.
+
+             Recommend one of: approve, reject, clarify (ask the requester for more info).
+             Consider: whether the requested change is reasonable for the field, the size of any rate change,
+             whether the stated reason justifies it, and the request's age. Be conservative on commercial (rate)
+             changes — recommend clarify if the reason is thin or the rate move is large and unexplained.
+             Do not invent facts. You MUST call the tool `{EmitTriageTool}`.
+             """;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("--- Change request ---");
+        sb.AppendLine($"Field: {request.FieldName}");
+        sb.AppendLine($"Current value: {AiDataSanitizer.Sanitize(request.CurrentValue ?? "(none)")}");
+        sb.AppendLine($"Requested value: {AiDataSanitizer.Sanitize(request.RequestedValue ?? "(none)")}");
+        sb.AppendLine($"Reason: {AiDataSanitizer.Sanitize(request.Reason ?? "(none given)")}");
+        sb.AppendLine($"Requested by: {request.RequestingPartyType}");
+        sb.AppendLine($"Approval mode: {request.ApprovalMode}");
+        sb.AppendLine($"Requires commercial refresh: {request.RequiresCommercialRefresh}");
+        if (request.OldCommercialAmount.HasValue || request.NewCommercialAmount.HasValue)
+        {
+            sb.AppendLine(
+                $"Commercial amount: {request.OldCommercialAmount?.ToString("N2", CultureInfo.InvariantCulture) ?? "?"} -> {request.NewCommercialAmount?.ToString("N2", CultureInfo.InvariantCulture) ?? "?"}");
+        }
+
+        sb.AppendLine($"Requested at (UTC): {request.RequestedAt:yyyy-MM-dd HH:mm}");
+        if (job != null)
+        {
+            sb.AppendLine();
+            sb.AppendLine(
+                $"Job {job.JobNo} — status {job.Status ?? job.StatusName ?? "?"}, client {job.ClientName ?? "?"}.");
+        }
+
+        var (json, usage) =
+            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitTriageTool, EmitTriageSchema, ct);
+        if (json == null)
+        {
+            return new ChangeRequestTriageResponse
+            {
+                RecommendedAction = "clarify",
+                Confidence = 0,
+                Rationale = "Unable to generate a recommendation.",
+                RiskFactors = [],
+                Usage = usage
+            };
+        }
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<ChangeRequestTriageResponse>(json, ToolJsonOptions);
+            return (parsed ?? new ChangeRequestTriageResponse { RecommendedAction = "clarify" }) with { Usage = usage };
+        }
+        catch (JsonException)
+        {
+            return new ChangeRequestTriageResponse
+            {
+                RecommendedAction = "clarify",
+                Confidence = 0,
+                Rationale = "Unable to parse the recommendation.",
+                RiskFactors = [],
+                Usage = usage
+            };
+        }
     }
 
     private async Task<PricingAnomaly?> ComputeAnomalyAsync(int jobId, decimal? storedCharge)
@@ -250,105 +358,6 @@ public sealed class AiInsightsService(
         }
     }
 
-    // ---- Change-request triage -------------------------------------------
-
-    private const string EmitTriageTool = "emit_triage";
-
-    private const string EmitTriageSchema = """
-    {
-      "type": "object",
-      "properties": {
-        "recommendedAction": { "type": "string", "enum": ["approve", "reject", "clarify"], "description": "Advisory only — a human approver decides." },
-        "confidence": { "type": "number", "description": "0.0 to 1.0." },
-        "rationale": { "type": "string", "description": "One sentence explaining the recommendation." },
-        "riskFactors": { "type": "array", "items": { "type": "string" }, "description": "Short risk/consideration phrases. Empty if none." }
-      },
-      "required": ["recommendedAction", "confidence", "rationale", "riskFactors"]
-    }
-    """;
-
-    public async Task<ChangeRequestTriageResponse> TriageChangeRequestAsync(int requestId, int jobId, CancellationToken ct = default)
-    {
-        var requests = await changeRequestService.ListForJobAsync(jobId, ct);
-        var request = requests.FirstOrDefault(r => r.Id == requestId);
-        if (request == null)
-        {
-            return new ChangeRequestTriageResponse
-            {
-                RecommendedAction = "clarify",
-                Confidence = 0,
-                Rationale = "Change request not found.",
-                RiskFactors = [],
-                Usage = new AiUsageInfo()
-            };
-        }
-
-        var job = await jobRepository.GetSingleJobById(jobId);
-
-        var systemPrompt =
-            $"""
-             You are an advisory assistant helping an approver triage a job change request for {RegionContext}.
-             Your output is a SUGGESTION ONLY — a human approver always makes the final decision and clicks approve/reject.
-
-             Recommend one of: approve, reject, clarify (ask the requester for more info).
-             Consider: whether the requested change is reasonable for the field, the size of any rate change,
-             whether the stated reason justifies it, and the request's age. Be conservative on commercial (rate)
-             changes — recommend clarify if the reason is thin or the rate move is large and unexplained.
-             Do not invent facts. You MUST call the tool `{EmitTriageTool}`.
-             """;
-
-        var sb = new StringBuilder();
-        sb.AppendLine("--- Change request ---");
-        sb.AppendLine($"Field: {request.FieldName}");
-        sb.AppendLine($"Current value: {AiDataSanitizer.Sanitize(request.CurrentValue ?? "(none)")}");
-        sb.AppendLine($"Requested value: {AiDataSanitizer.Sanitize(request.RequestedValue ?? "(none)")}");
-        sb.AppendLine($"Reason: {AiDataSanitizer.Sanitize(request.Reason ?? "(none given)")}");
-        sb.AppendLine($"Requested by: {request.RequestingPartyType}");
-        sb.AppendLine($"Approval mode: {request.ApprovalMode}");
-        sb.AppendLine($"Requires commercial refresh: {request.RequiresCommercialRefresh}");
-        if (request.OldCommercialAmount.HasValue || request.NewCommercialAmount.HasValue)
-        {
-            sb.AppendLine($"Commercial amount: {request.OldCommercialAmount?.ToString("N2", CultureInfo.InvariantCulture) ?? "?"} -> {request.NewCommercialAmount?.ToString("N2", CultureInfo.InvariantCulture) ?? "?"}");
-        }
-
-        sb.AppendLine($"Requested at (UTC): {request.RequestedAt:yyyy-MM-dd HH:mm}");
-        if (job != null)
-        {
-            sb.AppendLine();
-            sb.AppendLine($"Job {job.JobNo} — status {job.Status ?? job.StatusName ?? "?"}, client {job.ClientName ?? "?"}.");
-        }
-
-        var (json, usage) = await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitTriageTool, EmitTriageSchema, ct);
-        if (json == null)
-        {
-            return new ChangeRequestTriageResponse
-            {
-                RecommendedAction = "clarify",
-                Confidence = 0,
-                Rationale = "Unable to generate a recommendation.",
-                RiskFactors = [],
-                Usage = usage
-            };
-        }
-
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<ChangeRequestTriageResponse>(json, ToolJsonOptions);
-            return (parsed ?? new ChangeRequestTriageResponse { RecommendedAction = "clarify" }) with { Usage = usage };
-        }
-        catch (JsonException)
-        {
-            return new ChangeRequestTriageResponse
-            {
-                RecommendedAction = "clarify",
-                Confidence = 0,
-                Rationale = "Unable to parse the recommendation.",
-                RiskFactors = [],
-                Usage = usage
-            };
-        }
-    }
-
     // ---- Helpers ----------------------------------------------------------
 
     private async Task<(string? Json, AiUsageInfo Usage)> SendToolRequestAsync(
@@ -356,7 +365,10 @@ public sealed class AiInsightsService(
     {
         var tools = new List<AiToolDefinition>
         {
-            new() { Name = toolName, Description = $"Emit the structured result for {toolName}.", InputSchemaJson = schema }
+            new()
+            {
+                Name = toolName, Description = $"Emit the structured result for {toolName}.", InputSchemaJson = schema
+            }
         };
 
         var response = await aiClient.SendMessageAsync(
@@ -366,9 +378,10 @@ public sealed class AiInsightsService(
             tools,
             forceToolName: toolName,
             enableCaching: true,
+            cacheResponse: true,
             ct: ct);
 
-        var usage = new AiUsageInfo { InputTokens = response.InputTokens, OutputTokens = response.OutputTokens };
+        var usage = AiUsageInfo.From(response);
         var toolCall = response.ToolCalls.FirstOrDefault(t => t.ToolName == toolName);
         return (toolCall?.ArgumentsJson, usage);
     }
@@ -384,7 +397,8 @@ public sealed class AiInsightsService(
         foreach (var note in notes.OrderBy(n => n.CreatedDate).TakeLast(25))
         {
             var important = note.IsImportant ? " IMPORTANT" : string.Empty;
-            sb.AppendLine($"({note.NoteTypeName}{important}) {AiDataSanitizer.Sanitize(note.NoteText ?? string.Empty)}");
+            sb.AppendLine(
+                $"({note.NoteTypeName}{important}) {AiDataSanitizer.Sanitize(note.NoteText ?? string.Empty)}");
         }
 
         sb.AppendLine();
@@ -443,4 +457,6 @@ public sealed class AiInsightsService(
         sb.AppendLine(flags.Count > 0 ? "Flags: " + string.Join(", ", flags) : "Flags: none");
         sb.AppendLine();
     }
+
+    private sealed record SuggestionWrapper(List<AccessorialSuggestion> Suggestions);
 }

@@ -23,6 +23,7 @@ import { FlightDetailsDialogProps, FlightSegmentData, FlightData } from './types
 import { FlightSummaryCard } from './FlightSummaryCard';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import { FlightItinerary } from './FlightItinerary';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 /**
  * Create a pseudo-segment from the main flight data for non-segmented flights
@@ -149,7 +150,7 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
             slotProps={{
                 paper: {
                     sx: {
-                        borderRadius: isFullscreen ? 0 : 3,
+                        borderRadius: isFullscreen ? 0 : 3.5,
                         overflow: 'hidden',
                         height: isFullscreen ? '100vh' : 680,
                         maxHeight: isFullscreen ? '100vh' : '95vh',
@@ -160,29 +161,9 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
             }}
         >
             {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <FlightIcon sx={{ fontSize: 24 }} />
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <FlightIcon/>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h6" sx={{
@@ -196,10 +177,10 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                 </Box>
                 <IconButton
                     onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                    }}
+                    sx={(theme) => ({
+                        color: headerOnColor(theme),
+                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
+                    })}
                 >
                     <CloseIcon />
                 </IconButton>

@@ -12,13 +12,13 @@ import Dialog from '@mui/material/Dialog';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import Radio from '@mui/material/Radio';
 import InputAdornment from '@mui/material/InputAdornment';
 import PriceChangeIcon from '@mui/icons-material/PriceChange';
-import CloseIcon from '@mui/icons-material/Close';
+import {DialogHeader} from '../shared';
+import {grossModeColor} from '../../../theme/designTokens';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SyncIcon from '@mui/icons-material/Sync';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -62,14 +62,11 @@ const MODE_OPTIONS: ModeOption[] = [
     },
 ];
 
-/** Purple used exclusively for the "gross" pricing mode (no theme palette equivalent). */
-const GROSS_MODE_COLOR = '#9c27b0';
-
 const getSelectedIconColor = (mode: PricingMode) => {
     switch (mode) {
         case 'recalculate': return 'grey.600';
         case 'base': return 'success.main';
-        case 'gross': return GROSS_MODE_COLOR;
+        case 'gross': return grossModeColor;
     }
 };
 
@@ -179,7 +176,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     // --- Render helpers ---
 
     const renderEditState = () => (
-        <Box sx={{ p: '20px 24px 24px' }}>
+        <Box sx={{ pt: 2.5, px: 3, pb: 3 }}>
             {/* Job Reference Badge */}
             <Box sx={(theme) => ({
                 display: 'inline-flex',
@@ -216,7 +213,8 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 1.75,
-                                p: '14px 16px',
+                                py: 1.75,
+                                px: 2,
                                 border: 2,
                                 borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.08),
                                 borderRadius: 2.5,
@@ -243,7 +241,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 const iconBgMap: Record<PricingMode, string> = {
                                     recalculate: alpha(theme.palette.grey[600], 0.12),
                                     base: alpha(theme.palette.success.main, 0.12),
-                                    gross: alpha(GROSS_MODE_COLOR, 0.12),
+                                    gross: alpha(grossModeColor, 0.12),
                                 };
                                 return {
                                     width: 40,
@@ -438,7 +436,8 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: 1.5,
-                                        p: '10px 12px',
+                                        py: 1.25,
+                                        px: 1.5,
                                         bgcolor: alpha(theme.palette.common.black, 0.03),
                                         borderRadius: 2,
                                         border: `1px solid ${isChanged ? theme.palette.primary.main : alpha(theme.palette.common.black, 0.08)}`,
@@ -542,7 +541,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     );
 
     const renderSuccessState = () => (
-        <Box sx={{ p: '32px 24px', textAlign: 'center' }}>
+        <Box sx={{ py: 4, px: 3, textAlign: 'center' }}>
             <CheckCircleIcon sx={{ fontSize: 56, color: 'success.main', mb: 2 }} />
             <Typography
                 variant="h6"
@@ -665,7 +664,6 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 paper: {
                     elevation: 24,
                     sx: {
-                        borderRadius: 2,
                         overflow: 'hidden',
                         width: childJobs && childJobs.length > 0 ? 480 : 420,
                         maxWidth: '95vw',
@@ -677,40 +675,14 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             }}
         >
             {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    minHeight: 56,
-                    flexShrink: 0,
-                })}
-            >
-                <PriceChangeIcon sx={{ fontSize: 24 }} />
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>
-                        Edit Price
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Adjust the job price
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    disabled={isLoading}
-                    sx={(theme) => ({
-                        color: 'white',
-                        '&:hover': { bgcolor: alpha(theme.palette.common.white, 0.1) },
-                    })}
-                >
-                    <CloseIcon />
-                </IconButton>
+            <Box sx={{flexShrink: 0}}>
+                <DialogHeader
+                    icon={<PriceChangeIcon/>}
+                    title="Edit Price"
+                    subtitle="Adjust the job price"
+                    onClose={onClose}
+                    closeDisabled={isLoading}
+                />
             </Box>
             {/* Content — scrollable so action buttons remain visible */}
             <Box sx={{overflowY: 'auto', flex: 1}}>

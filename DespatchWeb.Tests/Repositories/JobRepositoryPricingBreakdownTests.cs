@@ -1,4 +1,4 @@
-﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
@@ -19,7 +19,6 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly IJobApiClient _jobApiClientMock = Substitute.For<IJobApiClient>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryPricingBreakdownTests()
@@ -56,8 +55,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         _tenantInfoServiceMock,
         _clock,
         _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        _jobApiClientMock
+        _createJobServiceMock
     );
 
     [Fact]

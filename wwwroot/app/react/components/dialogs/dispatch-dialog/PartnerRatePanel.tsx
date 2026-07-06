@@ -41,7 +41,7 @@ const SECTION_LABEL_SX = {
 } satisfies SxProps<Theme>;
 
 const SECTION_PAPER_SX = {
-    bgcolor: 'white',
+    bgcolor: 'background.paper',
     borderRadius: 3,
     p: 2.5,
     border: '1px solid',
@@ -256,7 +256,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                     fullWidth
                     size="small"
                     disabled={disabled}
-                    sx={{'& .MuiOutlinedInput-root': {bgcolor: 'white'}}}
+                    sx={{'& .MuiOutlinedInput-root': {bgcolor: 'background.paper'}}}
                 />
             </Box>
         </>

@@ -10,7 +10,6 @@
  */
 
 import React, {useEffect, useCallback, useRef, useState} from 'react';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
@@ -36,10 +35,12 @@ import CloseIcon from '@mui/icons-material/Close';
 import DoubleArrowIcon from '@mui/icons-material/DoubleArrow';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import type {SxProps, Theme} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import dayjs from 'dayjs';
-
 import type {JobFileUploadDialogProps, JobFile} from './types';
 import {useFileUpload} from './useFileUpload';
+import {DialogShell} from '../shared';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 const ACCEPTED_TYPES = 'image/*,application/pdf';
 
@@ -76,14 +77,14 @@ const styles: Record<string, SxProps<Theme>> = {
         borderColor: 'success.main',
         bgcolor: 'success.50',
     },
-    podDropBox: {
-        bgcolor: '#f0f7ff',
+    podDropBox: (theme) => ({
+        bgcolor: alpha(theme.palette.primary.main, 0.04),
         borderColor: 'primary.main',
         '&:hover': {
             borderColor: 'primary.dark',
-            bgcolor: '#e3f0ff',
+            bgcolor: alpha(theme.palette.primary.main, 0.08),
         },
-    },
+    }),
 };
 
 export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
@@ -287,7 +288,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                 onChange={e => upload.setPodDescription(e.target.value)}
                 fullWidth
                 size="small"
-                sx={{mb: 2, bgcolor: 'white'}}
+                sx={{mb: 2, bgcolor: 'background.paper'}}
             />
             {renderDropBox(true)}
             {renderFileTable(upload.podFiles, true)}
@@ -309,43 +310,21 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
             : 'Manage attached files for this job';
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={handleDialogClose}
             maxWidth="md"
-            fullWidth
             disableEnforceFocus
             slotProps={{
                 paper: {
-                    elevation: 24,
-                    sx: {borderRadius: 2, overflow: 'hidden'},
+                    sx: {overflow: 'hidden'},
                 },
             }}
         >
             {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    {isPODOnly ? <CameraAltIcon sx={{fontSize: 24}} /> : <UploadFileIcon sx={{fontSize: 24}} />}
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    {isPODOnly ? <CameraAltIcon/> : <UploadFileIcon/>}
                 </Box>
                 <Box sx={{flex: 1}}>
                     <Typography variant="h6" sx={{
@@ -363,7 +342,10 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                             onClick={onClose}
                             disabled={upload.isUploading}
                             startIcon={<DoubleArrowIcon />}
-                            sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}
+                            sx={(theme) => ({
+                                color: headerOnColor(theme),
+                                '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                            })}
                         >
                             Skip
                         </Button>
@@ -373,7 +355,10 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                         <IconButton
                             onClick={onClose}
                             disabled={upload.isUploading}
-                            sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}
+                            sx={(theme) => ({
+                                color: headerOnColor(theme),
+                                '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                            })}
                         >
                             <CloseIcon />
                         </IconButton>
@@ -410,7 +395,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                 sx={(theme) => ({
                     px: 3,
                     py: 2,
-                    bgcolor: 'white',
+                    bgcolor: 'background.paper',
                     borderTop: `1px solid ${theme.palette.divider}`,
                 })}
             >
@@ -424,7 +409,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                     Complete
                 </Button>
             </DialogActions>
-        </Dialog>
+        </DialogShell>
     );
 };
 

@@ -17,6 +17,7 @@ import {
 } from '../../hooks/useOverviewApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
 import {PanelHeader} from '../../components/common/panel-header';
+import {SymbolIcon} from '../../components/common/symbol-icon';
 import {FilterPanel} from './components/FilterPanel';
 import {StatsTabs} from './components/StatsTabs';
 import {DeliveriesTable} from './components/DeliveriesTable';
@@ -334,13 +335,16 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             <Box sx={{flex: 1, minWidth: 0}}>
                 <Card variant="outlined">
                     <PanelHeader
-                        icon={<span className="material-symbols-outlined">overview</span>}
+                        icon={<SymbolIcon name="overview" />}
                         title="Overview"
                         action={
-                            <IconButton size="small" onClick={handleToggleOverviewCard} sx={{color: 'inherit'}}>
-                                <span className="material-symbols-outlined">
-                                    {isOverviewCollapsed ? 'expand_more' : 'expand_less'}
-                                </span>
+                            <IconButton
+                                size="small"
+                                onClick={handleToggleOverviewCard}
+                                aria-label={isOverviewCollapsed ? 'Expand overview' : 'Collapse overview'}
+                                sx={{color: 'inherit'}}
+                            >
+                                <SymbolIcon name={isOverviewCollapsed ? 'expand_more' : 'expand_less'} />
                             </IconButton>
                         }
                     />
@@ -358,9 +362,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                                         input: {
                                             startAdornment: (
                                                 <InputAdornment position="start">
-                                                    <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                                        search
-                                                    </span>
+                                                    <SymbolIcon name="search" sx={{fontSize: 20}} />
                                                 </InputAdornment>
                                             ),
                                         },

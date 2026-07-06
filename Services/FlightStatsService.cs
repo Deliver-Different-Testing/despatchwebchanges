@@ -29,6 +29,8 @@ public sealed class FlightStatsService(
     /// <param name="codeType">Optional code type filter.</param>
     /// <param name="extendedOptions">Optional extended search options.</param>
     /// <param name="minimumLayoverMinutes">Minimum layover time for connecting flights (default 60 minutes).</param>
+    /// <param name="allowNearbyDepartures">When true, also searches airports near the departure airport.</param>
+    /// <param name="allowNearbyArrivals">When true, also searches airports near the arrival airport.</param>
     /// <returns>A list of available flight options sorted by arrival time.</returns>
     public async Task<IReadOnlyList<FlightViewModel>> GetFlightsAsync(
         int jobId,

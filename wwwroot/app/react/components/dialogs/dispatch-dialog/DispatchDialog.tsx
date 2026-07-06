@@ -12,11 +12,7 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -29,12 +25,12 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
-import CloseIcon from '@mui/icons-material/Close';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import type {SxProps, Theme} from '@mui/material';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 
 import {autocompleteSearch} from '../../../services/jobDetailApi';
 import {apiClient} from '../../../services/apiClient';
@@ -51,7 +47,7 @@ const SECTION_LABEL_SX = {
 } satisfies SxProps<Theme>;
 
 const SECTION_PAPER_SX = {
-    bgcolor: 'white',
+    bgcolor: 'background.paper',
     borderRadius: 3,
     p: 2.5,
     border: '1px solid',
@@ -59,7 +55,7 @@ const SECTION_PAPER_SX = {
 } satisfies SxProps<Theme>;
 
 const TEXT_FIELD_SX = {
-    '& .MuiOutlinedInput-root': {bgcolor: 'white'},
+    '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'},
 } satisfies SxProps<Theme>;
 
 // Per-type search backends. Mirrors the legacy useJobActions.handleCourierClick
@@ -275,66 +271,14 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     );
 
     return (
-        <Dialog
-            open={open}
-            onClose={submitting ? undefined : onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        minWidth: 480,
-                        maxWidth: 600,
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                    }}
-                >
-                    <LocalShippingIcon sx={{fontSize: 24}}/>
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>Dispatch</Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        {subtitleForMode(mode)}
-                    </Typography>
-                </Box>
-                <IconButton
-                    aria-label="Close dialog"
-                    onClick={onClose}
-                    disabled={submitting}
-                    sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}
-                >
-                    <CloseIcon/>
-                </IconButton>
-            </Box>
+        <DialogShell open={open} onClose={submitting ? undefined : onClose}>
+            <DialogHeader
+                icon={<LocalShippingIcon/>}
+                title="Dispatch"
+                subtitle={subtitleForMode(mode)}
+                onClose={onClose}
+                closeDisabled={submitting}
+            />
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
@@ -460,35 +404,15 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                 </Box>
             </DialogContent>
             {/* Footer */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'white',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button
-                    onClick={onClose}
-                    variant="outlined"
-                    disabled={submitting}
-                    sx={{minWidth: 100}}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleConfirm}
-                    variant="contained"
-                    color="primary"
-                    disabled={!canConfirm}
-                    startIcon={submitting ? <CircularProgress size={16} color="inherit"/> : confirmIcon}
-                    sx={{minWidth: 100}}
-                >
-                    {confirmLabel}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleConfirm}
+                confirmLabel={confirmLabel}
+                confirmIcon={confirmIcon}
+                confirmDisabled={!canConfirm}
+                submitting={submitting}
+            />
+        </DialogShell>
     );
 };
 

@@ -20,12 +20,12 @@ import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import type {SxProps, Theme} from '@mui/material/styles';
+import {headerChromeSx, headerChipSx, headerBadgeSx} from '../../dialogs/shared/styles';
 
 interface PanelHeaderProps {
     /**
      * The leading glyph, rendered inside the badge. Pass a rendered element —
-     * an MUI icon (`<TuneIcon />`) or a Material Symbols span
-     * (`<span className="material-symbols-outlined">tune</span>`). The badge
+     * an MUI icon (`<TuneIcon />`) or a `<SymbolIcon name="tune" />`. The badge
      * forces it to 20px and inherits the header's contrast colour, so callers
      * don't size or colour it themselves.
      */
@@ -40,37 +40,22 @@ interface PanelHeaderProps {
 }
 
 const rootSx = ((theme: Theme) => ({
-    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-    color: theme.palette.primary.contrastText,
+    // Shared header chrome, overridden for the panel's compact fixed-height bar.
+    ...headerChromeSx(theme),
     px: 2,
-    py: 1.25,
-    // Fixed (not min) height so every panel header is identical regardless of
-    // which action controls it carries — 56px is the natural height (36px icon
-    // badge + 2×10px py). Small MUI controls (≤44px) centre within it without
-    // changing the box height.
-    height: 56,
-    boxSizing: 'border-box',
-    display: 'flex',
-    alignItems: 'center',
+    py: 1,
     gap: 1.5,
+    // Fixed (not min) height so every panel header is identical regardless of
+    // which action controls it carries — 48px is the natural height (32px icon
+    // badge + 2×8px py). Small MUI controls (≤44px) centre within it without
+    // changing the box height.
+    height: 48,
+    boxSizing: 'border-box',
     flexShrink: 0,
 })) satisfies SxProps<Theme>;
 
-const iconBadgeSx = {
-    width: 36,
-    height: 36,
-    borderRadius: 1.5,
-    bgcolor: 'rgba(255,255,255,0.15)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    color: 'inherit',
-    // Force a consistent 20px glyph whether the caller passes an MUI SvgIcon
-    // (sizes itself via font-size) or a Material Symbols span.
-    '& svg': {fontSize: 20},
-    '& .material-symbols-outlined': {fontSize: 20},
-} satisfies SxProps<Theme>;
+// 32px chip (vs the 40px dialog default) to suit the compact panel bar.
+const iconBadgeSx = ((theme: Theme) => headerChipSx(theme, 'primary', 32)) satisfies SxProps<Theme>;
 
 const titleRowSx = {
     flex: 1,
@@ -80,15 +65,14 @@ const titleRowSx = {
     gap: 1,
 } satisfies SxProps<Theme>;
 
-const badgeChipSx = {
-    color: 'inherit',
+const badgeChipSx = ((theme: Theme) => ({
+    ...headerBadgeSx(theme),
     fontWeight: 700,
     fontSize: 10,
     letterSpacing: '0.6px',
-    bgcolor: 'rgba(255,255,255,0.18)',
     border: 'none',
     height: 20,
-} satisfies SxProps<Theme>;
+})) satisfies SxProps<Theme>;
 
 const actionSlotSx = {
     flexShrink: 0,
@@ -109,7 +93,16 @@ export const PanelHeader = React.memo(function PanelHeader({
         <Box sx={rootSx}>
             <Box sx={iconBadgeSx}>{icon}</Box>
             <Box sx={titleRowSx}>
-                <Typography variant="subtitle1" noWrap sx={{fontWeight: 600, color: 'inherit'}}>
+                <Typography
+                    noWrap
+                    sx={{
+                        fontSize: '1.125rem',
+                        fontWeight: 700,
+                        letterSpacing: '-0.01em',
+                        lineHeight: 1.2,
+                        color: 'inherit',
+                    }}
+                >
                     {count != null ? `${title} (${count})` : title}
                 </Typography>
                 {badge && <Chip label={badge} size="small" sx={badgeChipSx} />}

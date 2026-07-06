@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import TuneIcon from '@mui/icons-material/Tune';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {PanelHeader} from './PanelHeader';
+import {SymbolIcon} from '../symbol-icon';
 
 const theme = createTheme();
 
@@ -35,14 +36,11 @@ describe('PanelHeader', () => {
         expect(screen.getByText('Recurring Jobs')).toBeInTheDocument();
     });
 
-    it('renders a Material Symbols span icon (non-MUI glyph)', () => {
-        renderWithTheme(
-            <PanelHeader
-                icon={<span className="material-symbols-outlined">tune</span>}
-                title="Quick Filters"
-            />,
+    it('renders a SymbolIcon glyph as an svg badge', () => {
+        const {container} = renderWithTheme(
+            <PanelHeader icon={<SymbolIcon name="tune" />} title="Quick Filters" />,
         );
-        expect(screen.getByText('tune')).toBeInTheDocument();
+        expect(container.querySelector('svg')).toBeInTheDocument();
         expect(screen.getByText('Quick Filters')).toBeInTheDocument();
     });
 

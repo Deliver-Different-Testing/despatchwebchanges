@@ -887,6 +887,7 @@ export function useJobActions({
         const result = await window.ReactEditParcelDimensionsDialog?.showEditParcelDimensionsDialog({
             jobId: j.isBulkJob ? undefined : j.id,
             bulkJobId: j.isBulkJob ? j.id : undefined,
+            jobNumber: j.jobNo,
             parcels: j.parcelDimensions || [],
             isUsCustomer: isUsCustomer,
             jobWeight: j.weight,

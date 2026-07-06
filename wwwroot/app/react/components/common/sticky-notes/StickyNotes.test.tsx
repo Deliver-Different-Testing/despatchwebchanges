@@ -128,8 +128,7 @@ describe('StickyNotes', () => {
             expect(buttons.length).toBeGreaterThan(0);
 
             // Add note button exists
-            const addIcon = screen.getByText('note_add');
-            expect(addIcon).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Add note'})).toBeInTheDocument();
 
             // Created by names shown when present
             expect(screen.getByText('- John Smith')).toBeInTheDocument();
@@ -188,8 +187,7 @@ describe('StickyNotes', () => {
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Find and click filter button
-            const categoryIcon = screen.getByText('category');
-            const filterButton = categoryIcon.closest('button');
+            const filterButton = screen.getByRole('button', {name: 'Filter by category'});
             expect(filterButton).toBeInTheDocument();
             fireEvent.click(filterButton!);
 
@@ -210,8 +208,7 @@ describe('StickyNotes', () => {
 
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
-            const categoryIcon = screen.getByText('category');
-            const filterButton = categoryIcon.closest('button');
+            const filterButton = screen.getByRole('button', {name: 'Filter by category'});
             fireEvent.click(filterButton!);
 
             expect(await screen.findByText('All Categories')).toBeInTheDocument();
@@ -231,8 +228,7 @@ describe('StickyNotes', () => {
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Open menu and select "Client" category
-            const categoryIcon = screen.getByText('category');
-            const filterButton = categoryIcon.closest('button');
+            const filterButton = screen.getByRole('button', {name: 'Filter by category'});
             await user.click(filterButton!);
 
             expect(await screen.findByRole('menu')).toBeInTheDocument();
@@ -254,8 +250,7 @@ describe('StickyNotes', () => {
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Open menu and select "Client" category
-            const categoryIcon = screen.getByText('category');
-            const filterButton = categoryIcon.closest('button');
+            const filterButton = screen.getByRole('button', {name: 'Filter by category'});
             await user.click(filterButton!);
 
             expect(await screen.findByRole('menu')).toBeInTheDocument();
@@ -278,9 +273,8 @@ describe('StickyNotes', () => {
             // Clear the mock to track new calls
             mockedNotesApi.getJobNotes.mockClear();
 
-            const addIcon = screen.getByText('note_add');
-            const addButton = addIcon.closest('button');
-            fireEvent.click(addButton!);
+            const addButton = screen.getByRole('button', {name: 'Add note'});
+            fireEvent.click(addButton);
 
             // Dialog should be opened
             expect(mockedOpenNoteManagementDialog).toHaveBeenCalled();
@@ -311,8 +305,7 @@ describe('StickyNotes', () => {
             };
             mockedNotesApi.getJobNotes.mockResolvedValue([newNote]);
 
-            const addIcon = screen.getByText('note_add');
-            fireEvent.click(addIcon.closest('button')!);
+            fireEvent.click(screen.getByRole('button', {name: 'Add note'}));
 
             expect(mockedOpenNoteManagementDialog).toHaveBeenCalled();
 
@@ -355,10 +348,8 @@ describe('StickyNotes', () => {
 
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
-            // Find delete actions by icon text — they are span[role="button"]
-            const deleteIcons = screen.getAllByText('delete');
-            const deleteAction = deleteIcons[0].closest('button');
-            fireEvent.click(deleteAction!);
+            const deleteButtons = screen.getAllByRole('button', {name: 'Delete note'});
+            fireEvent.click(deleteButtons[0]);
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(mockedNotesApi.deleteNote).toHaveBeenCalledWith(1, 123);
@@ -381,9 +372,8 @@ describe('StickyNotes', () => {
 
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
-            const deleteIcons = screen.getAllByText('delete');
-            const deleteAction = deleteIcons[0].closest('button');
-            fireEvent.click(deleteAction!);
+            const deleteButtons = screen.getAllByRole('button', {name: 'Delete note'});
+            fireEvent.click(deleteButtons[0]);
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(mockedNotesApi.deleteNote).not.toHaveBeenCalled();

@@ -17,7 +17,8 @@ type DialogName =
     | 'simplePriceEditDialogReact'
     | 'editParcelDimensionsDialogReact'
     | 'sendPodDialogReact'
-    | 'jobFileUploadDialogReact';
+    | 'jobFileUploadDialogReact'
+    | 'dateRangeDialogReact';
 
 /** Map dialog name to its window global check */
 const DIALOG_GLOBALS: Record<DialogName, () => boolean> = {
@@ -31,6 +32,7 @@ const DIALOG_GLOBALS: Record<DialogName, () => boolean> = {
     editParcelDimensionsDialogReact: () => !!window.ReactEditParcelDimensionsDialog,
     sendPodDialogReact: () => !!window.ReactSendPodDialog,
     jobFileUploadDialogReact: () => !!window.ReactJobFileUploadDialog,
+    dateRangeDialogReact: () => !!window.ReactDateRangeDialog,
 };
 
 let manifestCache: Record<string, string> | null = null;
@@ -141,6 +143,10 @@ export function useDialogLoader() {
         await loadDialogBundle('jobFileUploadDialogReact');
     }, []);
 
+    const ensureDateRangeDialog = useCallback(async () => {
+        await loadDialogBundle('dateRangeDialogReact');
+    }, []);
+
     return {
         ensureSelectDialog,
         ensureDateTimeDialog,
@@ -152,5 +158,6 @@ export function useDialogLoader() {
         ensureParcelDimensionsDialog,
         ensureSendPodDialog,
         ensureJobFileUploadDialog,
+        ensureDateRangeDialog,
     };
 }

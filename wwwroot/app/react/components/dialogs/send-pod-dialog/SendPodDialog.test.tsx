@@ -68,3 +68,53 @@ describe('SendPodDialog — AI draft', () => {
         expect(mockDraftPodEmail).toHaveBeenCalledWith(1, expect.anything());
     });
 });
+
+describe('SendPodDialog — recipients and sending', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockIsAiEnabled.mockReturnValue(false);
+    });
+
+    it('closes via the shared header close button', async () => {
+        const onClose = jest.fn();
+        renderDialog({onClose});
+
+        await userEvent.click(screen.getByRole('button', {name: /close dialog/i}));
+
+        expect(onClose).toHaveBeenCalled();
+    });
+
+    it('disables Send until a recipient is added, then sends subject and body', async () => {
+        const onSend = jest.fn();
+        renderDialog({onSend});
+
+        const sendButton = screen.getByRole('button', {name: /send pod pdf/i});
+        expect(sendButton).toBeDisabled();
+
+        await userEvent.type(screen.getByPlaceholderText(/add another email address/i), 'ops@acme.test');
+        await userEvent.click(screen.getByRole('button', {name: /^add$/i}));
+
+        expect(screen.getByText('ops@acme.test')).toBeInTheDocument();
+        expect(sendButton).toBeEnabled();
+
+        await userEvent.click(sendButton);
+
+        expect(onSend).toHaveBeenCalledWith(expect.objectContaining({
+            jobId: 1,
+            recipients: ['ops@acme.test'],
+            subject: expect.stringContaining('J123'),
+            body: expect.stringContaining('Booking reference: J123'),
+        }));
+    });
+
+    it('adds booking recipients from the checkbox', async () => {
+        renderDialog({jobData: {...jobData, bookingContactEmail: 'book@acme.test'}});
+
+        expect(screen.getByRole('button', {name: /send pod pdf/i})).toBeDisabled();
+
+        await userEvent.click(screen.getByRole('checkbox'));
+
+        expect(screen.getByText(/sending to \(1\)/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /send pod pdf/i})).toBeEnabled();
+    });
+});

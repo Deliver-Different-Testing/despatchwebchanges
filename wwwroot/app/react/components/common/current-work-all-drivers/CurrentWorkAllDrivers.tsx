@@ -21,6 +21,7 @@ import Divider from '@mui/material/Divider';
 import SearchIcon from '@mui/icons-material/Search';
 import SortIcon from '@mui/icons-material/SortByAlpha';
 import ClearIcon from '@mui/icons-material/Clear';
+import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
 import { NoData } from '../no-data';
 import { IDriverWorkOverview, SortOrder, CurrentWorkAllDriversProps } from './CurrentWorkAllDrivers.types';
 
@@ -159,7 +160,7 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
             <Box sx={{ flex: 1, overflow: 'auto' }}>
                 {filteredAndSortedDrivers.length === 0 ? (
                     <NoData
-                        icon="local_shipping"
+                        icon={<LocalShippingOutlined/>}
                         title={searchText ? 'No Drivers Found' : 'No Drivers Available'}
                         message={
                             searchText

@@ -7,6 +7,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {JobDetailHeader} from './JobDetailHeader';
 import {createMockJob} from '../__testUtils__/mockJob';
+import {monoFontFamily} from '../../../../theme/muiTheme';
 import dayjs from 'dayjs';
 
 const theme = createTheme();
@@ -39,6 +40,11 @@ describe('JobDetailHeader', () => {
         renderWithTheme(<JobDetailHeader {...createDefaultProps()} />);
         expect(screen.getByText('J-1001')).toBeInTheDocument();
         expect(screen.getByText('Dispatched')).toBeInTheDocument();
+    });
+
+    it('sets the job number in the mono face as an identifier', () => {
+        renderWithTheme(<JobDetailHeader {...createDefaultProps()} />);
+        expect(screen.getByText('J-1001')).toHaveStyle({fontFamily: monoFontFamily});
     });
 
     it('hides status chip for prebook/recurring jobs', () => {

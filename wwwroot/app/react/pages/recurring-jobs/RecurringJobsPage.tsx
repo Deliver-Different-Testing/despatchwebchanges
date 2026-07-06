@@ -102,7 +102,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     const [jobToInsert, setJobToInsert] = useState<PrebookListModel | null>(null);
 
     // Fetch data
-    const {data, isLoading, refetch} = useRecurringJobsList(query);
+    const {data, isLoading, isFetching, refetch} = useRecurringJobsList(query);
 
     // Register refresh callback for AngularJS to call
     useEffect(() => {
@@ -285,6 +285,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                         searchText={query.searchText || ''}
                         recurringMode={query.recurringMode ?? (query.active ? RecurringMode.Active : RecurringMode.Inactive)}
                         isLoading={isLoading}
+                        isRefreshing={isFetching}
                         isExporting={isExporting}
                         filters={{
                             speedId: query.speedId,

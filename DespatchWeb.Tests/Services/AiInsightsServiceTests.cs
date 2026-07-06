@@ -40,7 +40,7 @@ public class AiInsightsServiceTests
 
         _aiClient.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
-                Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(response);
     }
 
@@ -56,7 +56,7 @@ public class AiInsightsServiceTests
 
         Assert.Empty(result.Blockers);
         Assert.Equal(SummarySeverity.Ok, result.Severity);
-        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(null!, null!, 0, null, null, false, CancellationToken.None);
+        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(null!, null!, 0, null, null, false, false, CancellationToken.None);
     }
 
     [Fact]
@@ -181,6 +181,6 @@ public class AiInsightsServiceTests
         var result = await service.TriageChangeRequestAsync(42, 1, TestContext.Current.CancellationToken);
 
         Assert.Equal("clarify", result.RecommendedAction);
-        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(null!, null!, 0, null, null, false, CancellationToken.None);
+        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(null!, null!, 0, null, null, false, false, CancellationToken.None);
     }
 }

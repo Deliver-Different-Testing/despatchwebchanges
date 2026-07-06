@@ -6,10 +6,7 @@
 
 import React, {useState, useMemo} from 'react';
 import {alpha} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
@@ -23,6 +20,8 @@ import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
 import dayjs, {Dayjs} from 'dayjs';
+import {DialogShell, DialogFooter} from '../shared';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 export interface DateRange {
     start: Date;
@@ -69,45 +68,22 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Dialog
+            <DialogShell
                 open={open}
                 onClose={onClose}
                 maxWidth="md"
-                fullWidth
                 slotProps={{
                     paper: {
-                        elevation: 24,
                         sx: {
-                            borderRadius: 3,
                             overflow: 'hidden',
                         },
                     },
                 }}
             >
                 {/* Header */}
-                <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                        color: 'white',
-                        px: 3,
-                        py: 2.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    })}
-                >
-                    <Box
-                        sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <DateRangeIcon sx={{ fontSize: 28 }} />
+                <Box sx={(theme) => headerChromeSx(theme)}>
+                    <Box sx={(theme) => headerChipSx(theme)}>
+                        <DateRangeIcon/>
                     </Box>
                     <Box sx={{ flex: 1 }}>
                         <Typography variant="h5" sx={{
@@ -121,10 +97,10 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                     </Box>
                     <IconButton
                         onClick={onClose}
-                        sx={{
-                            color: 'white',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                        }}
+                        sx={(theme) => ({
+                            color: headerOnColor(theme),
+                            '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
+                        })}
                     >
                         <CloseIcon />
                     </IconButton>
@@ -149,7 +125,7 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                             px: 2.5,
                             py: 1,
                             borderRadius: 2,
-                            bgcolor: 'white',
+                            bgcolor: 'background.paper',
                             border: `1px solid ${theme.palette.divider}`,
                             display: 'flex',
                             alignItems: 'center',
@@ -177,7 +153,7 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                             px: 2.5,
                             py: 1,
                             borderRadius: 2,
-                            bgcolor: 'white',
+                            bgcolor: 'background.paper',
                             border: `1px solid ${theme.palette.divider}`,
                             display: 'flex',
                             alignItems: 'center',
@@ -235,7 +211,7 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                                 borderRadius: 3,
                                 overflow: 'hidden',
                                 border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                             })}
                         >
                             <Box
@@ -271,7 +247,7 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                                 borderRadius: 3,
                                 overflow: 'hidden',
                                 border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                             })}
                         >
                             <Box
@@ -302,33 +278,13 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                     </Stack>
                 </DialogContent>
 
-                {/* Actions */}
-                <DialogActions
-                    sx={(theme) => ({
-                        px: 3,
-                        py: 2,
-                        bgcolor: 'white',
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                        gap: 1,
-                    })}
-                >
-                    <Button
-                        onClick={onClose}
-                        variant="outlined"
-                        sx={{ minWidth: 100 }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleApply}
-                        variant="contained"
-                        disabled={!isValidRange}
-                        sx={{ minWidth: 100 }}
-                    >
-                        Apply
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                <DialogFooter
+                    onCancel={onClose}
+                    onConfirm={handleApply}
+                    confirmLabel="Apply"
+                    confirmDisabled={!isValidRange}
+                />
+            </DialogShell>
         </LocalizationProvider>
     );
 };

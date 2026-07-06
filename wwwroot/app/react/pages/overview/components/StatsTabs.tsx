@@ -1,6 +1,7 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {OverviewStatsViewModel} from '../OverviewPage.interfaces';
 
 interface StatsTabsProps {
@@ -53,9 +54,7 @@ export const StatsTabs: React.FC<StatsTabsProps> = React.memo(({statistics, acti
                             <Typography variant="h6" sx={{fontWeight: 700, lineHeight: 1}}>
                                 {value}
                             </Typography>
-                            <span className="material-symbols-outlined" style={{fontSize: 20, marginTop: 2}}>
-                                {tab.icon}
-                            </span>
+                            <SymbolIcon name={tab.icon} sx={{fontSize: 20, mt: '2px'}} />
                         </Box>
                         <Typography
                             variant="body2"

@@ -1181,6 +1181,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
         expect(showDialogMock).toHaveBeenCalledWith(expect.objectContaining({
             partnerMode: false,
+            jobNumber: 'J-1001',
         }));
         expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
         expect(mockRefreshAndNotify).toHaveBeenCalled();

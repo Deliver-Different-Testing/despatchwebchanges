@@ -14,6 +14,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import {PanelHeader} from '../../../components/common/panel-header';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
 
 export interface BoxHeaderProps {
     /** Material Symbols outlined glyph name, e.g. "filter_list". */
@@ -150,7 +151,7 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
     return (
         <Box draggable={!!onDragStart} onDragStart={onDragStart} sx={{cursor: onDragStart ? 'grab' : 'default'}}>
             <PanelHeader
-                icon={<span className="material-symbols-outlined" aria-hidden>{icon}</span>}
+                icon={<SymbolIcon name={icon} aria-hidden />}
                 title={composedTitle}
                 badge={locked ? 'LOCKED' : undefined}
                 action={action}

@@ -19,7 +19,7 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuIcon from '@mui/icons-material/Menu';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import dayjs from 'dayjs';
-import {aiAccentColor} from '../../../theme/designTokens';
+import {displayFontFamily} from '../../../theme/muiTheme';
 
 export interface BreadcrumbItem {
     label: string;
@@ -34,6 +34,8 @@ export interface AppToolbarProps {
     children?: React.ReactNode;
     onLogoClick?: () => void;
     onMenuHover?: () => void;
+    /** Opens the nav on click/tap — the touch-accessible path (hover never fires on touch). */
+    onMenuClick?: () => void;
     /** Show a BETA chip next to the page title (V2 pages). */
     beta?: boolean;
 }
@@ -74,6 +76,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     children,
     onLogoClick,
     onMenuHover,
+    onMenuClick,
     beta,
 }) => {
     const greeting = greetUser(firstName);
@@ -159,9 +162,14 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                                 component={isLast ? 'h1' : 'span'}
                                 noWrap
                                 sx={{
-                                    fontSize: '0.9375rem',
-                                    fontWeight: isLast ? 500 : 400,
-                                    letterSpacing: 0,
+                                    // The active page title gets the display face
+                                    // at a larger size/weight so it reads as a real
+                                    // title, not a generic breadcrumb; ancestor
+                                    // crumbs stay in the quiet body face.
+                                    fontFamily: isLast ? displayFontFamily : undefined,
+                                    fontSize: isLast ? '1.0625rem' : '0.9375rem',
+                                    fontWeight: isLast ? 600 : 400,
+                                    letterSpacing: isLast ? '-0.01em' : 0,
                                     lineHeight: 1.25,
                                     color: 'inherit',
                                     opacity: isLast ? 1 : 0.75,
@@ -188,8 +196,8 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                         fontSize: '0.625rem',
                         fontWeight: 700,
                         letterSpacing: '0.04em',
-                        bgcolor: aiAccentColor,
-                        color: '#fff',
+                        bgcolor: 'ai.main',
+                        color: 'ai.contrastText',
                     }}
                 />
             )}
@@ -216,6 +224,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                     color="inherit"
                     aria-label="Open navigation menu"
                     onMouseEnter={onMenuHover}
+                    onClick={onMenuClick}
                     sx={(theme) => ({
                         ml: 0.5,
                         '&:hover': {

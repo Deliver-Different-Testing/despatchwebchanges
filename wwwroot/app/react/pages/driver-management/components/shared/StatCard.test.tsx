@@ -3,6 +3,7 @@ import {render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import CheckIcon from '@mui/icons-material/Check';
 import {StatCard} from './StatCard';
+import {monoFontFamily} from '../../../../theme/muiTheme';
 
 const theme = createTheme();
 
@@ -24,6 +25,18 @@ describe('StatCard', () => {
         renderStatCard({value: '$150.00'});
 
         expect(screen.getByText('$150.00')).toBeInTheDocument();
+    });
+
+    it('should render the value with tabular figures so numbers align', () => {
+        renderStatCard({value: '$150.00'});
+
+        expect(screen.getByText('$150.00')).toHaveStyle({fontVariantNumeric: 'tabular-nums'});
+    });
+
+    it('should render the value in the mono face', () => {
+        renderStatCard({value: '$150.00'});
+
+        expect(screen.getByText('$150.00')).toHaveStyle({fontFamily: monoFontFamily});
     });
 
     it('should render label', () => {

@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import PageInfoIcon from '@mui/icons-material/Info';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
 
 /**
@@ -72,9 +73,7 @@ export const JobDetailFab: React.FC<JobDetailFabProps> = ({currentJob, onAction}
                                 aria-label={action.label}
                                 onClick={() => onAction?.(action.id, currentJob)}
                             >
-                                <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                    {action.icon}
-                                </span>
+                                <SymbolIcon name={action.icon} sx={{fontSize: 20}} />
                             </IconButton>
                         </Tooltip>
                     ))}

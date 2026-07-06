@@ -15,11 +15,11 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class TaskRepositoryReassignTests : IAsyncDisposable
 {
-    private readonly SqliteTestDatabase _db = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly DespatchContext _context;
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly SqliteTestDatabase _db = new();
     private readonly ITenantInfoService _infoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public TaskRepositoryReassignTests()
     {
@@ -52,9 +52,21 @@ public class TaskRepositoryReassignTests : IAsyncDisposable
         TucEvent[]? events = null)
     {
         await using var context = _db.CreateContext();
-        if (staff is not null) context.TucStaffs.AddRange(staff);
-        if (eventTypes is not null) context.TucEventTypes.AddRange(eventTypes);
-        if (events is not null) context.TucEvents.AddRange(events);
+        if (staff is not null)
+        {
+            context.TucStaffs.AddRange(staff);
+        }
+
+        if (eventTypes is not null)
+        {
+            context.TucEventTypes.AddRange(eventTypes);
+        }
+
+        if (events is not null)
+        {
+            context.TucEvents.AddRange(events);
+        }
+
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 

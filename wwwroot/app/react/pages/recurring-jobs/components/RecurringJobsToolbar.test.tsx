@@ -60,6 +60,7 @@ const createDefaultProps = (overrides?: Partial<RecurringJobsToolbarProps>): Rec
     searchText: '',
     recurringMode: RecurringMode.Active,
     isLoading: false,
+    isRefreshing: false,
     isExporting: false,
     filters: defaultFilters,
     onSearchChange: jest.fn(),
@@ -337,6 +338,18 @@ describe('RecurringJobsToolbar', () => {
 
             expect(onRefresh).toHaveBeenCalledTimes(1);
         });
+
+        it('should show a spinner and be disabled while refreshing', () => {
+            renderWithProviders(createDefaultProps({isRefreshing: true}));
+
+            // Icon is swapped for a progress indicator...
+            expect(screen.queryByTestId('RefreshIcon')).not.toBeInTheDocument();
+            expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+            // ...and the button is disabled so it can't be double-fired.
+            const refreshButton = screen.getByRole('progressbar').closest('button')!;
+            expect(refreshButton).toBeDisabled();
+        });
     });
 
     describe('Export button', () => {
@@ -360,7 +373,7 @@ describe('RecurringJobsToolbar', () => {
     });
 
     describe('Loading state', () => {
-        it('should disable search, toggles, day buttons, courier, and show progress indicators when loading', () => {
+        it('should disable search, toggles, day buttons, and courier when loading', () => {
             renderWithProviders(createDefaultProps({isLoading: true}));
 
             // Search input disabled
@@ -377,11 +390,9 @@ describe('RecurringJobsToolbar', () => {
             // Courier autocomplete disabled
             expect(screen.getByLabelText('Courier')).toBeDisabled();
 
-            // Shows CircularProgress (refresh button replaced by progress)
-            expect(screen.getByRole('progressbar')).toBeInTheDocument();
-
-            // Export button also affected by loading - progress indicators present
-            expect(screen.getAllByRole('progressbar').length).toBeGreaterThanOrEqual(1);
+            // The refresh spinner is driven by isRefreshing, not isLoading, so an
+            // initial-load `isLoading` alone leaves the refresh icon in place.
+            expect(screen.getByTestId('RefreshIcon')).toBeInTheDocument();
         });
     });
 });

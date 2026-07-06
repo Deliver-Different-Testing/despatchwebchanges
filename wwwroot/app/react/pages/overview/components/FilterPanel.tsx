@@ -15,6 +15,8 @@ import dayjs from 'dayjs';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 import {useCourierSearch} from '../../../hooks/useOverviewApi';
 import {PanelHeader} from '../../../components/common/panel-header';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
+import {useDialogLoader} from '../../../components/common/job-details/hooks/useDialogLoader';
 
 interface FilterPanelProps {
     regions: ISuggestion[];
@@ -57,9 +59,7 @@ const ToolbarHeader: React.FC<{icon: string; title: string; actions?: React.Reac
             minHeight: 36,
         }}
     >
-        <span className="material-symbols-outlined" style={{fontSize: 18}}>
-            {icon}
-        </span>
+        <SymbolIcon name={icon} sx={{fontSize: 18}} />
         <Typography variant="caption" sx={{ml: 1, flex: 1, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em'}}>
             {title}
         </Typography>
@@ -88,6 +88,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 }) => {
     const [courierSearchText, setCourierSearchText] = useState('');
     const {data: courierResults, isLoading: couriersLoading} = useCourierSearch(courierSearchText);
+    const {ensureDateRangeDialog} = useDialogLoader();
 
     const hasDateFilter = dateRange.start != null || dateRange.end != null;
 
@@ -101,18 +102,17 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     }, [dateRange, hasDateFilter]);
 
     const handleOpenDateDialog = useCallback(async () => {
-        if (!window.ReactDateRangeDialog) {
-            console.warn('[FilterPanel] ReactDateRangeDialog not available');
-            return;
-        }
-        const result = await window.ReactDateRangeDialog.open({
+        // The date-range dialog ships as a separate lazy-loaded bundle; ensure it
+        // is loaded (registering window.ReactDateRangeDialog) before opening it.
+        await ensureDateRangeDialog();
+        const result = await window.ReactDateRangeDialog?.open({
             start: dateRange.start,
             end: dateRange.end,
         });
         if (result) {
             onDateRangeChange({start: result.start, end: result.end});
         }
-    }, [dateRange, onDateRangeChange]);
+    }, [dateRange, onDateRangeChange, ensureDateRangeDialog]);
 
     const handleClearDateRange = useCallback(
         (e: React.MouseEvent) => {
@@ -130,7 +130,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     return (
         <Card variant="outlined">
             <PanelHeader
-                icon={<span className="material-symbols-outlined">tune</span>}
+                icon={<SymbolIcon name="tune" />}
                 title="Quick Filters"
             />
             {/* Date Range */}
@@ -141,16 +141,12 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     variant={hasDateFilter ? 'contained' : 'outlined'}
                     onClick={handleOpenDateDialog}
                     startIcon={
-                        <span className="material-symbols-outlined">
-                            {hasDateFilter ? 'calendar_month' : 'date_range'}
-                        </span>
+                        <SymbolIcon name={hasDateFilter ? 'calendar_month' : 'date_range'} />
                     }
                     endIcon={
                         hasDateFilter ? (
                             <IconButton size="small" onClick={handleClearDateRange} sx={{color: 'inherit', p: 0}}>
-                                <span className="material-symbols-outlined" style={{fontSize: 18}}>
-                                    close
-                                </span>
+                                <SymbolIcon name="close" sx={{fontSize: 18}} />
                             </IconButton>
                         ) : undefined
                     }
@@ -188,9 +184,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 <Box sx={{p: 2}}>
                     {regions.length === 0 ? (
                         <Box sx={{textAlign: 'center', py: 2, color: 'text.secondary'}}>
-                            <span className="material-symbols-outlined" style={{fontSize: 36, display: 'block'}}>
-                                public_off
-                            </span>
+                            <SymbolIcon name="public_off" sx={{fontSize: 36}} />
                             <Typography variant="body2">No regions found</Typography>
                         </Box>
                     ) : (
@@ -243,9 +237,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 <Box sx={{p: 2}}>
                     {speeds.length === 0 ? (
                         <Box sx={{textAlign: 'center', py: 2, color: 'text.secondary'}}>
-                            <span className="material-symbols-outlined" style={{fontSize: 36, display: 'block'}}>
-                                speed
-                            </span>
+                            <SymbolIcon name="speed" sx={{fontSize: 36}} />
                             <Typography variant="body2">No speeds found</Typography>
                         </Box>
                     ) : (

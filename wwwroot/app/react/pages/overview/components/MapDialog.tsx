@@ -10,9 +10,16 @@ import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../../../query';
 import {overviewApi} from '../../../services/overviewApi';
 import {configApi} from '../../../services/configApi';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
 import {HereMap} from '../../../components/common/here-map/HereMap';
 import type {HereMapCredentials, HereMapConfig} from '../../../components/common/here-map/HereMap.types';
 import type {OverviewTableParentJob} from '../OverviewPage.interfaces';
+import {
+    headerChromeSx,
+    headerChipSx,
+    headerOnColor,
+    headerOverlayColor
+} from '../../../components/dialogs/shared/styles';
 
 interface MapDialogProps {
     open: boolean;
@@ -66,19 +73,9 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                 paper: {sx: {width: '90%', maxWidth: '90%', height: '80vh'}},
             }}
         >
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <MapIcon sx={{ fontSize: 28 }} />
+            <Box sx={(theme) => headerChromeSx(theme)}>
+                <Box sx={(theme) => headerChipSx(theme)}>
+                    <MapIcon/>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h5" sx={{
@@ -86,7 +83,10 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                     }}>{delivery?.jobName} Map</Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>View delivery locations and routes</Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                <IconButton onClick={onClose} sx={(theme) => ({
+                    color: headerOnColor(theme),
+                    '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
+                })}>
                     <CloseIcon />
                 </IconButton>
             </Box>
@@ -135,9 +135,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                             }}
                         >
                             <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 1}}>
-                                <span className="material-symbols-outlined" style={{fontSize: 16}}>
-                                    timeline
-                                </span>
+                                <SymbolIcon name="timeline" sx={{fontSize: 16}} />
                                 <Typography variant="caption" sx={{fontWeight: 600}}>
                                     Delivery Route
                                 </Typography>
@@ -226,9 +224,7 @@ const TimelineNode: React.FC<{
             }}
         >
             {icon ? (
-                <span className="material-symbols-outlined" style={{fontSize: 18}}>
-                    {icon}
-                </span>
+                <SymbolIcon name={icon} sx={{fontSize: 18}} />
             ) : (
                 number
             )}
@@ -263,9 +259,7 @@ const TimelineNode: React.FC<{
 const TimelineConnection: React.FC = () => (
     <Box sx={{display: 'flex', alignItems: 'center', mx: 0.25}}>
         <Box sx={{width: 16, height: 2, bgcolor: 'grey.300'}} />
-        <span className="material-symbols-outlined" style={{fontSize: 14, color: 'rgba(0,0,0,0.26)'}}>
-            chevron_right
-        </span>
+        <SymbolIcon name="chevron_right" sx={{fontSize: 14, color: 'rgba(0,0,0,0.26)'}} />
     </Box>
 );
 

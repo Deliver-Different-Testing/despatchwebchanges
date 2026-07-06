@@ -70,6 +70,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 logoUrl={logoUrl}
                 onLogoClick={onLogoClick}
                 onMenuHover={handleMenuHover}
+                onMenuClick={handleMenuHover}
                 beta={beta}
             >
                 {children}

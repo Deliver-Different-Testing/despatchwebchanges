@@ -240,16 +240,13 @@ public sealed class AiSummarizationService(
             [new AiMessage { Role = "user", Content = sb.ToString() }],
             settings.Value.MaxTokensPerSummary,
             enableCaching: true,
+            cacheResponse: true,
             ct: ct);
 
         return new AiSummaryResponse
         {
             Summary = response.TextContent ?? "Unable to generate summary.",
-            Usage = new AiUsageInfo
-            {
-                InputTokens = response.InputTokens,
-                OutputTokens = response.OutputTokens
-            }
+            Usage = AiUsageInfo.From(response)
         };
     }
 
@@ -277,16 +274,13 @@ public sealed class AiSummarizationService(
             [new AiMessage { Role = "user", Content = sb.ToString() }],
             settings.Value.MaxTokensPerSummary,
             enableCaching: true,
+            cacheResponse: true,
             ct: ct);
 
         return new AiSummaryResponse
         {
             Summary = response.TextContent ?? "Unable to generate summary.",
-            Usage = new AiUsageInfo
-            {
-                InputTokens = response.InputTokens,
-                OutputTokens = response.OutputTokens
-            }
+            Usage = AiUsageInfo.From(response)
         };
     }
 
@@ -520,13 +514,10 @@ public sealed class AiSummarizationService(
             tools,
             forceToolName: EmitSummaryToolName,
             enableCaching: true,
+            cacheResponse: true,
             ct: ct);
 
-        var usage = new AiUsageInfo
-        {
-            InputTokens = response.InputTokens,
-            OutputTokens = response.OutputTokens
-        };
+        var usage = AiUsageInfo.From(response);
 
         var toolCall = response.ToolCalls.FirstOrDefault(t => t.ToolName == EmitSummaryToolName);
         if (toolCall == null || string.IsNullOrWhiteSpace(toolCall.ArgumentsJson))

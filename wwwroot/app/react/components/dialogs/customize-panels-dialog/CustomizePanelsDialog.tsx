@@ -8,26 +8,23 @@
  */
 
 import React, {useMemo, useState} from 'react';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Button from '@mui/material/Button';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Switch from '@mui/material/Switch';
 import Alert from '@mui/material/Alert';
-import CloseIcon from '@mui/icons-material/Close';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SaveIcon from '@mui/icons-material/Save';
 import {alpha} from '@mui/material/styles';
 import type {SxProps, Theme} from '@mui/material/styles';
 import type {DashboardBox} from '../dashboard-settings-dialog/DashboardSettingsDialog';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {SymbolIcon} from '../../common/symbol-icon';
 
 export interface CustomizePanelsDialogProps {
     open: boolean;
@@ -41,7 +38,7 @@ export interface CustomizePanelsDialogProps {
 }
 
 const sectionPaperSx = {
-    bgcolor: 'white',
+    bgcolor: 'background.paper',
     borderRadius: 3,
     p: 1,
     border: '1px solid',
@@ -79,61 +76,13 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
     const handleSave = () => onSave(boxes);
 
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {borderRadius: 2, overflow: 'hidden', minWidth: 480, maxWidth: 600},
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <DashboardIcon sx={{fontSize: 24}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{fontWeight: 600}}>
-                        Customize panels
-                    </Typography>
-                    {title && (
-                        <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                            {title}
-                        </Typography>
-                    )}
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    aria-label="Close dialog"
-                    sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+        <DialogShell open={open} onClose={onClose}>
+            <DialogHeader
+                icon={<DashboardIcon />}
+                title="Customize panels"
+                subtitle={title}
+                onClose={onClose}
+            />
 
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
@@ -171,14 +120,11 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
                                                     })}
                                                 >
                                                     {box.icon ? (
-                                                        <Box
-                                                            component="span"
-                                                            className="material-symbols-outlined"
+                                                        <SymbolIcon
+                                                            name={box.icon}
                                                             aria-hidden
                                                             sx={{fontSize: 22, color: 'primary.main'}}
-                                                        >
-                                                            {box.icon}
-                                                        </Box>
+                                                        />
                                                     ) : (
                                                         <DashboardIcon sx={{fontSize: 22, color: 'primary.main'}} />
                                                     )}
@@ -202,31 +148,14 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
                 </Box>
             </DialogContent>
 
-            {/* Footer */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'white',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={onClose} variant="outlined" sx={{minWidth: 100}}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSave}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveIcon />}
-                    disabled={!layoutEditable}
-                    sx={{minWidth: 100}}
-                >
-                    Save
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSave}
+                confirmLabel="Save"
+                confirmIcon={<SaveIcon />}
+                confirmDisabled={!layoutEditable}
+            />
+        </DialogShell>
     );
 };
 

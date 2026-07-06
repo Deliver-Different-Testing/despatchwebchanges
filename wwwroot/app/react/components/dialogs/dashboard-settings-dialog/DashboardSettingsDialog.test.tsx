@@ -202,7 +202,7 @@ describe('DashboardSettingsDialog', () => {
             const onClose = jest.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onClose})} />);
 
-            await user.click(screen.getByRole('button', {name: ''}));
+            await user.click(screen.getByRole('button', {name: /close dialog/i}));
             expect(onClose).toHaveBeenCalledTimes(1);
 
             onClose.mockClear();

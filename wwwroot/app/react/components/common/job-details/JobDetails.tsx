@@ -23,6 +23,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type {SxProps, Theme} from '@mui/material/styles';
 import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
+import WorkOutlinedIcon from '@mui/icons-material/WorkOutlined';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
@@ -414,7 +415,7 @@ export function JobDetails({config}: JobDetailsProps) {
             <NoData
                 title="No Job Selected"
                 message="Select a job to view details"
-                icon="work_outline"
+                icon={<WorkOutlinedIcon/>}
             />
         );
     }

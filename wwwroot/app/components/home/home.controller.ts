@@ -687,7 +687,7 @@ class HomeController extends BaseController {
             },
             [DispatchBoxes.Supports]: {
                 name: DispatchBoxes.Supports,
-                title: 'Support Tasks',
+                title: 'Tasks',
                 icon: "support",
                 templateUrl: "app/components/home/partials/supports.html",
                 showRefresh: true,

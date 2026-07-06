@@ -12,21 +12,18 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
-import type {SxProps, Theme} from '@mui/material/styles';
-import CloseIcon from '@mui/icons-material/Close';
 import NotesIcon from '@mui/icons-material/Notes';
 
 import {DeliveryJourney} from './TaskHistory.interfaces';
 import {getEventIcon} from './eventIcons';
 import {formatCurrency} from '../../../utils/currencyUtils';
+import {DialogShell, DialogHeader, sectionPaperSx, sectionLabelSx} from '../../dialogs/shared';
 
 interface DeliveryEventDetailsDialogProps {
     open: boolean;
@@ -54,20 +51,6 @@ const STATUS_TONE: Record<StatusKey, StatusToneKey> = {
     waiting: 'default',
 };
 
-const sectionPaperSx = {
-    bgcolor: 'white',
-    borderRadius: 3,
-    p: 2.5,
-    border: '1px solid',
-    borderColor: 'grey.200',
-} satisfies SxProps<Theme>;
-
-const sectionLabelSx = {
-    color: 'text.secondary',
-    fontWeight: 500,
-    mb: 1,
-} satisfies SxProps<Theme>;
-
 export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProps> = ({
                                                                                           open,
                                                                                           event,
@@ -88,67 +71,22 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
     const showDescription = event.description && event.description.trim() !== event.title.trim();
 
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {borderRadius: 2, overflow: 'hidden', minWidth: 480, maxWidth: 600},
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <Icon sx={{fontSize: 24}}/>
-                </Box>
-                <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="h6" sx={{fontWeight: 600, lineHeight: 1.3}}>
-                        {event.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+        <DialogShell open={open} onClose={onClose}>
+            <DialogHeader
+                icon={<Icon/>}
+                title={event.title}
+                subtitle={
+                    <>
                         {event._dateStr}
                         {timeZoneShort && (
                             <Box component="span" sx={{ml: 0.5, opacity: 0.85}}>
                                 &middot; {timeZoneShort}
                             </Box>
                         )}
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    aria-label="Close dialog"
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon/>
-                </IconButton>
-            </Box>
+                    </>
+                }
+                onClose={onClose}
+            />
 
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
@@ -258,7 +196,7 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                     Close
                 </Button>
             </DialogActions>
-        </Dialog>
+        </DialogShell>
     );
 };
 

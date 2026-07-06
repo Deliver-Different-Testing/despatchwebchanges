@@ -6,12 +6,8 @@
 
 import React, {useState, useMemo} from 'react';
 import {alpha} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -22,12 +18,12 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
-import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
 import ScienceIcon from '@mui/icons-material/Science';
+import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 import {aiAccentColor} from '../../../theme/designTokens';
 import {AutoMateLogo} from '../../common/auto-mate-logo/AutoMateLogo';
 
@@ -158,66 +154,24 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     };
 
     return (
-        <Dialog
+        <DialogShell
             open={open}
             onClose={onClose}
-            maxWidth="sm"
-            fullWidth
             slotProps={{
                 paper: {
                     elevation: 24,
                     sx: {
-                        borderRadius: 3,
                         overflow: 'hidden',
                     },
                 },
             }}
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <SettingsIcon sx={{fontSize: 28}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h5" sx={{
-                        fontWeight: 600
-                    }}>
-                        {config.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Choose what appears on your dashboard and how often it updates
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<SettingsIcon/>}
+                title={config.title}
+                subtitle="Choose what appears on your dashboard and how often it updates"
+                onClose={onClose}
+            />
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 {/* Auto-Refresh Section */}
@@ -258,7 +212,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     p: 2,
                                     borderRadius: 2,
                                     border: `1px solid ${theme.palette.divider}`,
-                                    bgcolor: 'white',
+                                    bgcolor: 'background.paper',
                                 })}
                             >
                                 <Stack
@@ -307,7 +261,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                         p: 2,
                                         borderRadius: 2,
                                         border: `1px solid ${theme.palette.divider}`,
-                                        bgcolor: 'white',
+                                        bgcolor: 'background.paper',
                                     })}
                                 >
                                     <Stack
@@ -392,7 +346,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     p: 2,
                                     borderRadius: 2,
                                     border: `1px solid ${theme.palette.divider}`,
-                                    bgcolor: 'white',
+                                    bgcolor: 'background.paper',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease',
                                     '&:hover': {
@@ -422,7 +376,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                                     fontSize: '0.625rem',
                                                     fontWeight: 700,
                                                     bgcolor: aiAccentColor,
-                                                    color: '#fff',
+                                                    color: 'common.white',
                                                 }}
                                             />
                                         </Box>
@@ -460,7 +414,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     p: 2,
                                     borderRadius: 2,
                                     border: `1px solid ${theme.palette.divider}`,
-                                    bgcolor: 'white',
+                                    bgcolor: 'background.paper',
                                     cursor: aiEnabled ? 'pointer' : 'default',
                                     opacity: aiEnabled ? 1 : 0.5,
                                     transition: 'all 0.2s ease',
@@ -545,7 +499,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 p: 2,
                                 borderRadius: 2,
                                 border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
@@ -568,7 +522,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                                 fontSize: '0.625rem',
                                                 fontWeight: 700,
                                                 bgcolor: aiAccentColor,
-                                                color: '#fff',
+                                                color: 'common.white',
                                             }}
                                         />
                                     </Box>
@@ -623,7 +577,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 p: 2,
                                 borderRadius: 2,
                                 border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
@@ -646,7 +600,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                                 fontSize: '0.625rem',
                                                 fontWeight: 700,
                                                 bgcolor: aiAccentColor,
-                                                color: '#fff',
+                                                color: 'common.white',
                                             }}
                                         />
                                     </Box>
@@ -725,7 +679,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                             p: 2,
                                             borderRadius: 2,
                                             border: `1px solid ${theme.palette.divider}`,
-                                            bgcolor: 'white',
+                                            bgcolor: 'background.paper',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s ease',
                                             '&:hover': {
@@ -795,7 +749,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 p: 4,
                                 borderRadius: 2,
                                 border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                                 textAlign: 'center',
                             })}
                         >
@@ -832,23 +786,12 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                 </Box>
             </DialogContent>
             {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'white',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={onClose} variant="outlined" sx={{minWidth: 100}}>
-                    Cancel
-                </Button>
-                <Button onClick={handleSave} variant="contained" sx={{minWidth: 100}}>
-                    Save
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSave}
+                confirmLabel="Save"
+            />
+        </DialogShell>
     );
 };
 
