@@ -88,9 +88,9 @@ describe('MUI theme palettes', () => {
         expect(theme.typography.body1.fontFamily ?? theme.typography.fontFamily).toContain('Plus Jakarta Sans');
     });
 
-    it('headings use the Space Grotesk display face', () => {
+    it('headings use the Plus Jakarta Sans face', () => {
         const theme = createAppTheme(true);
-        expect(displayFontFamily).toContain('Space Grotesk');
+        expect(displayFontFamily).toBe(bodyFontFamily);
         expect(theme.typography.h1.fontFamily).toBe(displayFontFamily);
         expect(theme.typography.h2.fontFamily).toBe(displayFontFamily);
         expect(theme.typography.h3.fontFamily).toBe(displayFontFamily);
@@ -122,7 +122,7 @@ describe('MD3 typography role variants', () => {
         }
     });
 
-    it('carries display roles on the Space Grotesk display face and body roles on the body face', () => {
+    it('carries display and body roles on the Plus Jakarta Sans face', () => {
         const theme = createAppTheme(true);
         expect(theme.typography.displayLarge.fontFamily).toBe(displayFontFamily);
         expect(theme.typography.headlineMedium.fontFamily).toBe(displayFontFamily);
