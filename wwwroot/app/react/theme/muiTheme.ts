@@ -10,9 +10,8 @@ import {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette, aiColors} from
  * L/M/S) rather than the classic `h1`–`h6`. These are exposed *in addition to*
  * the existing `h1`–`h6` (which stay the app default), so new UI can opt into
  * MD3 roles — `<Typography variant="titleMedium">` — without disturbing
- * anything already shipped. Roles are mapped onto the app's own typefaces:
- * the display face (Space Grotesk) for Display/Headline/Title-large, the body
- * face (Plus Jakarta Sans) for Title-medium/small, Body and Label.
+ * anything already shipped. All roles are carried on the single app typeface,
+ * Plus Jakarta Sans; the role tokens vary only size/weight/spacing.
  */
 type Md3Role =
     | 'displayLarge' | 'displayMedium' | 'displaySmall'
@@ -69,19 +68,16 @@ export {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette};
 /**
  * Font families
  *
- * - body: Plus Jakarta Sans — the UI/body workhorse.
- * - display: Space Grotesk — a technical geometric face used for headings and
- *   page titles to give each screen a hierarchy anchor with real presence.
- * - mono: Space Mono — the proportional sibling of Space Grotesk, reserved for
- *   dense numeric/identity data (job IDs, prices, metric values) so the data
- *   layer reads like an operational instrument, not prose.
+ * The app uses a single typeface — Plus Jakarta Sans — for everything. The
+ * `display` and `mono` aliases are kept so consumers (headings, breadcrumbs,
+ * numeric job/price/metric fields) can keep referencing them, but they all
+ * resolve to the body face, matching the single-typeface look from before the
+ * Jul 2026 restyle.
  */
 export const bodyFontFamily =
     '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif';
-export const displayFontFamily =
-    '"Space Grotesk", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif';
-export const monoFontFamily =
-    '"Space Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
+export const displayFontFamily = bodyFontFamily;
+export const monoFontFamily = bodyFontFamily;
 
 /**
  * MD3 role type scale (see the augmentation above). Canonical MD3 proportions
@@ -290,9 +286,8 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             fontWeightRegular: 400,
             fontWeightMedium: 500,
             fontWeightBold: 700,
-            // Headings use the display face (Space Grotesk) with heavier weights
-            // and tighter tracking so titles carry presence instead of reading
-            // like scaled-up body copy.
+            // Headings use heavier weights and tighter tracking so titles carry
+            // presence instead of reading like scaled-up body copy.
             h1: {
                 fontFamily: displayFontFamily,
                 fontSize: '2.125rem',
