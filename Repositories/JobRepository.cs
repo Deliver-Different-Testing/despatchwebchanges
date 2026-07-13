@@ -3661,26 +3661,26 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Retrieves current active (non-completed, non-void) jobs for a specific courier.
+    /// Retrieves a courier's current work: not-done, non-void jobs dated on or before
+    /// <paramref name="endDate"/>'s day (today plus overdue past jobs).
     /// </summary>
     /// <param name="courierId">The courier ID to filter by.</param>
-    /// <param name="startDate">Start of date range.</param>
-    /// <param name="endDate">End of date range.</param>
+    /// <param name="startDate">Retained for API compatibility; not used as a lower bound
+    /// because current work intentionally includes overdue jobs from earlier days.</param>
+    /// <param name="endDate">Upper bound of the window (its calendar day is fully included).</param>
     /// <returns>Search result with jobs and map items for the courier.</returns>
     public async Task<JobSearchResult> CurrentJobListAsync(int courierId,
         DateTimeOffset startDate,
         DateTimeOffset endDate)
     {
         var isUsCustomer = _infoService.IsUsTenant();
-        var start = startDate.DateTime;
-        var end = endDate.DateTime;
 
+        // Current work is intentionally unbounded below: it includes overdue (past, not-done)
+        // jobs as well as today's, so startDate is no longer used as a lower bound. endDate caps
+        // the window at the current day, matching the drivers-overview count (CurrentWorkJob).
         var query = Context.TucJobs
-            .Where(j => j.UcjbCourierId == courierId
-                        && !j.UcjbVoid
-                        && j.UcjbStatus != (int)JobStatus.Void
-                        && j.UcjbDate >= start
-                        && j.UcjbDate <= end);
+            .Where(j => j.UcjbCourierId == courierId)
+            .Where(CurrentWorkJob(endDate));
 
         // Single query to get both jobs and map items data
         var jobs = await query

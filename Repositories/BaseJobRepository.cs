@@ -534,6 +534,21 @@ public partial class BaseJobRepository(
     }
 
     /// <summary>
+    /// A courier's "current work": not void, not done, not a Void-status job, and dated on or
+    /// before <paramref name="asOf"/>'s calendar day (today + overdue past jobs; future excluded).
+    /// Shared by the drivers-overview count and the drill-down list so the two never diverge.
+    /// Sargable (bare <c>UcjbDate</c> column) so an index can seek and SQLite can translate it.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> CurrentWorkJob(DateTimeOffset asOf)
+    {
+        var exclusiveEnd = asOf.Date.AddDays(1);
+        return j => !j.UcjbVoid
+                    && !j.UcjbJobDone
+                    && j.UcjbStatus != (int)JobStatus.Void
+                    && j.UcjbDate < exclusiveEnd;
+    }
+
+    /// <summary>
     /// Sargable equivalent of the date-then-time end filter: jobs booked before the filter day, or
     /// on the filter day at or before the filter time. The UcjbDate comparisons avoid <c>.Date</c>
     /// so the index range can seek; the intra-day time check on the separate UcjbTime column only

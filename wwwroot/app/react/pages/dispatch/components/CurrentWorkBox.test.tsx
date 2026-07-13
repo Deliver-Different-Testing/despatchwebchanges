@@ -58,6 +58,7 @@ function renderBox(overrides: Partial<React.ComponentProps<typeof CurrentWorkBox
 describe('CurrentWorkBox', () => {
     beforeEach(() => {
         mockOverview.onDriverSelect = undefined;
+        sessionStorage.clear();
         jest.clearAllMocks();
     });
 

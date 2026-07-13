@@ -1,11 +1,11 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import {AppPage} from '../../../interfaces/dispatchJob';
-import type {DispatchJob} from '../../../interfaces/dispatchJob';
+import type {DispatchJob, FetchConfig, JobListSearchParams} from '../../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../../services/toastService';
 import {fetchCurrentWorkJobs} from '../../../services/jobSearchApi';
 import {fetchDriverWorkOverview} from '../../../services/courierApi';
@@ -23,6 +23,41 @@ import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlo
 import type {CourierSuggestion} from '../../../interfaces';
 
 type Mode = 'overview' | 'detail';
+
+/**
+ * The drill-down focus (which driver the panel is showing) lives in local state,
+ * but the panel is remounted whenever the dispatch shell re-keys its box layout
+ * (e.g. a background remote-layout sync bumps `layoutVersion`). Persisting the
+ * focus to sessionStorage keeps a manually-picked driver from snapping back to
+ * the selected job's courier across those remounts. `appliedJobCourierId` records
+ * the last `selectedJobCourierId` we drilled into so a remount replaying the same
+ * value doesn't override a more-recent manual pick.
+ */
+interface CurrentWorkFocus {
+    courierId?: number;
+    mode: Mode;
+    pickedCourierName?: string;
+    appliedJobCourierId?: number;
+}
+
+const focusStorageKey = (): string => `dispatchCurrentWorkFocus_${window.ContactID ?? 0}`;
+
+function readFocus(): CurrentWorkFocus | null {
+    try {
+        const saved = sessionStorage.getItem(focusStorageKey());
+        return saved ? (JSON.parse(saved) as CurrentWorkFocus) : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeFocus(focus: CurrentWorkFocus): void {
+    try {
+        sessionStorage.setItem(focusStorageKey(), JSON.stringify(focus));
+    } catch {
+        /* ignore */
+    }
+}
 
 // "‹ All Drivers" back link on the gradient panel header: inherits the header's
 // contrast colour with a translucent-white hover matching the icon-badge tone.
@@ -84,26 +119,52 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     onJobSelect,
     headerSlot,
 }) => {
-    const [courierId, setCourierId] = useState<number | undefined>(selectedJobCourierId);
+    // Restore the drill-down focus so a box-layout remount doesn't reset it.
+    const restoredFocus = useMemo(readFocus, []);
+    const [courierId, setCourierId] = useState<number | undefined>(
+        restoredFocus?.courierId ?? selectedJobCourierId,
+    );
     // US tenants land on the overview; everyone else goes straight to the job list.
-    const [mode, setMode] = useState<Mode>(isUsCustomer ? 'overview' : 'detail');
+    const [mode, setMode] = useState<Mode>(
+        restoredFocus?.mode ?? ((isUsCustomer && !selectedJobCourierId) ? 'overview' : 'detail'),
+    );
     // Name of the focused courier (from the overview drill-in or the search field).
-    const [pickedCourierName, setPickedCourierName] = useState<string | undefined>();
+    const [pickedCourierName, setPickedCourierName] = useState<string | undefined>(
+        restoredFocus?.pickedCourierName,
+    );
+    // Last selected-job courier we drilled into; survives remounts via restore so a
+    // replayed selectedJobCourierId can't clobber a newer manual pick.
+    const appliedJobCourierIdRef = useRef<number | undefined>(restoredFocus?.appliedJobCourierId);
+
+    const persistFocus = (next: Partial<CurrentWorkFocus>) => {
+        writeFocus({
+            courierId,
+            mode,
+            pickedCourierName,
+            appliedJobCourierId: appliedJobCourierIdRef.current,
+            ...next,
+        });
+    };
 
     // Selecting a job elsewhere on the page drills into that job's courier here
-    // (matches V1 selectJob → getCurrentJobs(job.courierData.courierId)).
+    // (matches V1 selectJob → getCurrentJobs(job.courierData.courierId)). Skip when
+    // the value is unchanged from the last drill-in — a remount replaying the same
+    // selectedJobCourierId must not override a driver picked from the overview since.
     useEffect(() => {
-        if (selectedJobCourierId) {
+        if (selectedJobCourierId && selectedJobCourierId !== appliedJobCourierIdRef.current) {
+            appliedJobCourierIdRef.current = selectedJobCourierId;
             setCourierId(selectedJobCourierId);
             setMode('detail');
             setPickedCourierName(undefined);
+            persistFocus({courierId: selectedJobCourierId, mode: 'detail', pickedCourierName: undefined});
         }
-    }, [selectedJobCourierId]);
+    }, [selectedJobCourierId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleCourierSearchSelect = (courier: CourierSuggestion) => {
         setCourierId(courier.id);
         setPickedCourierName(courier.text);
         setMode('detail');
+        persistFocus({courierId: courier.id, pickedCourierName: courier.text, mode: 'detail'});
     };
 
     const courierLabel = pickedCourierName ?? selectedJobCourierName ?? 'Selected Driver';
@@ -116,9 +177,9 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
         refetchInterval: refetchIntervalMs,
     });
 
-    const fetchConfig = useMemo(() => ({
+    const fetchConfig = useMemo<FetchConfig>(() => ({
         fetchFn: fetchCurrentWorkJobs,
-        queryKeyFn: (params: any) => queryKeys.dispatch.currentWork(params),
+        queryKeyFn: (params: JobListSearchParams) => queryKeys.dispatch.currentWork(params),
         initialParams: {
             courierId,
             startDate: dayjs().startOf('day'),
@@ -141,7 +202,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             isUsCustomer={isUsCustomer}
             appPage={AppPage.Dispatch}
             storagePrefix="dispatchCurrentWork"
-            fetchConfig={fetchConfig as any}
+            fetchConfig={fetchConfig}
             hideLoggedInSwitch
             onJobSelect={onJobSelect}
         />
@@ -158,7 +219,10 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                             <Button
                                 size="small"
                                 startIcon={<ChevronLeftIcon />}
-                                onClick={() => setMode('overview')}
+                                onClick={() => {
+                                    setMode('overview');
+                                    persistFocus({mode: 'overview'});
+                                }}
                                 sx={headerBackButtonSx}
                             >
                                 All Drivers
@@ -208,6 +272,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                             setCourierId(driver.courierId);
                             setPickedCourierName(driver.name);
                             setMode('detail');
+                            persistFocus({courierId: driver.courierId, pickedCourierName: driver.name, mode: 'detail'});
                         }}
                     />
                 ) : (

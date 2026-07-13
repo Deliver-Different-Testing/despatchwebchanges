@@ -1339,10 +1339,11 @@ public class CourierRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task GetAvailableCouriersAsync_ExcludesCourierLoggedInOnPriorDay()
+    public async Task GetAvailableCouriersAsync_IncludesCourierWithOpenSessionFromPriorDay()
     {
-        // Arrange - active courier whose open session began the day before "today"
-        // (clock is 2024-01-15); a stale never-logged-out session must be excluded.
+        // Arrange - active courier whose still-open session began the day before "today"
+        // (clock is 2024-01-15). Drivers commonly stay logged in across midnight, so an
+        // open session (LogOutTime == null) must appear regardless of its login date.
         await SetupAvailableCourier(
             courierId: 1,
             fleetId: (int)CourierFleet.UaAuckland,
@@ -1359,8 +1360,37 @@ public class CourierRepositoryTests : IAsyncDisposable
             NzWideBounds,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        // Assert - only couriers logged in today should appear
-        Assert.Empty(result);
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(1, driver.CourierId);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_UsTenant_IncludesCourierWithOpenSessionFromPriorDay()
+    {
+        // Arrange - the US tenant uses a separate query path; it too must keep drivers whose
+        // still-open session began before today (clock is 2024-01-15).
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m,
+            logInTime: new DateTime(2024, 1, 14, 8, 0, 0));
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(1, driver.CourierId);
     }
 
     [Fact]
@@ -1491,4 +1521,94 @@ public class CourierRepositoryTests : IAsyncDisposable
         var item = Assert.Single(result);
         Assert.Equal("ACTIVE01", item.Code);
     }
+
+    [Fact]
+    public async Task GetDriverWorkOverviewAsync_CountsOnlyOutstandingTodayAndOverdueJobs()
+    {
+        // Arrange - clock is 2024-01-15. Only undelivered, non-void jobs dated today or
+        // earlier should count. Completed, void and future jobs must be excluded.
+        await using (var context = CreateContext())
+        {
+            context.TucCouriers.Add(new TucCourier
+            {
+                UccrId = 1,
+                Code = "C001",
+                UccrName = "John",
+                UccrSurname = "Doe",
+                Active = true,
+                UccrChannelId = 1,
+                Created = TestDates.Now,
+                CreatedBy = "Test",
+                LastModified = TestDates.Now,
+                LastModifiedBy = "Test"
+            });
+
+            context.TucJobs.AddRange(
+                OverviewJob(1, new DateTime(2024, 1, 15)), // today, undelivered -> counts
+                OverviewJob(2, new DateTime(2024, 1, 14)), // overdue, undelivered -> counts
+                OverviewJob(3, new DateTime(2024, 1, 15), done: true), // today, done -> excluded
+                OverviewJob(4, new DateTime(2024, 1, 14), done: true), // overdue, done -> excluded
+                OverviewJob(5, new DateTime(2024, 1, 15), isVoid: true), // void flag -> excluded
+                OverviewJob(6, new DateTime(2024, 1, 15), status: (int)JobStatus.Void), // void status -> excluded
+                OverviewJob(7, new DateTime(2024, 1, 16)) // future -> excluded
+            );
+
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetDriverWorkOverviewAsync();
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(1, driver.CourierId);
+        Assert.Equal(2, driver.JobCount);
+    }
+
+    [Fact]
+    public async Task GetDriverWorkOverviewAsync_DriverWithNoOutstandingJobs_ReturnsZeroCount()
+    {
+        // Arrange - the only job is completed, so the driver has no current work
+        await using (var context = CreateContext())
+        {
+            context.TucCouriers.Add(new TucCourier
+            {
+                UccrId = 1,
+                Code = "C001",
+                UccrName = "John",
+                UccrSurname = "Doe",
+                Active = true,
+                UccrChannelId = 1,
+                Created = TestDates.Now,
+                CreatedBy = "Test",
+                LastModified = TestDates.Now,
+                LastModifiedBy = "Test"
+            });
+            context.TucJobs.Add(OverviewJob(1, new DateTime(2024, 1, 15), done: true));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetDriverWorkOverviewAsync();
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(0, driver.JobCount);
+    }
+
+    private static TucJob OverviewJob(int id, DateTime date, bool done = false, bool isVoid = false,
+        int status = (int)JobStatus.Dispatched) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = $"JOB{id:000}",
+        UcjbCourierId = 1,
+        UcjbDate = date,
+        UcjbJobDone = done,
+        UcjbVoid = isVoid,
+        UcjbStatus = status
+    };
 }

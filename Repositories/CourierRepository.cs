@@ -1595,12 +1595,9 @@ public class CourierRepository(
         var driverIds = drivers.Select(d => d.UccrId).ToList();
 
         var jobCounts = await Context.TucJobs
-            .Where(j => j.UcjbCourierId.HasValue &&
-                        driverIds.Contains(j.UcjbCourierId.Value) &&
-                        !j.UcjbVoid &&
-                        j.UcjbStatus != (int)JobStatus.Void &&
-                        j.UcjbDate.Date <= now.Date)
-            .GroupBy(j => j.UcjbCourierId.Value)
+            .Where(j => j.UcjbCourierId.HasValue && driverIds.Contains(j.UcjbCourierId.Value))
+            .Where(BaseJobRepository.CurrentWorkJob(now))
+            .GroupBy(j => j.UcjbCourierId!.Value)
             .Select(g => new { CourierId = g.Key, Count = g.Count() })
             .TagWith("GetDriverWorkOverview - Step 2: Job Counts")
             .ToListAsync();
@@ -1803,8 +1800,6 @@ public class CourierRepository(
         try
         {
             var currentDate = clock.TenantNow;
-            var todayStart = clock.TenantToday;
-            var tomorrowStart = todayStart.AddDays(1);
 
             var query = Context.TucCouriers
                 .Where(c => c.Active &&
@@ -1815,8 +1810,6 @@ public class CourierRepository(
                             c.CourierGps.Latitude >= data.MinLat &&
                             c.CourierGps.Latitude <= data.MaxLat &&
                             c.CourierLogInOut != null &&
-                            c.CourierLogInOut.LogInTime >= todayStart &&
-                            c.CourierLogInOut.LogInTime < tomorrowStart &&
                             c.CourierLogInOut.LogOutTime == null);
 
             if (data.CourierFleetIds is { Count: > 0 })
@@ -1918,14 +1911,10 @@ public class CourierRepository(
         try
         {
             var now = clock.TenantNow;
-            var todayStart = clock.TenantToday;
-            var tomorrowStart = todayStart.AddDays(1);
 
             var query = Context.TucCouriers
                 .Where(c => c.Active &&
                             c.CourierLogInOut != null &&
-                            c.CourierLogInOut.LogInTime >= todayStart &&
-                            c.CourierLogInOut.LogInTime < tomorrowStart &&
                             c.CourierLogInOut.LogOutTime == null &&
                             c.CourierGps != null &&
                             c.CourierGps.Longitude >= data.MinLng &&
