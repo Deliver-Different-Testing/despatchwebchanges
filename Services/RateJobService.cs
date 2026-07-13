@@ -35,7 +35,7 @@ public sealed class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-          
+
             if (!jobDetails.ClientId.HasValue)
             {
                 throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
@@ -64,7 +64,8 @@ public sealed class RateJobService(
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 })
             {
-                await jobCommandRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType, rateResult.Description);
+                await jobCommandRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate,
+                    jobDetails.JobType, rateResult.Description);
             }
             else
             {
@@ -228,7 +229,7 @@ public sealed class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            
+
             if (!jobDetails.SpeedId.HasValue)
             {
                 throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
@@ -342,7 +343,8 @@ public sealed class RateJobService(
         const string notUpdatedReason =
             "Could not be updated — the job was not found, is locked, or has already been invoiced.";
 
-        static BulkPricePreviewRow SkippedRow(int jobId, string jobNo, decimal oldAmount, bool isPrebook, string reason) =>
+        static BulkPricePreviewRow SkippedRow(int jobId, string jobNo, decimal oldAmount, bool isPrebook,
+            string reason) =>
             new()
             {
                 JobId = jobId,
@@ -578,7 +580,8 @@ public sealed class RateJobService(
         else
         {
             var speed = await jobQueryRepository.GetJobTypeByIdAsync(request.SpeedId);
-            isFlight = speed.Grouping.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight);
+            isFlight = speed.Grouping.GroupingId ==
+                       (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight);
         }
 
         var result = new JobRateResult
@@ -736,8 +739,8 @@ public sealed class RateJobService(
     {
         try
         {
-            // Map Job Object
-            var jobObject = MapToUrgentRerateObject(jobDetails);
+            ArgumentNullException.ThrowIfNull(jobDetails);
+            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
 
             // Generate DFRNT Api Token
             var connectionString =
@@ -764,6 +767,9 @@ public sealed class RateJobService(
 
             var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/rates/getRerateAmount");
             request.Headers.Add("Authorization", $"Bearer {requestToken}");
+
+            // Map Job Object
+            var jobObject = MapToUrgentRerateObject(jobDetails);
             request.Content = JsonContent.Create(jobObject);
 
             var response = await httpClient.SendAsync(request);
@@ -772,7 +778,8 @@ public sealed class RateJobService(
             if (!response.IsSuccessStatusCode)
             {
                 Log.Error("DFRNT API returned {StatusCode}: {RawContent}", response.StatusCode, rawContent);
-                throw new ApplicationException($"DFRNT API returned {(int)response.StatusCode} {response.StatusCode}: {rawContent}");
+                throw new ApplicationException(
+                    $"DFRNT API returned {(int)response.StatusCode} {response.StatusCode}: {rawContent}");
             }
 
             Log.Debug("Raw response: {RawContent}", rawContent);
