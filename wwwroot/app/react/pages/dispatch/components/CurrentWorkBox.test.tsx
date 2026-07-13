@@ -10,9 +10,10 @@ jest.mock('../../../components/job-list/JobListPanel', () => ({
     ),
 }));
 
-const mockOverview: {onDriverSelect?: (d: {courierId: number}) => void} = {};
+type MockDriver = {courierId: number; name?: string};
+const mockOverview: {onDriverSelect?: (d: MockDriver) => void} = {};
 jest.mock('../../../components/common/current-work-all-drivers', () => ({
-    CurrentWorkAllDrivers: ({onDriverSelect}: {onDriverSelect: (d: {courierId: number}) => void}) => {
+    CurrentWorkAllDrivers: ({onDriverSelect}: {onDriverSelect: (d: MockDriver) => void}) => {
         mockOverview.onDriverSelect = onDriverSelect;
         return <div data-testid="mock-all-drivers" />;
     },
@@ -91,31 +92,58 @@ describe('CurrentWorkBox', () => {
             expect(fetchDriverWorkOverview).toHaveBeenCalled();
         });
 
-        it('switches to the selected driver job list when a driver is picked', async () => {
+        it('drills into a driver\'s job list when a driver is picked', async () => {
             renderBox({isUsCustomer: true});
             expect(screen.getByTestId('mock-all-drivers')).toBeInTheDocument();
 
             await act(async () => {
-                mockOverview.onDriverSelect?.({courierId: 7});
+                mockOverview.onDriverSelect?.({courierId: 7, name: 'Jane Smith'});
             });
 
             expect(await screen.findByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
+        });
+
+        it('returns to the All Drivers overview via the back link', async () => {
+            renderBox({isUsCustomer: true});
+
+            await act(async () => {
+                mockOverview.onDriverSelect?.({courierId: 7, name: 'Jane Smith'});
+            });
+            expect(await screen.findByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
+
+            await act(async () => {
+                screen.getByRole('button', {name: /all drivers/i}).click();
+            });
+
+            expect(screen.getByTestId('mock-all-drivers')).toBeInTheDocument();
         });
 
         it('focuses the selected job\'s courier and shows their job list', () => {
             renderBox({isUsCustomer: true, selectedJobCourierId: 99});
             expect(screen.getByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
         });
+
+        it('does not render the duplicate courier search field for US tenants', () => {
+            renderBox({isUsCustomer: true});
+            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
+        });
     });
 
     describe('header slot', () => {
-        it('portals the All/Selected toggle and truck button into the provided header slot', () => {
+        it('portals the breadcrumb back-link, driver name and truck button into the header slot', () => {
             const slot = document.createElement('div');
             document.body.appendChild(slot);
             try {
-                renderBox({isUsCustomer: true, selectedJobCourierId: 42, headerSlot: slot});
-                // Controls render inside the header slot, not the card body.
+                renderBox({
+                    isUsCustomer: true,
+                    selectedJobCourierId: 42,
+                    selectedJobCourierName: 'Jane Smith',
+                    headerSlot: slot,
+                });
+                // The selected job drills straight into its courier, so the header shows the
+                // breadcrumb (back-link + driver name) rather than the old peer toggle.
                 expect(within(slot).getByRole('button', {name: /all drivers/i})).toBeInTheDocument();
+                expect(within(slot).getByText('Jane Smith')).toBeInTheDocument();
                 expect(within(slot).getByRole('button', {name: 'Truck loading status'})).toBeInTheDocument();
             } finally {
                 document.body.removeChild(slot);

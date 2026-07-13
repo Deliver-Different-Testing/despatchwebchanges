@@ -1,8 +1,8 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import {AppPage} from '../../../interfaces/dispatchJob';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
@@ -15,33 +15,32 @@ import {CurrentWorkAllDrivers, IDriverWorkOverview} from '../../../components/co
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {CourierSearchField} from './CourierSearchField';
 import {TruckLoadingStatusDialog} from './TruckLoadingStatusDialog';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
 import type {CourierSuggestion} from '../../../interfaces';
 
-type Mode = 'overview' | 'selected';
+type Mode = 'overview' | 'detail';
 
-// Segmented control tuned for the gradient panel header: inherits the header's
-// contrast colour, translucent-white borders/fill matching the icon-badge tone.
-const headerToggleSx = {
-    '& .MuiToggleButton-root': {
-        color: 'inherit',
-        borderColor: 'rgba(255,255,255,0.5)',
-        textTransform: 'none',
-        maxWidth: 160,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        display: 'block',
-    },
-    '& .MuiToggleButton-root:hover': {bgcolor: 'rgba(255,255,255,0.12)'},
-    '& .MuiToggleButton-root.Mui-selected': {
-        color: 'inherit',
-        bgcolor: 'rgba(255,255,255,0.25)',
-        '&:hover': {bgcolor: 'rgba(255,255,255,0.32)'},
-    },
+// "‹ All Drivers" back link on the gradient panel header: inherits the header's
+// contrast colour with a translucent-white hover matching the icon-badge tone.
+const headerBackButtonSx = {
+    color: 'inherit',
+    textTransform: 'none',
+    px: 1,
+    minWidth: 0,
+    whiteSpace: 'nowrap',
+    '&:hover': {bgcolor: 'rgba(255,255,255,0.12)'},
+} satisfies SxProps<Theme>;
+
+const headerDriverNameSx = {
+    opacity: 0.9,
+    maxWidth: 160,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
 } satisfies SxProps<Theme>;
 
 const headerIconButtonSx = {color: 'inherit', '&:hover': {bgcolor: 'rgba(255,255,255,0.12)'}} satisfies SxProps<Theme>;
@@ -53,10 +52,10 @@ export interface CurrentWorkBoxProps {
     refetchIntervalMs?: number | false;
     /** Courier id derived from the currently selected job, if any. */
     selectedJobCourierId?: number;
-    /** Display name for the selected job's courier (used on the toggle). */
+    /** Display name for the selected job's courier (shown in the breadcrumb). */
     selectedJobCourierName?: string;
     onJobSelect?: (job: DispatchJob) => void;
-    /** Card header DOM node; the mode toggle + truck button portal into it. */
+    /** Card header DOM node; the breadcrumb + truck button portal into it. */
     headerSlot?: HTMLElement | null;
 }
 
@@ -67,11 +66,10 @@ const EmptyMessage: React.FC<{children: React.ReactNode}> = ({children}) => (
 /**
  * "Current Work" panel for the React dispatch page. Mirrors the AngularJS
  * home `currentWork` partial:
- *   - US tenants get an "All Drivers" overview (job counts) and a "Selected
- *     Driver" job list, toggled by a radio/segmented control.
- *   - Other tenants get the selected courier's job list directly.
- * The selected courier is seeded from the currently selected job and can be
- * changed by picking a driver from the overview.
+ *   - US tenants browse an "All Drivers" overview (job counts) and drill into a
+ *     single driver's job list; a breadcrumb back-link returns to the overview.
+ *   - Other tenants pick a courier via search and see their job list directly.
+ * The focused courier is also seeded from the currently selected job.
  *
  * Reuses the existing `CurrentWorkAllDrivers` overview and the shared
  * `JobListPanel` (driven by React Query via fetchConfig) rather than the
@@ -87,16 +85,17 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     headerSlot,
 }) => {
     const [courierId, setCourierId] = useState<number | undefined>(selectedJobCourierId);
-    const [mode, setMode] = useState<Mode>(isUsCustomer ? 'overview' : 'selected');
-    // Name of a courier picked via the search field (overrides the job's courier label).
+    // US tenants land on the overview; everyone else goes straight to the job list.
+    const [mode, setMode] = useState<Mode>(isUsCustomer ? 'overview' : 'detail');
+    // Name of the focused courier (from the overview drill-in or the search field).
     const [pickedCourierName, setPickedCourierName] = useState<string | undefined>();
 
-    // Selecting a job elsewhere on the page focuses that job's courier here
+    // Selecting a job elsewhere on the page drills into that job's courier here
     // (matches V1 selectJob → getCurrentJobs(job.courierData.courierId)).
     useEffect(() => {
         if (selectedJobCourierId) {
             setCourierId(selectedJobCourierId);
-            setMode('selected');
+            setMode('detail');
             setPickedCourierName(undefined);
         }
     }, [selectedJobCourierId]);
@@ -104,7 +103,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     const handleCourierSearchSelect = (courier: CourierSuggestion) => {
         setCourierId(courier.id);
         setPickedCourierName(courier.text);
-        setMode('selected');
+        setMode('detail');
     };
 
     const courierLabel = pickedCourierName ?? selectedJobCourierName ?? 'Selected Driver';
@@ -131,6 +130,8 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     }), [courierId, refetchIntervalMs]);
 
     const showOverview = isUsCustomer && mode === 'overview';
+    // The truck button acts on a focused courier — only meaningful in the detail view.
+    const showTruckButton = !isUsCustomer || mode === 'detail';
 
     const jobList = courierId ? (
         <JobListPanel
@@ -151,42 +152,40 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     return (
         <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
             <HeaderSlotPortal slot={headerSlot}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                    {isUsCustomer && (
-                        <ToggleButtonGroup
-                            size="small"
-                            exclusive
-                            value={mode}
-                            onChange={(_, next: Mode | null) => {
-                                if (next) setMode(next);
-                            }}
-                            aria-label="Driver view"
-                            sx={headerToggleSx}
-                        >
-                            <ToggleButton value="overview">All Drivers</ToggleButton>
-                            <ToggleButton value="selected" disabled={!courierId}>
-                                {courierLabel}
-                            </ToggleButton>
-                        </ToggleButtonGroup>
-                    )}
-                    <Tooltip title="Truck loading status">
-                        <span>
-                            <IconButton
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0}}>
+                    {isUsCustomer && mode === 'detail' && (
+                        <>
+                            <Button
                                 size="small"
-                                aria-label="Truck loading status"
-                                disabled={!courierId}
-                                onClick={() => setTruckStatusOpen(true)}
-                                sx={headerIconButtonSx}
+                                startIcon={<ChevronLeftIcon />}
+                                onClick={() => setMode('overview')}
+                                sx={headerBackButtonSx}
                             >
-                                <LocalShippingIcon fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
+                                All Drivers
+                            </Button>
+                            <Box component="span" sx={{opacity: 0.5}}>&middot;</Box>
+                            <Typography variant="body2" sx={headerDriverNameSx}>
+                                {courierLabel}
+                            </Typography>
+                        </>
+                    )}
+                    {showTruckButton && (
+                        <Tooltip title="Truck loading status">
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    aria-label="Truck loading status"
+                                    disabled={!courierId}
+                                    onClick={() => setTruckStatusOpen(true)}
+                                    sx={headerIconButtonSx}
+                                >
+                                    <LocalShippingIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    )}
                 </Box>
             </HeaderSlotPortal>
-            <Box sx={{px: 1, pt: 0.5, flexShrink: 0}}>
-                <CourierSearchField onSelect={handleCourierSearchSelect} />
-            </Box>
             <TruckLoadingStatusDialog
                 open={truckStatusOpen}
                 courierId={courierId}
@@ -194,6 +193,11 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                 isUsCustomer={isUsCustomer}
                 onClose={() => setTruckStatusOpen(false)}
             />
+            {!isUsCustomer && (
+                <Box sx={{px: 1, pt: 0.5, flexShrink: 0}}>
+                    <CourierSearchField onSelect={handleCourierSearchSelect} />
+                </Box>
+            )}
             <Box sx={{flex: 1, minHeight: 0, overflow: 'auto'}}>
                 {showOverview ? (
                     <CurrentWorkAllDrivers
@@ -202,7 +206,8 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                         selectedCourierId={courierId}
                         onDriverSelect={(driver: IDriverWorkOverview) => {
                             setCourierId(driver.courierId);
-                            setMode('selected');
+                            setPickedCourierName(driver.name);
+                            setMode('detail');
                         }}
                     />
                 ) : (
