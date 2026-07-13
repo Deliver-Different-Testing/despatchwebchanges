@@ -52,11 +52,7 @@ public class TaskRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
         var today = filters?.Date ?? clock.TenantNow.AddDays(1);
 
-        // Include partner-task events ('PT') alongside customer-service ('CS')
-        // so the inter-tenant change-request workflow surfaces in the task dashboard.
-        var query = Context.TucEvents
-            .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
-                        || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
+        var query = ApplyTaskGroupFilter(Context.TucEvents);
 
         if (filters != null)
         {
@@ -531,6 +527,17 @@ public class TaskRepository(
                 .ThenByDescending(e => e.UcevDueTime)
             : query.OrderByDescending(e => e.UcevDueTime.Date < today)
                 .ThenBy(e => e.UcevDueTime);
+
+    /// <summary>
+    /// Restricts an event query to the groups that surface as actionable tasks in the task
+    /// dashboard. Must stay in sync with <see cref="JobRepository.EventTypeListAsync"/>, which is
+    /// the list of event types offered by the "Add Task" dialog — otherwise a task the user can
+    /// create is saved but never shown.
+    /// </summary>
+    internal static IQueryable<TucEvent> ApplyTaskGroupFilter(IQueryable<TucEvent> query) =>
+        query.Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
+                         || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.GE)
+                         || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
 
     internal static IQueryable<TucEvent> ApplyFilters(
         IQueryable<TucEvent> query,

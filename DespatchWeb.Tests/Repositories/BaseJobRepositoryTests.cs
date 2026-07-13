@@ -525,6 +525,44 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         Assert.Equal([1, 2, 3, 5], result);
     }
 
+    // ---- Current-work predicate (fix: count and drill-down list must share one definition) ----
+    // Tested in-memory (LINQ-to-objects) for the same reason as the date filters above.
+
+    [Fact]
+    public void CurrentWorkJob_KeepsUndeliveredTodayAndOverdue_ExcludesDoneVoidAndFuture()
+    {
+        var asOf = new DateTime(2024, 6, 15, 10, 0, 0);
+        var jobs = new List<TucJob>
+        {
+            // kept: not void, not done, dated today or earlier
+            CurrentWorkJobOn(1, new DateTime(2024, 6, 15)), // today, undelivered
+            CurrentWorkJobOn(2, new DateTime(2024, 6, 14)), // overdue (yesterday), undelivered
+            // excluded:
+            CurrentWorkJobOn(3, new DateTime(2024, 6, 15), done: true), // today, done
+            CurrentWorkJobOn(4, new DateTime(2024, 6, 14), done: true), // overdue, done
+            CurrentWorkJobOn(5, new DateTime(2024, 6, 15), isVoid: true), // today, void flag
+            CurrentWorkJobOn(6, new DateTime(2024, 6, 15), status: (int)JobStatus.Void), // today, void status
+            CurrentWorkJobOn(7, new DateTime(2024, 6, 16)) // future prebooking
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.CurrentWorkJob(asOf))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2], result);
+    }
+
+    private static TucJob CurrentWorkJobOn(int id, DateTime date, bool done = false, bool isVoid = false,
+        int status = (int)JobStatus.Dispatched) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = $"JOB{id:000}",
+        UcjbDate = date,
+        UcjbJobDone = done,
+        UcjbVoid = isVoid,
+        UcjbStatus = status
+    };
+
     // ---- Bounded pagination helper (fix: non-paginated path must not be unbounded) ----
 
     [Fact]

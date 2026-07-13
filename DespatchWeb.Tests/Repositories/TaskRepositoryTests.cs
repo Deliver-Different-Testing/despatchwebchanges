@@ -64,6 +64,32 @@ public class TaskRepositoryTests : IAsyncDisposable
     private static TaskViewModel ProjectInMemory(TucEvent ev) =>
         new[] { ev }.AsQueryable().Select(TaskRepository.ProjectToTaskViewModel).Single();
 
+    private static TucEvent CreateEventWithGroup(int id, string group) =>
+        CreateEvent(id, e => e.UcevTypeNavigation = new TucEventType { UcetGroup = group });
+
+    [Fact]
+    public void ApplyTaskGroupFilter_ShowsCustomerServiceGeneralAndPartnerTaskGroups()
+    {
+        // The "Add Task" dialog (JobRepository.EventTypeListAsync) offers CS, GE and PT event
+        // types, so the task list must surface all three — otherwise a task the user creates with
+        // a 'GE' type (e.g. "dispatch to check pickup") is saved but never shown.
+        var events = new[]
+        {
+            CreateEventWithGroup(1, "CS"),
+            CreateEventWithGroup(2, "PT"),
+            CreateEventWithGroup(3, "GE"),
+            CreateEventWithGroup(4, "CE"),
+            CreateEventWithGroup(5, "OE")
+        };
+
+        var results = TaskRepository.ApplyTaskGroupFilter(events.AsQueryable())
+            .Select(e => e.UcevId)
+            .OrderBy(id => id)
+            .ToList();
+
+        Assert.Equal(new[] { 1, 2, 3 }, results);
+    }
+
     [Fact]
     public void ProjectToTaskViewModel_MapsCourierAndClientCodeFromJob()
     {
