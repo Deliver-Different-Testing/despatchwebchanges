@@ -4,10 +4,12 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 // Stub the heavy children so the test exercises CurrentWorkBox's own wiring.
+const jobListPanelProps: {fetchConfig?: any} = {};
 jest.mock('../../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix}: {storagePrefix: string}) => (
-        <div data-testid={`mock-job-list-${storagePrefix}`} />
-    ),
+    JobListPanel: ({storagePrefix, fetchConfig}: {storagePrefix: string; fetchConfig: any}) => {
+        jobListPanelProps.fetchConfig = fetchConfig;
+        return <div data-testid={`mock-job-list-${storagePrefix}`} />;
+    },
 }));
 
 type MockDriver = {courierId: number; name?: string};
@@ -41,15 +43,25 @@ jest.mock('./TruckLoadingStatusDialog', () => ({
         open ? <div data-testid="mock-truck-status" /> : null,
 }));
 
+import dayjs from 'dayjs';
 import {CurrentWorkBox} from './CurrentWorkBox';
 import {fetchDriverWorkOverview} from '../../../services/courierApi';
+
+const defaultStart = dayjs('2026-07-10T00:00:00');
+const defaultEnd = dayjs('2026-07-12T23:59:59');
 
 function renderBox(overrides: Partial<React.ComponentProps<typeof CurrentWorkBox>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={queryClient}>
             <ThemeProvider theme={createTheme()}>
-                <CurrentWorkBox showToast={jest.fn()} isUsCustomer={false} {...overrides} />
+                <CurrentWorkBox
+                    showToast={jest.fn()}
+                    isUsCustomer={false}
+                    startDate={defaultStart}
+                    endDate={defaultEnd}
+                    {...overrides}
+                />
             </ThemeProvider>
         </QueryClientProvider>,
     );
@@ -58,6 +70,7 @@ function renderBox(overrides: Partial<React.ComponentProps<typeof CurrentWorkBox
 describe('CurrentWorkBox', () => {
     beforeEach(() => {
         mockOverview.onDriverSelect = undefined;
+        jobListPanelProps.fetchConfig = undefined;
         sessionStorage.clear();
         jest.clearAllMocks();
     });
@@ -72,6 +85,14 @@ describe('CurrentWorkBox', () => {
         it('renders the current-work job list for the selected courier', () => {
             renderBox({selectedJobCourierId: 42});
             expect(screen.getByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
+        });
+
+        it('drives the current-work fetch off the page date filter (matching the other lists)', () => {
+            const startDate = dayjs('2026-01-01T00:00:00');
+            const endDate = dayjs('2026-01-05T23:59:59');
+            renderBox({selectedJobCourierId: 42, startDate, endDate});
+            expect(jobListPanelProps.fetchConfig.initialParams.startDate).toBe(startDate);
+            expect(jobListPanelProps.fetchConfig.initialParams.endDate).toBe(endDate);
         });
 
         it('shows the picked courier\'s job list after a courier search', async () => {

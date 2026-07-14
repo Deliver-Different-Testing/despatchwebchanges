@@ -94,6 +94,15 @@ describe('getCurrentJobs', () => {
         expect(ctrl.currentListLoading).toBe(false);
     });
 
+    it('fetches using the page date filter range so it matches the other lists', async () => {
+        const startDate = {format: () => 'start'};
+        const endDate = {format: () => 'end'};
+        const ctrl = setup({dateFilterData: {startDate, endDate}});
+        ctrl.DispatchData.getJobsCurrent.mockResolvedValue({jobs: []});
+        await ctrl.getCurrentJobs(10);
+        expect(ctrl.DispatchData.getJobsCurrent).toHaveBeenCalledWith(10, startDate, endDate);
+    });
+
     it('filters undispatched jobs for map', async () => {
         const undispatched = {...makeJob(1, 10), statusId: 0};
         const dispatched = {...makeJob(2, 10), statusId: 3};

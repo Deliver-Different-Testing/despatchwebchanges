@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import dayjs from 'dayjs';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
@@ -48,6 +49,8 @@ function Harness() {
                 key={`currentwork-${layoutBump}`}
                 showToast={jest.fn()}
                 isUsCustomer
+                startDate={dayjs('2026-07-14T00:00:00')}
+                endDate={dayjs('2026-07-14T23:59:59')}
                 selectedJobCourierId={currentJob?.courierData?.courierId}
                 onJobSelect={setCurrentJob}
             />

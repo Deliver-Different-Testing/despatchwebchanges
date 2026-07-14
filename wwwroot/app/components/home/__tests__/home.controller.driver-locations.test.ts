@@ -267,4 +267,16 @@ describe('refreshDataTimeSpan', () => {
         expect(ctrl.getData).toHaveBeenCalled();
         expect(ctrl.fetchDriverLocations).toHaveBeenCalled();
     });
+
+    it('re-fetches current work for the loaded courier so it follows the new range', async () => {
+        const ctrl = setup({currentCourier: {id: 42}});
+        await ctrl.refreshDataTimeSpan({startDate: 'a', endDate: 'b'} as any);
+        expect(ctrl.getCurrentJobs).toHaveBeenCalledWith(42);
+    });
+
+    it('does not re-fetch current work when no courier is loaded', async () => {
+        const ctrl = setup({currentCourier: undefined});
+        await ctrl.refreshDataTimeSpan({} as any);
+        expect(ctrl.getCurrentJobs).not.toHaveBeenCalled();
+    });
 });
