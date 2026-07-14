@@ -302,6 +302,12 @@ public static partial class JobMappings
                 .Select(r => r.UjcrPairing.PartnerTenantName)
                 .FirstOrDefault(),
 
+        // Without this the Job Details PartnerJobBanner always renders the "Stale
+        // partner link" warning (it keys purely on pairingId == null), even for
+        // freshly-dispatched jobs where IM stamped the column. JobMappings.Dispatch
+        // already maps this; Job Details reads JobViewModel via this Core mapping.
+        PartnerPairingId = j.PartnerPairingId,
+
         // Job item flags - loaded inline from navigation property (3-tier: stop child → own → parent)
         TailLiftPu = j.TucJobItemChildJobs.Any(i => i.Pu == true)
             || j.TucJobItemJobs.Any(i => i.Pu == true)
