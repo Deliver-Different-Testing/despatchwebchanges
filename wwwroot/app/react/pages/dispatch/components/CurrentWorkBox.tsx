@@ -3,7 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import dayjs from 'dayjs';
+import type {Dayjs} from 'dayjs';
 import {AppPage} from '../../../interfaces/dispatchJob';
 import type {DispatchJob, FetchConfig, JobListSearchParams} from '../../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../../services/toastService';
@@ -85,6 +85,10 @@ export interface CurrentWorkBoxProps {
     showToast: ShowToastFn;
     /** Auto-refresh interval in ms (React Query refetchInterval); false/undefined = off. */
     refetchIntervalMs?: number | false;
+    /** Page-level date filter start — the current work list follows it like the other lists. */
+    startDate: Dayjs;
+    /** Page-level date filter end — caps the current work window at this day. */
+    endDate: Dayjs;
     /** Courier id derived from the currently selected job, if any. */
     selectedJobCourierId?: number;
     /** Display name for the selected job's courier (shown in the breadcrumb). */
@@ -114,6 +118,8 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     isUsCustomer,
     showToast,
     refetchIntervalMs = false,
+    startDate,
+    endDate,
     selectedJobCourierId,
     selectedJobCourierName,
     onJobSelect,
@@ -182,13 +188,13 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
         queryKeyFn: (params: JobListSearchParams) => queryKeys.dispatch.currentWork(params),
         initialParams: {
             courierId,
-            startDate: dayjs().startOf('day'),
-            endDate: dayjs().endOf('day'),
+            startDate,
+            endDate,
             page: 0,
             pageSize: 50,
         },
         refetchInterval: refetchIntervalMs,
-    }), [courierId, refetchIntervalMs]);
+    }), [courierId, startDate, endDate, refetchIntervalMs]);
 
     const showOverview = isUsCustomer && mode === 'overview';
     // The truck button acts on a focused courier — only meaningful in the detail view.
@@ -196,8 +202,8 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
 
     const jobList = courierId ? (
         <JobListPanel
-            // Remount when the courier changes so fetchConfig.initialParams re-seeds.
-            key={courierId}
+            // Remount when the courier or date range changes so fetchConfig.initialParams re-seeds.
+            key={`${courierId}-${startDate.valueOf()}-${endDate.valueOf()}`}
             showToast={showToast}
             isUsCustomer={isUsCustomer}
             appPage={AppPage.Dispatch}

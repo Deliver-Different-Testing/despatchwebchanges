@@ -86,7 +86,6 @@ function renderCurrentWorkJobList(config: MountJobListConfig): void {
                         defaultCategory={config.defaultCategory}
                         storagePrefix={config.storagePrefix ?? 'currentWorkJobList'}
                         hideLoggedInSwitch
-                        onDateFilterModeChange={config.onDateFilterModeChange}
                         setJobsCallback={(cb) => {
                             updateJobsCallback = cb;
                         }}

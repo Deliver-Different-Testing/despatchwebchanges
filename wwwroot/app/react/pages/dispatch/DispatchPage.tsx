@@ -584,6 +584,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         isUsCustomer={isUsCustomer}
                         showToast={showToast}
                         refetchIntervalMs={refreshIntervals.jobsMs}
+                        startDate={filters.startDate}
+                        endDate={filters.endDate}
                         selectedJobCourierId={currentJob?.courierData?.courierId}
                         selectedJobCourierName={
                             currentJob?.courierData?.courierName

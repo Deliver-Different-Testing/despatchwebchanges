@@ -270,7 +270,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
                                                               headerSlot,
-                                                              onDateFilterModeChange,
                                                               setJobsCallback,
                                                               setRefreshCallback,
                                                               setSelectJobCallback,
@@ -425,12 +424,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     useEffect(() => {
         localStorage.setItem(getStorageKey('loggedInCouriersOnly'), String(loggedInCouriersOnly));
     }, [loggedInCouriersOnly, getStorageKey]);
-
-    // The current-work table is locked to today-only; tell AngularJS on mount.
-    useEffect(() => {
-        onDateFilterModeChange?.(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     // ── Debounced search (avoids filtering on every keystroke) ────────
     useEffect(() => {
