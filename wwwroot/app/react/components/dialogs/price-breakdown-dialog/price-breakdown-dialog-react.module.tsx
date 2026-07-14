@@ -28,6 +28,7 @@ interface ApiService {
     addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
     deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
+    getSuggestedFuelCharge: (jobId: number, chargeAmount: number, isPrebook: boolean, isArchived: boolean) => Promise<{ fuelChargeAmount: number; fuelCostAmount: number }>;
 }
 
 // State management for the dialog
@@ -37,6 +38,7 @@ interface DialogState {
     jobId: number;
     isPrebook: boolean;
     isArchived: boolean;
+    isUsCustomer: boolean;
     apiService: ApiService | null;
     resolve?: (value: number | null) => void;
 }
@@ -49,6 +51,7 @@ let dialogState: DialogState = {
     jobId: 0,
     isPrebook: false,
     isArchived: false,
+    isUsCustomer: false,
     apiService: null,
 };
 
@@ -87,6 +90,13 @@ function renderDialog(): void {
         return dialogState.apiService.deletePriceBreakdown(chargeId, jobId, isArchived);
     };
 
+    const handleGetSuggestedFuelCharge = async (chargeAmount: number) => {
+        if (!dialogState.apiService) throw new Error('API service not available');
+        return dialogState.apiService.getSuggestedFuelCharge(
+            dialogState.jobId, chargeAmount, dialogState.isPrebook, dialogState.isArchived
+        );
+    };
+
     // Get theme dynamically based on customer region
     const currentTheme = getTheme();
 
@@ -100,11 +110,13 @@ function renderDialog(): void {
                     jobId={dialogState.jobId}
                     isPrebook={dialogState.isPrebook}
                     isArchived={dialogState.isArchived}
+                    isUsCustomer={dialogState.isUsCustomer}
                     onClose={handleClose}
                     onSave={handleSave}
                     onAddItem={handleAddItem}
                     onUpdateItem={handleUpdateItem}
                     onDeleteItem={handleDeleteItem}
+                    onGetSuggestedFuelCharge={handleGetSuggestedFuelCharge}
                     showToast={toastService.showToast}
                 />
             </ThemeProvider>
@@ -137,6 +149,8 @@ function createDefaultApiService(): ApiService {
         updatePriceBreakdown: (breakdown) => pricingBreakdownApi.updatePriceBreakdown(breakdown),
         deletePriceBreakdown: (chargeId, jobId, isArchived) =>
             pricingBreakdownApi.deletePriceBreakdown({chargeId, jobId, isArchived}),
+        getSuggestedFuelCharge: (jobId, chargeAmount, isPrebook, isArchived) =>
+            pricingBreakdownApi.getSuggestedFuelCharge(jobId, chargeAmount, isPrebook, isArchived),
     };
 }
 
@@ -147,6 +161,7 @@ function createDefaultApiService(): ApiService {
  * @param jobId - The job ID
  * @param isPrebook - Whether this is a prebook job
  * @param isArchived - Whether this is an archived job
+ * @param isUsCustomer - Whether this tenant is US/non-NZ (gates the "Apply Fuel" option — NZ handles fuel automatically)
  * @param apiService - Optional API service for CRUD operations (uses default React service if not provided)
  * @returns Promise that resolves with the total amount, or null if cancelled
  */
@@ -155,6 +170,7 @@ export function openPriceBreakdownDialog(
     jobId: number,
     isPrebook: boolean,
     isArchived: boolean,
+    isUsCustomer: boolean = false,
     apiService?: ApiService
 ): Promise<number | null> {
     initializeDialogRoot();
@@ -166,6 +182,7 @@ export function openPriceBreakdownDialog(
             jobId,
             isPrebook,
             isArchived,
+            isUsCustomer,
             apiService: apiService ?? createDefaultApiService(),
             resolve,
         };
@@ -194,14 +211,16 @@ priceBreakdownDialogReactModule.service('priceBreakdownDialogReactService', [
          * @param jobId - The job ID
          * @param isPrebook - Whether this is a prebook job
          * @param isArchived - Whether this is an archived job
+         * @param isUsCustomer - Whether this tenant is US/non-NZ
          * @returns Promise resolving to total amount or null if cancelled
          */
         openPriceBreakdownDialog: (
             priceBreakdowns: PriceBreakdown[],
             jobId: number,
             isPrebook: boolean,
-            isArchived: boolean = false
-        ) => openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, isArchived)
+            isArchived: boolean = false,
+            isUsCustomer: boolean = false
+        ) => openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, isArchived, isUsCustomer)
     })
 ]);
 

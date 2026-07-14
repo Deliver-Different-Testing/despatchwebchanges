@@ -11,6 +11,7 @@ import type {ShowToastFn} from '../../../services/toastService';
 import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
@@ -18,6 +19,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Paper from '@mui/material/Paper';
@@ -29,9 +31,11 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import WalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AddIcon from '@mui/icons-material/Add';
+import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
 import MoneyIcon from '@mui/icons-material/AttachMoney';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
@@ -39,6 +43,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import InventoryIcon from '@mui/icons-material/Inventory2';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import SavingsIcon from '@mui/icons-material/Savings';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import WorkIcon from '@mui/icons-material/Work';
@@ -55,17 +60,28 @@ export interface PriceBreakdown {
     isArchived?: boolean;
 }
 
+export interface SuggestedFuelCharge {
+    fuelChargeAmount: number;
+    fuelCostAmount: number;
+}
+
 export interface PriceBreakdownDialogProps {
     open: boolean;
     priceBreakdowns: PriceBreakdown[];
     jobId: number;
     isPrebook: boolean;
     isArchived?: boolean;
+    /**
+     * NZ handles fuel automatically elsewhere — the "Apply Fuel" option on manual charges
+     * is only relevant (and only shown) for non-NZ tenants.
+     */
+    isUsCustomer?: boolean;
     onClose: () => void;
     onSave: (totalAmount: number) => void;
     onAddItem: (item: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
     onUpdateItem: (item: PriceBreakdown) => Promise<void>;
     onDeleteItem: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
+    onGetSuggestedFuelCharge?: (chargeAmount: number) => Promise<SuggestedFuelCharge>;
     showToast?: ShowToastFn;
 }
 
@@ -97,11 +113,13 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     jobId,
     isPrebook,
     isArchived = false,
+    isUsCustomer = false,
     onClose,
     onSave,
     onAddItem,
     onUpdateItem,
     onDeleteItem,
+    onGetSuggestedFuelCharge,
     showToast,
 }) => {
     const [priceBreakdowns, setPriceBreakdowns] = useState<PriceBreakdown[]>(initialBreakdowns);
@@ -126,6 +144,15 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     const [formName, setFormName] = useState('');
     const [formAmount, setFormAmount] = useState<number | ''>('');
     const [formCostAmount, setFormCostAmount] = useState<number | ''>('');
+
+    // Apply Fuel — only offered when adding a new item (US/non-NZ tenants only). Auto-suggests
+    // a companion "<Name> Fuel" line's revenue/cost via GetSuggestedFuelCharge; the existing
+    // PricingBreakdown sync trigger already rolls any charge named "...Fuel" into
+    // FuelSurchargeAmount/CourierPayment, so no other backend change is needed.
+    const [applyFuel, setApplyFuel] = useState(false);
+    const [formFuelChargeAmount, setFormFuelChargeAmount] = useState<number | ''>('');
+    const [formFuelCostAmount, setFormFuelCostAmount] = useState<number | ''>('');
+    const [isFuelLoading, setIsFuelLoading] = useState(false);
 
     const totals = useMemo(() => {
         const totalRevenue = priceBreakdowns.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -152,6 +179,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
         setFormName('');
         setFormAmount('');
         setFormCostAmount('');
+        setApplyFuel(false);
+        setFormFuelChargeAmount('');
+        setFormFuelCostAmount('');
         setIsNew(true);
         setIsEditing(true);
     };
@@ -161,6 +191,10 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
         setFormName(item.name);
         setFormAmount(item.amount);
         setFormCostAmount(item.costAmount ?? 0);
+        // Apply Fuel only applies to adding a new (paired) line — not editing an existing one.
+        setApplyFuel(false);
+        setFormFuelChargeAmount('');
+        setFormFuelCostAmount('');
         setIsNew(false);
         setIsEditing(true);
     };
@@ -169,6 +203,28 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
         setSelectedItem(null);
         setIsEditing(false);
         setIsNew(false);
+    };
+
+    const fetchSuggestedFuel = async (chargeAmount: number) => {
+        if (!onGetSuggestedFuelCharge || chargeAmount <= 0) return;
+        setIsFuelLoading(true);
+        try {
+            const suggestion = await onGetSuggestedFuelCharge(chargeAmount);
+            setFormFuelChargeAmount(suggestion.fuelChargeAmount);
+            setFormFuelCostAmount(suggestion.fuelCostAmount);
+        } catch (error) {
+            showToast?.(extractErrorMessage(error, 'Failed to calculate suggested fuel charge.'), 'error');
+        } finally {
+            setIsFuelLoading(false);
+        }
+    };
+
+    const handleToggleApplyFuel = async (checked: boolean) => {
+        setApplyFuel(checked);
+        if (checked) {
+            const amount = typeof formAmount === 'number' ? formAmount : 0;
+            await fetchSuggestedFuel(amount);
+        }
     };
 
     const handleSaveItem = async () => {
@@ -189,8 +245,24 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     ...(isPrebook ? { prebookJobId: jobId } : { childJobId: jobId }),
                 };
                 const chargeId = await onAddItem(newItem);
-                setPriceBreakdowns([...priceBreakdowns, { ...newItem, chargeId }]);
-                showToast?.(`Added "${formName}"`, 'success');
+                const addedItems = [{ ...newItem, chargeId }];
+
+                if (applyFuel) {
+                    const fuelChargeAmount = typeof formFuelChargeAmount === 'number' ? formFuelChargeAmount : 0;
+                    const fuelCostAmount = typeof formFuelCostAmount === 'number' ? formFuelCostAmount : 0;
+                    const fuelItem: Omit<PriceBreakdown, 'chargeId'> = {
+                        name: `${formName} Fuel`,
+                        amount: fuelChargeAmount,
+                        costAmount: fuelCostAmount,
+                        isArchived,
+                        ...(isPrebook ? { prebookJobId: jobId } : { childJobId: jobId }),
+                    };
+                    const fuelChargeId = await onAddItem(fuelItem);
+                    addedItems.push({ ...fuelItem, chargeId: fuelChargeId });
+                }
+
+                setPriceBreakdowns([...priceBreakdowns, ...addedItems]);
+                showToast?.(`Added "${formName}"${applyFuel ? ' and fuel charge' : ''}`, 'success');
             } else if (selectedItem) {
                 const updatedItem: PriceBreakdown = {
                     ...selectedItem,
@@ -788,6 +860,99 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                             }}
                                         />
                                     </Stack>
+
+                                    {/* Apply Fuel — non-NZ tenants only; NZ handles fuel automatically elsewhere */}
+                                    {isUsCustomer && isNew && (
+                                        <Paper
+                                            elevation={0}
+                                            sx={(theme) => ({
+                                                p: 2.5,
+                                                borderRadius: 2,
+                                                bgcolor: alpha(theme.palette.info.main, 0.04),
+                                                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                                            })}
+                                        >
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={applyFuel}
+                                                        onChange={(e) => handleToggleApplyFuel(e.target.checked)}
+                                                        disabled={typeof formAmount !== 'number' || formAmount <= 0}
+                                                        icon={<LocalGasStationIcon />}
+                                                        checkedIcon={<LocalGasStationIcon color="info" />}
+                                                    />
+                                                }
+                                                label={
+                                                    <Box>
+                                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                            Apply Fuel
+                                                        </Typography>
+                                                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                                            Adds a companion &quot;{formName || 'Item'} Fuel&quot; line using this job&apos;s fuel rate
+                                                        </Typography>
+                                                    </Box>
+                                                }
+                                            />
+
+                                            {applyFuel && (
+                                                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2, alignItems: 'flex-start' }}>
+                                                    <TextField
+                                                        label="Fuel Charge Amount"
+                                                        type="number"
+                                                        value={formFuelChargeAmount}
+                                                        onChange={(e) => setFormFuelChargeAmount(e.target.value ? parseFloat(e.target.value) : '')}
+                                                        fullWidth
+                                                        placeholder="0.00"
+                                                        helperText="Suggested — editable before saving"
+                                                        disabled={isFuelLoading}
+                                                        slotProps={{
+                                                            htmlInput: {min: 0, step: 0.01},
+                                                            input: {
+                                                                startAdornment: (
+                                                                    <InputAdornment position="start">
+                                                                        <MoneyIcon color="action" fontSize="small" />
+                                                                    </InputAdornment>
+                                                                ),
+                                                                sx: { borderRadius: 2 },
+                                                            },
+                                                        }}
+                                                    />
+                                                    <TextField
+                                                        label="Fuel Cost Amount"
+                                                        type="number"
+                                                        value={formFuelCostAmount}
+                                                        onChange={(e) => setFormFuelCostAmount(e.target.value ? parseFloat(e.target.value) : '')}
+                                                        fullWidth
+                                                        placeholder="0.00"
+                                                        helperText="Driver's share of the fuel charge"
+                                                        disabled={isFuelLoading}
+                                                        slotProps={{
+                                                            htmlInput: {min: 0, step: 0.01},
+                                                            input: {
+                                                                startAdornment: (
+                                                                    <InputAdornment position="start">
+                                                                        <MoneyIcon color="action" fontSize="small" />
+                                                                    </InputAdornment>
+                                                                ),
+                                                                sx: { borderRadius: 2 },
+                                                            },
+                                                        }}
+                                                    />
+                                                    <Tooltip title="Recalculate from the current Revenue Amount">
+                                                        <span>
+                                                            <IconButton
+                                                                onClick={() => fetchSuggestedFuel(typeof formAmount === 'number' ? formAmount : 0)}
+                                                                disabled={isFuelLoading || typeof formAmount !== 'number' || formAmount <= 0}
+                                                                sx={{ mt: 1 }}
+                                                            >
+                                                                {isFuelLoading ? <CircularProgress size={20} /> : <RefreshIcon />}
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </Stack>
+                                            )}
+                                        </Paper>
+                                    )}
 
                                     {/* Live Preview */}
                                     {(typeof formAmount === 'number' || typeof formCostAmount === 'number') && (

@@ -333,10 +333,12 @@ declare global {
                 jobId: number,
                 isPrebook: boolean,
                 isArchived: boolean,
+                isUsCustomer?: boolean,
                 apiService?: {
                     addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
                     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
                     deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
+                    getSuggestedFuelCharge: (jobId: number, chargeAmount: number, isPrebook: boolean, isArchived: boolean) => Promise<{ fuelChargeAmount: number; fuelCostAmount: number }>;
                 }
             ) => Promise<number | null>;
             setToastService: (service: ToastService) => void;
