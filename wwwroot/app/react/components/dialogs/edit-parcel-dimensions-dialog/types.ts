@@ -14,6 +14,7 @@ export interface ParcelDimensions {
     length?: number;
     depth?: number;
     weight?: number;
+    cubic?: number;
     dimensions: string;
     barcode?: string;
     itemTypes?: Array<{name: string; quantity: number}>;
@@ -31,6 +32,12 @@ export interface EditParcelDimensionsDialogProps {
     jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;
+    /**
+     * When true, dimensions/weight are entered once for the whole job (DimensionsType=2)
+     * rather than per parcel — the weight total and "Match proportionally" scaling
+     * sum row weights directly instead of multiplying by each row's quantity.
+     */
+    calculateDimsOncePerJob?: boolean;
     /**
      * When true, the dialog acts as a value-capture step only — no POST to
      * /job/UpdateJobPackages, no success toast — and resolves with the
@@ -53,6 +60,7 @@ export interface EditParcelDimensionsDialogOptions {
     jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;
+    calculateDimsOncePerJob?: boolean;
     partnerMode?: boolean;
 }
 
@@ -62,4 +70,5 @@ export interface EditParcelDimensionsDialogOptions {
 export interface EditParcelDimensionsDialogResult {
     parcels: ParcelDimensions[];
     totalWeight: number;
+    calculateDimsOncePerJob: boolean;
 }

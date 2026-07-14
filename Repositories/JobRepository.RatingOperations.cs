@@ -326,7 +326,7 @@ public partial class JobRepository
             toAirportId: dto.ToAirportId,
             isFromAddressAirport: isFromAirport,
             isToAddressAirport: isToAirport,
-            dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0,
+            dimensionsType: dto.CalculateDimsOncePerJob ? 2 : 0,
             description: description,
             rate: rate,
             returnValue: returnValue

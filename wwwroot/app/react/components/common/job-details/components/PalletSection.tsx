@@ -30,14 +30,15 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
 
     const weightUnit = isUsCustomer ? 'lbs' : 'kg';
     const dimUnit = isUsCustomer ? 'in' : 'cm';
-    const volUnit = isUsCustomer ? 'in\u00B3' : 'cm\u00B3';
+    // Cubic is stored as dimensional volume (ft\u00B3 for US, m\u00B3 for NZ) \u2014 see
+    // EditParcelDimensionsDialog's cubic calc. Sourcing the total from this stored value
+    // (rather than recomputing from L\u00D7W\u00D7H) keeps it accurate even when a job's volume was
+    // set without dimensions (e.g. a Per Job weight/volume entry with no L/W/H).
+    const volUnit = isUsCustomer ? 'ft\u00B3' : 'm\u00B3';
 
     const totalItems = pallets.reduce((sum, p) => sum + (p.quantity || 0), 0);
     const totalWeight = pallets.reduce((sum, p) => sum + (p.weight || 0) * (p.quantity || 1), 0);
-    const totalVolume = pallets.reduce((sum, p) => {
-        const vol = (p.length || 0) * (p.depth || 0) * (p.height || 0);
-        return sum + vol * (p.quantity || 1);
-    }, 0);
+    const totalVolume = pallets.reduce((sum, p) => sum + (p.cubic || 0) * (p.quantity || 1), 0);
 
     return (
         <Box sx={cardContainerSx}>
@@ -53,6 +54,7 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                         <TableCell sx={headerCellSx} align="right">Qty</TableCell>
                         <TableCell sx={headerCellSx} align="right">Weight ({weightUnit})</TableCell>
                         <TableCell sx={headerCellSx}>Dimensions ({dimUnit})</TableCell>
+                        <TableCell sx={headerCellSx} align="right">Volume ({volUnit})</TableCell>
                         <TableCell sx={headerCellSx}>Status</TableCell>
                         <TableCell sx={headerCellSx}>DG Class</TableCell>
                         <TableCell sx={headerCellSx}>Notes</TableCell>
@@ -68,8 +70,11 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                             <TableCell sx={cellSx} align="right">{pallet.quantity}</TableCell>
                             <TableCell sx={cellSx} align="right">{pallet.weight}</TableCell>
                             <TableCell sx={cellSx}>
-                                {pallet.length} x {pallet.depth} x {pallet.height}
+                                {pallet.length || pallet.depth || pallet.height
+                                    ? `${pallet.length} x ${pallet.depth} x ${pallet.height}`
+                                    : '—'}
                             </TableCell>
+                            <TableCell sx={cellSx} align="right">{pallet.cubic ? pallet.cubic.toFixed(3) : '—'}</TableCell>
                             <TableCell sx={cellSx}>
                                 <Box sx={{display: 'flex', gap: 0.5}}>
                                     {pallet.pu && <Chip label="PU" size="small" color="primary" sx={{height: 20, fontSize: '0.6875rem'}} />}
@@ -85,8 +90,8 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                         <TableCell sx={cellBoldSx}>Total</TableCell>
                         <TableCell sx={cellBoldSx} align="right">{totalItems}</TableCell>
                         <TableCell sx={cellBoldSx} align="right">{totalWeight.toFixed(1)}</TableCell>
-                        <TableCell sx={cellBoldSx} colSpan={4}>
-                            Volume: {totalVolume.toFixed(1)} {volUnit}
+                        <TableCell sx={cellBoldSx} colSpan={5}>
+                            Volume: {totalVolume.toFixed(3)} {volUnit}
                         </TableCell>
                     </TableRow>
                 </TableBody>

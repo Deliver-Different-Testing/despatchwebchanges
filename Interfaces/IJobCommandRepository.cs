@@ -85,8 +85,8 @@ public interface IJobCommandRepository
 
     Task RateJobUsAsync(RateJobUsDto dto);
 
-    Task UpdatePackagesForJobAsync(int jobId, IReadOnlyList<ParcelDimensions> parcels);
-    Task UpdatePackagesForBulkJobAsync(int bulkJobId, IReadOnlyList<ParcelDimensions> parcels);
+    Task UpdatePackagesForJobAsync(int jobId, IReadOnlyList<ParcelDimensions> parcels, bool? calculateDimsOncePerJob = null);
+    Task UpdatePackagesForBulkJobAsync(int bulkJobId, IReadOnlyList<ParcelDimensions> parcels, bool? calculateDimsOncePerJob = null);
     Task<bool> ApplyWebQtyUpdateAsync(int jobId);
 
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);

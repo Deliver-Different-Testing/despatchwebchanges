@@ -52,7 +52,8 @@ public static partial class JobMappings
 
             ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
             Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
-            IsManuallyRated = job.RatedManually
+            IsManuallyRated = job.RatedManually,
+            CalculateDimsOncePerJob = job.DimensionsType == 2
         };
 
     /// <summary>
@@ -106,6 +107,7 @@ public static partial class JobMappings
             ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
             Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
+            CalculateDimsOncePerJob = job.DimensionsType == 2,
             IsPrebook = job.IsRecurringJob,
             BulkScheduleId = job.ScheduleId,
             CreatedTime = job.CreatedTime,
@@ -203,6 +205,7 @@ public static partial class JobMappings
             ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
             Cubic = job.TucJobItemsArchives.Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
+            CalculateDimsOncePerJob = job.DimensionsType == 2,
             IsPrebook = job.IsRecurringJob,
             BulkScheduleId = job.ScheduleId,
             CreatedTime = job.CreatedTime,
@@ -294,7 +297,7 @@ public static partial class JobMappings
 
             ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
             Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
-            CalculateDimsOncePerJob = job.DimensionsType == 1,
+            CalculateDimsOncePerJob = job.DimensionsType == 2,
             IsPrebook = true
         };
 
@@ -356,7 +359,7 @@ public static partial class JobMappings
             Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
             IsPrebook = true,
-            CalculateDimsOncePerJob = job.DimensionsType == 1,
+            CalculateDimsOncePerJob = job.DimensionsType == 2,
 
             FromCompanyName = job.PickupAddressLine1,
             FromBuildingName = job.PickupAddressLine2,

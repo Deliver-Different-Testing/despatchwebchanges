@@ -193,6 +193,7 @@ public static partial class JobMappings
                 Depth = i.Depth,
                 Length = i.Length,
                 Weight = i.Weight,
+                Cubic = i.Cubic,
                 Barcode = i.Barcode
             }).ToList()
             : j.TblBulkJobItemJobs.Any(i => i.ChildJobId == null)
@@ -204,6 +205,7 @@ public static partial class JobMappings
                     Depth = i.Depth,
                     Length = i.Length,
                     Weight = i.Weight,
+                    Cubic = i.Cubic,
                     Barcode = i.Barcode
                 }).ToList()
                 : j.Parent != null
@@ -216,6 +218,7 @@ public static partial class JobMappings
                             Depth = i.Depth,
                             Length = i.Length,
                             Weight = i.Weight,
+                            Cubic = i.Cubic,
                             Barcode = i.Barcode
                         }).ToList()
                     : new List<ParcelDimensions>()

@@ -28,6 +28,7 @@ interface DialogState {
     jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;
+    calculateDimsOncePerJob?: boolean;
     partnerMode?: boolean;
     resolve?: (result: EditParcelDimensionsDialogResult | null) => void;
 }
@@ -92,6 +93,7 @@ class EditParcelDimensionsDialogManager {
                         jobNumber={this.dialogState.jobNumber}
                         isUsCustomer={this.dialogState.isUsCustomer}
                         jobWeight={this.dialogState.jobWeight}
+                        calculateDimsOncePerJob={this.dialogState.calculateDimsOncePerJob}
                         partnerMode={this.dialogState.partnerMode}
                         onClose={handleClose}
                         onSubmit={handleSubmit}
@@ -114,6 +116,7 @@ class EditParcelDimensionsDialogManager {
                 jobNumber: options.jobNumber,
                 isUsCustomer: options.isUsCustomer,
                 jobWeight: options.jobWeight,
+                calculateDimsOncePerJob: options.calculateDimsOncePerJob,
                 partnerMode: options.partnerMode,
                 resolve,
             };
