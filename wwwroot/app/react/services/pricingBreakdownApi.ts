@@ -34,6 +34,11 @@ export interface DeletePriceBreakdownRequest {
     isArchived?: boolean;
 }
 
+export interface SuggestedFuelCharge {
+    fuelChargeAmount: number;
+    fuelCostAmount: number;
+}
+
 /**
  * Get price breakdowns for a job
  */
@@ -72,11 +77,30 @@ export async function deletePriceBreakdown(request: DeletePriceBreakdownRequest)
     await apiClient.post('job/DeletePriceComponent', request);
 }
 
+/**
+ * Get a suggested fuel surcharge (revenue + driver cost) for a manually-added charge amount,
+ * using the job's actual fuel rate and vehicle size driver fuel percentage.
+ */
+export async function getSuggestedFuelCharge(
+    jobId: number,
+    chargeAmount: number,
+    isPrebook: boolean,
+    isArchived?: boolean
+): Promise<SuggestedFuelCharge> {
+    return apiClient.get<SuggestedFuelCharge>('job/GetSuggestedFuelCharge', {
+        jobId,
+        chargeAmount,
+        isPrebook,
+        isArchived,
+    });
+}
+
 export const pricingBreakdownApi = {
     getPriceBreakdowns,
     addPriceBreakdown,
     updatePriceBreakdown,
     deletePriceBreakdown,
+    getSuggestedFuelCharge,
 };
 
 export default pricingBreakdownApi;

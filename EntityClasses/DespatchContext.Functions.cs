@@ -41,6 +41,12 @@ namespace DespatchWeb.EntityClasses
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }
 
+        [DbFunction("UTL_fncMFV_FAF_Rates", "dbo")]
+        public static decimal? UTL_fncMFV_FAF_Rates(int? ClientID, DateTime? Date, int? SpeedID, int? VehicleSizeID)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         protected void OnModelCreatingGeneratedFunctions(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<UTL_fncClearList_OtherResult>().HasNoKey();

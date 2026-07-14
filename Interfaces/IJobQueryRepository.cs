@@ -60,6 +60,8 @@ public interface IJobQueryRepository
 
     Task<IReadOnlyList<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook, bool isArchived = false);
 
+    Task<SuggestedFuelChargeViewModel> GetSuggestedFuelChargeAsync(int jobId, decimal chargeAmount, bool isPrebook, bool isArchived = false);
+
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 
     Task<PaginatedResponse<ClientItemsViewModel>> GetClientItemsBySpeedAsync(

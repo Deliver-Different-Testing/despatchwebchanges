@@ -197,6 +197,20 @@ public class JobController(
         }
     }
 
+    public async Task<IActionResult> GetSuggestedFuelCharge(int jobId, decimal chargeAmount, bool isPrebook, bool isArchived = false)
+    {
+        try
+        {
+            var suggestion = await jobQueryRepository.GetSuggestedFuelChargeAsync(jobId, chargeAmount, isPrebook, isArchived);
+            return Json(suggestion);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting suggested fuel charge for job {JobId}", jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> AddPriceComponent([FromBody] ChargeViewModel breakdown)
     {

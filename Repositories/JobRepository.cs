@@ -4102,6 +4102,80 @@ public partial class JobRepository(
     }
 
     /// <summary>
+    /// Suggests fuel-surcharge revenue/cost amounts for a manually-added price breakdown line,
+    /// using the same fuel rate (UTL_fncMFV_FAF_Rates) and driver fuel percentage (VehicleSize)
+    /// that auto-computed charges use. Resolved live against the job's client/booked date/vehicle
+    /// size rather than frozen at add-time, matching how the rest of pricing always recomputes
+    /// fresh from current rates.
+    /// </summary>
+    public async Task<SuggestedFuelChargeViewModel> GetSuggestedFuelChargeAsync(int jobId, decimal chargeAmount,
+        bool isPrebook, bool isArchived = false)
+    {
+        int? clientId = null;
+        DateTime? bookedDate = null;
+        int? vehicleSizeId = null;
+
+        if (isPrebook)
+        {
+            var effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobId);
+            var job = await Context.TucJobBookings
+                .Where(j => j.UcbkId == effectivePrebookId)
+                .Select(j => new { j.UcbkClientId, j.UcbkDate, j.UcbkSize })
+                .FirstOrDefaultAsync();
+            clientId = job?.UcbkClientId;
+            bookedDate = job?.UcbkDate;
+            vehicleSizeId = job?.UcbkSize;
+        }
+        else if (isArchived)
+        {
+            var effectiveArchiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+            var job = await Context.TucJobArchives
+                .Where(j => j.UcjbId == effectiveArchiveJobId)
+                .Select(j => new { j.UcjbClientId, j.UcjbDate, j.UcjbSize })
+                .FirstOrDefaultAsync();
+            clientId = job?.UcjbClientId;
+            bookedDate = job?.UcjbDate;
+            vehicleSizeId = job?.UcjbSize;
+        }
+        else
+        {
+            var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
+            var job = await Context.TucJobs
+                .Where(j => j.UcjbId == effectiveJobId)
+                .Select(j => new { j.UcjbClientId, j.UcjbDate, j.UcjbSize })
+                .FirstOrDefaultAsync();
+            clientId = job?.UcjbClientId;
+            bookedDate = job?.UcjbDate;
+            vehicleSizeId = job?.UcjbSize;
+        }
+
+        if (clientId is null)
+        {
+            return new SuggestedFuelChargeViewModel { FuelChargeAmount = 0m, FuelCostAmount = 0m };
+        }
+
+        var mfv = await Context.TucJobs
+            .Select(_ => DespatchContext.UTL_fncMFV_FAF_Rates(clientId, bookedDate, null, vehicleSizeId))
+            .FirstOrDefaultAsync() ?? 0m;
+
+        var driverFuelPercentage = vehicleSizeId.HasValue
+            ? await Context.VehicleSizes
+                .Where(v => v.VehicleSizeId == vehicleSizeId)
+                .Select(v => (decimal?)v.FuelPercentage)
+                .FirstOrDefaultAsync() ?? 0m
+            : 0m;
+
+        var fuelChargeAmount = Math.Round(chargeAmount * mfv, 2);
+        var fuelCostAmount = Math.Round(fuelChargeAmount * driverFuelPercentage, 2);
+
+        return new SuggestedFuelChargeViewModel
+        {
+            FuelChargeAmount = fuelChargeAmount,
+            FuelCostAmount = fuelCostAmount
+        };
+    }
+
+    /// <summary>
     /// Gets the name of a staff member by ID.
     /// </summary>
     public async Task<string> GetStaffNameAsync(int staffId) => await Context.TucStaffs

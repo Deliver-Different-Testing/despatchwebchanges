@@ -804,7 +804,7 @@ export function useJobActions({
         } else {
             await ensurePriceBreakdownDialog();
             window.ReactPriceBreakdownDialog?.setToastService({showToast});
-            await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived);
+            await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived, isUsCustomer);
         }
         await refreshAndNotify();
     }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync]);
