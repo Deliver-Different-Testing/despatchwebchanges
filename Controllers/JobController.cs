@@ -2141,11 +2141,11 @@ public class JobController(
     {
         try
         {
-            // Serialise just the apply-payload fields (Parcels + Weight) — not JobId,
-            // which lives on the change-request row. The peer applies against its own
+            // Serialise just the apply-payload fields (Parcels + Weight + CalculateDimsOncePerJob) —
+            // not JobId, which lives on the change-request row. The peer applies against its own
             // mirror by reading the row's UjcrJobId, not the JSON.
             var payload = JsonSerializer.Serialize(
-                new { request.Parcels, request.Weight },
+                new { request.Parcels, request.Weight, request.CalculateDimsOncePerJob },
                 CompoundPayloadJsonOptions);
             var gateResult = await partnerJobGate.EvaluateAsync(
                 request.JobId, JobChangeField.Packages, payload, reason: null, ct);
@@ -2154,7 +2154,7 @@ public class JobController(
                 return earlyResponse;
             }
 
-            await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
+            await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels, request.CalculateDimsOncePerJob);
             if (request.Weight is > 0)
             {
                 await jobCommandRepository.UpdateJobWeightAsync(request.JobId, request.Weight.Value);
@@ -2175,7 +2175,7 @@ public class JobController(
     {
         try
         {
-            await jobCommandRepository.UpdatePackagesForBulkJobAsync(request.BulkJobId, request.Parcels);
+            await jobCommandRepository.UpdatePackagesForBulkJobAsync(request.BulkJobId, request.Parcels, request.CalculateDimsOncePerJob);
             return Ok();
         }
         catch (Exception ex)

@@ -62,7 +62,7 @@ describe('JobFieldsSection', () => {
     describe('Quantity field (Package Details)', () => {
         it('sums palletInfo.quantity so consolidated rows show the true piece count', () => {
             const job = createMockJob({
-                palletInfo: [{id: 1, quantity: 10, weight: 5, length: 100, depth: 50, height: 50, notes: '', itemId: 1}],
+                palletInfo: [{id: 1, quantity: 10, weight: 5, length: 100, depth: 50, height: 50, cubic: 0, notes: '', itemId: 1}],
                 parcelDimensions: [{itemName: '', dimensions: ''} as any],
                 weight: 50,
             });
@@ -87,7 +87,7 @@ describe('JobFieldsSection', () => {
 
         it('shows singular "parcel" when count is 1', () => {
             const job = createMockJob({
-                palletInfo: [{id: 1, quantity: 1, weight: 5, length: 1, depth: 1, height: 1, notes: '', itemId: 1}],
+                palletInfo: [{id: 1, quantity: 1, weight: 5, length: 1, depth: 1, height: 1, cubic: 0, notes: '', itemId: 1}],
                 parcelDimensions: [],
                 weight: 5,
             });
@@ -97,7 +97,7 @@ describe('JobFieldsSection', () => {
 
         it('uses lbs for US customers', () => {
             const job = createMockJob({
-                palletInfo: [{id: 1, quantity: 4, weight: 5, length: 1, depth: 1, height: 1, notes: '', itemId: 1}],
+                palletInfo: [{id: 1, quantity: 4, weight: 5, length: 1, depth: 1, height: 1, cubic: 0, notes: '', itemId: 1}],
                 parcelDimensions: [],
                 weight: 20,
             });

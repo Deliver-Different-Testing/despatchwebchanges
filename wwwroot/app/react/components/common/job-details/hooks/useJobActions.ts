@@ -891,6 +891,7 @@ export function useJobActions({
             parcels: j.parcelDimensions || [],
             isUsCustomer: isUsCustomer,
             jobWeight: j.weight,
+            calculateDimsOncePerJob: j.calculateDimsOncePerJob,
             partnerMode,
         });
         if (!result) return;
@@ -898,6 +899,7 @@ export function useJobActions({
             const payload = JSON.stringify({
                 parcels: result.parcels,
                 weight: result.totalWeight > 0 ? result.totalWeight : undefined,
+                calculateDimsOncePerJob: result.calculateDimsOncePerJob,
             });
             onRequestPartnerChange('Packages', payload, true);
             return;

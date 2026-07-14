@@ -99,6 +99,7 @@ public sealed class ParcelDimensions
     public double? Length { get; set; }
     public double? Depth { get; set; }
     public double? Weight { get; set; }
+    public decimal? Cubic { get; set; }
     public string Barcode { get; set; }
 }
 
@@ -121,6 +122,7 @@ public sealed class PalletInfo
     public double Length { get; set; }
     public double Depth { get; set; }
     public double Height { get; set; }
+    public double Cubic { get; set; }
     public bool? Pu { get; set; }
     public bool? Do { get; set; }
     public int? DgClass { get; set; }

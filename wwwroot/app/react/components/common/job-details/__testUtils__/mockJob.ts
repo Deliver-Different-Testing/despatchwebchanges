@@ -76,6 +76,7 @@ export function createMockPallet(overrides?: Partial<IPalletInfo>): IPalletInfo 
         length: 120,
         depth: 80,
         height: 100,
+        cubic: 0,
         pu: true,
         do: false,
         notes: 'Fragile',

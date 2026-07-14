@@ -440,6 +440,7 @@ export interface IParcelDimensions {
     length?: number;
     depth?: number;
     weight?: number;
+    cubic?: number;
     dimensions: string;
     barcode?: string;
     itemTypes?: Array<{name: string; quantity: number}>;
@@ -472,6 +473,7 @@ export interface IPalletInfo {
     length: number;
     depth: number;
     height: number;
+    cubic: number;
     pu?: boolean;
     do?: boolean;
     dgClass?: number;

@@ -127,7 +127,7 @@ public static partial class JobMappings
             IsAgentJob = j.UcbkSpeedNavigation != null
                          && j.UcbkSpeedNavigation.GroupingId !=
                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
-            CalculateDimsOncePerJob = j.DimensionsType == 1,
+            CalculateDimsOncePerJob = j.DimensionsType == 2,
             ToAddress = j.UcbkToAddr,
             JobType = j.UcbkType,
             JobTypeDescription = GetJobTypeDescription(j.UcbkType ?? 0),
@@ -181,7 +181,8 @@ public static partial class JobMappings
                             ItemName = p.Notes,
                             Height = p.Height,
                             Depth = p.Depth,
-                            Length = p.Length
+                            Length = p.Length,
+                            Cubic = p.Cubic
                         })
                         .ToList()
                     : j.BookingParent.TucJobBookingItemBookings.Select(p => new ParcelDimensions
@@ -190,7 +191,8 @@ public static partial class JobMappings
                             ItemName = p.Notes,
                             Height = p.Height,
                             Depth = p.Depth,
-                            Length = p.Length
+                            Length = p.Length,
+                            Cubic = p.Cubic
                         })
                         .ToList(),
 

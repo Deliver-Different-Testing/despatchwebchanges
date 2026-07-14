@@ -169,7 +169,7 @@ public static partial class JobMappings
 
         // Job characteristics
         Weight = j.UcjbWeight,
-        CalculateDimsOncePerJob = j.DimensionsType == 1,
+        CalculateDimsOncePerJob = j.DimensionsType == 2,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
         JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),
@@ -323,6 +323,7 @@ public static partial class JobMappings
                 Depth = i.Depth,
                 Length = i.Length,
                 Weight = i.Weight,
+                Cubic = i.Cubic,
                 Barcode = i.Barcode
             }).ToList()
             : j.TucJobItemJobs.Any(i => i.ChildJobId == null)
@@ -334,6 +335,7 @@ public static partial class JobMappings
                     Depth = i.Depth,
                     Length = i.Length,
                     Weight = i.Weight,
+                    Cubic = i.Cubic,
                     Barcode = i.Barcode
                 }).ToList()
                 : j.Parent != null
@@ -346,6 +348,7 @@ public static partial class JobMappings
                             Depth = i.Depth,
                             Length = i.Length,
                             Weight = i.Weight,
+                            Cubic = i.Cubic,
                             Barcode = i.Barcode
                         }).ToList()
                     : new List<ParcelDimensions>(),
@@ -361,6 +364,7 @@ public static partial class JobMappings
                 Length = i.Length ?? 0,
                 Depth = i.Depth ?? 0,
                 Height = i.Height ?? 0,
+                Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
                 Pu = i.Pu,
                 Do = i.Do,
                 DgClass = i.Dgclass,
@@ -376,6 +380,7 @@ public static partial class JobMappings
                     Length = i.Length ?? 0,
                     Depth = i.Depth ?? 0,
                     Height = i.Height ?? 0,
+                    Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
                     Pu = i.Pu,
                     Do = i.Do,
                     DgClass = i.Dgclass,
@@ -392,6 +397,7 @@ public static partial class JobMappings
                             Length = i.Length ?? 0,
                             Depth = i.Depth ?? 0,
                             Height = i.Height ?? 0,
+                            Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
                             Pu = i.Pu,
                             Do = i.Do,
                             DgClass = i.Dgclass,

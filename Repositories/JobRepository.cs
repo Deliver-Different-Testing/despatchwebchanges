@@ -1999,7 +1999,8 @@ public partial class JobRepository(
     /// <param name="jobId">The job ID to update packages for.</param>
     /// <param name="parcels">List of parcel dimensions to add or update.</param>
     public async Task UpdatePackagesForJobAsync(int jobId,
-        IReadOnlyList<ParcelDimensions> parcels)
+        IReadOnlyList<ParcelDimensions> parcels,
+        bool? calculateDimsOncePerJob = null)
     {
         try
         {
@@ -2011,7 +2012,7 @@ public partial class JobRepository(
             // not-yet-invoiced) jobs succeed instead of failing.
             if (await IsJobArchived(jobId))
             {
-                await UpdatePackagesForArchivedJobAsync(jobId, parcels);
+                await UpdatePackagesForArchivedJobAsync(jobId, parcels, calculateDimsOncePerJob);
                 return;
             }
 
@@ -2052,6 +2053,7 @@ public partial class JobRepository(
                         Length = p.Length ?? 0,
                         Depth = p.Depth ?? 0,
                         Weight = p.Weight ?? 0,
+                        Cubic = p.Cubic,
                         Notes = p.ItemName,
                         Barcode = p.Barcode,
                         Items = 1,
@@ -2069,21 +2071,45 @@ public partial class JobRepository(
                                 (childJobId == null || i.ChildJobId == childJobId))
                     .CountAsync();
 
+                int? dimensionsType = calculateDimsOncePerJob is true ? 2 : (int?)null;
+
                 if (childJobId == null)
                 {
                     // Non-stop: sync qty across parent and all split children (they share the same parcels)
-                    await Context.TucJobs
-                        .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                    if (calculateDimsOncePerJob.HasValue)
+                    {
+                        await Context.TucJobs
+                            .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+                            .ExecuteUpdateAsync(setters => setters
+                                .SetProperty(j => j.UcjbQty, (short)totalItemCount)
+                                .SetProperty(j => j.DimensionsType, dimensionsType));
+                    }
+                    else
+                    {
+                        await Context.TucJobs
+                            .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+                            .ExecuteUpdateAsync(setters => setters
+                                .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                    }
                 }
                 else
                 {
                     // Stop job: each stop has its own parcels — only update this stop's qty
-                    await Context.TucJobs
-                        .Where(j => j.UcjbId == jobId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                    if (calculateDimsOncePerJob.HasValue)
+                    {
+                        await Context.TucJobs
+                            .Where(j => j.UcjbId == jobId)
+                            .ExecuteUpdateAsync(setters => setters
+                                .SetProperty(j => j.UcjbQty, (short)totalItemCount)
+                                .SetProperty(j => j.DimensionsType, dimensionsType));
+                    }
+                    else
+                    {
+                        await Context.TucJobs
+                            .Where(j => j.UcjbId == jobId)
+                            .ExecuteUpdateAsync(setters => setters
+                                .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                    }
                 }
 
                 await transaction.CommitAsync();
@@ -2103,7 +2129,8 @@ public partial class JobRepository(
     /// delete-and-reinsert flow against tucJobItemsArchive / tucJobArchive for archived jobs.
     /// </summary>
     private async Task UpdatePackagesForArchivedJobAsync(int jobId,
-        IReadOnlyList<ParcelDimensions> parcels)
+        IReadOnlyList<ParcelDimensions> parcels,
+        bool? calculateDimsOncePerJob = null)
     {
         var effectiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
         var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
@@ -2142,6 +2169,7 @@ public partial class JobRepository(
                     Length = p.Length ?? 0,
                     Depth = p.Depth ?? 0,
                     Weight = p.Weight ?? 0,
+                    Cubic = p.Cubic,
                     Notes = p.ItemName,
                     Barcode = p.Barcode,
                     Items = 1,
@@ -2159,21 +2187,45 @@ public partial class JobRepository(
                             (childJobId == null || i.ChildJobId == childJobId))
                 .CountAsync();
 
+            int? dimensionsType = calculateDimsOncePerJob is true ? 2 : (int?)null;
+
             if (childJobId == null)
             {
                 // Non-stop: sync qty across parent and all split children (they share the same parcels)
-                await Context.TucJobArchives
-                    .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                if (calculateDimsOncePerJob.HasValue)
+                {
+                    await Context.TucJobArchives
+                        .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbQty, (short)totalItemCount)
+                            .SetProperty(j => j.DimensionsType, dimensionsType));
+                }
+                else
+                {
+                    await Context.TucJobArchives
+                        .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                }
             }
             else
             {
                 // Stop job: each stop has its own parcels — only update this stop's qty
-                await Context.TucJobArchives
-                    .Where(j => j.UcjbId == jobId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                if (calculateDimsOncePerJob.HasValue)
+                {
+                    await Context.TucJobArchives
+                        .Where(j => j.UcjbId == jobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbQty, (short)totalItemCount)
+                            .SetProperty(j => j.DimensionsType, dimensionsType));
+                }
+                else
+                {
+                    await Context.TucJobArchives
+                        .Where(j => j.UcjbId == jobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                }
             }
 
             await transaction.CommitAsync();
@@ -2231,7 +2283,8 @@ public partial class JobRepository(
     /// <param name="bulkJobId">The bulk job ID to update packages for.</param>
     /// <param name="parcels">List of parcel dimensions to add or update.</param>
     public async Task UpdatePackagesForBulkJobAsync(int bulkJobId,
-        IReadOnlyList<ParcelDimensions> parcels)
+        IReadOnlyList<ParcelDimensions> parcels,
+        bool? calculateDimsOncePerJob = null)
     {
         try
         {
@@ -2268,6 +2321,7 @@ public partial class JobRepository(
                         Length = p.Length ?? 0,
                         Depth = p.Depth ?? 0,
                         Weight = p.Weight ?? 0,
+                        Cubic = p.Cubic,
                         Notes = p.ItemName,
                         Barcode = p.Barcode,
                         ItemId = nextItemId++
@@ -2275,6 +2329,15 @@ public partial class JobRepository(
 
                     await Context.TblBulkJobItems.AddRangeAsync(newItems);
                     await Context.SaveChangesAsync();
+                }
+
+                if (calculateDimsOncePerJob.HasValue)
+                {
+                    int? dimensionsType = calculateDimsOncePerJob.Value ? 2 : (int?)null;
+                    await Context.TblBulkJobs
+                        .Where(j => j.BulkJobId == effectiveJobId || j.RootParentId == effectiveJobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.DimensionsType, dimensionsType));
                 }
 
                 await transaction.CommitAsync();

@@ -926,7 +926,7 @@ public sealed class JobChangeRequestService(
             return;
         }
 
-        await jobCommandRepository.UpdatePackagesForJobAsync(jobId, payload.Parcels);
+        await jobCommandRepository.UpdatePackagesForJobAsync(jobId, payload.Parcels, payload.CalculateDimsOncePerJob);
         if (payload.Weight is > 0)
         {
             await jobCommandRepository.UpdateJobWeightAsync(jobId, payload.Weight.Value);
@@ -1168,5 +1168,5 @@ public sealed class JobChangeRequestService(
     // Wire payload for JobChangeField.Packages. Mirrors UpdateJobPackagesRequest minus
     // the JobId (carried in the change-request row) so the change-request body stays
     // self-describing without coupling to the controller's DTO shape.
-    private sealed record UpdateJobPackagesPayload(List<ParcelDimensions> Parcels, decimal? Weight);
+    private sealed record UpdateJobPackagesPayload(List<ParcelDimensions> Parcels, decimal? Weight, bool? CalculateDimsOncePerJob = null);
 }

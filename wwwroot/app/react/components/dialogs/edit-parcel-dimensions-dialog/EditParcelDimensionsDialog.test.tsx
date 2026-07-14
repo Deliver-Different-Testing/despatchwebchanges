@@ -217,7 +217,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
         await user.click(screen.getByRole('button', {name: /add package type/i}));
 
         // Give the new type a weight so Save enables.
-        const weightInputs = screen.getAllByPlaceholderText('—');
+        const weightInputs = screen.getAllByRole('spinbutton', {name: 'Weight'});
         await user.clear(weightInputs[weightInputs.length - 1]);
         await user.paste('5');
 
@@ -260,7 +260,7 @@ describe('EditParcelDimensionsDialog weight validation', () => {
         const user = userEvent.setup();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
-        const weightInputs = screen.getAllByPlaceholderText('—');
+        const weightInputs = screen.getAllByRole('spinbutton', {name: 'Weight'});
         const weightInput = weightInputs[weightInputs.length - 1];
         await user.clear(weightInput);
         await user.paste('10');
@@ -273,7 +273,7 @@ describe('EditParcelDimensionsDialog weight validation', () => {
         const user = userEvent.setup();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel({weight: 5})]} />);
 
-        const weightInputs = screen.getAllByPlaceholderText('—');
+        const weightInputs = screen.getAllByRole('spinbutton', {name: 'Weight'});
         const weightInput = weightInputs[weightInputs.length - 1];
         await user.clear(weightInput);
         await user.paste('0');
