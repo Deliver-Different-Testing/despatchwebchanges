@@ -262,6 +262,24 @@ export function getPodSpreadsheetUrl(jobId: number): string {
     return `/job/PodSpreadsheet?jobId=${jobId}`;
 }
 
+export function getOverlayDocumentUrl(jobId: number, documentType: string): string {
+    return `/job/OverlayDocument?jobId=${jobId}&documentType=${encodeURIComponent(documentType)}`;
+}
+
+// ── PDF Overlay Documents ───────────────────────────────────────────
+
+/** An overlay document offered in the job export menu (from the Configurator template catalogue). */
+export interface OverlayDocument {
+    documentType: string;
+    displayName: string;
+    /** True when a template resolves for this job's client; false renders the menu item disabled. */
+    available: boolean;
+}
+
+export function getJobOverlayDocuments(jobId: number): Promise<OverlayDocument[]> {
+    return apiClient.get<OverlayDocument[]>('/job/OverlayDocuments', {jobId});
+}
+
 // ── Autocomplete Search ─────────────────────────────────────────────
 
 export function autocompleteSearch(searchTerm: string, url: string): Promise<ISuggestion[]> {

@@ -12,6 +12,7 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
+import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
@@ -29,8 +30,10 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import EmailIcon from '@mui/icons-material/Email';
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
+import DescriptionIcon from '@mui/icons-material/Description';
 import type {IJob} from '../JobDetails.types';
 import type {RouteOption} from '../../../../interfaces/recurringJobs';
+import type {OverlayDocument} from '../../../../services/jobDetailApi';
 
 interface JobDetailHeaderProps {
     job: IJob;
@@ -47,6 +50,14 @@ interface JobDetailHeaderProps {
     onSendPodEmail: () => void;
     onLockToggle: () => void;
     onRouteChange: (routeId: number | null) => void;
+    /** Extra overlay documents to offer below the POD options. */
+    overlayDocuments?: OverlayDocument[];
+    /** True while the overlay document list is being fetched. */
+    overlayDocumentsLoading?: boolean;
+    /** Called when the POD menu opens, to lazily fetch the overlay documents. */
+    onOverlayMenuOpen?: () => void;
+    /** Called when an available overlay document is selected. */
+    onDownloadOverlay?: (documentType: string) => void;
 }
 
 function getStatusColor(job: IJob): 'primary' | 'success' | 'error' | 'warning' | 'default' {
@@ -106,6 +117,10 @@ export function JobDetailHeader({
                                     onSendPodEmail,
                                     onLockToggle,
                                     onRouteChange,
+                                    overlayDocuments = [],
+                                    overlayDocumentsLoading = false,
+                                    onOverlayMenuOpen,
+                                    onDownloadOverlay,
                                 }: JobDetailHeaderProps) {
     const [podMenuAnchor, setPodMenuAnchor] = useState<HTMLElement | null>(null);
     const isDense = viewDensityLabel === 'Dense';
@@ -252,7 +267,10 @@ export function JobDetailHeader({
                         <Tooltip title="POD Report">
                             <IconButton
                                 size="small"
-                                onClick={(e) => setPodMenuAnchor(e.currentTarget)}
+                                onClick={(e) => {
+                                    setPodMenuAnchor(e.currentTarget);
+                                    onOverlayMenuOpen?.();
+                                }}
                             >
                                 <MoreVertIcon sx={{fontSize: ICON_SIZE}}/>
                             </IconButton>
@@ -284,6 +302,42 @@ export function JobDetailHeader({
                                 <ListItemIcon><EmailIcon fontSize="small"/></ListItemIcon>
                                 <ListItemText>Email POD Report</ListItemText>
                             </MenuItem>
+
+                            {/* Extra overlay documents (invoices, manifests, etc.). Every configured
+                                document type is shown; those without a template for this job's client
+                                render disabled rather than hidden. */}
+                            {overlayDocumentsLoading && (
+                                <MenuItem disabled>
+                                    <ListItemIcon><CircularProgress size={16}/></ListItemIcon>
+                                    <ListItemText>Loading documents…</ListItemText>
+                                </MenuItem>
+                            )}
+                            {!overlayDocumentsLoading && overlayDocuments.length > 0 && <Divider/>}
+                            {!overlayDocumentsLoading && overlayDocuments.map((doc) => (
+                                doc.available ? (
+                                    <MenuItem
+                                        key={doc.documentType}
+                                        onClick={() => {
+                                            setPodMenuAnchor(null);
+                                            onDownloadOverlay?.(doc.documentType);
+                                        }}
+                                    >
+                                        <ListItemIcon><DescriptionIcon fontSize="small"/></ListItemIcon>
+                                        <ListItemText>{doc.displayName}</ListItemText>
+                                    </MenuItem>
+                                ) : (
+                                    // Disabled MenuItems don't fire pointer events, so wrap in a span for the
+                                    // tooltip explaining why the document is unavailable for this job.
+                                    <Tooltip key={doc.documentType} title="No template configured for this job" placement="left">
+                                        <span>
+                                            <MenuItem disabled sx={{width: '100%'}}>
+                                                <ListItemIcon><DescriptionIcon fontSize="small"/></ListItemIcon>
+                                                <ListItemText>{doc.displayName}</ListItemText>
+                                            </MenuItem>
+                                        </span>
+                                    </Tooltip>
+                                )
+                            ))}
                         </Menu>
                     </>
                 )}

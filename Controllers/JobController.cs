@@ -752,6 +752,53 @@ public class JobController(
         }
     }
 
+    /// <summary>
+    /// Lists the extra overlay documents (invoices, manifests, etc.) configured for this job's tenant,
+    /// each flagged with whether a template resolves for the job's client. The export menu renders every
+    /// entry, disabling the unavailable ones. Returns an empty list when the overlay feature isn't
+    /// configured or none are set up — never errors, so it can't break the menu.
+    /// </summary>
+    public async Task<IActionResult> OverlayDocuments(int jobId)
+    {
+        var docs = await pdfOverlay.ListJobDocumentsAsync(jobId, HttpContext.RequestAborted);
+        // Project to camelCase keys — the app's Newtonsoft config serialises property names verbatim
+        // (no camel-case resolver), so PascalCase record properties would not match the SPA's contract.
+        return Json((docs ?? []).Select(d => new
+        {
+            documentType = d.DocumentType,
+            displayName = d.DisplayName,
+            available = d.Available,
+        }));
+    }
+
+    /// <summary>
+    /// Renders a single overlay document for a job by document type and returns the PDF. Unlike
+    /// <see cref="PodReport"/>, this does not append S3 delivery photos — those are POD-specific.
+    /// </summary>
+    public async Task<IActionResult> OverlayDocument(int jobId, string documentType)
+    {
+        if (string.IsNullOrWhiteSpace(documentType))
+        {
+            return BadRequest("documentType is required.");
+        }
+
+        try
+        {
+            var pdf = await pdfOverlay.TryRenderJobAsync(jobId, documentType, HttpContext.RequestAborted);
+            if (pdf is null)
+            {
+                return NotFound($"No '{documentType}' template available for job {jobId}.");
+            }
+
+            return File(pdf, "application/pdf", $"{documentType}-{jobId}.pdf");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error generating overlay document {DocType} for job {JobId}", documentType, jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> SendPodReport([FromBody] SendPodReportRequest request)
     {

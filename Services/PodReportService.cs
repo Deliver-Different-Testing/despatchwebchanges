@@ -29,7 +29,7 @@ public sealed class PodReportService(
         EnsureQuestPdfInitialized();
 
         var tenantId = GetTenantId();
-        var branding = await tenantBrandingService.GetBrandingAsync(tenantId);
+        var branding = await GetBrandingOrDefaultAsync(tenantId);
         var job = await jobRepository.GetSingleJobById(jobId)
                   ?? throw new InvalidOperationException($"Job {jobId} not found");
 
@@ -47,7 +47,7 @@ public sealed class PodReportService(
     public async Task<(byte[] Bytes, string FileName)> GeneratePodSpreadsheetAsync(int jobId)
     {
         var tenantId = GetTenantId();
-        var branding = await tenantBrandingService.GetBrandingAsync(tenantId);
+        var branding = await GetBrandingOrDefaultAsync(tenantId);
         var job = await jobRepository.GetSingleJobById(jobId)
                   ?? throw new InvalidOperationException($"Job {jobId} not found");
 
@@ -141,6 +141,25 @@ public sealed class PodReportService(
 
             Settings.License = LicenseType.Community;
             _questPdfInitialized = true;
+        }
+    }
+
+    // Tenant branding (logo/colours) is cosmetic and fetched from the Hub. A 404 means the
+    // tenant simply has no branding configured; a connectivity failure is transient. Neither
+    // should block the customer's actual deliverable — the POD — so fall back to default
+    // branding (PodDocument/PodSpreadsheet substitute their own theme for empty values).
+    private async Task<ReportBranding> GetBrandingOrDefaultAsync(int tenantId)
+    {
+        try
+        {
+            return await tenantBrandingService.GetBrandingAsync(tenantId);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            Log.Warning(ex,
+                "No tenant branding available for tenant {TenantId}; falling back to default POD branding",
+                tenantId);
+            return new ReportBranding { TenantId = tenantId };
         }
     }
 
