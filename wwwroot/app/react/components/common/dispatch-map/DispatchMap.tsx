@@ -34,6 +34,7 @@ export function DispatchMap({
     showAvailableCouriers = false,
     clearListId,
     onEnvelopeUpdate,
+    preferenceScope,
 }: DispatchMapProps) {
     // Refs for managers
     const jobMarkerManagerRef = useRef<JobMarkerManager | null>(null);
@@ -50,7 +51,7 @@ export function DispatchMap({
         toggleCouriersOnly,
         toggleUrgentArmyOnly,
         toggleCouriersLargeView,
-    } = useMapPreferences();
+    } = useMapPreferences(preferenceScope);
 
     // Handle map ready
     const handleMapReady = useCallback(

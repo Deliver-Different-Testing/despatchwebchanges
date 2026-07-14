@@ -2,6 +2,7 @@ import dayjs, {Dayjs} from 'dayjs';
 import {ContactID} from '../../../../contants';
 import {AppPage as LegacyAppPage} from '../../../../enums/app-pages.enum';
 import setDateFilterDefaults from '../../../../functions/setDateFilterDefaults';
+import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
 
 /**
  * Dispatch toolbar filters that scope the job list and driver locations:
@@ -64,6 +65,23 @@ export function loadSelectedViewIds(): number[] {
         if (!Array.isArray(views)) return [];
         // The toolbar stores only the selected views, but tolerate a mixed array.
         return views.filter(v => v && (v.selected === undefined || v.selected)).map(v => v.id);
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Read the full selected page-view objects (with centre coordinates) from the
+ * same localStorage key the toolbar writes. The map uses the coordinates to
+ * recentre/zoom on the selected region (V1 `updateMapForSelectedViews`).
+ */
+export function loadSelectedViews(): DfrntPageViewModel[] {
+    try {
+        const raw = localStorage.getItem(SELECTED_VIEWS_KEY);
+        if (!raw) return [];
+        const views = JSON.parse(raw) as DfrntPageViewModel[];
+        if (!Array.isArray(views)) return [];
+        return views.filter(v => v && (v.selected === undefined || v.selected));
     } catch {
         return [];
     }

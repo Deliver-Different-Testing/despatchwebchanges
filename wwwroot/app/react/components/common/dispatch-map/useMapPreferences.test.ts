@@ -265,6 +265,50 @@ describe('useMapPreferences', () => {
         });
     });
 
+    describe('Scoped preferences', () => {
+        const scope = 'Dispatch';
+        const scopedKey = `${PREFERENCE_KEYS.AUTO_ZOOM}-${scope}-${mockContactId}`;
+        const unscopedKey = `${PREFERENCE_KEYS.AUTO_ZOOM}-${mockContactId}`;
+
+        it('reads the scoped key when a scope is given', () => {
+            mockLocalStorage[scopedKey] = JSON.stringify({display: false});
+
+            const {result} = renderHook(() => useMapPreferences(scope));
+
+            expect(result.current.controlState.autoZoomEnabled).toBe(false);
+        });
+
+        it('falls back to the unscoped key when the scoped one is absent (migration)', () => {
+            mockLocalStorage[unscopedKey] = JSON.stringify({display: false});
+
+            const {result} = renderHook(() => useMapPreferences(scope));
+
+            expect(result.current.controlState.autoZoomEnabled).toBe(false);
+        });
+
+        it('writes to the scoped key', () => {
+            const {result} = renderHook(() => useMapPreferences(scope));
+
+            act(() => {
+                result.current.toggleAutoZoom();
+            });
+
+            expect(window.localStorage.setItem).toHaveBeenCalledWith(
+                scopedKey,
+                JSON.stringify({display: false}),
+            );
+        });
+
+        it('prefers the scoped value over the unscoped one', () => {
+            mockLocalStorage[scopedKey] = JSON.stringify({display: true});
+            mockLocalStorage[unscopedKey] = JSON.stringify({display: false});
+
+            const {result} = renderHook(() => useMapPreferences(scope));
+
+            expect(result.current.controlState.autoZoomEnabled).toBe(true);
+        });
+    });
+
     describe('LocalStorage Error Handling', () => {
         it('handles localStorage.getItem errors gracefully', () => {
             jest.spyOn(window.localStorage, 'getItem').mockImplementation(() => {

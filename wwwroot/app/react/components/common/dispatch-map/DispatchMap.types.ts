@@ -32,6 +32,13 @@ export interface DispatchMapProps {
     clearListId?: number;
     /** Callback when envelope data is updated */
     onEnvelopeUpdate?: (data: ClearListEnvelopeData) => void;
+    /**
+     * Scopes the map control preferences (auto-zoom etc.) in localStorage so a
+     * page's choices don't bleed into other pages that mount the map. When set,
+     * keys become `${key}-${scope}-${ContactID}`; omitted keeps the legacy
+     * unscoped `${key}-${ContactID}`.
+     */
+    preferenceScope?: string | number;
 }
 
 /**

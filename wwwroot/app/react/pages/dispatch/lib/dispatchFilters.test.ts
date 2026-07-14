@@ -5,6 +5,7 @@ import {
     REFRESH_INTERVAL_KEY,
     DRIVER_LOCATION_REFRESH_KEY,
     loadSelectedViewIds,
+    loadSelectedViews,
     loadDateFilter,
     loadDispatchFilters,
     loadRefreshIntervals,
@@ -38,6 +39,27 @@ describe('dispatchFilters', () => {
         it('returns [] on malformed storage', () => {
             localStorage.setItem(SELECTED_VIEWS_KEY, 'not json');
             expect(loadSelectedViewIds()).toEqual([]);
+        });
+    });
+
+    describe('loadSelectedViews', () => {
+        it('returns [] when nothing is stored', () => {
+            expect(loadSelectedViews()).toEqual([]);
+        });
+
+        it('returns full selected view objects including centre coordinates', () => {
+            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([
+                {id: 11, name: 'North', centerLatitude: -36.8, centerLongitude: 174.7, selected: true},
+                {id: 22, name: 'South', centerLatitude: -43.5, centerLongitude: 172.6, selected: false},
+            ]));
+            expect(loadSelectedViews()).toEqual([
+                {id: 11, name: 'North', centerLatitude: -36.8, centerLongitude: 174.7, selected: true},
+            ]);
+        });
+
+        it('returns [] on malformed storage', () => {
+            localStorage.setItem(SELECTED_VIEWS_KEY, 'not json');
+            expect(loadSelectedViews()).toEqual([]);
         });
     });
 
