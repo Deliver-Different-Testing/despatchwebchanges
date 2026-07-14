@@ -23,12 +23,33 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
     ),
 }));
 
+const dispatchMapProps: {
+    showAvailableCouriers?: boolean;
+    jobs?: {jobId: number}[];
+    mapCenter?: {lat: number; lng: number};
+    mapZoom?: number;
+    preferenceScope?: string | number;
+} = {};
 jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
-    DispatchMap: ({onMarkerClick}: {onMarkerClick?: (item: {jobId: number}) => void}) => (
-        <div data-testid="mock-dispatch-map">
-            <button onClick={() => onMarkerClick?.({jobId: 55})}>click-marker</button>
-        </div>
-    ),
+    DispatchMap: (props: {
+        onMarkerClick?: (item: {jobId: number}) => void;
+        showAvailableCouriers?: boolean;
+        jobs?: {jobId: number}[];
+        mapCenter?: {lat: number; lng: number};
+        mapZoom?: number;
+        preferenceScope?: string | number;
+    }) => {
+        dispatchMapProps.showAvailableCouriers = props.showAvailableCouriers;
+        dispatchMapProps.jobs = props.jobs;
+        dispatchMapProps.mapCenter = props.mapCenter;
+        dispatchMapProps.mapZoom = props.mapZoom;
+        dispatchMapProps.preferenceScope = props.preferenceScope;
+        return (
+            <div data-testid="mock-dispatch-map">
+                <button onClick={() => props.onMarkerClick?.({jobId: 55})}>click-marker</button>
+            </div>
+        );
+    },
 }));
 
 jest.mock('../../services/dispatchExecutorApi', () => ({
@@ -73,6 +94,7 @@ jest.mock('../../components/dialogs/dispatch-dialog', () => ({
 }));
 
 import {DispatchPage} from './DispatchPage';
+import {SELECTED_VIEWS_KEY} from './lib/dispatchFilters';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof DispatchPage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -146,6 +168,38 @@ describe('DispatchPage', () => {
 
             // Selecting a job surfaces the detail action menu in the Job Detail header.
             expect(await screen.findByRole('button', {name: 'Job actions'})).toBeInTheDocument();
+        });
+
+        it('always shows available couriers on the map (parity with the AngularJS page)', () => {
+            renderPage();
+            expect(dispatchMapProps.showAvailableCouriers).toBe(true);
+        });
+
+        it('defaults to the tenant overview (zoom 4) and scopes map preferences when no view is selected', () => {
+            renderPage();
+            expect(dispatchMapProps.mapZoom).toBe(4);
+            expect(dispatchMapProps.mapCenter).toEqual(expect.objectContaining({lat: expect.any(Number), lng: expect.any(Number)}));
+            expect(dispatchMapProps.preferenceScope).toBeDefined();
+        });
+
+        it('recentres the map on a single selected despatch view at zoom 7', () => {
+            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([
+                {id: 7, name: 'Auckland', centerLatitude: -36.85, centerLongitude: 174.76, selected: true},
+            ]));
+            renderPage();
+            expect(dispatchMapProps.mapZoom).toBe(7);
+            expect(dispatchMapProps.mapCenter).toEqual({lat: -36.85, lng: 174.76});
+        });
+
+        it('narrows the map to just the selected job when it has no courier', async () => {
+            const user = userEvent.setup();
+            renderPage();
+
+            await user.click(screen.getByRole('button', {name: 'load-jobs'}));
+            await user.click(screen.getByRole('button', {name: 'select-sample-job'}));
+
+            await screen.findByRole('button', {name: 'Job actions'});
+            expect(dispatchMapProps.jobs).toEqual([{jobId: 55, jobNo: 'JOB-55', pickupAddress: undefined, deliveryAddress: undefined, assignedCourier: undefined, statusId: undefined}]);
         });
     });
 

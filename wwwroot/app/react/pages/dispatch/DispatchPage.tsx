@@ -1,4 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
@@ -11,7 +13,7 @@ import {AppPage} from '../../interfaces/dispatchJob';
 import type {DispatchJob} from '../../interfaces/dispatchJob';
 import {IDispatchMapItem, ISuggestion} from '../../../interfaces/job.interface';
 import type {ShowToastFn} from '../../services/toastService';
-import {fetchDispatchJobs, fetchClearListJobs} from '../../services/jobSearchApi';
+import {fetchDispatchJobs, fetchClearListJobs, fetchCurrentWorkJobs} from '../../services/jobSearchApi';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {
     allocateJobs,
@@ -35,10 +37,14 @@ import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/Save
 import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
 import DispatchBoxes from '../../../components/home/enums/DispatchBoxes';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './lib/boxDefinitions';
+import {computeMapJobs, selectedCourierId} from './lib/mapJobs';
+import {computeMapView} from './lib/mapView';
+import {getDefaultMapCenter} from '../../components/common/here-map/HereMap.types';
 import {executeAddStopFlow} from './lib/addStopFlow';
 import {
     DispatchFilters,
     loadDispatchFilters,
+    loadSelectedViews,
     filtersKey,
     DispatchRefreshIntervals,
     loadRefreshIntervals,
@@ -233,6 +239,32 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         assignedCourier: job.assignedCourier,
         statusId: job.statusId,
     }), []);
+
+    // When the selected job is already dispatched, the map shows that courier's
+    // whole route (V1 selectJob → getCurrentJobs). Reuses the current-work query
+    // key so it shares cache with the Current Work box.
+    const mapCourierId = selectedCourierId(currentJob);
+    const mapCourierParams = useMemo(() => ({
+        courierId: mapCourierId,
+        startDate: dayjs().startOf('day'),
+        endDate: dayjs().endOf('day'),
+        page: 0,
+        pageSize: 50,
+    }), [mapCourierId]);
+    const {data: mapCourierWork} = useQuery({
+        queryKey: queryKeys.dispatch.currentWork(mapCourierParams),
+        queryFn: ({signal}) => fetchCurrentWorkJobs(mapCourierParams, {signal}),
+        enabled: !!mapCourierId,
+    });
+
+    // Map centre/zoom follows the selected despatch view(s) (V1
+    // updateMapForSelectedViews); the toolbar writes the full view objects to
+    // localStorage before pushing new ids, so re-reading on an id change is fresh.
+    const mapView = useMemo(
+        () => computeMapView(loadSelectedViews(), getDefaultMapCenter()),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- re-derive when the view selection changes
+        [filters.despatchViewIds],
+    );
 
     // ── Save / delete layout dialogs, driven imperatively by the toolbar ──
     const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -517,13 +549,15 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 );
 
             case DispatchBoxes.Map: {
-                const pickup = currentJob?.pickupAddress;
-                const mapCenter = pickup?.latitude && pickup?.longitude
-                    ? {lat: pickup.latitude, lng: pickup.longitude}
-                    : undefined;
-                // Show every loaded job as a marker (V1 mapJobList); the selected
-                // job is highlighted. Auto-zoom-to-markers is handled by DispatchMap.
-                const items = mapJobs.map(toMapItem);
+                // Match V1 mapJobList: all loaded jobs when nothing is selected,
+                // just the selected job when it has no courier, or the assigned
+                // courier's undispatched route when it does. The selected job is
+                // highlighted; auto-zoom-to-markers is handled by DispatchMap.
+                const items = computeMapJobs({
+                    currentJob,
+                    allJobs: mapJobs,
+                    courierJobs: mapCourierWork?.jobs,
+                }).map(toMapItem);
                 const currentItem = currentJob ? toMapItem(currentJob) : undefined;
                 if (currentItem && !items.some(i => i.jobId === currentItem.jobId)) {
                     items.push(currentItem);
@@ -533,11 +567,12 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         <DispatchMap
                             jobs={items}
                             currentJob={currentItem}
-                            mapCenter={mapCenter}
-                            mapZoom={12}
+                            mapCenter={mapView.center}
+                            mapZoom={mapView.zoom}
                             onMarkerClick={handleMarkerClick}
                             clearListId={clearListId}
-                            showAvailableCouriers={!!clearListId}
+                            showAvailableCouriers
+                            preferenceScope={LegacyAppPage.Dispatch}
                         />
                     </Box>
                 );
@@ -588,7 +623,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             default:
                 return null;
         }
-    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, refreshIntervals, mapJobs, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode]);
+    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, refreshIntervals, mapJobs, mapCourierWork, mapView, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode]);
 
     const subtitleFor = useCallback((boxName: string) => {
         if (boxName === DispatchBoxes.JobDetail) {
