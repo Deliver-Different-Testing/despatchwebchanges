@@ -7,6 +7,7 @@ using DespatchWeb.Services;
 using ImageMagick;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 
@@ -138,6 +139,38 @@ public class PodReportServiceIntegrationTests
 
         Assert.NotEmpty(bytes);
         Assert.StartsWith("POD-", fileName);
+    }
+
+    [Fact]
+    public async Task GeneratePodReportAsync_BrandingFetch404_StillReturnsPdf()
+    {
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Response status code does not indicate success: 404 (Not Found)."));
+        _jobRepositoryMock.GetSingleJobById(1).Returns(JobWithItems(1));
+
+        var service = CreateService();
+
+        var (bytes, fileName) = await service.GeneratePodReportAsync(1);
+
+        Assert.NotEmpty(bytes);
+        Assert.StartsWith("POD-", fileName);
+    }
+
+    [Fact]
+    public async Task GeneratePodSpreadsheetAsync_BrandingFetch404_StillReturnsXlsx()
+    {
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Response status code does not indicate success: 404 (Not Found)."));
+        _jobRepositoryMock.GetSingleJobById(1).Returns(JobWithItems(1));
+
+        var service = CreateService();
+
+        var (bytes, fileName) = await service.GeneratePodSpreadsheetAsync(1);
+
+        Assert.NotEmpty(bytes);
+        Assert.EndsWith(".xlsx", fileName);
     }
 
     [Fact]

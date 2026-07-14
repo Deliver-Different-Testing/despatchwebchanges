@@ -150,6 +150,57 @@ describe('JobDetailHeader', () => {
         expect(onPodReport).toHaveBeenCalledTimes(1);
     });
 
+    describe('overlay export documents', () => {
+        const doneJob = () => createMockJob({done: true, preBook: false});
+
+        it('calls onOverlayMenuOpen when the POD menu is opened', () => {
+            const onOverlayMenuOpen = jest.fn();
+            renderWithTheme(
+                <JobDetailHeader {...createDefaultProps({job: doneJob(), onOverlayMenuOpen})} />
+            );
+            fireEvent.click(screen.getByLabelText('POD Report'));
+            expect(onOverlayMenuOpen).toHaveBeenCalledTimes(1);
+        });
+
+        it('shows a loading item while documents are being fetched', () => {
+            renderWithTheme(
+                <JobDetailHeader
+                    {...createDefaultProps({job: doneJob(), overlayDocumentsLoading: true})}
+                />
+            );
+            fireEvent.click(screen.getByLabelText('POD Report'));
+            expect(screen.getByText('Loading documents…')).toBeInTheDocument();
+        });
+
+        it('renders an available document and triggers download on click', () => {
+            const onDownloadOverlay = jest.fn();
+            const overlayDocuments = [{documentType: 'Invoice', displayName: 'Customer Invoice', available: true}];
+            renderWithTheme(
+                <JobDetailHeader
+                    {...createDefaultProps({job: doneJob(), overlayDocuments, onDownloadOverlay})}
+                />
+            );
+            fireEvent.click(screen.getByLabelText('POD Report'));
+            fireEvent.click(screen.getByText('Customer Invoice'));
+            expect(onDownloadOverlay).toHaveBeenCalledWith('Invoice');
+        });
+
+        it('renders an unavailable document disabled and does not trigger download', () => {
+            const onDownloadOverlay = jest.fn();
+            const overlayDocuments = [{documentType: 'Manifest', displayName: 'Delivery Manifest', available: false}];
+            renderWithTheme(
+                <JobDetailHeader
+                    {...createDefaultProps({job: doneJob(), overlayDocuments, onDownloadOverlay})}
+                />
+            );
+            fireEvent.click(screen.getByLabelText('POD Report'));
+            const item = screen.getByText('Delivery Manifest').closest('li');
+            expect(item).toHaveClass('Mui-disabled');
+            fireEvent.click(screen.getByText('Delivery Manifest'));
+            expect(onDownloadOverlay).not.toHaveBeenCalled();
+        });
+    });
+
     describe('dense mode', () => {
         it('renders job number and status in dense mode', () => {
             renderWithTheme(<JobDetailHeader {...createDefaultProps({dense: true, viewDensityLabel: 'Dense'})} />);

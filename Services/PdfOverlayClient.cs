@@ -70,4 +70,51 @@ public sealed class PdfOverlayClient(
             return null;
         }
     }
+
+    public async Task<IReadOnlyList<OverlayDocument>?> ListJobDocumentsAsync(
+        int jobId, CancellationToken ct = default)
+    {
+        var baseUrl = configuration["PdfOverlayBaseUrl"];
+        var apiKey = configuration["PdfOverlayRenderApiKey"];
+
+        if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            return null;
+        }
+
+        var tenantId = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(c => c.Type == "CurrentTenantID")?.Value;
+        if (string.IsNullOrWhiteSpace(tenantId))
+        {
+            return null;
+        }
+
+        var url = $"{baseUrl.TrimEnd('/')}/api/pdf-overlay/list-job";
+        var payload = JsonSerializer.Serialize(new { tenantId, jobId });
+
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, url);
+            req.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+            req.Headers.Add("X-Api-Key", apiKey);
+
+            using var res = await httpClient.SendAsync(req, ct);
+            if (!res.IsSuccessStatusCode)
+            {
+                Log.Warning("PDF Overlay list-job for job {JobId} returned {Status}",
+                    jobId, (int)res.StatusCode);
+                return null;
+            }
+
+            var json = await res.Content.ReadAsStringAsync(ct);
+            var docs = JsonSerializer.Deserialize<List<OverlayDocument>>(
+                json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            return docs ?? [];
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "PDF Overlay list-job call failed for job {JobId}", jobId);
+            return null;
+        }
+    }
 }

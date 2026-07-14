@@ -462,6 +462,10 @@ export function JobDetails({config}: JobDetailsProps) {
                     onSendPodEmail={actions.handleSendPodEmail}
                     onLockToggle={actions.handleLockToggle}
                     onRouteChange={actions.handleRouteChange}
+                    overlayDocuments={actions.overlayDocuments}
+                    overlayDocumentsLoading={actions.overlayDocumentsLoading}
+                    onOverlayMenuOpen={actions.fetchOverlayDocuments}
+                    onDownloadOverlay={actions.handleDownloadOverlay}
                 />
 
                 {/* Partner-job edit banner. Rated fields (qty, speed, dates, DG, etc.)

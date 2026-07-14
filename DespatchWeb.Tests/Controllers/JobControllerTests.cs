@@ -111,6 +111,94 @@ public class JobControllerTests : IDisposable
         return controller;
     }
 
+    /// <summary>A controller with a real HttpContext so actions reading HttpContext.RequestAborted work.</summary>
+    private JobController CreateControllerWithHttpContext()
+    {
+        var controller = CreateController();
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        return controller;
+    }
+
+    [Fact]
+    public async Task OverlayDocuments_ReturnsDocumentsFromClientAsJson()
+    {
+        var docs = new List<OverlayDocument>
+        {
+            new("Invoice", "Customer Invoice", true),
+            new("Manifest", "Delivery Manifest", false),
+        };
+        _pdfOverlayClientMock.ListJobDocumentsAsync(42, Arg.Any<CancellationToken>()).Returns(docs);
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocuments(42);
+
+        // Assert the serialised contract, not the CLR object — the SPA reads camelCase keys and the
+        // app's Newtonsoft config emits property names verbatim, so casing is the thing under test.
+        var json = Assert.IsType<JsonResult>(result);
+        var serialised = Newtonsoft.Json.JsonConvert.SerializeObject(json.Value);
+        Assert.Contains("\"documentType\":\"Invoice\"", serialised);
+        Assert.Contains("\"displayName\":\"Customer Invoice\"", serialised);
+        Assert.Contains("\"available\":true", serialised);
+        Assert.Contains("\"documentType\":\"Manifest\"", serialised);
+        Assert.Contains("\"available\":false", serialised);
+    }
+
+    [Fact]
+    public async Task OverlayDocuments_NullFromClient_ReturnsEmptyJson()
+    {
+        _pdfOverlayClientMock.ListJobDocumentsAsync(42, Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<OverlayDocument>?)null);
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocuments(42);
+
+        var json = Assert.IsType<JsonResult>(result);
+        var serialised = Newtonsoft.Json.JsonConvert.SerializeObject(json.Value);
+        Assert.Equal("[]", serialised);
+    }
+
+    [Fact]
+    public async Task OverlayDocument_TemplateExists_ReturnsPdfFile()
+    {
+        var pdf = new byte[] { 1, 2, 3 };
+        _pdfOverlayClientMock.TryRenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>()).Returns(pdf);
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocument(42, "Invoice");
+
+        var file = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("application/pdf", file.ContentType);
+        Assert.Equal("Invoice-42.pdf", file.FileDownloadName);
+        Assert.Equal(pdf, file.FileContents);
+    }
+
+    [Fact]
+    public async Task OverlayDocument_NoTemplate_ReturnsNotFound()
+    {
+        _pdfOverlayClientMock.TryRenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>())
+            .Returns((byte[]?)null);
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocument(42, "Invoice");
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task OverlayDocument_BlankDocumentType_ReturnsBadRequest()
+    {
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocument(42, "  ");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _pdfOverlayClientMock.DidNotReceiveWithAnyArgs().TryRenderJobAsync(default, default!, default);
+    }
+
     [Fact]
     public async Task Index_ValidRequest_ReturnsJobList()
     {

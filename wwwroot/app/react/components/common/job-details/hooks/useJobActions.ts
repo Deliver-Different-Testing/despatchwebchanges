@@ -27,8 +27,11 @@ import {
     autocompleteSearch,
     getPodReportUrl,
     getPodSpreadsheetUrl,
+    getOverlayDocumentUrl,
+    getJobOverlayDocuments,
     saveRecurringFlight,
 } from '../../../../services/jobDetailApi';
+import type {OverlayDocument} from '../../../../services/jobDetailApi';
 import {
     sendToPartner,
 } from '../../../../services/jobListApi';
@@ -983,6 +986,32 @@ export function useJobActions({
         window.open(getPodSpreadsheetUrl(j.id), '_blank');
     }, []);
 
+    // Extra overlay documents (invoices, manifests, etc.) offered in the export menu. Fetched lazily the
+    // first time the menu opens for a job — avoids an HTTP call on every job-detail open.
+    const [overlayDocuments, setOverlayDocuments] = useState<OverlayDocument[]>([]);
+    const [overlayDocumentsLoading, setOverlayDocumentsLoading] = useState(false);
+    const overlayFetchedForJob = useRef<number | null>(null);
+
+    const fetchOverlayDocuments = useCallback(async () => {
+        const j = jobRef.current;
+        if (!j || overlayFetchedForJob.current === j.id) return;
+        overlayFetchedForJob.current = j.id;
+        setOverlayDocumentsLoading(true);
+        try {
+            setOverlayDocuments(await getJobOverlayDocuments(j.id));
+        } catch {
+            setOverlayDocuments([]);
+        } finally {
+            setOverlayDocumentsLoading(false);
+        }
+    }, []);
+
+    const handleDownloadOverlay = useCallback((documentType: string) => {
+        const j = jobRef.current;
+        if (!j) return;
+        window.open(getOverlayDocumentUrl(j.id, documentType), '_blank');
+    }, []);
+
     const handleSendPodEmail = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
@@ -1266,6 +1295,12 @@ export function useJobActions({
         handlePodReport,
         handlePodSpreadsheet,
         handleSendPodEmail,
+
+        // Overlay export documents
+        overlayDocuments,
+        overlayDocumentsLoading,
+        fetchOverlayDocuments,
+        handleDownloadOverlay,
 
         // Recurring
         handleDaysOfWeekChange,
