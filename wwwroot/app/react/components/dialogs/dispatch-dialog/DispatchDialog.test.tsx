@@ -8,10 +8,10 @@
 
 import React from 'react';
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {DispatchDialog} from './DispatchDialog';
 import type {DispatchDialogProps, DispatchMode} from './types';
 import {renderWithTheme} from '../../../__testUtils__';
+import {setupUser} from '../../../__testUtils__/setupUser';
 import type {PartnerRateForJobResponse, EventGroupItem} from '../../../services/jobListApi';
 import type {ISuggestion} from '../../../../interfaces/job.interface';
 
@@ -208,7 +208,7 @@ describe('DispatchDialog', () => {
 
         for (const {label, mode, tooltip} of cases) {
             it(`disables DFRNT Partner with the right tooltip for ${label}`, async () => {
-                const user = userEvent.setup();
+                const user = setupUser();
                 renderWithTheme(<DispatchDialog {...makeProps({mode})} />);
                 const dfrntRadio = screen.getByRole('radio', {name: /DFRNT Partner/});
                 expect(dfrntRadio).toBeDisabled();
@@ -335,19 +335,18 @@ describe('DispatchDialog', () => {
         });
 
         it('calls onSendToPartner with partner + rate when DFRNT Partner Confirm is clicked', async () => {
-            const user = userEvent.setup();
             const onSendToPartner = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<DispatchDialog {...makeProps({onSendToPartner})} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
 
-            // Wait for the partner dropdown to load.
-            const select = await screen.findByLabelText('Partner');
-
-            // Open the Select (MUI Select requires click on the combobox wrapper) and choose PartnerCo.
-            await user.click(select);
+            // The Partner Select stays disabled until getPartnerOptions resolves;
+            // wait for it to enable before opening (MUI Select opens on mousedown).
+            const select = await screen.findByRole('combobox', {name: 'Partner'});
+            await waitFor(() => expect(select).not.toHaveAttribute('aria-disabled', 'true'));
+            fireEvent.mouseDown(select);
             const partnerOption = await screen.findByRole('option', {name: 'PartnerCo'});
-            await user.click(partnerOption);
+            fireEvent.click(partnerOption);
 
             // Wait for the rate panel to load + pre-fill the Agreed Rate input.
             const rateInput = await screen.findByLabelText(/Agreed Rate/) as HTMLInputElement;

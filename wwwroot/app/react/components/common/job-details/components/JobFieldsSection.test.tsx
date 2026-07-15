@@ -117,6 +117,49 @@ describe('JobFieldsSection', () => {
             const quantityRow = screen.getByText('Quantity').parentElement;
             expect(quantityRow).toHaveTextContent('—');
         });
+
+        it('appends pallet cube total (cubic × quantity) in m³ for non-US', () => {
+            const job = createMockJob({
+                palletInfo: [{id: 1, quantity: 4, weight: 5, length: 1, depth: 1, height: 1, cubic: 0.5, notes: '', itemId: 1}],
+                parcelDimensions: [],
+                weight: 20,
+            });
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
+            expect(screen.getByText('4 parcels · 20 kg · 2.000 m³')).toBeInTheDocument();
+        });
+
+        it('appends parcel cube total (plain sum) when no pallets', () => {
+            const job = createMockJob({
+                palletInfo: [],
+                parcelDimensions: [
+                    {itemName: '', dimensions: '', cubic: 0.12} as any,
+                    {itemName: '', dimensions: '', cubic: 0.24} as any,
+                ],
+                weight: 12,
+            });
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
+            expect(screen.getByText('2 parcels · 12 kg · 0.360 m³')).toBeInTheDocument();
+        });
+
+        it('uses ft³ for the cube unit for US customers', () => {
+            const job = createMockJob({
+                palletInfo: [{id: 1, quantity: 2, weight: 5, length: 1, depth: 1, height: 1, cubic: 1.5, notes: '', itemId: 1}],
+                parcelDimensions: [],
+                weight: 20,
+            });
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job, isUsCustomer: true})} />);
+            expect(screen.getByText('2 parcels · 20 lbs · 3.000 ft³')).toBeInTheDocument();
+        });
+
+        it('omits the cube part when the total volume is 0', () => {
+            const job = createMockJob({
+                palletInfo: [{id: 1, quantity: 3, weight: 5, length: 1, depth: 1, height: 1, cubic: 0, notes: '', itemId: 1}],
+                parcelDimensions: [],
+                weight: 15,
+            });
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
+            expect(screen.getByText('3 parcels · 15 kg')).toBeInTheDocument();
+        });
     });
 
     describe('Job Details fields', () => {

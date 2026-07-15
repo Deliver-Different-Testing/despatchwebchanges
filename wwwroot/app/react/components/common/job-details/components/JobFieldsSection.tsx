@@ -140,12 +140,20 @@ export const JobFieldsSection = React.memo(({
                                 <EditableField
                                     icon="straighten" label="Quantity"
                                     value={(() => {
-                                        const palletQty = job.palletInfo?.reduce((sum, p) => sum + (p.quantity || 0), 0) ?? 0;
+                                        const pallets = job.palletInfo ?? [];
+                                        const palletQty = pallets.reduce((sum, p) => sum + (p.quantity || 0), 0);
                                         const count = palletQty || job.parcelDimensions?.length || 0;
                                         const weight = job.weight;
+                                        // Cube total from the same source the count prefers (pallets first,
+                                        // then parcels). Pallet cubic is per-unit (× quantity); parcel cubic
+                                        // is already stored per-barcode, so a plain sum reconstructs the total.
+                                        const cube = palletQty
+                                            ? pallets.reduce((sum, p) => sum + (p.cubic || 0) * (p.quantity || 1), 0)
+                                            : (job.parcelDimensions ?? []).reduce((sum, p) => sum + (p.cubic || 0), 0);
                                         const parts: string[] = [];
                                         if (count) parts.push(`${count} parcel${count !== 1 ? 's' : ''}`);
                                         if (weight != null) parts.push(`${weight} ${isUsCustomer ? 'lbs' : 'kg'}`);
+                                        if (cube > 0) parts.push(`${cube.toFixed(3)} ${isUsCustomer ? 'ft³' : 'm³'}`);
                                         return parts.length ? parts.join(' · ') : '—';
                                     })()}
                                     onClick={onEditDimensions} disabled={locked}

@@ -4,12 +4,15 @@
 
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../../__testUtils__/setupUser';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {FlightInformation} from './FlightInformation';
 import {createMockFlight} from '../__testUtils__/mockJob';
 import dayjs from 'dayjs';
 import nationwideApi from '../../../../services/nationwideApi';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 jest.mock('../../../../services/nationwideApi', () => ({
     __esModule: true,

@@ -1443,6 +1443,85 @@ public class CourierRepositoryTests : IAsyncDisposable
         Assert.Empty(result);
     }
 
+    [Fact]
+    public async Task GetAvailableCouriersAsync_TotalJobs_ExcludesDoneVoidAndFutureJobs()
+    {
+        // Arrange - clock is 2024-01-15. The driver-list job count must match the shared
+        // "current work" definition: only undelivered, non-void, non-future jobs count.
+        // Void-status (flag not set) and future-dated jobs must be excluded.
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                OverviewJob(1, new DateTime(2024, 1, 15)), // today, undelivered -> counts
+                OverviewJob(2, new DateTime(2024, 1, 14)), // overdue, undelivered -> counts
+                OverviewJob(3, new DateTime(2024, 1, 15), done: true), // done -> excluded
+                OverviewJob(4, new DateTime(2024, 1, 15), isVoid: true), // void flag -> excluded
+                OverviewJob(5, new DateTime(2024, 1, 15), status: (int)JobStatus.Void), // void status -> excluded
+                OverviewJob(6, new DateTime(2024, 1, 16)) // future -> excluded
+            );
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(2, driver.TotalJobs);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_UsTenant_TotalJobs_ExcludesDoneVoidAndFutureJobs()
+    {
+        // Arrange - the US tenant uses a separate query path; its driver-list count must
+        // apply the same "current work" exclusions (clock is 2024-01-15).
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                OverviewJob(1, new DateTime(2024, 1, 15)), // today, undelivered -> counts
+                OverviewJob(2, new DateTime(2024, 1, 14)), // overdue, undelivered -> counts
+                OverviewJob(3, new DateTime(2024, 1, 15), done: true), // done -> excluded
+                OverviewJob(4, new DateTime(2024, 1, 15), isVoid: true), // void flag -> excluded
+                OverviewJob(5, new DateTime(2024, 1, 15), status: (int)JobStatus.Void), // void status -> excluded
+                OverviewJob(6, new DateTime(2024, 1, 16)) // future -> excluded
+            );
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(2, driver.TotalJobs);
+    }
+
     /// <summary>
     /// Seeds one active and one inactive courier, both with a valid (future) driver's
     /// license, for the compliance-list tests. Clock is fixed at 2024-01-15.

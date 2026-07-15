@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -132,7 +132,7 @@ describe('RecurringDeliveryJourney', () => {
     });
 
     it('opens confirm dialog then calls openJobInSearch when parent chip clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithProviders(<RecurringDeliveryJourney bookingId={108} />);
 
         const parentChip = await screen.findByRole('button', {name: 'KT413VANS'});
@@ -153,7 +153,7 @@ describe('RecurringDeliveryJourney', () => {
     });
 
     it('cancels without calling openJobInSearch', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithProviders(<RecurringDeliveryJourney bookingId={108} />);
 
         const childChip = await screen.findByRole('button', {name: 'KT412VANSA'});

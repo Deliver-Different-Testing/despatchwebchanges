@@ -4,9 +4,9 @@
 
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
-import {renderWithProviders} from '../../__testUtils__';
+import { renderWithProviders } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
 
 jest.mock('../../services/jobChangeRequestApi', () => ({
@@ -96,7 +96,7 @@ describe('PartnerApprovalsInbox', () => {
     });
 
     it('approve calls the API and refetches', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockApi.pendingForApproval
             .mockResolvedValueOnce([makeItem()])
             .mockResolvedValueOnce([]);
@@ -113,7 +113,7 @@ describe('PartnerApprovalsInbox', () => {
     });
 
     it('reject opens the inline reason input and submits with the reason', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockApi.pendingForApproval
             .mockResolvedValueOnce([makeItem()])
             .mockResolvedValueOnce([]);
@@ -139,7 +139,7 @@ describe('PartnerApprovalsInbox', () => {
     });
 
     it('clicking the job number invokes onOpenJob', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onOpenJob = jest.fn();
         mockApi.pendingForApproval.mockResolvedValueOnce([makeItem()]);
 

@@ -1,6 +1,6 @@
 import React from 'react';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
@@ -143,7 +143,7 @@ describe('DispatchPage', () => {
 
     describe('beta banner', () => {
         it('can be dismissed and the dismissal persists', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const {unmount} = renderPage();
             expect(screen.getByText(/rebuilt Dispatch page/i)).toBeInTheDocument();
 
@@ -159,7 +159,7 @@ describe('DispatchPage', () => {
 
     describe('map', () => {
         it('selects a job when its map marker is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderPage();
 
             // Marker click resolves against the loaded job set.
@@ -192,7 +192,7 @@ describe('DispatchPage', () => {
         });
 
         it('narrows the map to just the selected job when it has no courier', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderPage();
 
             await user.click(screen.getByRole('button', {name: 'load-jobs'}));
@@ -210,7 +210,7 @@ describe('DispatchPage', () => {
         });
 
         it('dispatches the selected job to a courier via the dialog', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderPage();
 
             await user.click(screen.getByRole('button', {name: 'select-sample-job'}));

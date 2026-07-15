@@ -249,9 +249,13 @@ export class CourierMarkerManager {
             .replace(/"/g, '&quot;');
 
         return `<svg xmlns="http://www.w3.org/2000/svg" width="108" height="42" viewBox="0 0 108 42">
+            <defs>
+                <filter id="pillShadow" x="-20%" y="-40%" width="140%" height="200%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.24"/>
+                </filter>
+            </defs>
             <line x1="14" y1="42" x2="14" y2="29" stroke="${colors.border}" stroke-width="2.5" stroke-linecap="round"/>
-            <rect x="1" y="2" width="104" height="26" rx="13" fill="rgba(0,0,0,0.1)"/>
-            <rect x="0" y="0" width="104" height="26" rx="13" fill="${colors.bg}"/>
+            <rect x="0" y="0" width="104" height="26" rx="13" fill="${colors.bg}" filter="url(#pillShadow)"/>
             <rect x="0" y="0" width="104" height="26" rx="13" fill="none" stroke="${colors.border}" stroke-width="0.75" opacity="0.5"/>
             <text x="52" y="17" font-family="Roboto,Arial,sans-serif" font-size="11" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapedName}</text>
         </svg>`;

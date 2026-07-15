@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import { render, screen, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import { SelectDialog } from './SelectDialog';
 import { SelectDialogProps, SelectDialogItem } from './types';
@@ -214,7 +214,7 @@ describe('SelectDialog', () => {
 
     describe('Loading State', () => {
         it('shows loading state during submit', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn(() => new Promise<void>(() => {})); // Never resolves
             const props = createDefaultProps({ initialValue: 1, onSubmit });
             renderWithProviders(props);

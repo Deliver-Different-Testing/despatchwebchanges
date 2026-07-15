@@ -292,20 +292,26 @@ export class DispatchCourierMarkerManager {
     }
 
     /**
-     * Create large flag SVG (simplified blue flag)
+     * Create large flag SVG (Material Design 3 pennant on a rounded pin stem)
      */
     private createLargeFlagSvg(code: string): string {
         const escapedCode = this.escapeHtml(code);
         return `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="44" viewBox="0 0 80 44">
-            <rect x="0" y="0" width="8" height="44" fill="#1565C0"/>
-            <path d="M8,4 L76,4 L68,16 L76,28 L8,28 Z" fill="${MARKER_COLORS.COURIER_FLAG_LARGE}" stroke="#FFFFFF" stroke-width="2"/>
-            <text x="38" y="20" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">${escapedCode}</text>
+            <defs>
+                <filter id="largeFlagShadow" x="-20%" y="-30%" width="140%" height="170%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.24"/>
+                </filter>
+            </defs>
+            <line x1="4" y1="4" x2="4" y2="42" stroke="#0D47A1" stroke-width="3" stroke-linecap="round"/>
+            <path d="M8,4 L76,4 L68,16 L76,28 L8,28 Z" fill="${MARKER_COLORS.COURIER_FLAG_LARGE}" stroke="#FFFFFF" stroke-width="2" filter="url(#largeFlagShadow)"/>
+            <text x="38" y="20" font-family="Roboto, Arial, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">${escapedCode}</text>
         </svg>`;
     }
 
     /**
-     * Create flag SVG with colored background based on status
-     * Improved sizing for better readability: 50px min width, 22px height flag, 12px font
+     * Create flag SVG with a Material Design 3 tonal label on a rounded pin stem.
+     * Fully-rounded (MD3 full corner) chip, Roboto type, soft tonal elevation.
+     * Sizing preserved: 50px min width, 22px height flag, 12px font.
      */
     private createFlagSvg(displayText: string, courier: IAvailableCourierPosition): string {
         const colors = this.getLabelColors(courier);
@@ -315,13 +321,13 @@ export class DispatchCourierMarkerManager {
 
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="36" viewBox="0 0 ${totalWidth} 36">
             <defs>
-                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.2"/>
+                <filter id="flagShadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.24"/>
                 </filter>
             </defs>
-            <rect x="0" y="0" width="4" height="36" fill="#424242"/>
-            <rect x="4" y="2" width="${textWidth}" height="22" rx="3" ry="3" fill="${colors.bg}" stroke="${colors.border}" stroke-width="1.5" filter="url(#shadow)"/>
-            <text x="${4 + textWidth / 2}" y="17" font-family="Arial,sans-serif" font-size="12" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapedText}</text>
+            <line x1="4" y1="24" x2="4" y2="35" stroke="${colors.border}" stroke-width="2.5" stroke-linecap="round"/>
+            <rect x="4" y="2" width="${textWidth}" height="22" rx="11" ry="11" fill="${colors.bg}" stroke="${colors.border}" stroke-width="1" filter="url(#flagShadow)"/>
+            <text x="${4 + textWidth / 2}" y="17" font-family="Roboto, Arial, sans-serif" font-size="12" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapedText}</text>
         </svg>`;
     }
 

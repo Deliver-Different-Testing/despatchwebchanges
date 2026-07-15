@@ -1847,9 +1847,8 @@ public class CourierRepository(
 
             var jobData = await Context.TucJobs
                 .Where(j => j.UcjbCourierId.HasValue &&
-                            courierIds.Contains(j.UcjbCourierId.Value) &&
-                            !j.UcjbVoid &&
-                            !j.UcjbJobDone)
+                            courierIds.Contains(j.UcjbCourierId.Value))
+                .Where(BaseJobRepository.CurrentWorkJob(currentDate))
                 .Select(j => new
                 {
                     CourierId = j.UcjbCourierId.Value,
@@ -1958,9 +1957,8 @@ public class CourierRepository(
             // Single query for all job data
             var jobData = await Context.TucJobs
                 .Where(j => j.UcjbCourierId.HasValue &&
-                            courierIds.Contains(j.UcjbCourierId.Value) &&
-                            !j.UcjbVoid &&
-                            !j.UcjbJobDone)
+                            courierIds.Contains(j.UcjbCourierId.Value))
+                .Where(BaseJobRepository.CurrentWorkJob(now))
                 .Select(j => new
                 {
                     CourierId = j.UcjbCourierId.Value,

@@ -845,6 +845,44 @@ describe('DispatchCourierMarkerManager', () => {
         });
     });
 
+    describe('Material Design styling', () => {
+        it('renders the normal flag as a fully-rounded Roboto chip', () => {
+            manager.updateMarkers([createMockCourier()]);
+
+            const svg = mockH.map.Icon.mock.calls
+                .map((call: any[]) => call[0])
+                .find((s: string) => s && s.includes('height="36"'));
+
+            expect(svg).toBeDefined();
+            expect(svg).toContain('rx="11"');
+            expect(svg).toContain('font-family="Roboto, Arial, sans-serif"');
+            expect(svg).not.toContain('Arial,sans-serif"'); // no bare Arial
+            expect(svg).not.toContain('#424242'); // dark pole replaced by tonal stem
+        });
+
+        it('gives markers a soft tonal drop-shadow instead of a hard offset', () => {
+            manager.updateMarkers([createMockCourier()]);
+
+            const svg = mockH.map.Icon.mock.calls
+                .map((call: any[]) => call[0])
+                .find((s: string) => s && s.includes('height="36"'));
+
+            expect(svg).toContain('feDropShadow');
+            expect(svg).toContain('flood-opacity="0.24"');
+        });
+
+        it('renders the large flag label in Roboto', () => {
+            manager.updateMarkers([createMockCourier()], false, true);
+
+            const svg = mockH.map.Icon.mock.calls
+                .map((call: any[]) => call[0])
+                .find((s: string) => s && s.includes('width="80"'));
+
+            expect(svg).toBeDefined();
+            expect(svg).toContain('font-family="Roboto, Arial, sans-serif"');
+        });
+    });
+
     describe('Icon Anchor Configuration', () => {
         it('sets correct anchor for normal flag markers', () => {
             const couriers = [createMockCourier()];

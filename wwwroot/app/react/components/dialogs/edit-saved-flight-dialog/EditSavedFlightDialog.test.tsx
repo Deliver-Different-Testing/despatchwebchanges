@@ -4,11 +4,11 @@
 
 import React from 'react';
 import {render, screen, fireEvent, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import {EditSavedFlightDialog} from './EditSavedFlightDialog';
-import {testTheme} from '../../../__testUtils__';
+import { testTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {nationwideApi} from '../../../services/nationwideApi';
 
 jest.mock('../../../services/nationwideApi', () => ({
@@ -63,7 +63,7 @@ beforeEach(() => {
 
 describe('EditSavedFlightDialog', () => {
     it('searches the route on open and submits the picked flight number', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         renderWithTheme(<EditSavedFlightDialog {...defaultProps({onSubmit})} />);
 
@@ -82,7 +82,7 @@ describe('EditSavedFlightDialog', () => {
     });
 
     it('warns on a custom flight number not on the route but still saves it', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         renderWithTheme(<EditSavedFlightDialog {...defaultProps({onSubmit})} />);
 
@@ -97,7 +97,7 @@ describe('EditSavedFlightDialog', () => {
     });
 
     it('pre-fills the current saved flight and can clear it to an empty value', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         renderWithTheme(<EditSavedFlightDialog {...defaultProps({currentValue: 'NZ123', onSubmit})} />);
 
@@ -110,7 +110,7 @@ describe('EditSavedFlightDialog', () => {
     });
 
     it('lets the operator enter a flight number when the route has no airports', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         renderWithTheme(
             <EditSavedFlightDialog {...defaultProps({fromAirportId: undefined, toAirportId: undefined, onSubmit})} />
@@ -124,7 +124,7 @@ describe('EditSavedFlightDialog', () => {
 
     describe('add-flight mode (showAirportPickers)', () => {
         it('picks airports, searches that route, and submits flight + airports', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             renderWithTheme(
                 <EditSavedFlightDialog
@@ -165,7 +165,7 @@ describe('EditSavedFlightDialog', () => {
         });
 
         it('disables Save until a route and flight are chosen, then enables it', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithTheme(
                 <EditSavedFlightDialog
                     {...defaultProps({fromAirportId: undefined, toAirportId: undefined, showAirportPickers: true})}

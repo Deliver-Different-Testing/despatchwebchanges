@@ -1,6 +1,6 @@
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 // Capture the args useTasks is called with so we can assert filter wiring.
@@ -64,7 +64,7 @@ describe('SupportsBox', () => {
     });
 
     it('renders a TaskItem per task and exposes the status filters in the Filters menu', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
         renderBox({jobId: 42});
 
@@ -84,7 +84,7 @@ describe('SupportsBox', () => {
     });
 
     it('rebuilds the filter request when a status filter is selected', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
         renderBox({jobId: 42});
 
@@ -97,7 +97,7 @@ describe('SupportsBox', () => {
     });
 
     it('selects the task\'s job when a task is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSelectJob = jest.fn();
         useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
         renderBox({jobId: 42, onSelectJob});
@@ -107,7 +107,7 @@ describe('SupportsBox', () => {
     });
 
     it('applies the staff filter to the task request', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
         renderBox({jobId: 42});
 

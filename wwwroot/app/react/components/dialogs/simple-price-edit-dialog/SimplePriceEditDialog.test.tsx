@@ -4,10 +4,13 @@
 
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import { SimplePriceEditDialog } from './SimplePriceEditDialog';
 import { SimplePriceEditDialogProps } from './types';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 const theme = createTheme();
 

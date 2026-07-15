@@ -6,8 +6,8 @@
 
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithTheme} from '../../__testUtils__';
+import { renderWithTheme } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {JobListTable} from './JobListTable';
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -153,7 +153,7 @@ describe('JobListTable', () => {
             renderWithTheme(<JobListTable {...createDefaultProps({jobs: [partnerJob]})}/>);
 
             const row = screen.getByText('P001').closest('tr')!;
-            await userEvent.setup().hover(row.querySelector('svg[data-testid="HandshakeIcon"]')!);
+            await setupUser().hover(row.querySelector('svg[data-testid="HandshakeIcon"]')!);
             expect(await screen.findByText('Partner Job')).toBeInTheDocument();
         });
     });
@@ -161,7 +161,7 @@ describe('JobListTable', () => {
     // ── Row Interaction & Sort ───────────────────────────────────────
     describe('Row Interaction', () => {
         it('fires onJobClick and onContextMenu', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithTheme(<JobListTable {...props}/>);
 
@@ -174,7 +174,7 @@ describe('JobListTable', () => {
         });
 
         it('fires onSortChange when column header is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithTheme(<JobListTable {...props}/>);
 
@@ -297,7 +297,7 @@ describe('JobListTable', () => {
     // ── CourierCell — Autocomplete Search ────────────────────────────
     describe('CourierCell — Autocomplete Search', () => {
         it('shows autocomplete and calls search on input', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockedSearch.mockResolvedValue([{id: 1, text: '101 - John Smith'}]);
 
             renderWithTheme(<JobListTable {...createDefaultProps()}/>);
@@ -314,7 +314,7 @@ describe('JobListTable', () => {
         });
 
         it('passes dgOnly=true for DG jobs', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockedSearch.mockResolvedValue([]);
 
             renderWithTheme(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob({dgClass: 3})]})}/>);
@@ -329,7 +329,7 @@ describe('JobListTable', () => {
         });
 
         it('fires onJobDispatch when a courier is selected', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockedSearch.mockResolvedValue([{id: 42, text: '101 - John Smith'}]);
 
             const props = createDefaultProps();

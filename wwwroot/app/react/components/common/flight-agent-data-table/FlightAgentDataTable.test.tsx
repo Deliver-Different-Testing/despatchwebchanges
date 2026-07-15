@@ -6,13 +6,16 @@
 
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {FlightAgentDataTable} from './FlightAgentDataTable';
 import {AgentOption, FlightAgentDataTableProps, FlightOption, FlightSegment} from './types';
 import dayjs from 'dayjs';
 import {openFlightDetailsDialog} from '../../dialogs/flight-details-dialog';
 import {openAgentInfoDialog} from '../../dialogs/agent-info-dialog';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 jest.mock('../../dialogs/flight-details-dialog', () => ({
     openFlightDetailsDialog: jest.fn().mockResolvedValue(undefined),

@@ -1,8 +1,8 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {DeleteLayoutDialog} from './DeleteLayoutDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 function setup(overrides: Partial<React.ComponentProps<typeof DeleteLayoutDialog>> = {}) {
     const onClose = jest.fn();
@@ -28,7 +28,7 @@ describe('DeleteLayoutDialog', () => {
     });
 
     it('calls onConfirm when Delete is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const {onConfirm, onClose} = setup();
 
         await user.click(screen.getByRole('button', {name: /delete/i}));
@@ -38,7 +38,7 @@ describe('DeleteLayoutDialog', () => {
     });
 
     it('calls onClose when Cancel is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const {onClose, onConfirm} = setup();
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));

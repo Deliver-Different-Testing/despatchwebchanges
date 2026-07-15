@@ -41,7 +41,8 @@ public class JobRepositoryClientJobsReportTests : IAsyncDisposable
         _tenantInfoServiceMock,
         _clock,
         _clearListEnvelopeServiceMock,
-        _createJobServiceMock
+        _createJobServiceMock,
+        Substitute.For<ICourierRepository>()
     );
 
     private static ClientJobsReportRequest BuildRequest(IEnumerable<int> clientIds) => new()

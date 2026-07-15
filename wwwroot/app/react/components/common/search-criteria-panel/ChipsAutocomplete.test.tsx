@@ -4,10 +4,14 @@
 
 import React from 'react';
 import {screen, act, within} from '@testing-library/react';
-import userEvent, {UserEvent} from '@testing-library/user-event';
+import {UserEvent} from '@testing-library/user-event';
 import {ChipsAutocomplete, ChipsAutocompleteProps} from './ChipsAutocomplete';
 import {ISuggestion} from '../../../../interfaces/job.interface';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 function createChipsProps(overrides?: Partial<ChipsAutocompleteProps>): ChipsAutocompleteProps {
     return {
@@ -34,7 +38,7 @@ describe('ChipsAutocomplete', () => {
 
     beforeEach(() => {
         jest.useFakeTimers();
-        user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        user = setupUser({advanceTimers: jest.advanceTimersByTime});
     });
 
     afterEach(() => {

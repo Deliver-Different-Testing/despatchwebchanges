@@ -8,8 +8,8 @@
 
 import React from 'react';
 import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '../../__testUtils__';
+import { renderWithProviders } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {JobListPanel} from './JobListPanel';
 import type {DispatchJob, FetchConfig, JobListPanelProps, JobListSearchParams, JobSearchResult} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -59,6 +59,7 @@ jest.mock('../../services/jobListApi', () => ({
     lateCall: jest.fn().mockResolvedValue(undefined),
     reAllocateJobs: jest.fn().mockResolvedValue(undefined),
     restoreJobs: jest.fn().mockResolvedValue(undefined),
+    addRestoreEvent: jest.fn().mockResolvedValue(undefined),
     setFirstJob: jest.fn().mockResolvedValue(undefined),
     releaseBulkJob: jest.fn().mockResolvedValue({jobNumbers: []}),
     splitJob: jest.fn().mockResolvedValue(undefined),
@@ -962,7 +963,7 @@ describe('JobListPanel', () => {
         });
 
         it('does not call updateJobReadStatus on modifier-click (multi-select)', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const jobs = [
                 createMockDispatchJob({id: 30, jobNo: 'UNREAD2', hasBeenRead: false}),
             ];
@@ -978,7 +979,7 @@ describe('JobListPanel', () => {
 
     describe('Multi-Select', () => {
         it('includes previously plain-clicked job when Ctrl multi-select begins', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
                 createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
@@ -999,7 +1000,7 @@ describe('JobListPanel', () => {
         });
 
         it('plain-clicked job plus two Ctrl-clicks yields three selected', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
                 createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
@@ -1021,7 +1022,7 @@ describe('JobListPanel', () => {
         });
 
         it('does not auto-add when multi-select already has items', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
                 createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),

@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import dayjs from 'dayjs';
@@ -24,6 +24,9 @@ jest.mock('../../../components/common/driver-locations', () => ({
 }));
 
 import {DriverLocationsBox} from './DriverLocationsBox';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 // ContactID defaults to 0 and legacy AppPage.Dispatch === 1 in tests.
 function renderBox(overrides: Partial<React.ComponentProps<typeof DriverLocationsBox>> = {}) {

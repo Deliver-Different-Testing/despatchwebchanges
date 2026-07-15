@@ -149,12 +149,16 @@ export const MARKER_COLORS = {
 } as const;
 
 /**
- * Courier label colors based on status
+ * Courier label colors based on status, expressed as Material Design 3 tonal
+ * pairs (container fill + matching on-container text + subtle same-hue outline):
+ *   - NO_JOBS  → neutral tonal container (idle)
+ *   - HAS_JOBS → green tonal container (active)
+ *   - OVERDUE  → solid MD3 error fill + on-error text (urgent)
  */
 export const COURIER_LABEL_COLORS = {
-    NO_JOBS: { bg: '#E3F2FD', text: '#1565C0', border: '#1976D2' },    // Light blue - neutral
-    HAS_JOBS: { bg: '#E8F5E9', text: '#2E7D32', border: '#388E3C' },   // Soft green - active
-    OVERDUE: { bg: '#D32F2F', text: '#FFFFFF', border: '#B71C1C' },    // Red - urgent
+    NO_JOBS: { bg: '#ECEFF1', text: '#37474F', border: '#CFD8DC' },    // Neutral tonal container - idle
+    HAS_JOBS: { bg: '#C8E6C9', text: '#1B5E20', border: '#A5D6A7' },   // Green tonal container - active
+    OVERDUE: { bg: '#B3261E', text: '#FFFFFF', border: '#8C1D18' },    // MD3 error - urgent
 } as const;
 
 /**

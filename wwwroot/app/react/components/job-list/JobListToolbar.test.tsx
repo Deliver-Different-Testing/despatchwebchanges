@@ -4,8 +4,8 @@
 
 import React from 'react';
 import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithTheme} from '../../__testUtils__';
+import { renderWithTheme } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {JobListToolbar} from './JobListToolbar';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -51,7 +51,7 @@ describe('JobListToolbar', () => {
     });
 
     it('fires onCategoryChange when a category is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createDefaultProps();
         renderWithTheme(<JobListToolbar {...props}/>);
 
@@ -89,7 +89,7 @@ describe('JobListToolbar', () => {
     });
 
     it('fires onResetColumns when reset button is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createDefaultProps();
         renderWithTheme(<JobListToolbar {...props}/>);
 

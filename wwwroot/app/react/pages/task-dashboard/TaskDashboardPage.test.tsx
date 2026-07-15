@@ -5,8 +5,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -247,7 +247,7 @@ describe('TaskDashboardPage', () => {
 
     // ── View Mode Toggle (single render) ────────────────────────────
     it('switches to calendar view, saves preference, and keeps delivery journey', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
@@ -288,7 +288,7 @@ describe('TaskDashboardPage', () => {
 
     // ── Status Filters (single render, sequential clicks) ───────────
     it('filters tasks by status card clicks and updates task count', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
@@ -315,7 +315,7 @@ describe('TaskDashboardPage', () => {
 
     // ── Search input ────────────────────────────────────────────────
     it('updates search query on input', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
@@ -328,7 +328,7 @@ describe('TaskDashboardPage', () => {
 
     // ── Task Selection (single render) ──────────────────────────────
     it('updates Job Details header with job ID on task click', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 

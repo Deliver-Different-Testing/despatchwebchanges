@@ -55,7 +55,8 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         _tenantInfoServiceMock,
         _clock,
         _clearListEnvelopeServiceMock,
-        _createJobServiceMock
+        _createJobServiceMock,
+        Substitute.For<ICourierRepository>()
     );
 
     [Fact]

@@ -1,6 +1,6 @@
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {DispatchJobActionsMenu} from './DispatchJobActionsMenu';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
@@ -23,7 +23,7 @@ describe('DispatchJobActionsMenu', () => {
     });
 
     it('opens the available actions and fires onAction with the action id and job', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onAction = jest.fn();
         renderMenu({onAction});
 

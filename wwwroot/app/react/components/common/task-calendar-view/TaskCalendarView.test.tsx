@@ -4,7 +4,6 @@
 
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -14,7 +13,8 @@ import timezone from 'dayjs/plugin/timezone';
 import {TaskCalendarView} from './TaskCalendarView';
 import {TaskCalendarViewProps, TasksServiceInterface} from './TaskCalendarView.interfaces';
 import {Task} from '../task-item/TaskItem.interfaces';
-import {suppressConsoleError} from '../../../__testUtils__';
+import { suppressConsoleError } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 // Extend dayjs plugins for tests
 dayjs.extend(isoWeek);
@@ -110,7 +110,7 @@ describe('TaskCalendarView', () => {
 
     describe('View Mode Switching', () => {
         it('switches to week view when week button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
@@ -124,7 +124,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('switches to day view when day button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
@@ -138,7 +138,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('switches back to month view when month button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
@@ -209,7 +209,7 @@ describe('TaskCalendarView', () => {
         afterEach(() => { errorSpy.mockRestore(); });
 
         it('calls onTaskClick when a task is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({title: 'Clickable Task'});
             const props = createDefaultProps({tasks: [task]});
             renderWithProviders(<TaskCalendarView {...props} />);
@@ -220,7 +220,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('calls tasksService.markTaskAsClosed when checkbox is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({id: 42, closed: false});
             const props = createDefaultProps({tasks: [task]});
             renderWithProviders(<TaskCalendarView {...props} />);
@@ -233,7 +233,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('shows success toast after successful task completion', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({closed: false});
             const props = createDefaultProps({tasks: [task]});
             renderWithProviders(<TaskCalendarView {...props} />);
@@ -246,7 +246,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('calls onTaskStatusChange after task completion', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({closed: false});
             const props = createDefaultProps({tasks: [task]});
             renderWithProviders(<TaskCalendarView {...props} />);
@@ -259,7 +259,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('shows error toast when task completion fails', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({closed: false});
             const tasksService = createMockTasksService();
             tasksService.markTaskAsClosed = jest.fn().mockRejectedValue(new Error('Network error'));
@@ -276,7 +276,7 @@ describe('TaskCalendarView', () => {
 
     describe('Week View', () => {
         it('renders time slots in week view', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
@@ -287,7 +287,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('shows day headers for the week', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
@@ -301,7 +301,7 @@ describe('TaskCalendarView', () => {
 
     describe('Day View', () => {
         it('renders time slots in day view', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
@@ -314,7 +314,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('shows overdue tasks sidebar when there are overdue tasks', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const overdueTask = createMockTask({
                 id: 1,
                 title: 'Overdue Task',
@@ -330,7 +330,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('does not show overdue sidebar for completed overdue tasks', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const completedTask = createMockTask({
                 id: 1,
                 title: 'Completed Task',
@@ -360,7 +360,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('calls onViewChange when switching view modes', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 

@@ -4,13 +4,16 @@
 
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import {TaskItem} from './TaskItem';
 import {Task, TaskItemProps} from './TaskItem.interfaces';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 // Mock the date utilities
 jest.mock('../../../utils/dateUtils', () => ({

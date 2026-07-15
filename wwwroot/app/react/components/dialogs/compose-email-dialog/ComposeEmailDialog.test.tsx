@@ -7,9 +7,9 @@
 
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ComposeEmailDialog} from './ComposeEmailDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
 import {draftEmail} from '../../../services/aiAssistantApi';
 import {isAiEnabled} from '../../../../functions/aiSettings';
@@ -192,7 +192,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should show body error when only subject is filled', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('Test Subject');
@@ -204,7 +204,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should show subject error when only body is filled', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Message'));
             await user.paste('Test body content');
@@ -216,7 +216,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should treat whitespace-only subject as empty', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('   ');
@@ -230,7 +230,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should treat whitespace-only body as empty', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('Valid subject');
@@ -244,7 +244,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should clear subject error when user types in subject field', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
@@ -257,7 +257,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should clear body error when user types in body field', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
             expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
@@ -272,7 +272,7 @@ describe('ComposeEmailDialog', () => {
     describe('Send', () => {
         it('should call onSend with correct data when form is valid', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('Test Subject');
@@ -289,7 +289,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should trim subject and body before sending', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('  Padded Subject  ');
@@ -307,7 +307,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should include all selected courier IDs', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('Subject');
@@ -321,7 +321,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should reset form fields after successful send', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('Test Subject');
@@ -350,7 +350,7 @@ describe('ComposeEmailDialog', () => {
         it('should handle single courier', async () => {
             const singleCourier = [createMockCouriers()[0]];
             renderDialog({selectedCouriers: singleCourier});
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('Direct');
@@ -377,7 +377,7 @@ describe('ComposeEmailDialog', () => {
 
         it('should reset form fields when cancelled', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByLabelText('Subject'));
             await user.paste('Draft subject');
@@ -430,7 +430,7 @@ describe('ComposeEmailDialog', () => {
                 usage: {inputTokens: 1, outputTokens: 1},
             });
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             await user.click(screen.getByRole('button', {name: /^draft$/i}));
 

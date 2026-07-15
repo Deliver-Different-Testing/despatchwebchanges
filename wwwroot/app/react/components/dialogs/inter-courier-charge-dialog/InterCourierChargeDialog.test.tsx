@@ -4,9 +4,9 @@
 
 import React from 'react';
 import {act, fireEvent, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {InterCourierChargeDialog, InterCourierChargeDialogProps} from './InterCourierChargeDialog';
-import {createProps, renderWithTheme, suppressConsoleError} from '../../../__testUtils__';
+import { createProps, renderWithTheme, suppressConsoleError } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 // ── Mocks ──────────────────────────────────────────────────────────
 
@@ -317,7 +317,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Submit Guard', () => {
         it('disables Cancel and Add Charge buttons while submitting', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             let resolveSubmit: () => void;
             mockCreateInterCourierCharge.mockImplementation(() =>
                 new Promise<void>(resolve => { resolveSubmit = resolve; })

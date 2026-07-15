@@ -6,8 +6,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import IconButton from '@mui/material/IconButton';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -50,7 +50,7 @@ describe('PanelHeader', () => {
     });
 
     it('renders the action slot and fires its handler', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onClick = jest.fn();
         renderWithTheme(
             <PanelHeader
