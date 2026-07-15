@@ -356,10 +356,14 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs, {onJobSelect});
 
-            // Stats header
+            // Stats header — Active = needs-dispatch, Transit = dispatched/accepted/picked-up/in-transit, Done = delivered
             const totalLabel = screen.getByText('Total');
             const statsArea = totalLabel.closest('div')!.parentElement!;
             expect(within(statsArea).getByText('4')).toBeInTheDocument();
+            const statValue = (label: string) => within(within(statsArea).getByText(label).closest('div')!).getByText(/^\d+$/).textContent;
+            expect(statValue('Active')).toBe('1'); // J1 (New, no courier)
+            expect(statValue('Transit')).toBe('2'); // J2 (Dispatched) + J3 (InTransit)
+            expect(statValue('Done')).toBe('1'); // J4 (Completed)
 
             // Footer
             expect(screen.getByText(/Showing 4/)).toBeInTheDocument();

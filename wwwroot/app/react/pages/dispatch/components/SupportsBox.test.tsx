@@ -23,11 +23,12 @@ jest.mock('../../../services/tasksApi', () => ({
 }));
 
 jest.mock('../../../components/common/task-item/TaskItem', () => ({
-    TaskItem: ({task, onTaskClick}: {
+    TaskItem: ({task, onTaskClick, config}: {
         task: {id: number; title: string; jobId?: number};
         onTaskClick?: (t: {id: number; jobId?: number}) => void;
+        config?: {showJobId?: boolean};
     }) => (
-        <div data-testid={`mock-task-${task.id}`}>
+        <div data-testid={`mock-task-${task.id}`} data-show-job-id={String(!!config?.showJobId)}>
             <button onClick={() => onTaskClick?.(task)}>{task.title}</button>
         </div>
     ),
@@ -80,6 +81,7 @@ describe('SupportsBox', () => {
     it('shows an empty message when the job has no tasks', () => {
         useTasksMock.mockReturnValue({data: [], isLoading: false, refetch: jest.fn()});
         renderBox({jobId: 42});
+        expect(screen.getByRole('heading', {name: /no tasks/i})).toBeInTheDocument();
         expect(screen.getByText(/no tasks matching your filter/i)).toBeInTheDocument();
     });
 
@@ -117,5 +119,55 @@ describe('SupportsBox', () => {
 
         const lastCall = useTasksMock.mock.calls.at(-1)!;
         expect(lastCall[0]).toMatchObject({jobId: 42, staffId: 7});
+    });
+
+    it('scopes the request to the current job by default', () => {
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        renderBox({jobId: 42});
+
+        const lastCall = useTasksMock.mock.calls.at(-1)!;
+        expect(lastCall[0]).toMatchObject({jobId: 42});
+        // Rows belong to the one selected job, so the job id is hidden.
+        expect(screen.getByTestId('mock-task-1')).toHaveAttribute('data-show-job-id', 'false');
+    });
+
+    it('drops the jobId and shows job ids when switched to All tasks', async () => {
+        const user = setupUser();
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        renderBox({jobId: 42});
+
+        await user.click(screen.getByRole('button', {name: 'All tasks'}));
+
+        const lastCall = useTasksMock.mock.calls.at(-1)!;
+        expect(lastCall[0].jobId).toBeUndefined();
+        expect(screen.getByTestId('mock-task-1')).toHaveAttribute('data-show-job-id', 'true');
+    });
+
+    it('loads tasks in All tasks mode even when no job is selected', async () => {
+        const user = setupUser();
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        renderBox();
+
+        // With no job, current mode prompts to select one and keeps the query disabled.
+        expect(screen.getByText(/select a job to see its tasks/i)).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'All tasks'}));
+
+        expect(screen.queryByText(/select a job to see its tasks/i)).not.toBeInTheDocument();
+        expect(screen.getByTestId('mock-task-1')).toBeInTheDocument();
+        const lastCall = useTasksMock.mock.calls.at(-1)!;
+        expect(lastCall[0].jobId).toBeUndefined();
+        expect(lastCall[1]).toMatchObject({enabled: true});
+    });
+
+    it('keeps the scope when the active toggle button is clicked again', async () => {
+        const user = setupUser();
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        renderBox({jobId: 42});
+
+        await user.click(screen.getByRole('button', {name: 'This job'}));
+
+        const lastCall = useTasksMock.mock.calls.at(-1)!;
+        expect(lastCall[0]).toMatchObject({jobId: 42});
     });
 });

@@ -12,10 +12,16 @@ import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {TaskDashboardPage} from './TaskDashboardPage';
 import {TaskDashboardPageProps} from './TaskDashboardPage.interfaces';
 import {Task} from '../../interfaces';
 import {tasksApi} from '../../services/tasksApi';
+
+// Control the compact/expanded breakpoint deterministically. Defaults to
+// expanded (false) in beforeEach; the compact-layout test flips it to true.
+jest.mock('@mui/material/useMediaQuery');
+const mockUseMediaQuery = useMediaQuery as jest.Mock;
 
 // Mock JobDetails to avoid AngularJS dependency chain
 jest.mock('../../components/common/job-details/JobDetails', () => ({
@@ -163,6 +169,7 @@ const createDefaultProps = (overrides?: Partial<TaskDashboardPageProps>): TaskDa
 describe('TaskDashboardPage', () => {
     beforeEach(() => {
         localStorageMock.setStore({}); // Clear store properly
+        mockUseMediaQuery.mockReturnValue(false); // expanded (two-pane) by default
 
         // Setup default API responses
         mockTasksApi.getAllTasks.mockResolvedValue(createMockTasks());
@@ -181,20 +188,20 @@ describe('TaskDashboardPage', () => {
         expect(screen.getByRole('button', {name: /List/i})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /Calendar/i})).toBeInTheDocument();
 
-        // Stat cards with correct counts
-        expect(await screen.findByRole('button', {name: /ACTIVE: 2/})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /OVERDUE: 1/})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /TODO: 1/})).toBeInTheDocument();
+        // Stat cards mirror the time-to-action buckets with correct counts
+        // (mock data: 1 overdue, 0 due today, 1 upcoming/tomorrow, 1 done).
+        expect(await screen.findByRole('button', {name: /OVERDUE: 1/})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /TODAY: 0/})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /UPCOMING: 1/})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /DONE: 1/})).toBeInTheDocument();
 
         // Tasks rendered after loading
         expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
         expect(screen.getByText('Future email reminder')).toBeInTheDocument();
 
-        // Inline filter bar
+        // Filter bar: inline search + a Filters button (staff/type live in its popover)
         expect(screen.getByRole('textbox', {name: /Search/i})).toBeInTheDocument();
-        expect(screen.getAllByText('Staff').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Task Type').length).toBeGreaterThan(0);
+        expect(screen.getByRole('button', {name: /^Filters/})).toBeInTheDocument();
 
         // Job Details panel (rendered directly in React, no AngularJS bridge)
         expect(screen.getByText('Job Details')).toBeInTheDocument();
@@ -235,14 +242,60 @@ describe('TaskDashboardPage', () => {
         expect(skeletons.length).toBe(4);
     });
 
-    // ── Empty state ─────────────────────────────────────────────────
-    it('renders empty state when no tasks match filters', async () => {
+    // ── Empty state (shared NoData component) ───────────────────────
+    it('renders the shared NoData empty state when no tasks match filters', async () => {
         mockTasksApi.getAllTasks.mockResolvedValue([]);
 
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
-        expect(await screen.findByText('No tasks match your filters')).toBeInTheDocument();
+        expect(await screen.findByText('No tasks')).toBeInTheDocument();
+        expect(screen.getByText('No tasks match your filters')).toBeInTheDocument();
+    });
+
+    // ── Stat cards toggle the bucket filter via aria-pressed ────────
+    it('toggles the bucket filter and reflects it with aria-pressed on the stat cards', async () => {
+        const user = setupUser();
+        const props = createDefaultProps();
+        renderWithProviders(<TaskDashboardPage {...props} />);
+
+        const overdueCard = await screen.findByRole('button', {name: /OVERDUE: 1/});
+        const upcomingCard = screen.getByRole('button', {name: /UPCOMING: 1/});
+
+        // Default is "All" — no single bucket is selected.
+        expect(overdueCard).toHaveAttribute('aria-pressed', 'false');
+        expect(upcomingCard).toHaveAttribute('aria-pressed', 'false');
+
+        await user.click(overdueCard);
+        expect(overdueCard).toHaveAttribute('aria-pressed', 'true');
+        expect(upcomingCard).toHaveAttribute('aria-pressed', 'false');
+
+        // Clicking the active card again returns to All.
+        await user.click(overdueCard);
+        expect(overdueCard).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    // ── Adaptive layout: Job Details opens in a drawer below md ─────
+    it('opens Job Details in a drawer on compact widths and closes it', async () => {
+        mockUseMediaQuery.mockReturnValue(true); // compact (single pane + drawer)
+        const user = setupUser();
+        const props = createDefaultProps();
+        renderWithProviders(<TaskDashboardPage {...props} />);
+
+        await screen.findByText('Overdue follow up call');
+
+        // No side panel — the details header only appears once the drawer opens.
+        expect(screen.queryByText('Job Details')).not.toBeInTheDocument();
+
+        await user.click(screen.getByText('Overdue follow up call'));
+
+        expect(await screen.findByText(/Job Details - Job #100/)).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /Close job details/i}));
+
+        await waitFor(() => {
+            expect(screen.queryByText(/Job Details - Job #100/)).not.toBeInTheDocument();
+        });
     });
 
     // ── View Mode Toggle (single render) ────────────────────────────
@@ -295,7 +348,7 @@ describe('TaskDashboardPage', () => {
         expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
         expect(screen.getByText('Tasks (2)')).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', {name: /TODO:/}));
+        await user.click(screen.getByRole('button', {name: /UPCOMING:/}));
         expect(await screen.findByText('Future email reminder')).toBeInTheDocument();
         expect(screen.queryByText('Overdue follow up call')).not.toBeInTheDocument();
 
@@ -324,6 +377,36 @@ describe('TaskDashboardPage', () => {
         await user.paste('follow up');
 
         expect(searchInput).toHaveValue('follow up');
+    });
+
+    // ── Filters popover holds staff + task type ─────────────────────
+    it('reveals the staff and task-type filters inside the Filters popover', async () => {
+        const user = setupUser();
+        const props = createDefaultProps();
+        renderWithProviders(<TaskDashboardPage {...props} />);
+
+        await screen.findByText('Overdue follow up call');
+
+        // The staff + task-type selects are hidden until the popover opens.
+        expect(screen.queryAllByRole('combobox')).toHaveLength(0);
+
+        await user.click(screen.getByRole('button', {name: /^Filters/}));
+
+        await waitFor(() => {
+            expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(2);
+        });
+        // Both selects show their "all" default value.
+        expect(screen.getByText('All Staff')).toBeInTheDocument();
+        expect(screen.getByText('All Task Types')).toBeInTheDocument();
+    });
+
+    // ── Freshness indicator ─────────────────────────────────────────
+    it('shows a data-freshness label once tasks have loaded', async () => {
+        const props = createDefaultProps();
+        renderWithProviders(<TaskDashboardPage {...props} />);
+
+        await screen.findByText('Overdue follow up call');
+        expect(await screen.findByText(/Updated/i)).toBeInTheDocument();
     });
 
     // ── Task Selection (single render) ──────────────────────────────
@@ -362,6 +445,49 @@ describe('TaskDashboardPage', () => {
 
         expect(screen.getByText(/Tasks \(\d+\)/)).toBeInTheDocument();
         expect(screen.getByText('Job Details')).toBeInTheDocument();
+    });
+
+    // ── Auto-refresh: default off ───────────────────────────────────
+    it('renders the auto-refresh control defaulting to off', async () => {
+        const props = createDefaultProps();
+        renderWithProviders(<TaskDashboardPage {...props} />);
+
+        await screen.findByText('Overdue follow up call');
+        expect(screen.getByRole('button', {name: /Auto-refresh/i})).toBeInTheDocument();
+    });
+
+    // ── Auto-refresh: seed from localStorage ────────────────────────
+    it('seeds the auto-refresh interval from localStorage', async () => {
+        localStorageMock.setStore({'taskDashboardRefreshInterval-1': '30'});
+
+        const props = createDefaultProps();
+        renderWithProviders(<TaskDashboardPage {...props} />);
+
+        expect(await screen.findByRole('button', {name: /Auto: 30s/i})).toBeInTheDocument();
+    });
+
+    // ── Auto-refresh: select an interval, then turn off ─────────────
+    it('configures the auto-refresh interval and persists the choice', async () => {
+        const user = setupUser();
+        const props = createDefaultProps();
+        renderWithProviders(<TaskDashboardPage {...props} />);
+
+        await screen.findByText('Overdue follow up call');
+
+        // Open the menu and pick "1 min"
+        await user.click(screen.getByRole('button', {name: /Auto-refresh/i}));
+        await user.click(await screen.findByRole('menuitem', {name: '1 min'}));
+
+        // Persisted as seconds and reflected on the button
+        expect(localStorageMock.setItem).toHaveBeenCalledWith('taskDashboardRefreshInterval-1', '60');
+        expect(await screen.findByRole('button', {name: /Auto: 1m/i})).toBeInTheDocument();
+
+        // Turn it back off
+        await user.click(screen.getByRole('button', {name: /Auto: 1m/i}));
+        await user.click(await screen.findByRole('menuitem', {name: 'Off'}));
+
+        expect(localStorageMock.setItem).toHaveBeenCalledWith('taskDashboardRefreshInterval-1', '0');
+        expect(await screen.findByRole('button', {name: /Auto-refresh/i})).toBeInTheDocument();
     });
 
     // ── No onTaskSelect prop (bridge removed) ───────────────────────

@@ -24,6 +24,7 @@ import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import type {Dayjs} from 'dayjs';
 import {AddressViewModel, PrebookListModel, RecurringJobColumn, RecurringJobSort,} from '../../../interfaces';
+import {NoData} from '../../../components/common/no-data/NoData';
 
 export interface RecurringJobsTableProps {
     jobs: PrebookListModel[];
@@ -315,12 +316,11 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                         ) : jobs.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={columns.length} align="center" sx={{py: 8}}>
-                                    <EventRepeatIcon sx={{fontSize: 48, color: 'text.disabled', mb: 1}}/>
-                                    <Typography variant="body1" sx={{
-                                        color: "text.secondary"
-                                    }}>
-                                        No recurring jobs available
-                                    </Typography>
+                                    <NoData
+                                        title="No Recurring Jobs"
+                                        message="No recurring jobs available"
+                                        icon={<EventRepeatIcon/>}
+                                    />
                                 </TableCell>
                             </TableRow>
                         ) : (

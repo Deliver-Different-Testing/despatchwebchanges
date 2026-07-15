@@ -124,10 +124,6 @@ const headerSx = {
     alignItems: 'center',
     px: 1.5,
     py: 0.75,
-    bgcolor: 'primary.main',
-    color: 'primary.contrastText',
-    borderBottom: 1,
-    borderColor: 'divider',
 } satisfies SxProps<Theme>;
 
 const emptyStateSx = {
@@ -148,7 +144,6 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                                             showSuccessToast,
                                                             onDeliveryEventClick,
                                                         }) => {
-    const theme = useTheme();
     const config = useMemo(() => ({...defaultConfig, ...propConfig}), [propConfig]);
 
     const [densityMode, setDensityMode] = useState<DensityMode>(config.densityMode || DensityMode.Normal);
@@ -232,7 +227,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
         );
     }
 
-    const hoverBgSx = {bgcolor: alpha(theme.palette.common.white, 0.15)};
+    const hoverBgSx = {bgcolor: 'action.hover'};
 
     return (
         <Box sx={containerSx}>
@@ -244,7 +239,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                             size="small"
                             onClick={cycleDensityMode}
                             aria-label={`Toggle density: currently ${densityLabel}`}
-                            sx={{color: 'inherit', '&:hover': hoverBgSx}}
+                            sx={{color: 'text.secondary', '&:hover': hoverBgSx}}
                         >
                             {densityIcon}
                         </IconButton>
@@ -256,7 +251,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                             disabled={loading}
                             aria-label="Refresh delivery journey"
                             sx={{
-                                color: 'inherit',
+                                color: 'text.secondary',
                                 '&:hover': hoverBgSx,
                                 '@keyframes thSpin': {
                                     from: {transform: 'rotate(0deg)'},

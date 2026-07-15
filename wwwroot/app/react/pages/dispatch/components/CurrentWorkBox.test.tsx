@@ -125,13 +125,18 @@ describe('CurrentWorkBox', () => {
             expect(await screen.findByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
         });
 
-        it('returns to the All Drivers overview via the back link', async () => {
+        it('toggles between the All Drivers overview and the focused driver via the scope toggle', async () => {
             renderBox({isUsCustomer: true});
+
+            // Overview mode: the focused-driver toggle has no courier yet, so it is disabled.
+            expect(screen.getByRole('button', {name: /selected driver/i})).toBeDisabled();
 
             await act(async () => {
                 mockOverview.onDriverSelect?.({courierId: 7, name: 'Jane Smith'});
             });
             expect(await screen.findByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
+            // The focused-driver toggle now carries the picked driver's name.
+            expect(screen.getByRole('button', {name: 'Jane Smith'})).toBeEnabled();
 
             await act(async () => {
                 screen.getByRole('button', {name: /all drivers/i}).click();
@@ -152,7 +157,7 @@ describe('CurrentWorkBox', () => {
     });
 
     describe('header slot', () => {
-        it('portals the breadcrumb back-link, driver name and truck button into the header slot', () => {
+        it('portals the scope toggle and truck button into the header slot', () => {
             const slot = document.createElement('div');
             document.body.appendChild(slot);
             try {
@@ -163,9 +168,9 @@ describe('CurrentWorkBox', () => {
                     headerSlot: slot,
                 });
                 // The selected job drills straight into its courier, so the header shows the
-                // breadcrumb (back-link + driver name) rather than the old peer toggle.
+                // "All Drivers / <driver>" scope toggle with the driver name on the focused side.
                 expect(within(slot).getByRole('button', {name: /all drivers/i})).toBeInTheDocument();
-                expect(within(slot).getByText('Jane Smith')).toBeInTheDocument();
+                expect(within(slot).getByRole('button', {name: 'Jane Smith'})).toBeInTheDocument();
                 expect(within(slot).getByRole('button', {name: 'Truck loading status'})).toBeInTheDocument();
             } finally {
                 document.body.removeChild(slot);

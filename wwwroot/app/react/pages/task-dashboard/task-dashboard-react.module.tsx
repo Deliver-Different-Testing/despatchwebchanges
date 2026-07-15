@@ -69,7 +69,6 @@ export function mountTaskDashboardPage(
                         setRefreshCallback={(cb) => {
                             refreshCallback = cb;
                         }}
-                        onLayoutActionsChange={config.onLayoutActionsChange}
                     />
                 </ErrorBoundary>
             </ThemeProvider>

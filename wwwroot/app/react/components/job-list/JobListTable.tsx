@@ -28,23 +28,15 @@ import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
 import type {SxProps, Theme} from '@mui/material';
 
 // MUI Icons
-import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import LocalAirportIcon from '@mui/icons-material/LocalAirport';
-import FlightLandIcon from '@mui/icons-material/FlightLand';
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import AcUnitIcon from '@mui/icons-material/AcUnit';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutlined';
 import BoltIcon from '@mui/icons-material/Bolt';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import LinkIcon from '@mui/icons-material/Link';
-import HandshakeIcon from '@mui/icons-material/Handshake';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -59,7 +51,10 @@ import {
     getTimezoneAbbreviation
 } from '../../utils/dateUtils';
 import {useColumnResize} from './useColumnResize';
-import {isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
+import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
+import {JobListLegendDialog} from './JobListLegendDialog';
+import {FLIGHT_INDICATORS, INDICATORS, renderLegendMarker, renderTableIndicator} from './jobListIndicators';
+import {NoData} from '../common/no-data/NoData';
 
 // ── Column Definitions ───────────────────────────────────────────────
 
@@ -74,7 +69,7 @@ interface ColumnDef {
 }
 
 const ALL_COLUMNS: ColumnDef[] = [
-    {key: 'priority', label: '', sortable: true, width: 50, align: 'center'},
+    {key: 'priority', label: '', sortable: false, width: 50, align: 'center'},
     {key: 'date', label: 'Date', sortable: true, width: 80},
     {key: 'time', label: 'Time', sortable: true, width: 80},
     {key: 'speed', label: 'Speed', sortable: true, width: 80},
@@ -180,20 +175,16 @@ function isMultiPartJob(job: DispatchJob): boolean {
 }
 
 function getFlightIcon(job: DispatchJob): React.ReactNode {
-    if (!job.jobNo) return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small"
-                                                                      sx={{color: 'info.main'}}/></Tooltip>;
-    const lastChar = job.jobNo.toString().slice(-1);
-    switch (lastChar) {
+    if (!job.jobNo) return renderTableIndicator(FLIGHT_INDICATORS.unknown);
+    switch (job.jobNo.toString().slice(-1)) {
         case '1':
-            return <Tooltip title="Flight Pickup"><FlightTakeoffIcon fontSize="small"
-                                                                     sx={{color: 'info.main'}}/></Tooltip>;
+            return renderTableIndicator(FLIGHT_INDICATORS.pickup);
         case '2':
-            return <Tooltip title="Flight Job"><LocalAirportIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+            return renderTableIndicator(FLIGHT_INDICATORS.job);
         case '3':
-            return <Tooltip title="Flight Delivery"><FlightLandIcon fontSize="small"
-                                                                    sx={{color: 'info.main'}}/></Tooltip>;
+            return renderTableIndicator(FLIGHT_INDICATORS.delivery);
         default:
-            return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+            return renderTableIndicator(FLIGHT_INDICATORS.unknown);
     }
 }
 
@@ -361,34 +352,40 @@ function getRowSx(
     return sx;
 }
 
+// The branch order below IS the precedence — the first match is the marker shown
+// for a row. Job-type/attribute icons win over the status dots. The dots mirror
+// the top stats-header categories: red = Urgent, amber = In Transit, green =
+// Done, blue = Active. Keep in sync with the legend via ./jobListIndicators.
 function getPriorityIndicator(job: DispatchJob): React.ReactNode {
     if (job.toAirportId || job.fromAirportId) {
         return getFlightIcon(job);
     }
     if (isChilledJob(job)) {
-        return <Tooltip title="Chilled"><AcUnitIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        return renderTableIndicator(INDICATORS.chilled);
     }
     if (isMultiPartJob(job)) {
-        return <Tooltip title="Multi-Part"><AccountTreeIcon fontSize="small" sx={{color: 'text.secondary'}}/></Tooltip>;
+        return renderTableIndicator(INDICATORS.multiPart);
     }
     if (job.isPartnerJob) {
-        return <Tooltip title="Partner Job"><HandshakeIcon fontSize="small" sx={{color: 'primary.main'}}/></Tooltip>;
+        return renderTableIndicator(INDICATORS.partner);
     }
     if (isLateForPickup(job)) {
-        return <Tooltip title="Late Pickup"><ScheduleIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
+        return renderTableIndicator(INDICATORS.latePickup);
     }
     if (isLateForDelivery(job)) {
-        return <Tooltip title="Late Delivery"><LocalShippingIcon fontSize="small"
-                                                                 sx={{color: 'error.main'}}/></Tooltip>;
+        return renderTableIndicator(INDICATORS.lateDelivery);
     }
     if (isUrgent(job)) {
-        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mx: 'auto'}}/>;
+        return renderTableIndicator(INDICATORS.urgent);
     }
-    if (job.statusId === JOB_STATUS.Warning) {
-        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'warning.main', mx: 'auto'}}/>;
+    if (isInTransit(job)) {
+        return renderTableIndicator(INDICATORS.inTransit);
+    }
+    if (isDelivered(job)) {
+        return renderTableIndicator(INDICATORS.done);
     }
     if (needsDispatch(job)) {
-        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'info.main', mx: 'auto'}}/>;
+        return renderTableIndicator(INDICATORS.active);
     }
     return null;
 }
@@ -476,6 +473,8 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         return !(col.showOnlyJobSearch && !isJobSearchPage);
     }), [isUsCustomer, isJobSearchPage]);
 
+    const [legendOpen, setLegendOpen] = useState(false);
+
     const handleSort = useCallback(
         (e: React.MouseEvent<HTMLSpanElement>) => {
             const column = e.currentTarget.dataset.sortColumn;
@@ -550,26 +549,16 @@ export const JobListTable: React.FC<JobListTableProps> = ({
 
     if (jobs.length === 0) {
         return (
-            <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flex: 1,
-                py: 8,
-                color: 'text.disabled',
-            }}>
-                <EventRepeatIcon sx={{fontSize: 48, mb: 1, color: 'text.disabled'}}/>
-                <Typography variant="body2" sx={{
-                    color: "text.secondary"
-                }}>
-                    No jobs to display
-                </Typography>
-            </Box>
+            <NoData
+                title="No Jobs"
+                message="No jobs to display"
+                icon={<WorkOutlineIcon/>}
+            />
         );
     }
 
     return (
+        <>
         <TableContainer
             ref={(node: HTMLDivElement | null) => {
                 scrollContainerRef.current = node;
@@ -607,6 +596,17 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                     >
                                         {col.label}
                                     </TableSortLabel>
+                                ) : col.key === 'priority' ? (
+                                    <Tooltip title="What do these icons mean?" arrow>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => setLegendOpen(true)}
+                                            aria-label="Column legend"
+                                            sx={{p: 0.25, color: 'text.secondary'}}
+                                        >
+                                            <InfoOutlinedIcon sx={{fontSize: 16}}/>
+                                        </IconButton>
+                                    </Tooltip>
                                 ) : (
                                     col.label
                                 )}
@@ -665,6 +665,8 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                 </TableBody>
             </Table>
         </TableContainer>
+        <JobListLegendDialog open={legendOpen} onClose={() => setLegendOpen(false)}/>
+        </>
     );
 };
 
@@ -743,8 +745,10 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
                 >
                     {isRelated && !isSelected && colIndex === 0 ? (
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                            <Tooltip title="Related job" arrow>
-                                <LinkIcon sx={{fontSize: 16, color: '#7986cb', flexShrink: 0}}/>
+                            <Tooltip title={INDICATORS.related.label} arrow>
+                                <Box component="span" sx={{display: 'inline-flex', flexShrink: 0}}>
+                                    {renderLegendMarker(INDICATORS.related.marker)}
+                                </Box>
                             </Tooltip>
                             <MemoizedCellContent col={col.key} job={job} isUltraDense={isUltraDense}
                                                  isUsCustomer={isUsCustomer} appPage={appPage}

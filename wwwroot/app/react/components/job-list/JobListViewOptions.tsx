@@ -51,6 +51,20 @@ const toolbarToggleSx = {
     '& .MuiToggleButton-root': {px: 0.75, py: 0.5},
 } satisfies SxProps<Theme>;
 
+// In the gradient panel header the switch would otherwise inherit the header
+// colour and disappear against it — force a white thumb/track instead.
+const headerSwitchSx = {
+    '& .MuiSwitch-switchBase': {color: '#fff !important'},
+    '& .MuiSwitch-switchBase + .MuiSwitch-track': {
+        bgcolor: '#fff',
+        opacity: 0.3,
+    },
+    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+        bgcolor: '#fff',
+        opacity: 0.6,
+    },
+} satisfies SxProps<Theme>;
+
 export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
     densityMode,
     onDensityModeChange,
@@ -76,6 +90,7 @@ export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
                             size="small"
                             checked={loggedInCouriersOnly}
                             onChange={(_, checked) => onLoggedInCouriersOnlyChange(checked)}
+                            sx={headerVariant ? headerSwitchSx : undefined}
                         />
                     }
                     label="Logged-in only"

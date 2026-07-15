@@ -31,6 +31,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
+import { getTimezoneAbbreviation } from '../../../utils/dateUtils';
 import { NoData } from '../../common/no-data/NoData';
 import type { ShowToastFn } from '../../../services/toastService';
 
@@ -212,7 +213,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                                                         color: "text.secondary",
                                                         fontStyle: "italic"
                                                     }}>
-                                                    ({tz})
+                                                    {getTimezoneAbbreviation(tz)}
                                                 </Typography>
                                             </TableCell>
                                             <TableCell sx={{ width: '25%', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>

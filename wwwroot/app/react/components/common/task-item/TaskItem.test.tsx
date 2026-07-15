@@ -279,6 +279,26 @@ describe('TaskItem', () => {
             expect(screen.queryByText(/2:00 PM/)).not.toBeInTheDocument();
         });
 
+        it('shows "Set date"/"Set time" placeholders when the task has no due date', () => {
+            const task = createMockTask({_dueDateString: undefined, _dueTimeString: undefined});
+            const props = createDefaultProps({task});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.getByText('Set date')).toBeInTheDocument();
+            expect(screen.getByText('Set time')).toBeInTheDocument();
+            expect(screen.queryByText(/undefined/)).not.toBeInTheDocument();
+        });
+
+        it('shows "Set date"/"Set time" placeholders when the date strings are "Invalid Date"', () => {
+            const task = createMockTask({_dueDateString: 'Invalid Date', _dueTimeString: 'Invalid Date'});
+            const props = createDefaultProps({task});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.getByText('Set date')).toBeInTheDocument();
+            expect(screen.getByText('Set time')).toBeInTheDocument();
+            expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument();
+        });
+
         it('hides description when showDescription is false', () => {
             const props = createDefaultProps({config: {showDescription: false}});
             renderWithProviders(<TaskItem {...props} />);
@@ -433,25 +453,40 @@ describe('TaskItem', () => {
         });
     });
 
-    describe('Context menu', () => {
-        it('invokes onContextMenu with the task and prevents the default menu on right-click', () => {
-            const onContextMenu = jest.fn();
-            const props = createDefaultProps({onContextMenu});
-            renderWithProviders(<TaskItem {...props} />);
-
-            const event = fireEvent.contextMenu(screen.getByText('Test Task'));
-
-            expect(onContextMenu).toHaveBeenCalledTimes(1);
-            expect(onContextMenu.mock.calls[0][0]).toEqual(props.task);
-            // fireEvent returns false when a handler called preventDefault()
-            expect(event).toBe(false);
-        });
-
-        it('does nothing on right-click when no onContextMenu handler is provided', () => {
+    describe('Unassign button', () => {
+        it('renders the unassign button with its visible label when the task has an assignee', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            expect(() => fireEvent.contextMenu(screen.getByText('Test Task'))).not.toThrow();
+            expect(screen.getByRole('button', {name: 'Unassign task'})).toHaveTextContent('Unassign');
+        });
+
+        it('does not render the unassign button when the task is unassigned', () => {
+            const task = createMockTask({assignee: {id: 0, text: ''}});
+            const props = createDefaultProps({task});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.queryByRole('button', {name: 'Unassign task'})).not.toBeInTheDocument();
+        });
+
+        it('does not render the unassign button when showAssignee is false', () => {
+            const props = createDefaultProps({config: {showAssignee: false}});
+            renderWithProviders(<TaskItem {...props} />);
+
+            expect(screen.queryByRole('button', {name: 'Unassign task'})).not.toBeInTheDocument();
+        });
+
+        it('calls tasksService.unassignTask and refreshes without opening the task', async () => {
+            const props = createDefaultProps();
+            renderWithProviders(<TaskItem {...props} />);
+
+            await userEvent.click(screen.getByRole('button', {name: 'Unassign task'}));
+
+            await waitFor(() => {
+                expect(props.tasksService.unassignTask).toHaveBeenCalledWith(props.task.id);
+            });
+            expect(props.onTaskUpdated).toHaveBeenCalled();
+            expect(props.onTaskClick).not.toHaveBeenCalled();
         });
     });
 

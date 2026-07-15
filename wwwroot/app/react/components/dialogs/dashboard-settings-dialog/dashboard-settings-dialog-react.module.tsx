@@ -28,6 +28,7 @@ interface DialogState {
     boxes: Record<string, DashboardBox>;
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
+    selectedTaskRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
     aiAutoOpen?: boolean;
@@ -120,6 +121,7 @@ function renderDialog(): void {
                     boxes={dialogState.boxes}
                     selectedRefreshInterval={dialogState.selectedRefreshInterval}
                     selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
+                    selectedTaskRefreshInterval={dialogState.selectedTaskRefreshInterval}
                     refreshOptions={dialogState.refreshOptions}
                     aiEnabled={dialogState.aiEnabled}
                     aiAutoOpen={dialogState.aiAutoOpen}
@@ -150,6 +152,7 @@ export function openDashboardSettingsDialog(
     boxes: Record<string, DashboardBox>,
     selectedRefreshInterval?: RefreshOption,
     selectedDriverLocationRefreshInterval?: RefreshOption,
+    selectedTaskRefreshInterval?: RefreshOption,
     aiEnabled?: boolean,
     jobSearchBetaEnabled?: boolean,
     dispatchBetaEnabled?: boolean,
@@ -169,6 +172,7 @@ export function openDashboardSettingsDialog(
             boxes: {...boxes}, // Clone the boxes
             selectedRefreshInterval: selectedRefreshInterval ?? {id: 0, text: 'Disabled'},
             selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? {id: 0, text: 'Disabled'},
+            selectedTaskRefreshInterval: selectedTaskRefreshInterval ?? {id: 0, text: 'Disabled'},
             refreshOptions,
             aiEnabled,
             aiAutoOpen: isAiAutoOpenEnabled(),

@@ -28,6 +28,7 @@ import {
     DATE_FILTER_KEY as DISPATCH_DATE_FILTER_KEY,
     REFRESH_INTERVAL_KEY as DISPATCH_REFRESH_INTERVAL_KEY,
     DRIVER_LOCATION_REFRESH_KEY as DISPATCH_DRIVER_LOC_REFRESH_KEY,
+    TASK_REFRESH_KEY as DISPATCH_TASK_REFRESH_KEY,
 } from './react/pages/dispatch/lib/dispatchFilters';
 import type {DfrntPageViewModel} from './interfaces/dfrnt-page-view-model.interface';
 import type IDateFilterData from './interfaces/date-filter-data.interface';
@@ -350,6 +351,7 @@ class RouterConfig {
                                             title: string;
                                             showRefreshInterval?: boolean;
                                             showDriverLocationRefresh?: boolean;
+                                            showTaskRefresh?: boolean;
                                             showDashboards?: boolean;
                                             showAiToggle?: boolean;
                                             showDispatchBetaToggle?: boolean;
@@ -358,6 +360,7 @@ class RouterConfig {
                                         boxes: Record<string, IBox>,
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
+                                        selectedTaskRefreshInterval?: {id: number; text: string},
                                         aiEnabled?: boolean,
                                         jobSearchBetaEnabled?: boolean,
                                         dispatchBetaEnabled?: boolean,
@@ -367,6 +370,7 @@ class RouterConfig {
                                         boxes?: Record<string, IBox>;
                                         selectedRefreshInterval?: {id: number; text: string};
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string};
+                                        selectedTaskRefreshInterval?: {id: number; text: string};
                                     } | null>;
                                 };
                             };
@@ -379,6 +383,12 @@ class RouterConfig {
                                 const n = raw == null ? 0 : parseInt(raw, 10);
                                 return Number.isFinite(n) && n > 0 ? n : 0;
                             };
+                            // On first run the Tasks dropdown inherits the job-list
+                            // cadence (matches loadRefreshIntervals) so the dialog
+                            // reflects what the panel is actually doing.
+                            const taskSeedSeconds = localStorage.getItem(DISPATCH_TASK_REFRESH_KEY) != null
+                                ? readIntervalSeconds(DISPATCH_TASK_REFRESH_KEY)
+                                : readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY);
                             try {
                                 const wasOn = getDispatchBetaEnabled();
                                 const result = await w.ReactDashboardSettingsDialog.open(
@@ -386,6 +396,7 @@ class RouterConfig {
                                         title: 'Dispatch Dashboard Settings',
                                         showRefreshInterval: true,
                                         showDriverLocationRefresh: true,
+                                        showTaskRefresh: true,
                                         showAiToggle: true,
                                         showDispatchBetaToggle: true,
                                         panelsMovedNotice: true,
@@ -393,6 +404,7 @@ class RouterConfig {
                                     {},
                                     {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
                                     {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
+                                    {id: taskSeedSeconds, text: ''},
                                     isAiEnabled(),
                                     undefined,
                                     wasOn,
@@ -412,9 +424,13 @@ class RouterConfig {
                                 if (result.selectedDriverLocationRefreshInterval) {
                                     localStorage.setItem(DISPATCH_DRIVER_LOC_REFRESH_KEY, String(result.selectedDriverLocationRefreshInterval.id));
                                 }
+                                if (result.selectedTaskRefreshInterval) {
+                                    localStorage.setItem(DISPATCH_TASK_REFRESH_KEY, String(result.selectedTaskRefreshInterval.id));
+                                }
                                 window.ReactDispatch?.updateRefreshIntervals({
                                     jobsMs: toMs(result.selectedRefreshInterval?.id),
                                     driverLocationsMs: toMs(result.selectedDriverLocationRefreshInterval?.id),
+                                    tasksMs: toMs(result.selectedTaskRefreshInterval?.id),
                                 });
 
                                 if (result.dispatchBetaEnabled !== undefined
@@ -906,6 +922,7 @@ class RouterConfig {
                                         boxes: Record<string, IBox>,
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
+                                        selectedTaskRefreshInterval?: {id: number; text: string},
                                         aiEnabled?: boolean,
                                         jobSearchBetaEnabled?: boolean,
                                     ) => Promise<{
@@ -934,6 +951,7 @@ class RouterConfig {
                                     {},
                                     undefined,
                                     undefined,
+                                    undefined, // selectedTaskRefreshInterval — not used on Job Search
                                     isAiEnabled(),
                                     wasOn,
                                 );
@@ -1298,12 +1316,7 @@ class RouterConfig {
                 <md-content class="md-dense task-dashboard-view">
                     <react-app-shell
                         section="Dashboards"
-                        title="Task Dashboard"
-                        layouts="layouts"
-                        current-layout-name="currentLayoutName"
-                        on-save-layout="saveLayout()"
-                        on-load-layout="loadLayout(index)"
-                        on-delete-layout="deleteLayout(index)">
+                        title="Task Dashboard">
                     </react-app-shell>
                     <div style="height: calc(100vh - 64px); overflow: hidden;">
                         <div id="react-task-dashboard" style="height: 100%; overflow: hidden;"></div>
@@ -1333,13 +1346,7 @@ class RouterConfig {
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
                 function (
-                    $scope: angular.IScope & {
-                        layouts: { name: string }[];
-                        currentLayoutName: string;
-                        saveLayout: () => void;
-                        loadLayout: (index: number) => void;
-                        deleteLayout: (index: number) => void;
-                    },
+                    $scope: angular.IScope,
                     toastrService: {
                         showSuccessToast: (m: string) => void;
                         showWarningToast: (m: string) => void;
@@ -1348,39 +1355,6 @@ class RouterConfig {
                     },
                     appConfig: { US_Customer: boolean }
                 ) {
-                    // Layout state - will be updated by React component
-                    $scope.layouts = [];
-                    $scope.currentLayoutName = 'Default';
-
-                    // Layout action callbacks - will be set by React component
-                    let reactSaveLayout: (() => void) | null = null;
-                    let reactLoadLayout: ((index: number) => void) | null = null;
-                    let reactDeleteLayout: ((index: number) => void) | null = null;
-
-                    // Callbacks exposed to template that delegate to React
-                    $scope.saveLayout = () => {
-                        console.log('[TaskDashboard] saveLayout called, reactSaveLayout:', !!reactSaveLayout);
-                        if (reactSaveLayout) {
-                            reactSaveLayout();
-                        } else {
-                            console.warn('[TaskDashboard] reactSaveLayout not set yet');
-                        }
-                    };
-
-                    $scope.loadLayout = (index: number) => {
-                        console.log('[TaskDashboard] loadLayout called, index:', index);
-                        if (reactLoadLayout) {
-                            reactLoadLayout(index);
-                        }
-                    };
-
-                    $scope.deleteLayout = (index: number) => {
-                        console.log('[TaskDashboard] deleteLayout called, index:', index);
-                        if (reactDeleteLayout) {
-                            reactDeleteLayout(index);
-                        }
-                    };
-
                     const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                         switch (type) {
                             case 'success':
@@ -1398,35 +1372,9 @@ class RouterConfig {
                         }
                     };
 
-                    // Called by React component when layout actions change
-                    const onLayoutActionsChange = (actions: {
-                        layouts: { name: string }[];
-                        currentLayoutName: string;
-                        onSaveLayout: () => void;
-                        onLoadLayout: (index: number) => void;
-                        onDeleteLayout: (index: number) => void;
-                    }) => {
-                        console.log('[TaskDashboard] onLayoutActionsChange called with', actions.layouts.length, 'layouts');
-
-                        // Update scope with layout data
-                        $scope.layouts = actions.layouts;
-                        $scope.currentLayoutName = actions.currentLayoutName;
-
-                        // Store React callbacks
-                        reactSaveLayout = actions.onSaveLayout;
-                        reactLoadLayout = actions.onLoadLayout;
-                        reactDeleteLayout = actions.onDeleteLayout;
-
-                        // Trigger Angular digest cycle if not already in one
-                        if (!$scope.$$phase && !$scope.$root.$$phase) {
-                            $scope.$apply();
-                        }
-                    };
-
                     window.ReactTaskDashboard!.mount('react-task-dashboard', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
-                        onLayoutActionsChange,
                     });
 
                     $scope.$on('$destroy', () => {

@@ -7,9 +7,9 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Typography from '@mui/material/Typography';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import dayjs from 'dayjs';
+import {NoData} from '../../../components/common/no-data/NoData';
 import {useScanDetail} from '../hooks/useScanDetail';
 
 export interface ScanListProps {
@@ -23,7 +23,13 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
     const {scans, isLoading} = useScanDetail({jobId, runDate, isBulkJob});
 
     if (!jobId) {
-        return <EmptyState message="Select a job to see its scan records." />;
+        return (
+            <NoData
+                title="No Job Selected"
+                message="Select a job to see its scan records."
+                icon={<QrCodeScannerIcon/>}
+            />
+        );
     }
 
     if (isLoading) {
@@ -35,7 +41,13 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
     }
 
     if (scans.length === 0) {
-        return <EmptyState message="This job has no scan records. Use the driver application to scan the job items." />;
+        return (
+            <NoData
+                title="No Scan Records"
+                message="This job has no scan records. Use the driver application to scan the job items."
+                icon={<QrCodeScannerIcon/>}
+            />
+        );
     }
 
     return (
@@ -64,21 +76,3 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
         </TableContainer>
     );
 };
-
-const EmptyState: React.FC<{message: string}> = ({message}) => (
-    <Box
-        sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 1,
-            p: 3,
-            color: 'text.secondary',
-            textAlign: 'center',
-        }}
-    >
-        <QrCodeScannerIcon sx={{fontSize: 40, opacity: 0.5}} />
-        <Typography variant="body2">{message}</Typography>
-    </Box>
-);

@@ -9,10 +9,14 @@ import type {ShowToastFn} from '../../services/toastService';
 // Re-export Task for convenience
 export type {Task};
 
+// Time-to-action buckets — the stat cards and the queue's date-group headers
+// share this single taxonomy. `All` is the default (all active work) and is not
+// a card; the four cards below are Overdue / DueToday / Upcoming / Done.
 export enum StatusFilter {
     All = 'all',
     Overdue = 'overdue',
-    Todo = 'todo',
+    DueToday = 'dueToday',
+    Upcoming = 'upcoming',
     Done = 'done'
 }
 
@@ -28,9 +32,9 @@ export interface DateFilterData {
 }
 
 export interface StatusCounts {
-    active: number;
     overdue: number;
-    todo: number;
+    dueToday: number;
+    upcoming: number;
     done: number;
 }
 
@@ -41,21 +45,10 @@ export interface ExtendedTask extends Task {
 export interface MountTaskDashboardConfig {
     showToast: ShowToastFn;
     isUsCustomer: boolean;
-    onLayoutActionsChange?: (actions: LayoutActions) => void;
-}
-
-// Layout actions interface for app bar integration (kept for module bridge compatibility)
-export interface LayoutActions {
-    layouts: { name: string }[];
-    currentLayoutName: string;
-    onSaveLayout: () => void;
-    onLoadLayout: (index: number) => void;
-    onDeleteLayout: (index: number) => void;
 }
 
 export interface TaskDashboardPageProps {
     showToast: ShowToastFn;
     isUsCustomer: boolean;
     setRefreshCallback?: (callback: () => void) => void;
-    onLayoutActionsChange?: (actions: LayoutActions) => void;
 }

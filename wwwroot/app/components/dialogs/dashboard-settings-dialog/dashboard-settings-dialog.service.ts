@@ -101,6 +101,9 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             showJobSearchBetaToggle: appPage === AppPage.JobSearch,
             showDispatchBetaToggle: appPage === AppPage.Dispatch,
             panelsMovedNotice,
+            // Dispatch manages panels only from the Layouts menu → Customize
+            // panels, so the settings gear drops the panels section entirely.
+            showPanels: appPage !== AppPage.Dispatch,
         };
 
         if (!selectedRefreshInterval) {
@@ -125,6 +128,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 boxes,
                 selectedRefreshInterval,
                 selectedDriverLocationRefreshInterval,
+                undefined, // selectedTaskRefreshInterval — V1 dispatch has no separate Tasks cadence
                 isAiEnabled(),
                 appPage === AppPage.JobSearch ? getJobSearchBetaEnabled() : undefined,
                 appPage === AppPage.Dispatch ? getDispatchBetaEnabled() : undefined,

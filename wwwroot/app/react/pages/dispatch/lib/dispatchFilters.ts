@@ -21,11 +21,13 @@ export const SELECTED_VIEWS_KEY = `selectedViews-${LegacyAppPage.Dispatch}-${Con
 export const DATE_FILTER_KEY = `dateFilter-${LegacyAppPage.Dispatch}-${ContactID}`;
 export const REFRESH_INTERVAL_KEY = `refreshInterval-${LegacyAppPage.Dispatch}-${ContactID}`;
 export const DRIVER_LOCATION_REFRESH_KEY = `driverLocationRefreshInterval-${LegacyAppPage.Dispatch}-${ContactID}`;
+export const TASK_REFRESH_KEY = `taskRefreshInterval-${LegacyAppPage.Dispatch}-${ContactID}`;
 
 /** Auto-refresh intervals in ms (React Query refetchInterval); `false` = off. */
 export interface DispatchRefreshIntervals {
     jobsMs: number | false;
     driverLocationsMs: number | false;
+    tasksMs: number | false;
 }
 
 function readIntervalSeconds(key: string): number {
@@ -38,17 +40,35 @@ function readIntervalSeconds(key: string): number {
     }
 }
 
+function hasStoredInterval(key: string): boolean {
+    try {
+        return localStorage.getItem(key) != null;
+    } catch {
+        return false;
+    }
+}
+
 /**
  * Read the persisted auto-refresh intervals (V1 stores seconds; 0 = Disabled).
  * Mirrors home.controller's `loadSavedRefreshInterval` /
- * `loadSavedDriverLocationRefreshInterval`.
+ * `loadSavedDriverLocationRefreshInterval`. The Tasks panel keeps its own
+ * independent interval so it can refresh on a different cadence to the job list.
+ *
+ * On first run (the Tasks key has never been written) the Tasks panel inherits
+ * the job-list cadence, so existing users keep an active refresh instead of
+ * silently defaulting to Off. Once the user picks a Tasks cadence — even "Off"
+ * (a stored 0) — that choice sticks.
  */
 export function loadRefreshIntervals(): DispatchRefreshIntervals {
     const jobs = readIntervalSeconds(REFRESH_INTERVAL_KEY);
     const driver = readIntervalSeconds(DRIVER_LOCATION_REFRESH_KEY);
+    const tasks = hasStoredInterval(TASK_REFRESH_KEY)
+        ? readIntervalSeconds(TASK_REFRESH_KEY)
+        : jobs;
     return {
         jobsMs: jobs > 0 ? jobs * 1000 : false,
         driverLocationsMs: driver > 0 ? driver * 1000 : false,
+        tasksMs: tasks > 0 ? tasks * 1000 : false,
     };
 }
 

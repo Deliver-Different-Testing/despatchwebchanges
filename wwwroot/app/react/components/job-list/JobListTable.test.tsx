@@ -158,6 +158,64 @@ describe('JobListTable', () => {
         });
     });
 
+    // ── Priority-column status dots ──────────────────────────────────
+    describe('Priority status dots', () => {
+        // Each dot mirrors a top stats-header category. Hovering shows the meaning.
+        const cases: Array<{label: string; overrides: Partial<DispatchJob>; tooltip: string}> = [
+            {label: 'in-transit (amber)', overrides: {jobNo: 'D-TRANSIT', statusId: 11}, tooltip: 'In Transit'},
+            {
+                label: 'dispatched → in-transit (amber)',
+                overrides: {jobNo: 'D-DISPATCHED', statusId: 1, assignedCourier: {id: 5, text: '5 - R'}},
+                tooltip: 'In Transit',
+            },
+            {label: 'delivered (green)', overrides: {jobNo: 'D-DONE', statusId: 6}, tooltip: 'Done'},
+            {
+                label: 'active (blue)',
+                overrides: {jobNo: 'D-DISPATCH', statusId: 0, assignedCourier: undefined},
+                tooltip: 'Active',
+            },
+            {
+                label: 'urgent (red)',
+                overrides: {jobNo: 'D-URGENT', statusId: 1, assignedCourier: {id: 5, text: '5 - R'}, booked: dayjs().add(15, 'minute')},
+                tooltip: 'Urgent',
+            },
+        ];
+
+        it.each(cases)('shows a tooltip on the $label dot', async ({overrides, tooltip}) => {
+            const job = createMockDispatchJob({id: 1, ...overrides});
+            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+            await setupUser().hover(screen.getByTestId('priority-dot'));
+            expect(await screen.findByText(tooltip)).toBeInTheDocument();
+        });
+
+        it('does not show an in-transit dot for Warning-status jobs', () => {
+            // Warning (7) previously rendered an amber dot; amber now means In Transit only.
+            const warningJob = createMockDispatchJob({id: 1, jobNo: 'D-WARN', statusId: 7, assignedCourier: {id: 5, text: '5 - R'}});
+            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [warningJob]})}/>);
+
+            expect(screen.queryByTestId('priority-dot')).not.toBeInTheDocument();
+        });
+    });
+
+    // ── Priority-column header legend ────────────────────────────────
+    describe('Priority column header', () => {
+        it('is not sortable and opens the legend dialog from its info button', async () => {
+            const props = createDefaultProps();
+            renderWithTheme(<JobListTable {...props}/>);
+
+            // No sort label on the priority column
+            expect(screen.queryByTestId('resize-handle-priority')?.querySelector('.MuiTableSortLabel-root')).toBeFalsy();
+
+            await setupUser().click(screen.getByRole('button', {name: 'Column legend'}));
+
+            // Dialog opened, sorting not triggered
+            expect(props.onSortChange).not.toHaveBeenCalled();
+            expect(await screen.findByText('Job type')).toBeInTheDocument();
+            expect(screen.getByText('Needs attention')).toBeInTheDocument();
+        });
+    });
+
     // ── Row Interaction & Sort ───────────────────────────────────────
     describe('Row Interaction', () => {
         it('fires onJobClick and onContextMenu', async () => {
