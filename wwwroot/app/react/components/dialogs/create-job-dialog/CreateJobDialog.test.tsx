@@ -4,9 +4,9 @@
 
 import React from 'react';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {CreateJobDialog, CreateJobDialogProps} from './CreateJobDialog';
-import {createProps, renderWithAllProviders} from '../../../__testUtils__';
+import { createProps, renderWithAllProviders } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {addressApi} from '../../../services/addressApi';
 import {jobApi} from '../../../services/jobApi';
 import type {HereMapsLookupResponse} from '../../../interfaces';
@@ -134,7 +134,7 @@ describe('CreateJobDialog', () => {
 
     describe('Close Functionality', () => {
         it('calls onClose via close icon and cancel button', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
             const props = createMockProps({onClose});
             renderWithAllProviders(<CreateJobDialog {...props} />);
@@ -152,7 +152,7 @@ describe('CreateJobDialog', () => {
 
     describe('Validation', () => {
         it('shows all validation errors, toast, and blocks submit on empty form', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const showToast = jest.fn();
             const onSubmit = jest.fn();
             const props = createMockProps({showToast, onSubmit});

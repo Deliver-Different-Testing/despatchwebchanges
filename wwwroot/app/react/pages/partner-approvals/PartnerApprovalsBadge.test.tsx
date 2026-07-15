@@ -4,9 +4,9 @@
 
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {PartnerApprovalsBadge} from './PartnerApprovalsBadge';
-import {renderWithProviders} from '../../__testUtils__';
+import { renderWithProviders } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
 
 jest.mock('../../services/jobChangeRequestApi', () => ({
@@ -77,7 +77,7 @@ describe('PartnerApprovalsBadge', () => {
     });
 
     it('clicking the badge opens the drawer with the inbox', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockApi.pendingForApproval.mockResolvedValue([makeItem(1, 1)]);
         renderWithProviders(<PartnerApprovalsBadge/>);
         expect(await screen.findByText('1')).toBeInTheDocument();

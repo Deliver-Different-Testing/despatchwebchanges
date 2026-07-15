@@ -4,9 +4,9 @@
 
 import React from 'react';
 import { screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { AgentInfoDialog, AgentInfo, AirportViewModel } from './AgentInfoDialog';
-import { renderWithTheme, createProps } from '../../../__testUtils__';
+import { createProps, renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 const mockAirports: AirportViewModel[] = [
     {
@@ -256,7 +256,7 @@ describe('AgentInfoDialog', () => {
 
     describe('Close Functionality', () => {
         it('calls onClose when the header close button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createMockProps();
             renderWithTheme(<AgentInfoDialog {...props} />);
 
@@ -266,7 +266,7 @@ describe('AgentInfoDialog', () => {
         });
 
         it('calls onClose when the footer Close button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createMockProps();
             renderWithTheme(<AgentInfoDialog {...props} />);
 

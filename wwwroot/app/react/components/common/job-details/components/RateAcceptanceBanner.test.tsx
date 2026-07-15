@@ -2,8 +2,8 @@
  * RateAcceptanceBanner tests.
  */
 import React from 'react';
+import { setupUser } from '../../../../__testUtils__/setupUser';
 import {render, screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RateAcceptanceBanner} from './RateAcceptanceBanner';
 import type {
@@ -76,7 +76,7 @@ describe('RateAcceptanceBanner', () => {
     });
 
     it('invokes the accept API when Accept is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         api.getPartnerInboundRateAcceptance.mockResolvedValue({
             status: 'PendingAcceptance',
             proposedAgreedRate: 42.5,
@@ -94,7 +94,7 @@ describe('RateAcceptanceBanner', () => {
     });
 
     it('opens the reject dialog, requires a reason, and posts it', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         api.getPartnerInboundRateAcceptance.mockResolvedValue({
             status: 'PendingAcceptance',
             proposedAgreedRate: 10,

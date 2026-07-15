@@ -7,9 +7,9 @@
 
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {JobChangeRequestDialog, JobChangeRequestDialogProps} from './JobChangeRequestDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {jobChangeRequestApi} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
 
@@ -58,7 +58,7 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('updates the title when the field changes', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderDialog();
         await user.click(screen.getByLabelText(/Field/));
         await user.click(screen.getByRole('option', {name: /Agreed Rate/}));
@@ -66,7 +66,7 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('validates that a requested value is provided', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderDialog();
         // Default field is Notes (auto-apply) so the action button reads "Apply".
         await user.click(screen.getByRole('button', {name: /Apply/}));
@@ -75,7 +75,7 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('submits Notes (auto-apply) with the typed value and surfaces the result via a toast', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockCreate.mockResolvedValueOnce({
             success: true,
             request: {status: 'Applied'},
@@ -103,7 +103,7 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('renders the Speed dropdown from getSpeedList when Service Speed is picked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderDialog();
         await user.click(screen.getByRole('combobox', {name: /Field/}));
         await user.click(screen.getByRole('option', {name: /Service Speed/}));
@@ -117,7 +117,7 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('PartnerAgreedRate renders a $ adornment and submits the numeric value', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockCreate.mockResolvedValueOnce({
             success: true,
             request: {status: 'Pending'},
@@ -149,7 +149,7 @@ describe('JobChangeRequestDialog', () => {
 
     describe('address fields', () => {
         it('renders structured address inputs and submits a JSON payload', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockCreate.mockResolvedValueOnce({
                 success: true,
                 request: {status: 'Pending'},
@@ -183,7 +183,7 @@ describe('JobChangeRequestDialog', () => {
         });
 
         it('rejects submission when all address lines are empty', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderDialog({preselectedFieldName: 'DeliveryAddress'});
             await user.click(screen.getByRole('button', {name: /Submit/}));
             expect(screen.getByText(/Enter at least one address line/)).toBeInTheDocument();
@@ -254,7 +254,7 @@ describe('JobChangeRequestDialog', () => {
 
     describe('field dropdown grouping', () => {
         it('groups fields under "Applies immediately" and "Requires partner approval"', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderDialog();
             await user.click(screen.getByLabelText(/Field/));
             const listbox = await screen.findByRole('listbox');
@@ -283,7 +283,7 @@ describe('JobChangeRequestDialog', () => {
         });
 
         it('keeps the reason textarea editable and submits with the locked value', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockCreate.mockResolvedValueOnce({
                 success: true,
                 request: {status: 'Pending'},
@@ -366,7 +366,7 @@ describe('JobChangeRequestDialog', () => {
         // The dispatcher's tenant may have multiple active partner pairings; sending
         // pairingId lets the backend disambiguate without falling back to the
         // single-active-pairing heuristic that errors out on multi-pairing tenants.
-        const user = userEvent.setup();
+        const user = setupUser();
         mockCreate.mockResolvedValueOnce({success: true, request: {status: 'Applied'}});
         renderDialog({pairingId: 17});
         await user.click(screen.getByLabelText(/New notes/i));
@@ -378,7 +378,7 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('surfaces backend error message via a toast after closing the dialog', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockCreate.mockResolvedValueOnce({
             success: false,
             message: 'A pending request for Notes already exists',

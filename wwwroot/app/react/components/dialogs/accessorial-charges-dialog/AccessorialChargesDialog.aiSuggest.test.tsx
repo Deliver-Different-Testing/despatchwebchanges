@@ -1,10 +1,13 @@
 import React from 'react';
 import {render, screen, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {AccessorialChargesDialog} from './AccessorialChargesDialog';
 import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
 import {analyzePricing} from '../../../services/aiAssistantApi';
 import {isAiEnabled} from '../../../../functions/aiSettings';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 jest.mock('../../../services/accessorialChargesApi', () => ({
     accessorialChargesApi: {

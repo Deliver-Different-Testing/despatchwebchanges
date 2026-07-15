@@ -1,9 +1,12 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {ChangeRequestTriage} from './ChangeRequestTriage';
 import {triageChangeRequest} from '../../services/aiAssistantApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 jest.mock('../../services/aiAssistantApi', () => ({triageChangeRequest: jest.fn()}));
 jest.mock('../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));

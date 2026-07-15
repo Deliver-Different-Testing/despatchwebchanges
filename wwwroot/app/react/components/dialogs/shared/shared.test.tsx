@@ -1,8 +1,8 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {DialogShell} from './DialogShell';
 import {DialogHeader} from './DialogHeader';
 import {DialogFooter} from './DialogFooter';
@@ -30,7 +30,7 @@ describe('DialogShell', () => {
 
 describe('DialogHeader', () => {
     it('renders title, subtitle and icon, and fires onClose', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onClose = jest.fn();
         renderWithTheme(
             <DialogHeader
@@ -66,7 +66,7 @@ describe('DialogHeader', () => {
 
 describe('DialogFooter', () => {
     it('fires the cancel and confirm callbacks', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onCancel = jest.fn();
         const onConfirm = jest.fn();
         renderWithTheme(

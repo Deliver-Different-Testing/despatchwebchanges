@@ -6,10 +6,14 @@
 
 import React from 'react';
 import {screen, act} from '@testing-library/react';
-import userEvent, {UserEvent} from '@testing-library/user-event';
+import {UserEvent} from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import {SearchCriteriaPanel, SearchCriteriaPanelProps} from './SearchCriteriaPanel';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 // Mock DateRangePicker to avoid LocalizationProvider/DatePicker complexity
 jest.mock('../date-range-picker/DateRangePicker', () => ({
@@ -41,7 +45,7 @@ describe('SearchCriteriaPanel', () => {
 
     beforeEach(() => {
         jest.useFakeTimers();
-        user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        user = setupUser({advanceTimers: jest.advanceTimersByTime});
     });
 
     afterEach(() => {

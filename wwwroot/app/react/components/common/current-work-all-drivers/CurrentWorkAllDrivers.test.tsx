@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import { CurrentWorkAllDrivers } from './CurrentWorkAllDrivers';
 import { IDriverWorkOverview } from './CurrentWorkAllDrivers.types';
@@ -140,7 +140,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should toggle sort order when sort button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -166,7 +166,7 @@ describe('CurrentWorkAllDrivers', () => {
 
     describe('search', () => {
         it('should filter drivers by search text', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -185,7 +185,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should be case insensitive', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -202,7 +202,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should show count of filtered results', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -219,7 +219,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should show no results message when search has no matches', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -237,7 +237,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should clear search when clear button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -264,7 +264,7 @@ describe('CurrentWorkAllDrivers', () => {
 
     describe('selection', () => {
         it('should call onDriverSelect when driver is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onDriverSelect = jest.fn();
 
             renderWithTheme(
@@ -300,7 +300,7 @@ describe('CurrentWorkAllDrivers', () => {
 
     describe('combined search and sort', () => {
         it('should maintain sort order when searching', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -416,7 +416,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should handle partial name matches in search', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -458,7 +458,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should handle whitespace in search', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -507,7 +507,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should handle rapid sort toggling', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <CurrentWorkAllDrivers
@@ -532,7 +532,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should call onDriverSelect with complete driver object', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onDriverSelect = jest.fn();
 
             renderWithTheme(

@@ -8,9 +8,9 @@
 
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {PartnerRatePanel, type PartnerRatePanelProps} from './PartnerRatePanel';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import type {PartnerRateForJobResponse} from '../../../services/jobListApi';
 
 const rateCardResponse: PartnerRateForJobResponse = {
@@ -101,7 +101,7 @@ describe('PartnerRatePanel', () => {
     });
 
     it('lets the operator switch live quotes by clicking another row', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderPanel({fetchRate: jest.fn().mockResolvedValue(liveQuoteResponse)});
 
         expect(await screen.findByText(/Express Delivery/)).toBeInTheDocument();
@@ -154,7 +154,7 @@ describe('PartnerRatePanel', () => {
 
     it('reports rate=0/valid=false when the input is cleared', async () => {
         const onRateChange = jest.fn();
-        const user = userEvent.setup();
+        const user = setupUser();
         renderPanel({onRateChange});
 
         expect(await screen.findByLabelText(/Agreed Rate/)).toBeInTheDocument();

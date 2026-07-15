@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {TextInputDialog} from './TextInputDialog';
 
@@ -46,21 +46,21 @@ describe('TextInputDialog', () => {
     });
 
     it('calls onCancel when Cancel button clicked', async () => {
-        const user = userEvent.setup({delay: null});
+        const user = setupUser({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
         await user.click(screen.getByRole('button', {name: 'Cancel'}));
         expect(defaultProps.onCancel).toHaveBeenCalledTimes(1);
     });
 
     it('calls onSubmit with current value when Save clicked', async () => {
-        const user = userEvent.setup({delay: null});
+        const user = setupUser({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
         await user.click(screen.getByRole('button', {name: 'Save'}));
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('REF-001');
     });
 
     it('updates value as user types and submits new value', async () => {
-        const user = userEvent.setup({delay: null});
+        const user = setupUser({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
 
         const input = screen.getByDisplayValue('REF-001');
@@ -72,7 +72,7 @@ describe('TextInputDialog', () => {
     });
 
     it('disables Save and shows helper text when required and value is empty', async () => {
-        const user = userEvent.setup({delay: null});
+        const user = setupUser({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} required={true} />);
 
         const input = screen.getByDisplayValue('REF-001');
@@ -83,7 +83,7 @@ describe('TextInputDialog', () => {
     });
 
     it('does not submit on Enter when required and value is empty', async () => {
-        const user = userEvent.setup({delay: null});
+        const user = setupUser({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} required={true} initialValue="" />);
 
         const input = screen.getByRole('textbox');
@@ -94,7 +94,7 @@ describe('TextInputDialog', () => {
     });
 
     it('submits on Enter key when value is valid', async () => {
-        const user = userEvent.setup({delay: null});
+        const user = setupUser({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
 
         const input = screen.getByDisplayValue('REF-001');

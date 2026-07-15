@@ -5,8 +5,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EditAfterhoursDialog, EditAfterhoursDialogProps} from './EditAfterhoursDialog';
@@ -160,7 +160,7 @@ describe('EditAfterhoursDialog', () => {
         it('shows search results from hook', async () => {
             mockUseCourierSearch.mockReturnValue({data: sampleCouriers, isFetching: false, error: null} as any);
 
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithProviders(createDefaultProps());
 
             const searchInput = screen.getByLabelText('Search driver...');
@@ -238,7 +238,7 @@ describe('EditAfterhoursDialog', () => {
     // ── Dialog Actions ──────────────────────────────────────────────
     describe('Dialog Actions', () => {
         it('calls onClose when Cancel is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
             renderWithProviders(createDefaultProps({onClose}));
 
@@ -247,7 +247,7 @@ describe('EditAfterhoursDialog', () => {
         });
 
         it('calls onSave with schedule data preserving schedule ID', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSave = jest.fn();
             renderWithProviders(createDefaultProps({schedule: existingSchedule, onSave, isUsTenant: false}));
 

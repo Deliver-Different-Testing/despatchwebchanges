@@ -5,8 +5,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -131,7 +131,7 @@ describe('EditDateTimeDialog', () => {
     // ── Dialog Actions ──────────────────────────────────────────────
     describe('Dialog Actions', () => {
         it('calls onClose when Cancel is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
             renderWithProviders(createDefaultProps({onClose}));
 
@@ -140,7 +140,7 @@ describe('EditDateTimeDialog', () => {
         });
 
         it('calls onSubmit with correct result when Save is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             renderWithProviders(createDefaultProps({
                 onSubmit,
@@ -169,7 +169,7 @@ describe('EditDateTimeDialog', () => {
     // ── Validation ──────────────────────────────────────────────────
     describe('Validation', () => {
         it('handles invalid date by falling back to current time', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             const showToast = jest.fn();
             renderWithProviders(createDefaultProps({dateTime: dayjs('invalid'), onSubmit, showToast}));
@@ -183,7 +183,7 @@ describe('EditDateTimeDialog', () => {
         });
 
         it('shows warning toast when submitting with invalid date', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             const showToast = jest.fn();
             renderWithProviders(createDefaultProps({onSubmit, showToast, showDate: true, showTime: false}));
@@ -226,7 +226,7 @@ describe('EditDateTimeDialog', () => {
         });
 
         it('submits successfully after typing a valid date', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             renderWithProviders(createDefaultProps({onSubmit}));
 
@@ -243,7 +243,7 @@ describe('EditDateTimeDialog', () => {
         });
 
         it('allows editing date-only and time-only pickers', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
 
             // Date-only
@@ -276,7 +276,7 @@ describe('EditDateTimeDialog', () => {
     // ── Date Processing ─────────────────────────────────────────────
     describe('Date Processing', () => {
         it('sets time to midnight in date-only mode', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             renderWithProviders(createDefaultProps({showDate: true, showTime: false, onSubmit}));
 
@@ -290,7 +290,7 @@ describe('EditDateTimeDialog', () => {
         });
 
         it('uses minimum date in time-only mode', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             renderWithProviders(createDefaultProps({showDate: false, showTime: true, onSubmit}));
 
@@ -308,7 +308,7 @@ describe('EditDateTimeDialog', () => {
     // ── Date/Time Independence ──────────────────────────────────────
     describe('Date/Time Independence', () => {
         it('preserves time when date is changed', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             renderWithProviders(createDefaultProps({onSubmit}));
 
@@ -323,7 +323,7 @@ describe('EditDateTimeDialog', () => {
         });
 
         it('preserves date when time is changed', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             renderWithProviders(createDefaultProps({onSubmit}));
 
@@ -339,7 +339,7 @@ describe('EditDateTimeDialog', () => {
         });
 
         it('ignores invalid intermediate date and time values', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             renderWithProviders(createDefaultProps({onSubmit}));
 
@@ -359,7 +359,7 @@ describe('EditDateTimeDialog', () => {
     // ── Loading State ───────────────────────────────────────────────
     describe('Loading State', () => {
         it('disables buttons during loading', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithProviders(createDefaultProps({
                 onSubmit: jest.fn(() => new Promise(() => {
                 }))
@@ -373,7 +373,7 @@ describe('EditDateTimeDialog', () => {
     // ── Timezone-Aware Fallback ─────────────────────────────────────
     describe('Timezone-Aware Fallback Initialization', () => {
         it('initializes with target timezone time when no initialDateTime is provided', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             const targetTz = 'America/Denver';
             renderWithProviders(createDefaultProps({dateTime: undefined, defaultTimeZone: targetTz, onSubmit}));

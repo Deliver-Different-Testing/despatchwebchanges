@@ -5,9 +5,9 @@
 
 import React from 'react';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {AutoCompleteDialog, AutoCompleteDialogProps, Suggestion} from './AutoCompleteDialog';
-import {createProps, renderWithTheme} from '../../../__testUtils__';
+import { createProps, renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 const mockSuggestions: Suggestion[] = [
     {id: 1, text: 'John Smith'},
@@ -91,7 +91,7 @@ describe('AutoCompleteDialog', () => {
 
     describe('Search Functionality', () => {
         it('does not search when input is less than minInputLength', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSearch = jest.fn().mockResolvedValue([]);
             const props = createMockProps({onSearch, minInputLength: 3});
             renderWithTheme(<AutoCompleteDialog {...props} />);
@@ -106,7 +106,7 @@ describe('AutoCompleteDialog', () => {
         });
 
         it('searches when input reaches minInputLength', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSearch = jest.fn().mockResolvedValue(mockSuggestions);
             const props = createMockProps({onSearch, minInputLength: 2});
             renderWithTheme(<AutoCompleteDialog {...props} />);
@@ -121,7 +121,7 @@ describe('AutoCompleteDialog', () => {
         });
 
         it('displays loading indicator during search', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             let resolveSearch: (value: Suggestion[]) => void;
             const onSearch = jest.fn().mockImplementation(() =>
                 new Promise<Suggestion[]>(resolve => {
@@ -141,7 +141,7 @@ describe('AutoCompleteDialog', () => {
         });
 
         it('displays no options text when search returns empty', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSearch = jest.fn().mockResolvedValue([]);
             const props = createMockProps({onSearch, minInputLength: 2});
             renderWithTheme(<AutoCompleteDialog {...props} />);
@@ -177,7 +177,7 @@ describe('AutoCompleteDialog', () => {
 
     describe('Submit Functionality', () => {
         it('calls onSubmit with selected item when Save is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({onSubmit, existingItem});
@@ -192,7 +192,7 @@ describe('AutoCompleteDialog', () => {
         });
 
         it('calls onSubmit with shouldRerate true when checkbox is checked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSubmit = jest.fn();
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({onSubmit, existingItem, showRerateOption: true});
@@ -237,7 +237,7 @@ describe('AutoCompleteDialog', () => {
 
     describe('Min Input Length Message', () => {
         it('displays minimum characters message for single character', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createMockProps({minInputLength: 1});
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
@@ -249,7 +249,7 @@ describe('AutoCompleteDialog', () => {
         });
 
         it('displays minimum characters message for multiple characters', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createMockProps({minInputLength: 3});
             renderWithTheme(<AutoCompleteDialog {...props} />);
 

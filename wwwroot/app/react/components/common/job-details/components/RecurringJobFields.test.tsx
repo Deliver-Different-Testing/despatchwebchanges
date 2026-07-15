@@ -4,12 +4,12 @@
 
 import React from 'react';
 import {render, screen, fireEvent, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import {RecurringJobFields} from './RecurringJobFields';
 import {createMockJob} from '../__testUtils__/mockJob';
-import {testTheme} from '../../../../__testUtils__';
+import { testTheme } from '../../../../__testUtils__';
+import { setupUser } from '../../../../__testUtils__/setupUser';
 import {DaysOfWeek} from '../../../../../enums/days-of-week.enum';
 import {Frequency} from '../../../../../enums/frequency.enum';
 
@@ -94,7 +94,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('renders schedule fields and the full holiday-option set, firing onHolidayOptionChange with the enum value', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onHolidayOptionChange = jest.fn();
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onHolidayOptionChange})} />);
         expect(screen.getByText('Recurring Schedule')).toBeInTheDocument();
@@ -159,7 +159,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('hovering a date field reveals a tooltip carrying the pickup timezone abbreviation', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const job = createMockJob({
             preBook: true,
             // Override the mock's NZ timezone so the abbreviation is non-empty —

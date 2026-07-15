@@ -1,9 +1,12 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {CustomizePanelsDialog, CustomizePanelsDialogProps} from './CustomizePanelsDialog';
 import type {DashboardBox} from '../dashboard-settings-dialog/DashboardSettingsDialog';
-import {createProps, renderWithTheme} from '../../../__testUtils__';
+import { createProps, renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 const mockBoxes: Record<string, DashboardBox> = {
     jobList: {name: 'jobList', title: 'Live Job Data', description: 'The job list', icon: 'filter_list', visible: true},

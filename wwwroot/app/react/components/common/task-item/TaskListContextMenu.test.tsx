@@ -4,11 +4,14 @@
 
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import {TaskListContextMenu} from './TaskListContextMenu';
 import {Task, TasksServiceInterface} from './TaskItem.interfaces';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 const theme = createTheme();
 

@@ -1,8 +1,11 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {AiDraftButton} from './AiDraftButton';
 import {isAiEnabled} from '../../../../functions/aiSettings';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 jest.mock('../../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn(),

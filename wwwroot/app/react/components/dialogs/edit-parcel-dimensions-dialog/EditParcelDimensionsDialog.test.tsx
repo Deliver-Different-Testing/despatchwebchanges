@@ -1,9 +1,9 @@
 
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {EditParcelDimensionsDialog} from './EditParcelDimensionsDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import type {ParcelDimensions} from './types';
 import {apiClient} from '../../../services/apiClient';
 
@@ -66,7 +66,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('closes directly when no changes have been made', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
@@ -76,7 +76,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
     });
 
     it('shows confirmation dialog when cancelling with unsaved changes', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
         const nameInput = screen.getByPlaceholderText('Name');
@@ -90,7 +90,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
     });
 
     it('closes when Discard is confirmed', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
         const nameInput = screen.getByPlaceholderText('Name');
@@ -106,7 +106,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
     });
 
     it('keeps dialog open when Keep editing is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
         const nameInput = screen.getByPlaceholderText('Name');
@@ -130,7 +130,7 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('increases qty when + is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
         expect(screen.getByText(/1 parcel total/i)).toBeInTheDocument();
@@ -139,7 +139,7 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     });
 
     it('decreases qty when - is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel()]} />);
 
         expect(screen.getByText(/2 parcels total/i)).toBeInTheDocument();
@@ -153,7 +153,7 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     });
 
     it('deletes a row when Delete row is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[
             mockParcel({itemName: 'A'}),
             mockParcel({itemName: 'B'}),
@@ -165,7 +165,7 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     });
 
     it('keeps at least one empty row when the last row is deleted', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
         await user.click(screen.getByRole('button', {name: /delete row/i}));
@@ -186,7 +186,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
     };
 
     it('auto-fills an added item barcode as {jobNumber}-N, continuing past existing barcodes and leaving them untouched', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(
             <EditParcelDimensionsDialog
                 {...defaultProps}
@@ -205,7 +205,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
     });
 
     it('auto-fills the first barcode of a newly added package type', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(
             <EditParcelDimensionsDialog
                 {...defaultProps}
@@ -228,7 +228,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
     });
 
     it('leaves added barcodes empty when no jobNumber is provided', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(
             <EditParcelDimensionsDialog
                 {...defaultProps}
@@ -257,7 +257,7 @@ describe('EditParcelDimensionsDialog weight validation', () => {
     });
 
     it('enables Save once all parcels have a weight greater than 0', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
         const weightInputs = screen.getAllByRole('spinbutton', {name: 'Weight'});
@@ -270,7 +270,7 @@ describe('EditParcelDimensionsDialog weight validation', () => {
     });
 
     it('disables Save when a parcel weight is zero', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel({weight: 5})]} />);
 
         const weightInputs = screen.getAllByRole('spinbutton', {name: 'Weight'});
@@ -300,7 +300,7 @@ describe('EditParcelDimensionsDialog partnerMode', () => {
     });
 
     it('skips the UpdateJobPackages POST and resolves with captured parcels', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         const showToast = jest.fn();
         renderWithTheme(
@@ -327,7 +327,7 @@ describe('EditParcelDimensionsDialog partnerMode', () => {
     });
 
     it('non-partner mode still POSTs to UpdateJobPackages', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         renderWithTheme(
             <EditParcelDimensionsDialog

@@ -9,6 +9,12 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import type {
     CourierData,
@@ -27,6 +33,7 @@ import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
 import {
+    addRestoreEvent,
     allocateJobs,
     bulkUpdateReadStatus,
     restoreJobs,
@@ -623,10 +630,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     // ── Bulk action handlers ───────────────────────────────────────────
 
-    const handleBulkRestore = useCallback(async () => {
+    const [bulkRestoreConfirmOpen, setBulkRestoreConfirmOpen] = useState(false);
+
+    const performBulkRestore = useCallback(async (forceRestoreCompleted: boolean) => {
         const ids = [...multiSelect.selectedIds];
         try {
-            await restoreJobs(ids);
+            await Promise.all(ids.map(id => addRestoreEvent(id)));
+            await restoreJobs(ids, forceRestoreCompleted);
             showToast(`${ids.length} job(s) restored`, 'success');
             multiSelect.clear();
             if (fetchConfig) {
@@ -638,6 +648,19 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             showToast('Failed to restore jobs', 'error');
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
+
+    const handleBulkRestore = useCallback(() => {
+        // Force-restore (and confirm) only when the selection includes a completed job,
+        // since that clears POD and re-opens it.
+        const anyCompleted = [...multiSelect.selectedIds].some(
+            id => jobs.find(j => j.id === id)?.done,
+        );
+        if (anyCompleted) {
+            setBulkRestoreConfirmOpen(true);
+            return;
+        }
+        void performBulkRestore(false);
+    }, [multiSelect, jobs, performBulkRestore]);
 
     const handleBulkMarkRead = useCallback(async () => {
         const ids = [...multiSelect.selectedIds];
@@ -863,6 +886,33 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 fetchRate={getPartnerRateForJob}
                 getPartnerOptions={getActivePartnerOptions}
             />
+            {/* Confirm before force-restoring a selection that includes completed jobs. */}
+            <Dialog
+                open={bulkRestoreConfirmOpen}
+                onClose={() => setBulkRestoreConfirmOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle>Restore Completed Jobs?</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2">
+                        Some selected jobs are completed. Restoring them will clear their POD and
+                        reactivate them as new jobs. Continue?
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setBulkRestoreConfirmOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={async () => {
+                            setBulkRestoreConfirmOpen(false);
+                            await performBulkRestore(true);
+                        }}
+                    >
+                        Restore
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

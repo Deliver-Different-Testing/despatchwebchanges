@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor, within, fireEvent} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {StickyNotes} from './StickyNotes';
@@ -221,7 +221,7 @@ describe('StickyNotes', () => {
         });
 
         it('filters notes by category when selected', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
@@ -243,7 +243,7 @@ describe('StickyNotes', () => {
         });
 
         it('shows filter indicator when category is selected', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 

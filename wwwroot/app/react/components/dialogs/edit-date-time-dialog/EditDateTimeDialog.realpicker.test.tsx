@@ -19,8 +19,8 @@ jest.mock('../../../../tests/mocks/muiDatePickerMocks', () => ({
 }));
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -121,7 +121,7 @@ describe('EditDateTimeDialog – Real MUI v8 Picker Integration', () => {
      * and the real MUI picker doesn't interfere with state management.
      */
     it('submits the initial date/time value correctly', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         const props = createDefaultProps({
             showDate: true,
@@ -145,7 +145,7 @@ describe('EditDateTimeDialog – Real MUI v8 Picker Integration', () => {
     });
 
     it('time-only submit uses minimum date with selected time', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         const props = createDefaultProps({
             showDate: false,
@@ -167,7 +167,7 @@ describe('EditDateTimeDialog – Real MUI v8 Picker Integration', () => {
     });
 
     it('date-only submit sets time to midnight', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         const props = createDefaultProps({
             showDate: true,
@@ -191,7 +191,7 @@ describe('EditDateTimeDialog – Real MUI v8 Picker Integration', () => {
     });
 
     it('passes timezone in submit result', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         const props = createDefaultProps({
             defaultTimeZone: 'America/New_York',

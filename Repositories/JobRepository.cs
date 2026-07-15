@@ -20,7 +20,8 @@ public partial class JobRepository(
     ITenantInfoService infoService,
     ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
-    ICreateJobService createJobService)
+    ICreateJobService createJobService,
+    ICourierRepository courierRepository)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobQueryRepository,
         IJobCommandRepository
 {
@@ -28,6 +29,7 @@ public partial class JobRepository(
     private readonly ITenantClock _clock = clock;
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private readonly ITenantInfoService _infoService = infoService;
+    private readonly ICourierRepository _courierRepository = courierRepository;
 
     /// <summary>
     /// Updates pricing fields (amount, PPD, fuel, courier payment) for multiple jobs manually.
@@ -480,7 +482,7 @@ public partial class JobRepository(
     {
         try
         {
-            await RestoreNonCompletedJobsAsync(jobIds);
+            await RestoreJobsCoreAsync(jobIds, forceRestoreCompleted: false);
         }
         catch (Exception e)
         {
@@ -799,14 +801,19 @@ public partial class JobRepository(
 
     /// <summary>
     /// Restores voided or not-yet-done jobs back to active dispatch status.
-    /// Genuinely-completed jobs are guarded and skipped (see <see cref="RestoreNonCompletedJobsAsync"/>).
+    /// Genuinely-completed jobs (done and not void) are skipped unless
+    /// <paramref name="forceRestoreCompleted"/> is set (see <see cref="RestoreJobsCoreAsync"/>).
     /// </summary>
     /// <param name="jobIds">List of job IDs to restore.</param>
-    public async Task RestoreJobsAsync(IReadOnlyList<int> jobIds)
+    /// <param name="forceRestoreCompleted">
+    /// When true, completed jobs are also re-opened and their POD is cleared. Set only after
+    /// the operator confirms restoring a completed job.
+    /// </param>
+    public async Task RestoreJobsAsync(IReadOnlyList<int> jobIds, bool forceRestoreCompleted = false)
     {
         try
         {
-            await RestoreNonCompletedJobsAsync(jobIds);
+            await RestoreJobsCoreAsync(jobIds, forceRestoreCompleted);
         }
         catch (Exception e)
         {
@@ -816,30 +823,109 @@ public partial class JobRepository(
         }
     }
 
-    /// <summary>
-    /// Maximum job IDs per uspRestoreJobs call. UTL_fncCSV_ToTable and the proc
-    /// parameter are nvarchar(4000); chunking keeps a large selection well under
-    /// that so it can never silently truncate and drop jobs.
-    /// </summary>
-    private const int RestoreJobsBatchSize = 300;
+    /// <summary>Dispatcher id that marks a multi-leg job whose siblings share a dispatcher.</summary>
+    private const int MultiLegDispatcherId = 148;
+
+    /// <summary>Parent relationship types whose children's shared dispatcher is cleared on restore.</summary>
+    private static readonly int[] SharedDispatcherRelationshipTypes = [5, 7];
 
     /// <summary>
-    /// Restores the given jobs via uspRestoreJobs (one batch call per chunk). The
-    /// proc skips genuinely-completed jobs (done and not void) per row — re-opening
-    /// one would leave stale POD/completion evidence that DESWEB_qryDespatch filters
-    /// out — and sets DisplayInDespatch = 1 on each restored job so it reappears on
-    /// the board.
+    /// Restores the given jobs back onto the dispatch board (the C# replacement for the legacy
+    /// uspRestoreJobs proc). Per job it un-assigns the courier, clears dispatch/paging/completion
+    /// state, resets the status to New and internal status to New Jobs, and re-shows the job via
+    /// DisplayInDespatch = 1. A genuinely-completed job (done and not void) is skipped unless
+    /// <paramref name="forceRestoreCompleted"/> is set — forcing also clears the POD, matching the
+    /// proc's <c>@ForceRestoreCompleted = 1</c> branch. The courier device is notified via
+    /// UTL_stpJob_RestoreDevice (before the courier is nulled) and the courier's clear-list area
+    /// order is recomputed, preserving the proc's side effects.
     /// </summary>
-    private async Task RestoreNonCompletedJobsAsync(IReadOnlyList<int> jobIds)
+    private async Task RestoreJobsCoreAsync(IReadOnlyList<int> jobIds, bool forceRestoreCompleted)
     {
         if (jobIds is null or { Count: 0 })
         {
             return;
         }
 
-        foreach (var chunk in jobIds.Chunk(RestoreJobsBatchSize))
+        var jobs = await Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .Select(j => new
+            {
+                j.UcjbId,
+                j.UcjbCourierId,
+                j.ParentId,
+                j.UcjbDispId,
+                j.UcjbJobDone,
+                j.UcjbVoid
+            })
+            .ToListAsync();
+
+        foreach (var job in jobs)
         {
-            await Context.Procedures.uspRestoreJobsAsync(string.Join(',', chunk), forceRestoreCompleted: false);
+            // Skip a genuinely-completed job unless the caller forces it — re-opening one would
+            // otherwise leave stale POD/completion evidence that DESWEB_qryDespatch filters out.
+            if (!forceRestoreCompleted && job.UcjbJobDone && !job.UcjbVoid)
+            {
+                continue;
+            }
+
+            // Multi-leg relationship: clear the shared dispatcher off every sibling job.
+            if (job.UcjbDispId == MultiLegDispatcherId && (job.ParentId ?? 0) != 0)
+            {
+                var parentRelationshipTypeId = await Context.TucJobs
+                    .Where(j => j.UcjbId == job.ParentId)
+                    .Select(j => j.JobRelationshipTypeId)
+                    .FirstOrDefaultAsync();
+
+                if (parentRelationshipTypeId is not null &&
+                    SharedDispatcherRelationshipTypes.Contains(parentRelationshipTypeId.Value))
+                {
+                    await Context.TucJobs
+                        .Where(j => j.ParentId == job.ParentId)
+                        .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.UcjbDispId, (int?)null));
+                }
+            }
+
+            // Notify the courier's device the job has been taken off them. Must run before the
+            // courier is nulled below (the proc reads the still-assigned courier; it self-guards
+            // when the job has no courier).
+            await Context.Procedures.UTL_stpJob_RestoreDeviceAsync(job.UcjbId);
+
+            await Context.TucJobs
+                .Where(j => j.UcjbId == job.UcjbId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.New)
+                    .SetProperty(j => j.UcjbJobDone, false)
+                    .SetProperty(j => j.UcjbVoid, false)
+                    .SetProperty(j => j.UcjbCourierId, (int?)null)
+                    .SetProperty(j => j.UcjbDispDate, (DateTime?)null)
+                    .SetProperty(j => j.UcjbDispTime, (DateTime?)null)
+                    .SetProperty(j => j.UcjbPaged, false)
+                    .SetProperty(j => j.UcjbPagedTime, (DateTime?)null)
+                    .SetProperty(j => j.UcjbComplTime, (DateTime?)null)
+                    .SetProperty(j => j.UcjbMobileSend, false)
+                    .SetProperty(j => j.AutoDespatch, false)
+                    .SetProperty(j => j.DisplayInDespatch, true)
+                    .SetProperty(j => j.PickRunOrder, (byte?)null)
+                    .SetProperty(j => j.DropRunOrder, (byte?)null)
+                    .SetProperty(j => j.DesCheck, false)
+                    .SetProperty(j => j.FdcourierId, (int?)null)
+                    .SetProperty(j => j.FirstJob, false)
+                    .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.NewJobs));
+
+            // Only a forced (completed-job) restore clears the POD, mirroring the proc's
+            // CASE WHEN @ForceRestoreCompleted = 1 THEN NULL ELSE ucjbPODName END.
+            if (forceRestoreCompleted)
+            {
+                await Context.TucJobs
+                    .Where(j => j.UcjbId == job.UcjbId)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.UcjbPodname, (string)null));
+            }
+
+            // Recompute the (former) courier's clear-list area ordering now the job is gone.
+            if (job.UcjbCourierId is { } courierId)
+            {
+                await _courierRepository.ResetClearListAreaOrderAsync(courierId);
+            }
         }
     }
 

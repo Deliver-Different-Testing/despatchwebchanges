@@ -34,6 +34,7 @@ namespace DespatchWeb.EntityClasses
         Task<int> uspReDespatchJobByCourierIDAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspRestoreJobsAsync(string jobIDs, bool? forceRestoreCompleted, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<UTL_stpJob_InsertFromTblBulkJobResult>> UTL_stpJob_InsertFromTblBulkJobAsync(int? bulkJobID, string runName, int? courierID, int? runStatus, int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> UTL_stpJob_RestoreDeviceAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? clientID, decimal? amount, OutputParameter<decimal?> pPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }
 }

@@ -4,10 +4,13 @@
 
 import React from 'react';
 import {act, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {RecoveryAgentManagementDialog, RecoveryAgentManagementDialogProps} from './RecoveryAgentManagementDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import type {RecoveryAgentJobViewModel, Suggestion} from '../../../services/nationwideApi';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 const mockAirports: Suggestion[] = [
     {id: 1, text: 'Los Angeles International (LAX)'},

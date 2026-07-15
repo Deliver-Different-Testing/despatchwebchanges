@@ -2,8 +2,8 @@
  * Optimised: read-only tests consolidated to reduce render count.
  */
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverComplianceTab} from './DriverComplianceTab';
@@ -116,7 +116,7 @@ describe('DriverComplianceTab', () => {
 
     describe('Bulk reminders dialog', () => {
         it('should open dialog when Send Reminders button is clicked and there are remindable items', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             setupMocks();
             renderWithProviders();
 
@@ -127,7 +127,7 @@ describe('DriverComplianceTab', () => {
         });
 
         it('should close dialog when Cancel is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             setupMocks();
             renderWithProviders();
 

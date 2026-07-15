@@ -6,8 +6,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 
@@ -123,7 +123,7 @@ describe('InsertToLiveDialog', () => {
     });
 
     it('calls onClose when Cancel is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onClose = jest.fn();
         renderDialog(createProps({onClose}));
 
@@ -132,7 +132,7 @@ describe('InsertToLiveDialog', () => {
     });
 
     it('inserts with the default date and Group scope, then reports success', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSuccess = jest.fn();
         const showToast = jest.fn();
         const result = createResult();
@@ -155,7 +155,7 @@ describe('InsertToLiveDialog', () => {
     });
 
     it('submits the Route scope when selected', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockInsertToLive.mockResolvedValue(createResult());
 
         renderDialog(createProps());
@@ -171,7 +171,7 @@ describe('InsertToLiveDialog', () => {
     });
 
     it('warns when saved flights could not be matched', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const showToast = jest.fn();
         mockInsertToLive.mockResolvedValue(createResult({flightsUnmatched: 2}));
 
@@ -188,7 +188,7 @@ describe('InsertToLiveDialog', () => {
     });
 
     it('surfaces the backend error message on failure', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const showToast = jest.fn();
         const onSuccess = jest.fn();
         mockInsertToLive.mockRejectedValue({response: {data: 'Booking is not in Manual mode.'}});

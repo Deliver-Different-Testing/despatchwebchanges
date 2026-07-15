@@ -4,9 +4,9 @@
 
 import React from 'react';
 import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {DateRangeDialog, DateRangeDialogProps} from './DateRangeDialog';
-import {renderWithTheme, createProps} from '../../../__testUtils__';
+import { createProps, renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import dayjs from 'dayjs';
 
 const defaultProps: DateRangeDialogProps = {
@@ -174,7 +174,7 @@ describe('DateRangeDialog', () => {
 
     describe('Close Functionality', () => {
         it('calls onClose when close button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
             const props = createMockProps({onClose});
             renderWithTheme(<DateRangeDialog {...props} />);
@@ -187,7 +187,7 @@ describe('DateRangeDialog', () => {
         });
 
         it('calls onClose when Cancel button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
             const props = createMockProps({onClose});
             renderWithTheme(<DateRangeDialog {...props} />);
@@ -200,7 +200,7 @@ describe('DateRangeDialog', () => {
 
     describe('Apply Functionality', () => {
         it('calls onApply with date range when Apply is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onApply = jest.fn();
             const initialRange = {
                 start: new Date(2024, 0, 15),

@@ -4,10 +4,13 @@
 
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {JobChangeRequestsForJob} from './JobChangeRequestsForJob';
-import {renderWithProviders} from '../../__testUtils__';
+import { renderWithProviders } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {jobChangeRequestApi, type JobChangeRequestDto} from '../../services/jobChangeRequestApi';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 jest.mock('../../services/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {
@@ -57,7 +60,7 @@ type PanelProps = Partial<React.ComponentProps<typeof JobChangeRequestsForJob>>;
  * happens here. Returns the userEvent instance for follow-up interactions.
  */
 async function renderAndClick(buttonName: RegExp, props: PanelProps = {}): Promise<ReturnType<typeof userEvent.setup>> {
-    const user = userEvent.setup();
+    const user = setupUser();
     renderWithProviders(<JobChangeRequestsForJob jobId={42} {...props}/>);
     expect(await screen.findByRole('button', {name: buttonName})).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: buttonName}));
@@ -150,7 +153,7 @@ describe('JobChangeRequestsForJob', () => {
     });
 
     it('clicking Approve calls the API, reloads, and fires onChanged', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onChanged = jest.fn();
         mockApi.forJob.mockResolvedValueOnce([baseRow]).mockResolvedValueOnce([]);
         mockApi.approve.mockResolvedValueOnce({success: true});
@@ -212,7 +215,7 @@ describe('JobChangeRequestsForJob', () => {
 
     describe('modify own pending request', () => {
         it('cancels the existing row and invokes onModifyRequest with the field + value', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onModifyRequest = jest.fn();
             mockApi.forJob.mockResolvedValueOnce([localPendingRow]).mockResolvedValueOnce([]);
             mockApi.cancel.mockResolvedValueOnce({success: true});
@@ -403,7 +406,7 @@ describe('JobChangeRequestsForJob', () => {
         });
 
         it('renders the requestedAt tooltip with a timezone abbreviation', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockApi.forJob.mockResolvedValueOnce([baseRow]);
             renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
 

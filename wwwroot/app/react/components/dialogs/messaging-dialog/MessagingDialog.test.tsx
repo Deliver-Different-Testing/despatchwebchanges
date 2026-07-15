@@ -6,12 +6,12 @@
 
 import React from 'react';
 import {render, screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {MessagingDialog, isNearBottom} from './MessagingDialog';
 import {dayjs} from '../../../utils/dateUtils';
 import {messagingApi} from '../../../services/messagingApi';
-import {suppressConsoleError} from '../../../__testUtils__';
+import { suppressConsoleError } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
 
 jest.mock('../../../services/messagingApi', () => {
@@ -93,7 +93,7 @@ Element.prototype.scrollIntoView = jest.fn();
 describe('MessagingDialog', () => {
     // ── Rendering + close (single render) ───────────────────────────
     it('renders drawer with title, conversations panel, and calls onClose on close button', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults();
         const onClose = jest.fn();
         renderWithTheme(<MessagingDialog {...defaultProps} onClose={onClose} />);
@@ -109,7 +109,7 @@ describe('MessagingDialog', () => {
 
     // ── Outside click does not dismiss ──────────────────────────────
     it('stays open on backdrop (outside) click but closes on the close button', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults();
         const onClose = jest.fn();
         renderWithTheme(<MessagingDialog {...defaultProps} onClose={onClose} />);
@@ -138,7 +138,7 @@ describe('MessagingDialog', () => {
 
     // ── Accessibility: labelled controls + live region ─────────────
     it('exposes accessible names on icon controls and a live region for messages', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults([createConversation({otherPartyId: 10})]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
@@ -159,7 +159,7 @@ describe('MessagingDialog', () => {
 
     // ── Message grouping: consecutive same-sender messages share one timestamp ─
     it('groups consecutive same-sender messages so only the last shows a timestamp', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults([createConversation({otherPartyId: 10})]);
         // Two messages from the same sender, same minute → one group.
         mockApi.getMessages.mockResolvedValue([
@@ -211,7 +211,7 @@ describe('MessagingDialog', () => {
 
     // ── Empty state + Start Conversation → new chat search ──────────
     it('shows empty state and navigates to new conversation search view', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults([]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
@@ -224,7 +224,7 @@ describe('MessagingDialog', () => {
 
     // ── Error state + Retry ─────────────────────────────────────────
     it('displays error state with Retry button and recovers on retry', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockApi.getRecentList.mockRejectedValueOnce(new Error('Server error'));
         mockApi.getQuickResponses.mockResolvedValue([]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
@@ -247,7 +247,7 @@ describe('MessagingDialog', () => {
 
     // ── Chat Panel: placeholder → select conversation → header, type, empty messages (single render) ─
     it('shows placeholder, then header/input/party type/empty messages when conversation selected', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults([
             createConversation({
                 otherPartyName: 'Alice',
@@ -277,7 +277,7 @@ describe('MessagingDialog', () => {
 
     // ── Messages + mark as read + bubble rendering (single render) ──
     it('loads messages, marks as read, and renders sent/received bubbles with status indicators', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const conversations = [createConversation({otherPartyId: 10, unreadCount: 3})];
         const messages = [
             createMessage({messageId: 1, message: 'Read message', isSender: true, read: true, sent: true}),
@@ -313,7 +313,7 @@ describe('MessagingDialog', () => {
         afterEach(() => { errorSpy.mockRestore(); });
 
         it('disables send for empty input, sends message, and shows success toast', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const showToast = jest.fn();
             setupApiDefaults([createConversation({otherPartyId: 10})]);
             renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast}/>);
@@ -347,7 +347,7 @@ describe('MessagingDialog', () => {
         });
 
         it('shows error toast when sending fails', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const showToast = jest.fn();
             setupApiDefaults([createConversation({otherPartyId: 10})]);
             mockApi.sendMessage.mockRejectedValueOnce(new Error('Send failed'));
@@ -373,7 +373,7 @@ describe('MessagingDialog', () => {
 
     // ── Quick Responses ─────────────────────────────────────────────
     it('toggles quick responses panel', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const quickResponses: QuickResponse[] = [
             {id: 1, text: 'On my way!'},
             {id: 2, text: 'Delivered'},
@@ -396,7 +396,7 @@ describe('MessagingDialog', () => {
 
     // ── New Chat View: navigation, back button, Multi mode, recent conversations (single render) ─
     it('opens new conversation view with search, Multi, back, and shows recent conversations', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const conversations = [
             createConversation({otherPartyId: 1, otherPartyName: 'Recent Alice'}),
             createConversation({otherPartyId: 2, otherPartyName: 'Recent Bob'}),
@@ -429,7 +429,7 @@ describe('MessagingDialog', () => {
 
     // ── Conversation list filter: by name and unread-only ───────────
     it('filters the conversation list by name and by unread', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults([
             createConversation({otherPartyId: 1, otherPartyName: 'Alice', unreadCount: 0}),
             createConversation({otherPartyId: 2, otherPartyName: 'Bob', unreadCount: 3}),
@@ -453,7 +453,7 @@ describe('MessagingDialog', () => {
 
     // ── Mark-as-read quick action from the list ─────────────────────
     it('marks a conversation as read from the list quick action', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults([createConversation({otherPartyId: 10, otherPartyName: 'John Driver', unreadCount: 2})]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
@@ -471,7 +471,7 @@ describe('MessagingDialog', () => {
 
     // ── Relative date separator ─────────────────────────────────────
     it('labels the date separator "Today" for messages sent today', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         // Build "today" from the same clock the component uses (dayjs, local
         // wall-clock) — not new Date().toISOString() (UTC), which is the
         // previous calendar day during NZ morning hours and mislabels the
@@ -489,7 +489,7 @@ describe('MessagingDialog', () => {
 
     // ── Sending / failed message states ─────────────────────────────
     it('shows a sending indicator while a message is in flight', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setupApiDefaults([createConversation({otherPartyId: 10})]);
         let resolveSend!: () => void;
         mockApi.sendMessage.mockImplementationOnce(
@@ -511,7 +511,7 @@ describe('MessagingDialog', () => {
     });
 
     it('shows a failed state with retry when sending fails, and resends on retry', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const errorSpy = suppressConsoleError('Failed to send message');
         setupApiDefaults([createConversation({otherPartyId: 10})]);
         mockApi.sendMessage.mockRejectedValueOnce(new Error('network down'));

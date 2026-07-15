@@ -8,8 +8,8 @@
 
 import React from 'react';
 import {fireEvent, screen, waitFor, act} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithTheme} from '../../__testUtils__';
+import { renderWithTheme } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
 import {JobListContextMenu} from './JobListContextMenu';
 import type {DispatchJob, AppPage} from '../../interfaces/dispatchJob';
 import {AppPage as AppPageEnum} from '../../interfaces/dispatchJob';
@@ -61,6 +61,9 @@ import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {openJobInSearch} from '../../services/navigationService';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 const mockedApi = api as jest.Mocked<typeof api>;
 const mockedExecuteSplitJobFlow = executeSplitJobFlow as jest.Mock;
@@ -468,16 +471,35 @@ describe('JobListContextMenu', () => {
             invalidateSpy.mockRestore();
         });
 
-        it('Restore calls restoreJobs with jobId array and refreshes', async () => {
+        it('Restore (non-completed job) restores without forcing, logs the audit event, and refreshes', async () => {
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Restore'));
 
             await waitFor(() => {
-                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1]);
+                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1], false);
             });
+            expect(mockedApi.addRestoreEvent).toHaveBeenCalledWith(1);
             expect(props.onRefresh).toHaveBeenCalled();
+        });
+
+        it('Restore (completed job) confirms first, then force-restores and logs the audit event', async () => {
+            const props = createDefaultProps({job: createMockJob({done: true})});
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            fireEvent.click(screen.getByText('Restore'));
+
+            // Confirmation shown; nothing restored yet.
+            expect(await screen.findByText('Restore Completed Job?')).toBeInTheDocument();
+            expect(mockedApi.restoreJobs).not.toHaveBeenCalled();
+
+            fireEvent.click(screen.getByRole('button', {name: 'OK'}));
+
+            await waitFor(() => {
+                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1], true);
+            });
+            expect(mockedApi.addRestoreEvent).toHaveBeenCalledWith(1);
         });
 
         it('Mark Missing calls markJobMissing with toast and refresh', async () => {
@@ -574,7 +596,7 @@ describe('JobListContextMenu', () => {
 
         it('Enter key submits the dialog', async () => {
             // Kept as userEvent: asserts keyboard submission behaviour
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 

@@ -1,10 +1,14 @@
 
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
-import userEvent, {UserEvent} from '@testing-library/user-event';
+import {UserEvent} from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import {DateRangePicker, DateRangePickerProps} from './DateRangePicker';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 function createDefaultProps(overrides?: Partial<DateRangePickerProps>): DateRangePickerProps {
     return {
@@ -22,7 +26,7 @@ describe('DateRangePicker', () => {
     let user: UserEvent;
 
     beforeEach(() => {
-        user = userEvent.setup();
+        user = setupUser();
     });
 
     it('renders all range toggle buttons', () => {

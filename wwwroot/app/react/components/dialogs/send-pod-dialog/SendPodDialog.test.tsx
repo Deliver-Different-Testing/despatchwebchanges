@@ -1,10 +1,13 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {SendPodDialog, SendPodJobData} from './SendPodDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {draftPodEmail} from '../../../services/aiAssistantApi';
 import {isAiEnabled} from '../../../../functions/aiSettings';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 jest.mock('../../../services/aiAssistantApi', () => ({draftPodEmail: jest.fn()}));
 jest.mock('../../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));

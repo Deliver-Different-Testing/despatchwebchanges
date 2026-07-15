@@ -106,10 +106,16 @@ describe('jobListApi', () => {
     });
 
     describe('restoreJobs', () => {
-        it('posts job IDs', async () => {
+        it('posts job IDs with forceRestoreCompleted defaulting to false', async () => {
             await restoreJobs([5, 6]);
 
-            expect(mockedPost).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [5, 6]});
+            expect(mockedPost).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [5, 6], forceRestoreCompleted: false});
+        });
+
+        it('forwards forceRestoreCompleted when set', async () => {
+            await restoreJobs([5], true);
+
+            expect(mockedPost).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [5], forceRestoreCompleted: true});
         });
     });
 

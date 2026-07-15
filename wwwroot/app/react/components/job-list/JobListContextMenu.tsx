@@ -448,14 +448,29 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         openDispatchDialog('Courier');
     };
 
-    const handleRestore = async () => {
-        closeAll();
+    const performRestore = async (forceRestoreCompleted: boolean) => {
         try {
-            await api.restoreJobs([activeJob.id]);
+            await api.addRestoreEvent(activeJob.id);
+            await api.restoreJobs([activeJob.id], forceRestoreCompleted);
             refresh();
         } catch {
             showToast('Error restoring job', 'error');
         }
+    };
+
+    const handleRestore = () => {
+        closeAll();
+        // Restoring a completed job clears its POD and re-opens it — confirm first.
+        if (activeJob.done) {
+            setConfirmDialogConfig({
+                title: 'Restore Completed Job?',
+                message: 'This job is completed. Restoring it will clear its POD and reactivate it as a new job. Continue?',
+                onConfirm: () => performRestore(true),
+            });
+            setConfirmDialogOpen(true);
+            return;
+        }
+        void performRestore(false);
     };
 
     const handleMarkMissing = async () => {

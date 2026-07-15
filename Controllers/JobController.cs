@@ -1394,7 +1394,7 @@ public class JobController(
     {
         try
         {
-            await jobCommandRepository.RestoreJobsAsync(data.JobIds);
+            await jobCommandRepository.RestoreJobsAsync(data.JobIds, data.ForceRestoreCompleted);
             return Ok();
         }
         catch (Exception ex)

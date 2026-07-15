@@ -1,6 +1,6 @@
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {SendToLiveConfirmationDialog} from './SendToLiveConfirmationDialog';
 
@@ -35,7 +35,7 @@ describe('SendToLiveConfirmationDialog', () => {
     });
 
     it('calls onClose when Cancel is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createProps();
         renderWithTheme(<SendToLiveConfirmationDialog {...props} />);
 
@@ -45,7 +45,7 @@ describe('SendToLiveConfirmationDialog', () => {
     });
 
     it('calls onClose when the close icon is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createProps();
         renderWithTheme(<SendToLiveConfirmationDialog {...props} />);
 
@@ -54,7 +54,7 @@ describe('SendToLiveConfirmationDialog', () => {
     });
 
     it('calls onConfirm then onClose when Send to Live is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const props = createProps();
         renderWithTheme(<SendToLiveConfirmationDialog {...props} />);
 
@@ -65,7 +65,7 @@ describe('SendToLiveConfirmationDialog', () => {
     });
 
     it('shows loading state and disables buttons while submitting', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         let resolveConfirm!: () => void;
         const onConfirm = jest.fn(() => new Promise<void>((resolve) => {
             resolveConfirm = resolve;
@@ -83,7 +83,7 @@ describe('SendToLiveConfirmationDialog', () => {
     });
 
     it('still calls onClose if onConfirm rejects', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onConfirm = jest.fn().mockRejectedValue(new Error('api failed'));
         const props = createProps({onConfirm});
         renderWithTheme(<SendToLiveConfirmationDialog {...props} />);

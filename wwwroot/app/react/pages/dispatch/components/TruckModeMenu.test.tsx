@@ -1,8 +1,11 @@
 import React from 'react';
 import {render, screen, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {TruckModeMenu} from './TruckModeMenu';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 function renderMenu(value: 'On' | 'Off' | 'Only' = 'On', onChange = jest.fn()) {
     render(

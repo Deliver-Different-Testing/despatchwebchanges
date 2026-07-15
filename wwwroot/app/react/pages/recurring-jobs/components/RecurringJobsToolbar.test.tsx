@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RecurringJobsToolbar, RecurringJobsToolbarProps, RecurringJobsFilters} from './RecurringJobsToolbar';
@@ -162,7 +162,7 @@ describe('RecurringJobsToolbar', () => {
             renderWithProviders(createDefaultProps({onSearchChange}));
 
             const searchInput = screen.getByPlaceholderText('Search jobs...');
-            const user = userEvent.setup();
+            const user = setupUser();
             await user.click(searchInput);
             await user.paste('test');
 
@@ -229,7 +229,7 @@ describe('RecurringJobsToolbar', () => {
             renderWithProviders(createDefaultProps());
 
             const courierInput = screen.getByRole('combobox', {name: /courier/i});
-            const user = userEvent.setup();
+            const user = setupUser();
             await user.click(courierInput);
             await user.paste('John');
 

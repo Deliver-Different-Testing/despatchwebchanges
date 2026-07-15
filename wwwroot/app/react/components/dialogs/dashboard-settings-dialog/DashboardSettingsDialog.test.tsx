@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {screen, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {
     DashboardBox,
     DashboardSettingsConfig,
@@ -14,7 +13,8 @@ import {
     DashboardSettingsDialogProps,
     RefreshOption,
 } from './DashboardSettingsDialog';
-import {createProps, renderWithTheme} from '../../../__testUtils__';
+import { createProps, renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 const mockRefreshOptions: RefreshOption[] = [
     {id: 0, text: 'Disabled'},
@@ -161,7 +161,7 @@ describe('DashboardSettingsDialog', () => {
     // ── Toggle Box Visibility ───────────────────────────────────────
     describe('Toggle Box Visibility', () => {
         it('toggles via switch and via row click', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
             const pendingJobsRow = screen.getByText('Pending Jobs').closest('div[class*="Paper"]') as HTMLElement;
@@ -180,7 +180,7 @@ describe('DashboardSettingsDialog', () => {
     // ── Refresh Interval Selection ──────────────────────────────────
     describe('Refresh Interval Selection', () => {
         it('allows changing job list refresh interval', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
             const jobListSection = screen.getByText('Job list').closest('div');
@@ -198,7 +198,7 @@ describe('DashboardSettingsDialog', () => {
     // ── Close / Save ────────────────────────────────────────────────
     describe('Close Functionality', () => {
         it('calls onClose when close button or Cancel is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onClose})} />);
 
@@ -213,7 +213,7 @@ describe('DashboardSettingsDialog', () => {
 
     describe('Save Functionality', () => {
         it('calls onSave with current settings including toggled box visibility', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSave = jest.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onSave})} />);
 
@@ -256,7 +256,7 @@ describe('DashboardSettingsDialog', () => {
         });
 
         it('renders the toggle and emits dispatchBetaEnabled on save when enabled', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSave = jest.fn();
             renderWithTheme(
                 <DashboardSettingsDialog
@@ -280,7 +280,7 @@ describe('DashboardSettingsDialog', () => {
         });
 
         it('omits dispatchBetaEnabled from the result when the toggle is not shown', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSave = jest.fn();
             renderWithTheme(
                 <DashboardSettingsDialog {...createMockProps({onSave})} />,
@@ -310,7 +310,7 @@ describe('DashboardSettingsDialog', () => {
         });
 
         it('disables "Open automatically" while briefings are off, enables it once on', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithTheme(
                 <DashboardSettingsDialog {...createMockProps({config: aiConfig, aiEnabled: false})} />,
             );
@@ -326,7 +326,7 @@ describe('DashboardSettingsDialog', () => {
         });
 
         it('reflects the aiAutoOpen prop and emits it on save', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSave = jest.fn();
             renderWithTheme(
                 <DashboardSettingsDialog

@@ -7,9 +7,12 @@
 
 import React from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {SwapPodsDialog, SwapPodsDialogProps} from './SwapPodsDialog';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 const theme = createTheme();
 

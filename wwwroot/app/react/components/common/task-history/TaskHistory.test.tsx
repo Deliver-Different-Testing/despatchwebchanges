@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -195,7 +195,7 @@ describe('TaskHistory', () => {
 
     describe('Density Modes', () => {
         it('cycles through density modes when toggle is clicked', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -218,7 +218,7 @@ describe('TaskHistory', () => {
 
     describe('Refresh Functionality', () => {
         it('calls showInfoToast when refresh is clicked', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -233,7 +233,7 @@ describe('TaskHistory', () => {
         });
 
         it('calls tasksApi.getDeliveryJourney on refresh', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -258,7 +258,7 @@ describe('TaskHistory', () => {
 
     describe('Event Click', () => {
         it('calls onDeliveryEventClick and opens the details dialog when an event is clicked', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -281,7 +281,7 @@ describe('TaskHistory', () => {
         });
 
         it('opens the details dialog even when no onDeliveryEventClick callback is provided', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps({onDeliveryEventClick: undefined});
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -292,7 +292,7 @@ describe('TaskHistory', () => {
         });
 
         it('closes the details dialog when Close is clicked', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -415,7 +415,7 @@ describe('TaskHistory', () => {
         ];
 
         it('renders Total chip only on events with grandTotalAfter and hides it in UltraDense', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             mockGetDeliveryJourney.mockResolvedValue(eventsWithGrandTotal);
             const props = createDefaultProps({jobId: 999});
             renderWithProviders(<TaskHistory {...props} />);
@@ -475,7 +475,7 @@ describe('TaskHistory', () => {
 
     describe('Notes visibility by density', () => {
         it('shows notes in Normal density and hides them in Dense / UltraDense', async () => {
-            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 

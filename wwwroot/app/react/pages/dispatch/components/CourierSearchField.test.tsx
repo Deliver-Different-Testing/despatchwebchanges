@@ -1,6 +1,6 @@
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 const useCourierSearchMock = jest.fn();
@@ -34,7 +34,7 @@ describe('CourierSearchField', () => {
     });
 
     it('calls onSelect with the chosen courier', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSelect = renderField();
 
         // Open the dropdown (options come from the mocked search hook).

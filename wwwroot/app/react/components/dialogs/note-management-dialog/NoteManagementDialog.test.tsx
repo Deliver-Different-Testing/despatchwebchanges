@@ -6,13 +6,16 @@
 
 import React from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {NoteManagementDialog} from './NoteManagementDialog';
 import {NoteManagementDialogProps} from './types';
 import {JobNote, NoteType} from '../../../interfaces/notes';
-import {testTheme} from '../../../__testUtils__';
+import { testTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 // Mock the dateUtils module
 jest.mock('../../../utils/dateUtils', () => ({

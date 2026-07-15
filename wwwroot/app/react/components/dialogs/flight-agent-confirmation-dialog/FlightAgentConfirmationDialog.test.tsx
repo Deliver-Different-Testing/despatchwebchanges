@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
@@ -315,7 +315,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('allows AWB input when no existingAwb', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -374,7 +374,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('allows entering delivery notes', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -394,7 +394,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
     describe('Dialog Actions', () => {
         it('calls onClose when Cancel button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
 
             renderWithTheme(
@@ -412,7 +412,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('calls onConfirm with correct data when Confirm button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             renderWithTheme(
@@ -442,7 +442,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('includes stop jobs flag when checkbox is checked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             renderWithTheme(
@@ -653,7 +653,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
     describe('Issue #3: Package Ready Time Calculation', () => {
         it('calculates packageReadyTime as arrival + processing time', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             // Arrival at 10:30, processing time 90 mins = ready at 12:00
@@ -698,7 +698,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('uses cargo opening time if arrival + processing is before opening', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             // Arrival at 04:00, processing time 60 mins = 05:00 (before cargo opens at 06:00)
@@ -804,7 +804,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
     describe('Issue #4: Delivery By Time', () => {
         it('includes deliverByTime from API response in confirmation result', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             const cargoProcessing = createCargoProcessing({
@@ -833,7 +833,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('does not include deliverByTime when not provided by API', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             // No deliverByTime in the response

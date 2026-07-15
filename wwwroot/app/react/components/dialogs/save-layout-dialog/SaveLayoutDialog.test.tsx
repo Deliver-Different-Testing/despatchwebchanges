@@ -1,8 +1,8 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {SaveLayoutDialog} from './SaveLayoutDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 function setup(overrides: Partial<React.ComponentProps<typeof SaveLayoutDialog>> = {}) {
     const onClose = jest.fn();
@@ -27,7 +27,7 @@ describe('SaveLayoutDialog', () => {
     });
 
     it('disables Add Layout when the name is empty and enables it once a valid name is typed', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setup();
 
         const addButton = screen.getByRole('button', {name: /add layout/i});
@@ -39,7 +39,7 @@ describe('SaveLayoutDialog', () => {
     });
 
     it('rejects a duplicate name (case-insensitive) with an error and keeps Add Layout disabled', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         setup({existingNames: ['Default', 'Dispatch']});
 
         await user.click(screen.getByLabelText('Layout name'));
@@ -50,7 +50,7 @@ describe('SaveLayoutDialog', () => {
     });
 
     it('calls onConfirm with the trimmed name', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const {onConfirm} = setup();
 
         await user.click(screen.getByLabelText('Layout name'));
@@ -61,7 +61,7 @@ describe('SaveLayoutDialog', () => {
     });
 
     it('submits on Enter', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const {onConfirm} = setup();
 
         await user.click(screen.getByLabelText('Layout name'));
@@ -72,7 +72,7 @@ describe('SaveLayoutDialog', () => {
     });
 
     it('calls onClose when Cancel is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const {onClose, onConfirm} = setup();
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
