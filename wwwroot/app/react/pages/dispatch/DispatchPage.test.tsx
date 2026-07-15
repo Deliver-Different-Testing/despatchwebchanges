@@ -157,6 +157,62 @@ describe('DispatchPage', () => {
         });
     });
 
+    describe('job detail panel mount', () => {
+        let mountMock: jest.Mock;
+        let unmountMock: jest.Mock;
+        let originalReactJobDetails: unknown;
+
+        beforeEach(() => {
+            mountMock = jest.fn();
+            unmountMock = jest.fn();
+            originalReactJobDetails = (window as {ReactJobDetails?: unknown}).ReactJobDetails;
+            (window as {ReactJobDetails?: unknown}).ReactJobDetails = {
+                mount: mountMock,
+                unmount: unmountMock,
+                refresh: jest.fn(),
+            };
+        });
+
+        afterEach(() => {
+            (window as {ReactJobDetails?: unknown}).ReactJobDetails = originalReactJobDetails;
+        });
+
+        const selectSampleJob = async (user: ReturnType<typeof setupUser>) => {
+            await user.click(screen.getByRole('button', {name: 'load-jobs'}));
+            await user.click(screen.getByRole('button', {name: 'click-marker'}));
+            expect(await screen.findByRole('button', {name: 'Job actions'})).toBeInTheDocument();
+        };
+
+        it('mounts the detail panel once and keeps it mounted across unrelated re-renders', async () => {
+            const user = setupUser();
+            renderPage();
+
+            await selectSampleJob(user);
+            expect(mountMock).toHaveBeenCalledTimes(1);
+            expect(mountMock).toHaveBeenLastCalledWith(
+                'react-dispatch-job-detail',
+                expect.objectContaining({jobId: 55}),
+            );
+
+            // A re-render that does not change the selected job (e.g. list reload /
+            // auto-refresh) must not tear the panel down — that would reset the tab.
+            await user.click(screen.getByRole('button', {name: 'load-jobs'}));
+            expect(unmountMock).not.toHaveBeenCalled();
+            expect(mountMock).toHaveBeenCalledTimes(1);
+        });
+
+        it('unmounts the detail panel only when the page is torn down', async () => {
+            const user = setupUser();
+            const {unmount} = renderPage();
+
+            await selectSampleJob(user);
+            expect(unmountMock).not.toHaveBeenCalled();
+
+            unmount();
+            expect(unmountMock).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe('map', () => {
         it('selects a job when its map marker is clicked', async () => {
             const user = setupUser();

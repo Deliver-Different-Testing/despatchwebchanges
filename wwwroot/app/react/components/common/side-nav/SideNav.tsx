@@ -100,6 +100,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 label: 'Dashboard',
                 icon: <DashboardIcon />,
                 state: 'home',
+                matchStates: ['dispatchV2'],
             },
             {
                 id: 'shipping',
@@ -124,6 +125,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 label: 'Job Search',
                 icon: <SearchIcon />,
                 state: 'jobSearch',
+                matchStates: ['jobSearchV2'],
             },
             {
                 id: 'recurringJobs',
@@ -252,7 +254,9 @@ export const SideNav: React.FC<SideNavProps> = ({
             <Box component="nav" sx={{flex: 1, overflow: 'auto', py: 1}}>
                 <List subheader={<ListSubheader sx={sectionHeaderSx}>Menu</ListSubheader>}>
                     {filteredNavItems.map((item) => {
-                        const isActive = currentState === item.state;
+                        const isActive =
+                            currentState === item.state ||
+                            (item.matchStates?.includes(currentState) ?? false);
                         return (
                             <ListItem key={item.id} disablePadding>
                                 <ListItemButton

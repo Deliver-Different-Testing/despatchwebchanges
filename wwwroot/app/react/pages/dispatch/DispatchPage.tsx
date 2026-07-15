@@ -6,6 +6,8 @@ import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutlined';
+import {NoData} from '../../components/common/no-data/NoData';
 import {useDismissibleBanner} from '../../hooks/useDismissibleBanner';
 import {ContactID} from '../../../contants';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
@@ -103,21 +105,37 @@ const ReactJobDetailsMount: React.FC<{
     onJobUpdate?: () => void;
 }> = ({jobId, isUsCustomer, showToast, onRelatedJobChange, onJobUpdate}) => {
     const containerId = 'react-dispatch-job-detail';
+
+    // Keep the latest callbacks in refs so a DispatchPage re-render that hands us
+    // new inline callbacks does not churn the mount. The detail panel is its own
+    // React root and must stay continuously mounted across re-renders (auto-refresh,
+    // related-job tab clicks) so its internal tab state — and the smooth MUI tab
+    // indicator slide — survive; a remount would reset the selected tab to 0.
+    const onRelatedJobChangeRef = useRef(onRelatedJobChange);
+    const onJobUpdateRef = useRef(onJobUpdate);
+    onRelatedJobChangeRef.current = onRelatedJobChange;
+    onJobUpdateRef.current = onJobUpdate;
+
     useEffect(() => {
         const w = window as any;
         if (!w.ReactJobDetails?.mount) return;
+        // mount() reuses the existing root for the same container, so this
+        // re-renders JobDetails with the new props instead of remounting it.
         w.ReactJobDetails.mount(containerId, {
             jobId,
             isBulkJob: false,
             isUsCustomer,
             showToast,
-            onRelatedJobChange,
-            onJobUpdate,
+            onRelatedJobChange: (id: number) => onRelatedJobChangeRef.current?.(id),
+            onJobUpdate: () => onJobUpdateRef.current?.(),
         });
-        return () => {
-            w.ReactJobDetails?.unmount?.();
-        };
-    }, [jobId, isUsCustomer, showToast, onRelatedJobChange, onJobUpdate]);
+    }, [jobId, isUsCustomer, showToast]);
+
+    // Unmount only when this adapter itself leaves the tree (box removed / page torn down).
+    useEffect(() => () => {
+        (window as any).ReactJobDetails?.unmount?.();
+    }, []);
+
     return <div id={containerId} style={{height: '100%', overflow: 'auto'}} />;
 };
 
@@ -174,7 +192,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
 
     // Auto-refresh intervals (ms; false = off), seeded from localStorage and
     // updated from the settings dialog via the bridge. Applied as React Query
-    // refetchInterval on the job list, current work and driver locations.
+    // refetchInterval on the job list, current work, driver locations and tasks.
+    // The Tasks panel has its own independent interval (tasksMs).
     const [refreshIntervals, setRefreshIntervals] = useState<DispatchRefreshIntervals>(() => loadRefreshIntervals());
     const applyRefreshIntervals = useCallback((next: Partial<DispatchRefreshIntervals>) => {
         setRefreshIntervals(prev => ({...prev, ...next}));
@@ -533,9 +552,11 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             case DispatchBoxes.JobDetail:
                 if (!currentJobId) {
                     return (
-                        <Box sx={{p: 3, color: 'text.secondary', textAlign: 'center'}}>
-                            Select a job from the list to see its details.
-                        </Box>
+                        <NoData
+                            title="No Job Selected"
+                            message="Select a job from the list to see its details."
+                            icon={<WorkOutlineIcon/>}
+                        />
                     );
                 }
                 return (
@@ -601,7 +622,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     <SupportsBox
                         jobId={currentJobId}
                         showToast={showToast}
-                        refetchIntervalMs={refreshIntervals.jobsMs}
+                        refetchIntervalMs={refreshIntervals.tasksMs}
                         onSelectJob={(jobId) => void selectJobById(jobId)}
                         headerSlot={headerSlot}
                     />

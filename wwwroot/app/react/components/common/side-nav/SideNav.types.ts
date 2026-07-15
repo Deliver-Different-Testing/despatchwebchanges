@@ -5,6 +5,8 @@ export interface NavItem {
     label: string;
     icon: React.ReactNode;
     state: string;
+    /** Extra ui-router state names (e.g. v2/beta variants) that also mark this item active. */
+    matchStates?: string[];
     usOnly?: boolean;
     nzOnly?: boolean;
 }

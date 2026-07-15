@@ -44,9 +44,21 @@ export function isDelivered(job: DispatchJob): boolean {
     return job.statusId === JOB_STATUS.Completed;
 }
 
+// "In transit" = assigned and being worked (dispatched through to in-transit),
+// as opposed to "Active" (needs a courier) or "Done" (delivered).
+const IN_TRANSIT_STATUSES: number[] = [
+    JOB_STATUS.Dispatched,
+    JOB_STATUS.Accepted,
+    JOB_STATUS.PickedUp,
+    JOB_STATUS.InTransit,
+];
+
+export function isInTransit(job: DispatchJob): boolean {
+    return IN_TRANSIT_STATUSES.includes(job.statusId as number);
+}
+
 export function needsDispatch(job: DispatchJob): boolean {
     if (job.assignedCourier) return false;
     if (isDelivered(job)) return false;
-    const activeStatuses = [JOB_STATUS.Dispatched, JOB_STATUS.Accepted, JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
-    return !activeStatuses.includes(job.statusId as any);
+    return !isInTransit(job);
 }

@@ -43,7 +43,7 @@ import {
 } from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
-import {isDelivered, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
+import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
 import {DispatchDialog} from '../dialogs/dispatch-dialog';
@@ -69,16 +69,6 @@ const DEFAULT_COLUMN_WIDTHS: Record<string, number> = {
 const DEFAULT_STORAGE_PREFIX = 'jobListReact';
 
 // ── Filter / Sort Helpers ────────────────────────────────────────────
-
-function isActive(job: DispatchJob): boolean {
-    if (needsDispatch(job)) return false;
-    const activeStatuses = [JOB_STATUS.Dispatched, JOB_STATUS.Accepted, JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
-    return activeStatuses.includes(job.statusId as any) || isUrgent(job) || hasIssues(job);
-}
-
-function isInTransit(job: DispatchJob): boolean {
-    return job.statusId === JOB_STATUS.InTransit;
-}
 
 function hasIssues(job: DispatchJob): boolean {
     return [JOB_STATUS.Rejected, JOB_STATUS.LatePickup, JOB_STATUS.Warning, JOB_STATUS.LateDelivery, JOB_STATUS.Undeliverable].includes(
@@ -208,7 +198,7 @@ function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean):
             if (isUrgent(job)) return 0;
             if (hasIssues(job)) return 1;
             if (needsDispatch(job)) return 2;
-            if (isActive(job)) return 3;
+            if (isInTransit(job)) return 3;
             if (isDelivered(job)) return 4;
             return 5;
         default:
@@ -469,7 +459,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         // Stats from full (unfiltered) jobs — single pass
         const statsResult = {total: jobs.length, active: 0, transit: 0, done: 0};
         for (const j of jobs) {
-            if (isActive(j)) statsResult.active++;
+            if (needsDispatch(j)) statsResult.active++;
             if (isInTransit(j)) statsResult.transit++;
             if (isDelivered(j)) statsResult.done++;
         }

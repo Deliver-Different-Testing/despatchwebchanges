@@ -45,6 +45,8 @@ export interface DashboardSettingsConfig {
     title: string;
     showRefreshInterval?: boolean;
     showDriverLocationRefresh?: boolean;
+    /** Show the "Tasks" auto-refresh dropdown (its own independent cadence). */
+    showTaskRefresh?: boolean;
     showDashboards?: boolean;
     showAiToggle?: boolean;
     /** Show the "Try the React (BETA) Job Search" toggle. Job Search settings only. */
@@ -57,11 +59,18 @@ export interface DashboardSettingsConfig {
      * Customize Panels dialog owns visibility (currently Job Search).
      */
     panelsMovedNotice?: boolean;
+    /**
+     * Render the Dashboard panels section at all. Defaults to shown; set `false`
+     * to drop the section entirely (e.g. Dispatch, where panels are managed only
+     * from the Layouts menu → Customize panels).
+     */
+    showPanels?: boolean;
 }
 
 export interface DashboardSettingsResult {
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
+    selectedTaskRefreshInterval?: RefreshOption;
     boxes?: Record<string, DashboardBox>;
     aiEnabled?: boolean;
     /** When true, the Auto-mate briefing opens expanded automatically instead of click-to-open. */
@@ -78,6 +87,7 @@ export interface DashboardSettingsDialogProps {
     boxes: Record<string, DashboardBox>;
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
+    selectedTaskRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
     aiAutoOpen?: boolean;
@@ -93,6 +103,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     boxes: initialBoxes,
     selectedRefreshInterval: initialRefreshInterval,
     selectedDriverLocationRefreshInterval: initialDriverInterval,
+    selectedTaskRefreshInterval: initialTaskInterval,
     refreshOptions,
     aiEnabled: initialAiEnabled,
     aiAutoOpen: initialAiAutoOpen,
@@ -106,6 +117,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     );
     const [driverLocationInterval, setDriverLocationInterval] = useState<RefreshOption>(
         initialDriverInterval ?? {id: 0, text: 'Disabled'}
+    );
+    const [taskInterval, setTaskInterval] = useState<RefreshOption>(
+        initialTaskInterval ?? {id: 0, text: 'Disabled'}
     );
     const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? false);
     const [aiAutoOpen, setAiAutoOpen] = useState<boolean>(initialAiAutoOpen ?? false);
@@ -145,6 +159,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
         onSave({
             selectedRefreshInterval: refreshInterval,
             selectedDriverLocationRefreshInterval: driverLocationInterval,
+            selectedTaskRefreshInterval: taskInterval,
             boxes,
             aiEnabled,
             aiAutoOpen,
@@ -252,6 +267,56 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     </FormControl>
                                 </Stack>
                             </Paper>
+
+                            {/* Tasks Refresh — independent of the Job list cadence */}
+                            {config.showTaskRefresh && (
+                                <Paper
+                                    elevation={0}
+                                    sx={(theme) => ({
+                                        p: 2,
+                                        borderRadius: 2,
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        bgcolor: 'background.paper',
+                                    })}
+                                >
+                                    <Stack
+                                        direction="row"
+                                        sx={{
+                                            alignItems: "center",
+                                            justifyContent: "space-between"
+                                        }}>
+                                        <Box>
+                                            <Typography variant="subtitle2" sx={{
+                                                fontWeight: 600
+                                            }}>
+                                                Tasks
+                                            </Typography>
+                                            <Typography variant="body2" sx={{
+                                                color: "text.secondary"
+                                            }}>
+                                                How often the Tasks panel checks for new and updated tasks
+                                            </Typography>
+                                        </Box>
+                                        <FormControl size="small" sx={{minWidth: 140}}>
+                                            <Select
+                                                value={taskInterval.id}
+                                                onChange={(e) => {
+                                                    const option = refreshOptions.find(
+                                                        (o) => o.id === e.target.value
+                                                    );
+                                                    if (option) setTaskInterval(option);
+                                                }}
+                                            >
+                                                {refreshOptions.map((option) => (
+                                                    <MenuItem key={option.id} value={option.id}>
+                                                        {option.text}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Stack>
+                                </Paper>
+                            )}
 
                             {/* Driver Location Refresh */}
                             {config.showDriverLocationRefresh && (
@@ -621,9 +686,10 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                     </Box>
                 )}
 
-                {config.showDispatchBetaToggle && <Divider />}
+                {config.showDispatchBetaToggle && config.showPanels !== false && <Divider />}
 
                 {/* Dashboard Panels Section */}
+                {config.showPanels !== false && (
                 <Box sx={{p: 3}}>
                     <Stack
                         direction="row"
@@ -784,6 +850,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         </Paper>)
                     )}
                 </Box>
+                )}
             </DialogContent>
             {/* Actions */}
             <DialogFooter

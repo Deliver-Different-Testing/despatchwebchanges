@@ -30,6 +30,9 @@ import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutlined';
+import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined';
+import {NoData} from '../../components/common/no-data/NoData';
 import {useDismissibleBanner} from '../../hooks/useDismissibleBanner';
 import {SearchCriteriaPanel} from '../../components/common/search-criteria-panel/SearchCriteriaPanel';
 import {JobListPanel} from '../../components/job-list/JobListPanel';
@@ -597,9 +600,11 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             case JobSearchBoxes.JobDetail:
                 if (!currentJobId) {
                     return (
-                        <Box sx={{p: 3, color: 'text.secondary', textAlign: 'center'}}>
-                            Select a job from the list to see its details.
-                        </Box>
+                        <NoData
+                            title="No Job Selected"
+                            message="Select a job from the list to see its details."
+                            icon={<WorkOutlineIcon/>}
+                        />
                     );
                 }
                 return (
@@ -653,9 +658,11 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             case JobSearchBoxes.DeliveryJourney:
                 if (!currentJobId) {
                     return (
-                        <Box sx={{p: 3, color: 'text.secondary', textAlign: 'center'}}>
-                            Select a job to see its delivery journey.
-                        </Box>
+                        <NoData
+                            title="No Job Selected"
+                            message="Select a job to see its delivery journey."
+                            icon={<RouteOutlinedIcon/>}
+                        />
                     );
                 }
                 return (

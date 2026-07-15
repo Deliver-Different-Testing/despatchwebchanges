@@ -273,6 +273,7 @@ declare global {
                 boxes: Record<string, DashboardBox>,
                 selectedRefreshInterval?: RefreshOption,
                 selectedDriverLocationRefreshInterval?: RefreshOption,
+                selectedTaskRefreshInterval?: RefreshOption,
                 aiEnabled?: boolean,
                 jobSearchBetaEnabled?: boolean,
                 dispatchBetaEnabled?: boolean

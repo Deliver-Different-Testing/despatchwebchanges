@@ -156,6 +156,20 @@ describe('DashboardSettingsDialog', () => {
             })} />);
             expect(screen.getByText(/panel visibility is only available/i)).toBeInTheDocument();
         });
+
+        it('drops the Dashboard panels section entirely when showPanels is false', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps({
+                config: {
+                    ...mockConfig,
+                    showPanels: false
+                }
+            })} />);
+            expect(screen.queryByText('Dashboard panels')).not.toBeInTheDocument();
+            expect(screen.queryByText('Pending Jobs')).not.toBeInTheDocument();
+            expect(screen.queryByText(/panel visibility is only available/i)).not.toBeInTheDocument();
+            // Other sections still render.
+            expect(screen.getByText('Auto-refresh')).toBeInTheDocument();
+        });
     });
 
     // ── Toggle Box Visibility ───────────────────────────────────────
@@ -192,6 +206,46 @@ describe('DashboardSettingsDialog', () => {
             // both as the combobox value and (briefly) as the lingering menu option,
             // so a bare getByText('5 minutes') matches multiple elements on slow CI.
             expect(select).toHaveTextContent('5 minutes');
+        });
+    });
+
+    // ── Tasks refresh (independent cadence) ─────────────────────────
+    describe('Tasks refresh', () => {
+        it('is hidden unless showTaskRefresh is set', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
+            expect(screen.queryByText('Tasks')).not.toBeInTheDocument();
+            expect(
+                screen.queryByText('How often the Tasks panel checks for new and updated tasks'),
+            ).not.toBeInTheDocument();
+        });
+
+        it('renders its own dropdown and emits selectedTaskRefreshInterval on save', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({
+                        config: {...mockConfig, showTaskRefresh: true},
+                        selectedTaskRefreshInterval: mockRefreshOptions[0],
+                        onSave,
+                    })}
+                />,
+            );
+
+            expect(screen.getByText('Tasks')).toBeInTheDocument();
+
+            const tasksSection = screen.getByText('Tasks').closest('div');
+            const select = within(tasksSection!.parentElement!).getByRole('combobox');
+            await user.click(select);
+            await user.click(await screen.findByRole('option', {name: '1 minute'}));
+
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    selectedTaskRefreshInterval: expect.objectContaining({id: 60}),
+                }),
+            );
         });
     });
 

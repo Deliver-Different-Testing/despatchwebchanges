@@ -1,6 +1,8 @@
 import React, {useMemo, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Popover from '@mui/material/Popover';
 import LinearProgress from '@mui/material/LinearProgress';
 import FormControl from '@mui/material/FormControl';
@@ -18,8 +20,12 @@ import PersonIcon from '@mui/icons-material/Person';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined';
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import type {Dayjs} from 'dayjs';
+import {NoData} from '../../../components/common/no-data/NoData';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
+import {headerScopeToggleSx, headerTextButtonSx} from './headerScopeToggleSx';
 import type {ShowToastFn} from '../../../services/toastService';
 import {TaskItem} from '../../../components/common/task-item/TaskItem';
 import {
@@ -73,10 +79,6 @@ const FILTER_CHIPS: FilterChip[] = [
     {type: 'oldest', label: 'Oldest', icon: <ArrowUpwardIcon fontSize="small" />, countType: 'oldest'},
 ];
 
-const EmptyMessage: React.FC<{children: React.ReactNode}> = ({children}) => (
-    <Box sx={{p: 3, color: 'text.secondary', textAlign: 'center'}}>{children}</Box>
-);
-
 /**
  * "Supports" (tasks) panel for the React dispatch page. Mirrors the AngularJS
  * home `supports` partial: tasks for the selected job, with the Total / Mine /
@@ -87,6 +89,14 @@ const EmptyMessage: React.FC<{children: React.ReactNode}> = ({children}) => (
 export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refetchIntervalMs = false, onSelectJob, headerSlot}) => {
     const [filterType, setFilterType] = useState<TaskFilterType>('all');
     const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
+    // 'current' scopes tasks to the selected job; 'all' drops the jobId so the
+    // shared getAllTasks endpoint returns tasks across every job.
+    const [taskScope, setTaskScope] = useState<'current' | 'all'>('current');
+
+    // In 'all' mode the query must run without a job, and every task-scoped
+    // request drops the jobId. In 'current' mode nothing loads until a job is set.
+    const effectiveJobId = taskScope === 'all' ? undefined : jobId;
+    const tasksEnabled = taskScope === 'all' || !!jobId;
 
     // Staff + event-type filters (persisted per page, mirror V1 filterByStaff /
     // filterBySupportType). Options come from the shared task hooks.
@@ -94,8 +104,8 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
     const [staffFilter, setStaffFilter] = useState(initialFilters.staffFilter);
     const [eventTypeFilter, setEventTypeFilter] = useState(initialFilters.eventTypeFilter);
 
-    const {data: staffList = []} = useActiveStaff({enabled: !!jobId});
-    const {data: eventTypes = []} = useEventTypes({enabled: !!jobId});
+    const {data: staffList = []} = useActiveStaff({enabled: tasksEnabled});
+    const {data: eventTypes = []} = useEventTypes({enabled: tasksEnabled});
 
     const handleStaffChange = (value: string) => {
         setStaffFilter(value);
@@ -107,11 +117,11 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
     };
 
     const filterRequest = useMemo(
-        () => buildFilterRequest(filterType, {jobId, staffFilter, eventTypeFilter}),
-        [filterType, jobId, staffFilter, eventTypeFilter],
+        () => buildFilterRequest(filterType, {jobId: effectiveJobId, staffFilter, eventTypeFilter}),
+        [filterType, effectiveJobId, staffFilter, eventTypeFilter],
     );
 
-    const {data: tasks = [], isLoading, refetch} = useTasks(filterRequest, {enabled: !!jobId, refetchInterval: refetchIntervalMs});
+    const {data: tasks = [], isLoading, refetch} = useTasks(filterRequest, {enabled: tasksEnabled, refetchInterval: refetchIntervalMs});
 
     const markTaskAsClosedMutation = useMarkTaskAsClosed();
     const updateTaskDateMutation = useUpdateTaskDate();
@@ -145,9 +155,7 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
     const showSuccessToast = (msg: string) => showToast(msg, 'success');
     const showErrorToast = (msg: string) => showToast(msg, 'error');
 
-    if (!jobId) {
-        return <EmptyMessage>Select a job to see its tasks.</EmptyMessage>;
-    }
+    const needsJobSelection = taskScope === 'current' && !jobId;
 
     const activeFilterCount =
         (staffFilter !== StatusFilterValue.All ? 1 : 0)
@@ -157,6 +165,17 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
     return (
         <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
             <HeaderSlotPortal slot={headerSlot}>
+                <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={taskScope}
+                    onChange={(_, value) => { if (value) setTaskScope(value); }}
+                    aria-label="Task scope"
+                    sx={headerScopeToggleSx}
+                >
+                    <ToggleButton value="current">This job</ToggleButton>
+                    <ToggleButton value="all">All tasks</ToggleButton>
+                </ToggleButtonGroup>
                 <Button
                     size="small"
                     startIcon={<FilterListIcon />}
@@ -164,7 +183,7 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
                     onClick={(e) => setFilterAnchor(e.currentTarget)}
                     aria-haspopup="true"
                     aria-expanded={filterAnchor ? 'true' : undefined}
-                    sx={{color: 'inherit', textTransform: 'none', '&:hover': {bgcolor: 'rgba(255,255,255,0.12)'}}}
+                    sx={headerTextButtonSx}
                 >
                     {activeFilterCount ? `Filters (${activeFilterCount})` : 'Filters'}
                 </Button>
@@ -227,15 +246,27 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
             </Popover>
             {isLoading && <LinearProgress />}
             <Box sx={{flex: 1, minHeight: 0, overflow: 'auto', p: 0.5}}>
-                {tasks.length === 0 && !isLoading ? (
-                    <EmptyMessage>This job has no tasks matching your filter.</EmptyMessage>
+                {needsJobSelection ? (
+                    <NoData
+                        icon={<WorkOutlineOutlinedIcon />}
+                        title="No job selected"
+                        message="Select a job to see its tasks."
+                    />
+                ) : tasks.length === 0 && !isLoading ? (
+                    <NoData
+                        icon={<AssignmentOutlinedIcon />}
+                        title="No tasks"
+                        message={taskScope === 'all'
+                            ? 'No tasks match your filter.'
+                            : 'This job has no tasks matching your filter.'}
+                    />
                 ) : (
                     tasks.map(task => (
                         <Box key={task.id} sx={{mb: 0.5}}>
                             <TaskItem
                                 task={task}
                                 config={{
-                                    showJobId: false,
+                                    showJobId: taskScope === 'all',
                                     showAssignee: true,
                                     showJobType: true,
                                     showDateTime: true,

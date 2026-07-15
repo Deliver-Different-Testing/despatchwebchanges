@@ -74,6 +74,24 @@ describe('SideNav', () => {
             const dashboardButton = screen.getByText('Dashboard').closest('div[role="button"]');
             expect(dashboardButton).toHaveClass('Mui-selected');
         });
+
+        it('should highlight Dashboard on the v2 dispatch state', () => {
+            renderWithTheme(<SideNav {...defaultProps} currentState="dispatchV2" />);
+            const dashboardButton = screen.getByText('Dashboard').closest('div[role="button"]');
+            expect(dashboardButton).toHaveClass('Mui-selected');
+        });
+
+        it('should highlight Job Search on the v2 job search state', () => {
+            renderWithTheme(<SideNav {...defaultProps} currentState="jobSearchV2" />);
+            const jobSearchButton = screen.getByText('Job Search').closest('div[role="button"]');
+            expect(jobSearchButton).toHaveClass('Mui-selected');
+        });
+
+        it('should not highlight unrelated items on the v2 job search state', () => {
+            renderWithTheme(<SideNav {...defaultProps} currentState="jobSearchV2" />);
+            const dashboardButton = screen.getByText('Dashboard').closest('div[role="button"]');
+            expect(dashboardButton).not.toHaveClass('Mui-selected');
+        });
     });
 
     describe('Interactions', () => {

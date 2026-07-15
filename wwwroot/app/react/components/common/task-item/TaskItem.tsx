@@ -13,6 +13,7 @@ import Box from '@mui/material/Box';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import ButtonBase from '@mui/material/ButtonBase';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
@@ -30,6 +31,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import BusinessIcon from '@mui/icons-material/Business';
 import FlagIcon from '@mui/icons-material/Flag';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
@@ -37,6 +39,10 @@ import {TimeClock} from '@mui/x-date-pickers/TimeClock';
 import dayjs, {Dayjs} from 'dayjs';
 import {TaskItemProps, TaskItemConfig, Task} from './TaskItem.interfaces';
 import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
+import {monoFontFamily} from '../../../theme/muiTheme';
+
+// MD3 emphasized easing for the row's state-layer / border transition.
+const MD3_EMPHASIZED = 'cubic-bezier(0.2, 0, 0, 1)';
 
 const defaultConfig: TaskItemConfig = {
     showJobId: true,
@@ -88,9 +94,10 @@ const getAvatarColor = (name: string): string => {
     return `hsl(${Math.abs(hash) % 360}, 42%, 42%)`;
 };
 
-// Shared grey metadata-chip styling (matches the app's chip convention).
+// Shared metadata-chip styling on an MD3 tonal surface-container tier
+// (matches the app's chip convention).
 const metadataChipSx = {
-    bgcolor: 'grey.100',
+    bgcolor: 'background.surfaceContainerHigh',
     border: 1,
     borderColor: 'divider',
     color: 'text.secondary',
@@ -108,7 +115,6 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         config: configOverrides,
         onTaskUpdated,
         onTaskClick,
-        onContextMenu,
         currentUserId,
         tasksService,
         dispatchService,
@@ -127,6 +133,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const [staffSearchText, setStaffSearchText] = useState('');
     const [loadingStaff, setLoadingStaff] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
+    const [isUnassigning, setIsUnassigning] = useState(false);
 
     // Derived state
     const isOverdue = useMemo(() => {
@@ -143,6 +150,17 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const statusChip = useMemo(() => getStatusChip(task, isOverdue), [task, isOverdue]);
     const assigneeName = task.assignee?.text || '';
     const hasAssignee = Boolean(task.assignee?.id);
+    const canUnassign = config.showAssignee !== false && hasAssignee;
+
+    // A task may have no due date; guard against rendering the raw "undefined"/"Invalid Date"
+    // string and drop the timezone suffix when there's no value to qualify.
+    const hasValidDate = (s?: string) => Boolean(s) && s !== 'Invalid Date';
+    const dateChipLabel = hasValidDate(task._dueDateString)
+        ? `${task._dueDateString} ${timeZoneShort}`.trim()
+        : 'Set date';
+    const timeChipLabel = hasValidDate(task._dueTimeString)
+        ? `${task._dueTimeString} ${timeZoneShort}`.trim()
+        : 'Set time';
 
     // Handlers
     const closePopover = useCallback(() => {
@@ -175,12 +193,20 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         onTaskClick?.(task);
     }, [config.onTaskClick, config.autoAssignOnClick, onTaskClick, task, currentUserId, assignToCurrentUser]);
 
-    const handleContextMenu = useCallback((event: React.MouseEvent) => {
-        if (!onContextMenu) return;
-        event.preventDefault();
+    const handleUnassign = useCallback(async (event: React.MouseEvent) => {
         event.stopPropagation();
-        onContextMenu(task, event);
-    }, [onContextMenu, task]);
+        setIsUnassigning(true);
+        try {
+            await tasksService.unassignTask(task.id);
+            showSuccessToast?.('Task unassigned');
+            onTaskUpdated?.();
+        } catch (error) {
+            showErrorToast?.('Error unassigning task');
+            console.error('Error unassigning task:', error);
+        } finally {
+            setIsUnassigning(false);
+        }
+    }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
 
     const handleCheckboxChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         event.stopPropagation();
@@ -275,6 +301,30 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         setStaffSearchText(event.target.value);
     }, []);
 
+    const unassignButton = canUnassign ? (
+        <Button
+            size="small"
+            variant="outlined"
+            color="inherit"
+            onClick={handleUnassign}
+            disabled={isUnassigning}
+            aria-label="Unassign task"
+            startIcon={isUnassigning
+                ? <CircularProgress size={14} color="inherit" />
+                : <PersonOffIcon fontSize="small" />}
+            sx={{
+                textTransform: 'none',
+                color: 'text.secondary',
+                borderColor: 'divider',
+                ...(compact
+                    ? {}
+                    : {position: 'absolute', bottom: 8, right: 8}),
+            }}
+        >
+            Unassign
+        </Button>
+    ) : null;
+
     const titleTypography = (
         <Typography
             className="task-title"
@@ -294,8 +344,8 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box
                 onClick={handleTaskClick}
-                onContextMenu={handleContextMenu}
                 sx={(theme) => ({
+                    position: 'relative',
                     display: 'flex',
                     alignItems: compact ? 'center' : 'flex-start',
                     py: compact ? 1 : 1.5,
@@ -307,16 +357,15 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                     border: 1,
                     borderColor: 'divider',
                     borderLeft: `4px solid ${getStatusBorderColor(theme, task, isOverdue)}`,
-                    boxShadow: 1,
-                    transition: `all ${theme.transitions.duration.short}ms ease`,
+                    transition: `background-color ${theme.transitions.duration.short}ms ${MD3_EMPHASIZED}, border-color ${theme.transitions.duration.short}ms ${MD3_EMPHASIZED}`,
+                    '@media (prefers-reduced-motion: reduce)': {transition: 'none'},
                     cursor: config.onTaskClick ? 'pointer' : 'default',
                     color: task.closed ? 'text.disabled' : 'text.primary',
+                    // MD3 list rows are flat on the surface: no per-row shadow or
+                    // lift — hover is a primary state-layer overlay instead.
                     '&:hover': config.onTaskClick ? {
-                        transform: 'translateY(-1px)',
-                        bgcolor: 'grey.50',
-                        borderColor: 'grey.300',
-                        borderLeftColor: getStatusBorderColor(theme, task, isOverdue),
-                        boxShadow: 3,
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        borderColor: alpha(theme.palette.primary.main, 0.24),
                         '& .task-title': {
                             color: 'primary.main',
                         },
@@ -442,7 +491,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                     border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                                     color: 'primary.dark',
                                     fontWeight: 600,
-                                    fontFamily: '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace',
+                                    fontFamily: monoFontFamily,
                                 })}
                             />
                         )}
@@ -479,7 +528,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                 </Box>
 
                 {/* Trailing supporting text: due date / time */}
-                {config.showDateTime !== false && (
+                {(config.showDateTime !== false || (compact && canUnassign)) && (
                     <Box
                         sx={{
                             pl: 1.5,
@@ -490,26 +539,36 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                             flexShrink: 0,
                         }}
                     >
-                        <Chip
-                            size="small"
-                            onClick={openDatePopover}
-                            icon={<CalendarIcon />}
-                            label={`${task._dueDateString} ${timeZoneShort}`}
-                            color={isOverdue ? 'error' : 'default'}
-                            variant={isOverdue ? 'outlined' : 'filled'}
-                            sx={isOverdue ? undefined : metadataChipSx}
-                        />
-                        <Chip
-                            size="small"
-                            onClick={openTimePopover}
-                            icon={<ScheduleIcon />}
-                            label={`${task._dueTimeString} ${timeZoneShort}`}
-                            color={isOverdue ? 'error' : 'default'}
-                            variant={isOverdue ? 'outlined' : 'filled'}
-                            sx={isOverdue ? undefined : metadataChipSx}
-                        />
+                        {config.showDateTime !== false && (
+                            <>
+                                <Chip
+                                    size="small"
+                                    onClick={openDatePopover}
+                                    icon={<CalendarIcon />}
+                                    label={dateChipLabel}
+                                    color={isOverdue ? 'error' : 'default'}
+                                    variant={isOverdue ? 'outlined' : 'filled'}
+                                    sx={isOverdue ? undefined : metadataChipSx}
+                                />
+                                <Chip
+                                    size="small"
+                                    onClick={openTimePopover}
+                                    icon={<ScheduleIcon />}
+                                    label={timeChipLabel}
+                                    color={isOverdue ? 'error' : 'default'}
+                                    variant={isOverdue ? 'outlined' : 'filled'}
+                                    sx={isOverdue ? undefined : metadataChipSx}
+                                />
+                            </>
+                        )}
+                        {/* Compact rows keep the unassign action inline; non-compact
+                            anchors it to the card's bottom-right corner (below). */}
+                        {compact && unassignButton}
                     </Box>
                 )}
+
+                {/* Unassign action — anchored to the card's bottom-right corner. */}
+                {!compact && unassignButton}
             </Box>
 
             {/* Date Popover */}

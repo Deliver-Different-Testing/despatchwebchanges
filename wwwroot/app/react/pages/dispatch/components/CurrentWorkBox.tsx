@@ -1,8 +1,8 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import type {Dayjs} from 'dayjs';
 import {AppPage} from '../../../interfaces/dispatchJob';
 import type {DispatchJob, FetchConfig, JobListSearchParams} from '../../../interfaces/dispatchJob';
@@ -15,9 +15,9 @@ import {CurrentWorkAllDrivers, IDriverWorkOverview} from '../../../components/co
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {CourierSearchField} from './CourierSearchField';
+import {headerScopeToggleSx} from './headerScopeToggleSx';
 import {TruckLoadingStatusDialog} from './TruckLoadingStatusDialog';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
 import type {CourierSuggestion} from '../../../interfaces';
@@ -59,20 +59,11 @@ function writeFocus(focus: CurrentWorkFocus): void {
     }
 }
 
-// "‹ All Drivers" back link on the gradient panel header: inherits the header's
-// contrast colour with a translucent-white hover matching the icon-badge tone.
-const headerBackButtonSx = {
-    color: 'inherit',
-    textTransform: 'none',
-    px: 1,
-    minWidth: 0,
-    whiteSpace: 'nowrap',
-    '&:hover': {bgcolor: 'rgba(255,255,255,0.12)'},
-} satisfies SxProps<Theme>;
-
-const headerDriverNameSx = {
-    opacity: 0.9,
-    maxWidth: 160,
+// The focused-driver toggle button carries the courier name, so cap its width
+// and ellipsize rather than letting a long name stretch the header.
+const detailToggleSx = {
+    maxWidth: 180,
+    display: 'block',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -220,24 +211,25 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
         <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
             <HeaderSlotPortal slot={headerSlot}>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0}}>
-                    {isUsCustomer && mode === 'detail' && (
-                        <>
-                            <Button
-                                size="small"
-                                startIcon={<ChevronLeftIcon />}
-                                onClick={() => {
-                                    setMode('overview');
-                                    persistFocus({mode: 'overview'});
-                                }}
-                                sx={headerBackButtonSx}
-                            >
-                                All Drivers
-                            </Button>
-                            <Box component="span" sx={{opacity: 0.5}}>&middot;</Box>
-                            <Typography variant="body2" sx={headerDriverNameSx}>
+                    {isUsCustomer && (
+                        <ToggleButtonGroup
+                            size="small"
+                            exclusive
+                            value={mode}
+                            onChange={(_, value: Mode | null) => {
+                                if (value) {
+                                    setMode(value);
+                                    persistFocus({mode: value});
+                                }
+                            }}
+                            aria-label="Current work scope"
+                            sx={headerScopeToggleSx}
+                        >
+                            <ToggleButton value="overview">All Drivers</ToggleButton>
+                            <ToggleButton value="detail" disabled={!courierId} sx={detailToggleSx}>
                                 {courierLabel}
-                            </Typography>
-                        </>
+                            </ToggleButton>
+                        </ToggleButtonGroup>
                     )}
                     {showTruckButton && (
                         <Tooltip title="Truck loading status">

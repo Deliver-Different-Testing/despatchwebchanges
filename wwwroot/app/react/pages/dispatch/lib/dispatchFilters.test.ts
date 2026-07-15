@@ -4,6 +4,7 @@ import {
     DATE_FILTER_KEY,
     REFRESH_INTERVAL_KEY,
     DRIVER_LOCATION_REFRESH_KEY,
+    TASK_REFRESH_KEY,
     loadSelectedViewIds,
     loadSelectedViews,
     loadDateFilter,
@@ -95,20 +96,40 @@ describe('dispatchFilters', () => {
     });
 
     describe('loadRefreshIntervals', () => {
-        it('returns false for both when nothing is stored', () => {
-            expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false});
+        it('returns false for all when nothing is stored', () => {
+            expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: false});
         });
 
         it('converts stored seconds to ms', () => {
             localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
             localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY, '60');
-            expect(loadRefreshIntervals()).toEqual({jobsMs: 30000, driverLocationsMs: 60000});
+            localStorage.setItem(TASK_REFRESH_KEY, '90');
+            expect(loadRefreshIntervals()).toEqual({jobsMs: 30000, driverLocationsMs: 60000, tasksMs: 90000});
+        });
+
+        it('reads a stored Tasks interval independently of the job list', () => {
+            localStorage.setItem(REFRESH_INTERVAL_KEY, '0');
+            localStorage.setItem(TASK_REFRESH_KEY, '120');
+            expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: 120000});
+        });
+
+        it('seeds the Tasks interval from the job list on first run (Tasks key unset)', () => {
+            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
+            // No TASK_REFRESH_KEY written yet.
+            expect(loadRefreshIntervals()).toEqual({jobsMs: 30000, driverLocationsMs: false, tasksMs: 30000});
+        });
+
+        it('keeps an explicit Tasks "Off" (stored 0) even when the job list is on', () => {
+            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
+            localStorage.setItem(TASK_REFRESH_KEY, '0');
+            expect(loadRefreshIntervals()).toEqual({jobsMs: 30000, driverLocationsMs: false, tasksMs: false});
         });
 
         it('treats 0 / Disabled as false', () => {
             localStorage.setItem(REFRESH_INTERVAL_KEY, '0');
             localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY, 'not a number');
-            expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false});
+            localStorage.setItem(TASK_REFRESH_KEY, '0');
+            expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: false});
         });
     });
 
