@@ -212,6 +212,11 @@ const defaultActions = {
     savedFlightDialog: {open: false, bookingId: 0},
     closeSavedFlightDialog: jest.fn(),
     savedFlightDialogConfirm: jest.fn().mockResolvedValue(undefined),
+
+    // CreateAheadDays backfill dialog wiring.
+    handleInitialDaysChange: jest.fn().mockResolvedValue(undefined),
+    createAheadBackfillDialog: {open: false, jobId: 0, oldValue: 0, newValue: 0},
+    closeCreateAheadBackfillDialog: jest.fn(),
 };
 
 function setupDefaultMocks(overrides?: {

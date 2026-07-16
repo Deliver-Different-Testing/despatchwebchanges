@@ -31,6 +31,12 @@ public class RecurringJobRepository(
     private const int MaxConNoteLength = 100;
     private const int MaxSavedFlightNumberLength = 16;
 
+    // Upper bound for RecurringInitialDays / create-ahead offset. Bounds the
+    // backfill preview cost (see PreviewCreateAheadBackfillAsync) and prevents
+    // accidental multi-year batches from a fat-finger edit. Adjust here if
+    // product raises the cap.
+    private const int MaxRecurringInitialDays = 30;
+
     /// <summary>
     /// SQL Server minimum date — values at or below this are treated as "no date" and skipped during timezone conversion.
     /// </summary>
@@ -132,7 +138,8 @@ public class RecurringJobRepository(
                 JobProperty.Size or JobProperty.DGDocumentation or
                     JobProperty.TrackingMethod or JobProperty.Frequency or
                     JobProperty.HolidayDelivery or JobProperty.DaysOfWeek or
-                    JobProperty.Active or JobProperty.RecurringMode
+                    JobProperty.Active or JobProperty.RecurringMode or
+                    JobProperty.RecurringInitialDays
                     => await UpdatePropertyWithNoteAsync(jobId, property, value),
 
                 _ => throw new ArgumentOutOfRangeException(nameof(property), property, null)
@@ -717,6 +724,370 @@ public class RecurringJobRepository(
         }
     }
 
+    // ------------------------------------------------------------------
+    // CreateAheadDays backfill (Kevin 2026-07-16, Dane sign-off).
+    //
+    // The nightly materialiser (uspPrebookSet -> Monitor -> InsertSchedule /
+    // InsertJobAndChildren) already stamps ucbkDate = today + RecurringInitialDays
+    // for rolling-window bookings and materialises the corresponding tucJob on
+    // that day, so raising the offset takes effect on the very next cron pass.
+    // The gap to fill is: dates BETWEEN today + oldOffset + 1 AND today + newOffset
+    // that would have been materialised had the higher offset been in force
+    // yesterday. This flow lets an operator explicitly opt in to that catch-up.
+    //
+    // Filters mirror uspPrebookSet's target-match block so the preview matches
+    // what the cron would have created. Dup guard mirrors the booking-day-skip
+    // NOT EXISTS in uspPrebookSet. Materialiser reuses ExecuteMaterialiseParentAsync
+    // so each date rotates a fresh ucbkJobNumber family (collision-safe).
+    // ------------------------------------------------------------------
+    public async Task<PreviewCreateAheadBackfillResult> PreviewCreateAheadBackfillAsync(
+        PreviewCreateAheadBackfillRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.JobId <= 0)
+        {
+            throw new ArgumentException("JobId is required", nameof(request));
+        }
+
+        // NewValue <= OldValue means the operator is shrinking the offset (or
+        // no change). There is nothing to backfill — per the README's
+        // non-goal, we never delete future jobs when the value decreases.
+        if (request.NewValue <= request.OldValue)
+        {
+            return new PreviewCreateAheadBackfillResult();
+        }
+
+        if (request.NewValue > MaxRecurringInitialDays)
+        {
+            throw new ArgumentException(
+                $"NewValue must be between 0 and {MaxRecurringInitialDays}. Got: {request.NewValue}.",
+                nameof(request));
+        }
+
+        var parentUcbkId = await Context.GetEffectiveJobBookingIdAsync(request.JobId);
+
+        // Bundle the metadata we need for the target-match check into one
+        // round-trip so preview stays snappy even for a wide window.
+        var meta = await (
+            from jb in Context.TucJobBookings
+            where jb.UcbkId == parentUcbkId
+            join c in Context.TucClients on jb.UcbkClientId equals c.UcclId into cs
+            from c in cs.DefaultIfEmpty()
+            select new
+            {
+                jb.UcbkId,
+                jb.UcbkFrequency,
+                jb.UcbkDays,
+                jb.HolidayDeliveryOption,
+                jb.ScheduleId,
+                jb.ScheduleName,
+                jb.UcbkClientId,
+                jb.UcbkFirstDue,
+                ClientSiteId = c != null ? c.SiteId : (int?)null
+            }
+        ).FirstOrDefaultAsync();
+
+        if (meta is null)
+        {
+            throw new InvalidOperationException(
+                $"Parent recurring booking {parentUcbkId} not found");
+        }
+
+        var siteId = meta.ClientSiteId ?? 1;
+        var today = DateOnly.FromDateTime(_clock.TenantNow);
+        var windowStart = today.AddDays(request.OldValue + 1);
+        var windowEnd = today.AddDays(request.NewValue);
+
+        // Preload existing tucJob rows for the whole family in the window
+        // (parent + child templates). Dup guard uses BookingParentID ties
+        // back to the specific ucbkID of a template, so we fetch all of them.
+        var familyTemplateIds = await Context.TucJobBookings
+            .Where(b => b.UcbkId == parentUcbkId || b.BookingParentId == parentUcbkId)
+            .Select(b => b.UcbkId)
+            .ToListAsync();
+
+        var windowStartDt = windowStart.ToDateTime(TimeOnly.MinValue);
+        var windowEndDt = windowEnd.ToDateTime(TimeOnly.MaxValue);
+
+        var existingLiveDates = await Context.TucJobs
+            .Where(j => j.BookingParentId.HasValue
+                       && familyTemplateIds.Contains(j.BookingParentId.Value)
+                       && j.UcjbDate >= windowStartDt && j.UcjbDate <= windowEndDt
+                       && !j.UcjbVoid)
+            .Select(j => j.UcjbDate)
+            .Distinct()
+            .ToListAsync();
+
+        var existingDateSet = existingLiveDates
+            .Select(d => DateOnly.FromDateTime(d))
+            .ToHashSet();
+
+        // Load holidays for the window. Matches uspPrebookSet's
+        // UTL_IsHoliday(date, siteId, 'local') filter shape (SiteID +
+        // JobEntryType = 'Local').
+        var holidayDates = await Context.TblHolidays
+            .Where(h => h.SiteId == siteId
+                       && h.JobEntryType == "Local"
+                       && h.Date >= windowStartDt && h.Date <= windowEndDt)
+            .Select(h => h.Date)
+            .Distinct()
+            .ToListAsync();
+
+        var holidaySet = holidayDates.Select(d => DateOnly.FromDateTime(d)).ToHashSet();
+
+        // Load schedule-active DOWs once when the template is schedule-bound
+        // so we don't hit the DB per candidate day. TblBulkRunSchedule.DayOfWeek
+        // is a short, cast up so the ISO-DOW comparison stays in one type.
+        HashSet<int> scheduleActiveDows = new();
+        if ((meta.ScheduleId ?? 0) > 0 && !string.IsNullOrEmpty(meta.ScheduleName))
+        {
+            var clientId = meta.UcbkClientId ?? 0;
+            var rawDows = await Context.TblBulkRunSchedules
+                .Where(s => s.Name == meta.ScheduleName
+                           && (s.ClientId == clientId || s.ClientId == null))
+                .Select(s => s.DayOfWeek)
+                .Distinct()
+                .ToListAsync();
+            scheduleActiveDows = rawDows.Select(d => (int)d).ToHashSet();
+        }
+
+        var candidates = new List<CreateAheadBackfillCandidate>();
+        var already = new List<DateOnly>();
+        var skipped = new List<CreateAheadBackfillSkippedDate>();
+
+        for (var d = windowStart; d <= windowEnd; d = d.AddDays(1))
+        {
+            // Dup guard first — a date with an existing live job is not a
+            // candidate regardless of pattern / holiday state.
+            if (existingDateSet.Contains(d))
+            {
+                already.Add(d);
+                continue;
+            }
+
+            // Frequency + day-pattern check (mirrors uspPrebookSet).
+            var patternDow = ((int)d.DayOfWeek + 6) % 7 + 1; // 1=Mon..7=Sun
+            var freq = meta.UcbkFrequency ?? 0;
+            var daysMask = meta.UcbkDays ?? "1111100";
+            bool patternMatch;
+
+            if (freq == 0 || freq == 1)
+            {
+                patternMatch = MaskMatches(daysMask, patternDow);
+            }
+            else if (freq == 2)
+            {
+                // Fortnightly: same DATEDIFF(WEEK, ucbkFirstDue, target) % 2
+                // parity check the SP uses.
+                patternMatch = MaskMatches(daysMask, patternDow)
+                               && meta.UcbkFirstDue.HasValue
+                               && WeeksBetween(DateOnly.FromDateTime(meta.UcbkFirstDue.Value), d) % 2 == 0;
+            }
+            else if (freq == 4 || freq == 8 || freq == 16)
+            {
+                var firstOfMonth = new DateOnly(d.Year, d.Month, 1);
+                var weekOfMonth = WeeksBetween(firstOfMonth, d) + 1;
+                var wantedWeek = freq switch { 4 => 1, 8 => 2, 16 => 3, _ => 0 };
+                patternMatch = MaskMatches(daysMask, patternDow) && weekOfMonth == wantedWeek;
+            }
+            else if (freq == 32)
+            {
+                patternMatch = d == FirstWorkdayOfMonth(d);
+            }
+            else if (freq == 64)
+            {
+                patternMatch = d == LastWorkdayOfMonth(d);
+            }
+            else
+            {
+                patternMatch = MaskMatches(daysMask, patternDow);
+            }
+
+            if (!patternMatch)
+            {
+                skipped.Add(new CreateAheadBackfillSkippedDate
+                {
+                    ServiceDate = d,
+                    Reason = "Does not match recurrence pattern"
+                });
+                continue;
+            }
+
+            // Schedule-active check (only for schedule-bound templates).
+            if ((meta.ScheduleId ?? 0) > 0)
+            {
+                // ISO day-of-week for tblBulkRunSchedule.DayOfWeek — matches
+                // uspPrebookSet's DATEPART(WEEKDAY, DATEADD(DAY, -1, target)).
+                var isoDow = ((int)d.DayOfWeek + 6) % 7 + 1;
+                if (!scheduleActiveDows.Contains(isoDow))
+                {
+                    skipped.Add(new CreateAheadBackfillSkippedDate
+                    {
+                        ServiceDate = d,
+                        Reason = "Schedule not active on this day"
+                    });
+                    continue;
+                }
+            }
+
+            // Holiday check unless HolidayDeliveryOption = 2 (Book Anyway).
+            if (meta.HolidayDeliveryOption != 2 && holidaySet.Contains(d))
+            {
+                skipped.Add(new CreateAheadBackfillSkippedDate
+                {
+                    ServiceDate = d,
+                    Reason = "Holiday"
+                });
+                continue;
+            }
+
+            candidates.Add(new CreateAheadBackfillCandidate
+            {
+                ServiceDate = d,
+                DisplayLabel = d.ToString("ddd dd MMM")
+            });
+        }
+
+        return new PreviewCreateAheadBackfillResult
+        {
+            Candidates = candidates,
+            AlreadyExistingDates = already,
+            SkippedDates = skipped
+        };
+    }
+
+    public async Task<CreateCreateAheadBackfillResult> CreateCreateAheadBackfillAsync(
+        CreateCreateAheadBackfillRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.JobId <= 0)
+        {
+            throw new ArgumentException("JobId is required", nameof(request));
+        }
+        if (request.Dates.Count == 0)
+        {
+            return new CreateCreateAheadBackfillResult();
+        }
+
+        var parentUcbkId = await Context.GetEffectiveJobBookingIdAsync(request.JobId);
+
+        var meta = await Context.TucJobBookings
+            .Where(b => b.UcbkId == parentUcbkId)
+            .Select(b => new { b.UcbkId, b.ScheduleId })
+            .FirstOrDefaultAsync();
+
+        if (meta is null)
+        {
+            throw new InvalidOperationException(
+                $"Parent recurring booking {parentUcbkId} not found");
+        }
+
+        var useSchedule = (meta.ScheduleId ?? 0) > 0;
+
+        // Family template IDs for the dup guard — same set the preview built.
+        var familyTemplateIds = await Context.TucJobBookings
+            .Where(b => b.UcbkId == parentUcbkId || b.BookingParentId == parentUcbkId)
+            .Select(b => b.UcbkId)
+            .ToListAsync();
+
+        var jobsCreated = 0;
+        var duplicatesSkipped = 0;
+        var createdDates = new List<DateOnly>();
+        var errors = new List<CreateCreateAheadBackfillDateError>();
+
+        foreach (var d in request.Dates.OrderBy(x => x))
+        {
+            // Dup guard: mirrors the uspPrebookSet booking-day-skip predicate.
+            var dt = d.ToDateTime(TimeOnly.MinValue);
+            var dtEnd = d.ToDateTime(TimeOnly.MaxValue);
+            var alreadyExists = await Context.TucJobs
+                .AnyAsync(j => j.BookingParentId.HasValue
+                              && familyTemplateIds.Contains(j.BookingParentId.Value)
+                              && j.UcjbDate >= dt && j.UcjbDate <= dtEnd
+                              && !j.UcjbVoid);
+
+            if (alreadyExists)
+            {
+                duplicatesSkipped++;
+                continue;
+            }
+
+            try
+            {
+                var beforeUtc = DateTime.UtcNow;
+                await ExecuteMaterialiseParentAsync(parentUcbkId, dt, useSchedule);
+
+                // Count how many tucJob rows landed. Same shape the
+                // InsertRecurringToLive result uses.
+                var newRowCount = await Context.TucJobs
+                    .CountAsync(j => j.BookingParentId.HasValue
+                                    && familyTemplateIds.Contains(j.BookingParentId.Value)
+                                    && j.CreatedTime >= beforeUtc);
+                jobsCreated += newRowCount;
+                createdDates.Add(d);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex,
+                    "CreateAhead backfill push failed for template {UcbkId} on {Date}",
+                    parentUcbkId, d);
+                errors.Add(new CreateCreateAheadBackfillDateError
+                {
+                    ServiceDate = d,
+                    Message = ex.Message
+                });
+            }
+        }
+
+        return new CreateCreateAheadBackfillResult
+        {
+            JobsCreated = jobsCreated,
+            DuplicatesSkipped = duplicatesSkipped,
+            CreatedDates = createdDates,
+            Errors = errors
+        };
+    }
+
+    // ISO 1=Mon..7=Sun position lookup on the tucJobBooking.ucbkDays mask.
+    private static bool MaskMatches(string daysMask, int isoDow)
+    {
+        if (string.IsNullOrEmpty(daysMask) || isoDow < 1 || isoDow > daysMask.Length)
+        {
+            return false;
+        }
+        return daysMask[isoDow - 1] == '1';
+    }
+
+    // DATEDIFF(WEEK, ...) equivalent using SQL Server's Sunday-anchored
+    // ISO week boundary (@@DATEFIRST = 7).
+    private static int WeeksBetween(DateOnly start, DateOnly end)
+    {
+        int DaysFromMonday(DateOnly d) => ((int)d.DayOfWeek + 6) % 7;
+        var startSunday = start.AddDays(-DaysFromMonday(start) - 1);
+        var endSunday = end.AddDays(-DaysFromMonday(end) - 1);
+        return (endSunday.DayNumber - startSunday.DayNumber) / 7;
+    }
+
+    private static DateOnly FirstWorkdayOfMonth(DateOnly d)
+    {
+        var candidate = new DateOnly(d.Year, d.Month, 1);
+        while (candidate.DayOfWeek == DayOfWeek.Saturday || candidate.DayOfWeek == DayOfWeek.Sunday)
+        {
+            candidate = candidate.AddDays(1);
+        }
+        return candidate;
+    }
+
+    private static DateOnly LastWorkdayOfMonth(DateOnly d)
+    {
+        var candidate = new DateOnly(d.Year, d.Month, DateTime.DaysInMonth(d.Year, d.Month));
+        while (candidate.DayOfWeek == DayOfWeek.Saturday || candidate.DayOfWeek == DayOfWeek.Sunday)
+        {
+            candidate = candidate.AddDays(-1);
+        }
+        return candidate;
+    }
+
     public async Task<IReadOnlyList<PrebookListViewModel>> GetAllRecurringJobsForExportAsync(
         RecurringJobQueryRequest request)
     {
@@ -1186,6 +1557,49 @@ public class RecurringJobRepository(
                 }
 
                 return $"Changed Mode to {mode}";
+            }
+            case JobProperty.RecurringInitialDays:
+            {
+                var newInitialDays = ParseValue<int>(value, property);
+
+                // Cap per Q5 recommendation (30 days). Bounds backfill preview
+                // cost and prevents accidental multi-year batches. Adjust here
+                // if product decides on a different limit.
+                if (newInitialDays < 0 || newInitialDays > MaxRecurringInitialDays)
+                {
+                    throw new ArgumentException(
+                        $"RecurringInitialDays must be between 0 and {MaxRecurringInitialDays}. Got: {newInitialDays}.",
+                        nameof(value));
+                }
+
+                // Only write on the parent template — children are ignored by
+                // uspPrebookSet and inherit target-date behaviour via the SP
+                // fan-out in InsertSchedule / InsertJobAndChildren.
+                var effectiveBookingId = await Context.GetEffectiveJobBookingIdAsync(jobId);
+
+                var beforeMeta = await Context.TucJobBookings
+                    .Where(j => j.UcbkId == effectiveBookingId)
+                    .Select(j => new { InitialDays = j.RecurringInitialDays ?? 0, j.UcbkFrequency })
+                    .FirstOrDefaultAsync();
+                var oldInitialDays = beforeMeta?.InitialDays ?? 0;
+                var isFortnightly = beforeMeta?.UcbkFrequency == 2;
+
+                await Context.TucJobBookings.Where(j => j.UcbkId == effectiveBookingId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.RecurringInitialDays, newInitialDays));
+
+                // Fortnightly anchor re-seed. Client-side guarded so we only
+                // hit the SP when it will actually do work (the SP itself
+                // also returns early for non-fortnightly, but skipping the
+                // round-trip keeps non-fortnightly edits SP-free and makes
+                // repository tests SQL-Server-independent).
+                if (newInitialDays != oldInitialDays && isFortnightly)
+                {
+                    await Context.Database.ExecuteSqlRawAsync(
+                        "EXEC dbo.UTL_stpJobBooking_RecomputeFirstDueOnEdit @JobBookingID = {0}",
+                        effectiveBookingId);
+                }
+
+                return $"Create-ahead days changed from {oldInitialDays} to {newInitialDays}";
             }
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);

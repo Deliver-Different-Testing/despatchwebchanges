@@ -3648,4 +3648,138 @@ public class JobControllerTests : IDisposable
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
+
+    // ------------------------------------------------------------------
+    // PreviewCreateAheadBackfill / CreateCreateAheadBackfill endpoints
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_ReturnsJson_OnHappyPath()
+    {
+        var controller = CreateController();
+        var preview = new PreviewCreateAheadBackfillResult
+        {
+            Candidates = new List<CreateAheadBackfillCandidate>
+            {
+                new() { ServiceDate = new DateOnly(2024, 6, 17), DisplayLabel = "Mon 17 Jun" }
+            }
+        };
+        _recurringJobRepositoryMock
+            .PreviewCreateAheadBackfillAsync(Arg.Any<PreviewCreateAheadBackfillRequest>())
+            .Returns(preview);
+
+        var result = await controller.PreviewCreateAheadBackfill(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = 100, OldValue = 0, NewValue = 2
+        });
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Same(preview, json.Value);
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_ReturnsBadRequest_OnArgumentException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .PreviewCreateAheadBackfillAsync(Arg.Any<PreviewCreateAheadBackfillRequest>())
+            .Throws(new ArgumentException("NewValue must be between 0 and 30"));
+
+        var result = await controller.PreviewCreateAheadBackfill(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = 100, OldValue = 0, NewValue = 999
+        });
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("between 0 and 30", bad.Value?.ToString());
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_ReturnsBadRequest_OnInvalidOperationException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .PreviewCreateAheadBackfillAsync(Arg.Any<PreviewCreateAheadBackfillRequest>())
+            .Throws(new InvalidOperationException("Parent recurring booking 100 not found"));
+
+        var result = await controller.PreviewCreateAheadBackfill(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = 100, OldValue = 0, NewValue = 2
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_Returns500_OnUnexpectedException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .PreviewCreateAheadBackfillAsync(Arg.Any<PreviewCreateAheadBackfillRequest>())
+            .Throws(new Exception("boom"));
+
+        var result = await controller.PreviewCreateAheadBackfill(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = 100, OldValue = 0, NewValue = 2
+        });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_ReturnsJson_OnHappyPath()
+    {
+        var controller = CreateController();
+        var payload = new CreateCreateAheadBackfillResult
+        {
+            JobsCreated = 3,
+            DuplicatesSkipped = 1,
+            CreatedDates = new[] { new DateOnly(2024, 6, 17), new DateOnly(2024, 6, 18) }
+        };
+        _recurringJobRepositoryMock
+            .CreateCreateAheadBackfillAsync(Arg.Any<CreateCreateAheadBackfillRequest>())
+            .Returns(payload);
+
+        var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
+        {
+            JobId = 100, Dates = new[] { new DateOnly(2024, 6, 17), new DateOnly(2024, 6, 18) }
+        });
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Same(payload, json.Value);
+    }
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_ReturnsBadRequest_OnArgumentException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .CreateCreateAheadBackfillAsync(Arg.Any<CreateCreateAheadBackfillRequest>())
+            .Throws(new ArgumentException("JobId is required"));
+
+        var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
+        {
+            JobId = 0, Dates = new[] { new DateOnly(2024, 6, 17) }
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_Returns500_OnUnexpectedException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .CreateCreateAheadBackfillAsync(Arg.Any<CreateCreateAheadBackfillRequest>())
+            .Throws(new Exception("boom"));
+
+        var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
+        {
+            JobId = 100, Dates = new[] { new DateOnly(2024, 6, 17) }
+        });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
+    }
 }

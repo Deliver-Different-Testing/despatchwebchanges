@@ -8,10 +8,14 @@
 import {apiClient, RequestOptions, downloadBlob} from './apiClient';
 import {parseDateFromApi, getTenantTimezone} from '../utils/dateUtils';
 import {
+    CreateCreateAheadBackfillRequest,
+    CreateCreateAheadBackfillResult,
     InsertRecurringToLiveRequest,
     InsertRecurringToLiveResult,
     PaginatedRecurringJobsResponse,
     PaginatedRecurringJobsResponseDto,
+    PreviewCreateAheadBackfillRequest,
+    PreviewCreateAheadBackfillResult,
     RecurringJobQuery,
     RecurringMode,
     RouteOption,
@@ -100,6 +104,33 @@ export const recurringJobsApi = {
      */
     insertToLive: async (request: InsertRecurringToLiveRequest): Promise<InsertRecurringToLiveResult> => {
         return await apiClient.post<InsertRecurringToLiveResult>('job/InsertRecurringToLive', request);
+    },
+
+    /**
+     * Preview interim service dates that would be materialised if the operator
+     * raises RecurringInitialDays from `oldValue` to `newValue` on a template.
+     * Read-only — safe to call as the operator adjusts the value in the dialog.
+     */
+    previewCreateAheadBackfill: async (
+        request: PreviewCreateAheadBackfillRequest
+    ): Promise<PreviewCreateAheadBackfillResult> => {
+        return await apiClient.post<PreviewCreateAheadBackfillResult>(
+            'job/PreviewCreateAheadBackfill', request
+        );
+    },
+
+    /**
+     * Materialise the operator-confirmed subset of dates from the preview
+     * candidate list. Each date rotates a fresh ucbkJobNumber family via the
+     * same SP path uspPrebookSet uses nightly, so double-click yields
+     * jobsCreated=0 on the second call (dup guard against family + date).
+     */
+    createCreateAheadBackfill: async (
+        request: CreateCreateAheadBackfillRequest
+    ): Promise<CreateCreateAheadBackfillResult> => {
+        return await apiClient.post<CreateCreateAheadBackfillResult>(
+            'job/CreateCreateAheadBackfill', request
+        );
     },
 
     /**

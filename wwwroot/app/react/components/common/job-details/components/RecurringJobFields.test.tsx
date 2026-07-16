@@ -30,6 +30,7 @@ function createDefaultProps(overrides?: Record<string, any>) {
         onEditRestartDate: jest.fn(),
         onEditSavedFlight: jest.fn(),
         onAddFlight: jest.fn(),
+        onInitialDaysChange: jest.fn(),
         ...overrides,
     };
 }
@@ -215,5 +216,84 @@ describe('RecurringJobFields', () => {
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
         expect(screen.queryByText('Saved Flight')).not.toBeInTheDocument();
         expect(screen.queryByText('Add flight')).not.toBeInTheDocument();
+    });
+
+    // -- Create-ahead offset input (RecurringInitialDays) --
+
+    it('renders the create-ahead input pre-populated with the job value', () => {
+        const job = createMockJob({preBook: true, recurringInitialDays: 3});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        expect(input.value).toBe('3');
+    });
+
+    it('defaults the create-ahead input to 0 when the job value is undefined', () => {
+        const job = createMockJob({preBook: true, recurringInitialDays: undefined});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        expect(input.value).toBe('0');
+    });
+
+    it('fires onInitialDaysChange on blur with the new value when it differs', () => {
+        const onInitialDaysChange = jest.fn();
+        const job = createMockJob({preBook: true, recurringInitialDays: 0});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        fireEvent.change(input, {target: {value: '2'}});
+        fireEvent.blur(input);
+        expect(onInitialDaysChange).toHaveBeenCalledWith(2);
+    });
+
+    it('does not fire onInitialDaysChange when the value is unchanged on blur', () => {
+        const onInitialDaysChange = jest.fn();
+        const job = createMockJob({preBook: true, recurringInitialDays: 2});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        fireEvent.change(input, {target: {value: '2'}});
+        fireEvent.blur(input);
+        expect(onInitialDaysChange).not.toHaveBeenCalled();
+    });
+
+    it('clamps values above the max (30) before firing onInitialDaysChange', () => {
+        const onInitialDaysChange = jest.fn();
+        const job = createMockJob({preBook: true, recurringInitialDays: 0});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        fireEvent.change(input, {target: {value: '999'}});
+        fireEvent.blur(input);
+        expect(onInitialDaysChange).toHaveBeenCalledWith(30);
+        expect(input.value).toBe('30');
+    });
+
+    it('clamps negative values to 0 before firing onInitialDaysChange', () => {
+        const onInitialDaysChange = jest.fn();
+        const job = createMockJob({preBook: true, recurringInitialDays: 2});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        fireEvent.change(input, {target: {value: '-5'}});
+        fireEvent.blur(input);
+        expect(onInitialDaysChange).toHaveBeenCalledWith(0);
+        expect(input.value).toBe('0');
+    });
+
+    it('rolls the draft back to the last-saved value when the input is garbage', () => {
+        const onInitialDaysChange = jest.fn();
+        const job = createMockJob({preBook: true, recurringInitialDays: 5});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        fireEvent.change(input, {target: {value: 'abc'}});
+        fireEvent.blur(input);
+        expect(onInitialDaysChange).not.toHaveBeenCalled();
+        expect(input.value).toBe('5');
+    });
+
+    it('commits the value when Enter is pressed', () => {
+        const onInitialDaysChange = jest.fn();
+        const job = createMockJob({preBook: true, recurringInitialDays: 0});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        fireEvent.change(input, {target: {value: '4'}});
+        fireEvent.keyDown(input, {key: 'Enter'});
+        expect(onInitialDaysChange).toHaveBeenCalledWith(4);
     });
 });
