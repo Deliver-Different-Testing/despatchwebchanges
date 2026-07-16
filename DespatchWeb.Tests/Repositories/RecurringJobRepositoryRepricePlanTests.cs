@@ -81,7 +81,7 @@ public class RecurringJobRepositoryRepricePlanTests
     {
         var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, 42m, null, null));
 
-        var plan = RecurringJobRepository.BuildRepricePlan([(1, (int?)null)], pricing);
+        var plan = RecurringJobRepository.BuildRepricePlan([(1, null)], pricing);
 
         Assert.Empty(plan.Groups);
         Assert.Equal(0, plan.RepricedJobCount);

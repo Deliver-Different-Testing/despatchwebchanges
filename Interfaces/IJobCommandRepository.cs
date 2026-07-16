@@ -46,7 +46,7 @@ public interface IJobCommandRepository
     );
 
     Task RestoreSplitJobsAsync(IReadOnlyList<int> jobIds);
-    Task RestoreJobsAsync(IReadOnlyList<int> jobIds, bool forceRestoreCompleted = false);
+    Task RestoreJobsAsync(IReadOnlyList<int> jobIds);
     Task VoidJobAsync(VoidJobRequest data);
     Task VoidArchivedJobAsync(VoidJobRequest data);
     Task VoidBulkJobAsync(VoidBulkJobRequest data);

@@ -23,6 +23,7 @@ import {StatsTabs} from './components/StatsTabs';
 import {DeliveriesTable} from './components/DeliveriesTable';
 import {OpenJobsWidget} from './components/OpenJobsWidget';
 import {MapDialog} from './components/MapDialog';
+import {OpenJobConfirmDialog} from '../../components/common/recurring-delivery-journey/OpenJobConfirmDialog';
 import type {
     OverviewPageProps,
     OverviewQueryParams,
@@ -88,6 +89,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     // Map dialog state
     const [mapDialogOpen, setMapDialogOpen] = useState(false);
     const [mapDelivery, setMapDelivery] = useState<OverviewTableParentJob | null>(null);
+
+    // Open-job confirmation dialog state
+    const [confirmTarget, setConfirmTarget] = useState<{jobId: number; jobNumber: string} | null>(null);
 
     // Expandable rows state
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -285,11 +289,22 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     const handleOpenJobDetail = useCallback(
         (delivery: OverviewTableParentJob) => {
             if (delivery?.jobId) {
-                onOpenJobDetail(delivery.jobId);
+                setConfirmTarget({jobId: delivery.jobId, jobNumber: delivery.jobName});
             }
         },
-        [onOpenJobDetail],
+        [],
     );
+
+    const handleConfirmOpenJob = useCallback(() => {
+        if (confirmTarget) {
+            onOpenJobDetail(confirmTarget.jobId);
+        }
+        setConfirmTarget(null);
+    }, [confirmTarget, onOpenJobDetail]);
+
+    const handleCancelOpenJob = useCallback(() => {
+        setConfirmTarget(null);
+    }, []);
 
     const handleToggleOverviewCard = useCallback(() => {
         setIsOverviewCollapsed((prev) => {
@@ -409,6 +424,15 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 open={mapDialogOpen}
                 onClose={() => setMapDialogOpen(false)}
                 delivery={mapDelivery}
+            />
+
+            {/* Open-job confirmation */}
+            <OpenJobConfirmDialog
+                open={confirmTarget != null}
+                jobId={confirmTarget?.jobId ?? null}
+                jobNumber={confirmTarget?.jobNumber ?? null}
+                onCancel={handleCancelOpenJob}
+                onConfirm={handleConfirmOpenJob}
             />
         </Box>
     );

@@ -217,8 +217,8 @@ export function getUndeliverableList(options?: RequestOptions): Promise<ISuggest
 
 // ── Job Dispatch Operations ─────────────────────────────────────────
 
-export function restoreJobs(jobIds: number[], forceRestoreCompleted = false): Promise<void> {
-    return apiClient.post('job/RestoreJobs', {jobIds, forceRestoreCompleted});
+export function restoreJobs(jobIds: number[]): Promise<void> {
+    return apiClient.post('job/RestoreJobs', {jobIds});
 }
 
 export function allocateJob(courierId: number, jobIds: number[]): Promise<void> {

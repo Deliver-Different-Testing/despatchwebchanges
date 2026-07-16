@@ -29,7 +29,6 @@ public partial class JobRepository(
     private readonly ITenantClock _clock = clock;
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private readonly ITenantInfoService _infoService = infoService;
-    private readonly ICourierRepository _courierRepository = courierRepository;
 
     /// <summary>
     /// Updates pricing fields (amount, PPD, fuel, courier payment) for multiple jobs manually.
@@ -482,7 +481,7 @@ public partial class JobRepository(
     {
         try
         {
-            await RestoreJobsCoreAsync(jobIds, forceRestoreCompleted: false);
+            await RestoreJobsCoreAsync(jobIds);
         }
         catch (Exception e)
         {
@@ -800,20 +799,16 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Restores voided or not-yet-done jobs back to active dispatch status.
-    /// Genuinely-completed jobs (done and not void) are skipped unless
-    /// <paramref name="forceRestoreCompleted"/> is set (see <see cref="RestoreJobsCoreAsync"/>).
+    /// Restores the given jobs back to active dispatch status, including genuinely-completed
+    /// jobs (the operator confirms that in the UI). Proof of delivery is always preserved
+    /// (see <see cref="RestoreJobsCoreAsync"/>).
     /// </summary>
     /// <param name="jobIds">List of job IDs to restore.</param>
-    /// <param name="forceRestoreCompleted">
-    /// When true, completed jobs are also re-opened and their POD is cleared. Set only after
-    /// the operator confirms restoring a completed job.
-    /// </param>
-    public async Task RestoreJobsAsync(IReadOnlyList<int> jobIds, bool forceRestoreCompleted = false)
+    public async Task RestoreJobsAsync(IReadOnlyList<int> jobIds)
     {
         try
         {
-            await RestoreJobsCoreAsync(jobIds, forceRestoreCompleted);
+            await RestoreJobsCoreAsync(jobIds);
         }
         catch (Exception e)
         {
@@ -831,20 +826,23 @@ public partial class JobRepository(
 
     /// <summary>
     /// Restores the given jobs back onto the dispatch board (the C# replacement for the legacy
-    /// uspRestoreJobs proc). Per job it un-assigns the courier, clears dispatch/paging/completion
+    /// uspRestoreJobs proc). Per job, it un-assigns the courier, clears dispatch/paging/completion
     /// state, resets the status to New and internal status to New Jobs, and re-shows the job via
-    /// DisplayInDespatch = 1. A genuinely-completed job (done and not void) is skipped unless
-    /// <paramref name="forceRestoreCompleted"/> is set — forcing also clears the POD, matching the
-    /// proc's <c>@ForceRestoreCompleted = 1</c> branch. The courier device is notified via
+    /// DisplayInDespatch = 1. Completed jobs are restored too (the operator confirms that in the
+    /// UI); proof of delivery is always preserved. The courier device is notified via
     /// UTL_stpJob_RestoreDevice (before the courier is nulled) and the courier's clear-list area
     /// order is recomputed, preserving the proc's side effects.
     /// </summary>
-    private async Task RestoreJobsCoreAsync(IReadOnlyList<int> jobIds, bool forceRestoreCompleted)
+    private async Task RestoreJobsCoreAsync(IReadOnlyList<int> jobIds)
     {
         if (jobIds is null or { Count: 0 })
         {
             return;
         }
+
+        Log.Information(
+            "RestoreJobsCore starting for {RequestedCount} requested job(s) {RequestedJobIds}.",
+            jobIds.Count, string.Join(",", jobIds));
 
         var jobs = await Context.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId))
@@ -859,14 +857,23 @@ public partial class JobRepository(
             })
             .ToListAsync();
 
+        // Jobs requested but absent from TucJobs are almost always archived (they live only in
+        var missingJobIds = jobIds.Where(id => jobs.All(j => j.UcjbId != id)).ToList();
+        if (missingJobIds.Count > 0)
+        {
+            Log.Warning(
+                "RestoreJobsCore: {MissingCount} requested job(s) {MissingJobIds} were not found in TucJobs and will be skipped (likely archived).",
+                missingJobIds.Count, string.Join(",", missingJobIds));
+        }
+
+        Log.Information("RestoreJobsCore loaded {FoundCount} job(s) from TucJobs to evaluate for restore.",
+            jobs.Count);
+
         foreach (var job in jobs)
         {
-            // Skip a genuinely-completed job unless the caller forces it — re-opening one would
-            // otherwise leave stale POD/completion evidence that DESWEB_qryDespatch filters out.
-            if (!forceRestoreCompleted && job.UcjbJobDone && !job.UcjbVoid)
-            {
-                continue;
-            }
+            Log.Information(
+                "RestoreJobsCore evaluating job {JobId}: JobDone={JobDone}, Void={Void}, CourierId={CourierId}, DispId={DispId}, ParentId={ParentId}",
+                job.UcjbId, job.UcjbJobDone, job.UcjbVoid, job.UcjbCourierId, job.UcjbDispId, job.ParentId);
 
             // Multi-leg relationship: clear the shared dispatcher off every sibling job.
             if (job.UcjbDispId == MultiLegDispatcherId && (job.ParentId ?? 0) != 0)
@@ -912,21 +919,19 @@ public partial class JobRepository(
                     .SetProperty(j => j.FirstJob, false)
                     .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.NewJobs));
 
-            // Only a forced (completed-job) restore clears the POD, mirroring the proc's
-            // CASE WHEN @ForceRestoreCompleted = 1 THEN NULL ELSE ucjbPODName END.
-            if (forceRestoreCompleted)
-            {
-                await Context.TucJobs
-                    .Where(j => j.UcjbId == job.UcjbId)
-                    .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.UcjbPodname, (string)null));
-            }
+            Log.Information(
+                "RestoreJobsCore restored job {JobId} to New/NewJobs (courier cleared, completion/dispatch state reset; POD preserved).",
+                job.UcjbId);
 
             // Recompute the (former) courier's clear-list area ordering now the job is gone.
             if (job.UcjbCourierId is { } courierId)
             {
-                await _courierRepository.ResetClearListAreaOrderAsync(courierId);
+                await courierRepository.ResetClearListAreaOrderAsync(courierId);
             }
         }
+
+        Log.Information("RestoreJobsCore finished for requested job(s) {RequestedJobIds}.",
+            string.Join(",", jobIds));
     }
 
     /// <summary>
@@ -2084,6 +2089,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobId">The job ID to update packages for.</param>
     /// <param name="parcels">List of parcel dimensions to add or update.</param>
+    /// <param name="calculateDimsOncePerJob"></param>
     public async Task UpdatePackagesForJobAsync(int jobId,
         IReadOnlyList<ParcelDimensions> parcels,
         bool? calculateDimsOncePerJob = null)
@@ -2157,7 +2163,7 @@ public partial class JobRepository(
                                 (childJobId == null || i.ChildJobId == childJobId))
                     .CountAsync();
 
-                int? dimensionsType = calculateDimsOncePerJob is true ? 2 : (int?)null;
+                int? dimensionsType = calculateDimsOncePerJob is true ? 2 : null;
 
                 if (childJobId == null)
                 {
@@ -2273,7 +2279,7 @@ public partial class JobRepository(
                             (childJobId == null || i.ChildJobId == childJobId))
                 .CountAsync();
 
-            int? dimensionsType = calculateDimsOncePerJob is true ? 2 : (int?)null;
+            int? dimensionsType = calculateDimsOncePerJob is true ? 2 : null;
 
             if (childJobId == null)
             {
@@ -2368,6 +2374,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="bulkJobId">The bulk job ID to update packages for.</param>
     /// <param name="parcels">List of parcel dimensions to add or update.</param>
+    /// <param name="calculateDimsOncePerJob"></param>
     public async Task UpdatePackagesForBulkJobAsync(int bulkJobId,
         IReadOnlyList<ParcelDimensions> parcels,
         bool? calculateDimsOncePerJob = null)
@@ -2419,7 +2426,7 @@ public partial class JobRepository(
 
                 if (calculateDimsOncePerJob.HasValue)
                 {
-                    int? dimensionsType = calculateDimsOncePerJob.Value ? 2 : (int?)null;
+                    int? dimensionsType = calculateDimsOncePerJob.Value ? 2 : null;
                     await Context.TblBulkJobs
                         .Where(j => j.BulkJobId == effectiveJobId || j.RootParentId == effectiveJobId)
                         .ExecuteUpdateAsync(setters => setters
@@ -4197,9 +4204,9 @@ public partial class JobRepository(
     public async Task<SuggestedFuelChargeViewModel> GetSuggestedFuelChargeAsync(int jobId, decimal chargeAmount,
         bool isPrebook, bool isArchived = false)
     {
-        int? clientId = null;
-        DateTime? bookedDate = null;
-        int? vehicleSizeId = null;
+        int? clientId;
+        DateTime? bookedDate;
+        int? vehicleSizeId;
 
         if (isPrebook)
         {
@@ -5870,7 +5877,7 @@ public partial class JobRepository(
 
     private async Task<bool> IsStopJob(int jobId)
     {
-        // Live jobs live in tucJob; once archived the row moves to tucJobArchive. Look in the
+        // Live jobs in tucJob; once archived the row moves to tucJobArchive. Look in the
         // live table first, then fall back to the archive so this works for archived jobs too.
         var jobNumber = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)

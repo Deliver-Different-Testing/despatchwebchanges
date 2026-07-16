@@ -9,12 +9,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import type {
     CourierData,
@@ -47,6 +41,7 @@ import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './j
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
 import {DispatchDialog} from '../dialogs/dispatch-dialog';
+import {RestoreCompletedConfirmationDialog} from '../dialogs/restore-completed-confirmation-dialog';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -622,13 +617,24 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const [bulkRestoreConfirmOpen, setBulkRestoreConfirmOpen] = useState(false);
 
-    const performBulkRestore = useCallback(async (forceRestoreCompleted: boolean) => {
-        const ids = [...multiSelect.selectedIds];
+    const performBulkRestore = useCallback(async () => {
+        // Archived jobs live only in the archive tables; restore operates on live (tucJob)
+        // rows, so restoring an archived job silently no-ops — exclude them.
+        const ids = [...multiSelect.selectedIds].filter(
+            id => !jobs.find(j => j.id === id)?.isArchived,
+        );
+        if (ids.length === 0) {
+            showToast('Archived jobs can’t be restored', 'warning');
+            return;
+        }
         try {
             await Promise.all(ids.map(id => addRestoreEvent(id)));
-            await restoreJobs(ids, forceRestoreCompleted);
+            await restoreJobs(ids);
             showToast(`${ids.length} job(s) restored`, 'success');
             multiSelect.clear();
+            // Invalidate job detail (and related/photos) so an open detail panel reflects the
+            // reset status, then refresh the list.
+            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             if (fetchConfig) {
                 hookDataRef.current.refresh();
             } else if (onRefresh) {
@@ -637,20 +643,25 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         } catch {
             showToast('Failed to restore jobs', 'error');
         }
-    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+    }, [multiSelect, jobs, showToast, fetchConfig, onRefresh]);
 
     const handleBulkRestore = useCallback(() => {
-        // Force-restore (and confirm) only when the selection includes a completed job,
-        // since that clears POD and re-opens it.
-        const anyCompleted = [...multiSelect.selectedIds].some(
-            id => jobs.find(j => j.id === id)?.done,
+        // Exclude archived jobs — restore only operates on live rows.
+        const restorableIds = [...multiSelect.selectedIds].filter(
+            id => !jobs.find(j => j.id === id)?.isArchived,
         );
+        if (restorableIds.length === 0) {
+            showToast('Archived jobs can’t be restored', 'warning');
+            return;
+        }
+        // Confirm only when a restorable job is completed, since restoring re-opens it.
+        const anyCompleted = restorableIds.some(id => jobs.find(j => j.id === id)?.done);
         if (anyCompleted) {
             setBulkRestoreConfirmOpen(true);
             return;
         }
-        void performBulkRestore(false);
-    }, [multiSelect, jobs, performBulkRestore]);
+        void performBulkRestore();
+    }, [multiSelect, jobs, performBulkRestore, showToast]);
 
     const handleBulkMarkRead = useCallback(async () => {
         const ids = [...multiSelect.selectedIds];
@@ -876,33 +887,19 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 fetchRate={getPartnerRateForJob}
                 getPartnerOptions={getActivePartnerOptions}
             />
-            {/* Confirm before force-restoring a selection that includes completed jobs. */}
-            <Dialog
+            {/* Confirm before restoring a selection that includes completed jobs. */}
+            <RestoreCompletedConfirmationDialog
                 open={bulkRestoreConfirmOpen}
+                count={[...multiSelect.selectedIds].filter(id => {
+                    const j = jobs.find(x => x.id === id);
+                    return j && !j.isArchived && j.done;
+                }).length}
                 onClose={() => setBulkRestoreConfirmOpen(false)}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogTitle>Restore Completed Jobs?</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2">
-                        Some selected jobs are completed. Restoring them will clear their POD and
-                        reactivate them as new jobs. Continue?
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setBulkRestoreConfirmOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        onClick={async () => {
-                            setBulkRestoreConfirmOpen(false);
-                            await performBulkRestore(true);
-                        }}
-                    >
-                        Restore
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onConfirm={async () => {
+                    setBulkRestoreConfirmOpen(false);
+                    await performBulkRestore();
+                }}
+            />
         </Box>
     );
 };

@@ -19,6 +19,8 @@ public sealed class PdfOverlayClient(
     IHttpContextAccessor contextAccessor,
     IConfiguration configuration) : IPdfOverlayClient
 {
+    private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web);
+
     public async Task<byte[]?> TryRenderJobAsync(int jobId, string documentType, CancellationToken ct = default)
     {
         var baseUrl = configuration["PdfOverlayBaseUrl"];
@@ -107,8 +109,7 @@ public sealed class PdfOverlayClient(
             }
 
             var json = await res.Content.ReadAsStringAsync(ct);
-            var docs = JsonSerializer.Deserialize<List<OverlayDocument>>(
-                json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            var docs = JsonSerializer.Deserialize<List<OverlayDocument>>(json, WebJsonOptions);
             return docs ?? [];
         }
         catch (Exception ex)

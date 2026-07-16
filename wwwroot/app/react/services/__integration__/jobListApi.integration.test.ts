@@ -350,22 +350,7 @@ describe('jobListApi integration', () => {
 
             await restoreJobs([10, 20]);
 
-            expect(capturedBody).toEqual({ jobIds: [10, 20], forceRestoreCompleted: false });
-        });
-
-        it('forwards forceRestoreCompleted when restoring completed jobs', async () => {
-            let capturedBody: unknown = null;
-
-            server.use(
-                http.post('*/job/RestoreJobs', async ({ request }) => {
-                    capturedBody = await request.json();
-                    return new HttpResponse(null, { status: 200 });
-                })
-            );
-
-            await restoreJobs([10, 20], true);
-
-            expect(capturedBody).toEqual({ jobIds: [10, 20], forceRestoreCompleted: true });
+            expect(capturedBody).toEqual({ jobIds: [10, 20] });
         });
     });
 

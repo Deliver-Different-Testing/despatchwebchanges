@@ -471,35 +471,62 @@ describe('JobListContextMenu', () => {
             invalidateSpy.mockRestore();
         });
 
-        it('Restore (non-completed job) restores without forcing, logs the audit event, and refreshes', async () => {
+        it('Restore (non-completed job) restores directly, logs the audit event, invalidates job detail, and refreshes', async () => {
+            const {queryClient: qc} = await import('../../query/queryClient');
+            const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Restore'));
 
             await waitFor(() => {
-                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1], false);
+                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1]);
             });
             expect(mockedApi.addRestoreEvent).toHaveBeenCalledWith(1);
+            expect(props.showToast).toHaveBeenCalledWith('Job J001 restored', 'success');
+            expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs']});
             expect(props.onRefresh).toHaveBeenCalled();
+            invalidateSpy.mockRestore();
         });
 
-        it('Restore (completed job) confirms first, then force-restores and logs the audit event', async () => {
+        it('Restore (completed job) confirms first, then restores and logs the audit event', async () => {
             const props = createDefaultProps({job: createMockJob({done: true})});
             renderWithTheme(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Restore'));
 
             // Confirmation shown; nothing restored yet.
-            expect(await screen.findByText('Restore Completed Job?')).toBeInTheDocument();
+            expect(await screen.findByText('Restore completed job')).toBeInTheDocument();
             expect(mockedApi.restoreJobs).not.toHaveBeenCalled();
 
-            fireEvent.click(screen.getByRole('button', {name: 'OK'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Restore'}));
 
             await waitFor(() => {
-                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1], true);
+                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1]);
             });
             expect(mockedApi.addRestoreEvent).toHaveBeenCalledWith(1);
+        });
+
+        it('Restore is disabled for archived jobs (restore only touches live jobs, so it would silently no-op)', () => {
+            const props = createDefaultProps({job: createMockJob({isArchived: true, done: true})});
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            const restoreItem = screen.getByText('Restore').closest('[role="menuitem"]');
+            expect(restoreItem).toHaveAttribute('aria-disabled', 'true');
+
+            // Clicking the disabled item must not open the confirm dialog or call the API.
+            fireEvent.click(screen.getByText('Restore'));
+            expect(screen.queryByText('Restore completed job')).not.toBeInTheDocument();
+            expect(mockedApi.restoreJobs).not.toHaveBeenCalled();
+            expect(mockedApi.addRestoreEvent).not.toHaveBeenCalled();
+        });
+
+        it('Restore stays enabled for a non-archived job', () => {
+            const props = createDefaultProps({job: createMockJob({isArchived: false})});
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            const restoreItem = screen.getByText('Restore').closest('[role="menuitem"]');
+            expect(restoreItem).not.toHaveAttribute('aria-disabled', 'true');
         });
 
         it('Mark Missing calls markJobMissing with toast and refresh', async () => {

@@ -52,6 +52,7 @@ import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {DispatchDialog, type DispatchType} from '../dialogs/dispatch-dialog';
 import {SendToLiveConfirmationDialog} from '../dialogs/send-to-live-confirmation-dialog';
+import {RestoreCompletedConfirmationDialog} from '../dialogs/restore-completed-confirmation-dialog';
 import {openJobInSearch} from '../../services/navigationService';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
@@ -92,6 +93,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const [lateType, setLateType] = useState<'pickup' | 'delivery'>('pickup');
     const [lateMinutes, setLateMinutes] = useState('');
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [restoreCompletedConfirmOpen, setRestoreCompletedConfirmOpen] = useState(false);
     const [confirmDialogConfig, setConfirmDialogConfig] = useState<{
         title: string;
         message: string;
@@ -138,7 +140,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || dispatchDialog.open || sendToLiveTarget !== null;
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || restoreCompletedConfirmOpen || splitJobLoading || dispatchDialog.open || sendToLiveTarget !== null;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -448,10 +450,14 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         openDispatchDialog('Courier');
     };
 
-    const performRestore = async (forceRestoreCompleted: boolean) => {
+    const performRestore = async () => {
         try {
             await api.addRestoreEvent(activeJob.id);
-            await api.restoreJobs([activeJob.id], forceRestoreCompleted);
+            await api.restoreJobs([activeJob.id]);
+            showToast(`Job ${activeJob.jobNo} restored`, 'success');
+            // Invalidate job detail (and related/photos) so an open detail panel reflects the
+            // reset status, then refresh the list.
+            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             refresh();
         } catch {
             showToast('Error restoring job', 'error');
@@ -460,17 +466,12 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
     const handleRestore = () => {
         closeAll();
-        // Restoring a completed job clears its POD and re-opens it — confirm first.
+        // Restoring a completed job re-opens it — confirm first.
         if (activeJob.done) {
-            setConfirmDialogConfig({
-                title: 'Restore Completed Job?',
-                message: 'This job is completed. Restoring it will clear its POD and reactivate it as a new job. Continue?',
-                onConfirm: () => performRestore(true),
-            });
-            setConfirmDialogOpen(true);
+            setRestoreCompletedConfirmOpen(true);
             return;
         }
-        void performRestore(false);
+        void performRestore();
     };
 
     const handleMarkMissing = async () => {
@@ -673,11 +674,16 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </MenuItem>
                 )}
 
-                {/* Restore */}
-                <MenuItem onClick={handleRestore}>
-                    <ListItemIcon><RedoIcon fontSize="small"/></ListItemIcon>
-                    <ListItemText>Restore</ListItemText>
-                </MenuItem>
+                {/* Restore — disabled for archived jobs: restore only operates on live
+                    (tucJob) rows, so restoring an archived job silently does nothing. */}
+                <Tooltip title={activeJob.isArchived ? 'Archived jobs can’t be restored' : ''} placement="right">
+                    <span>
+                        <MenuItem disabled={activeJob.isArchived} onClick={handleRestore}>
+                            <ListItemIcon><RedoIcon fontSize="small"/></ListItemIcon>
+                            <ListItemText>Restore</ListItemText>
+                        </MenuItem>
+                    </span>
+                </Tooltip>
 
                 {/* Mark Missing */}
                 <MenuItem onClick={handleMarkMissing}>
@@ -737,6 +743,15 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </Button>
                 </DialogActions>
             </Dialog>
+            {/* Restore Completed Job Confirmation */}
+            <RestoreCompletedConfirmationDialog
+                open={restoreCompletedConfirmOpen}
+                onClose={() => setRestoreCompletedConfirmOpen(false)}
+                onConfirm={async () => {
+                    setRestoreCompletedConfirmOpen(false);
+                    await performRestore();
+                }}
+            />
             {/* Send to Live Confirmation Dialog */}
             <SendToLiveConfirmationDialog
                 open={sendToLiveTarget !== null}

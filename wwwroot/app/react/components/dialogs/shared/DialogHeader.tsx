@@ -14,15 +14,16 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from './styles';
+import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor, type HeaderVariant} from './styles';
 
 export interface DialogHeaderProps {
     icon: React.ReactNode;
     title: React.ReactNode;
     subtitle?: React.ReactNode;
     onClose: () => void;
-    /** "error" uses the error palette for destructive dialogs. */
-    variant?: 'primary' | 'error';
+    /** Palette for the header fill: "error" for destructive dialogs, "warning"
+     * for cautionary ones, etc. Defaults to "primary". */
+    variant?: HeaderVariant;
     /** Disables the close button (e.g. while a submit is in flight). */
     closeDisabled?: boolean;
 }

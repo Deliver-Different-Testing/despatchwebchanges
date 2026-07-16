@@ -126,7 +126,7 @@
 
                                             <md-button aria-label="Restore Job" class="md-fab md-raised md-mini"
                                                        ng-click="ctrl.restoreJob(ctrl.currentJob)"
-                                                       ng-if="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier != null && !ctrl.currentJob.done">
+                                                       ng-if="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier != null && !ctrl.currentJob.done && !ctrl.currentJob.isArchived">
                                                 <md-tooltip md-direction="bottom">Restore Job</md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
                                             </md-button>

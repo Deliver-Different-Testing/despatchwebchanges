@@ -1394,7 +1394,15 @@ public class JobController(
     {
         try
         {
-            await jobCommandRepository.RestoreJobsAsync(data.JobIds, data.ForceRestoreCompleted);
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(data.JobIds);
+            
+            Log.Information(
+                "RestoreJobs request received for {JobCount} job(s) {JobIds}.",
+                data.JobIds?.Count ?? 0,
+                data.JobIds is null ? "[]" : string.Join(",", data.JobIds));
+
+            await jobCommandRepository.RestoreJobsAsync(data.JobIds);
             return Ok();
         }
         catch (Exception ex)

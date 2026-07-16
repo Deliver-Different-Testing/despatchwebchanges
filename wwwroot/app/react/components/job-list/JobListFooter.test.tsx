@@ -25,6 +25,15 @@ describe('JobListFooter', () => {
         expect(screen.getByText('Showing 10 of 50 jobs')).toBeInTheDocument();
     });
 
+    it('renders nothing when there are no jobs', () => {
+        const {container} = renderWithTheme(
+            <JobListFooter displayedCount={0} totalCount={0} lastUpdated="Last updated: 3:00 PM" allJobsLoaded/>,
+        );
+
+        expect(screen.queryByText('Last updated: 3:00 PM')).not.toBeInTheDocument();
+        expect(container).toBeEmptyDOMElement();
+    });
+
     it('renders loading message when loading more', () => {
         renderWithTheme(
             <JobListFooter displayedCount={10} totalCount={50} lastUpdated="Last updated: 3:00 PM" isLoadingMore/>,

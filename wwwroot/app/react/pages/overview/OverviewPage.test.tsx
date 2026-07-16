@@ -23,6 +23,12 @@ jest.mock('./components/DeliveriesTable', () => ({
     DeliveriesTable: (props: any) => (
         <div data-testid="deliveries-table">
             DeliveriesTable: loading={String(props.isLoading)} total={props.total}
+            <button
+                data-testid="open-job-detail"
+                onClick={() => props.onOpenJobDetail({jobId: 123, jobName: 'JOB-123'})}
+            >
+                open
+            </button>
         </div>
     ),
 }));
@@ -212,6 +218,34 @@ describe('OverviewPage', () => {
             renderOverviewPage();
 
             expect(screen.getByTestId('open-jobs-widget')).toHaveTextContent('loading=true');
+        });
+    });
+
+    describe('View job details confirmation', () => {
+        it('opens a confirmation dialog before opening the job, and only navigates on confirm', () => {
+            const onOpenJobDetail = jest.fn();
+            renderOverviewPage({onOpenJobDetail});
+
+            fireEvent.click(screen.getByTestId('open-job-detail'));
+
+            // Confirmation dialog shown, nothing navigated yet
+            expect(screen.getByText('Open job JOB-123')).toBeInTheDocument();
+            expect(onOpenJobDetail).not.toHaveBeenCalled();
+
+            fireEvent.click(screen.getByRole('button', {name: 'Open Job'}));
+
+            expect(onOpenJobDetail).toHaveBeenCalledWith(123);
+        });
+
+        it('does not navigate when the confirmation is cancelled', () => {
+            const onOpenJobDetail = jest.fn();
+            renderOverviewPage({onOpenJobDetail});
+
+            fireEvent.click(screen.getByTestId('open-job-detail'));
+            fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+
+            expect(onOpenJobDetail).not.toHaveBeenCalled();
+            expect(screen.queryByText('Open job JOB-123')).not.toBeInTheDocument();
         });
     });
 
