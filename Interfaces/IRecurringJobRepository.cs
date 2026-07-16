@@ -30,4 +30,27 @@ public interface IRecurringJobRepository
     // parent/child group, or every Manual booking on the same RouteId
     // is materialised.
     Task<InsertRecurringToLiveResult> InsertRecurringToLiveAsync(InsertRecurringToLiveRequest request);
+
+    // Read-only preview for the CreateAheadDays backfill flow. Given a
+    // proposed RecurringInitialDays value on a parent template, returns
+    // the interim service dates that would be materialised, plus dates
+    // in the window that already have live jobs (rendered as info rows
+    // in the UI) and dates dropped for pattern / holiday / schedule
+    // reasons (rendered as diagnostics).
+    //
+    // Filters mirror uspPrebookSet's target-date checks. Idempotent —
+    // safe to call repeatedly as the operator adjusts the value.
+    Task<PreviewCreateAheadBackfillResult> PreviewCreateAheadBackfillAsync(
+        PreviewCreateAheadBackfillRequest request);
+
+    // Materialises the operator-confirmed subset of dates from the
+    // preview. Reuses the Manual-mode Insert-to-Live materialiser path
+    // (ExecuteMaterialiseParentAsync) so each date gets a fresh
+    // ucbkJobNumber family and no ucjbNumber UNIQUE collision is possible.
+    //
+    // Per-date dup guard: skips dates where a live tucJob for this
+    // BookingParentID + service date already exists (non-void), so a
+    // double-click on Create yields JobsCreated=0 on the second call.
+    Task<CreateCreateAheadBackfillResult> CreateCreateAheadBackfillAsync(
+        CreateCreateAheadBackfillRequest request);
 }

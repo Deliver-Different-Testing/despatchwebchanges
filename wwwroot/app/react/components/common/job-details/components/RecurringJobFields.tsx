@@ -17,6 +17,7 @@ import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
 import Tooltip from '@mui/material/Tooltip';
 import ListItemButton from '@mui/material/ListItemButton';
+import TextField from '@mui/material/TextField';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import EventIcon from '@mui/icons-material/Event';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
@@ -49,7 +50,16 @@ interface RecurringJobFieldsProps {
     /** Opens the add-flight dialog (with airport pickers) for recurring
      *  bookings that have no route airports yet. */
     onAddFlight: () => void;
+    /** Persist a new RecurringInitialDays value (create-ahead offset in days).
+     *  Parent hook posts the update via JobProperty.RecurringInitialDays and,
+     *  when newValue > oldValue, opens the CreateAheadBackfillDialog to plug
+     *  the interim gap. Value is clamped to [0, 30] at the input level. */
+    onInitialDaysChange: (initialDays: number) => void;
 }
+
+/** Upper bound mirrors DespatchWeb.Repositories.RecurringJobRepository
+ *  MaxRecurringInitialDays. Kept in sync at both ends. */
+const MAX_RECURRING_INITIAL_DAYS = 30;
 
 const dayOptions = DaysOfWeekHelpers.allDays.map(day => ({
     value: day,
@@ -143,7 +153,25 @@ export function RecurringJobFields({
     onEditRestartDate,
     onEditSavedFlight,
     onAddFlight,
+    onInitialDaysChange,
 }: RecurringJobFieldsProps) {
+    /** Local state for the create-ahead input so we can commit-on-blur
+     *  instead of firing the backfill dialog on every keystroke. Kept in
+     *  sync with `job.recurringInitialDays` when the caller refreshes the
+     *  job (e.g. after a successful save).
+     *
+     *  Both hooks live above the `if (!job.preBook) return null` guard on
+     *  purpose - React's Rules of Hooks require hooks to be called in the
+     *  same order on every render, so they cannot sit after an early return
+     *  (eslint react-hooks/rules-of-hooks flags this as an error). */
+    const currentInitialDays = job.recurringInitialDays ?? 0;
+    const [initialDaysDraft, setInitialDaysDraft] = React.useState<string>(
+        String(currentInitialDays)
+    );
+    React.useEffect(() => {
+        setInitialDaysDraft(String(currentInitialDays));
+    }, [currentInitialDays]);
+
     if (!job.preBook) return null;
 
     // Flight jobs are identified by speed grouping (same rule as live jobs) —
@@ -158,6 +186,23 @@ export function RecurringJobFields({
             ? daysOfWeekArray.filter(d => d !== day)
             : [...daysOfWeekArray, day];
         onDaysOfWeekChange(newDays);
+    };
+
+    const commitInitialDays = () => {
+        const parsed = parseInt(initialDaysDraft, 10);
+        if (Number.isNaN(parsed)) {
+            // Roll the draft back so the input reflects the last-saved value
+            // instead of leaving a garbage string in the box.
+            setInitialDaysDraft(String(currentInitialDays));
+            return;
+        }
+        const clamped = Math.min(MAX_RECURRING_INITIAL_DAYS, Math.max(0, parsed));
+        if (clamped !== currentInitialDays) {
+            onInitialDaysChange(clamped);
+        }
+        if (String(clamped) !== initialDaysDraft) {
+            setInitialDaysDraft(String(clamped));
+        }
     };
 
     /** Schedule dates are anchored to the pickup side of the job (that's where
@@ -248,6 +293,45 @@ export function RecurringJobFields({
                             </Select>
                         </FormControl>
                     </Stack>
+                    {/* Create-ahead offset. Save-on-blur so the confirmation
+                     *  dialog for the interim backfill only opens once per edit
+                     *  cycle, not on every keystroke. Enter also commits. */}
+                    <Tooltip
+                        title="Cron creates this recurring job's live tucJob N days ahead of the service date. Raising this value offers to backfill the interim service dates that would otherwise be skipped."
+                        placement="top-start"
+                        arrow
+                    >
+                        <TextField
+                            label="Create bookings X days ahead"
+                            size="small"
+                            fullWidth
+                            type="number"
+                            value={initialDaysDraft}
+                            onChange={(e) => setInitialDaysDraft(e.target.value)}
+                            onBlur={commitInitialDays}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    // Commit inline as well as blurring the input
+                                    // so both behaviours (visible focus loss +
+                                    // callback) fire in one keystroke. blur()
+                                    // alone doesn't synthesise an onBlur event
+                                    // in jsdom, so we commit directly to make
+                                    // the flow testable end-to-end.
+                                    commitInitialDays();
+                                    (e.target as HTMLInputElement).blur();
+                                }
+                            }}
+                            slotProps={{
+                                htmlInput: {
+                                    min: 0,
+                                    max: MAX_RECURRING_INITIAL_DAYS,
+                                    step: 1,
+                                    inputMode: 'numeric',
+                                },
+                            }}
+                            sx={{mt: 1.5}}
+                        />
+                    </Tooltip>
                 </Box>
             </Box>
 

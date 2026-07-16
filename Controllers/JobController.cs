@@ -418,6 +418,68 @@ public class JobController(
         }
     }
 
+    // Read-only preview for the CreateAheadDays backfill dialog. Returns the
+    // interim service dates that would be materialised if the operator raises
+    // RecurringInitialDays from OldValue to NewValue on this parent template.
+    // Never writes — safe to call from the confirmation dialog before commit.
+    [HttpPost]
+    public async Task<IActionResult> PreviewCreateAheadBackfill(
+        [FromBody] PreviewCreateAheadBackfillRequest request)
+    {
+        try
+        {
+            var result = await recurringJobRepository.PreviewCreateAheadBackfillAsync(request);
+            return Json(result);
+        }
+        catch (ArgumentException ex)
+        {
+            Log.Warning(ex, "PreviewCreateAheadBackfill rejected: {Message}", ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Log.Warning(ex, "PreviewCreateAheadBackfill rejected: {Message}", ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(PreviewCreateAheadBackfill)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    // Executes the operator-confirmed CreateAheadDays backfill for the
+    // provided dates. Each date is materialised via the same SP path the
+    // nightly cron uses (fresh ucbkJobNumber family per date). Per-date
+    // dup guard ensures double-click yields JobsCreated=0 on the second call.
+    [HttpPost]
+    public async Task<IActionResult> CreateCreateAheadBackfill(
+        [FromBody] CreateCreateAheadBackfillRequest request)
+    {
+        try
+        {
+            var result = await recurringJobRepository.CreateCreateAheadBackfillAsync(request);
+            return Json(result);
+        }
+        catch (ArgumentException ex)
+        {
+            Log.Warning(ex, "CreateCreateAheadBackfill rejected: {Message}", ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Log.Warning(ex, "CreateCreateAheadBackfill rejected: {Message}", ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(CreateCreateAheadBackfill)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     public async Task<IActionResult> GetCurrentWorkList(int courierId,
         DateTimeOffset startDate,
         DateTimeOffset endDate)

@@ -187,6 +187,10 @@ export interface IJob {
     daysOfWeek?: DaysOfWeek
     frequency?: Frequency;
     holidayDeliveryOption: HolidayDeliveryOptions,
+    // Create-ahead offset (days). Backed by tucJobBooking.RecurringInitialDays.
+    // Drives uspPrebookSet's @TargetDate = today + N. Raising the value
+    // triggers CreateAheadBackfillDialog. Zero / null = legacy same-day push.
+    recurringInitialDays?: number;
     // Recurring Route assignment. Null when not assigned to any route.
     // Cascades through booking tree on update via JobProperty.RouteId.
     routeId?: number | null;
@@ -399,6 +403,9 @@ export interface IJobDto {
     daysOfWeek?: number;
     frequency?: number;
     holidayDeliveryOption: number;
+    // See IJob.recurringInitialDays. Wire-format INT (nullable) — direct
+    // pass-through from tucJobBooking.RecurringInitialDays column.
+    recurringInitialDays?: number;
     // Recurring Route assignment from JobRecurringMapping. Null when
     // unassigned. dtoMappings maps this to IJob.routeId.
     routeId?: number | null;

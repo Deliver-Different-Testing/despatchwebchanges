@@ -72,6 +72,57 @@ export interface InsertRecurringToLiveResult {
     flightsUnmatched: number;
 }
 
+/** ------------------------------------------------------------------
+ *  CreateAheadDays backfill flow (Kevin 2026-07-16, Dane sign-off).
+ *  Raised RecurringInitialDays leaves a gap of days that would have
+ *  been materialised had the higher offset been in force yesterday.
+ *  The preview endpoint returns which service dates fall in that gap
+ *  (matching pattern / not already live / not holiday). The create
+ *  endpoint materialises the operator-confirmed subset.
+ *  ------------------------------------------------------------------ */
+
+export interface PreviewCreateAheadBackfillRequest {
+    jobId: number;
+    oldValue: number;
+    newValue: number;
+}
+
+export interface CreateAheadBackfillCandidate {
+    // Calendar date only (YYYY-MM-DD). Backend serialises DateOnly directly.
+    serviceDate: string;
+    // Convenience label for the UI, e.g. "Mon 21 Jul".
+    displayLabel: string;
+}
+
+export interface CreateAheadBackfillSkippedDate {
+    serviceDate: string;
+    reason: string;
+}
+
+export interface PreviewCreateAheadBackfillResult {
+    candidates: CreateAheadBackfillCandidate[];
+    alreadyExistingDates: string[];
+    skippedDates: CreateAheadBackfillSkippedDate[];
+}
+
+export interface CreateCreateAheadBackfillRequest {
+    jobId: number;
+    // YYYY-MM-DD calendar dates the operator confirmed from the preview list.
+    dates: string[];
+}
+
+export interface CreateCreateAheadBackfillDateError {
+    serviceDate: string;
+    message: string;
+}
+
+export interface CreateCreateAheadBackfillResult {
+    jobsCreated: number;
+    duplicatesSkipped: number;
+    createdDates: string[];
+    errors: CreateCreateAheadBackfillDateError[];
+}
+
 /**
  * Days of week bitmask values
  */

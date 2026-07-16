@@ -73,4 +73,9 @@ export enum JobProperty {
     // booking. Single-row write on tucJobBooking.SavedFlightNumber; empty
     // string clears it. Auto-assigned on push-to-live.
     SavedFlightNumber = 'SavedFlightNumber',
+    // Create-ahead offset (days). Backed by tucJobBooking.RecurringInitialDays.
+    // Drives uspPrebookSet's @TargetDate = today + N. Raising the value
+    // triggers the CreateAheadBackfillDialog to plug the gap between
+    // today + oldN + 1 and today + newN (via the backfill endpoints).
+    RecurringInitialDays = 'RecurringInitialDays',
 }

@@ -197,6 +197,19 @@ export function useJobActions({
         setSavedFlightDialog((s) => ({...s, open: false}));
     }, []);
 
+    // Create-ahead backfill dialog state. Opened by handleInitialDaysChange
+    // when the operator raises RecurringInitialDays. JobDetails renders the
+    // dialog inline and wires closeCreateAheadBackfillDialog back to us.
+    const [createAheadBackfillDialog, setCreateAheadBackfillDialog] = useState<{
+        open: boolean;
+        jobId: number;
+        oldValue: number;
+        newValue: number;
+    }>({open: false, jobId: 0, oldValue: 0, newValue: 0});
+    const closeCreateAheadBackfillDialog = useCallback(() => {
+        setCreateAheadBackfillDialog((s) => ({...s, open: false}));
+    }, []);
+
     // Stable ref for job so callbacks don't recreate on every job change.
     // Assigned synchronously (not via useEffect) so it's never one render behind.
     const jobRef = useRef(job);
@@ -1067,6 +1080,36 @@ export function useJobActions({
         await refreshAndNotify();
     }, [updateField, refreshAndNotify]);
 
+    // Persist a new RecurringInitialDays value on the parent recurring
+    // template. When the value goes up, open the CreateAheadBackfillDialog
+    // to plug the interim gap (dates from today + oldN + 1 through today +
+    // newN that would have been materialised had the higher offset been in
+    // force yesterday). When it goes down / stays, no dialog — we never
+    // delete future jobs (per the README non-goal).
+    const handleInitialDaysChange = useCallback(async (initialDays: number) => {
+        const j = jobRef.current;
+        if (!j) return;
+        const oldValue = j.recurringInitialDays ?? 0;
+        if (initialDays === oldValue) return;
+
+        await updateField({
+            job: j,
+            field: JobProperty.RecurringInitialDays,
+            value: initialDays,
+            isRecurring: j.preBook,
+        });
+        await refreshAndNotify();
+
+        if (initialDays > oldValue) {
+            setCreateAheadBackfillDialog({
+                open: true,
+                jobId: j.id,
+                oldValue,
+                newValue: initialDays,
+            });
+        }
+    }, [updateField, refreshAndNotify]);
+
     const handleEditFirstDue = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
@@ -1312,11 +1355,16 @@ export function useJobActions({
         handleEditRestartDate,
         handleEditSavedFlight,
         handleAddFlight,
+        handleInitialDaysChange,
 
         // Saved-flight dialog — JobDetails renders the dialog and wires these back.
         savedFlightDialog,
         closeSavedFlightDialog,
         savedFlightDialogConfirm,
+
+        // Create-ahead backfill dialog — JobDetails renders it inline.
+        createAheadBackfillDialog,
+        closeCreateAheadBackfillDialog,
 
         // Missing field editors
         handleEditAmount,

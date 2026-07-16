@@ -1729,4 +1729,248 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UpdatedDate = createdDate // Explicit to avoid SQLite getdate() issue
     };
 
+    // ------------------------------------------------------------------
+    // CreateAheadDays / RecurringInitialDays edit path
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RecurringInitialDays_WritesValueOnParent()
+    {
+        const int jobId = 800;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        await repo.UpdateRecurringJobAsync(jobId, JobProperty.RecurringInitialDays, "3");
+
+        _context.ChangeTracker.Clear();
+        var updated = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal(3, updated!.RecurringInitialDays);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RecurringInitialDays_RejectsValueAboveMax()
+    {
+        const int jobId = 801;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        // MaxRecurringInitialDays is 30. Anything over should be rejected before
+        // touching the database — a fat-finger from the operator (999) should
+        // not produce a 999-day backfill window.
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            repo.UpdateRecurringJobAsync(jobId, JobProperty.RecurringInitialDays, "999"));
+        Assert.Contains("between 0 and 30", ex.Message);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RecurringInitialDays_RejectsNegative()
+    {
+        const int jobId = 802;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            repo.UpdateRecurringJobAsync(jobId, JobProperty.RecurringInitialDays, "-1"));
+        Assert.Contains("between 0 and 30", ex.Message);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RecurringInitialDays_NoOpWhenUnchanged()
+    {
+        // Non-fortnightly + unchanged value must not fire the re-seed SP.
+        // SQLite doesn't know about UTL_stpJobBooking_RecomputeFirstDueOnEdit,
+        // so a failure to guard would surface as a SqliteException here.
+        const int jobId = 803;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 2, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        await repo.UpdateRecurringJobAsync(jobId, JobProperty.RecurringInitialDays, "2");
+
+        _context.ChangeTracker.Clear();
+        var updated = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal(2, updated!.RecurringInitialDays);
+    }
+
+    // ------------------------------------------------------------------
+    // PreviewCreateAheadBackfillAsync
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_ReturnsEmpty_WhenNewValueNotGreaterThanOld()
+    {
+        const int jobId = 810;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.PreviewCreateAheadBackfillAsync(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = jobId, OldValue = 3, NewValue = 3
+        });
+
+        Assert.Empty(result.Candidates);
+        Assert.Empty(result.AlreadyExistingDates);
+        Assert.Empty(result.SkippedDates);
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_RejectsValueAboveMax()
+    {
+        const int jobId = 811;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            repo.PreviewCreateAheadBackfillAsync(new PreviewCreateAheadBackfillRequest
+            {
+                JobId = jobId, OldValue = 0, NewValue = 999
+            }));
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_MonFriPattern_SkipsWeekendCandidates()
+    {
+        // TestDates.Now = 2024-06-15 (Saturday). Raising 0 -> 3 examines
+        // Sun 6/16, Mon 6/17, Tue 6/18. With a Mon-Fri pattern only Mon +
+        // Tue should be candidates; Sun is skipped by the day-pattern check.
+        const int jobId = 812;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(
+            jobId, currentValue: 0, frequency: 1, ucbkDays: "1111100"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.PreviewCreateAheadBackfillAsync(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = jobId, OldValue = 0, NewValue = 3
+        });
+
+        Assert.Equal(2, result.Candidates.Count);
+        Assert.Contains(result.Candidates, c => c.ServiceDate == new DateOnly(2024, 6, 17));
+        Assert.Contains(result.Candidates, c => c.ServiceDate == new DateOnly(2024, 6, 18));
+        Assert.Contains(result.SkippedDates, s => s.ServiceDate == new DateOnly(2024, 6, 16));
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_HonoursExistingLiveJobDupGuard()
+    {
+        const int jobId = 813;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(
+            jobId, currentValue: 0, frequency: 1, ucbkDays: "1111111"));
+        // Simulate a live tucJob already existing for 2024-06-17 in the
+        // window that would otherwise be a candidate — the preview should
+        // classify it as "already existing", not "candidate".
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = 90000,
+            BookingParentId = jobId,
+            UcjbNumber = "JOB-EXISTS",
+            UcjbDate = new DateTime(2024, 6, 17),
+            UcjbVoid = false
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.PreviewCreateAheadBackfillAsync(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = jobId, OldValue = 0, NewValue = 3
+        });
+
+        Assert.DoesNotContain(result.Candidates, c => c.ServiceDate == new DateOnly(2024, 6, 17));
+        Assert.Contains(result.AlreadyExistingDates, d => d == new DateOnly(2024, 6, 17));
+    }
+
+    // ------------------------------------------------------------------
+    // CreateCreateAheadBackfillAsync
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_ReturnsEmpty_WhenDatesEmpty()
+    {
+        const int jobId = 820;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.CreateCreateAheadBackfillAsync(new CreateCreateAheadBackfillRequest
+        {
+            JobId = jobId, Dates = Array.Empty<DateOnly>()
+        });
+
+        Assert.Equal(0, result.JobsCreated);
+        Assert.Equal(0, result.DuplicatesSkipped);
+        Assert.Empty(result.CreatedDates);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_DupGuard_SkipsExistingLiveJobDate()
+    {
+        // ExecuteMaterialiseParentAsync calls a stored proc that SQLite
+        // doesn't have; the dup guard fires FIRST so if we prepopulate a
+        // live tucJob for the requested date the SP is never invoked and
+        // the test can complete cleanly, exercising the dup-guard branch
+        // that a double-click would hit in production.
+        const int jobId = 821;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = 91000,
+            BookingParentId = jobId,
+            UcjbNumber = "JOB-DUP",
+            UcjbDate = new DateTime(2024, 6, 17),
+            UcjbVoid = false
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.CreateCreateAheadBackfillAsync(new CreateCreateAheadBackfillRequest
+        {
+            JobId = jobId, Dates = new[] { new DateOnly(2024, 6, 17) }
+        });
+
+        Assert.Equal(0, result.JobsCreated);
+        Assert.Equal(1, result.DuplicatesSkipped);
+        Assert.Empty(result.CreatedDates);
+        Assert.Empty(result.Errors);
+    }
+
+    // Fixture helper: minimal recurring parent template that satisfies
+    // PreviewCreateAheadBackfillAsync's SELECT (metadata + client site).
+    // frequency=1 (weekly) avoids the fortnightly re-seed SP entirely.
+    private TucJobBooking CreateRecurringInitialDaysFixture(
+        int id,
+        int currentValue,
+        int frequency,
+        string ucbkDays = "1111111")
+    {
+        // Client row is needed so the LEFT JOIN in the preview SELECT
+        // resolves without returning null-only metadata.
+        if (!_context.TucClients.Any(c => c.UcclId == 1))
+        {
+            _context.TucClients.Add(CreateClient(1, "TESTCLIENT"));
+        }
+        return new TucJobBooking
+        {
+            UcbkId = id,
+            UcbkClientId = 1,
+            UcbkClientCode = "TESTCLIENT",
+            UcbkJobNumber = $"JOB{id}",
+            RecurringInitialDays = currentValue,
+            UcbkFrequency = frequency,
+            UcbkDays = ucbkDays,
+            HolidayDeliveryOption = 2, // Book Anyway — bypasses the holiday guard
+            UcbkAttention = false,
+            RecurringMode = (byte)RecurringMode.Active
+        };
+    }
+
 }

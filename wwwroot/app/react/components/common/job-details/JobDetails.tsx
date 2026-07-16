@@ -59,6 +59,7 @@ import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
 import {JobChangeRequestsForJob} from '../../job-change-requests/JobChangeRequestsForJob';
 import {JobChangeRequestDialog} from '../../dialogs/job-change-request-dialog/JobChangeRequestDialog';
 import {EditSavedFlightDialog} from '../../dialogs/edit-saved-flight-dialog';
+import {CreateAheadBackfillDialog} from './components/CreateAheadBackfillDialog';
 import {PartnerJobBanner} from './components/PartnerJobBanner';
 
 import type {IJob, MountJobDetailsConfig} from './JobDetails.types';
@@ -655,6 +656,7 @@ export function JobDetails({config}: JobDetailsProps) {
                                 onEditRestartDate={actions.handleEditRestartDate}
                                 onEditSavedFlight={actions.handleEditSavedFlight}
                                 onAddFlight={actions.handleAddFlight}
+                                onInitialDaysChange={actions.handleInitialDaysChange}
                             />
                         </Suspense>
                     )}
@@ -806,6 +808,18 @@ export function JobDetails({config}: JobDetailsProps) {
                 showAirportPickers={actions.savedFlightDialog.showAirportPickers}
                 onClose={actions.closeSavedFlightDialog}
                 onSubmit={actions.savedFlightDialogConfirm}
+            />
+
+            {/* Create-ahead backfill dialog. Opens when the operator raises
+             *  RecurringInitialDays on the recurring schedule card. */}
+            <CreateAheadBackfillDialog
+                open={actions.createAheadBackfillDialog.open}
+                jobId={actions.createAheadBackfillDialog.jobId}
+                oldValue={actions.createAheadBackfillDialog.oldValue}
+                newValue={actions.createAheadBackfillDialog.newValue}
+                onClose={actions.closeCreateAheadBackfillDialog}
+                onSuccess={() => { void refetch(); }}
+                showToast={showToast}
             />
         </Box>
     );

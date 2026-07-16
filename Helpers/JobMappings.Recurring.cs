@@ -221,6 +221,11 @@ public static partial class JobMappings
             DaysOfWeek = j.UcbkDaysInt,
             Frequency = j.UcbkFrequency ?? 0,
             HolidayDeliveryOption = j.HolidayDeliveryOption,
+            // Create-ahead offset (days). Pass-through of
+            // tucJobBooking.RecurringInitialDays so the "Create bookings X
+            // days ahead" input in RecurringJobFields pre-populates with
+            // the current value on load.
+            RecurringInitialDays = j.RecurringInitialDays,
             // Recurring Route assignment. Drives the Route dropdown in
             // the React detail panel's JobDetailHeader so the current
             // selection pre-populates rather than reading "No route".
