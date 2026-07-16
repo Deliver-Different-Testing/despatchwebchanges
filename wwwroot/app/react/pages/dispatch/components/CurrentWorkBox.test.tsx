@@ -1,5 +1,5 @@
 import React, {act} from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
@@ -12,11 +12,12 @@ jest.mock('../../../components/job-list/JobListPanel', () => ({
     },
 }));
 
-type MockDriver = {courierId: number; name?: string};
-const mockOverview: {onDriverSelect?: (d: MockDriver) => void} = {};
+type MockDriver = {courierId: number; name?: string; driverStatusText?: string};
+const mockOverview: {onDriverSelect?: (d: MockDriver) => void; drivers?: MockDriver[]} = {};
 jest.mock('../../../components/common/current-work-all-drivers', () => ({
-    CurrentWorkAllDrivers: ({onDriverSelect}: {onDriverSelect: (d: MockDriver) => void}) => {
+    CurrentWorkAllDrivers: ({drivers, onDriverSelect}: {drivers: MockDriver[]; onDriverSelect: (d: MockDriver) => void}) => {
         mockOverview.onDriverSelect = onDriverSelect;
+        mockOverview.drivers = drivers;
         return <div data-testid="mock-all-drivers" />;
     },
 }));
@@ -70,6 +71,7 @@ function renderBox(overrides: Partial<React.ComponentProps<typeof CurrentWorkBox
 describe('CurrentWorkBox', () => {
     beforeEach(() => {
         mockOverview.onDriverSelect = undefined;
+        mockOverview.drivers = undefined;
         jobListPanelProps.fetchConfig = undefined;
         sessionStorage.clear();
         jest.clearAllMocks();
@@ -143,6 +145,25 @@ describe('CurrentWorkBox', () => {
             });
 
             expect(screen.getByTestId('mock-all-drivers')).toBeInTheDocument();
+        });
+
+        it('shows only active drivers when the Active Drivers scope is selected', async () => {
+            (fetchDriverWorkOverview as jest.Mock).mockResolvedValue([
+                {courierId: 1, name: 'Active Amy', driverStatusText: 'Active'},
+                {courierId: 2, name: 'Idle Ian', driverStatusText: 'Inactive'},
+                {courierId: 3, name: 'Active Al', driverStatusText: 'Active'},
+            ]);
+            renderBox({isUsCustomer: true});
+
+            // Overview shows every driver once the query resolves.
+            await waitFor(() => expect(mockOverview.drivers?.map(d => d.courierId)).toEqual([1, 2, 3]));
+
+            await act(async () => {
+                screen.getByRole('button', {name: /active drivers/i}).click();
+            });
+
+            // Active scope narrows the list to logged-in (Active) drivers only.
+            expect(mockOverview.drivers?.map(d => d.courierId)).toEqual([1, 3]);
         });
 
         it('focuses the selected job\'s courier and shows their job list', () => {

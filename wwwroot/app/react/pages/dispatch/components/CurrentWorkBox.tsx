@@ -22,7 +22,7 @@ import {TruckLoadingStatusDialog} from './TruckLoadingStatusDialog';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
 import type {CourierSuggestion} from '../../../interfaces';
 
-type Mode = 'overview' | 'detail';
+type Mode = 'overview' | 'active' | 'detail';
 
 /**
  * The drill-down focus (which driver the panel is showing) lives in local state,
@@ -170,7 +170,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     const overviewQuery = useQuery({
         queryKey: queryKeys.dispatch.driverOverview,
         queryFn: ({signal}) => fetchDriverWorkOverview({signal}),
-        enabled: isUsCustomer && mode === 'overview',
+        enabled: isUsCustomer && (mode === 'overview' || mode === 'active'),
         refetchInterval: refetchIntervalMs,
     });
 
@@ -187,7 +187,14 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
         refetchInterval: refetchIntervalMs,
     }), [courierId, startDate, endDate, refetchIntervalMs]);
 
-    const showOverview = isUsCustomer && mode === 'overview';
+    const showDriverList = isUsCustomer && (mode === 'overview' || mode === 'active');
+    // Active Drivers reuses the same overview data, narrowed to logged-in drivers.
+    const driversForList = useMemo(() => {
+        const all = overviewQuery.data ?? [];
+        return mode === 'active'
+            ? all.filter(d => d.driverStatusText === 'Active')
+            : all;
+    }, [overviewQuery.data, mode]);
     // The truck button acts on a focused courier — only meaningful in the detail view.
     const showTruckButton = !isUsCustomer || mode === 'detail';
 
@@ -226,6 +233,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                             sx={headerScopeToggleSx}
                         >
                             <ToggleButton value="overview">All Drivers</ToggleButton>
+                            <ToggleButton value="active">Active Drivers</ToggleButton>
                             <ToggleButton value="detail" disabled={!courierId} sx={detailToggleSx}>
                                 {courierLabel}
                             </ToggleButton>
@@ -261,9 +269,9 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                 </Box>
             )}
             <Box sx={{flex: 1, minHeight: 0, overflow: 'auto'}}>
-                {showOverview ? (
+                {showDriverList ? (
                     <CurrentWorkAllDrivers
-                        drivers={overviewQuery.data ?? []}
+                        drivers={driversForList}
                         loading={overviewQuery.isLoading}
                         selectedCourierId={courierId}
                         onDriverSelect={(driver: IDriverWorkOverview) => {
