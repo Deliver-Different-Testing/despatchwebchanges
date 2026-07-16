@@ -125,18 +125,48 @@ describe('JobDetailHeader', () => {
         expect(onResetFieldVisibility).toHaveBeenCalledTimes(1);
     });
 
-    it('shows/hides POD report menu based on job done status', () => {
-        const job = createMockJob({done: true, preBook: false});
-        const {unmount} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-        expect(screen.getByLabelText('POD Report')).toBeInTheDocument();
+    it('always shows the Documents menu button, regardless of job status', () => {
+        const {unmount} = renderWithTheme(
+            <JobDetailHeader {...createDefaultProps({job: createMockJob({done: true, preBook: false})})} />
+        );
+        expect(screen.getByLabelText('Documents')).toBeInTheDocument();
         unmount();
 
-        const incompleteJob = createMockJob({done: false});
-        renderWithTheme(<JobDetailHeader {...createDefaultProps({job: incompleteJob})} />);
-        expect(screen.queryByLabelText('POD Report')).not.toBeInTheDocument();
+        renderWithTheme(<JobDetailHeader {...createDefaultProps({job: createMockJob({done: false})})} />);
+        expect(screen.getByLabelText('Documents')).toBeInTheDocument();
     });
 
-    it('opens POD menu and triggers actions', () => {
+    it('disables POD options and ignores clicks until the job is completed', () => {
+        const onPodReport = jest.fn();
+        const onPodSpreadsheet = jest.fn();
+        const onSendPodEmail = jest.fn();
+        const incompleteJob = createMockJob({done: false});
+        renderWithTheme(
+            <JobDetailHeader {...createDefaultProps({job: incompleteJob, onPodReport, onPodSpreadsheet, onSendPodEmail})} />
+        );
+
+        fireEvent.click(screen.getByLabelText('Documents'));
+        for (const label of ['Download as PDF', 'Download as Excel', 'Email POD Report']) {
+            expect(screen.getByText(label).closest('li')).toHaveClass('Mui-disabled');
+        }
+        fireEvent.click(screen.getByText('Download as PDF'));
+        fireEvent.click(screen.getByText('Download as Excel'));
+        fireEvent.click(screen.getByText('Email POD Report'));
+        expect(onPodReport).not.toHaveBeenCalled();
+        expect(onPodSpreadsheet).not.toHaveBeenCalled();
+        expect(onSendPodEmail).not.toHaveBeenCalled();
+    });
+
+    it('disables POD options on recurring/prebook jobs but still shows the button', () => {
+        renderWithTheme(
+            <JobDetailHeader {...createDefaultProps({job: createMockJob({preBook: true, done: true})})} />
+        );
+        expect(screen.getByLabelText('Documents')).toBeInTheDocument();
+        fireEvent.click(screen.getByLabelText('Documents'));
+        expect(screen.getByText('Download as PDF').closest('li')).toHaveClass('Mui-disabled');
+    });
+
+    it('enables POD options and triggers actions on a completed job', () => {
         const onPodReport = jest.fn();
         const onPodSpreadsheet = jest.fn();
         const onSendPodEmail = jest.fn();
@@ -145,7 +175,7 @@ describe('JobDetailHeader', () => {
             <JobDetailHeader {...createDefaultProps({job, onPodReport, onPodSpreadsheet, onSendPodEmail})} />
         );
 
-        fireEvent.click(screen.getByLabelText('POD Report'));
+        fireEvent.click(screen.getByLabelText('Documents'));
         fireEvent.click(screen.getByText('Download as PDF'));
         expect(onPodReport).toHaveBeenCalledTimes(1);
     });
@@ -158,7 +188,7 @@ describe('JobDetailHeader', () => {
             renderWithTheme(
                 <JobDetailHeader {...createDefaultProps({job: doneJob(), onOverlayMenuOpen})} />
             );
-            fireEvent.click(screen.getByLabelText('POD Report'));
+            fireEvent.click(screen.getByLabelText('Documents'));
             expect(onOverlayMenuOpen).toHaveBeenCalledTimes(1);
         });
 
@@ -168,7 +198,7 @@ describe('JobDetailHeader', () => {
                     {...createDefaultProps({job: doneJob(), overlayDocumentsLoading: true})}
                 />
             );
-            fireEvent.click(screen.getByLabelText('POD Report'));
+            fireEvent.click(screen.getByLabelText('Documents'));
             expect(screen.getByText('Loading documents…')).toBeInTheDocument();
         });
 
@@ -180,7 +210,7 @@ describe('JobDetailHeader', () => {
                     {...createDefaultProps({job: doneJob(), overlayDocuments, onDownloadOverlay})}
                 />
             );
-            fireEvent.click(screen.getByLabelText('POD Report'));
+            fireEvent.click(screen.getByLabelText('Documents'));
             fireEvent.click(screen.getByText('Customer Invoice'));
             expect(onDownloadOverlay).toHaveBeenCalledWith('Invoice');
         });
@@ -193,11 +223,24 @@ describe('JobDetailHeader', () => {
                     {...createDefaultProps({job: doneJob(), overlayDocuments, onDownloadOverlay})}
                 />
             );
-            fireEvent.click(screen.getByLabelText('POD Report'));
+            fireEvent.click(screen.getByLabelText('Documents'));
             const item = screen.getByText('Delivery Manifest').closest('li');
             expect(item).toHaveClass('Mui-disabled');
             fireEvent.click(screen.getByText('Delivery Manifest'));
             expect(onDownloadOverlay).not.toHaveBeenCalled();
+        });
+
+        it('still offers overlay documents on a job that is not completed', () => {
+            const onDownloadOverlay = jest.fn();
+            const overlayDocuments = [{documentType: 'Invoice', displayName: 'Customer Invoice', available: true}];
+            renderWithTheme(
+                <JobDetailHeader
+                    {...createDefaultProps({job: createMockJob({done: false}), overlayDocuments, onDownloadOverlay})}
+                />
+            );
+            fireEvent.click(screen.getByLabelText('Documents'));
+            fireEvent.click(screen.getByText('Customer Invoice'));
+            expect(onDownloadOverlay).toHaveBeenCalledWith('Invoice');
         });
     });
 
@@ -226,8 +269,8 @@ describe('JobDetailHeader', () => {
             renderWithTheme(
                 <JobDetailHeader {...createDefaultProps({dense: true, viewDensityLabel: 'Dense', job, onPodReport})} />
             );
-            expect(screen.getByLabelText('POD Report')).toBeInTheDocument();
-            fireEvent.click(screen.getByLabelText('POD Report'));
+            expect(screen.getByLabelText('Documents')).toBeInTheDocument();
+            fireEvent.click(screen.getByLabelText('Documents'));
             fireEvent.click(screen.getByText('Download as PDF'));
             expect(onPodReport).toHaveBeenCalledTimes(1);
         });

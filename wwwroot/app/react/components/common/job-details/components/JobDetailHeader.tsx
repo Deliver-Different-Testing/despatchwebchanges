@@ -136,6 +136,34 @@ export function JobDetailHeader({
         fontSize: '1rem',
     } : styles.jobNo;
 
+    // POD report/email options require a completed, non-recurring job. The menu is
+    // always shown so PDF-overlay documents are reachable at any stage; these three
+    // items render disabled (with an explanatory tooltip) until the job qualifies.
+    const podEnabled = job.done && !job.preBook;
+    const podDisabledReason = 'Available once the job is completed';
+
+    const renderPodItem = (icon: React.ReactNode, label: string, onClick: () => void) => (
+        podEnabled ? (
+            <MenuItem onClick={() => {
+                setPodMenuAnchor(null);
+                onClick();
+            }}>
+                <ListItemIcon>{icon}</ListItemIcon>
+                <ListItemText>{label}</ListItemText>
+            </MenuItem>
+        ) : (
+            // Disabled MenuItems don't fire pointer events, so wrap in a span for the tooltip.
+            <Tooltip title={podDisabledReason} placement="left">
+                <span>
+                    <MenuItem disabled sx={{width: '100%'}}>
+                        <ListItemIcon>{icon}</ListItemIcon>
+                        <ListItemText>{label}</ListItemText>
+                    </MenuItem>
+                </span>
+            </Tooltip>
+        )
+    );
+
     return (
         <Box sx={toolbarSx}>
             {/* Job identity */}
@@ -261,86 +289,67 @@ export function JobDetailHeader({
                     </Tooltip>
                 )}
 
-                {/* POD Report Menu */}
-                {job.done && !job.preBook && (
-                    <>
-                        <Tooltip title="POD Report">
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    setPodMenuAnchor(e.currentTarget);
-                                    onOverlayMenuOpen?.();
+                {/* Documents menu — always shown so PDF-overlay documents are reachable
+                    at any stage; the POD report/email items disable themselves until the
+                    job is completed (see renderPodItem / podEnabled above). */}
+                <Tooltip title="Documents">
+                    <IconButton
+                        size="small"
+                        aria-label="Documents"
+                        onClick={(e) => {
+                            setPodMenuAnchor(e.currentTarget);
+                            onOverlayMenuOpen?.();
+                        }}
+                    >
+                        <MoreVertIcon sx={{fontSize: ICON_SIZE}}/>
+                    </IconButton>
+                </Tooltip>
+                <Menu
+                    anchorEl={podMenuAnchor}
+                    open={Boolean(podMenuAnchor)}
+                    onClose={() => setPodMenuAnchor(null)}
+                >
+                    {renderPodItem(<PictureAsPdfIcon fontSize="small"/>, 'Download as PDF', onPodReport)}
+                    {renderPodItem(<TableChartIcon fontSize="small"/>, 'Download as Excel', onPodSpreadsheet)}
+                    <Divider/>
+                    {renderPodItem(<EmailIcon fontSize="small"/>, 'Email POD Report', onSendPodEmail)}
+
+                    {/* Extra overlay documents (invoices, manifests, etc.). Every configured
+                        document type is shown; those without a template for this job's client
+                        render disabled rather than hidden. */}
+                    {overlayDocumentsLoading && (
+                        <MenuItem disabled>
+                            <ListItemIcon><CircularProgress size={16}/></ListItemIcon>
+                            <ListItemText>Loading documents…</ListItemText>
+                        </MenuItem>
+                    )}
+                    {!overlayDocumentsLoading && overlayDocuments.length > 0 && <Divider/>}
+                    {!overlayDocumentsLoading && overlayDocuments.map((doc) => (
+                        doc.available ? (
+                            <MenuItem
+                                key={doc.documentType}
+                                onClick={() => {
+                                    setPodMenuAnchor(null);
+                                    onDownloadOverlay?.(doc.documentType);
                                 }}
                             >
-                                <MoreVertIcon sx={{fontSize: ICON_SIZE}}/>
-                            </IconButton>
-                        </Tooltip>
-                        <Menu
-                            anchorEl={podMenuAnchor}
-                            open={Boolean(podMenuAnchor)}
-                            onClose={() => setPodMenuAnchor(null)}
-                        >
-                            <MenuItem onClick={() => {
-                                setPodMenuAnchor(null);
-                                onPodReport();
-                            }}>
-                                <ListItemIcon><PictureAsPdfIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>Download as PDF</ListItemText>
+                                <ListItemIcon><DescriptionIcon fontSize="small"/></ListItemIcon>
+                                <ListItemText>{doc.displayName}</ListItemText>
                             </MenuItem>
-                            <MenuItem onClick={() => {
-                                setPodMenuAnchor(null);
-                                onPodSpreadsheet();
-                            }}>
-                                <ListItemIcon><TableChartIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>Download as Excel</ListItemText>
-                            </MenuItem>
-                            <Divider/>
-                            <MenuItem onClick={() => {
-                                setPodMenuAnchor(null);
-                                onSendPodEmail();
-                            }}>
-                                <ListItemIcon><EmailIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>Email POD Report</ListItemText>
-                            </MenuItem>
-
-                            {/* Extra overlay documents (invoices, manifests, etc.). Every configured
-                                document type is shown; those without a template for this job's client
-                                render disabled rather than hidden. */}
-                            {overlayDocumentsLoading && (
-                                <MenuItem disabled>
-                                    <ListItemIcon><CircularProgress size={16}/></ListItemIcon>
-                                    <ListItemText>Loading documents…</ListItemText>
-                                </MenuItem>
-                            )}
-                            {!overlayDocumentsLoading && overlayDocuments.length > 0 && <Divider/>}
-                            {!overlayDocumentsLoading && overlayDocuments.map((doc) => (
-                                doc.available ? (
-                                    <MenuItem
-                                        key={doc.documentType}
-                                        onClick={() => {
-                                            setPodMenuAnchor(null);
-                                            onDownloadOverlay?.(doc.documentType);
-                                        }}
-                                    >
+                        ) : (
+                            // Disabled MenuItems don't fire pointer events, so wrap in a span for the
+                            // tooltip explaining why the document is unavailable for this job.
+                            <Tooltip key={doc.documentType} title="No template configured for this job" placement="left">
+                                <span>
+                                    <MenuItem disabled sx={{width: '100%'}}>
                                         <ListItemIcon><DescriptionIcon fontSize="small"/></ListItemIcon>
                                         <ListItemText>{doc.displayName}</ListItemText>
                                     </MenuItem>
-                                ) : (
-                                    // Disabled MenuItems don't fire pointer events, so wrap in a span for the
-                                    // tooltip explaining why the document is unavailable for this job.
-                                    <Tooltip key={doc.documentType} title="No template configured for this job" placement="left">
-                                        <span>
-                                            <MenuItem disabled sx={{width: '100%'}}>
-                                                <ListItemIcon><DescriptionIcon fontSize="small"/></ListItemIcon>
-                                                <ListItemText>{doc.displayName}</ListItemText>
-                                            </MenuItem>
-                                        </span>
-                                    </Tooltip>
-                                )
-                            ))}
-                        </Menu>
-                    </>
-                )}
+                                </span>
+                            </Tooltip>
+                        )
+                    ))}
+                </Menu>
             </Box>
         </Box>
     );
