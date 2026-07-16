@@ -755,6 +755,13 @@ class JobSearchController extends BaseController {
     }
 
     async restoreJob(job: IDispatchJob) {
+        // Restore operates on live (tucJob) rows only; an archived job isn't found and the
+        // request silently no-ops (200, unchanged status, courier still attached). Block it.
+        if (job.isArchived) {
+            this.toastrService.showErrorToast('Archived jobs can’t be restored');
+            return;
+        }
+
         try {
             const jobIds: number[] = [];
             await this.DispatchData.addRestoreEvent(job.id);

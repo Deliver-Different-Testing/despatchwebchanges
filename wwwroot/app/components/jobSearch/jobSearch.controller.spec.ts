@@ -533,6 +533,32 @@ describe('JobSearchController', () => {
         });
     });
 
+    describe('restoreJob', () => {
+        it('blocks archived jobs — warns and calls no restore APIs', async () => {
+            const dispatchCore = createMockDispatchCoreService();
+            const toastrService = createMockToastrService();
+            const ctrl = createController({dispatchCore, toastrService});
+
+            await ctrl.restoreJob({id: 5, jobNo: 'J005', isArchived: true} as any);
+
+            expect(toastrService.showErrorToast).toHaveBeenCalledWith('Archived jobs can’t be restored');
+            expect(dispatchCore.addRestoreEvent).not.toHaveBeenCalled();
+            expect(dispatchCore.restoreJobs).not.toHaveBeenCalled();
+            expect(dispatchCore.restoreSplitJobs).not.toHaveBeenCalled();
+        });
+
+        it('restores a live (non-archived) job via addRestoreEvent + restoreJobs', async () => {
+            const dispatchCore = createMockDispatchCoreService();
+            const ctrl = createController({dispatchCore});
+
+            await ctrl.restoreJob({id: 5, jobNo: 'J005', isArchived: false} as any);
+
+            expect(dispatchCore.addRestoreEvent).toHaveBeenCalledWith(5);
+            expect(dispatchCore.restoreJobs).toHaveBeenCalledWith([5]);
+            expect(dispatchCore.restoreSplitJobs).not.toHaveBeenCalled();
+        });
+    });
+
     describe('layout management', () => {
         it('isDefaultLayout returns true for Default layout', () => {
             const ctrl = createController();

@@ -38,7 +38,9 @@ const ACTIONS: FabAction[] = [
     {id: 'dispatch', label: 'Dispatch to Courier', icon: 'send_to_mobile',
         available: job => !job.bulkJob && !job.preBook && job.assignedCourier == null},
     {id: 'restore', label: 'Restore Job', icon: 'undo',
-        available: job => !job.bulkJob && !job.preBook && job.assignedCourier != null && !job.done},
+        // Archived jobs live only in the archive tables; restore operates on live (tucJob)
+        // rows, so restoring an archived job silently no-ops — don't offer it.
+        available: job => !job.bulkJob && !job.preBook && job.assignedCourier != null && !job.done && !job.isArchived},
     {id: 'swapPod', label: 'Swap POD', icon: 'swap_horiz',
         available: job => !job.bulkJob && !job.preBook},
     {id: 'sendPod', label: 'Email Photo POD', icon: 'send',

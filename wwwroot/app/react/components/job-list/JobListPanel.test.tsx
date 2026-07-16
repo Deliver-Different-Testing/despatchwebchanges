@@ -69,10 +69,12 @@ jest.mock('../../services/jobListApi', () => ({
     restoreNationwideJob: jest.fn().mockResolvedValue(undefined),
 }));
 
-import {allocateJobs, updateJobReadStatus} from '../../services/jobListApi';
+import {allocateJobs, updateJobReadStatus, restoreJobs, addRestoreEvent} from '../../services/jobListApi';
 import {queryClient} from '../../query/queryClient';
 const mockedAllocateJobs = allocateJobs as jest.Mock;
 const mockedUpdateJobReadStatus = updateJobReadStatus as jest.Mock;
+const mockedRestoreJobs = restoreJobs as jest.Mock;
+const mockedAddRestoreEvent = addRestoreEvent as jest.Mock;
 
 // ── Mock Data Factory ────────────────────────────────────────────────
 
@@ -194,7 +196,8 @@ describe('JobListPanel', () => {
             expect(screen.getByText('Unassigned')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: 'All'})).toBeInTheDocument();
             expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
-            expect(screen.getByText(/Showing/)).toBeInTheDocument();
+            // Footer is hidden when there are no jobs to display
+            expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
             expect(screen.getByText('No jobs to display')).toBeInTheDocument();
 
             // setJobsCallback bridge registered
@@ -1041,6 +1044,56 @@ describe('JobListPanel', () => {
             await user.keyboard('{/Control}');
 
             expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+        });
+    });
+
+    describe('Bulk Restore', () => {
+        beforeEach(() => {
+            mockedRestoreJobs.mockClear().mockResolvedValue(undefined);
+            mockedAddRestoreEvent.mockClear().mockResolvedValue(undefined);
+        });
+
+        it('excludes archived jobs from the restore call', async () => {
+            const user = setupUser();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-LIVE', isArchived: false}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-ARCH', isArchived: true, done: true}),
+            ];
+            renderAndPushJobs(jobs);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-LIVE'));
+            await user.click(screen.getByText('JOB-ARCH'));
+            await user.keyboard('{/Control}');
+
+            await user.click(screen.getByText('Restore'));
+
+            await waitFor(() => {
+                expect(mockedRestoreJobs).toHaveBeenCalledWith([1]);
+            });
+            // Audit event only for the live job; the archived one is never touched.
+            expect(mockedAddRestoreEvent).toHaveBeenCalledWith(1);
+            expect(mockedAddRestoreEvent).not.toHaveBeenCalledWith(2);
+        });
+
+        it('warns and restores nothing when only archived jobs are selected', async () => {
+            const user = setupUser();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-ARCH-1', isArchived: true, done: true}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-ARCH-2', isArchived: true, done: true}),
+            ];
+            const {props} = renderAndPushJobs(jobs);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-ARCH-1'));
+            await user.click(screen.getByText('JOB-ARCH-2'));
+            await user.keyboard('{/Control}');
+
+            await user.click(screen.getByText('Restore'));
+
+            expect(props.showToast).toHaveBeenCalledWith('Archived jobs can’t be restored', 'warning');
+            expect(mockedRestoreJobs).not.toHaveBeenCalled();
+            expect(mockedAddRestoreEvent).not.toHaveBeenCalled();
         });
     });
 });

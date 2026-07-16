@@ -297,20 +297,12 @@ describe('jobDetailApi', () => {
     // ── Job Dispatch + Package Operations ───────────────────────────
 
     describe('Job Dispatch Operations', () => {
-        it('restoreJobs posts jobIds with forceRestoreCompleted defaulting to false', async () => {
+        it('restoreJobs posts jobIds', async () => {
             mockApiClient.post.mockResolvedValueOnce(undefined);
 
             await restoreJobs([1, 2, 3]);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [1, 2, 3], forceRestoreCompleted: false});
-        });
-
-        it('restoreJobs forwards forceRestoreCompleted when set', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-
-            await restoreJobs([1], true);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [1], forceRestoreCompleted: true});
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [1, 2, 3]});
         });
 
         it('allocateJob posts courierId and jobIds', async () => {

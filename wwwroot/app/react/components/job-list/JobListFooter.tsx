@@ -38,6 +38,10 @@ export const JobListFooter: React.FC<JobListFooterProps> = ({
     isLoadingMore,
     allJobsLoaded,
 }) => {
+    if (displayedCount === 0 && !isLoadingMore) {
+        return null;
+    }
+
     let displayText: string;
     if (isLoadingMore) {
         displayText = 'Loading more jobs...';
