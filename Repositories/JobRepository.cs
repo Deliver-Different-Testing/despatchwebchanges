@@ -829,7 +829,8 @@ public partial class JobRepository(
     /// uspRestoreJobs proc). Per job, it un-assigns the courier, clears dispatch/paging/completion
     /// state, resets the status to New and internal status to New Jobs, and re-shows the job via
     /// DisplayInDespatch = 1. Completed jobs are restored too (the operator confirms that in the
-    /// UI); proof of delivery is always preserved. The courier device is notified via
+    /// UI). The POD name is cleared so the job re-enters the DESWEB_qryDespatch board view, which
+    /// excludes any job that still carries a UcjbPodname. The courier device is notified via
     /// UTL_stpJob_RestoreDevice (before the courier is nulled) and the courier's clear-list area
     /// order is recomputed, preserving the proc's side effects.
     /// </summary>
@@ -917,10 +918,11 @@ public partial class JobRepository(
                     .SetProperty(j => j.DesCheck, false)
                     .SetProperty(j => j.FdcourierId, (int?)null)
                     .SetProperty(j => j.FirstJob, false)
-                    .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.NewJobs));
+                    .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.NewJobs)
+                    .SetProperty(j => j.UcjbPodname, (string?)null));
 
             Log.Information(
-                "RestoreJobsCore restored job {JobId} to New/NewJobs (courier cleared, completion/dispatch state reset; POD preserved).",
+                "RestoreJobsCore restored job {JobId} to New/NewJobs (courier cleared, completion/dispatch state reset; POD name cleared so the job re-enters the dispatch view).",
                 job.UcjbId);
 
             // Recompute the (former) courier's clear-list area ordering now the job is gone.

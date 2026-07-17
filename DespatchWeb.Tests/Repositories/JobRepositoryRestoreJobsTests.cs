@@ -76,7 +76,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         _context.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == id, TestContext.Current.CancellationToken);
 
     [Fact]
-    public async Task RestoreJobsAsync_CompletedJob_IsRestoredAndPreservesPod()
+    public async Task RestoreJobsAsync_CompletedJob_IsRestoredAndClearsPod()
     {
         await SeedJobAsync(1, done: true, @void: false, courierId: 55, podName: "pod.jpg",
             internalStatus: (int)InternalJobStatus.AwaitingPod);
@@ -89,8 +89,8 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.New, job.UcjbStatus);
         Assert.Null(job.UcjbCourierId);
         Assert.Null(job.UcjbComplTime);
-        // POD is always preserved on restore.
-        Assert.Equal("pod.jpg", job.UcjbPodname);
+        // POD name is cleared so the job re-enters the DESWEB_qryDespatch board view.
+        Assert.True(string.IsNullOrEmpty(job.UcjbPodname));
         Assert.Equal((int)InternalJobStatus.NewJobs, job.InternalStatus);
         Assert.True(job.DisplayInDespatch);
         await _procedures.Received(1).UTL_stpJob_RestoreDeviceAsync(1);
@@ -98,7 +98,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task RestoreJobsAsync_NonCompletedJob_RestoresAndPreservesPod()
+    public async Task RestoreJobsAsync_NonCompletedJob_RestoresAndClearsPod()
     {
         await SeedJobAsync(1, done: false, @void: false, courierId: 55, podName: "keep.jpg");
 
@@ -108,7 +108,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.New, job.UcjbStatus);
         Assert.Null(job.UcjbCourierId);
         Assert.True(job.DisplayInDespatch);
-        Assert.Equal("keep.jpg", job.UcjbPodname);
+        Assert.True(string.IsNullOrEmpty(job.UcjbPodname));
         await _procedures.Received(1).UTL_stpJob_RestoreDeviceAsync(1);
         await _courierRepository.Received(1).ResetClearListAreaOrderAsync(55);
     }
@@ -145,7 +145,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task ReDispatchSelectedJobsAsync_CompletedJob_IsRestoredAndPreservesPod()
+    public async Task ReDispatchSelectedJobsAsync_CompletedJob_IsRestoredAndClearsPod()
     {
         await SeedJobAsync(1, done: true, @void: false, courierId: 55, podName: "pod.jpg");
 
@@ -155,7 +155,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         Assert.False(job.UcjbJobDone);
         Assert.Equal((int)JobStatus.New, job.UcjbStatus);
         Assert.Null(job.UcjbCourierId);
-        Assert.Equal("pod.jpg", job.UcjbPodname);
+        Assert.True(string.IsNullOrEmpty(job.UcjbPodname));
         await _procedures.Received(1).UTL_stpJob_RestoreDeviceAsync(1);
     }
 
