@@ -17,15 +17,15 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryRestoreJobsTests : IAsyncDisposable
 {
-    private readonly SqliteTestDatabase _db = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeService = Substitute.For<IClearListEnvelopeService>();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly DespatchContext _context;
     private readonly IDbContextFactory<DespatchContext> _contextFactory;
-    private readonly ITenantInfoService _tenantInfoService = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeService = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobService = Substitute.For<ICreateJobService>();
-    private readonly IDespatchContextProcedures _procedures = Substitute.For<IDespatchContextProcedures>();
     private readonly ICourierRepository _courierRepository = Substitute.For<ICourierRepository>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
+    private readonly ICreateJobService _createJobService = Substitute.For<ICreateJobService>();
+    private readonly SqliteTestDatabase _db = new();
+    private readonly IDespatchContextProcedures _procedures = Substitute.For<IDespatchContextProcedures>();
+    private readonly ITenantInfoService _tenantInfoService = Substitute.For<ITenantInfoService>();
 
     public JobRepositoryRestoreJobsTests()
     {
@@ -51,7 +51,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
     );
 
     private async Task SeedJobAsync(int id, bool done, bool @void, int? courierId = null,
-        string podName = null, int? internalStatus = null, int? dispId = null, int? parentId = null)
+        string? podName = null, int? internalStatus = null, int? dispId = null, int? parentId = null)
     {
         _context.TucJobs.Add(new TucJob
         {
@@ -67,7 +67,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
             InternalStatus = internalStatus,
             UcjbDispId = dispId,
             ParentId = parentId,
-            DisplayInDespatch = false,
+            DisplayInDespatch = false
         });
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -93,7 +93,8 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         Assert.True(string.IsNullOrEmpty(job.UcjbPodname));
         Assert.Equal((int)InternalJobStatus.NewJobs, job.InternalStatus);
         Assert.True(job.DisplayInDespatch);
-        await _procedures.Received(1).UTL_stpJob_RestoreDeviceAsync(1);
+        await _procedures.Received(1)
+            .UTL_stpJob_RestoreDeviceAsync(1, cancellationToken: Arg.Any<CancellationToken>());
         await _courierRepository.Received(1).ResetClearListAreaOrderAsync(55);
     }
 
@@ -109,7 +110,8 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         Assert.Null(job.UcjbCourierId);
         Assert.True(job.DisplayInDespatch);
         Assert.True(string.IsNullOrEmpty(job.UcjbPodname));
-        await _procedures.Received(1).UTL_stpJob_RestoreDeviceAsync(1);
+        await _procedures.Received(1)
+            .UTL_stpJob_RestoreDeviceAsync(1, cancellationToken: Arg.Any<CancellationToken>());
         await _courierRepository.Received(1).ResetClearListAreaOrderAsync(55);
     }
 
@@ -123,7 +125,8 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         var job = await ReloadAsync(1);
         Assert.False(job.UcjbVoid);
         Assert.Equal((int)JobStatus.New, job.UcjbStatus);
-        await _procedures.Received(1).UTL_stpJob_RestoreDeviceAsync(1);
+        await _procedures.Received(1)
+            .UTL_stpJob_RestoreDeviceAsync(1, cancellationToken: Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -132,7 +135,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         // Parent with a shared-dispatcher relationship type (5).
         _context.TucJobs.Add(new TucJob
         {
-            UcjbId = 10, UcjbNumber = "P", UcjbDate = TestDates.Now, JobRelationshipTypeId = 5,
+            UcjbId = 10, UcjbNumber = "P", UcjbDate = TestDates.Now, JobRelationshipTypeId = 5
         });
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         await SeedJobAsync(1, done: false, @void: false, dispId: 148, parentId: 10);
@@ -156,7 +159,8 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.New, job.UcjbStatus);
         Assert.Null(job.UcjbCourierId);
         Assert.True(string.IsNullOrEmpty(job.UcjbPodname));
-        await _procedures.Received(1).UTL_stpJob_RestoreDeviceAsync(1);
+        await _procedures.Received(1)
+            .UTL_stpJob_RestoreDeviceAsync(1, cancellationToken: Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -164,6 +168,7 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
     {
         await CreateRepository().RestoreJobsAsync([]);
 
-        await _procedures.DidNotReceiveWithAnyArgs().UTL_stpJob_RestoreDeviceAsync(default);
+        await _procedures.DidNotReceiveWithAnyArgs()
+            .UTL_stpJob_RestoreDeviceAsync(default, cancellationToken: TestContext.Current.CancellationToken);
     }
 }

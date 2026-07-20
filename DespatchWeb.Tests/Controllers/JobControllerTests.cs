@@ -9,6 +9,7 @@ using DespatchWeb.Models.Response;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -17,33 +18,34 @@ namespace DespatchWeb.Tests.Controllers;
 [TestSubject(typeof(JobController))]
 public class JobControllerTests : IDisposable
 {
-    private readonly HttpClient _httpClient = new();
-    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
-    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
-    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly IAddStopJobService _addStopJobServiceMock = Substitute.For<IAddStopJobService>();
 
     private readonly IClientAccessValidatorService _clientAccessValidatorMock =
         Substitute.For<IClientAccessValidatorService>();
 
-    private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
-    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly IAddStopJobService _addStopJobServiceMock = Substitute.For<IAddStopJobService>();
-    private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
-    private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
-    private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
     private readonly IDeliveryJourneyService _deliveryJourneyServiceMock = Substitute.For<IDeliveryJourneyService>();
+    private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
+    private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
+    private readonly HttpClient _httpClient = new();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
+    private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
+    private readonly IPdfOverlayClient _pdfOverlayClientMock = Substitute.For<IPdfOverlayClient>();
+    private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
 
     private readonly IPricingPermissionService _pricingPermissionServiceMock =
         Substitute.For<IPricingPermissionService>();
 
-    private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
-    private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
-    private readonly IPdfOverlayClient _pdfOverlayClientMock = Substitute.For<IPdfOverlayClient>();
+    private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
+    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
-    private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
-    private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
+
+    private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
+    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public JobControllerTests()
     {
@@ -125,7 +127,7 @@ public class JobControllerTests : IDisposable
         var docs = new List<OverlayDocument>
         {
             new("Invoice", "Customer Invoice", true),
-            new("Manifest", "Delivery Manifest", false),
+            new("Manifest", "Delivery Manifest", false)
         };
         _pdfOverlayClientMock.ListJobDocumentsAsync(42, Arg.Any<CancellationToken>()).Returns(docs);
 
@@ -136,7 +138,7 @@ public class JobControllerTests : IDisposable
         // Assert the serialised contract, not the CLR object — the SPA reads camelCase keys and the
         // app's Newtonsoft config emits property names verbatim, so casing is the thing under test.
         var json = Assert.IsType<JsonResult>(result);
-        var serialised = Newtonsoft.Json.JsonConvert.SerializeObject(json.Value);
+        var serialised = JsonConvert.SerializeObject(json.Value);
         Assert.Contains("\"documentType\":\"Invoice\"", serialised);
         Assert.Contains("\"displayName\":\"Customer Invoice\"", serialised);
         Assert.Contains("\"available\":true", serialised);
@@ -155,7 +157,7 @@ public class JobControllerTests : IDisposable
         var result = await controller.OverlayDocuments(42);
 
         var json = Assert.IsType<JsonResult>(result);
-        var serialised = Newtonsoft.Json.JsonConvert.SerializeObject(json.Value);
+        var serialised = JsonConvert.SerializeObject(json.Value);
         Assert.Equal("[]", serialised);
     }
 
@@ -1392,6 +1394,89 @@ public class JobControllerTests : IDisposable
 
         // Assert
         Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task RestoreJobs_RemoveCapturedImagesTrue_ArchivesEachJobsImagesUsingPreRestoreMonth()
+    {
+        // Arrange
+        var request = new RestoreJobsRequest { JobIds = [1, 2], RemoveCapturedImages = true };
+        _jobQueryRepositoryMock.GetJobCompletionTimesAsync(request.JobIds)
+            .Returns(new Dictionary<int, DateTime?>
+            {
+                [1] = new DateTime(2024, 7, 15),
+                [2] = new DateTime(2024, 8, 3),
+            });
+        _jobPhotoServiceMock.ArchiveJobCapturedMediaAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>())
+            .Returns(new DespatchWeb.Models.Response.AwsBatchOperationResult());
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RestoreJobs(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).RestoreJobsAsync(request.JobIds);
+        await _jobPhotoServiceMock.Received(1).ArchiveJobCapturedMediaAsync(1, 2024, 7);
+        await _jobPhotoServiceMock.Received(1).ArchiveJobCapturedMediaAsync(2, 2024, 8);
+    }
+
+    [Fact]
+    public async Task RestoreJobs_RemoveCapturedImagesFalse_DoesNotArchive()
+    {
+        // Arrange
+        var request = new RestoreJobsRequest { JobIds = [1, 2], RemoveCapturedImages = false };
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RestoreJobs(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).RestoreJobsAsync(request.JobIds);
+        await _jobQueryRepositoryMock.DidNotReceive().GetJobCompletionTimesAsync(Arg.Any<IReadOnlyList<int>>());
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs()
+            .ArchiveJobCapturedMediaAsync(default, default, default);
+    }
+
+    [Fact]
+    public async Task RestoreJobs_JobWithoutCompletionTime_SkipsArchive()
+    {
+        // Arrange — a job with no recorded completion time has nothing to locate in S3.
+        var request = new RestoreJobsRequest { JobIds = [1], RemoveCapturedImages = true };
+        _jobQueryRepositoryMock.GetJobCompletionTimesAsync(request.JobIds)
+            .Returns(new Dictionary<int, DateTime?> { [1] = null });
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RestoreJobs(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs()
+            .ArchiveJobCapturedMediaAsync(default, default, default);
+    }
+
+    [Fact]
+    public async Task RestoreJobs_ArchiveThrows_StillReturnsOk()
+    {
+        // Arrange — archiving is best-effort; the restore has already committed.
+        var request = new RestoreJobsRequest { JobIds = [1], RemoveCapturedImages = true };
+        _jobQueryRepositoryMock.GetJobCompletionTimesAsync(request.JobIds)
+            .Returns(new Dictionary<int, DateTime?> { [1] = new DateTime(2024, 7, 15) });
+        _jobPhotoServiceMock.ArchiveJobCapturedMediaAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>())
+            .ThrowsAsync(new Exception("S3 down"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RestoreJobs(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).RestoreJobsAsync(request.JobIds);
     }
 
     [Fact]

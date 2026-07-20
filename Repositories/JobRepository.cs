@@ -3636,6 +3636,21 @@ public partial class JobRepository(
 
         await Task.WhenAll(liveJobsTask, archivedJobsTask);
 
+        // Archived jobs have no JobId-keyed item navigation (TucJobArchive.TucJobItemsArchives is
+        // keyed by ChildJobId), so sum tucJobItemsArchive.Cubic by JobId via a correlated subquery.
+        // Live-job cubic is summed inline in LiveJobDownloadMapping via the TucJobItemJobs navigation.
+        var archivedCubicByJobId = await archivedJobsQuery
+            .Take(maxExportRowsPerSource)
+            .Select(j => new
+            {
+                j.UcjbId,
+                Cubic = archivedJobsContext.TucJobItemsArchives
+                    .Where(i => i.JobId == j.UcjbId)
+                    .Sum(i => i.Cubic)
+            })
+            .TagWith("PodSearchDownload - Archived Job Cubic")
+            .ToDictionaryAsync(x => x.UcjbId, x => x.Cubic);
+
         // Combine and sort by job number
         // Note: No parent/child filtering applied - download returns all jobs matching search criteria
         // to maintain consistency with PodSearchAsync results
@@ -3661,6 +3676,7 @@ public partial class JobRepository(
             Quantity = j.Quantity,
             Weight = j.Weight,
             Size = j.Size,
+            Cubic = j.IsArchived ? archivedCubicByJobId.GetValueOrDefault(j.Id) : j.Cubic,
             PickupAddressLine1 = j.PickupAddressLine1,
             PickupAddressLine2 = j.PickupAddressLine2,
             PickupAddressLine3 = j.PickupAddressLine3,
@@ -5085,6 +5101,19 @@ public partial class JobRepository(
 
     public new async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds)
         => await base.GetJobCurrentAmountsAsync(jobIds);
+
+    public async Task<Dictionary<int, DateTime?>> GetJobCompletionTimesAsync(IReadOnlyList<int> jobIds)
+    {
+        if (jobIds is null or { Count: 0 })
+        {
+            return new Dictionary<int, DateTime?>();
+        }
+
+        return await Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .Select(j => new { j.UcjbId, j.UcjbComplTime })
+            .ToDictionaryAsync(x => x.UcjbId, x => x.UcjbComplTime);
+    }
 
     /// <summary>
     /// Checks if a job can be split.

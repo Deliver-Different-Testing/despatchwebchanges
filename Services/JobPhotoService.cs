@@ -203,6 +203,74 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
         }
     }
 
+    /// <summary>S3 key prefix under which archived (soft-deleted) captured media is retained.</summary>
+    private const string ArchivePrefix = "RestoredArchive/";
+
+    /// <summary>
+    /// Soft-deletes a job's captured photos and signatures by copying each S3 object under the
+    /// <see cref="ArchivePrefix"/> prefix and then deleting the original. Reuses the same
+    /// month-window prefix search the photo getters use, so exactly the objects shown against the
+    /// job are archived. The copy runs first; the original is only deleted once the copy succeeds,
+    /// so a failure never loses data.
+    /// </summary>
+    public async Task<AwsBatchOperationResult> ArchiveJobCapturedMediaAsync(int jobId, int year, int month)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var pattern = $"{jobId}-";
+
+        var objects = new List<S3Object>();
+        objects.AddRange(await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Delivery));
+        objects.AddRange(await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Pickup));
+
+        var keys = objects
+            .Select(o => o.Key)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var successful = 0;
+        var errors = new List<string>();
+
+        foreach (var key in keys)
+        {
+            try
+            {
+                await s3Client.CopyObjectAsync(new CopyObjectRequest
+                {
+                    SourceBucket = bucketName,
+                    SourceKey = key,
+                    DestinationBucket = bucketName,
+                    DestinationKey = $"{ArchivePrefix}{key}"
+                });
+
+                await s3Client.DeleteObjectAsync(new DeleteObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = key
+                });
+
+                successful++;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "{Message}",
+                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                        nameof(ArchiveJobCapturedMediaAsync)));
+                errors.Add($"{key}: {e.Message}");
+            }
+        }
+
+        Log.Information("Archived {Successful}/{Total} captured media object(s) for job {JobId}",
+            successful, keys.Count, jobId);
+
+        return new AwsBatchOperationResult
+        {
+            TotalFiles = keys.Count,
+            SuccessfulFiles = successful,
+            FailedFiles = keys.Count - successful,
+            ErrorMessages = errors
+        };
+    }
+
     /// <summary>
     /// Retrieves all file attachments for a job from S3.
     /// </summary>
@@ -477,7 +545,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
 
     /// <summary>
     /// Searches for S3 objects matching a pattern within specific year/month folders based on photo type.
-    /// Searches both the specified month and the following month to handle edge cases.
+    /// Photos are S3-keyed by their upload instant, whereas callers pass the job's completion month, so
+    /// the search spans the specified month plus the adjacent months (previous and following) to cover
+    /// jobs whose upload and completion fall on opposite sides of a month boundary.
     /// </summary>
     /// <param name="bucketName">The S3 bucket to search in.</param>
     /// <param name="pattern">The key prefix pattern to match.</param>
@@ -494,13 +564,20 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
     )
     {
         var allResults = new List<S3Object>();
-        // Calculate next month and year (handling December rollover)
+        // Calculate the adjacent months/years (handling year rollover in both directions)
         var nextMonth = month == 12 ? 1 : month + 1;
         var nextYear = month == 12 ? year + 1 : year;
+        var prevMonth = month == 1 ? 12 : month - 1;
+        var prevYear = month == 1 ? year - 1 : year;
 
         try
         {
-            var monthPrefixes = new[] { $"{year}/{month:D2}/", $"{nextYear}/{nextMonth:D2}/" };
+            var monthPrefixes = new[]
+            {
+                $"{year}/{month:D2}/",
+                $"{prevYear}/{prevMonth:D2}/",
+                $"{nextYear}/{nextMonth:D2}/"
+            };
             var folders = GetFoldersByPhotoType(photoType);
 
             foreach (var folder in folders)

@@ -1069,7 +1069,7 @@ describe('JobListPanel', () => {
             await user.click(screen.getByText('Restore'));
 
             await waitFor(() => {
-                expect(mockedRestoreJobs).toHaveBeenCalledWith([1]);
+                expect(mockedRestoreJobs).toHaveBeenCalledWith([1], false);
             });
             // Audit event only for the live job; the archived one is never touched.
             expect(mockedAddRestoreEvent).toHaveBeenCalledWith(1);

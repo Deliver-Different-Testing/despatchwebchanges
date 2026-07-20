@@ -480,7 +480,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Restore'));
 
             await waitFor(() => {
-                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1]);
+                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1], false);
             });
             expect(mockedApi.addRestoreEvent).toHaveBeenCalledWith(1);
             expect(props.showToast).toHaveBeenCalledWith('Job J001 restored', 'success');
@@ -502,9 +502,24 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Restore'}));
 
             await waitFor(() => {
-                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1]);
+                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1], false);
             });
             expect(mockedApi.addRestoreEvent).toHaveBeenCalledWith(1);
+        });
+
+        it('Restore (completed job) archives the captured images when the checkbox is ticked', async () => {
+            const props = createDefaultProps({job: createMockJob({done: true})});
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            fireEvent.click(screen.getByText('Restore'));
+
+            expect(await screen.findByText('Restore completed job')).toBeInTheDocument();
+            fireEvent.click(screen.getByRole('checkbox', {name: /Also remove the images captured/i}));
+            fireEvent.click(screen.getByRole('button', {name: 'Restore'}));
+
+            await waitFor(() => {
+                expect(mockedApi.restoreJobs).toHaveBeenCalledWith([1], true);
+            });
         });
 
         it('Restore is disabled for archived jobs (restore only touches live jobs, so it would silently no-op)', () => {

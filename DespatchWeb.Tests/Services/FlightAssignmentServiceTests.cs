@@ -22,19 +22,20 @@ public class FlightAssignmentServiceTests
         DepartureAirportFsCode = "AKL",
         ArrivalAirportFsCode = "WLG",
         DepartureTime = DateTimeOffset.Parse("2026-07-08T08:00:00Z"),
-        ArrivalTime = DateTimeOffset.Parse("2026-07-08T09:00:00Z"),
+        ArrivalTime = DateTimeOffset.Parse("2026-07-08T09:00:00Z")
     };
 
-    private static FlightViewModel Flight(string airlineCode, string number, string time = "2026-07-08T08:00:00Z") => new()
-    {
-        AirlineCode = airlineCode,
-        FlightNumber = number,
-        DepartureTime = DateTimeOffset.Parse(time),
-        ArrivalTime = DateTimeOffset.Parse(time).AddHours(1),
-        DepartureAirport = "AKL",
-        ArrivalAirport = "WLG",
-        FlightSegments = [Segment(airlineCode, number)],
-    };
+    private static FlightViewModel Flight(string airlineCode, string number, string time = "2026-07-08T08:00:00Z") =>
+        new()
+        {
+            AirlineCode = airlineCode,
+            FlightNumber = number,
+            DepartureTime = DateTimeOffset.Parse(time),
+            ArrivalTime = DateTimeOffset.Parse(time).AddHours(1),
+            DepartureAirport = "AKL",
+            ArrivalAirport = "WLG",
+            FlightSegments = [Segment(airlineCode, number)]
+        };
 
     private static SavedFlightCandidate Candidate(string savedNumber, int jobId = 100) => new()
     {
@@ -42,7 +43,7 @@ public class FlightAssignmentServiceTests
         FromAirportId = 1,
         ToAirportId = 2,
         SavedFlightNumber = savedNumber,
-        DepartureDate = DateTimeOffset.Parse("2026-07-08T00:00:00Z"),
+        DepartureDate = DateTimeOffset.Parse("2026-07-08T00:00:00Z")
     };
 
     private void StubFlights(params FlightViewModel[] flights) =>
@@ -60,7 +61,7 @@ public class FlightAssignmentServiceTests
             JobId = 100,
             FlightNumber = "NZ123",
             DepartureDate = DateTimeOffset.Parse("2026-07-08T08:00:00Z"),
-            FlightSegments = [Segment("NZ", "123"), Segment("NZ", "456")],
+            FlightSegments = [Segment("NZ", "123"), Segment("NZ", "456")]
         };
         _flightService.CreateFlightRuleByDepartureAsync(Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<string>())
             .Returns("wh-1", "wh-2");

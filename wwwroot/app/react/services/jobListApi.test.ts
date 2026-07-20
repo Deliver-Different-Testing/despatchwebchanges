@@ -109,7 +109,7 @@ describe('jobListApi', () => {
         it('posts job IDs', async () => {
             await restoreJobs([5, 6]);
 
-            expect(mockedPost).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [5, 6]});
+            expect(mockedPost).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [5, 6], removeCapturedImages: false});
         });
     });
 

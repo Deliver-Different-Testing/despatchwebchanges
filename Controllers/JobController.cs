@@ -823,13 +823,13 @@ public class JobController(
     public async Task<IActionResult> OverlayDocuments(int jobId)
     {
         var docs = await pdfOverlay.ListJobDocumentsAsync(jobId, HttpContext.RequestAborted);
-        // Project to camelCase keys — the app's Newtonsoft config serialises property names verbatim
+        // Project to camelCase keys — the app's Newtonsoft config serializes property names verbatim
         // (no camel-case resolver), so PascalCase record properties would not match the SPA's contract.
         return Json((docs ?? []).Select(d => new
         {
             documentType = d.DocumentType,
             displayName = d.DisplayName,
-            available = d.Available,
+            available = d.Available
         }));
     }
 
@@ -1458,13 +1458,31 @@ public class JobController(
         {
             ArgumentNullException.ThrowIfNull(data);
             ArgumentNullException.ThrowIfNull(data.JobIds);
+
+            if (data.JobIds.Count is 0)
+            {
+                throw new ArgumentException("JobIds cannot be empty", nameof(data));
+            }
             
             Log.Information(
-                "RestoreJobs request received for {JobCount} job(s) {JobIds}.",
-                data.JobIds?.Count ?? 0,
-                data.JobIds is null ? "[]" : string.Join(",", data.JobIds));
+                "RestoreJobs request received for {JobCount} job(s) {JobIds} (RemoveCapturedImages={RemoveCapturedImages}).",
+                data.JobIds.Count,
+                string.Join(",", data.JobIds),
+                data.RemoveCapturedImages);
+
+            // Capture completion months before the restore clears UcjbComplTime, which is the anchor
+            // used to locate the job's photos in S3.
+            var completionTimes = data.RemoveCapturedImages
+                ? await jobQueryRepository.GetJobCompletionTimesAsync(data.JobIds)
+                : null;
 
             await jobCommandRepository.RestoreJobsAsync(data.JobIds);
+
+            if (completionTimes is not null)
+            {
+                await ArchiveRestoredJobImagesAsync(completionTimes);
+            }
+
             return Ok();
         }
         catch (Exception ex)
@@ -1472,10 +1490,42 @@ public class JobController(
             Log.Error(
                 ex,
                 "Error restoring the following jobs {JobId}. Error: {ErrorMessage}",
-                data.JobIds.ToString(),
+                data.JobIds?.ToString(),
                 ex.Message
             );
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    /// <summary>
+    /// Archives (soft-deletes) the captured images for each restored job. Best-effort: the restore
+    /// has already committed, so a failure to archive is logged but never fails the request. Jobs
+    /// with no recorded completion time are skipped (nothing to locate in S3).
+    /// </summary>
+    private async Task ArchiveRestoredJobImagesAsync(IReadOnlyDictionary<int, DateTime?> completionTimes)
+    {
+        foreach (var (jobId, completedTime) in completionTimes)
+        {
+            if (completedTime is not { } completed)
+            {
+                continue;
+            }
+
+            try
+            {
+                var result = await jobPhotoService.ArchiveJobCapturedMediaAsync(
+                    jobId, completed.Year, completed.Month);
+
+                Log.Information(
+                    "Archived {Successful}/{Total} captured image(s) for restored job {JobId} ({Failed} failed).",
+                    result.SuccessfulFiles, result.TotalFiles, jobId, result.FailedFiles);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex,
+                    "Failed to archive captured images for restored job {JobId}. Error: {ErrorMessage}",
+                    jobId, ex.Message);
+            }
         }
     }
 

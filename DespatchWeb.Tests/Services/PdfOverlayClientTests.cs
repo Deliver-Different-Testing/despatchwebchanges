@@ -2,7 +2,6 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 using DespatchWeb.Services;
-using DespatchWeb.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
@@ -25,7 +24,7 @@ public class PdfOverlayClientTests
         new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["PdfOverlayBaseUrl"] = baseUrl,
-            ["PdfOverlayRenderApiKey"] = apiKey,
+            ["PdfOverlayRenderApiKey"] = apiKey
         }).Build();
 
     private PdfOverlayClient CreateClient(IConfiguration config) =>
@@ -39,7 +38,7 @@ public class PdfOverlayClientTests
         {
             Content = new StringContent(
                 """[{"documentType":"Invoice","displayName":"Customer Invoice","available":true},{"documentType":"Manifest","displayName":"Delivery Manifest","available":false}]""",
-                Encoding.UTF8, "application/json"),
+                Encoding.UTF8, "application/json")
         });
 
         var result = await CreateClient(Config()).ListJobDocumentsAsync(42, TestContext.Current.CancellationToken);
@@ -58,7 +57,7 @@ public class PdfOverlayClientTests
         SetTenant("42");
         _handler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent("[]", Encoding.UTF8, "application/json"),
+            Content = new StringContent("[]", Encoding.UTF8, "application/json")
         });
 
         await CreateClient(Config()).ListJobDocumentsAsync(7, TestContext.Current.CancellationToken);

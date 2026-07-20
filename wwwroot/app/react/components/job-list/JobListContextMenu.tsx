@@ -450,10 +450,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         openDispatchDialog('Courier');
     };
 
-    const performRestore = async () => {
+    const performRestore = async (removeCapturedImages = false) => {
         try {
             await api.addRestoreEvent(activeJob.id);
-            await api.restoreJobs([activeJob.id]);
+            await api.restoreJobs([activeJob.id], removeCapturedImages);
             showToast(`Job ${activeJob.jobNo} restored`, 'success');
             // Invalidate job detail (and related/photos) so an open detail panel reflects the
             // reset status, then refresh the list.
@@ -747,9 +747,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             <RestoreCompletedConfirmationDialog
                 open={restoreCompletedConfirmOpen}
                 onClose={() => setRestoreCompletedConfirmOpen(false)}
-                onConfirm={async () => {
+                onConfirm={async (removeCapturedImages) => {
                     setRestoreCompletedConfirmOpen(false);
-                    await performRestore();
+                    await performRestore(removeCapturedImages);
                 }}
             />
             {/* Send to Live Confirmation Dialog */}

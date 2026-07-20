@@ -413,6 +413,47 @@ public class JobReportServiceLargeDataTests
         Assert.Single(lines); // Header only
     }
 
+    [Fact]
+    public async Task GenerateJobsReportAsync_IncludesCubicColumn()
+    {
+        // Arrange
+        var jobs = new List<JobDownloadModel>
+        {
+            new() { Id = 1, JobNumber = "TEST-001", Cubic = 4.0m, BookDate = TestDates.Now }
+        };
+
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
+
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
+
+        var service = CreateService();
+        var request = new PodSearchDownloadRequest
+        {
+            FromDate = DateTimeOffset.Now.AddMonths(-1),
+            ToDate = DateTimeOffset.Now
+        };
+
+        // Act
+        var result = await service.GenerateJobsReportAsync(request);
+
+        // Assert - header has a Cubic column and the summed value is written
+        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
+        var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var header = lines[0].Split(',');
+        var cubicIndex = Array.IndexOf(header, "Cubic");
+        Assert.True(cubicIndex >= 0, "CSV header should contain a Cubic column");
+        Assert.Equal("4.0", lines[1].Split(',')[cubicIndex]);
+    }
+
     private static List<JobDownloadModel> GenerateLargeJobDownloadDataset(int count)
     {
         var jobs = new List<JobDownloadModel>(count);
