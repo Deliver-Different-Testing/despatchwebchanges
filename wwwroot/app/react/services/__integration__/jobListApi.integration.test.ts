@@ -350,7 +350,7 @@ describe('jobListApi integration', () => {
 
             await restoreJobs([10, 20]);
 
-            expect(capturedBody).toEqual({ jobIds: [10, 20] });
+            expect(capturedBody).toEqual({ jobIds: [10, 20], removeCapturedImages: false });
         });
     });
 

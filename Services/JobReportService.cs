@@ -117,6 +117,7 @@ public sealed class JobReportService(
         ["Quantity"] = x => x.Quantity?.ToString(),
         ["Weight"] = x => x.Weight?.ToString(),
         ["Size"] = x => x.Size?.ToString(),
+        ["Cubic"] = x => x.Cubic?.ToString(),
         ["StatusName"] = x => x.StatusName?.ToString(),
         ["PickupAddressLine1"] = x => FormatCsvField(x.PickupAddressLine1),
         ["PickupAddressLine2"] = x => FormatCsvField(x.PickupAddressLine2),

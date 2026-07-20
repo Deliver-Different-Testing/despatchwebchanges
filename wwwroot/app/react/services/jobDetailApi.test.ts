@@ -302,7 +302,7 @@ describe('jobDetailApi', () => {
 
             await restoreJobs([1, 2, 3]);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [1, 2, 3]});
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [1, 2, 3], removeCapturedImages: false});
         });
 
         it('allocateJob posts courierId and jobIds', async () => {

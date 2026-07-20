@@ -120,6 +120,12 @@ public interface IJobQueryRepository
     Task<int?> GetJobParentIdAsync(int jobId);
     Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds);
 
+    /// <summary>
+    /// Returns each job's completion time (<c>UcjbComplTime</c>) keyed by job id. Used to capture the
+    /// completion month before a restore clears it, so the job's S3 photos can still be located.
+    /// </summary>
+    Task<Dictionary<int, DateTime?>> GetJobCompletionTimesAsync(IReadOnlyList<int> jobIds);
+
     Task<List<Suggestion>> GetActivePartnerOptionsAsync();
     Task<bool> IsPartnerJobAsync(int jobId);
     Task<bool> IsOutboundPartnerJobAsync(int jobId, string? localTenantId);

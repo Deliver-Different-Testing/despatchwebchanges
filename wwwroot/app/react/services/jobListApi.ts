@@ -82,8 +82,8 @@ export async function reAllocateJobs(courierId: number, jobIds: number[]): Promi
 
 // ── Restore ──────────────────────────────────────────────────────────
 
-export async function restoreJobs(jobIds: number[]): Promise<void> {
-    await apiClient.post('job/RestoreJobs', {jobIds});
+export async function restoreJobs(jobIds: number[], removeCapturedImages = false): Promise<void> {
+    await apiClient.post('job/RestoreJobs', {jobIds, removeCapturedImages});
 }
 
 export async function restoreSplitJobs(jobIds: number[]): Promise<void> {

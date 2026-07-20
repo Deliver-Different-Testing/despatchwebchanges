@@ -617,7 +617,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const [bulkRestoreConfirmOpen, setBulkRestoreConfirmOpen] = useState(false);
 
-    const performBulkRestore = useCallback(async () => {
+    const performBulkRestore = useCallback(async (removeCapturedImages = false) => {
         // Archived jobs live only in the archive tables; restore operates on live (tucJob)
         // rows, so restoring an archived job silently no-ops — exclude them.
         const ids = [...multiSelect.selectedIds].filter(
@@ -629,7 +629,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
         try {
             await Promise.all(ids.map(id => addRestoreEvent(id)));
-            await restoreJobs(ids);
+            await restoreJobs(ids, removeCapturedImages);
             showToast(`${ids.length} job(s) restored`, 'success');
             multiSelect.clear();
             // Invalidate job detail (and related/photos) so an open detail panel reflects the
@@ -895,9 +895,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                     return j && !j.isArchived && j.done;
                 }).length}
                 onClose={() => setBulkRestoreConfirmOpen(false)}
-                onConfirm={async () => {
+                onConfirm={async (removeCapturedImages) => {
                     setBulkRestoreConfirmOpen(false);
-                    await performBulkRestore();
+                    await performBulkRestore(removeCapturedImages);
                 }}
             />
         </Box>

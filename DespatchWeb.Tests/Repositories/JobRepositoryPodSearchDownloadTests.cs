@@ -733,6 +733,48 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         Assert.Contains(result, j => j.JobNumber == "ARCH-003");
     }
 
+    [Fact]
+    public async Task PodSearchDownloadAsync_SumsCubicAcrossJobItems()
+    {
+        // Arrange - live job with two items and an archived job with two items
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(CreateLiveJob(1, "LIVE-CUBIC", new DateTime(2024, 1, 15)));
+            context.TucJobArchives.Add(CreateArchivedJob(101, "ARCH-CUBIC", new DateTime(2024, 1, 15)));
+            context.TucJobs.Add(CreateLiveJob(2, "LIVE-NOITEMS", new DateTime(2024, 1, 15)));
+
+            context.TucJobItems.AddRange(
+                new TucJobItem { JobId = 1, ItemId = 1, Items = 1, Weight = 1, Cubic = 1.5m },
+                new TucJobItem { JobId = 1, ItemId = 2, Items = 1, Weight = 1, Cubic = 2.5m }
+            );
+            context.TucJobItemsArchives.AddRange(
+                new TucJobItemsArchive { JobId = 101, ItemId = 1, Items = 1, Weight = 1, Cubic = 3.0m },
+                new TucJobItemsArchive { JobId = 101, ItemId = 2, Items = 1, Weight = 1, Cubic = 4.0m }
+            );
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: string.Empty,
+            wild: string.Empty,
+            clientIds: []
+        );
+
+        // Assert - Cubic is the per-job sum of item cubic values (live sums via the
+        // TucJobItemJobs navigation, archived via the JobId correlated subquery)
+        Assert.Equal(4.0m, result.Single(j => j.JobNumber == "LIVE-CUBIC").Cubic);
+        Assert.Equal(7.0m, result.Single(j => j.JobNumber == "ARCH-CUBIC").Cubic);
+        // A job with no items sums to 0 (empty SUM)
+        Assert.Equal(0m, result.Single(j => j.JobNumber == "LIVE-NOITEMS").Cubic);
+    }
+
     private static TucJob CreateLiveJob(
         int id,
         string jobNumber,

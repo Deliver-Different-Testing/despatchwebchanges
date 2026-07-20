@@ -1,5 +1,4 @@
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using DespatchWeb.Services;
 
 namespace DespatchWeb.Extensions;
