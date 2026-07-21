@@ -5,18 +5,15 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantine} from '../../../__testUtils__';
 import {RelatedJob, VoidJobConfirmationDialog, VoidJobDialogJob} from './VoidJobConfirmationDialog';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+const renderWithTheme = (ui: React.ReactElement) => renderWithMantine(ui);
 
 const mockJob: VoidJobDialogJob = {
     id: 123,
@@ -82,23 +79,18 @@ describe('VoidJobConfirmationDialog', () => {
 
         // Close icon
         props.onClose.mockClear();
-        const closeIconButton = screen.getAllByRole('button').find(btn =>
-            btn.querySelector('[data-testid="CloseIcon"]')
-        );
-        if (closeIconButton) {
-            await userEvent.click(closeIconButton);
-            expect(props.onClose).toHaveBeenCalledTimes(1);
-        }
+        await userEvent.click(screen.getByRole('button', {name: 'Close dialog'}));
+        expect(props.onClose).toHaveBeenCalledTimes(1);
     });
 
     // ── Closed / null job (single render with rerender) ─────────────
     it('does not render when closed or job is null', () => {
         const props = createMockProps({open: false});
-        const {rerender, container} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        const {rerender} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-        rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...createMockProps({job: null})} /></ThemeProvider>);
-        expect(container.firstChild).toBeNull();
+        rerender(<VoidJobConfirmationDialog {...createMockProps({job: null})} />);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     // ── Single void + submitting state (single render) ──────────────
@@ -263,12 +255,10 @@ describe('VoidJobConfirmationDialog', () => {
         fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Test reason'}});
 
         await act(async () => {
-            rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...props}
-                                                                             open={false}/></ThemeProvider>);
+            rerender(<VoidJobConfirmationDialog {...props} open={false}/>);
         });
         await act(async () => {
-            rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...props}
-                                                                             open={true}/></ThemeProvider>);
+            rerender(<VoidJobConfirmationDialog {...props} open={true}/>);
         });
 
         expect(screen.getByLabelText(/Reason for voiding/)).toHaveValue('');

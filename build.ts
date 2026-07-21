@@ -3,6 +3,13 @@ import fs from "fs";
 import path from "path";
 import {lessLoader} from "esbuild-plugin-less";
 
+// Every valid-identifier named export of the installed React, used to generate
+// the `react` → window.React shim (see createReactGlobalShimPlugin) so the shim
+// tracks whatever React version ships rather than a hand-maintained list.
+const reactNamedExports: string[] = Object.keys(require("react")).filter(
+    (k) => k !== "default" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k)
+);
+
 // Type definitions
 type EntryPointName =
     'vendor-core'
@@ -269,46 +276,13 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 namespace: "react-shim",
             }));
 
+            // Re-export EVERY named export of the installed React off window.React,
+            // generated from React's own export list. This avoids hand-maintaining
+            // the set (React 19 added `use`, `useEffectEvent`, `Activity`, … and
+            // Mantine imports them) — the shim now tracks whatever React ships.
             build.onLoad({filter: /.*/, namespace: "react-shim"}, () => ({
-                contents: `
-                    const React = window.React;
-                    export default React;
-                    // Core hooks
-                    export const useState = React.useState;
-                    export const useEffect = React.useEffect;
-                    export const useCallback = React.useCallback;
-                    export const useMemo = React.useMemo;
-                    export const useRef = React.useRef;
-                    export const useContext = React.useContext;
-                    export const useReducer = React.useReducer;
-                    export const useLayoutEffect = React.useLayoutEffect;
-                    export const useImperativeHandle = React.useImperativeHandle;
-                    export const useDebugValue = React.useDebugValue;
-                    // React 18 hooks
-                    export const useId = React.useId;
-                    export const useTransition = React.useTransition;
-                    export const useDeferredValue = React.useDeferredValue;
-                    export const useSyncExternalStore = React.useSyncExternalStore;
-                    export const useInsertionEffect = React.useInsertionEffect;
-                    // Core APIs
-                    export const createContext = React.createContext;
-                    export const createElement = React.createElement;
-                    export const Fragment = React.Fragment;
-                    export const Children = React.Children;
-                    export const cloneElement = React.cloneElement;
-                    export const isValidElement = React.isValidElement;
-                    export const memo = React.memo;
-                    export const forwardRef = React.forwardRef;
-                    export const lazy = React.lazy;
-                    export const Suspense = React.Suspense;
-                    export const StrictMode = React.StrictMode;
-                    // Additional APIs
-                    export const Component = React.Component;
-                    export const PureComponent = React.PureComponent;
-                    export const createRef = React.createRef;
-                    export const version = React.version;
-                    export const startTransition = React.startTransition;
-                `,
+                contents: `const React = window.React;\nexport default React;\n`
+                    + reactNamedExports.map(k => `export const ${k} = React.${k};`).join('\n'),
                 loader: "js",
             }));
 

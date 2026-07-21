@@ -27,6 +27,7 @@
     var appBundleFile = manifest.GetValueOrDefault("app.js", "");
     var vendorCoreCss = manifest.GetValueOrDefault("vendor-core.css", "");
     var vendorPluginsCss = manifest.GetValueOrDefault("vendor-plugins.css", "");
+    var vendorReactCss = manifest.GetValueOrDefault("vendor-react.css", "");
     var appStylesFile = manifest.GetValueOrDefault("app.css", "");
 }
 
@@ -138,6 +139,11 @@
     @if (!string.IsNullOrEmpty(vendorPluginsCss))
     {
         <link rel="stylesheet" href="/dist/@vendorPluginsCss"/>
+    }
+    @* Mantine (DFRNT) styles — scoped to @@layer mantine, loaded once for all React islands. *@
+    @if (!string.IsNullOrEmpty(vendorReactCss))
+    {
+        <link rel="stylesheet" href="/dist/@vendorReactCss"/>
     }
     @if (!string.IsNullOrEmpty(appStylesFile))
     {
