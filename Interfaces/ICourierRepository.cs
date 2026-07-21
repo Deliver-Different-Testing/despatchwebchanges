@@ -15,9 +15,7 @@ public interface ICourierRepository
 
    Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
-
-    Task<IReadOnlyList<ActiveCouriersViewModel>> ActiveCouriersAsync();
+   Task<IReadOnlyList<ActiveCouriersViewModel>> ActiveCouriersAsync();
 
     Task<IReadOnlyList<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false);
 

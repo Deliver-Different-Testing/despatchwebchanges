@@ -1,6 +1,5 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using DespatchWeb.Services.JobApi;
 
 namespace DespatchWeb.Extensions;
 

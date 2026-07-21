@@ -521,7 +521,7 @@ public class NoteRepository(
         var notes = await Context.GetActiveNotesByJobIdAsync(effectiveJobId);
         if (notes.Count == 0)
         {
-            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, false, tenantTimeZone);
+            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, false);
             if (fallback != null)
             {
                 return [fallback];
@@ -543,7 +543,7 @@ public class NoteRepository(
         var notes = await query.ToListAsync();
         if (notes.Count == 0)
         {
-            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, true, tenantTimeZone);
+            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, true);
             if (fallback != null)
             {
                 return [fallback];
@@ -564,7 +564,7 @@ public class NoteRepository(
     /// Prefers the requested job's own UcjbNotes, falling back to the family root's.
     /// </summary>
     private async Task<TucNoteViewModel> BuildUcjbNotesFallbackAsync(
-        int jobId, int effectiveJobId, bool isArchived, string tenantTimeZone)
+        int jobId, int effectiveJobId, bool isArchived)
     {
         var candidates = isArchived
             ? await GetArchivedUcjbNotesCandidatesAsync(jobId, effectiveJobId)
