@@ -318,9 +318,16 @@ public class RecurringJobRepository(
             {
                 b.UcbkId,
                 b.ScheduleId,
-                b.RawBaseAmount
+                b.RawBaseAmount,
+                b.UcbkClientId
             })
             .ToDictionaryAsync(b => b.UcbkId);
+
+        var clientId = parentMeta.Values.Select(m => m.UcbkClientId).FirstOrDefault(id => id.HasValue);
+        var recalcFuel = clientId == null || await Context.TucClients
+            .Where(c => c.UcclId == clientId.Value)
+            .Select(c => c.RecalcRecurringFuel)
+            .FirstOrDefaultAsync();
 
         foreach (var parentBookingId in parentBookingIds)
         {
@@ -363,31 +370,34 @@ public class RecurringJobRepository(
             newJobs.Select(j => (j.UcjbId, j.BookingParentId)),
             allTemplatePricing);
 
-        // Self-heal each affected template's RawBaseAmount once — only the
-        // templates whose raw base had to be derived from the fuel formula.
-        foreach (var (templateId, rawBaseAmount) in plan.SelfHealTemplateRawBases)
+        if (recalcFuel)
         {
-            await Context.TucJobBookings
-                .Where(b => b.UcbkId == templateId)
-                .ExecuteUpdateAsync(s => s.SetProperty(b => b.RawBaseAmount, rawBaseAmount));
-        }
+            // Self-heal each affected template's RawBaseAmount once — only the
+            // templates whose raw base had to be derived from the fuel formula.
+            foreach (var (templateId, rawBaseAmount) in plan.SelfHealTemplateRawBases)
+            {
+                await Context.TucJobBookings
+                    .Where(b => b.UcbkId == templateId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(b => b.RawBaseAmount, rawBaseAmount));
+            }
 
-        // Reprice the new jobs with one set-based UPDATE per distinct raw-base
-        // value instead of a query + update per job. UcjbAmount is recomputed
-        // per row by the pricing UDF; fuel is that total minus the raw base. A
-        // null UDF result coalesces to 0 to match the previous per-row path.
-        foreach (var group in plan.Groups)
-        {
-            var rawBaseAmount = group.RawBaseAmount;
-            var jobIds = group.JobIds;
-            await Context.TucJobs
-                .Where(t => jobIds.Contains(t.UcjbId))
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(t => t.RawBaseAmount, rawBaseAmount)
-                    .SetProperty(t => t.UcjbAmount,
-                        t => DespatchContext.UTL_fncJob_RawBaseToAmount(t.UcjbId, rawBaseAmount) ?? 0m)
-                    .SetProperty(t => t.FuelSurchargeAmount,
-                        t => (DespatchContext.UTL_fncJob_RawBaseToAmount(t.UcjbId, rawBaseAmount) ?? 0m) - rawBaseAmount));
+            // Reprice the new jobs with one set-based UPDATE per distinct raw-base
+            // value instead of a query + update per job. UcjbAmount is recomputed
+            // per row by the pricing UDF; fuel is that total minus the raw base. A
+            // null UDF result coalesces to 0 to match the previous per-row path.
+            foreach (var group in plan.Groups)
+            {
+                var rawBaseAmount = group.RawBaseAmount;
+                var jobIds = group.JobIds;
+                await Context.TucJobs
+                    .Where(t => jobIds.Contains(t.UcjbId))
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(t => t.RawBaseAmount, rawBaseAmount)
+                        .SetProperty(t => t.UcjbAmount,
+                            t => DespatchContext.UTL_fncJob_RawBaseToAmount(t.UcjbId, rawBaseAmount) ?? 0m)
+                        .SetProperty(t => t.FuelSurchargeAmount,
+                            t => (DespatchContext.UTL_fncJob_RawBaseToAmount(t.UcjbId, rawBaseAmount) ?? 0m) - rawBaseAmount));
+            }
         }
 
         return new InsertRecurringToLiveResult

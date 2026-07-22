@@ -595,6 +595,8 @@ public partial class TucClient
 
     public bool ArReminderSuppressed { get; set; }
 
+    public bool RecalcRecurringFuel { get; set; }
+
     public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();
 
     public virtual TucAgent NpAgent { get; set; }
