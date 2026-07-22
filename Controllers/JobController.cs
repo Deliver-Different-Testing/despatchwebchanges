@@ -846,7 +846,9 @@ public class JobController(
 
         try
         {
-            var pdf = await pdfOverlay.TryRenderJobAsync(jobId, documentType, HttpContext.RequestAborted);
+            // RenderJobAsync (not TryRenderJobAsync) so a real render failure throws and hits the catch
+            // below as a 500 with the actual cause, instead of being mislabelled "no template available".
+            var pdf = await pdfOverlay.RenderJobAsync(jobId, documentType, HttpContext.RequestAborted);
             if (pdf is null)
             {
                 return NotFound($"No '{documentType}' template available for job {jobId}.");

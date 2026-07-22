@@ -9,6 +9,16 @@ namespace DespatchWeb.Interfaces;
 /// </summary>
 public interface IPdfOverlayClient
 {
+    /// <summary>
+    /// Renders a job's overlay document. Returns the stamped PDF on success, or <c>null</c> for the
+    /// genuine "nothing to render" cases (feature unconfigured, no tenant on the request, or the render
+    /// endpoint reports no active template — HTTP 404). Unlike <see cref="TryRenderJobAsync"/> it does
+    /// <b>not</b> swallow real failures: a render-side error (e.g. an undecodable image → 4xx/5xx) throws
+    /// <see cref="PdfOverlayRenderException"/> so the caller can surface the actual cause instead of
+    /// mislabelling it "no template available".
+    /// </summary>
+    Task<byte[]?> RenderJobAsync(int jobId, string documentType, CancellationToken ct = default);
+
     Task<byte[]?> TryRenderJobAsync(int jobId, string documentType, CancellationToken ct = default);
 
     /// <summary>
@@ -20,6 +30,16 @@ public interface IPdfOverlayClient
     /// the existing POD download).
     /// </summary>
     Task<IReadOnlyList<OverlayDocument>?> ListJobDocumentsAsync(int jobId, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Thrown by <see cref="IPdfOverlayClient.RenderJobAsync"/> when the render endpoint returns a real
+/// failure (any non-success status other than 404). Carries the endpoint's status and message so the
+/// caller can surface the actual cause rather than mislabelling it "no template available".
+/// </summary>
+public sealed class PdfOverlayRenderException(int statusCode, string message) : Exception(message)
+{
+    public int StatusCode { get; } = statusCode;
 }
 
 /// <summary>One overlay document offered in the job export menu.</summary>

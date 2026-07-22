@@ -165,7 +165,7 @@ public class JobControllerTests : IDisposable
     public async Task OverlayDocument_TemplateExists_ReturnsPdfFile()
     {
         var pdf = new byte[] { 1, 2, 3 };
-        _pdfOverlayClientMock.TryRenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>()).Returns(pdf);
+        _pdfOverlayClientMock.RenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>()).Returns(pdf);
 
         var controller = CreateControllerWithHttpContext();
 
@@ -180,7 +180,7 @@ public class JobControllerTests : IDisposable
     [Fact]
     public async Task OverlayDocument_NoTemplate_ReturnsNotFound()
     {
-        _pdfOverlayClientMock.TryRenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>())
+        _pdfOverlayClientMock.RenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>())
             .Returns((byte[]?)null);
 
         var controller = CreateControllerWithHttpContext();
@@ -191,6 +191,22 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task OverlayDocument_RenderFails_ReturnsServerErrorNotNotFound()
+    {
+        // A real render-side failure (e.g. an undecodable delivery photo) must surface as a 500 with
+        // the actual cause — not be mislabelled "no template available" (the original bug).
+        _pdfOverlayClientMock.RenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>())
+            .Throws(new PdfOverlayRenderException(500, "Image bytes could not be decoded."));
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocument(42, "Invoice");
+
+        var status = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, status.StatusCode);
+    }
+
+    [Fact]
     public async Task OverlayDocument_BlankDocumentType_ReturnsBadRequest()
     {
         var controller = CreateControllerWithHttpContext();
@@ -198,7 +214,7 @@ public class JobControllerTests : IDisposable
         var result = await controller.OverlayDocument(42, "  ");
 
         Assert.IsType<BadRequestObjectResult>(result);
-        await _pdfOverlayClientMock.DidNotReceiveWithAnyArgs().TryRenderJobAsync(default, default!, default);
+        await _pdfOverlayClientMock.DidNotReceiveWithAnyArgs().RenderJobAsync(default, default!, default);
     }
 
     [Fact]
