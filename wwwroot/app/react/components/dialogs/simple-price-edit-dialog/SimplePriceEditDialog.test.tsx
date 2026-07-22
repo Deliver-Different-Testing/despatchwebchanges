@@ -44,6 +44,18 @@ describe('SimplePriceEditDialog', () => {
         jest.restoreAllMocks();
     });
 
+    describe('Read-only mode', () => {
+        it('hides the primary action, shows Close, disables inputs and shows the view-only subtitle', () => {
+            renderWithProviders(createDefaultProps({readOnly: true}));
+
+            expect(screen.getByText('View only — this job is locked')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /^Save|Update|Apply/i})).not.toBeInTheDocument();
+
+            screen.getAllByRole('radio').forEach((radio) => expect(radio).toBeDisabled());
+        });
+    });
+
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
             const props = createDefaultProps({ open: false });

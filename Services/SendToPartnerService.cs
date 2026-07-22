@@ -20,6 +20,12 @@ public sealed class SendToPartnerService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService tenantInfoService) : ISendToPartnerService
 {
+    private static readonly JsonSerializerOptions CaseInsensitiveJsonOptions =
+        new() { PropertyNameCaseInsensitive = true };
+
+    private static readonly JsonSerializerOptions WebJsonOptions =
+        new(JsonSerializerDefaults.Web);
+
     public async Task<SendToPartnerResponse> SendAsync(SendToPartnerRequest request)
     {
         var (baseUrl, bearerToken) = ResolveUrlAndToken();
@@ -46,15 +52,7 @@ public sealed class SendToPartnerService(
             })
         };
         httpRequest.Headers.Add("Authorization", $"Bearer {bearerToken}");
-        // Sent in addition to Authorization so that an upstream proxy stripping the Bearer token
-        // doesn't trip Integration Manager's CSRF middleware — without this the rejection looks
-        // like a missing-header bug rather than the auth failure it actually is.
         httpRequest.Headers.Add("X-Requested-With", "XMLHttpRequest");
-        // Fallback transport for the JWT. The IM staging ingress strips the standard
-        // Authorization header before it reaches the upstream pod (proven via diagnostic
-        // logging — AuthorizationHeader=absent on every despatchweb→IM call). Until the
-        // ingress is fixed to forward Authorization, IM's JWT bearer auth also accepts the
-        // token from this header. Same JWT, same validation; only the transport differs.
         httpRequest.Headers.Add("X-IM-Authorization", $"Bearer {bearerToken}");
 
         try
@@ -121,12 +119,7 @@ public sealed class SendToPartnerService(
             };
         }
     }
-
-    // Stamps the pairing id onto the tucJob row so JobChangeRequestService can resolve the
-    // source pairing, and the dispatch UI can surface the partner name in the courier column.
-    // Symmetric with the inbound path where IntegrationManager populates TucJob.PartnerPairingId
-    // at mirror ingestion. Idempotent — ExecuteUpdateAsync is a single UPDATE with no
-    // load/track step, so re-sending an already-linked job just rewrites the same value.
+    
     private async Task RecordOutboundPartnerDispatchAsync(int jobId, int pairingId)
     {
         try
@@ -157,7 +150,7 @@ public sealed class SendToPartnerService(
         try
         {
             await using var ctx = await contextFactory.CreateDbContextAsync();
-            ctx.JobDeliveryJourneys.Add(new JobDeliveryJourney
+            var dispatchedToPartnerRecord = new JobDeliveryJourney
             {
                 JobId = jobId,
                 ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
@@ -169,7 +162,9 @@ public sealed class SendToPartnerService(
                 Comments = string.IsNullOrWhiteSpace(trackingNumber)
                     ? "Job sent to partner"
                     : $"Job sent to partner; tracking {trackingNumber}"
-            });
+            };
+            
+            await ctx.JobDeliveryJourneys.AddAsync(dispatchedToPartnerRecord);
             await ctx.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -205,7 +200,7 @@ public sealed class SendToPartnerService(
         try
         {
             return JsonSerializer.Deserialize<SendToPartnerResponse>(body,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                CaseInsensitiveJsonOptions);
         }
         catch (JsonException)
         {
@@ -284,14 +279,15 @@ public sealed class SendToPartnerService(
                 return null;
             }
 
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                Log.Warning("Acceptance-state lookup failed for job {JobId}: {StatusCode}",
-                    jobId, response.StatusCode);
-                return null;
+                return await response.Content.ReadFromJsonAsync<PartnerInboundJobAcceptanceStateResponse>();
             }
 
-            return await response.Content.ReadFromJsonAsync<PartnerInboundJobAcceptanceStateResponse>();
+            Log.Warning("Acceptance-state lookup failed for job {JobId}: {StatusCode}",
+                jobId, response.StatusCode);
+            return null;
+
         }
         catch (Exception ex)
         {
@@ -336,18 +332,19 @@ public sealed class SendToPartnerService(
             var body = await response.Content.ReadAsStringAsync();
             var result = TryDeserializeAction(body);
 
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                Log.Warning("Acceptance {Action} failed for job {JobId}: {StatusCode} {Body}",
-                    action, jobId, response.StatusCode, body);
-                return result ?? new PartnerInboundJobActionResponse
-                {
-                    Success = false,
-                    ErrorMessage = BuildFallbackErrorMessage(response.StatusCode, body)
-                };
+                return result ?? new PartnerInboundJobActionResponse { Success = true };
             }
 
-            return result ?? new PartnerInboundJobActionResponse { Success = true };
+            Log.Warning("Acceptance {Action} failed for job {JobId}: {StatusCode} {Body}",
+                action, jobId, response.StatusCode, body);
+            return result ?? new PartnerInboundJobActionResponse
+            {
+                Success = false,
+                ErrorMessage = BuildFallbackErrorMessage(response.StatusCode, body)
+            };
+
         }
         catch (Exception ex)
         {
@@ -373,7 +370,7 @@ public sealed class SendToPartnerService(
         try
         {
             return JsonSerializer.Deserialize<PartnerInboundJobActionResponse>(body,
-                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                WebJsonOptions);
         }
         catch (JsonException)
         {

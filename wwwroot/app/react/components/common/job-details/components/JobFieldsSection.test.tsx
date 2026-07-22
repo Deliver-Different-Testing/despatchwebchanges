@@ -315,13 +315,21 @@ describe('JobFieldsSection', () => {
     });
 
     describe('Locked state', () => {
-        it('disables click handlers when job is locked', () => {
+        it('keeps the dimensions field clickable when locked (opens read-only) but not select fields', () => {
+            const onEditDimensions = jest.fn();
             const onSpeedClick = jest.fn();
             const job = createMockJob({locked: true});
             renderWithTheme(
-                <JobFieldsSection {...createDefaultProps({job, onSpeedClick})} />
+                <JobFieldsSection {...createDefaultProps({job, onEditDimensions, onSpeedClick})} />
             );
-            expect(screen.getByText('Standard')).toBeInTheDocument();
+
+            // Dimensions (Quantity) is in the read-only subset — still opens the dialog.
+            fireEvent.click(screen.getByText('Quantity'));
+            expect(onEditDimensions).toHaveBeenCalledTimes(1);
+
+            // Speed is out of the subset — its field stays disabled while locked.
+            fireEvent.click(screen.getByText('Standard'));
+            expect(onSpeedClick).not.toHaveBeenCalled();
         });
     });
 

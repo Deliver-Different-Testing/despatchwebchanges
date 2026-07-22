@@ -18,6 +18,7 @@ import Paper from '@mui/material/Paper';
 import TodayIcon from '@mui/icons-material/Today';
 import CloseIcon from '@mui/icons-material/Close';
 import PublicIcon from '@mui/icons-material/Public';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -56,6 +57,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
     showDate = true,
     showTime = true,
     isUSCustomer = false,
+    readOnly = false,
     onClose,
     onSubmit,
     showToast,
@@ -155,7 +157,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         const commonProps = {
             value: dateTime,
             onChange: handleDateTimeChange,
-            disabled: isLoading,
+            disabled: isLoading || readOnly,
             slotProps: {
                 textField: {
                     fullWidth: true,
@@ -208,7 +210,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                 {/* Header */}
                 <Box sx={(theme) => headerChromeSx(theme)}>
                     <Box sx={(theme) => headerChipSx(theme)}>
-                        <TodayIcon/>
+                        {readOnly ? <LockOutlinedIcon/> : <TodayIcon/>}
                     </Box>
                     <Box sx={{ flex: 1 }}>
                         <Typography variant="h6" sx={{
@@ -217,7 +219,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                             {title}
                         </Typography>
                         <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                            Update the date and time
+                            {readOnly ? 'View only — this job is locked' : 'Update the date and time'}
                         </Typography>
                     </Box>
                     <IconButton
@@ -247,7 +249,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                     <DatePicker
                                         value={dateTime}
                                         onChange={handleDateChange}
-                                        disabled={isLoading}
+                                        disabled={isLoading || readOnly}
                                         label="Date"
                                         format="YYYY-MM-DD"
                                         slotProps={{
@@ -260,7 +262,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                     <TimePicker
                                         value={dateTime}
                                         onChange={handleTimeChange}
-                                        disabled={isLoading}
+                                        disabled={isLoading || readOnly}
                                         label="Time (24-hour)"
                                         ampm={false}
                                         format="HH:mm"
@@ -331,18 +333,20 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                         disabled={isLoading}
                         sx={{ minWidth: 100 }}
                     >
-                        Cancel
+                        {readOnly ? 'Close' : 'Cancel'}
                     </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        variant="contained"
-                        color="primary"
-                        disabled={isLoading}
-                        startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : null}
-                        sx={{ minWidth: 100 }}
-                    >
-                        {isLoading ? 'Saving...' : 'Save'}
-                    </Button>
+                    {!readOnly && (
+                        <Button
+                            onClick={handleSubmit}
+                            variant="contained"
+                            color="primary"
+                            disabled={isLoading}
+                            startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : null}
+                            sx={{ minWidth: 100 }}
+                        >
+                            {isLoading ? 'Saving...' : 'Save'}
+                        </Button>
+                    )}
                 </DialogActions>
             </Dialog>
         </LocalizationProvider>

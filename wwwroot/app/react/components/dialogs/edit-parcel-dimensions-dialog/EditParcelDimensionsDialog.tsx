@@ -21,6 +21,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import CloseIcon from '@mui/icons-material/Close';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -181,6 +182,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     jobWeight,
     calculateDimsOncePerJob = false,
     partnerMode = false,
+    readOnly = false,
     onClose,
     onSubmit,
     showToast,
@@ -438,14 +440,16 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                 })}
             >
                 <Box sx={(theme) => headerChipSx(theme)}>
-                    <Inventory2OutlinedIcon/>
+                    {readOnly ? <LockOutlinedIcon/> : <Inventory2OutlinedIcon/>}
                 </Box>
                 <Box sx={{flex: 1}}>
                     <Typography variant="h6" sx={{
                         fontWeight: 600
                     }}>Edit Quantity</Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        {groups.length} type{groups.length !== 1 ? 's' : ''} · {totalParcels} parcel{totalParcels !== 1 ? 's' : ''} total
+                        {readOnly
+                            ? 'View only — this job is locked'
+                            : `${groups.length} type${groups.length !== 1 ? 's' : ''} · ${totalParcels} parcel${totalParcels !== 1 ? 's' : ''} total`}
                     </Typography>
                 </Box>
                 <IconButton onClick={handleCancel} disabled={isLoading} sx={(theme) => ({
@@ -483,6 +487,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                         <TextField
                                             size="small"
                                             fullWidth
+                                            disabled={readOnly}
                                             value={g.itemName}
                                             onChange={e => updateGroup(g.id, 'itemName', e.target.value)}
                                             placeholder="Name"
@@ -503,6 +508,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             size="small"
                                             type="number"
                                             fullWidth
+                                            disabled={readOnly}
                                             value={g.length}
                                             onChange={e => updateGroup(g.id, 'length', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
@@ -516,6 +522,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             size="small"
                                             type="number"
                                             fullWidth
+                                            disabled={readOnly}
                                             value={g.depth}
                                             onChange={e => updateGroup(g.id, 'depth', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
@@ -529,6 +536,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             size="small"
                                             type="number"
                                             fullWidth
+                                            disabled={readOnly}
                                             value={g.height}
                                             onChange={e => updateGroup(g.id, 'height', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
@@ -542,6 +550,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             size="small"
                                             type="number"
                                             fullWidth
+                                            disabled={readOnly}
                                             value={g.weight}
                                             onChange={e => updateGroup(g.id, 'weight', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
@@ -555,6 +564,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             size="small"
                                             type="number"
                                             fullWidth
+                                            disabled={readOnly}
                                             value={g.cubic}
                                             onChange={e => updateGroup(g.id, 'cubic', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
@@ -565,13 +575,13 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                     </TableCell>
                                     <TableCell>
                                         <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5}}>
-                                            <IconButton size="small" aria-label="Decrease quantity" onClick={() => adjustQty(g.id, -1)} disabled={g.barcodes.length <= 1}>
+                                            <IconButton size="small" aria-label="Decrease quantity" onClick={() => adjustQty(g.id, -1)} disabled={readOnly || g.barcodes.length <= 1}>
                                                 <RemoveIcon fontSize="small" />
                                             </IconButton>
                                             <Typography variant="body2" sx={{minWidth: 20, textAlign: 'center'}}>
                                                 {g.barcodes.length}
                                             </Typography>
-                                            <IconButton size="small" aria-label="Increase quantity" onClick={() => adjustQty(g.id, 1)}>
+                                            <IconButton size="small" aria-label="Increase quantity" onClick={() => adjustQty(g.id, 1)} disabled={readOnly}>
                                                 <AddIcon fontSize="small" />
                                             </IconButton>
                                         </Box>
@@ -579,9 +589,11 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                     <TableCell>
                                         <Box sx={{display: 'flex', alignItems: 'center', gap: 0.25}}>
                                             <Tooltip title="Delete row">
-                                                <IconButton size="small" aria-label="Delete row" color="error" onClick={() => deleteGroup(g.id)}>
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
+                                                <span>
+                                                    <IconButton size="small" aria-label="Delete row" color="error" onClick={() => deleteGroup(g.id)} disabled={readOnly}>
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </span>
                                             </Tooltip>
                                             <Tooltip title={g.expandedBarcodes ? 'Hide barcodes' : 'Show barcodes'}>
                                                 <IconButton size="small" onClick={() => toggleBarcodes(g.id)}>
@@ -605,6 +617,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             <TextField
                                                 size="small"
                                                 fullWidth
+                                                disabled={readOnly}
                                                 value={barcode}
                                                 onChange={e => updateBarcode(g.id, i, e.target.value)}
                                                 placeholder="Barcode"
@@ -619,7 +632,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                 </Table>
 
                 <Box sx={{mt: 1.5}}>
-                    <Button size="small" startIcon={<AddIcon />} onClick={addGroup}>
+                    <Button size="small" startIcon={<AddIcon />} onClick={addGroup} disabled={readOnly}>
                         Add package type
                     </Button>
                 </Box>
@@ -633,6 +646,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     <ToggleButtonGroup
                         size="small"
                         exclusive
+                        disabled={readOnly}
                         value={isPerJob ? 'perJob' : 'perItem'}
                         onChange={(_e, value) => {
                             if (value === null) return;
@@ -648,6 +662,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     size="small"
                     label="Job weight"
                     type="number"
+                    disabled={readOnly}
                     value={targetWeight}
                     onChange={e => setTargetWeight(e.target.value)}
                     onWheel={e => e.currentTarget.blur()}
@@ -664,7 +679,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                             size="small"
                             variant="outlined"
                             onClick={handleMatchProportionally}
-                            disabled={isNaN(parseFloat(targetWeight)) || parseFloat(targetWeight) <= 0 || parcelTotal <= 0}
+                            disabled={readOnly || isNaN(parseFloat(targetWeight)) || parseFloat(targetWeight) <= 0 || parcelTotal <= 0}
                         >
                             Match proportionally
                         </Button>
@@ -674,6 +689,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     size="small"
                     label="Job volume"
                     type="number"
+                    disabled={readOnly}
                     value={targetCubic}
                     onChange={e => setTargetCubic(e.target.value)}
                     onWheel={e => e.currentTarget.blur()}
@@ -690,7 +706,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                             size="small"
                             variant="outlined"
                             onClick={handleMatchCubicProportionally}
-                            disabled={isNaN(parseFloat(targetCubic)) || parseFloat(targetCubic) <= 0 || parcelCubicTotal <= 0}
+                            disabled={readOnly || isNaN(parseFloat(targetCubic)) || parseFloat(targetCubic) <= 0 || parcelCubicTotal <= 0}
                         >
                             Match proportionally
                         </Button>
@@ -723,9 +739,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             {/* Footer */}
             <Box sx={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, p: 2, borderTop: 1, borderColor: 'divider', flexShrink: 0}}>
                 <Button onClick={handleCancel} disabled={isLoading}>
-                    Cancel
+                    {readOnly ? 'Close' : 'Cancel'}
                 </Button>
-                {isLoading ? (
+                {!readOnly && (isLoading ? (
                     <CircularProgress size={20} />
                 ) : (
                     <Tooltip title={hasEmptyWeights ? 'All parcels must have a weight greater than 0' : weightMismatch ? 'Job weight must match parcel total before saving' : cubicMismatch ? 'Job volume must match parcel volume total before saving' : ''}>
@@ -735,7 +751,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                             </Button>
                         </span>
                     </Tooltip>
-                )}
+                ))}
             </Box>
             {/* Discard confirmation */}
             <Dialog

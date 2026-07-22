@@ -37,6 +37,8 @@ export interface SimplePriceEditDialogProps {
     isBulk?: boolean;
     hideRecalculate?: boolean;
     childJobs?: ChildJobPrice[];
+    /** When true the dialog opens in view-only mode: fields disabled, no Save. */
+    readOnly?: boolean;
     onClose: () => void;
     onSubmit: (mode: PricingMode, amount: number, childUpdates: ChildPriceUpdate[]) => Promise<number>;
     showToast: ShowToastFn;
@@ -52,4 +54,5 @@ export interface SimplePriceEditDialogOptions {
     isPrebook: boolean;
     isBulk?: boolean;
     hideRecalculate?: boolean;
+    readOnly?: boolean;
 }

@@ -6,7 +6,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto.Cirium;
 using Serilog;
 
-namespace DespatchWeb.Services.JobApi;
+namespace DespatchWeb.Services;
 
 /// <summary>
 /// HTTP client to the Integration Manager Cirium gateway. SC-JWT minting and base-URL resolution

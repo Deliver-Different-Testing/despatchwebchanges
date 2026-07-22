@@ -192,7 +192,6 @@ function AddressBlock({
         <Box
             sx={{
                 ...blockSx as object,
-                ...(locked ? {opacity: 0.7, pointerEvents: 'none' as const} : {}),
             } as SxProps<Theme>}
         >
             <SectionHeader
@@ -202,10 +201,11 @@ function AddressBlock({
                 variant={isPu ? 'pickup' : 'delivery'}
             />
 
-            {/* Address display */}
+            {/* Address display — opens the address dialog even when locked; the
+                dialog renders read-only. Contact cards below stay non-interactive
+                (contact editing is out of the read-only subset). */}
             <ButtonBase
-                onClick={locked ? undefined : onEditAddress}
-                disabled={locked}
+                onClick={onEditAddress}
                 sx={{width: '100%', display: 'block', textAlign: 'left'}}
             >
                 <Box sx={dense ? {

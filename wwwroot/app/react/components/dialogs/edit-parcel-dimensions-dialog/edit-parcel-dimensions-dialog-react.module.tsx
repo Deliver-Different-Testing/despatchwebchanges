@@ -30,6 +30,7 @@ interface DialogState {
     jobWeight?: number;
     calculateDimsOncePerJob?: boolean;
     partnerMode?: boolean;
+    readOnly?: boolean;
     resolve?: (result: EditParcelDimensionsDialogResult | null) => void;
 }
 
@@ -95,6 +96,7 @@ class EditParcelDimensionsDialogManager {
                         jobWeight={this.dialogState.jobWeight}
                         calculateDimsOncePerJob={this.dialogState.calculateDimsOncePerJob}
                         partnerMode={this.dialogState.partnerMode}
+                        readOnly={this.dialogState.readOnly}
                         onClose={handleClose}
                         onSubmit={handleSubmit}
                         showToast={this.toastService.showToast}
@@ -118,6 +120,7 @@ class EditParcelDimensionsDialogManager {
                 jobWeight: options.jobWeight,
                 calculateDimsOncePerJob: options.calculateDimsOncePerJob,
                 partnerMode: options.partnerMode,
+                readOnly: options.readOnly ?? false,
                 resolve,
             };
             this.renderDialog();

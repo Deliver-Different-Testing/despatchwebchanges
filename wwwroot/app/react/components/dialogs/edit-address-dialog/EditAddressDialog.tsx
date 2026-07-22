@@ -24,6 +24,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ShippingIcon from '@mui/icons-material/LocalShipping';
 import LocationIcon from '@mui/icons-material/LocationOn';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import MapIcon from '@mui/icons-material/Map';
 import SaveIcon from '@mui/icons-material/Save';
 import SearchIcon from '@mui/icons-material/Search';
@@ -84,6 +85,8 @@ export interface EditAddressDialogProps {
      * when unspecified.
      */
     addressType?: AddressType;
+    /** When true the dialog opens in view-only mode: fields disabled, no Save. */
+    readOnly?: boolean;
     onClose: () => void;
     onSave: (address: EditAddressDialogViewModel) => void;
     showToast: ShowToastFn;
@@ -104,6 +107,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     showContactInfo,
     isUsTenant,
     addressType = AddressType.Pickup,
+    readOnly = false,
     onClose,
     onSave,
     showToast,
@@ -428,6 +432,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
     // Handle map click - reverse geocode and update address
     handleMapClickRef.current = useCallback(async (lat: number, lng: number) => {
+        if (readOnly) return;
         setLatitude(lat);
         setLongitude(lng);
         addMarker(lat, lng);
@@ -610,9 +615,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             }}
         >
             <DialogHeader
-                icon={<LocationIcon />}
+                icon={readOnly ? <LockOutlinedIcon /> : <LocationIcon />}
                 title={title}
-                subtitle="Search and update the address details"
+                subtitle={readOnly ? 'View only — this job is locked' : 'Search and update the address details'}
                 onClose={onClose}
                 closeDisabled={isSubmitting}
             />
@@ -641,6 +646,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
                     <Autocomplete
                         options={addressOptions}
+                        disabled={readOnly}
                         getOptionLabel={(option) => option.address.label}
                         loading={isSearchingAddresses || isLoadingAddress}
                         inputValue={addressSearchText}
@@ -715,7 +721,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         value={addressLine1}
                         onChange={(e) => setAddressLine1(e.target.value)}
                         fullWidth
-                        disabled={isLoadingAddress}
+                        disabled={isLoadingAddress || readOnly}
                         sx={{mb: 2}}
                     />
 
@@ -725,14 +731,14 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             label={isUsTenant ? 'Unit/Suite' : 'Unit/Flat/Suite'}
                             value={addressLine2}
                             onChange={(e) => setAddressLine2(e.target.value)}
-                            disabled={isLoadingAddress}
+                            disabled={isLoadingAddress || readOnly}
                             sx={{flex: '0 0 25%'}}
                         />
                         <TextField
                             label="Street Number"
                             value={addressLine3}
                             onChange={(e) => setAddressLine3(e.target.value)}
-                            disabled={isLoadingAddress}
+                            disabled={isLoadingAddress || readOnly}
                             sx={{flex: '0 0 20%'}}
                         />
                         <TextField
@@ -741,7 +747,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             onChange={(e) => setAddressLine4(e.target.value)}
                             error={!!validationErrors.addressLine4}
                             helperText={validationErrors.addressLine4}
-                            disabled={isLoadingAddress}
+                            disabled={isLoadingAddress || readOnly}
                             sx={{flex: 1}}
                         />
                     </Box>
@@ -755,7 +761,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 onChange={(e) => setAddressLine5(e.target.value)}
                                 error={!!validationErrors.addressLine5}
                                 helperText={validationErrors.addressLine5}
-                                disabled={isLoadingAddress}
+                                disabled={isLoadingAddress || readOnly}
                                 required
                                 sx={{flex: '0 0 50%'}}
                             />
@@ -765,7 +771,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                     value={stateAbbreviation}
                                     onChange={(e) => handleStateChange(e.target.value)}
                                     label="State *"
-                                    disabled={isLoadingAddress}
+                                    disabled={isLoadingAddress || readOnly}
                                 >
                                     {US_STATES.map((state) => (
                                         <MenuItem key={state.abbreviation} value={state.abbreviation}>
@@ -780,7 +786,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 onChange={(e) => setAddressLine7(e.target.value)}
                                 error={!!validationErrors.addressLine7}
                                 helperText={validationErrors.addressLine7}
-                                disabled={isLoadingAddress}
+                                disabled={isLoadingAddress || readOnly}
                                 required
                                 sx={{flex: '0 0 auto', maxWidth: 120}}
                                 slotProps={{htmlInput: {pattern: '[0-9]{5}(-[0-9]{4})?'}}}
@@ -795,7 +801,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 label="Suburb"
                                 value={addressLine5}
                                 onChange={(e) => setAddressLine5(e.target.value)}
-                                disabled={isLoadingAddress}
+                                disabled={isLoadingAddress || readOnly}
                                 sx={{flex: '0 0 40%'}}
                             />
                             <TextField
@@ -804,7 +810,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 onChange={(e) => setAddressLine6(e.target.value)}
                                 error={!!validationErrors.addressLine6}
                                 helperText={validationErrors.addressLine6}
-                                disabled={isLoadingAddress}
+                                disabled={isLoadingAddress || readOnly}
                                 required
                                 sx={{flex: '0 0 40%'}}
                             />
@@ -814,7 +820,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 onChange={(e) => setAddressLine7(e.target.value)}
                                 error={!!validationErrors.addressLine7}
                                 helperText={validationErrors.addressLine7}
-                                disabled={isLoadingAddress}
+                                disabled={isLoadingAddress || readOnly}
                                 required
                                 sx={{flex: '0 0 auto', maxWidth: 110}}
                                 slotProps={{htmlInput: {pattern: '[0-9]{4}'}}}
@@ -827,7 +833,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         label="Country"
                         value={addressLine8}
                         onChange={(e) => setAddressLine8(e.target.value)}
-                        disabled={isLoadingAddress}
+                        disabled={isLoadingAddress || readOnly}
                         fullWidth
                         sx={{mb: 2}}
                     />
@@ -839,7 +845,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             type="number"
                             value={latitude ?? ''}
                             onChange={(e) => setLatitude(e.target.value ? parseFloat(e.target.value) : undefined)}
-                            disabled={isLoadingAddress}
+                            disabled={isLoadingAddress || readOnly}
                             slotProps={{htmlInput: {step: 'any'}}}
                             sx={{flex: 1}}
                         />
@@ -848,7 +854,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             type="number"
                             value={longitude ?? ''}
                             onChange={(e) => setLongitude(e.target.value ? parseFloat(e.target.value) : undefined)}
-                            disabled={isLoadingAddress}
+                            disabled={isLoadingAddress || readOnly}
                             slotProps={{htmlInput: {step: 'any'}}}
                             sx={{flex: 1}}
                         />
@@ -899,6 +905,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         label="Contact Name"
                                         value={contactName}
                                         onChange={(e) => setContactName(e.target.value)}
+                                        disabled={readOnly}
                                         fullWidth
                                     />
                                     <TextField
@@ -906,6 +913,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         value={contactMobile}
                                         onChange={(e) => setContactMobile(e.target.value)}
                                         type="tel"
+                                        disabled={readOnly}
                                         fullWidth
                                     />
                                 </Box>
@@ -918,6 +926,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         value={weight ?? ''}
                                         onChange={(e) => setWeight(e.target.value ? parseFloat(e.target.value) : undefined)}
                                         slotProps={{htmlInput: {min: 0, step: 0.1}}}
+                                        disabled={readOnly}
                                         fullWidth
                                     />
                                     <TextField
@@ -926,6 +935,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         value={quantity ?? ''}
                                         onChange={(e) => setQuantity(e.target.value ? parseInt(e.target.value) : undefined)}
                                         slotProps={{htmlInput: {min: 1}}}
+                                        disabled={readOnly}
                                         fullWidth
                                     />
                                 </Box>
@@ -938,6 +948,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         value={length ?? ''}
                                         onChange={(e) => setLength(e.target.value ? parseFloat(e.target.value) : undefined)}
                                         slotProps={{htmlInput: {min: 0, step: 0.1}}}
+                                        disabled={readOnly}
                                         fullWidth
                                     />
                                     <TextField
@@ -946,6 +957,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         value={depth ?? ''}
                                         onChange={(e) => setDepth(e.target.value ? parseFloat(e.target.value) : undefined)}
                                         slotProps={{htmlInput: {min: 0, step: 0.1}}}
+                                        disabled={readOnly}
                                         fullWidth
                                     />
                                     <TextField
@@ -954,6 +966,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         value={height ?? ''}
                                         onChange={(e) => setHeight(e.target.value ? parseFloat(e.target.value) : undefined)}
                                         slotProps={{htmlInput: {min: 0, step: 0.1}}}
+                                        disabled={readOnly}
                                         fullWidth
                                     />
                                 </Box>
@@ -967,6 +980,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                     multiline
                                     rows={3}
                                     slotProps={{htmlInput: {maxLength: 150}}}
+                                    disabled={readOnly}
                                     fullWidth
                                 />
                             </Box>
@@ -992,14 +1006,16 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         }}>
                             Location Preview
                         </Typography>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                color: "text.secondary",
-                                ml: 'auto'
-                            }}>
-                            Click on the map to set coordinates
-                        </Typography>
+                        {!readOnly && (
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "text.secondary",
+                                    ml: 'auto'
+                                }}>
+                                Click on the map to set coordinates
+                            </Typography>
+                        )}
                     </Box>
 
                     <Box
@@ -1029,9 +1045,11 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 onCancel={onClose}
                 onConfirm={handleSave}
                 confirmLabel={isSubmitting ? 'Saving...' : submitLabel}
+                cancelLabel={readOnly ? 'Close' : 'Cancel'}
                 confirmIcon={<SaveIcon />}
                 confirmDisabled={isSubmitting}
                 submitting={isSubmitting}
+                hideConfirm={readOnly}
             />
         </DialogShell>
     );

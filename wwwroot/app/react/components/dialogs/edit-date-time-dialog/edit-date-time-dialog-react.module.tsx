@@ -26,6 +26,7 @@ interface DialogState {
     showDate: boolean;
     showTime: boolean;
     isUSCustomer: boolean;
+    readOnly: boolean;
     resolve?: (result: EditDateTimeDialogResult | null) => void;
 }
 
@@ -60,6 +61,7 @@ class EditDateTimeDialogManager {
         showDate: true,
         showTime: true,
         isUSCustomer: false,
+        readOnly: false,
     };
 
     setToastService(service: ToastService): void {
@@ -107,6 +109,7 @@ class EditDateTimeDialogManager {
                         showDate={this.dialogState.showDate}
                         showTime={this.dialogState.showTime}
                         isUSCustomer={this.dialogState.isUSCustomer}
+                        readOnly={this.dialogState.readOnly}
                         onClose={handleClose}
                         onSubmit={handleSubmit}
                         showToast={this.toastService.showToast}
@@ -162,6 +165,7 @@ class EditDateTimeDialogManager {
                 showDate: options.showDate ?? true,
                 showTime: options.showTime ?? true,
                 isUSCustomer: options.isUSCustomer ?? getIsUSCustomer(),
+                readOnly: options.readOnly ?? false,
                 resolve,
             };
             this.renderDialog();

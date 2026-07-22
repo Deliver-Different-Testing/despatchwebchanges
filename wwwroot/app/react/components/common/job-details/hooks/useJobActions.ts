@@ -325,6 +325,7 @@ export function useJobActions({
             fieldName: field,
             dateTime: dateTime as any,
             defaultTimeZone: timezone as any,
+            readOnly: !!j.locked,
         });
         if (!result) return;
         // Partner-job rated datetimes (Date / PuTime / DeliverBy / BookedTime)
@@ -356,6 +357,7 @@ export function useJobActions({
             fieldName: field,
             dateTime: dateTime as any,
             defaultTimeZone: timezone as any,
+            readOnly: !!j.locked,
         });
         if (!result) return;
         // Partner-job rated dates route through the locked change-request
@@ -451,6 +453,7 @@ export function useJobActions({
             isUsCustomer,
             undefined,
             isDelivery ? AddressType.Delivery : AddressType.Pickup,
+            !!j.locked,
         );
         if (!result) return;
         // Partner-job address edits never write locally — forward the captured
@@ -789,6 +792,13 @@ export function useJobActions({
         // change-request dialog with the field + value locked so the user only
         // adds a reason for the counterparty.
         if (j.isPartnerJob) {
+            // A locked partner job is view-only; the partner mirror carries no
+            // local breakdown to display, so surface the state rather than
+            // opening the editable agreed-rate flow.
+            if (j.locked) {
+                showToast(`${j.jobNo} is locked — pricing is read-only.`, 'info');
+                return;
+            }
             if (!onRequestPartnerChange) {
                 showToast(`${j.jobNo} is managed by a partner. Use Request Change to negotiate the agreed rate.`, 'info');
                 return;
@@ -816,11 +826,12 @@ export function useJobActions({
                 isPrebook: j.preBook,
                 isBulk: j.isBulkJob,
                 hideRecalculate: hideRecalculate === true,
+                readOnly: !!j.locked,
             });
         } else {
             await ensurePriceBreakdownDialog();
             window.ReactPriceBreakdownDialog?.setToastService({showToast});
-            await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived, isUsCustomer);
+            await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived, isUsCustomer, !!j.locked);
         }
         await refreshAndNotify();
     }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync]);
@@ -909,6 +920,7 @@ export function useJobActions({
             jobWeight: j.weight,
             calculateDimsOncePerJob: j.calculateDimsOncePerJob,
             partnerMode,
+            readOnly: !!j.locked,
         });
         if (!result) return;
         if (partnerMode && onRequestPartnerChange) {
