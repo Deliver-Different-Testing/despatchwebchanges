@@ -71,8 +71,9 @@ export const MetricsGrid = React.memo(({
     const pendingPuTime = usePendingChangeForField(job.id, 'PuTime');
     const pendingDeliverBy = usePendingChangeForField(job.id, 'DeliverBy');
 
-    const canEditFollowUp = !isLocked
-        && job.internalStatusId !== JobInternalStatusEnum.NewJobs
+    // Follow Up opens the date/time dialog, which renders read-only when the job
+    // is locked — so lock no longer disables the card, only the status rule does.
+    const canEditFollowUp = job.internalStatusId !== JobInternalStatusEnum.NewJobs
         && job.internalStatusId !== JobInternalStatusEnum.Reprice;
 
     // Use jobRef so callbacks don't recreate when job fields change
@@ -121,7 +122,6 @@ export const MetricsGrid = React.memo(({
                     label="Pricing"
                     value={job.charge != null ? formatCurrency(job.charge) : ''}
                     onClick={onPricingClick}
-                    disabled={isLocked}
                     highlight
                     category="pricing"
                     filled
@@ -132,7 +132,6 @@ export const MetricsGrid = React.memo(({
                     label="Ready"
                     value={`${job._readyStr || ''} ${job._pickUpTimeZoneStr || puTz}`}
                     onClick={handleReadyClick}
-                    disabled={isLocked}
                     category="time"
                     filled
                     dense={dense}
@@ -142,7 +141,6 @@ export const MetricsGrid = React.memo(({
                     label="PU Arrival"
                     value={job.pickupArrivalTime ? `${job._pickupArrivalTimeStr} ${job._pickUpTimeZoneStr || puTz}` : '-'}
                     onClick={handlePuArrivalClick}
-                    disabled={isLocked}
                     category="time"
                     filled
                     dense={dense}
@@ -151,7 +149,6 @@ export const MetricsGrid = React.memo(({
                     label="PU Time"
                     value={job.puTime ? `${job._puTimeStr} ${job._pickUpTimeZoneStr || puTz}` : '-'}
                     onClick={handlePuTimeClick}
-                    disabled={isLocked}
                     category="time"
                     filled
                     dense={dense}
@@ -162,7 +159,6 @@ export const MetricsGrid = React.memo(({
                     value={job.deliverByTime ? `${job._deliverByTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
                     onClick={handleDeliverByClick}
                     overlay={pendingDeliverBy && <PendingChangeBadge request={pendingDeliverBy}/>}
-                    disabled={isLocked}
                     category="time"
                     filled
                     dense={dense}
@@ -183,7 +179,6 @@ export const MetricsGrid = React.memo(({
                     label="Del Arrival"
                     value={job.deliveryArrivalTime ? `${job._deliveryArrivalTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
                     onClick={handleDelArrivalClick}
-                    disabled={isLocked}
                     category="time"
                     filled
                     dense={dense}
@@ -201,7 +196,6 @@ export const MetricsGrid = React.memo(({
                     label="POD Time"
                     value={job.completedTime ? `${job._completedTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
                     onClick={onEditCompletedTime}
-                    disabled={isLocked}
                     category="pod"
                     filled
                     dense={dense}

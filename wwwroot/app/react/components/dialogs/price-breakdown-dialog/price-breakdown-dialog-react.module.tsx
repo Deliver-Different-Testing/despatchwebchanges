@@ -39,6 +39,7 @@ interface DialogState {
     isPrebook: boolean;
     isArchived: boolean;
     isUsCustomer: boolean;
+    readOnly: boolean;
     apiService: ApiService | null;
     resolve?: (value: number | null) => void;
 }
@@ -52,6 +53,7 @@ let dialogState: DialogState = {
     isPrebook: false,
     isArchived: false,
     isUsCustomer: false,
+    readOnly: false,
     apiService: null,
 };
 
@@ -111,6 +113,7 @@ function renderDialog(): void {
                     isPrebook={dialogState.isPrebook}
                     isArchived={dialogState.isArchived}
                     isUsCustomer={dialogState.isUsCustomer}
+                    readOnly={dialogState.readOnly}
                     onClose={handleClose}
                     onSave={handleSave}
                     onAddItem={handleAddItem}
@@ -162,6 +165,7 @@ function createDefaultApiService(): ApiService {
  * @param isPrebook - Whether this is a prebook job
  * @param isArchived - Whether this is an archived job
  * @param isUsCustomer - Whether this tenant is US/non-NZ (gates the "Apply Fuel" option — NZ handles fuel automatically)
+ * @param readOnly - When true the dialog opens view-only (locked job): breakdown visible, no add/edit/delete/save
  * @param apiService - Optional API service for CRUD operations (uses default React service if not provided)
  * @returns Promise that resolves with the total amount, or null if cancelled
  */
@@ -171,6 +175,7 @@ export function openPriceBreakdownDialog(
     isPrebook: boolean,
     isArchived: boolean,
     isUsCustomer: boolean = false,
+    readOnly: boolean = false,
     apiService?: ApiService
 ): Promise<number | null> {
     initializeDialogRoot();
@@ -183,6 +188,7 @@ export function openPriceBreakdownDialog(
             isPrebook,
             isArchived,
             isUsCustomer,
+            readOnly,
             apiService: apiService ?? createDefaultApiService(),
             resolve,
         };
@@ -219,8 +225,9 @@ priceBreakdownDialogReactModule.service('priceBreakdownDialogReactService', [
             jobId: number,
             isPrebook: boolean,
             isArchived: boolean = false,
-            isUsCustomer: boolean = false
-        ) => openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, isArchived, isUsCustomer)
+            isUsCustomer: boolean = false,
+            readOnly: boolean = false
+        ) => openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, isArchived, isUsCustomer, readOnly)
     })
 ]);
 

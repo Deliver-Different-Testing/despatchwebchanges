@@ -1881,7 +1881,9 @@ public partial class JobRepository(
 
         var success = returnValueParam.Value == 0 || jobIdParam.Value.HasValue;
         if (!success)
+        {
             throw new InvalidOperationException($"Failed to create quick add job: {messageParam.Value}");
+        }
 
         return jobIdParam.Value ?? throw new InvalidOperationException("Failed to get job id from quick add job");
 

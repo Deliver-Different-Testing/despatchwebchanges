@@ -267,6 +267,20 @@ describe('EditAddressDialog', () => {
         });
     });
 
+    describe('Read-only mode', () => {
+        it('hides Save, shows Close, disables inputs and shows the view-only subtitle', () => {
+            renderWithProviders(createDefaultProps({readOnly: true, addressDetails: existingAddress}));
+
+            expect(screen.getByText('View only — this job is locked')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Save/i})).not.toBeInTheDocument();
+
+            const textboxes = screen.getAllByRole('textbox');
+            expect(textboxes.length).toBeGreaterThan(0);
+            textboxes.forEach((tb) => expect(tb).toBeDisabled());
+        });
+    });
+
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
             const props = createDefaultProps({open: false});

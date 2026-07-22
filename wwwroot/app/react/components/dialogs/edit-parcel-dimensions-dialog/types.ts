@@ -45,6 +45,8 @@ export interface EditParcelDimensionsDialogProps {
      * change-request dialog (Packages requires partner approval).
      */
     partnerMode?: boolean;
+    /** When true the dialog opens in view-only mode: fields disabled, no Save. */
+    readOnly?: boolean;
     onClose: () => void;
     onSubmit: (result: EditParcelDimensionsDialogResult) => void;
     showToast: ShowToastFn;
@@ -62,6 +64,7 @@ export interface EditParcelDimensionsDialogOptions {
     jobWeight?: number;
     calculateDimsOncePerJob?: boolean;
     partnerMode?: boolean;
+    readOnly?: boolean;
 }
 
 /**

@@ -42,6 +42,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import InventoryIcon from '@mui/icons-material/Inventory2';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SavingsIcon from '@mui/icons-material/Savings';
@@ -76,6 +77,9 @@ export interface PriceBreakdownDialogProps {
      * is only relevant (and only shown) for non-NZ tenants.
      */
     isUsCustomer?: boolean;
+    /** When true the dialog opens in view-only mode: the breakdown table stays
+     * visible, but all add/edit/delete/save controls are removed or disabled. */
+    readOnly?: boolean;
     onClose: () => void;
     onSave: (totalAmount: number) => void;
     onAddItem: (item: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
@@ -114,6 +118,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     isPrebook,
     isArchived = false,
     isUsCustomer = false,
+    readOnly = false,
     onClose,
     onSave,
     onAddItem,
@@ -334,7 +339,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             {/* Header */}
             <Box sx={(theme) => headerChromeSx(theme)}>
                 <Box sx={(theme) => headerChipSx(theme)}>
-                    <ReceiptLongIcon/>
+                    {readOnly ? <LockOutlinedIcon/> : <ReceiptLongIcon/>}
                 </Box>
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="h5" sx={{
@@ -343,7 +348,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                         Price Breakdown
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                        Manage pricing components for this job
+                        {readOnly ? 'View only — this job is locked' : 'Manage pricing components for this job'}
                     </Typography>
                 </Box>
                 <IconButton
@@ -539,14 +544,16 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     />
                                 )}
                             </Box>
-                            <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={handleAddNew}
-                                sx={{ borderRadius: 2 }}
-                            >
-                                Add Item
-                            </Button>
+                            {!readOnly && (
+                                <Button
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={handleAddNew}
+                                    sx={{ borderRadius: 2 }}
+                                >
+                                    Add Item
+                                </Button>
+                            )}
                         </Box>
 
                         {/* Table */}
@@ -670,7 +677,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={() => handleEdit(item)}
-                                                                disabled={isDeleting !== null}
+                                                                disabled={isDeleting !== null || readOnly}
                                                                 sx={(theme) => ({
                                                                     bgcolor: alpha(theme.palette.primary.main, 0.08),
                                                                     '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) },
@@ -681,7 +688,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={() => handleDeleteRequest(item)}
-                                                                disabled={isDeleting !== null}
+                                                                disabled={isDeleting !== null || readOnly}
                                                                 sx={(theme) => ({
                                                                     bgcolor: alpha(theme.palette.error.main, 0.08),
                                                                     '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.16) },
@@ -738,16 +745,20 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                         color: "text.secondary",
                                         mb: 2
                                     }}>
-                                    Start by adding your first price breakdown item
+                                    {readOnly
+                                        ? 'There are no price breakdown items to view'
+                                        : 'Start by adding your first price breakdown item'}
                                 </Typography>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<AddIcon />}
-                                    onClick={handleAddNew}
-                                    sx={{ borderRadius: 2 }}
-                                >
-                                    Add First Item
-                                </Button>
+                                {!readOnly && (
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<AddIcon />}
+                                        onClick={handleAddNew}
+                                        sx={{ borderRadius: 2 }}
+                                    >
+                                        Add First Item
+                                    </Button>
+                                )}
                             </Paper>
                         )}
                     </Box>
@@ -1124,16 +1135,18 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                 variant="outlined"
                                 sx={{ borderRadius: 2, minWidth: 100 }}
                             >
-                                Cancel
+                                {readOnly ? 'Close' : 'Cancel'}
                             </Button>
-                            <Button
-                                variant="contained"
-                                onClick={handleSaveAndClose}
-                                startIcon={<CheckCircleIcon />}
-                                sx={{ borderRadius: 2, minWidth: 140 }}
-                            >
-                                Save & Close
-                            </Button>
+                            {!readOnly && (
+                                <Button
+                                    variant="contained"
+                                    onClick={handleSaveAndClose}
+                                    startIcon={<CheckCircleIcon />}
+                                    sx={{ borderRadius: 2, minWidth: 140 }}
+                                >
+                                    Save & Close
+                                </Button>
+                            )}
                         </Stack>
                     </Box>
                 </DialogActions>

@@ -36,6 +36,8 @@ export interface EditDateTimeDialogProps {
     showDate?: boolean;
     showTime?: boolean;
     isUSCustomer?: boolean;
+    /** When true the dialog opens in view-only mode: fields disabled, no Save. */
+    readOnly?: boolean;
     onClose: () => void;
     onSubmit: (result: EditDateTimeDialogResult) => void | Promise<void>;
     showToast: ShowToastFn;
@@ -52,4 +54,5 @@ export interface EditDateTimeDialogOptions {
     showDate?: boolean;
     showTime?: boolean;
     isUSCustomer?: boolean;
+    readOnly?: boolean;
 }

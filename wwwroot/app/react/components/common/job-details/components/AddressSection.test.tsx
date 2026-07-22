@@ -82,6 +82,23 @@ describe('AddressSection', () => {
         expect(onEditToContact).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps the address clickable when locked (opens read-only) but not the contacts', () => {
+        const onEditPickupAddress = jest.fn();
+        const onEditFromContact = jest.fn();
+        const job = createMockJob({locked: true});
+        renderWithTheme(
+            <AddressSection {...createDefaultProps({job, onEditPickupAddress, onEditFromContact})} />
+        );
+
+        // Address is in the read-only subset — still opens the dialog when locked.
+        fireEvent.click(screen.getByText('123 Test St, Testville TST 1234'));
+        expect(onEditPickupAddress).toHaveBeenCalledTimes(1);
+
+        // Contact editing is out of the subset — the contact card is inert while locked.
+        fireEvent.click(screen.getByText('John Sender'));
+        expect(onEditFromContact).not.toHaveBeenCalled();
+    });
+
     it('shows phone source chip when provided', () => {
         const job = createMockJob({fromContactNumberSource: 'Address Book'});
         renderWithTheme(<AddressSection {...createDefaultProps({job})} />);

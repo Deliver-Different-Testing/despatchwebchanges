@@ -156,7 +156,7 @@ export const JobFieldsSection = React.memo(({
                                         if (cube > 0) parts.push(`${cube.toFixed(3)} ${isUsCustomer ? 'ft³' : 'm³'}`);
                                         return parts.length ? parts.join(' · ') : '—';
                                     })()}
-                                    onClick={onEditDimensions} disabled={locked}
+                                    onClick={onEditDimensions}
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('dimensions')}
                                     onToggleVisibility={onToggleField} fieldKey="dimensions"

@@ -26,6 +26,7 @@ interface DialogState {
     showContactInfo: boolean;
     isUsTenant: boolean;
     addressType?: AddressType;
+    readOnly: boolean;
     toastService: ToastService | null;
     resolve?: (value: EditAddressDialogViewModel | null) => void;
 }
@@ -39,6 +40,7 @@ let dialogState: DialogState = {
     submitLabel: 'Save',
     showContactInfo: false,
     isUsTenant: false,
+    readOnly: false,
     toastService: null,
 };
 
@@ -86,6 +88,7 @@ function renderDialog(): void {
                     showContactInfo={dialogState.showContactInfo}
                     isUsTenant={dialogState.isUsTenant}
                     addressType={dialogState.addressType}
+                    readOnly={dialogState.readOnly}
                     onClose={handleClose}
                     onSave={handleSave}
                     showToast={handleShowToast}
@@ -127,6 +130,7 @@ export function openEditAddressDialog(
     isUsTenant: boolean = false,
     toastService?: ToastService,
     addressType?: AddressType,
+    readOnly: boolean = false,
 ): Promise<EditAddressDialogViewModel | null> {
     initializeDialogRoot();
 
@@ -139,6 +143,7 @@ export function openEditAddressDialog(
             showContactInfo,
             isUsTenant,
             addressType,
+            readOnly,
             toastService: toastService ?? null,
             resolve,
         };

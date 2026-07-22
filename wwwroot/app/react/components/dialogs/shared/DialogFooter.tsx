@@ -23,6 +23,9 @@ export interface DialogFooterProps {
     confirmDisabled?: boolean;
     /** When true, shows a spinner on confirm and disables both buttons. */
     submitting?: boolean;
+    /** Hides the confirm button entirely, leaving only Cancel/Close — used for
+     * read-only (view-only) dialogs. */
+    hideConfirm?: boolean;
 }
 
 export const DialogFooter: React.FC<DialogFooterProps> = ({
@@ -34,6 +37,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
     confirmColor = 'primary',
     confirmDisabled = false,
     submitting = false,
+    hideConfirm = false,
 }) => (
     <DialogActions
         sx={(theme) => ({
@@ -52,16 +56,18 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
         >
             {cancelLabel}
         </Button>
-        <Button
-            onClick={onConfirm}
-            variant="contained"
-            color={confirmColor}
-            disabled={confirmDisabled || submitting}
-            startIcon={submitting ? <CircularProgress size={16} color="inherit"/> : confirmIcon}
-            sx={{minWidth: 100, minHeight: 44}}
-        >
-            {confirmLabel}
-        </Button>
+        {!hideConfirm && (
+            <Button
+                onClick={onConfirm}
+                variant="contained"
+                color={confirmColor}
+                disabled={confirmDisabled || submitting}
+                startIcon={submitting ? <CircularProgress size={16} color="inherit"/> : confirmIcon}
+                sx={{minWidth: 100, minHeight: 44}}
+            >
+                {confirmLabel}
+            </Button>
+        )}
     </DialogActions>
 );
 

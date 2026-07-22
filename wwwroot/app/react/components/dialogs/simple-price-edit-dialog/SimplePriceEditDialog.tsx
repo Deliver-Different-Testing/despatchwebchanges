@@ -17,6 +17,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Radio from '@mui/material/Radio';
 import InputAdornment from '@mui/material/InputAdornment';
 import PriceChangeIcon from '@mui/icons-material/PriceChange';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {DialogHeader} from '../shared';
 import {grossModeColor} from '../../../theme/designTokens';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -93,6 +94,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     isBulk = false,
     hideRecalculate = false,
     childJobs,
+    readOnly = false,
     onClose,
     onSubmit,
     showToast,
@@ -207,7 +209,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     return (
                         <Box
                             key={opt.mode}
-                            onClick={() => { if (!disabled) setSelectedMode(opt.mode); }}
+                            onClick={() => { if (!disabled && !readOnly) setSelectedMode(opt.mode); }}
                             title={disabled ? 'Not available for bulk jobs' : undefined}
                             sx={(theme) => ({
                                 display: 'flex',
@@ -218,11 +220,11 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 border: 2,
                                 borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.08),
                                 borderRadius: 2.5,
-                                cursor: disabled ? 'not-allowed' : 'pointer',
+                                cursor: (disabled || readOnly) ? 'default' : 'pointer',
                                 opacity: disabled ? 0.5 : 1,
                                 bgcolor: isSelected ? alpha(theme.palette.grey[600], 0.06) : 'background.paper',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                '&:hover': disabled ? undefined : {
+                                '&:hover': (disabled || readOnly) ? undefined : {
                                     borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.18),
                                     bgcolor: isSelected ? alpha(theme.palette.grey[600], 0.06) : alpha(theme.palette.common.black, 0.02),
                                 },
@@ -230,7 +232,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         >
                             <Radio
                                 checked={isSelected}
-                                disabled={disabled}
+                                disabled={disabled || readOnly}
                                 sx={{
                                     p: 0,
                                     color: 'text.disabled',
@@ -305,7 +307,8 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         value={amount || ''}
                         onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
                         placeholder="0.00"
-                        autoFocus
+                        disabled={readOnly}
+                        autoFocus={!readOnly}
                         slotProps={{
                             input: {
                                 startAdornment: (
@@ -403,6 +406,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                             <Button
                                 size="small"
                                 variant="text"
+                                disabled={readOnly}
                                 onClick={() => {
                                     const currentSum = childJobs.reduce((s, c) => s + (childAmounts[c.jobId] ?? c.charge), 0);
                                     if (currentSum <= 0) return;
@@ -468,6 +472,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                             const val = parseFloat(e.target.value) || 0;
                                             setChildAmounts(prev => ({...prev, [child.jobId]: val}));
                                         }}
+                                        disabled={readOnly}
                                         size="small"
                                         slotProps={{
                                             input: {
@@ -677,9 +682,9 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             {/* Header */}
             <Box sx={{flexShrink: 0}}>
                 <DialogHeader
-                    icon={<PriceChangeIcon/>}
+                    icon={readOnly ? <LockOutlinedIcon/> : <PriceChangeIcon/>}
                     title="Edit Price"
-                    subtitle="Adjust the job price"
+                    subtitle={readOnly ? 'View only — this job is locked' : 'Adjust the job price'}
                     onClose={onClose}
                     closeDisabled={isLoading}
                 />
@@ -729,18 +734,20 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         onClick={onClose}
                         sx={{ minWidth: 80, color: 'text.secondary', borderColor: 'divider' }}
                     >
-                        Cancel
+                        {readOnly ? 'Close' : 'Cancel'}
                     </Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleSubmit}
-                        disabled={isSubmitDisabled}
-                        startIcon={selectedMode === 'recalculate' ? <SyncIcon /> : undefined}
-                        sx={{ minWidth: 120, borderRadius: 2, fontWeight: 500 }}
-                    >
-                        {getSubmitButtonText(selectedMode)}
-                    </Button>
+                    {!readOnly && (
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleSubmit}
+                            disabled={isSubmitDisabled}
+                            startIcon={selectedMode === 'recalculate' ? <SyncIcon /> : undefined}
+                            sx={{ minWidth: 120, borderRadius: 2, fontWeight: 500 }}
+                        >
+                            {getSubmitButtonText(selectedMode)}
+                        </Button>
+                    )}
                 </Box>
             )}
         </Dialog>

@@ -1,6 +1,5 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using DespatchWeb.Services.JobApi;
 
 namespace DespatchWeb.Extensions;
 
@@ -14,7 +13,6 @@ public static class PricingServiceCollectionExtensions
         services.AddScoped<IFlightAssignmentService, FlightAssignmentService>();
         services.AddScoped<IPricingPermissionService, PricingPermissionService>();
 
-        // DespatchWeb -> Integration Manager Cirium gateway (used when Cirium:UseIntegrationManager is on).
         services.AddHttpClient<ICiriumApiClient, CiriumApiClient>();
 
         return services;

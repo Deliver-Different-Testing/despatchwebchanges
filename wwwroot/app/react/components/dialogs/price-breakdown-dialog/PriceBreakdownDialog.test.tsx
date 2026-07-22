@@ -36,6 +36,25 @@ describe('PriceBreakdownDialog', () => {
         window.confirm = jest.fn().mockImplementation(() => true);
     });
 
+    // ── Read-only (locked job) ───────────────────────────────────────
+    describe('Read-only mode', () => {
+        it('shows the breakdown but hides all mutation controls', () => {
+            renderWithTheme(<PriceBreakdownDialog {...createMockProps({readOnly: true})} />);
+
+            // View-only signalling
+            expect(screen.getByText('View only — this job is locked')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
+
+            // The breakdown table stays visible so the user can read it.
+            expect(screen.getByText('Base Charge')).toBeInTheDocument();
+            expect(screen.getByText('Rush Fee')).toBeInTheDocument();
+
+            // No add/save mutation controls.
+            expect(screen.queryByRole('button', {name: /save & close/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
+        });
+    });
+
     // ── Read-only: default props (single render) ─────────────────────
     describe('Default render', () => {
         it('renders dialog structure, summary cards, price items table and footer', () => {

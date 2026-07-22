@@ -861,7 +861,7 @@ public partial class JobRepository
                 archive.AcceptedJobTypeId = short.Parse(value);
                 break;
             case JobProperty.Locked:
-                archive.UcjbLocked = int.Parse(value);
+                archive.UcjbLocked = bool.Parse(value) ? 1 : 0;
                 break;
             case JobProperty.PuTime:
                 archive.PickUpTime = DateTimeOffset.Parse(value).DateTime;

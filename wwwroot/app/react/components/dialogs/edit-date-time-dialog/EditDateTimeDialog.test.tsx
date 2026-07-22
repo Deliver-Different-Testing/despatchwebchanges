@@ -128,6 +128,21 @@ describe('EditDateTimeDialog', () => {
         });
     });
 
+    // ── Read-only (locked job) ──────────────────────────────────────
+    describe('Read-only mode', () => {
+        it('hides Save, shows Close, disables inputs and shows the view-only subtitle', () => {
+            renderWithProviders(createDefaultProps({readOnly: true}));
+
+            expect(screen.queryByRole('button', {name: /Save/i})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Close/i})).toBeInTheDocument();
+            expect(screen.getByText('View only — this job is locked')).toBeInTheDocument();
+
+            // Date/time pickers are disabled while locked.
+            const dateInput = screen.getByLabelText(/Date/i) as HTMLInputElement;
+            expect(dateInput).toBeDisabled();
+        });
+    });
+
     // ── Dialog Actions ──────────────────────────────────────────────
     describe('Dialog Actions', () => {
         it('calls onClose when Cancel is clicked', async () => {

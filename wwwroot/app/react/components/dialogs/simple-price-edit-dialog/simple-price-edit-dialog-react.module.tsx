@@ -27,6 +27,7 @@ interface DialogState {
     isBulk: boolean;
     hideRecalculate?: boolean;
     childJobs?: ChildJobPrice[];
+    readOnly: boolean;
     resolve?: (result: PriceEditResult | null) => void;
 }
 
@@ -73,6 +74,7 @@ class SimplePriceEditDialogManager {
         currentCharge: 0,
         isPrebook: false,
         isBulk: false,
+        readOnly: false,
     };
 
     setToastService(service: ToastService): void {
@@ -140,6 +142,7 @@ class SimplePriceEditDialogManager {
                         isBulk={this.dialogState.isBulk}
                         hideRecalculate={this.dialogState.hideRecalculate}
                         childJobs={this.dialogState.childJobs}
+                        readOnly={this.dialogState.readOnly}
                         onClose={handleClose}
                         onSubmit={handleSubmit}
                         showToast={this.toastService.showToast}
@@ -179,6 +182,7 @@ class SimplePriceEditDialogManager {
                 isBulk: options.isBulk ?? false,
                 hideRecalculate: options.hideRecalculate,
                 childJobs,
+                readOnly: options.readOnly ?? false,
                 resolve,
             };
             this.renderDialog();

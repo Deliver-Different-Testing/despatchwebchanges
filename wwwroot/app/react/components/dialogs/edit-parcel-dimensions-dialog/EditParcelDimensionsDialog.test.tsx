@@ -60,6 +60,25 @@ describe('EditParcelDimensionsDialog header parcel count', () => {
     });
 });
 
+// ── Read-only (locked job) ─────────────────────────────────────────
+
+describe('EditParcelDimensionsDialog read-only mode', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    it('hides Save, shows Close, disables inputs and shows the view-only subtitle', () => {
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} readOnly />);
+
+        expect(screen.getByText('View only — this job is locked')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /Close/i})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^Save|Continue/i})).not.toBeInTheDocument();
+
+        // Parcel fields are visible but not editable.
+        const textboxes = screen.getAllByRole('textbox');
+        expect(textboxes.length).toBeGreaterThan(0);
+        textboxes.forEach((tb) => expect(tb).toBeDisabled());
+    });
+});
+
 // ── Discard changes confirmation ───────────────────────────────────
 
 describe('EditParcelDimensionsDialog discard changes confirmation', () => {

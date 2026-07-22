@@ -115,14 +115,27 @@ describe('MetricsGrid', () => {
         expect(dashes.length).toBeGreaterThanOrEqual(5);
     });
 
-    it('disables metric cards when job is locked', () => {
+    it('keeps in-scope cards clickable when locked (they open read-only) but not out-of-scope cards', () => {
         const job = createMockJob({locked: true});
         const onPricingClick = jest.fn();
-        renderWithTheme(<MetricsGrid {...createDefaultProps({job, onPricingClick})} />);
+        const onEditDateAndTime = jest.fn();
+        renderWithTheme(<MetricsGrid {...createDefaultProps({job, onPricingClick, onEditDateAndTime})} />);
 
-        const pricingLabel = screen.getByText('Pricing');
-        const button = pricingLabel.closest('button');
-        expect(button).toBeNull();
+        // Pricing + date/time cards stay clickable so the dialog can open read-only.
+        const pricingButton = screen.getByText('Pricing').closest('button');
+        expect(pricingButton).not.toBeNull();
+        if (pricingButton) fireEvent.click(pricingButton);
+        expect(onPricingClick).toHaveBeenCalledTimes(1);
+
+        const puTimeButton = screen.getByText('PU Time').closest('button');
+        expect(puTimeButton).not.toBeNull();
+        if (puTimeButton) fireEvent.click(puTimeButton);
+        expect(onEditDateAndTime).toHaveBeenCalled();
+
+        // POD Name (free-text) and Client Name (autocomplete) are out of the
+        // read-only subset — they stay disabled/non-clickable while locked.
+        expect(screen.getByText('POD Name').closest('button')).toBeNull();
+        expect(screen.getByText('Client Name').closest('button')).toBeNull();
     });
 
     describe('dense mode', () => {

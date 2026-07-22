@@ -297,7 +297,8 @@ declare global {
                 showContactInfo?: boolean,
                 isUsTenant?: boolean,
                 toastService?: ToastService,
-                addressType?: AddressType
+                addressType?: AddressType,
+                readOnly?: boolean
             ) => Promise<EditAddressDialogViewModel | null>;
         };
         ReactEditAfterhoursDialog?: {
@@ -335,6 +336,7 @@ declare global {
                 isPrebook: boolean,
                 isArchived: boolean,
                 isUsCustomer?: boolean,
+                readOnly?: boolean,
                 apiService?: {
                     addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
                     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
