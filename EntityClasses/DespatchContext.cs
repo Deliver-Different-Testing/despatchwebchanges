@@ -4473,6 +4473,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ReferenceCmessage)
                 .HasMaxLength(500)
                 .HasColumnName("ReferenceCMessage");
+            entity.Property(e => e.RecalcRecurringFuel).HasDefaultValue(true);
             entity.Property(e => e.RerateJobs).HasDefaultValue(true, "RerateJobs");
             entity.Property(e => e.RuralDeliveryRateCodeId).HasColumnName("RuralDeliveryRateCodeID");
             entity.Property(e => e.Sddenabled)
