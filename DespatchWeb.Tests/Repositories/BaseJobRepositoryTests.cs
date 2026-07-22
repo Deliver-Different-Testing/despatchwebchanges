@@ -552,6 +552,33 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         Assert.Equal([1, 2], result);
     }
 
+    [Fact]
+    public void CurrentWorkListJob_KeepsDoneWithinWindowAndOverdueUndelivered_ExcludesOlderDoneVoidAndFuture()
+    {
+        var startDate = new DateTime(2024, 6, 10);
+        var endDate = new DateTime(2024, 6, 15, 10, 0, 0);
+        var jobs = new List<TucJob>
+        {
+            // kept: undelivered, unbounded below (overdue) through the end day
+            CurrentWorkJobOn(1, new DateTime(2024, 6, 15)), // today, undelivered
+            CurrentWorkJobOn(2, new DateTime(2024, 6, 5)), // before startDate, undelivered → still kept
+            // kept: done jobs within [startDate, endDate]
+            CurrentWorkJobOn(3, new DateTime(2024, 6, 15), done: true), // today, done
+            CurrentWorkJobOn(4, new DateTime(2024, 6, 10), done: true), // on startDate, done
+            // excluded:
+            CurrentWorkJobOn(5, new DateTime(2024, 6, 9), done: true), // done before startDate
+            CurrentWorkJobOn(6, new DateTime(2024, 6, 15), isVoid: true), // void flag
+            CurrentWorkJobOn(7, new DateTime(2024, 6, 15), status: (int)JobStatus.Void), // void status
+            CurrentWorkJobOn(8, new DateTime(2024, 6, 16)) // future prebooking
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.CurrentWorkListJob(startDate, endDate))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2, 3, 4], result);
+    }
+
     private static TucJob CurrentWorkJobOn(int id, DateTime date, bool done = false, bool isVoid = false,
         int status = (int)JobStatus.Dispatched) => new()
     {

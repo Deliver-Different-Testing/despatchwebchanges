@@ -139,6 +139,17 @@ describe('BulkPriceUploadDialog', () => {
             expect(screen.getByText(/Id/)).toBeInTheDocument();
         });
 
+        it('should note which columns apply to which pricing mode', () => {
+            const props = createMockProps();
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+
+            // Amount means different things per mode; Fuel is only honoured in gross mode
+            // (base mode calculates it); recalculate ignores the price columns entirely.
+            expect(screen.getByText(/Base mode: pre-surcharge base price/)).toBeInTheDocument();
+            expect(screen.getByText(/calculated automatically in Base mode/)).toBeInTheDocument();
+            expect(screen.getByText(/Recalculate mode re-prices each job from its details/)).toBeInTheDocument();
+        });
+
         it('should display Cancel button in upload state', () => {
             const props = createMockProps();
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
@@ -227,9 +238,9 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            expect(screen.getByText('Recalculate')).toBeInTheDocument();
-            expect(screen.getByText('Raw Base Amount')).toBeInTheDocument();
-            expect(screen.getByText('Gross Amount')).toBeInTheDocument();
+            expect(screen.getByText('Auto-Calculate Prices')).toBeInTheDocument();
+            expect(screen.getByText('Base Price (add surcharges)')).toBeInTheDocument();
+            expect(screen.getByText('Final Price (use as-is)')).toBeInTheDocument();
         });
 
         it('should default to recalculate mode', async () => {
@@ -237,7 +248,7 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            expect(screen.getByText(/Prices will be recalculated based on job details/)).toBeInTheDocument();
+            expect(screen.getByText(/Prices will be recalculated from job details/)).toBeInTheDocument();
         });
 
         it('should update description when selecting base mode', async () => {
@@ -245,10 +256,10 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            const baseOption = screen.getByText('Raw Base Amount');
+            const baseOption = screen.getByText('Base Price (add surcharges)');
             await userEvent.click(baseOption);
 
-            expect(screen.getByText(/Raw base amounts from file will be saved/)).toBeInTheDocument();
+            expect(screen.getByText(/File amounts are treated as base prices/)).toBeInTheDocument();
         });
 
         it('should update description when selecting gross mode', async () => {
@@ -256,10 +267,10 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            const grossOption = screen.getByText('Gross Amount');
+            const grossOption = screen.getByText('Final Price (use as-is)');
             await userEvent.click(grossOption);
 
-            expect(screen.getByText(/Amounts from file will be applied directly/)).toBeInTheDocument();
+            expect(screen.getByText(/File amounts are applied directly as the final prices/)).toBeInTheDocument();
         });
 
         it('should display Back and Apply buttons', async () => {
@@ -277,10 +288,10 @@ describe('BulkPriceUploadDialog', () => {
             await uploadFileAndGoToModeSelect();
 
             // Select gross mode
-            const grossOption = screen.getByText('Gross Amount');
+            const grossOption = screen.getByText('Final Price (use as-is)');
             await userEvent.click(grossOption);
 
-            expect(screen.getByRole('button', { name: /apply gross amounts/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /apply final amounts/i })).toBeInTheDocument();
         });
 
         it('should go back to upload state when clicking Back', async () => {

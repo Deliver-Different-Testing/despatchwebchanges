@@ -3835,11 +3835,13 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Retrieves a courier's current work: not-done, non-void jobs dated on or before
-    /// <paramref name="endDate"/>'s day (today plus overdue past jobs).
+    /// Retrieves a courier's current work: non-void jobs dated on or before
+    /// <paramref name="endDate"/>'s day (today plus overdue past jobs). Done/completed jobs are
+    /// included but bounded below by <paramref name="startDate"/> so the panel's "Done" tab has
+    /// data without returning the courier's entire completion history.
     /// </summary>
     /// <param name="courierId">The courier ID to filter by.</param>
-    /// <param name="startDate">Retained for API compatibility; not used as a lower bound
+    /// <param name="startDate">Lower bound for done jobs only; undelivered jobs are unbounded below
     /// because current work intentionally includes overdue jobs from earlier days.</param>
     /// <param name="endDate">Upper bound of the window (its calendar day is fully included).</param>
     /// <returns>Search result with jobs and map items for the courier.</returns>
@@ -3849,12 +3851,14 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        // Current work is intentionally unbounded below: it includes overdue (past, not-done)
-        // jobs as well as today's, so startDate is no longer used as a lower bound. endDate caps
-        // the window at the current day, matching the drivers-overview count (CurrentWorkJob).
+        // Current work is unbounded below for undelivered jobs: it includes overdue (past, not-done)
+        // jobs as well as today's. endDate caps the window at the current day. Done jobs are kept
+        // (so the client "Done" tab has data) but bounded to [startDate, endDate] so we don't return
+        // the courier's full completion history. Distinct from the drivers-overview count
+        // (CurrentWorkJob), which excludes done work entirely.
         var query = Context.TucJobs
             .Where(j => j.UcjbCourierId == courierId)
-            .Where(CurrentWorkJob(endDate));
+            .Where(CurrentWorkListJob(startDate, endDate));
 
         // Single query to get both jobs and map items data
         var jobs = await query
