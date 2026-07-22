@@ -41,22 +41,22 @@ interface ModeOption {
 const MODE_OPTIONS: ModeOption[] = [
     {
         mode: 'recalculate',
-        title: 'Recalculate',
-        description: 'Auto-price based on job details',
+        title: 'Auto-Calculate Prices',
+        description: 'Recalculate from job details & current rates',
         icon: <SyncIcon sx={{ fontSize: 22 }} />,
         iconColorClass: 'recalculate',
     },
     {
         mode: 'base',
-        title: 'Raw Base Amount',
-        description: 'Set the base price directly',
+        title: 'Base Price (add surcharges)',
+        description: 'Enter the base amount; PPD & fuel added on top',
         icon: <AddCircleIcon sx={{ fontSize: 22 }} />,
         iconColorClass: 'base',
     },
     {
         mode: 'gross',
-        title: 'Gross Amount',
-        description: 'Set final price directly',
+        title: 'Final Price (use as-is)',
+        description: 'Enter the final amount; applied as-is',
         icon: <EditNoteIcon sx={{ fontSize: 22 }} />,
         iconColorClass: 'gross',
     },
@@ -73,16 +73,16 @@ const getSelectedIconColor = (mode: PricingMode) => {
 const getSubmitButtonText = (mode: PricingMode) => {
     switch (mode) {
         case 'recalculate': return 'Recalculate & Save';
-        case 'base': return 'Apply Raw Base';
-        case 'gross': return 'Apply Amount';
+        case 'base': return 'Apply Base Amount';
+        case 'gross': return 'Apply Final Amount';
     }
 };
 
 const getModeSubtitle = (mode: PricingMode) => {
     switch (mode) {
         case 'recalculate': return 'Recalculated based on job details';
-        case 'base': return 'Raw base amount applied';
-        case 'gross': return 'Gross amount applied';
+        case 'base': return 'Base price applied';
+        case 'gross': return 'Final price applied';
     }
 };
 
@@ -98,7 +98,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     showToast,
 }) => {
     // Bulk jobs only support gross-amount editing — tblBulkJob has no fuel/PPD breakdown
-    // and no SuburbID for the rating pipeline. Recalculate/Raw Base remain visible but disabled.
+    // and no SuburbID for the rating pipeline. Auto-Calculate/Base Price remain visible but disabled.
     const availableModes = hideRecalculate
         ? MODE_OPTIONS.filter(o => o.mode !== 'recalculate')
         : MODE_OPTIONS;
@@ -297,7 +297,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                             color: "text.secondary",
                             mb: 1.25
                         }}>
-                        {selectedMode === 'base' ? 'Enter Raw Base Amount' : 'Enter Final Amount'}
+                        {selectedMode === 'base' ? 'Enter Base Amount' : 'Enter Final Amount'}
                     </Typography>
                     <TextField
                         fullWidth

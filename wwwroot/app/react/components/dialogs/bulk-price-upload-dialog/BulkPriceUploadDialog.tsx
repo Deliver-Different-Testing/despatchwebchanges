@@ -155,11 +155,11 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
     const modeDescription = useMemo((): string => {
         switch (selectedMode) {
             case 'recalculate':
-                return 'Prices will be recalculated based on job details and current rates';
+                return 'Prices will be recalculated from job details and current rates';
             case 'base':
-                return 'Raw base amounts from file will be saved with PPD and Fuel added';
+                return 'File amounts are treated as base prices; PPD & fuel are added on top';
             case 'gross':
-                return 'Amounts from file will be applied directly as final prices';
+                return 'File amounts are applied directly as the final prices';
             default:
                 return '';
         }
@@ -170,9 +170,9 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             case 'recalculate':
                 return 'Recalculate & Save';
             case 'base':
-                return 'Apply Raw Base Amounts';
+                return 'Apply Base Amounts';
             case 'gross':
-                return 'Apply Gross Amounts';
+                return 'Apply Final Amounts';
             default:
                 return 'Apply';
         }
@@ -393,22 +393,25 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     </Typography>
                     <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
                         {[
-                            { label: 'Amount', desc: 'Raw base or gross amount (depending on mode selected)' },
-                            { label: 'Fuel', desc: 'Fuel surcharge' },
-                            { label: 'Ppd', desc: 'PPD amount' },
-                            { label: 'CourierPayment', desc: 'Courier payment amount' },
-                            { label: 'CourierFuel', desc: 'Courier fuel amount' },
-                            { label: 'CourierBonus', desc: 'Courier bonus amount' },
+                            { label: 'Amount', desc: 'Base mode: pre-surcharge base price · Gross mode: final total' },
+                            { label: 'Fuel', desc: 'Gross mode only (calculated automatically in Base mode)' },
+                            { label: 'Ppd', desc: 'Gross mode only' },
+                            { label: 'CourierPayment', desc: 'Courier payment (Base & Gross modes)' },
+                            { label: 'CourierFuel', desc: 'Courier fuel (Base & Gross modes)' },
+                            { label: 'CourierBonus', desc: 'Courier bonus (Base & Gross modes)' },
                         ].map((item) => (
                             <Box component="li" key={item.label} sx={{ mb: 0.5 }}>
                                 <Typography variant="caption" sx={{
                                     color: "text.secondary"
                                 }}>
-                                    <strong style={{ color: 'rgba(0, 0, 0, 0.87)' }}>{item.label}</strong>
+                                    <strong style={{ color: 'rgba(0, 0, 0, 0.87)' }}>{item.label}</strong> — {item.desc}
                                 </Typography>
                             </Box>
                         ))}
                     </Box>
+                    <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 1 }}>
+                        Recalculate mode re-prices each job from its details and ignores the price columns above.
+                    </Typography>
                 </Box>
             </Box>
         );
@@ -418,22 +421,22 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         const modes: { value: PricingMode; title: string; desc: string; icon: React.ReactNode; colorClass: string }[] = [
             {
                 value: 'recalculate',
-                title: 'Recalculate',
-                desc: 'Auto-price based on job details',
+                title: 'Auto-Calculate Prices',
+                desc: 'Recalculate from job details & current rates',
                 icon: <SyncIcon />,
                 colorClass: 'recalculate',
             },
             {
                 value: 'base',
-                title: 'Raw Base Amount',
-                desc: 'Save base price directly from file',
+                title: 'Base Price (add surcharges)',
+                desc: 'Use file amounts as base; PPD & fuel added on top',
                 icon: <AddCircleIcon />,
                 colorClass: 'base',
             },
             {
                 value: 'gross',
-                title: 'Gross Amount',
-                desc: 'Apply file amounts directly',
+                title: 'Final Price (use as-is)',
+                desc: 'Apply file amounts directly as the final price',
                 icon: <EditNoteIcon />,
                 colorClass: 'gross',
             },

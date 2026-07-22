@@ -291,6 +291,55 @@ public class RateJobServiceBulkPriceTests : IDisposable
     }
 
     [Fact]
+    public async Task ApplyBulkPriceUpdateAsync_BaseMode_AppliesFuelWhenBaseSuppliedInAmountColumn()
+    {
+        // Arrange - the uploaded file follows the documented format, which uses an "Amount"
+        // column for the base price (no "RawBaseAmount" column exists in the template). Base
+        // mode must derive the fuel surcharge from that value; if it only reads RawBaseAmount
+        // the base is treated as 0 and no fuel is applied.
+        var fileMock = CreateMockFile("test.xlsx", string.Empty);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, Amount = 150m }]);
+
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
+            {
+                [1] = new()
+                {
+                    JobId = 1, JobNo = "JOB-001", Amount = 100m, RawBaseAmount = 100m, IsPrebook = false,
+                    CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m
+                }
+            });
+
+        // 150 base + 25 fuel = 175 total
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 150m)
+            .Returns(175m);
+
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return capturedModels.Select(m => m.Id).ToHashSet();
+            });
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
+
+        // Assert - the base from the Amount column drives the fuel calculation
+        await _jobQueryRepositoryMock.Received().GetTotalAmountFromBaseAsync(1, 150m);
+        Assert.Equal(175m, result.Rows[0].NewAmount);
+
+        Assert.NotNull(capturedModels);
+        var model = capturedModels![0];
+        Assert.Equal(175m, model.Amount);
+        Assert.Equal(150m, model.RawBaseAmount);
+        Assert.Equal(25m, model.Fuel); // 175 - 150 = 25, i.e. fuel is applied
+    }
+
+    [Fact]
     public async Task ApplyBulkPriceUpdateAsync_BaseMode_HandlesCalculationFailure()
     {
         // Arrange

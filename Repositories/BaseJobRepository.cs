@@ -549,6 +549,25 @@ public partial class BaseJobRepository(
     }
 
     /// <summary>
+    /// The current-work drill-down list. Like <see cref="CurrentWorkJob"/> (the drivers-overview
+    /// count) it excludes void jobs and caps the window at <paramref name="endDate"/>'s day, but it
+    /// KEEPS done/completed jobs so the panel's client-side "Done" tab has data. Done jobs are bounded
+    /// below by <paramref name="startDate"/> (the page's date filter) so the list does not return the
+    /// courier's entire completion history; not-done jobs stay unbounded below so overdue work shows.
+    /// Sargable (bare <c>UcjbDate</c> column) so an index can seek and SQLite can translate it.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> CurrentWorkListJob(
+        DateTimeOffset startDate, DateTimeOffset endDate)
+    {
+        var startInclusive = startDate.Date;
+        var exclusiveEnd = endDate.Date.AddDays(1);
+        return j => !j.UcjbVoid
+                    && j.UcjbStatus != (int)JobStatus.Void
+                    && j.UcjbDate < exclusiveEnd
+                    && (!j.UcjbJobDone || j.UcjbDate >= startInclusive);
+    }
+
+    /// <summary>
     /// Sargable equivalent of the date-then-time end filter: jobs booked before the filter day, or
     /// on the filter day at or before the filter time. The UcjbDate comparisons avoid <c>.Date</c>
     /// so the index range can seek; the intra-day time check on the separate UcjbTime column only

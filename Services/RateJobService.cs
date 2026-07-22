@@ -421,7 +421,10 @@ public sealed class RateJobService(
                     }
 
                     var oldAmount = jobInfo.Amount;
-                    var baseAmount = data.RawBaseAmount ?? 0;
+                    // The upload template documents a single "Amount" column for the base price
+                    // in this mode; only fall back to a distinct RawBaseAmount column if supplied.
+                    // Without the Amount fallback the base is treated as 0, so no fuel is applied.
+                    var baseAmount = data.RawBaseAmount ?? data.Amount ?? 0;
                     decimal newAmount;
 
                     try
