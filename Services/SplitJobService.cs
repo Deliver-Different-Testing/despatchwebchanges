@@ -552,18 +552,33 @@ public class SplitJobService(
         // Only the IMMEDIATE children of the parent being split — using RootParentId here would
         // pull in unrelated siblings from earlier splits when re-splitting a leg, and redistribute
         // this parent's amount across them too.
-        var childJobIds = await context.TucJobs
+        var children = await context.TucJobs
             .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
             .OrderBy(j => j.Sequence)
-            .Select(j => j.UcjbId)
+            .Select(j => new { j.UcjbId, j.RatedManually, j.UcjbAmount })
             .Take(100)
             .ToListAsync(ct);
 
-        if (childJobIds.Count == 0)
+        if (children.Count == 0)
         {
             Log.Warning("No non-void child jobs found for parent {ParentJobId}. Skipping re-rate.", parentJobId);
             return;
         }
+
+        // Manually-priced legs keep their existing amount and are excluded from redistribution —
+        // only the remaining amount (parent total minus what's already fixed manually) is spread
+        // across the auto-rated legs.
+        var manualAmount = children.Where(c => c.RatedManually).Sum(c => c.UcjbAmount ?? 0m);
+        var childJobIds = children.Where(c => !c.RatedManually).Select(c => c.UcjbId).ToList();
+
+        if (childJobIds.Count == 0)
+        {
+            Log.Information(
+                "All split children of parent {ParentJobId} are manually rated. Skipping re-rate.", parentJobId);
+            return;
+        }
+
+        var amountToDistribute = parentAmount - manualAmount;
 
         var isUs = tenantInfoService.IsUsTenant();
 
@@ -588,7 +603,7 @@ public class SplitJobService(
             rates.Add((childId, rate));
         }
 
-        // Distribute parent amount proportionally based on calculated rates
+        // Distribute the remaining (non-manual) amount proportionally based on calculated rates
         var totalRate = rates.Sum(r => r.Rate);
         var runningTotal = 0m;
 
@@ -598,17 +613,17 @@ public class SplitJobService(
             if (i == rates.Count - 1)
             {
                 // Last job absorbs rounding difference to ensure exact balance
-                amount = parentAmount - runningTotal;
+                amount = amountToDistribute - runningTotal;
             }
             else if (totalRate == 0m)
             {
-                // All rates are 0: distribute evenly so the parent total is still preserved
-                amount = Math.Round(parentAmount / rates.Count, 2, MidpointRounding.AwayFromZero);
+                // All rates are 0: distribute evenly so the remaining total is still preserved
+                amount = Math.Round(amountToDistribute / rates.Count, 2, MidpointRounding.AwayFromZero);
             }
             else
             {
                 var percentage = rates[i].Rate / totalRate;
-                amount = Math.Round(percentage * parentAmount, 2, MidpointRounding.AwayFromZero);
+                amount = Math.Round(percentage * amountToDistribute, 2, MidpointRounding.AwayFromZero);
             }
 
             runningTotal += amount;

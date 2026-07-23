@@ -95,6 +95,13 @@ public interface IJobCommandRepository
     Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data);
     Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
     Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType, string? pricingBreakdown = null);
+
+    /// <summary>
+    /// Explicitly sets/clears the RatedManually flag for a job (active, prebook, or archived),
+    /// bypassing the auto-rate guard. Used by deliberate re-rate actions (e.g. the Recalculate
+    /// button, bulk recalculate upload) that need to override or restamp manual-pricing status.
+    /// </summary>
+    Task SetJobRatedManuallyAsync(int jobId, bool isBooking, bool ratedManually);
     Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data);
     Task<decimal> RepriceJobWithBaseAmountAsync(RepriceJobWithBaseAmountModel data);
     Task AssignCourierToJobAsync(IReadOnlyList<int> jobIds, int courierId);

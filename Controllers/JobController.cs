@@ -2511,6 +2511,10 @@ public class JobController(
         var isArchived = !isBooking && await jobQueryRepository.IsJobArchived(jobId);
         //if (isArchived) return;
 
+        // Explicit user-initiated recalculation: clear the manual-pricing flag so the rate
+        // engine is allowed to overwrite the price, and so the job is left as system-rated.
+        await jobCommandRepository.SetJobRatedManuallyAsync(jobId, isBooking, false);
+
         var isUsCustomer = infoService.IsUsTenant();
 
         if (isUsCustomer)
