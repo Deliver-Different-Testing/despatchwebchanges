@@ -345,10 +345,15 @@ public class NationwideJobController(
                 return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
             }
 
-            await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value,
-                jobRequestModel.IncludeStopJobs ?? false);
+            var result = await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value,
+                jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false);
 
-            return Ok();
+            return Ok(new
+            {
+                status = result.Status.ToString(),
+                agentEmail = result.AgentEmail,
+                willEmail = result.WillEmail
+            });
         }
         catch (Exception ex)
         {
@@ -630,6 +635,27 @@ public class NationwideJobController(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
                     nameof(CanAssignAgentToJob)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    public async Task<IActionResult> GetAgentInboundEmailPreview(int agentId, int jobId)
+    {
+        try
+        {
+            var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+            return Json(new
+            {
+                status = preview.Status.ToString(),
+                agentEmail = preview.AgentEmail,
+                willEmail = preview.WillEmail
+            });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(GetAgentInboundEmailPreview)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

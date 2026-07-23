@@ -128,52 +128,69 @@ public class JobPhotoServiceTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task DeleteJobPhotoOrSignatureAsync_EmptyKey_ReturnsFalse(string? key)
+    public async Task ArchiveJobPhotoAsync_EmptyKey_ReturnsFalse(string? key)
     {
         // Arrange
         var service = CreateService();
 
         // Act
-        var result = await service.DeleteJobPhotoOrSignatureAsync(1, key);
+        var result = await service.ArchiveJobPhotoAsync(1, key);
 
         // Assert
         Assert.False(result);
+        await _s3ClientMock.DidNotReceive()
+            .CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>());
+        await _s3ClientMock.DidNotReceive()
+            .DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteJobPhotoOrSignatureAsync_ValidKey_DeletesFromS3()
+    public async Task ArchiveJobPhotoAsync_ValidKey_CopiesToArchivePrefixThenDeletesOriginal()
     {
         // Arrange
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
+        const string key = "DeliveryPhotos/2024/01/1-test.jpg";
 
+        _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new CopyObjectResponse());
         _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>())
             .Returns(new DeleteObjectResponse());
 
         // Act
-        var result = await service.DeleteJobPhotoOrSignatureAsync(1, "DeliveryPhotos/2024/01/1-test.jpg");
+        var result = await service.ArchiveJobPhotoAsync(1, key);
 
         // Assert
         Assert.True(result);
-        await _s3ClientMock.Received().DeleteObjectAsync(
-            Arg.Is<DeleteObjectRequest>(r => r.Key == "DeliveryPhotos/2024/01/1-test.jpg"),
+        await _s3ClientMock.Received(1).CopyObjectAsync(
+            Arg.Is<CopyObjectRequest>(r =>
+                r.SourceKey == key &&
+                r.DestinationKey == $"RestoredArchive/{key}" &&
+                r.SourceBucket == "test-bucket" &&
+                r.DestinationBucket == "test-bucket"),
+            Arg.Any<CancellationToken>());
+        await _s3ClientMock.Received(1).DeleteObjectAsync(
+            Arg.Is<DeleteObjectRequest>(r => r.Key == key),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteJobPhotoOrSignatureAsync_S3Error_ReturnsFalse()
+    public async Task ArchiveJobPhotoAsync_CopyFails_DoesNotDeleteOriginalAndReturnsFalse()
     {
-        // Arrange
+        // Arrange — the copy throws, so the original must be kept (never soft-delete without a backup).
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
-        _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>()).ThrowsAsync(new AmazonS3Exception("Delete failed"));
+        _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AmazonS3Exception("copy failed"));
 
         // Act
-        var result = await service.DeleteJobPhotoOrSignatureAsync(1, "test-key");
+        var result = await service.ArchiveJobPhotoAsync(1, "DeliveryPhotos/2024/01/1-test.jpg");
 
         // Assert
         Assert.False(result);
+        await _s3ClientMock.DidNotReceive()
+            .DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

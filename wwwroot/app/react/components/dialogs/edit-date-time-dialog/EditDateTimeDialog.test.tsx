@@ -173,6 +173,38 @@ describe('EditDateTimeDialog', () => {
         });
     });
 
+    // ── Clear ───────────────────────────────────────────────────────
+    describe('Clear', () => {
+        it('does not show a Clear button unless allowClear is set', () => {
+            renderWithProviders(createDefaultProps());
+            expect(screen.queryByRole('button', {name: /Clear/i})).not.toBeInTheDocument();
+        });
+
+        it('shows a Clear button when allowClear is set', () => {
+            renderWithProviders(createDefaultProps({allowClear: true}));
+            expect(screen.getByRole('button', {name: /Clear/i})).toBeInTheDocument();
+        });
+
+        it('submits with cleared: true when Clear is clicked', async () => {
+            const user = setupUser();
+            const onSubmit = jest.fn();
+            renderWithProviders(createDefaultProps({allowClear: true, fieldName: 'CompletedTime', onSubmit}));
+
+            await user.click(screen.getByRole('button', {name: /Clear/i}));
+
+            await waitFor(() => {
+                expect(onSubmit).toHaveBeenCalledWith(
+                    expect.objectContaining({fieldName: 'CompletedTime', cleared: true})
+                );
+            });
+        });
+
+        it('hides the Clear button in read-only mode', () => {
+            renderWithProviders(createDefaultProps({allowClear: true, readOnly: true}));
+            expect(screen.queryByRole('button', {name: /Clear/i})).not.toBeInTheDocument();
+        });
+    });
+
     // ── Initial Value ───────────────────────────────────────────────
     describe('Initial Value', () => {
         it('initializes without error when no dateTime provided', () => {

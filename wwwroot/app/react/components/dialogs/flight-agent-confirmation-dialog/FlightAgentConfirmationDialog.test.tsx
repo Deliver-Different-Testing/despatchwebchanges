@@ -6,16 +6,30 @@ import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
 import {AgentSuggestion, FlightCargoProcessing, FlightSegment, FlightViewModel} from './types';
 
+// The agent-mode pre-flight notice fetches an inbound-email preview via react-query.
+// Keep it inert here (never resolves → renders nothing) so these tests stay focused on
+// the dialog's own content; the notice has its own dedicated tests.
+jest.mock('../../../services/dispatchExecutorApi', () => ({
+    getAgentInboundEmailPreview: jest.fn(() => new Promise(() => { /* never resolves */ })),
+}));
+
 // Create a theme for testing
 const theme = createTheme();
 
-// Helper to render component with theme
+// Helper to render component with theme + a QueryClient (production mounts this dialog
+// inside ReactQueryProvider via its bridge module).
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+    return render(
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+        </QueryClientProvider>,
+    );
 }
 
 // Create sample flight segment

@@ -58,6 +58,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
     showTime = true,
     isUSCustomer = false,
     readOnly = false,
+    allowClear = false,
     onClose,
     onSubmit,
     showToast,
@@ -151,6 +152,26 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             setIsLoading(false);
         }
     }, [dateTime, fieldName, selectedTimeZone, processDateTime, onSubmit, showToast]);
+
+    // Clear the value: resolve with `cleared: true` so the caller removes the
+    // stored value rather than persisting a date. `value` is still supplied to
+    // satisfy the result shape but is ignored by clear-aware callers.
+    const handleClear = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            await onSubmit({
+                fieldName,
+                value: dateTime,
+                timezone: selectedTimeZone,
+                cleared: true,
+            });
+        } catch (error: unknown) {
+            console.error('Error clearing date/time:', error);
+            showToast(error instanceof Error ? error.message : 'Failed to clear date/time', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [dateTime, fieldName, selectedTimeZone, onSubmit, showToast]);
 
     // Render the appropriate picker based on mode
     const renderPicker = () => {
@@ -335,6 +356,17 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                     >
                         {readOnly ? 'Close' : 'Cancel'}
                     </Button>
+                    {!readOnly && allowClear && (
+                        <Button
+                            onClick={handleClear}
+                            variant="outlined"
+                            color="error"
+                            disabled={isLoading}
+                            sx={{ minWidth: 100 }}
+                        >
+                            Clear
+                        </Button>
+                    )}
                     {!readOnly && (
                         <Button
                             onClick={handleSubmit}

@@ -13,6 +13,8 @@ import {
     isJobParent,
     isBulkJobParent,
     canAssignAgentToJob,
+    assignAgentToJob,
+    getAgentInboundEmailPreview,
     recalculateJobRate,
     applyRecalculatedJobRate,
     simpleRepriceJobManual,
@@ -152,6 +154,48 @@ describe('dispatchExecutorApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith('nationwideJob/CanAssignAgentToJob', {agentJobId: 30}, undefined);
             expect(result).toBe(true);
+        });
+    });
+
+    describe('assignAgentToJob', () => {
+        it('should POST jobId/agentId/includeStopJobs and return the email outcome', async () => {
+            const outcome = {status: 'Queued', agentEmail: 'agent@example.com', willEmail: true};
+            mockApiClient.post.mockResolvedValueOnce(outcome);
+
+            const result = await assignAgentToJob(100, 7);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                'nationwideJob/AssignAgentToJob',
+                {jobId: 100, agentId: 7, includeStopJobs: false},
+            );
+            expect(result).toEqual(outcome);
+        });
+
+        it('should forward includeStopJobs when provided', async () => {
+            mockApiClient.post.mockResolvedValueOnce({status: 'NoAgentEmail', agentEmail: null, willEmail: false});
+
+            await assignAgentToJob(100, 7, true);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                'nationwideJob/AssignAgentToJob',
+                {jobId: 100, agentId: 7, includeStopJobs: true},
+            );
+        });
+    });
+
+    describe('getAgentInboundEmailPreview', () => {
+        it('should call apiClient.get with agentId/jobId', async () => {
+            const preview = {status: 'NoInboundUrl', agentEmail: 'agent@example.com', willEmail: false};
+            mockApiClient.get.mockResolvedValueOnce(preview);
+
+            const result = await getAgentInboundEmailPreview(7, 100);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'nationwideJob/GetAgentInboundEmailPreview',
+                {agentId: 7, jobId: 100},
+                undefined,
+            );
+            expect(result).toEqual(preview);
         });
     });
 

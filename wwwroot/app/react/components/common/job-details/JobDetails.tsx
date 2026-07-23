@@ -721,6 +721,8 @@ export function JobDetails({config}: JobDetailsProps) {
                             showToast={showToast}
                             onUploadPhotos={actions.handlePodUpload}
                             onSendPod={actions.handleSendPodEmail}
+                            jobId={job.id}
+                            onPhotoDeleted={invalidatePhotos}
                         />
                     </Suspense>
                 </Box>
@@ -748,6 +750,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 title={actions.textDialog.title}
                 label={actions.textDialog.label}
                 initialValue={actions.textDialog.initialValue}
+                allowClear={actions.textDialog.allowClear}
                 onSubmit={actions.handleTextDialogSubmit}
                 onCancel={actions.handleTextDialogCancel}
             />

@@ -38,6 +38,7 @@ import type {ISuggestion} from '../../../../interfaces/job.interface';
 import type {EventGroupItem} from '../../../services/jobListApi';
 
 import {PartnerRatePanel} from './PartnerRatePanel';
+import {AgentInboundEmailNotice} from '../shared/AgentInboundEmailNotice';
 import type {DispatchDialogProps, DispatchMode, DispatchType} from './types';
 
 const SECTION_LABEL_SX = {
@@ -351,6 +352,11 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                                 />
                             </Paper>
                         </Box>
+                    )}
+
+                    {/* Inbound-agent email pre-flight — only for a chosen Agent on a single job */}
+                    {selectedType === 'Agent' && destination && mode.kind === 'single' && (
+                        <AgentInboundEmailNotice agentId={destination.id} jobId={mode.jobId}/>
                     )}
 
                     {/* DFRNT Partner panel */}

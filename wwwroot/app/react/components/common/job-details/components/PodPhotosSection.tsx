@@ -16,11 +16,14 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import UploadIcon from '@mui/icons-material/Upload';
 import SendIcon from '@mui/icons-material/Send';
 import Tooltip from '@mui/material/Tooltip';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DialogContent from '@mui/material/DialogContent';
 import {isImageFile, isPdfFile} from '../JobDetails.types';
 import type {PodPhoto} from '../JobDetails.types';
-import {downloadFile} from '../../../../services/jobDetailApi';
+import {downloadFile, deleteJobDeliveryPhotoOrSignature} from '../../../../services/jobDetailApi';
 import {cardContainerSx} from '../JobDetails.styles';
 import {SectionHeader} from './SectionHeader';
+import {DialogShell, DialogHeader, DialogFooter} from '../../../dialogs/shared';
 
 const cardContainerLoadingSx = {...cardContainerSx as object, p: 1.5};
 const cardContainerPickupSx = {...cardContainerSx as object, mt: 1};
@@ -34,6 +37,10 @@ interface PodPhotosSectionProps {
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
     onUploadPhotos?: () => void;
     onSendPod?: () => void;
+    /** Job id — required to enable per-photo delete on the delivery grid. */
+    jobId?: number;
+    /** Called after a photo is soft-deleted so the caller can refresh the photo list. */
+    onPhotoDeleted?: () => void;
 }
 
 function PhotoGrid({
@@ -41,13 +48,53 @@ function PhotoGrid({
     photos,
     imageOnlyPhotos,
     showToast,
+    jobId,
+    canDelete = false,
+    onPhotoDeleted,
 }: {
     title: string;
     photos: PodPhoto[];
     imageOnlyPhotos: PodPhoto[];
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+    jobId?: number;
+    canDelete?: boolean;
+    onPhotoDeleted?: () => void;
 }) {
     const [selectedIndex, setSelectedIndex] = useState(0);
+    // Index of the photo awaiting delete confirmation (null when the dialog is closed).
+    const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const pendingPhoto = pendingDeleteIndex != null ? photos[pendingDeleteIndex] : null;
+    const showDelete = canDelete && !!jobId;
+
+    const closeDeleteDialog = useCallback(() => {
+        if (isDeleting) return;
+        setPendingDeleteIndex(null);
+    }, [isDeleting]);
+
+    const confirmDelete = useCallback(async () => {
+        if (!jobId || pendingDeleteIndex == null) return;
+        const photo = photos[pendingDeleteIndex];
+        if (!photo?.s3Key) {
+            showToast('Cannot delete this photo — missing file reference.', 'error');
+            setPendingDeleteIndex(null);
+            return;
+        }
+        setIsDeleting(true);
+        try {
+            await deleteJobDeliveryPhotoOrSignature(jobId, photo.s3Key);
+            // Keep the carousel index in range now that a photo is gone.
+            setSelectedIndex(prev => Math.max(0, Math.min(prev, photos.length - 2)));
+            setPendingDeleteIndex(null);
+            showToast('Photo deleted', 'success');
+            onPhotoDeleted?.();
+        } catch {
+            showToast('Failed to delete photo', 'error');
+        } finally {
+            setIsDeleting(false);
+        }
+    }, [jobId, pendingDeleteIndex, photos, showToast, onPhotoDeleted]);
 
     // Reset index when photos array changes to avoid stale selection
     useEffect(() => {
@@ -106,6 +153,7 @@ function PhotoGrid({
     const selectedPhoto = photos[selectedIndex] || photos[0];
 
     return (
+        <>
         <Box>
             {/* Main photo viewer */}
             {selectedPhoto && isImageFile(selectedPhoto) && (
@@ -129,6 +177,25 @@ function PhotoGrid({
                         alt={`${title} photo`}
                         style={{maxWidth: '100%', maxHeight: 280, objectFit: 'contain'}}
                     />
+                    {showDelete && (
+                        <Tooltip title="Delete photo">
+                            <IconButton
+                                size="small"
+                                aria-label="Delete photo"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPendingDeleteIndex(selectedIndex);
+                                }}
+                                sx={{
+                                    position: 'absolute', right: 8, top: 8,
+                                    bgcolor: 'rgba(0,0,0,0.45)', color: 'white',
+                                    '&:hover': {bgcolor: 'rgba(0,0,0,0.65)'},
+                                }}
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                     {photos.length > 1 && (
                         <>
                             <IconButton
@@ -220,6 +287,35 @@ function PhotoGrid({
                 </Box>
             )}
         </Box>
+        {showDelete && (
+            <DialogShell open={pendingDeleteIndex != null} onClose={closeDeleteDialog}>
+                <DialogHeader
+                    icon={<DeleteIcon />}
+                    title="Delete photo"
+                    subtitle={pendingPhoto?.fileName}
+                    onClose={closeDeleteDialog}
+                    variant="error"
+                    closeDisabled={isDeleting}
+                />
+                <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
+                    <Box sx={{p: 3}}>
+                        <Typography variant="body2">
+                            Remove this {title.toLowerCase()} photo from the job? The image is archived
+                            (not permanently deleted) and can be recovered if needed.
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogFooter
+                    onCancel={closeDeleteDialog}
+                    onConfirm={confirmDelete}
+                    confirmLabel="Delete"
+                    confirmColor="error"
+                    confirmIcon={<DeleteIcon />}
+                    submitting={isDeleting}
+                />
+            </DialogShell>
+        )}
+        </>
     );
 }
 
@@ -232,6 +328,8 @@ export function PodPhotosSection({
     showToast,
     onUploadPhotos,
     onSendPod,
+    jobId,
+    onPhotoDeleted,
 }: PodPhotosSectionProps) {
     if (isLoading) {
         return (
@@ -281,6 +379,9 @@ export function PodPhotosSection({
                         photos={deliveryPhotos}
                         imageOnlyPhotos={imageOnlyDeliveryPhotos}
                         showToast={showToast}
+                        jobId={jobId}
+                        canDelete
+                        onPhotoDeleted={onPhotoDeleted}
                     />
                 </Box>
             </Box>

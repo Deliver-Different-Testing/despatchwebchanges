@@ -145,6 +145,62 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdateJobAsync_CompletedTime_EmptyValue_LiveJob_ClearsCompletedTime()
+    {
+        // Arrange — a completed live job with an existing POD time
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 10,
+                UcjbNumber = "JOB-010",
+                UcjbComplTime = new DateTime(2024, 6, 15, 9, 37, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act — an empty value clears the POD time
+        await repository.UpdateJobAsync(10, JobProperty.CompletedTime, string.Empty);
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 10,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(updatedJob.UcjbComplTime); // empty value should null the POD time
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_CompletedTime_EmptyValue_ArchivedJob_ClearsCompletedTime()
+    {
+        // Arrange — a completed archived job with an existing POD time
+        await using (var context = CreateContext())
+        {
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 11,
+                UcjbNumber = "JOB-011",
+                UcjbComplTime = new DateTime(2024, 6, 15, 12, 37, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act — clearing must also work on archived jobs
+        await repository.UpdateJobAsync(11, JobProperty.CompletedTime, string.Empty);
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 11,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(updatedArchive.UcjbComplTime); // empty value should null the archived POD time
+    }
+
+    [Fact]
     public async Task UpdateJobAsync_Delivered_LiveJob_SetsCompletedTimeViaInfoService()
     {
         // Arrange — Delivered=true uses entity-based update with DeliverByTimeZone include
@@ -315,5 +371,61 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal(newFollowup.DateTime, updatedJob.FollowupTime); // FollowupTime should store the wall-clock time from DateTimeOffset
         Assert.Equal(14, updatedJob.FollowupTime!.Value.Hour);
         Assert.Equal(30, updatedJob.FollowupTime!.Value.Minute);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_PodName_EmptyValue_ClearsName()
+    {
+        // Arrange — an active job that already has a POD name
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 10,
+                UcjbNumber = "JOB-010",
+                UcjbPodname = "Jane Doe"
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act — an empty value clears the POD name
+        await repository.UpdateJobAsync(10, JobProperty.PodName, "");
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 10,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(string.Empty, updatedJob.UcjbPodname);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_PodName_EmptyValue_ArchivedJob_ClearsName()
+    {
+        // Arrange — an archived job that already has a POD name
+        await using (var context = CreateContext())
+        {
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 11,
+                UcjbNumber = "JOB-011",
+                UcjbPodname = "John Smith"
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateJobAsync(11, JobProperty.PodName, "");
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 11,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(string.Empty, updatedArchive.UcjbPodname);
     }
 }

@@ -46,6 +46,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import type {AppPage, DispatchJob} from '../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../services/toastService';
 import * as api from '../../services/jobListApi';
+import {assignAgentToJob, canAssignAgentToJob} from '../../services/dispatchExecutorApi';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
@@ -280,6 +281,34 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setDispatchDialog({open: true, initialType});
     };
 
+    // Assign an agent from the dispatch dialog: gate on a flight being assigned, then
+    // assign and report whether the agent was emailed the inbound-agent link.
+    const assignAgentFromDialog = async (
+        targetJob: DispatchJob,
+        destination: {id: number; text: string},
+    ) => {
+        const canAssign = await canAssignAgentToJob(targetJob.id);
+        if (!canAssign) {
+            throw new Error(
+                'A flight must be assigned to the flight portion before an agent can be assigned.',
+            );
+        }
+        const result = await assignAgentToJob(targetJob.id, destination.id);
+        setDispatchDialog((s) => ({...s, open: false}));
+        await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
+        const base = `Job ${targetJob.jobNo} assigned to ${destination.text}`;
+        if (result.willEmail) {
+            showToast(`${base} — inbound link emailed to ${result.agentEmail}`, 'success');
+        } else if (result.status === 'NoAgentEmail') {
+            showToast(`${base} — agent has no email on file, no link sent`, 'warning');
+        } else if (result.status === 'NoInboundUrl') {
+            showToast(`${base} — inbound portal URL not configured, no link sent`, 'warning');
+        } else {
+            showToast(`${base} — inbound link could not be sent`, 'warning');
+        }
+        refresh();
+    };
+
     const handleDispatchDialogConfirmCourier = async (
         type: 'Courier' | 'Agent' | 'NP',
         destination: {id: number; text: string},
@@ -288,8 +317,12 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         // courier assigned, treat the action as a re-dispatch so the server
         // releases the previous courier; otherwise allocate fresh.
         const targetJob = activeJob;
+        if (type === 'Agent') {
+            await assignAgentFromDialog(targetJob, destination);
+            return;
+        }
         if (type !== 'Courier') {
-            // Agent / NP from the context menu isn't wired server-side for ad-hoc
+            // NP from the context menu isn't wired server-side for ad-hoc
             // dispatch yet — surface that clearly instead of failing silently.
             throw new Error(`${type} dispatch is not yet wired from the job list — use the job-details panel.`);
         }

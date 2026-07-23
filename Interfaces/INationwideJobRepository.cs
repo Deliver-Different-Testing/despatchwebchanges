@@ -21,7 +21,14 @@ public interface INationwideJobRepository
 
     Task<IReadOnlyList<AgentViewModel>> GetAgentsAsync(int jobId);
 
-    Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false);
+    Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false);
+
+    /// <summary>
+    /// Pre-flight check (no side effects): would assigning <paramref name="agentId"/> to
+    /// <paramref name="jobId"/> email the agent the inbound-agent link, and to what address?
+    /// </summary>
+    Task<AgentInboundEmailResult> GetAgentInboundEmailPreviewAsync(int agentId, int jobId);
+
     Task<IReadOnlyList<AirlineSuggestion>> GetActiveAirlineOptionsAsync();
     Task<IReadOnlyList<string>> GetActiveAirlineCodesAsync();
     Task<string?> GetAirlineCodeByIdAsync(int airlineId);

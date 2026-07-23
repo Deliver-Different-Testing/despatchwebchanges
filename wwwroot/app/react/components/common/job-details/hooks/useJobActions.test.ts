@@ -400,6 +400,37 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             // Should show "updated" toast from editDateAndTime, not "Completed"
             expect(mockShowToast).toHaveBeenCalledWith('J-1001 updated', 'success');
         });
+
+        it('offers Clear and clears the POD time when the dialog signals cleared', async () => {
+            const {updateJobDetail} = jest.requireMock('../../../../services/jobDetailApi');
+            (updateJobDetail as jest.Mock).mockClear();
+
+            const job = createMockJob({
+                done: true,
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                podName: 'Bob',
+            });
+            (window as any).ReactEditDateTimeDialog = {
+                showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
+                    value: dayjs('2026-03-23T11:45:00'),
+                    fieldName: JobProperty.CompletedTime,
+                    timezone: 'Pacific/Auckland',
+                    cleared: true,
+                }),
+            };
+
+            const {result, mockUpdatePod, mockShowToast} = setup({job});
+
+            await act(() => result.current.handleEditCompletedTime());
+
+            // The dialog is opened with the Clear affordance enabled
+            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+                .toHaveBeenCalledWith(expect.objectContaining({allowClear: true}));
+            // Clear persists an empty value so the backend nulls the POD time
+            expect(updateJobDetail).toHaveBeenCalledWith(1001, JobProperty.CompletedTime, '', false, 'Pacific/Auckland');
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+            expect(mockShowToast).toHaveBeenCalledWith('J-1001 updated', 'success');
+        });
     });
 
     describe('handleEditPodName — chaining into completion flow', () => {
@@ -446,7 +477,29 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             expect(result.current.textDialog.open).toBe(true);
             expect(result.current.textDialog.title).toBe('Edit POD Name');
             expect(result.current.textDialog.okLabel).toBeUndefined();
+            // Clear affordance is offered so the name can be removed
+            expect(result.current.textDialog.allowClear).toBe(true);
             expect(mockUpdatePod).not.toHaveBeenCalled();
+        });
+
+        it('clears the POD name when an empty value is submitted on a done job', async () => {
+            const job = createMockJob({
+                done: true,
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                podName: 'Bob',
+            });
+            const {result, mockUpdateField} = setup({job});
+
+            act(() => {
+                result.current.handleEditPodName();
+            });
+
+            // Clear submits an empty value through the text dialog
+            await act(() => result.current.handleTextDialogSubmit(''));
+
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({field: JobProperty.PodName, value: ''}),
+            );
         });
     });
 

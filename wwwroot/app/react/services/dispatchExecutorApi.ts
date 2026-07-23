@@ -91,10 +91,50 @@ export async function isBulkJobParent(bulkJobId: number, options?: RequestOption
 // ── Nationwide / Agent ──────────────────────────────────────────────
 
 /**
- * Check if an agent can be assigned to a job.
+ * Check if an agent can be assigned to a job (a flight must be assigned first).
  */
 export async function canAssignAgentToJob(agentJobId: number, options?: RequestOptions): Promise<boolean> {
     return apiClient.get<boolean>('nationwideJob/CanAssignAgentToJob', {agentJobId}, options);
+}
+
+/** Whether assigning an agent will email them the inbound-agent job link. */
+export type AgentInboundEmailStatus = 'Queued' | 'NoAgentEmail' | 'NoInboundUrl' | 'Failed';
+
+export interface AgentInboundEmailResult {
+    status: AgentInboundEmailStatus;
+    agentEmail: string | null;
+    willEmail: boolean;
+}
+
+/**
+ * Assign an agent to a job. Returns whether the agent was emailed the inbound-agent
+ * link (best-effort — the assignment itself always succeeds if this resolves).
+ */
+export async function assignAgentToJob(
+    jobId: number,
+    agentId: number,
+    includeStopJobs = false,
+): Promise<AgentInboundEmailResult> {
+    return apiClient.post<AgentInboundEmailResult>(
+        'nationwideJob/AssignAgentToJob',
+        {jobId, agentId, includeStopJobs},
+    );
+}
+
+/**
+ * Pre-flight (no side effects): would assigning this agent email them the inbound-agent
+ * link, and to what address? Used to warn the dispatcher before they confirm.
+ */
+export async function getAgentInboundEmailPreview(
+    agentId: number,
+    jobId: number,
+    options?: RequestOptions,
+): Promise<AgentInboundEmailResult> {
+    return apiClient.get<AgentInboundEmailResult>(
+        'nationwideJob/GetAgentInboundEmailPreview',
+        {agentId, jobId},
+        options,
+    );
 }
 
 // ── Pricing ─────────────────────────────────────────────────────────
@@ -178,6 +218,8 @@ export const dispatchExecutorApi = {
     isJobParent,
     isBulkJobParent,
     canAssignAgentToJob,
+    assignAgentToJob,
+    getAgentInboundEmailPreview,
     recalculateJobRate,
     applyRecalculatedJobRate,
     simpleRepriceJobManual,
