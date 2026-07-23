@@ -492,6 +492,93 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdateManualPriceAsync_PriceChanged_SetsRatedManually()
+    {
+        // A directly-entered bulk price is a manual set — must be flagged so a later automatic
+        // re-rate doesn't silently overwrite it.
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 100,
+                UcjbNumber = "JOB100",
+                UcjbAmount = 50m,
+                FuelSurchargeAmount = 0m,
+                PpdexclusiveAmount = 0m,
+                UcjbLocked = false,
+                RatedManually = false
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        await repository.UpdateManualPriceAsync([
+            new JobManualPriceModel
+            {
+                Id = 100, Amount = 75m, Fuel = 0m, Ppd = 0m,
+                CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m
+            }
+        ]);
+
+        await using var verifyContext = CreateContext();
+        var job = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        Assert.NotNull(job);
+        Assert.Equal(75m, job!.UcjbAmount);
+        Assert.True(job.RatedManually);
+    }
+
+    [Fact]
+    public async Task UpdateManualPriceAsync_SplitParentTotalChanged_SetsRatedManuallyOnParent()
+    {
+        // When editing split children's amounts changes the parent's summed total, the parent's
+        // breakdown gets collapsed to a single consolidated line (there's no way to know how to
+        // re-split it) — the parent must be flagged manually rated so a later auto re-rate can't
+        // silently overwrite that consolidated price.
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 100, UcjbNumber = "JOB100", UcjbAmount = 100m,
+                FuelSurchargeAmount = 0m, PpdexclusiveAmount = 0m, UcjbLocked = false,
+                RatedManually = false
+            });
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 101, UcjbNumber = "JOB100A", ParentId = 100, UcjbAmount = 40m,
+                FuelSurchargeAmount = 0m, PpdexclusiveAmount = 0m, UcjbLocked = false
+            });
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 102, UcjbNumber = "JOB100B", ParentId = 100, UcjbAmount = 60m,
+                FuelSurchargeAmount = 0m, PpdexclusiveAmount = 0m, UcjbLocked = false
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        await repository.UpdateManualPriceAsync([
+            new JobManualPriceModel
+            {
+                Id = 101, Amount = 45m, Fuel = 0m, Ppd = 0m,
+                CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m
+            },
+            new JobManualPriceModel
+            {
+                Id = 102, Amount = 65m, Fuel = 0m, Ppd = 0m,
+                CourierPayment = 0m, CourierFuel = 0m, CourierBonus = 0m
+            }
+        ]);
+
+        await using var verifyContext = CreateContext();
+        var parent = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        Assert.NotNull(parent);
+        Assert.Equal(110m, parent!.UcjbAmount);
+        Assert.True(parent.RatedManually);
+    }
+
+    [Fact]
     public async Task SimpleRepriceJobManualAsync_WithRegularJob_UpdatesPriceAndMarksManual()
     {
         // Arrange

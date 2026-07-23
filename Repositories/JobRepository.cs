@@ -186,6 +186,9 @@ public partial class JobRepository(
                         match.FuelSurchargeAmount = Math.Round(d.Fuel.Value, 4, MidpointRounding.AwayFromZero);
                         match.PpdexclusiveAmount = Math.Round(d.Ppd.Value, 4, MidpointRounding.AwayFromZero);
                         match.RawBaseAmount = match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
+                        // A directly-entered bulk price is a manual set — flag it so a later
+                        // auto re-rate doesn't silently overwrite it.
+                        match.RatedManually = true;
                         // Mark this job for a pricing breakdown update
                         jobsWithChangedPrices.Add(d.Id);
                         Log.Information("Job {DId} has price change - updating", d.Id);
@@ -271,6 +274,11 @@ public partial class JobRepository(
                     parentJob.FuelSurchargeAmount = totalFuel;
                     parentJob.PpdexclusiveAmount = totalPpd;
                     parentJob.RawBaseAmount = totalAmount - totalFuel - totalPpd;
+
+                    // The breakdown below gets collapsed to a single "Manually Rated" line since
+                    // there's no way to know how to re-split the new total across the old lines —
+                    // flag the job so a later auto re-rate doesn't silently overwrite it.
+                    parentJob.RatedManually = true;
 
                     // Mark this parent job for a pricing breakdown update
                     jobsWithChangedPrices.Add(x.Key);
@@ -1248,6 +1256,8 @@ public partial class JobRepository(
                 await Context.PricingBreakdownArchives.AddAsync(archiveItem);
                 await Context.SaveChangesAsync();
 
+                await SetArchiveJobAsManuallyPriceAsync(effectiveJobId);
+
                 await RecalculateJobAmountFromBreakdownAsync(
                     effectiveJobId, null, viewModel.ChildJobId, isArchived: true);
 
@@ -1349,6 +1359,10 @@ public partial class JobRepository(
         {
             await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
         }
+        else if (viewModel.JobId != null)
+        {
+            await SetArchiveJobAsManuallyPriceAsync(viewModel.JobId.Value);
+        }
 
         await RecalculateJobAmountFromBreakdownAsync(
             viewModel.JobId, viewModel.PrebookJobId, viewModel.ChildJobId, isArchived);
@@ -1373,6 +1387,11 @@ public partial class JobRepository(
             var archiveJobId = archiveBreakdown.JobId;
             Context.PricingBreakdownArchives.Remove(archiveBreakdown);
             await Context.SaveChangesAsync();
+
+            if (archiveJobId != null)
+            {
+                await SetArchiveJobAsManuallyPriceAsync(archiveJobId.Value);
+            }
 
             await RecalculateJobAmountFromBreakdownAsync(
                 archiveJobId, null, null, isArchived: true);
@@ -5803,6 +5822,14 @@ public partial class JobRepository(
                 .SetProperty(j => j.RatedManually, true));
 
         await CreateNewRecurringJobNote(prebookJobId, note, false);
+    }
+
+    private async Task SetArchiveJobAsManuallyPriceAsync(int jobId)
+    {
+        await Context.TucJobArchives
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.RatedManually, true));
     }
 
     private async Task<JobInfo> GetJobInfo(int jobId) =>

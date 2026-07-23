@@ -906,6 +906,11 @@ public sealed class RateJobService(
         var isArchived = !isBooking && await jobQueryRepository.IsJobArchived(jobId);
         var isUsCustomer = infoService.IsUsTenant();
 
+        // Same mechanism as the single-job Recalculate button: this produces a genuine
+        // system-computed rate and pricing breakdown from the rating engine, not a manual
+        // override, so clear the flag first (bypassing the auto-rate guard) and leave it cleared.
+        await jobCommandRepository.SetJobRatedManuallyAsync(jobId, isBooking, false);
+
         if (isUsCustomer)
         {
             var jobDetailsUs = isBooking
@@ -913,13 +918,14 @@ public sealed class RateJobService(
                 : await jobQueryRepository.GetJobDetailsForRatingAsync(jobId);
 
             await RateJobUsAsync(jobDetailsUs);
-            return;
         }
+        else
+        {
+            var jobDetailsNz = isBooking
+                ? await jobQueryRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
+                : await jobQueryRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
 
-        var jobDetailsNz = isBooking
-            ? await jobQueryRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
-            : await jobQueryRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
-
-        await RateJobNzAsync(jobDetailsNz);
+            await RateJobNzAsync(jobDetailsNz);
+        }
     }
 }

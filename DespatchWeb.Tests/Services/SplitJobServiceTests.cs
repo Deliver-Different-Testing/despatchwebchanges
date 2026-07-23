@@ -952,6 +952,125 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task PropagateUpdateToChildrenAsync_SplitParent_ManualLegKeepsAmountAndFlagAutoLegTakesRemainder()
+    {
+        // A manually-priced leg (custom breakdown/reprice) must survive an unrelated field
+        // edit on the split parent: its amount and RatedManually flag stay untouched, and only
+        // the remaining (parent total minus manual legs) is redistributed across auto legs.
+        SeedJob(jobId: 100, jobNumber: "JOB-100", configure: j =>
+        {
+            j.JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent;
+            j.RootParentId = 100;
+            j.UcjbAmount = 100.00m;
+        });
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 101,
+            UcjbNumber = "JOB-100A",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 1,
+            RatedManually = true,
+            UcjbAmount = 40.00m
+        });
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 102,
+            UcjbNumber = "JOB-100B",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 2,
+            UcjbAmount = 999.00m
+        });
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var service = CreateService();
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Van, "true",
+            TestContext.Current.CancellationToken);
+
+        // Field edit still propagates to every non-void child, manual or not.
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(101, JobProperty.Van, "true");
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(102, JobProperty.Van, "true");
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var manualLeg = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 101,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var autoLeg = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 102,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(40.00m, manualLeg.UcjbAmount);
+        Assert.True(manualLeg.RatedManually);
+
+        Assert.Equal(60.00m, autoLeg.UcjbAmount);
+        Assert.False(autoLeg.RatedManually);
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToChildrenAsync_SplitParent_AllLegsManual_SkipsReRateEntirely()
+    {
+        // If every leg has been manually priced there's nothing left to redistribute —
+        // the re-rate must no-op rather than touch any leg's amount or call the rating engine.
+        SeedJob(jobId: 100, jobNumber: "JOB-100", configure: j =>
+        {
+            j.JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent;
+            j.RootParentId = 100;
+            j.UcjbAmount = 100.00m;
+        });
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 101,
+            UcjbNumber = "JOB-100A",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 1,
+            RatedManually = true,
+            UcjbAmount = 40.00m
+        });
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 102,
+            UcjbNumber = "JOB-100B",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 2,
+            RatedManually = true,
+            UcjbAmount = 60.00m
+        });
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var service = CreateService();
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Van, "true",
+            TestContext.Current.CancellationToken);
+
+        // No leg left to rate a preview for once manual legs are excluded.
+        await _rateJobServiceMock.DidNotReceive().GetJobRateNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+        await _rateJobServiceMock.DidNotReceive().GetJobRateUsAsync(Arg.Any<JobRatingDetailsDto>());
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var leg101 = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 101,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var leg102 = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 102,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(40.00m, leg101.UcjbAmount);
+        Assert.Equal(60.00m, leg102.UcjbAmount);
+    }
+
+    [Fact]
     public async Task PropagateUpdateToChildrenAsync_SingleJob_DoesNotPropagate()
     {
         // A standalone job (no Split/Multi relationship type) must never fan out updates or

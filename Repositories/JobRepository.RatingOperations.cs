@@ -77,6 +77,18 @@ public partial class JobRepository
     /// </summary>
     public async Task RateJobUsAsync(RateJobUsDto dto)
     {
+        var isRatedManually = dto.IsPrebook
+            ? await Context.TucJobBookings.Where(j => j.UcbkId == dto.JobId)
+                .Select(j => j.RatedManually).FirstOrDefaultAsync()
+            : await Context.TucJobs.Where(j => j.UcjbId == dto.JobId)
+                .Select(j => j.RatedManually).FirstOrDefaultAsync();
+
+        if (isRatedManually)
+        {
+            Log.Information("Job {Job} is manually rated. Skipping automatic rate update.", dto.JobId);
+            return;
+        }
+
         var (rate, description) = await CallRatingProcedureAsync(dto);
 
         if (dto.PreviousRate == rate)
@@ -114,6 +126,29 @@ public partial class JobRepository
         await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
     }
 
+    /// <inheritdoc cref="IJobCommandRepository.SetJobRatedManuallyAsync" />
+    public async Task SetJobRatedManuallyAsync(int jobId, bool isBooking, bool ratedManually)
+    {
+        if (isBooking)
+        {
+            await Context.TucJobBookings
+                .Where(j => j.UcbkId == jobId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.RatedManually, ratedManually));
+            return;
+        }
+
+        var rowsChanged = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.RatedManually, ratedManually));
+
+        if (rowsChanged == 0)
+        {
+            await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.RatedManually, ratedManually));
+        }
+    }
+
     /// <summary>
     /// Updates the rate amount for an NZ urgent job in the appropriate table based on job type.
     /// </summary>
@@ -121,6 +156,23 @@ public partial class JobRepository
     {
         try
         {
+            var isRatedManually = jobType switch
+            {
+                JobType.Active => await Context.TucJobs.Where(j => j.UcjbId == jobId)
+                    .Select(j => j.RatedManually).FirstOrDefaultAsync(),
+                JobType.Recurring => await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                    .Select(j => j.RatedManually).FirstOrDefaultAsync(),
+                JobType.Archived => await Context.TucJobArchives.Where(j => j.UcjbId == jobId)
+                    .Select(j => j.RatedManually).FirstOrDefaultAsync(),
+                _ => false
+            };
+
+            if (isRatedManually)
+            {
+                Log.Information("Job {JobId} is manually rated. Skipping automatic rate update.", jobId);
+                return;
+            }
+
             var previousRate = jobType switch
             {
                 JobType.Active => await Context.TucJobs.Where(j => j.UcjbId == jobId)

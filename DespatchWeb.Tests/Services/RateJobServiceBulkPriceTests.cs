@@ -863,6 +863,13 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // Verify the rating method was called
         await _jobCommandRepositoryMock.Received().RateJobUsAsync(Arg.Any<RateJobUsDto>());
+
+        // A bulk "recalculate" upload produces a genuine system-computed rate via the same
+        // engine as the single-job Recalculate button — the flag is cleared to allow the engine
+        // to run, and must NOT be restamped back to true afterward (it's not a manual override).
+        await _jobCommandRepositoryMock.Received(1).SetJobRatedManuallyAsync(1, false, false);
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .SetJobRatedManuallyAsync(1, Arg.Any<bool>(), true);
     }
 
     [Fact]

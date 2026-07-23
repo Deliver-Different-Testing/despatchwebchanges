@@ -3014,6 +3014,18 @@ public class JobControllerTests : IDisposable
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(200, okResult.StatusCode);
+
+        // The Recalculate button is a deliberate user-initiated override: the manual-pricing
+        // flag must be cleared BEFORE the rate engine runs (so it isn't blocked by the
+        // RatedManually guard), and must not be restamped back to true afterward — the result
+        // is a genuine system-computed rate, not a manual override.
+        Received.InOrder(() =>
+        {
+            _jobCommandRepositoryMock.SetJobRatedManuallyAsync(jobId, false, false);
+            _rateJobServiceMock.RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+        });
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .SetJobRatedManuallyAsync(jobId, Arg.Any<bool>(), true);
     }
 
     [Fact]
