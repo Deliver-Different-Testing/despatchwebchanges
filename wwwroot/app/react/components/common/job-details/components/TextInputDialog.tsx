@@ -26,6 +26,8 @@ export interface TextInputDialogProps {
     okLabel?: string;
     cancelLabel?: string;
     required?: boolean;
+    /** When true a "Clear" action is shown that submits an empty value to remove the field. */
+    allowClear?: boolean;
     onSubmit: (value: string) => void;
     onCancel: () => void;
 }
@@ -38,11 +40,14 @@ export function TextInputDialog({
     okLabel = 'Save',
     cancelLabel = 'Cancel',
     required = true,
+    allowClear = false,
     onSubmit,
     onCancel,
 }: TextInputDialogProps) {
     const [value, setValue] = useState(initialValue);
     const isEmpty = required && !value.trim();
+    // Only offer Clear when there is a value to remove.
+    const canClear = allowClear && !!value.trim();
 
     useEffect(() => {
         if (open) {
@@ -54,6 +59,12 @@ export function TextInputDialog({
         e.preventDefault();
         if (isEmpty) return;
         onSubmit(value);
+    };
+
+    // Clear submits an empty value, bypassing the required check, so the
+    // field is removed rather than updated.
+    const handleClear = () => {
+        onSubmit('');
     };
 
     return (
@@ -94,6 +105,15 @@ export function TextInputDialog({
                     <Button onClick={onCancel}>
                         {cancelLabel}
                     </Button>
+                    {canClear && (
+                        <Button
+                            onClick={handleClear}
+                            variant="outlined"
+                            color="error"
+                        >
+                            Clear
+                        </Button>
+                    )}
                     <Button
                         type="submit"
                         variant="contained"

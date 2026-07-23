@@ -112,6 +112,28 @@ describe('TextInputDialog', () => {
         expect(screen.getByRole('button', {name: 'Discard'})).toBeInTheDocument();
     });
 
+    it('does not show Clear button unless allowClear is set', () => {
+        renderWithTheme(<TextInputDialog {...defaultProps} />);
+        expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
+    });
+
+    it('shows Clear button when allowClear is set and a value exists', () => {
+        renderWithTheme(<TextInputDialog {...defaultProps} allowClear />);
+        expect(screen.getByRole('button', {name: 'Clear'})).toBeInTheDocument();
+    });
+
+    it('hides Clear button when allowClear is set but the value is empty', () => {
+        renderWithTheme(<TextInputDialog {...defaultProps} allowClear initialValue="" />);
+        expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
+    });
+
+    it('submits an empty value when Clear is clicked', async () => {
+        const user = setupUser({delay: null});
+        renderWithTheme(<TextInputDialog {...defaultProps} allowClear />);
+        await user.click(screen.getByRole('button', {name: 'Clear'}));
+        expect(defaultProps.onSubmit).toHaveBeenCalledWith('');
+    });
+
     it('resets value when reopened with new initialValue', () => {
         const {rerender} = renderWithTheme(<TextInputDialog {...defaultProps} open={false} />);
         rerender(

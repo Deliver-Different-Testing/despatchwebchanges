@@ -20,11 +20,13 @@ public class NationwideJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
     ITenantClock clock,
-    IClearListEnvelopeService clearListEnvelopeService)
+    IClearListEnvelopeService clearListEnvelopeService,
+    IInboundAgentLinkService inboundAgentLinkService)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), INationwideJobRepository
 {
     private readonly ITenantClock _clock = clock;
     private readonly ITenantInfoService _infoService = infoService;
+    private readonly IInboundAgentLinkService _inboundAgentLinkService = inboundAgentLinkService;
 
     public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData,
         IReadOnlyList<string> webhookIds,
@@ -298,7 +300,7 @@ public class NationwideJobRepository(
         return results;
     }
 
-    public async Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
+    public async Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
     {
         var job = await Context.TucJobs
             .AsTracking()
@@ -383,6 +385,53 @@ public class NationwideJobRepository(
         await Context.AddAsync(journeyRecord);
 
         await Context.SaveChangesAsync();
+
+        // Best-effort: email the agent a link to the job in the inbound-agent portal.
+        // The assignment is already committed, so a send failure must not unwind it. Only
+        // send when there is actually a link to include (agent email + InboundUrl present).
+        try
+        {
+            var preview = await EvaluateAgentInboundEmailAsync(agentId, jobId);
+            if (preview.WillEmail)
+            {
+                await SendAgentRequestMessageAsync(agentId, jobId);
+            }
+
+            return preview;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex,
+                "Job {JobId}: failed to email agent {AgentId} the inbound link (best-effort, ignored)",
+                jobId, agentId);
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.Failed, null);
+        }
+    }
+
+    public Task<AgentInboundEmailResult> GetAgentInboundEmailPreviewAsync(int agentId, int jobId) =>
+        EvaluateAgentInboundEmailAsync(agentId, jobId);
+
+    // Decides whether assigning this agent would email the inbound-agent link, and to whom.
+    // No side effects — used both for the pre-flight preview and to gate the actual send.
+    private async Task<AgentInboundEmailResult> EvaluateAgentInboundEmailAsync(int agentId, int jobId)
+    {
+        var agentEmail = await Context.TucAgents
+            .Where(a => a.UcagId == agentId)
+            .Select(a => a.UcagFax)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrWhiteSpace(agentEmail))
+        {
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoAgentEmail, null);
+        }
+
+        var link = await _inboundAgentLinkService.BuildJobLinkAsync(jobId);
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail);
+        }
+
+        return new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail);
     }
 
     public async Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
@@ -442,6 +491,13 @@ public class NationwideJobRepository(
             .Select(a => a.UcagFax)
             .FirstOrDefaultAsync();
 
+        if (string.IsNullOrWhiteSpace(agentEmail))
+        {
+            Log.Information("Agent {AgentId} has no email; skipping agent message for job {JobId}",
+                agentId, jobId);
+            return;
+        }
+
         var smppSetting = await Context.TblSmppsettings.FirstOrDefaultAsync();
 
         var staffId = _infoService.GetStaffId();
@@ -474,6 +530,7 @@ public class NationwideJobRepository(
 
         agentQuoteTemplateDto.CompletedTimeFormatted =
             _infoService.FormatDateForTenant(agentQuoteTemplateDto.CompletedTime);
+        agentQuoteTemplateDto.InboundUrl = await _inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
 
         Log.Information("AgentQuoteTemplateDto for job {JobId} and agent {AgentId}: {@AgentQuoteTemplateDto}",
             jobId,

@@ -49,6 +49,7 @@ import {
     FlightSegment,
 } from './types';
 import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {AgentInboundEmailNotice} from '../shared/AgentInboundEmailNotice';
 
 dayjs.extend(duration);
 dayjs.extend(utc);
@@ -776,6 +777,10 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                         )}
 
                         <Divider/>
+
+                        {mode === 'agent' && agent && (
+                            <AgentInboundEmailNotice agentId={agent.id} jobId={jobId}/>
+                        )}
 
                         {/* Delivery Notes */}
                         <TextField

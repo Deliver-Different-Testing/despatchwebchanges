@@ -13,4 +13,5 @@ public sealed class AgentQuoteTemplateDto
     public string PodName { get; init; }
     public DateTime? CompletedTime { get; init; }
     public string CompletedTimeFormatted { get; set; }
+    public string InboundUrl { get; set; }
 }

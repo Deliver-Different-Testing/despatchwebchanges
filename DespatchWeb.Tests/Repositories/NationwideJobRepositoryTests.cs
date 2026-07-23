@@ -20,6 +20,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly IInboundAgentLinkService _inboundAgentLinkServiceMock = Substitute.For<IInboundAgentLinkService>();
     private FakeTenantClock _clock = new(TestDates.Now);
 
     public NationwideJobRepositoryTests()
@@ -44,7 +45,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         _contextFactoryMock,
         _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock
+        _clearListEnvelopeServiceMock,
+        _inboundAgentLinkServiceMock
     );
 
     [Fact]
@@ -553,6 +555,197 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WithInboundUrlAndAgentEmail_QueuesAgentMessageWithLink()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        _context.TblSmppsettings.Add(CreateAgentEmailSmppSetting());
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
+        Assert.Equal("agent@example.com", result.AgentEmail);
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("agent@example.com", message.SendToEmailAddress);
+        Assert.Equal("Job JOB001", message.Subject);
+        Assert.Contains("https://inbound.example.com/TOKEN123", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WithoutAgentEmail_AssignsButQueuesNoMessage()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        _context.TucAgents.Add(CreateAgent(agentId, "Test Agent")); // UcagFax null
+        _context.TblSmppsettings.Add(CreateAgentEmailSmppSetting());
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.NoAgentEmail, result.Status);
+        Assert.Empty(await _context.TucManualMessages.ToListAsync(TestContext.Current.CancellationToken));
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(agentId, job.AgentId);
+        Assert.Equal((int)JobStatus.OutboundAgentAssigned, job.UcjbStatus);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WhenInboundUrlNotConfigured_AssignsButQueuesNoMessage()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        _context.TblSmppsettings.Add(CreateAgentEmailSmppSetting());
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns((string?)null); // no InboundUrl configured — nothing to link, so no email
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.NoInboundUrl, result.Status);
+        Assert.Empty(await _context.TucManualMessages.ToListAsync(TestContext.Current.CancellationToken));
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(agentId, job.AgentId);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WhenLinkServiceThrows_StillAssignsAgentAndReportsFailed()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        _context.TblSmppsettings.Add(CreateAgentEmailSmppSetting());
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns<Task<string?>>(_ => throw new InvalidOperationException("boom"));
+
+        var repository = CreateRepository();
+
+        // Act — the best-effort email failure must not unwind the assignment
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Failed, result.Status);
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(agentId, job.AgentId);
+        Assert.Equal((int)JobStatus.OutboundAgentAssigned, job.UcjbStatus);
+    }
+
+    [Fact]
+    public async Task GetAgentInboundEmailPreviewAsync_WithEmailAndInboundUrl_ReturnsQueuedWithNoSideEffects()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Queued, preview.Status);
+        Assert.True(preview.WillEmail);
+        Assert.Equal("agent@example.com", preview.AgentEmail);
+        // Preview has no side effects: the job is not assigned and nothing is queued.
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Null(job.AgentId);
+        Assert.Empty(await _context.TucManualMessages.ToListAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task GetAgentInboundEmailPreviewAsync_WithoutAgentEmail_ReturnsNoAgentEmail()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        _context.TucAgents.Add(CreateAgent(agentId, "Test Agent")); // UcagFax null
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.NoAgentEmail, preview.Status);
+        Assert.False(preview.WillEmail);
+    }
+
+    [Fact]
+    public async Task GetAgentInboundEmailPreviewAsync_WhenInboundUrlNotConfigured_ReturnsNoInboundUrl()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns((string?)null);
+
+        var repository = CreateRepository();
+
+        // Act
+        var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.NoInboundUrl, preview.Status);
+        Assert.False(preview.WillEmail);
+        Assert.Equal("agent@example.com", preview.AgentEmail);
     }
 
     [Fact]
@@ -2578,6 +2771,25 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         CreatedBy = "Test",
         LastModifiedBy = "Test"
     };
+
+    private static TblSmppsetting CreateAgentEmailSmppSetting()
+    {
+        // The legacy tblSMPPSettings has many NOT NULL string columns; default them all to
+        // empty so the SQLite insert succeeds, then set only the agent-email fields we assert on.
+        var setting = new TblSmppsetting { SettingId = 1 };
+        foreach (var prop in typeof(TblSmppsetting).GetProperties())
+        {
+            if (prop.PropertyType == typeof(string) && prop.CanWrite)
+            {
+                prop.SetValue(setting, string.Empty);
+            }
+        }
+
+        setting.AgentEmailSubject = "Job [JobNo]";
+        setting.AgentEmailMessage = "View your job here: [InboundUrl]";
+        setting.AgentEmailReplyAddress = "reply@example.com";
+        return setting;
+    }
 
     private static TucJobNationwide CreateJobNationwide(int id, int jobId, string webhookId) => new()
     {

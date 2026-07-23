@@ -559,7 +559,7 @@ public class JobController(
 
         try
         {
-            var success = await jobPhotoService.DeleteJobPhotoOrSignatureAsync(jobId, key);
+            var success = await jobPhotoService.ArchiveJobPhotoAsync(jobId, key);
             if (!success)
             {
                 return BadRequest("Failed to delete file or file key is required");

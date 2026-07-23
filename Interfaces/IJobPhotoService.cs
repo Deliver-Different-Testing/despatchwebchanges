@@ -13,7 +13,14 @@ public interface IJobPhotoService
     Task<AwsUploadResult> UploadJobPhotoOrSignatureAsync(int jobId, IFormFile file, JobPhotoType photoType,
         bool isPod = true, string podDescription = null);
 
-    Task<bool> DeleteJobPhotoOrSignatureAsync(int jobId, string key);
+    /// <summary>
+    /// Soft-deletes a single captured photo/signature by moving its S3 object under the
+    /// <c>RestoredArchive/</c> prefix (copy then delete original). The bytes are retained
+    /// (recoverable) but no longer returned by the photo getters.
+    /// </summary>
+    /// <param name="jobId">The job the file belongs to (for logging).</param>
+    /// <param name="key">The S3 key of the file to archive.</param>
+    Task<bool> ArchiveJobPhotoAsync(int jobId, string key);
 
     /// <summary>
     /// Soft-deletes all captured photos and signatures for a job (delivery photos, delivery

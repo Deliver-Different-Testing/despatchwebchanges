@@ -155,7 +155,10 @@ public partial class JobRepository
                 break;
 
             case JobProperty.CompletedTime:
-                var complTime = DateTimeOffset.Parse(value).DateTime;
+                // An empty value clears the POD time (nullable column); a value parses as usual.
+                DateTime? complTime = string.IsNullOrWhiteSpace(value)
+                    ? null
+                    : DateTimeOffset.Parse(value).DateTime;
                 rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbComplTime, complTime));
                 break;
 
@@ -807,7 +810,10 @@ public partial class JobRepository
 
                 break;
             case JobProperty.CompletedTime:
-                archive.UcjbComplTime = DateTimeOffset.Parse(value).DateTime;
+                // An empty value clears the POD time (nullable column); a value parses as usual.
+                archive.UcjbComplTime = string.IsNullOrWhiteSpace(value)
+                    ? null
+                    : DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DGClass:
                 archive.Dgclass = int.Parse(value);

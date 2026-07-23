@@ -867,7 +867,7 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const string key = "jobs/1/photo.png";
 
-        _jobPhotoServiceMock.DeleteJobPhotoOrSignatureAsync(jobId, key)
+        _jobPhotoServiceMock.ArchiveJobPhotoAsync(jobId, key)
             .Returns(true);
 
         var controller = CreateController();
@@ -886,7 +886,7 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const string key = "invalid-key";
 
-        _jobPhotoServiceMock.DeleteJobPhotoOrSignatureAsync(jobId, key)
+        _jobPhotoServiceMock.ArchiveJobPhotoAsync(jobId, key)
             .Returns(false);
 
         var controller = CreateController();

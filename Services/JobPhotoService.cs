@@ -162,17 +162,23 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
         }
     }
 
+    /// <summary>S3 key prefix under which archived (soft-deleted) captured media is retained.</summary>
+    private const string ArchivePrefix = "RestoredArchive/";
+
     /// <summary>
-    /// Deletes a photo or signature file from S3.
+    /// Soft-deletes a single captured photo/signature by copying the S3 object under the
+    /// <see cref="ArchivePrefix"/> prefix and then deleting the original. The copy runs first, so a
+    /// failure never loses data — the bytes remain recoverable and are no longer returned by the
+    /// photo getters. Reused by both the whole-job archiver and the single-image delete endpoint.
     /// </summary>
-    /// <param name="jobId">The job ID the file belongs to.</param>
-    /// <param name="key">The S3 key of the file to delete.</param>
-    /// <returns>True if deletion was successful, false otherwise.</returns>
-    public async Task<bool> DeleteJobPhotoOrSignatureAsync(int jobId, string key)
+    /// <param name="jobId">The job ID the file belongs to (for logging).</param>
+    /// <param name="key">The S3 key of the file to archive.</param>
+    /// <returns>True if the object was archived, false otherwise.</returns>
+    public async Task<bool> ArchiveJobPhotoAsync(int jobId, string key)
     {
         if (string.IsNullOrEmpty(key))
         {
-            Log.Warning("Attempted to delete file for job {JobId} with empty key", jobId);
+            Log.Warning("Attempted to archive file for job {JobId} with empty key", jobId);
             return false;
         }
 
@@ -180,17 +186,21 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
 
-            var deleteRequest = new DeleteObjectRequest
+            await s3Client.CopyObjectAsync(new CopyObjectRequest
+            {
+                SourceBucket = bucketName,
+                SourceKey = key,
+                DestinationBucket = bucketName,
+                DestinationKey = $"{ArchivePrefix}{key}"
+            });
+
+            await s3Client.DeleteObjectAsync(new DeleteObjectRequest
             {
                 BucketName = bucketName,
                 Key = key
-            };
+            });
 
-            Log.Debug("Deleting file with key {Key} for job {JobId}", key, jobId);
-
-            await s3Client.DeleteObjectAsync(deleteRequest);
-
-            Log.Information("Successfully deleted file with key {Key} for job {JobId}", key, jobId);
+            Log.Information("Archived (soft-deleted) file with key {Key} for job {JobId}", key, jobId);
 
             return true;
         }
@@ -198,13 +208,10 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
-                    nameof(DeleteJobPhotoOrSignatureAsync)));
+                    nameof(ArchiveJobPhotoAsync)));
             return false;
         }
     }
-
-    /// <summary>S3 key prefix under which archived (soft-deleted) captured media is retained.</summary>
-    private const string ArchivePrefix = "RestoredArchive/";
 
     /// <summary>
     /// Soft-deletes a job's captured photos and signatures by copying each S3 object under the
@@ -232,30 +239,13 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
 
         foreach (var key in keys)
         {
-            try
+            if (await ArchiveJobPhotoAsync(jobId, key))
             {
-                await s3Client.CopyObjectAsync(new CopyObjectRequest
-                {
-                    SourceBucket = bucketName,
-                    SourceKey = key,
-                    DestinationBucket = bucketName,
-                    DestinationKey = $"{ArchivePrefix}{key}"
-                });
-
-                await s3Client.DeleteObjectAsync(new DeleteObjectRequest
-                {
-                    BucketName = bucketName,
-                    Key = key
-                });
-
                 successful++;
             }
-            catch (Exception e)
+            else
             {
-                Log.Error(e, "{Message}",
-                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
-                        nameof(ArchiveJobCapturedMediaAsync)));
-                errors.Add($"{key}: {e.Message}");
+                errors.Add(key);
             }
         }
 

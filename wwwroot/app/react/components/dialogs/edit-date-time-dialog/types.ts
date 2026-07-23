@@ -22,6 +22,8 @@ export interface EditDateTimeDialogResult {
     fieldName: JobPropertyField;
     value: Dayjs;
     timezone: string;
+    /** True when the user chose to clear the value rather than pick a new one. */
+    cleared?: boolean;
 }
 
 /**
@@ -38,6 +40,8 @@ export interface EditDateTimeDialogProps {
     isUSCustomer?: boolean;
     /** When true the dialog opens in view-only mode: fields disabled, no Save. */
     readOnly?: boolean;
+    /** When true a "Clear" action is shown that submits with `cleared: true` to remove the value. */
+    allowClear?: boolean;
     onClose: () => void;
     onSubmit: (result: EditDateTimeDialogResult) => void | Promise<void>;
     showToast: ShowToastFn;
@@ -55,4 +59,5 @@ export interface EditDateTimeDialogOptions {
     showTime?: boolean;
     isUSCustomer?: boolean;
     readOnly?: boolean;
+    allowClear?: boolean;
 }

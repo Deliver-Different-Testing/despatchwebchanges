@@ -3,10 +3,18 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {PodPhotosSection} from './PodPhotosSection';
+import {deleteJobDeliveryPhotoOrSignature} from '../../../../services/jobDetailApi';
 import type {PodPhoto} from '../JobDetails.types';
+
+jest.mock('../../../../services/jobDetailApi', () => ({
+    downloadFile: jest.fn(),
+    deleteJobDeliveryPhotoOrSignature: jest.fn().mockResolvedValue(undefined),
+}));
+
+const mockDeletePhoto = deleteJobDeliveryPhotoOrSignature as jest.Mock;
 
 const theme = createTheme();
 
@@ -140,5 +148,75 @@ describe('PodPhotosSection', () => {
         );
 
         expect(screen.getByText('No delivery photos')).toBeInTheDocument();
+    });
+
+    describe('per-photo delete', () => {
+        const s3Key = 'DeliveryPhotos/2026/03/1-20260323120000.jpg';
+
+        beforeEach(() => mockDeletePhoto.mockClear());
+
+        it('shows the delete button only on delivery photos when jobId is set', () => {
+            const deliveryPhotos = [createMockPhoto({s3Key})];
+            const pickupPhotos = [createMockPhoto({url: 'https://example.com/pickup.jpg', s3Key: 'PickupPhotos/x.jpg'})];
+
+            // No jobId → no delete affordance.
+            const {unmount} = renderWithTheme(
+                <PodPhotosSection {...createDefaultProps({deliveryPhotos, imageOnlyDeliveryPhotos: deliveryPhotos})} />
+            );
+            expect(screen.queryByRole('button', {name: 'Delete photo'})).not.toBeInTheDocument();
+            unmount();
+
+            // With jobId, only the delivery grid gets a delete button (pickup does not).
+            renderWithTheme(
+                <PodPhotosSection {...createDefaultProps({
+                    deliveryPhotos,
+                    pickupPhotos,
+                    imageOnlyDeliveryPhotos: deliveryPhotos,
+                    imageOnlyPickupPhotos: pickupPhotos,
+                    jobId: 42,
+                })} />
+            );
+            expect(screen.getAllByRole('button', {name: 'Delete photo'})).toHaveLength(1);
+        });
+
+        it('confirms then soft-deletes the photo and notifies the caller', async () => {
+            const onPhotoDeleted = jest.fn();
+            const showToast = jest.fn();
+            const deliveryPhotos = [createMockPhoto({s3Key})];
+            renderWithTheme(
+                <PodPhotosSection {...createDefaultProps({
+                    deliveryPhotos,
+                    imageOnlyDeliveryPhotos: deliveryPhotos,
+                    jobId: 42,
+                    onPhotoDeleted,
+                    showToast,
+                })} />
+            );
+
+            fireEvent.click(screen.getByRole('button', {name: 'Delete photo'}));
+            // Confirmation dialog appears with a distinct "Delete" confirm button.
+            const confirmButton = screen.getByRole('button', {name: 'Delete'});
+            fireEvent.click(confirmButton);
+
+            await waitFor(() => expect(mockDeletePhoto).toHaveBeenCalledWith(42, s3Key));
+            await waitFor(() => expect(onPhotoDeleted).toHaveBeenCalledTimes(1));
+            expect(showToast).toHaveBeenCalledWith('Photo deleted', 'success');
+        });
+
+        it('does not delete when the confirmation is cancelled', () => {
+            const deliveryPhotos = [createMockPhoto({s3Key})];
+            renderWithTheme(
+                <PodPhotosSection {...createDefaultProps({
+                    deliveryPhotos,
+                    imageOnlyDeliveryPhotos: deliveryPhotos,
+                    jobId: 42,
+                })} />
+            );
+
+            fireEvent.click(screen.getByRole('button', {name: 'Delete photo'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+
+            expect(mockDeletePhoto).not.toHaveBeenCalled();
+        });
     });
 });

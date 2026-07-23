@@ -38,6 +38,7 @@ import {
 import type {DispatchType} from '../../../dialogs/dispatch-dialog';
 import type {ISuggestion} from '../../../../../interfaces/job.interface';
 import {toastService} from '../../../../services/toastService';
+import {assignAgentToJob, canAssignAgentToJob} from '../../../../services/dispatchExecutorApi';
 
 interface TextDialogState {
     open: boolean;
@@ -46,6 +47,7 @@ interface TextDialogState {
     initialValue: string;
     field: string;
     okLabel?: string;
+    allowClear?: boolean;
     onSubmitExtra?: () => void;
 }
 
@@ -250,6 +252,7 @@ export function useJobActions({
         initialValue: string | number | undefined,
         okLabel?: string,
         onSubmitExtra?: () => void,
+        allowClear?: boolean,
     ) => {
         setTextDialog({
             open: true,
@@ -259,6 +262,7 @@ export function useJobActions({
             field,
             okLabel,
             onSubmitExtra,
+            allowClear,
         });
     }, []);
 
@@ -316,7 +320,7 @@ export function useJobActions({
 
     // ── Dialog Primitives ──────────────────────────────────────────
 
-    const editDateAndTime = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
+    const editDateAndTime = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown, allowClear?: boolean) => {
         const j = jobRef.current;
         if (!j) return;
         await ensureDateTimeDialog();
@@ -326,8 +330,24 @@ export function useJobActions({
             dateTime: dateTime as any,
             defaultTimeZone: timezone as any,
             readOnly: !!j.locked,
+            allowClear,
         });
         if (!result) return;
+        // Clear: persist an empty value so the backend nulls the field (works on
+        // active and archived jobs alike). No partner-gating — CompletedTime is
+        // never a partner-managed field.
+        if (result.cleared) {
+            if (j.isBulkJob) {
+                const {updateBulkJobDetail} = await import('../../../../services/jobDetailApi');
+                await updateBulkJobDetail(j.id, result.fieldName, '', result.timezone);
+            } else {
+                const {updateJobDetail} = await import('../../../../services/jobDetailApi');
+                await updateJobDetail(j.id, result.fieldName, '', j.preBook, result.timezone);
+            }
+            showToast(`${j.jobNo} updated`, 'success');
+            await refreshAndNotify();
+            return;
+        }
         // Partner-job rated datetimes (Date / PuTime / DeliverBy / BookedTime)
         // never persist locally — forward to the locked change-request dialog
         // with the chosen value serialised to an offset-aware ISO string so
@@ -697,6 +717,38 @@ export function useJobActions({
     ) => {
         const j = jobRef.current;
         if (!j) return;
+
+        // Non-recurring agent assignment goes through the dedicated assign flow (flight
+        // gate + inbound-agent link email), not a bare AgentId field write (which the
+        // server rejects for standard jobs). Recurring jobs still update the booking field.
+        if (type === 'Agent' && !isRecurringJob) {
+            try {
+                const canAssign = await canAssignAgentToJob(j.id);
+                if (!canAssign) {
+                    throw new Error(
+                        'A flight must be assigned to the flight portion before an agent can be assigned.',
+                    );
+                }
+                const result = await assignAgentToJob(j.id, destination.id);
+                await refreshAndNotify();
+                setDispatchDialog((s) => ({...s, open: false}));
+                const base = `Assigned agent ${destination.text} to job ${j.jobNo}`;
+                if (result.willEmail) {
+                    toastService.showSuccessToast(`${base} — inbound link emailed to ${result.agentEmail}`);
+                } else if (result.status === 'NoAgentEmail') {
+                    toastService.showWarningToast(`${base} — agent has no email on file, no link sent`);
+                } else if (result.status === 'NoInboundUrl') {
+                    toastService.showWarningToast(`${base} — inbound portal URL not configured, no link sent`);
+                } else {
+                    toastService.showWarningToast(`${base} — inbound link could not be sent`);
+                }
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Dispatch failed';
+                throw new Error(message, {cause: err});
+            }
+            return;
+        }
+
         const targetField =
             type === 'Agent' ? JobProperty.AgentId :
             type === 'NP' ? JobProperty.NpAgentId :
@@ -762,7 +814,7 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (j.done) {
-            openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, j.podName);
+            openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, j.podName, undefined, undefined, true);
             return;
         }
         await markJobAsDone('name');
@@ -772,7 +824,7 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (j.done) {
-            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone);
+            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone, true);
             return;
         }
         await markJobAsDone('time');
