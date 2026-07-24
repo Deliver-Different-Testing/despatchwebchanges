@@ -7,6 +7,7 @@ import {
     getPodJobsDownloadUrl,
     getClientJobsReportDownloadUrl,
 } from "../../react/pages/job-search/lib/exportUrls";
+import {getPriceDetailReportDownloadUrl} from "../../react/pages/job-search/lib/priceDetailExport";
 import angular from 'angular';
 
 class JobSearchService implements angular.IServiceProvider {
@@ -82,6 +83,19 @@ class JobSearchService implements angular.IServiceProvider {
         clientIds?: number[],
     ): string {
         return getClientJobsReportDownloadUrl(fromDate, toDate, clientIds);
+    }
+
+    getPriceDetailReportDownloadUrl(
+        fromDate: Dayjs,
+        toDate: Dayjs,
+        courierIds?: number[],
+        clientIds?: number[],
+        speedIds?: number[],
+        wild?: string,
+        job?: string,
+        jobId?: number,
+    ): string {
+        return getPriceDetailReportDownloadUrl(fromDate, toDate, courierIds, clientIds, speedIds, wild, job, jobId);
     }
 
     async uploadJobList(file: File) {

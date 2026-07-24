@@ -26,6 +26,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
     private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
     private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
+    private readonly IPriceReportService _priceReportServiceMock = Substitute.For<IPriceReportService>();
     private readonly IPdfOverlayClient _pdfOverlayClientMock = Substitute.For<IPdfOverlayClient>();
     private readonly IPricingPermissionService _pricingPermissionServiceMock = Substitute.For<IPricingPermissionService>();
     private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
@@ -71,6 +72,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
         _deliveryJourneyServiceMock,
         _pricingPermissionServiceMock,
         _podReportServiceMock,
+        _priceReportServiceMock,
         _pdfOverlayClientMock,
         _splitJobServiceMock,
         _sendToPartnerServiceMock,

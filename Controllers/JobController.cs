@@ -35,6 +35,7 @@ public class JobController(
     IDeliveryJourneyService deliveryJourneyService,
     IPricingPermissionService pricingPermissionService,
     IPodReportService podReportService,
+    IPriceReportService priceReportService,
     IPdfOverlayClient pdfOverlay,
     ISplitJobService splitJobService,
     ISendToPartnerService sendToPartnerService,
@@ -748,6 +749,23 @@ public class JobController(
         {
             Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(PodSearchDownload)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    public async Task<IActionResult> PriceDetailReportDownload([FromQuery] PriceDetailReportRequest request)
+    {
+        try
+        {
+            var (fileBytes, fileName) = await priceReportService.GeneratePriceDetailReportAsync(request);
+            return File(fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(PriceDetailReportDownload)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }

@@ -32,6 +32,7 @@ class SearchCriteriaPanelReactController implements angular.IController {
     onSearch?: () => void;
     onDownload?: () => void;
     onClientReport?: () => void;
+    onPriceDetailReport?: () => void;
     onUpload?: (params: {$event: React.MouseEvent}) => void;
     onClientSearch?: (params: {searchText: string}) => Promise<ISuggestion[]>;
     onCourierSearch?: (params: {searchText: string}) => Promise<ISuggestion[]>;
@@ -98,6 +99,11 @@ class SearchCriteriaPanelReactController implements angular.IController {
             this.$scope.$applyAsync();
         };
 
+        const handlePriceDetailReport = () => {
+            this.onPriceDetailReport?.();
+            this.$scope.$applyAsync();
+        };
+
         const handleUpload = (event: React.MouseEvent) => {
             this.onUpload?.({$event: event});
             this.$scope.$applyAsync();
@@ -127,6 +133,7 @@ class SearchCriteriaPanelReactController implements angular.IController {
                     onSearch={handleSearch}
                     onDownload={handleDownload}
                     onClientReport={handleClientReport}
+                    onPriceDetailReport={handlePriceDetailReport}
                     onUpload={handleUpload}
                     onClientSearch={handleClientSearch}
                     onCourierSearch={handleCourierSearch}
@@ -153,6 +160,7 @@ export const SearchCriteriaPanelReactComponent: angular.IComponentOptions = {
         onSearch: '&',
         onDownload: '&',
         onClientReport: '&',
+        onPriceDetailReport: '&',
         onUpload: '&',
         onClientSearch: '&',
         onCourierSearch: '&',

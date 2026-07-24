@@ -35,6 +35,7 @@ public class JobControllerTests : IDisposable
     private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
     private readonly IPdfOverlayClient _pdfOverlayClientMock = Substitute.For<IPdfOverlayClient>();
     private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
+    private readonly IPriceReportService _priceReportServiceMock = Substitute.For<IPriceReportService>();
 
     private readonly IPricingPermissionService _pricingPermissionServiceMock =
         Substitute.For<IPricingPermissionService>();
@@ -93,6 +94,7 @@ public class JobControllerTests : IDisposable
             _deliveryJourneyServiceMock,
             _pricingPermissionServiceMock,
             _podReportServiceMock,
+            _priceReportServiceMock,
             _pdfOverlayClientMock,
             _splitJobServiceMock,
             _sendToPartnerServiceMock,

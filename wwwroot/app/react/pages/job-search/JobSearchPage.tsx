@@ -45,6 +45,7 @@ import {useBoxLayout} from './hooks/useBoxLayout';
 import {useDeepLinkJob} from './hooks/useDeepLinkJob';
 import {filterCouriersForNumericSearch} from './lib/searchCriteria';
 import {getClientJobsReportDownloadUrl, getPodJobsDownloadUrl} from './lib/exportUrls';
+import {getPriceDetailReportDownloadUrl} from './lib/priceDetailExport';
 import {
     openInterCourierChargeDialog
 } from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
@@ -395,6 +396,20 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         window.open(url, '_blank');
     }, [searchCriteria]);
 
+    const handlePriceDetailReport = useCallback(() => {
+        const url = getPriceDetailReportDownloadUrl(
+            searchCriteria.criteria.from_date,
+            searchCriteria.criteria.to_date,
+            searchCriteria.selectedCourierIds,
+            searchCriteria.selectedClientIds,
+            searchCriteria.selectedSpeedIds,
+            searchCriteria.criteria.wild,
+            searchCriteria.criteria.job,
+            searchCriteria.criteria.jobId,
+        );
+        window.open(url, '_blank');
+    }, [searchCriteria]);
+
     const handleUpload = useCallback(() => {
         const w = window as any;
         if (w.ReactBulkPriceUploadDialog?.open) {
@@ -555,6 +570,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                             onSearch={handleSearch}
                             onDownload={handleDownload}
                             onClientReport={handleClientReport}
+                            onPriceDetailReport={handlePriceDetailReport}
                             onUpload={handleUpload}
                             onClientSearch={handleClientSearch}
                             onCourierSearch={handleCourierSearch}

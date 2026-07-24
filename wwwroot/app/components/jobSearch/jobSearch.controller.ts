@@ -982,6 +982,22 @@ class JobSearchController extends BaseController {
         window.open(downloadUrl, '_blank');
     }
 
+    downloadPriceDetailReport() {
+        const downloadUrl = this.jobSearchService.getPriceDetailReportDownloadUrl(
+            this.searchCriteria.from_date,
+            this.searchCriteria.to_date,
+            this.getCourierIds(),
+            this.getClientIds(),
+            this.getSpeedIds(),
+            this.searchCriteria.wild,
+            this.searchCriteria.job,
+            this.searchCriteria.jobId,
+        );
+
+        // Open in new window to trigger browser's native download
+        window.open(downloadUrl, '_blank');
+    }
+
     async uploadJobList($event: MouseEvent) {
         try {
             const result = await this.bulkPriceUploadDialogService.openBulkPriceUploadDialog($event);
