@@ -28,6 +28,10 @@ public interface IJobQueryRepository
         int? jobId = null
     );
 
+    Task<PriceDetailReportRaw> GetPriceDetailReportAsync(
+        PriceDetailReportRequest request,
+        CancellationToken ct = default);
+
     Task<IReadOnlyList<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request);
 
     Task<JobSearchResult> CurrentJobListAsync(int courierId,

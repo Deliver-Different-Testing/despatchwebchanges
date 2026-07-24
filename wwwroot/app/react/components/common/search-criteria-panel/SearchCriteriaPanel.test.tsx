@@ -32,6 +32,7 @@ function createDefaultProps(overrides?: Partial<SearchCriteriaPanelProps>): Sear
         onSearch: jest.fn(),
         onDownload: jest.fn(),
         onClientReport: jest.fn(),
+        onPriceDetailReport: jest.fn(),
         onUpload: jest.fn(),
         onClientSearch: jest.fn().mockResolvedValue([]),
         onCourierSearch: jest.fn().mockResolvedValue([]),
@@ -183,6 +184,9 @@ describe('SearchCriteriaPanel', () => {
 
         await user.click(screen.getByRole('button', {name: 'Download'}));
         expect(props.onDownload).toHaveBeenCalledTimes(1);
+
+        await user.click(screen.getByRole('button', {name: 'Price Detail Report'}));
+        expect(props.onPriceDetailReport).toHaveBeenCalledTimes(1);
 
         await user.click(screen.getByRole('button', {name: 'Upload Prices'}));
         expect(props.onUpload).toHaveBeenCalledTimes(1);

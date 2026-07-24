@@ -23,6 +23,7 @@ import Collapse from '@mui/material/Collapse';
 import DownloadIcon from '@mui/icons-material/Download';
 import DescriptionIcon from '@mui/icons-material/Description';
 import UploadIcon from '@mui/icons-material/Upload';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {Dayjs} from 'dayjs';
 import {DateRangePicker} from '../date-range-picker/DateRangePicker';
@@ -42,6 +43,7 @@ export interface SearchCriteriaPanelProps {
     onSearch: () => void;
     onDownload: () => void;
     onClientReport: () => void;
+    onPriceDetailReport: () => void;
     onUpload: (event: React.MouseEvent) => void;
     onClientSearch: (searchText: string) => Promise<ISuggestion[]>;
     onCourierSearch: (searchText: string) => Promise<ISuggestion[]>;
@@ -68,6 +70,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
     onSearch,
     onDownload,
     onClientReport,
+    onPriceDetailReport,
     onUpload,
     onClientSearch,
     onCourierSearch,
@@ -381,6 +384,11 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                                 <DescriptionIcon sx={{fontSize: 20, color: isClientReportEnabled ? 'text.secondary' : 'text.disabled'}} />
                             </IconButton>
                         </span>
+                    </Tooltip>
+                    <Tooltip title="Price Detail Report">
+                        <IconButton onClick={onPriceDetailReport} size="small" sx={{width: 36, height: 36}}>
+                            <ReceiptLongIcon sx={{fontSize: 20, color: 'text.secondary'}} />
+                        </IconButton>
                     </Tooltip>
                     <Tooltip title="Upload Prices">
                         <IconButton onClick={onUpload} size="small" sx={{width: 36, height: 36}}>
