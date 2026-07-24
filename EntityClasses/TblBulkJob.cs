@@ -259,6 +259,8 @@ public partial class TblBulkJob
 
     public DateTime? DeliveryWindowEnd { get; set; }
 
+    public bool ContentsUnknownAtPickup { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucClient Client { get; set; }

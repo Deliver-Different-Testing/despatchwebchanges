@@ -11,13 +11,14 @@ namespace DespatchWeb.Tests.Reporting;
 // the invariants. These are the crown jewels; keep them green when the rating engine changes.
 public class PriceDetailReportTests
 {
+    private static readonly string[] ExpectedNames = ["Base", "Base Fuel", "Inside Delivery"];
     // ---- accessorial classification --------------------------------------------------------
 
     [Theory]
     [InlineData("Base", Bucket.BaseDistance)]
     [InlineData("Distance (20 mi incl., 65 mi charged)", Bucket.BaseDistance)]
     [InlineData("Base Fuel", Bucket.Fuel)]
-    [InlineData("Weight Fuel", Bucket.Fuel)]        // fuel wins over weight
+    [InlineData("Weight Fuel", Bucket.Fuel)] // fuel wins over weight
     [InlineData("Weight", Bucket.Weight)]
     [InlineData("Cubic", Bucket.Cubic)]
     [InlineData("Congestion", Bucket.Congestion)]
@@ -48,19 +49,18 @@ public class PriceDetailReportTests
         var t0 = new DateTime(2026, 7, 13, 12, 0, 0, DateTimeKind.Utc);
         var raw = OneJob(
             Header(jobNo: "E100V", headerAmount: 118m),
-            new[] { Line("Base", 75m), Line("Base Fuel", 18.75m), Line("Inside Delivery", 25m) },
-            new[]
-            {
+            [Line("Base", 75m), Line("Base Fuel", 18.75m), Line("Inside Delivery", 25m)],
+            [
                 Insert("Base: $75.00", t0),
                 Insert("Base Fuel: $18.75", t0),
-                Insert("Inside Delivery: $25.00", t0.AddSeconds(30)),      // booking-screen accessorial - INCLUDED
-                Insert("After Hours: $25.00", t0.AddHours(2)),             // later re-rate - EXCLUDED
-            });
+                Insert("Inside Delivery: $25.00", t0.AddSeconds(30)), // booking-screen accessorial - INCLUDED
+                Insert("After Hours: $25.00", t0.AddHours(2)) // later re-rate - EXCLUDED
+            ]);
 
         var job = PriceDetailReportData.From(raw, InfoMock()).Jobs.Single();
 
         var names = job.Booked.Select(b => b.ChargeName).OrderBy(n => n).ToArray();
-        Assert.Equal(new[] { "Base", "Base Fuel", "Inside Delivery" }, names);
+        Assert.Equal(ExpectedNames, names);
         Assert.DoesNotContain(job.Booked, b => b.ChargeName == "After Hours");
     }
 
@@ -70,11 +70,10 @@ public class PriceDetailReportTests
         // No PricingBreakdown inserts; only value-change rows -> reconstruct current - sum(new-old).
         var raw = OneJob(
             Header("E200V", 93.75m),
-            new[] { Line("Base", 75m), Line("Base Fuel", 18.75m) },
-            new[]
-            {
-                Change("Pricing: Base", "50", "75", new DateTime(2026, 7, 14, 9, 0, 0, DateTimeKind.Utc)),
-            });
+            [Line("Base", 75m), Line("Base Fuel", 18.75m)],
+            [
+                Change("Pricing: Base", "50", "75", new DateTime(2026, 7, 14, 9, 0, 0, DateTimeKind.Utc))
+            ]);
 
         var job = PriceDetailReportData.From(raw, InfoMock()).Jobs.Single();
         Assert.Equal(50m, job.Booked.Single(b => b.ChargeName == "Base").Amount); // 75 - (75-50)
@@ -86,13 +85,13 @@ public class PriceDetailReportTests
     public void Detect_flags_header_fuel_with_no_fuel_line_x125()
     {
         var raw = OneJob(
-            Header("P2836V", headerAmount: 244.375m),   // 195.50 * 1.25
-            new[] { Line("Base", 195.50m) },             // no fuel line
-            Array.Empty<PricingChangeRow>());
+            Header("P2836V", headerAmount: 244.375m), // 195.50 * 1.25
+            [Line("Base", 195.50m)], // no fuel line
+            []);
         var data = PriceDetailReportData.From(raw, InfoMock());
         data.Findings = PriceDetailFindings.Detect(data);
 
-        Assert.Single(data.Findings.Where(f => f.Type == "Header fuel, no fuel line" && f.Severity == "High"));
+        Assert.Single(data.Findings, f => f is { Type: "Header fuel, no fuel line", Severity: "High" });
     }
 
     [Fact]
@@ -101,8 +100,8 @@ public class PriceDetailReportTests
         var t0 = new DateTime(2026, 7, 17, 12, 0, 0, DateTimeKind.Utc);
         var raw = OneJob(
             Header("E347V", 231.75m),
-            new[] { Line("Base", 50m), Line("Milage to CT", 90m), Line("Milage to CT", 90m) },
-            new[] { Insert("Milage to CT: $90.00", t0), Insert("Milage to CT: $90.00", t0.AddSeconds(10)) });
+            [Line("Base", 50m), Line("Milage to CT", 90m), Line("Milage to CT", 90m)],
+            [Insert("Milage to CT: $90.00", t0), Insert("Milage to CT: $90.00", t0.AddSeconds(10))]);
         var data = PriceDetailReportData.From(raw, InfoMock());
         data.Findings = PriceDetailFindings.Detect(data);
 
@@ -115,8 +114,8 @@ public class PriceDetailReportTests
         var t0 = new DateTime(2026, 7, 13, 20, 0, 0, DateTimeKind.Utc);
         var raw = OneJob(
             Header("E245OTG", 0m),
-            Array.Empty<PriceDetailLineRow>(),                 // all zeroed / removed
-            new[] { Insert("Base: $50.00", t0), Delete("Base: $50.00", t0.AddMinutes(3)) });
+            [], // all zeroed / removed
+            [Insert("Base: $50.00", t0), Delete("Base: $50.00", t0.AddMinutes(3))]);
         var data = PriceDetailReportData.From(raw, InfoMock());
         data.Findings = PriceDetailFindings.Detect(data);
         Assert.Contains(data.Findings, f => f.Type == "Deleted line");
@@ -128,7 +127,7 @@ public class PriceDetailReportTests
     public void Recurring_detected_by_p_prefix_not_IsRecurringJob_flag()
     {
         var raw = OneJob(Header("P2843OTG", 100m, bookingParentId: null),
-            new[] { Line("Base", 100m) }, Array.Empty<PricingChangeRow>());
+            [Line("Base", 100m)], []);
         Assert.True(PriceDetailReportData.From(raw, InfoMock()).Jobs.Single().IsRecurring);
     }
 
@@ -143,12 +142,11 @@ public class PriceDetailReportTests
         var editAt = new DateTime(2026, 7, 13, 14, 30, 0, DateTimeKind.Utc);
         var raw = OneJob(
             Header("E900V", 75m),
-            new[] { Line("Base", 75m) },
-            new[]
-            {
-                Insert("Base: $50.00", t0),                                  // booking
-                Insert("Extra Handling: $25.00", editAt),                    // later add, outside 120s window -> change
-            });
+            [Line("Base", 75m)],
+            [
+                Insert("Base: $50.00", t0), // booking
+                Insert("Extra Handling: $25.00", editAt) // later add, outside 120s window -> change
+            ]);
 
         var us = PriceDetailReportData.From(raw, InfoMock(usTenant: true)).Jobs.Single();
         Assert.Contains("07-13 14:30", string.Join("|", us.ChangeSummary));
@@ -167,23 +165,21 @@ public class PriceDetailReportTests
         var live = new List<TaggedRow>
         {
             new(JobId: 1, Tag: "live"),
-            new(JobId: 2, Tag: "live"),
+            new(JobId: 2, Tag: "live")
         };
         var archive = new List<TaggedRow>
         {
             new(JobId: 2, Tag: "archive"),
-            new(JobId: 3, Tag: "archive"),
+            new(JobId: 3, Tag: "archive")
         };
 
         var merged = JobRepository.MergePreferLive(live, archive, r => r.JobId);
 
         Assert.Equal(3, merged.Count);
         Assert.Equal("live", merged.Single(r => r.JobId == 1).Tag);
-        Assert.Equal("live", merged.Single(r => r.JobId == 2).Tag);        // live wins the collision
-        Assert.Equal("archive", merged.Single(r => r.JobId == 3).Tag);     // archive-only included
+        Assert.Equal("live", merged.Single(r => r.JobId == 2).Tag); // live wins the collision
+        Assert.Equal("archive", merged.Single(r => r.JobId == 3).Tag); // archive-only included
     }
-
-    private sealed record TaggedRow(int JobId, string Tag);
 
     // ---- split-child fallback --------------------------------------------------------------
     // Two jobs in one raw payload: parent (id 100) has lines; child (id 101, BookingParentId=100)
@@ -202,18 +198,18 @@ public class PriceDetailReportTests
             JobId = parentHeader.JobId + 1,
             JobNo = "E500V-child",
             HeaderAmount = 100m,
-            BookingParentId = parentHeader.JobId,
+            BookingParentId = parentHeader.JobId
         };
         var raw = new PriceDetailReportRaw
         {
-            Headers = new[] { parentHeader, childHeader },
+            Headers = [parentHeader, childHeader],
             // parent has its own lines; child has none of its own but was re-keyed by the repo:
-            CurrentLines = new[]
-            {
+            CurrentLines =
+            [
                 new PriceDetailLineRow { JobId = parentHeader.JobId, ChargeName = "Base", ChargeAmount = 100m },
-                new PriceDetailLineRow { JobId = childHeader.JobId,  ChargeName = "Base", ChargeAmount = 100m },
-            },
-            History = Array.Empty<PricingChangeRow>(),
+                new PriceDetailLineRow { JobId = childHeader.JobId, ChargeName = "Base", ChargeAmount = 100m }
+            ],
+            History = []
         };
 
         var jobs = PriceDetailReportData.From(raw, InfoMock()).Jobs;
@@ -231,12 +227,11 @@ public class PriceDetailReportTests
         var t0 = new DateTime(2026, 7, 20, 9, 0, 0, DateTimeKind.Utc);
         var raw = OneJob(
             Header("E600V", 200m),
-            new[] { Line("Distance (0 mi incl., 45 mi charged)", 200m) },
-            new[]
-            {
-                CreatedBySp("DD_stpJob_InsertExcelerator", t0),           // engine-sourced booking
-                Insert("Base: $200.00", t0),                              // booked with a Zone-shaped line
-            });
+            [Line("Distance (0 mi incl., 45 mi charged)", 200m)],
+            [
+                CreatedBySp("DD_stpJob_InsertExcelerator", t0), // engine-sourced booking
+                Insert("Base: $200.00", t0) // booked with a Zone-shaped line
+            ]);
         var data = PriceDetailReportData.From(raw, InfoMock());
         data.Findings = PriceDetailFindings.Detect(data);
 
@@ -249,28 +244,56 @@ public class PriceDetailReportTests
     private static PriceDetailReportRaw OneJob(PriceDetailHeaderRow header,
         IReadOnlyList<PriceDetailLineRow> currentLines, IReadOnlyList<PricingChangeRow> history)
     {
-        var lines = currentLines.Select(l => new PriceDetailLineRow { JobId = header.JobId, ChargeName = l.ChargeName, ChargeAmount = l.ChargeAmount, CourierPay = l.CourierPay }).ToList();
-        var hist = history.Select(h => new PricingChangeRow { JobId = header.JobId, ChangeType = h.ChangeType, FieldName = h.FieldName, OldValue = h.OldValue, NewValue = h.NewValue, AtUtc = h.AtUtc, UpdatedByType = h.UpdatedByType, StaffFirstName = h.StaffFirstName, StaffLastName = h.StaffLastName }).ToList();
-        return new() { Headers = new[] { header }, CurrentLines = lines, History = hist };
+        var lines = currentLines.Select(l => new PriceDetailLineRow
+        {
+            JobId = header.JobId, ChargeName = l.ChargeName, ChargeAmount = l.ChargeAmount, CourierPay = l.CourierPay
+        }).ToList();
+        var hist = history.Select(h => new PricingChangeRow
+        {
+            JobId = header.JobId, ChangeType = h.ChangeType, FieldName = h.FieldName, OldValue = h.OldValue,
+            NewValue = h.NewValue, AtUtc = h.AtUtc, UpdatedByType = h.UpdatedByType, StaffFirstName = h.StaffFirstName,
+            StaffLastName = h.StaffLastName
+        }).ToList();
+        return new() { Headers = [header], CurrentLines = lines, History = hist };
     }
 
     private static PriceDetailHeaderRow Header(string jobNo, decimal headerAmount, int? bookingParentId = null) =>
-        new() { JobId = jobNo.GetHashCode() & 0x7fffffff, JobNo = jobNo, HeaderAmount = headerAmount, BookingParentId = bookingParentId };
+        new()
+        {
+            JobId = jobNo.GetHashCode() & 0x7fffffff, JobNo = jobNo, HeaderAmount = headerAmount,
+            BookingParentId = bookingParentId
+        };
 
     private static PriceDetailLineRow Line(string name, decimal amount) =>
         new() { ChargeName = name, ChargeAmount = amount };
 
     private static PricingChangeRow Insert(string newVal, DateTime atUtc) =>
-        new() { ChangeType = "JobUpdate", FieldName = "PricingBreakdown", OldValue = null, NewValue = newVal, AtUtc = atUtc, UpdatedByType = "System" };
+        new()
+        {
+            ChangeType = "JobUpdate", FieldName = "PricingBreakdown", OldValue = null, NewValue = newVal, AtUtc = atUtc,
+            UpdatedByType = "System"
+        };
 
     private static PricingChangeRow Delete(string oldVal, DateTime atUtc) =>
-        new() { ChangeType = "JobUpdate", FieldName = "PricingBreakdown", OldValue = oldVal, NewValue = null, AtUtc = atUtc, UpdatedByType = "System" };
+        new()
+        {
+            ChangeType = "JobUpdate", FieldName = "PricingBreakdown", OldValue = oldVal, NewValue = null, AtUtc = atUtc,
+            UpdatedByType = "System"
+        };
 
     private static PricingChangeRow Change(string field, string oldVal, string newVal, DateTime atUtc) =>
-        new() { ChangeType = "JobUpdate", FieldName = field, OldValue = oldVal, NewValue = newVal, AtUtc = atUtc, UpdatedByType = "System" };
+        new()
+        {
+            ChangeType = "JobUpdate", FieldName = field, OldValue = oldVal, NewValue = newVal, AtUtc = atUtc,
+            UpdatedByType = "System"
+        };
 
     private static PricingChangeRow CreatedBySp(string spName, DateTime atUtc) =>
-        new() { ChangeType = "JobCreated", FieldName = "CreatedBySp", OldValue = null, NewValue = spName, AtUtc = atUtc, UpdatedByType = "System" };
+        new()
+        {
+            ChangeType = "JobCreated", FieldName = "CreatedBySp", OldValue = null, NewValue = spName, AtUtc = atUtc,
+            UpdatedByType = "System"
+        };
 
     private static ITenantInfoService InfoMock(bool usTenant = true)
     {
@@ -280,4 +303,6 @@ public class PriceDetailReportTests
         m.IsUsTenant().Returns(usTenant);
         return m;
     }
+
+    private sealed record TaggedRow(int JobId, string Tag);
 }

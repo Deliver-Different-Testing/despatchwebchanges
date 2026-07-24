@@ -14,10 +14,10 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class NoteRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteTestDatabase _db = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly DespatchContext _context;
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
+    private readonly SqliteTestDatabase _db = new();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public NoteRepositoryTests()
@@ -305,7 +305,8 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.AddNewTucNoteTypeAsync(noteType);
 
         // Assert
-        var savedType = await _context.TucNoteTypes.FirstOrDefaultAsync(nt => nt.NoteTypeName == "New Note Type", cancellationToken: TestContext.Current.CancellationToken);
+        var savedType = await _context.TucNoteTypes.FirstOrDefaultAsync(nt => nt.NoteTypeName == "New Note Type",
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(savedType);
         Assert.True(savedType.IsActive);
         Assert.True(savedType.IsPublic);
@@ -334,7 +335,7 @@ public class NoteRepositoryTests : IAsyncDisposable
 
         // Assert
         Assert.Equal(2, result.Count);
-        Assert.All(result, h => Assert.True(h.NewNoteText == "New2" || h.NewNoteText == "New3"));
+        Assert.All(result, h => Assert.True(h.NewNoteText is "New2" or "New3"));
     }
 
     [Fact]
@@ -567,7 +568,8 @@ public class NoteRepositoryTests : IAsyncDisposable
 
         // Assert — query is untracked by the global QueryTrackingBehavior so we see
         // the post-ExecuteDeleteAsync state, not a stale tracker entry.
-        var note = await _context.TucNotes.FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
+        var note = await _context.TucNotes.FirstOrDefaultAsync(n => n.NoteId == noteId,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Null(note);
 
         var history = await _context.TucNoteHistories
@@ -732,7 +734,8 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.DeleteBulkNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert
-        var note = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
+        var note = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteId == noteId,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Null(note);
 
         var history = await _context.TucNoteHistories
@@ -866,7 +869,7 @@ public class NoteRepositoryTests : IAsyncDisposable
 
         // Assert
         Assert.Equal(2, result.Count);
-        Assert.All(result, h => Assert.True(h.NewNoteText == "New1" || h.NewNoteText == "New3"));
+        Assert.All(result, h => Assert.True(h.NewNoteText is "New1" or "New3"));
     }
 
     [Fact]
@@ -1024,7 +1027,8 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert
-        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteText == "Brand new note", cancellationToken: TestContext.Current.CancellationToken);
+        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteText == "Brand new note",
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(savedNote);
         Assert.Equal(bulkJobId, savedNote.BulkJobId);
         Assert.Equal(1, savedNote.NoteTypeId);
@@ -1180,7 +1184,8 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert
-        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.BulkJobId == bulkJobId, cancellationToken: TestContext.Current.CancellationToken);
+        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.BulkJobId == bulkJobId,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(savedNote);
         Assert.Equal(1, savedNote.NoteTypeId); // Internal Note default
     }

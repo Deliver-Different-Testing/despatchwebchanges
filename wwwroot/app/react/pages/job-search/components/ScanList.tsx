@@ -8,8 +8,8 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import dayjs from 'dayjs';
 import {NoData} from '../../../components/common/no-data/NoData';
+import {formatLongDateTime} from '../../../utils/dateUtils';
 import {useScanDetail} from '../hooks/useScanDetail';
 
 export interface ScanListProps {
@@ -64,7 +64,7 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
                     {scans.map(scan => (
                         <TableRow key={scan.bulkScanId} hover>
                             <TableCell>
-                                {dayjs(scan.scanDateTime).format('DD/MM/YYYY h:mm a')}
+                                {formatLongDateTime(scan.scanDateTime)}
                                 {timeZoneShort ? ` (${timeZoneShort})` : null}
                             </TableCell>
                             <TableCell>{scan.scanDetail}</TableCell>

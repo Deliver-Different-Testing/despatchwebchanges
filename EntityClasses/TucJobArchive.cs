@@ -539,6 +539,8 @@ public partial class TucJobArchive
 
     public DateTime? DeliveryWindowEnd { get; set; }
 
+    public bool ContentsUnknownAtPickup { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucAgent Agent { get; set; }

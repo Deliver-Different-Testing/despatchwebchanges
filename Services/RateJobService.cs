@@ -343,20 +343,6 @@ public sealed class RateJobService(
         const string notUpdatedReason =
             "Could not be updated — the job was not found, is locked, or has already been invoiced.";
 
-        static BulkPricePreviewRow SkippedRow(int jobId, string jobNo, decimal oldAmount, bool isPrebook,
-            string reason) =>
-            new()
-            {
-                JobId = jobId,
-                JobNo = jobNo,
-                Field = "Amount",
-                OldAmount = oldAmount,
-                NewAmount = oldAmount,
-                IsPrebook = isPrebook,
-                Skipped = true,
-                Error = reason
-            };
-
         switch (pricingMode)
         {
             // Apply updates based on mode
@@ -561,6 +547,20 @@ public sealed class RateJobService(
             TotalOldAmount = updatedRows.Sum(r => r.OldAmount),
             TotalNewAmount = updatedRows.Sum(r => r.NewAmount)
         };
+
+        static BulkPricePreviewRow SkippedRow(int jobId, string jobNo, decimal oldAmount, bool isPrebook,
+            string reason) =>
+            new()
+            {
+                JobId = jobId,
+                JobNo = jobNo,
+                Field = "Amount",
+                OldAmount = oldAmount,
+                NewAmount = oldAmount,
+                IsPrebook = isPrebook,
+                Skipped = true,
+                Error = reason
+            };
     }
 
     /// <summary>

@@ -191,6 +191,7 @@ describe('dateUtils', () => {
 
         it('formats today as time only and tomorrow with prefix', () => {
             // Use UTC dates with Z suffix since tenant TZ is UTC — avoids local timezone shifting
+            (window as any).serverConfig = {isUSCustomer: false};
             const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00Z';
             const tomorrow = dayjs.utc().add(1, 'day').format('YYYY-MM-DD') + 'T09:00:00Z';
 
@@ -201,8 +202,27 @@ describe('dateUtils', () => {
         it('preserves wall-clock time from offset-bearing API date', () => {
             // An API date with a non-UTC offset should still show the wall-clock time
             // after parseDateFromApi strips and re-applies the offset
+            (window as any).serverConfig = {isUSCustomer: false};
             const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00+00:00';
             expect(formatRelativeDateTime(today)).toBe('14:30');
+        });
+
+        it('formats today/tomorrow time in 12-hour form for US tenants', () => {
+            (window as any).serverConfig = {isUSCustomer: true};
+            const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00Z';
+            const tomorrow = dayjs.utc().add(1, 'day').format('YYYY-MM-DD') + 'T09:00:00Z';
+
+            expect(formatRelativeDateTime(today)).toBe('2:30 PM');
+            expect(formatRelativeDateTime(tomorrow)).toBe('Tomorrow 9:00 AM');
+        });
+
+        it('formats today/tomorrow time in 24-hour form for non-US tenants', () => {
+            (window as any).serverConfig = {isUSCustomer: false};
+            const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00Z';
+            const tomorrow = dayjs.utc().add(1, 'day').format('YYYY-MM-DD') + 'T09:00:00Z';
+
+            expect(formatRelativeDateTime(today)).toBe('14:30');
+            expect(formatRelativeDateTime(tomorrow)).toBe('Tomorrow 09:00');
         });
     });
 
@@ -236,6 +256,7 @@ describe('dateUtils', () => {
     describe('formatRelativeDateTime cross-timezone behavior', () => {
         it('with matching TZ offset works correctly for today', () => {
             (window as any).TimeZone = 'UTC';
+            (window as any).serverConfig = {isUSCustomer: false};
             const today = dayjs().utc().format('YYYY-MM-DD') + 'T14:30:00+00:00';
             // When input offset matches tenant TZ, conversion doesn't change the day
             expect(formatRelativeDateTime(today)).toBe('14:30');
@@ -252,6 +273,7 @@ describe('dateUtils', () => {
             ['New Zealand Standard Time'],
         ])('shows the input-offset wall-clock for a same-day booking (window.TimeZone=%s)', (tz) => {
             (window as any).TimeZone = tz;
+            (window as any).serverConfig = {isUSCustomer: false};
             // "Today" expressed in the +12:00 frame, at 16:24.
             const input = dayjs().utcOffset(12 * 60).format('YYYY-MM-DD') + 'T16:24:00+12:00';
             expect(formatRelativeDateTime(input)).toBe('16:24');
@@ -259,6 +281,7 @@ describe('dateUtils', () => {
 
         it('labels Tomorrow using the input-offset wall-clock, not window.TimeZone', () => {
             (window as any).TimeZone = 'UTC';
+            (window as any).serverConfig = {isUSCustomer: false};
             const input = dayjs().utcOffset(12 * 60).add(1, 'day').format('YYYY-MM-DD') + 'T09:15:00+12:00';
             expect(formatRelativeDateTime(input)).toBe('Tomorrow 09:15');
         });

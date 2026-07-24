@@ -216,7 +216,7 @@ public class JobControllerTests : IDisposable
         var result = await controller.OverlayDocument(42, "  ");
 
         Assert.IsType<BadRequestObjectResult>(result);
-        await _pdfOverlayClientMock.DidNotReceiveWithAnyArgs().RenderJobAsync(default, default!, default);
+        await _pdfOverlayClientMock.DidNotReceiveWithAnyArgs().RenderJobAsync(default, default!);
     }
 
     [Fact]
@@ -1423,10 +1423,10 @@ public class JobControllerTests : IDisposable
             .Returns(new Dictionary<int, DateTime?>
             {
                 [1] = new DateTime(2024, 7, 15),
-                [2] = new DateTime(2024, 8, 3),
+                [2] = new DateTime(2024, 8, 3)
             });
         _jobPhotoServiceMock.ArchiveJobCapturedMediaAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>())
-            .Returns(new DespatchWeb.Models.Response.AwsBatchOperationResult());
+            .Returns(new AwsBatchOperationResult());
 
         var controller = CreateController();
 
@@ -3850,7 +3850,7 @@ public class JobControllerTests : IDisposable
         {
             JobsCreated = 3,
             DuplicatesSkipped = 1,
-            CreatedDates = new[] { new DateOnly(2024, 6, 17), new DateOnly(2024, 6, 18) }
+            CreatedDates = [new DateOnly(2024, 6, 17), new DateOnly(2024, 6, 18)]
         };
         _recurringJobRepositoryMock
             .CreateCreateAheadBackfillAsync(Arg.Any<CreateCreateAheadBackfillRequest>())
@@ -3858,7 +3858,7 @@ public class JobControllerTests : IDisposable
 
         var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
         {
-            JobId = 100, Dates = new[] { new DateOnly(2024, 6, 17), new DateOnly(2024, 6, 18) }
+            JobId = 100, Dates = [new DateOnly(2024, 6, 17), new DateOnly(2024, 6, 18)]
         });
 
         var json = Assert.IsType<JsonResult>(result);
@@ -3875,7 +3875,7 @@ public class JobControllerTests : IDisposable
 
         var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
         {
-            JobId = 0, Dates = new[] { new DateOnly(2024, 6, 17) }
+            JobId = 0, Dates = [new DateOnly(2024, 6, 17)]
         });
 
         Assert.IsType<BadRequestObjectResult>(result);
@@ -3891,7 +3891,7 @@ public class JobControllerTests : IDisposable
 
         var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
         {
-            JobId = 100, Dates = new[] { new DateOnly(2024, 6, 17) }
+            JobId = 100, Dates = [new DateOnly(2024, 6, 17)]
         });
 
         var obj = Assert.IsType<ObjectResult>(result);

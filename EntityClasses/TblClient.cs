@@ -595,6 +595,12 @@ public partial class TblClient
 
     public bool ArReminderSuppressed { get; set; }
 
+    public bool ContentsUnknownAtPickup { get; set; }
+
+    public bool ContentsUnknownForBulkJobs { get; set; }
+
+    public bool RecalcRecurringFuel { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }
