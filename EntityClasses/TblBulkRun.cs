@@ -33,5 +33,13 @@ public partial class TblBulkRun
 
     public DateTime? DespatchDateTime { get; set; }
 
+    public bool NoReroute { get; set; }
+
+    public byte RoutingMode { get; set; }
+
+    public int? FinishAtBulkJobId { get; set; }
+
+    public bool IsVoidRun { get; set; }
+
     public virtual ICollection<TblBulkJobRun> TblBulkJobRuns { get; set; } = new List<TblBulkJobRun>();
 }

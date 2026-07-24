@@ -21,17 +21,10 @@ public sealed class InboundAgentLinkService(IDbContextFactory<DespatchContext> c
             return null;
         }
 
-        // Canonical token: reuse the same reversible-encryption UDF the automation engine
-        // and UTL_fncJob_PlaceholderData use, so the link matches the rest of the system.
-        var token = await ctx.Database
-            .SqlQueryRaw<string?>("SELECT dbo.EncryptJobIdReversible({0}) AS Value", jobId)
+        var token = await ctx.TblSettings
+            .Select(_ => DespatchContext.EncryptJobIdReversible(jobId))
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return null;
-        }
-
-        return $"{baseUrl.TrimEnd('/')}/{token}";
+        return string.IsNullOrWhiteSpace(token) ? null : $"{baseUrl.TrimEnd('/')}/{token}";
     }
 }

@@ -208,6 +208,25 @@ describe('useMessages', () => {
         expect(result.current.messages[1].messageId).toBe(2);
     });
 
+    it('should order messages with an identical time by messageId', async () => {
+        // Same timestamp must resolve deterministically to received (id) order,
+        // so a re-fetch can never re-shuffle same-second messages.
+        const sameTimeMessages = [
+            {...mockMessages[0], messageId: 3, messageTime: '2024-01-15T10:00:00Z'},
+            {...mockMessages[1], messageId: 1, messageTime: '2024-01-15T10:00:00Z'},
+            {...mockMessages[0], messageId: 2, messageTime: '2024-01-15T10:00:00Z'},
+        ];
+        mockMessagingApi.getMessages.mockResolvedValueOnce(sameTimeMessages);
+
+        const { result } = renderHook(() => useMessages(100));
+
+        await act(async () => {
+            await result.current.loadMessages(200, OtherMessagePartyType.Courier);
+        });
+
+        expect(result.current.messages.map(m => m.messageId)).toEqual([1, 2, 3]);
+    });
+
     it('should handle loading errors', async () => {
         const error = new Error('Failed to load');
         mockMessagingApi.getMessages.mockRejectedValueOnce(error);

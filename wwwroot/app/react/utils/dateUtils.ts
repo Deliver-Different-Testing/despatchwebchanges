@@ -197,10 +197,14 @@ export function formatRelativeDateTime(dateTimeString: string): string {
     const isToday = parsed.isSame(now, 'day');
     const isTomorrow = parsed.isSame(now.add(1, 'day'), 'day');
 
+    // Locale-aware time so US tenants see 12-hour AM/PM (matching formatLongDateTime),
+    // not the 24-hour form used for NZ tenants.
+    const timeStr = isUsCustomer() ? parsed.format('h:mm A') : parsed.format('HH:mm');
+
     if (isToday) {
-        return formatTime(parsed);
+        return timeStr;
     } else if (isTomorrow) {
-        return `Tomorrow ${formatTime(parsed)}`;
+        return `Tomorrow ${timeStr}`;
     } else {
         return formatLongDateTime(parsed);
     }

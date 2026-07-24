@@ -9,10 +9,10 @@ namespace DespatchWeb.Tests.Services;
 
 public class AiResponseCacheTests
 {
-    private readonly IDistributedCache _cache = Substitute.For<IDistributedCache>();
-
     private static readonly List<AiMessage> Messages =
         [new() { Role = "user", Content = "summarize job 42" }];
+
+    private readonly IDistributedCache _cache = Substitute.For<IDistributedCache>();
 
     private AiResponseCache CreateCache(int seconds = 90) =>
         new(_cache, Options.Create(new AnthropicSettings { ResponseCacheSeconds = seconds }));
@@ -20,7 +20,7 @@ public class AiResponseCacheTests
     [Fact]
     public void Enabled_ReflectsSettings()
     {
-        Assert.True(CreateCache(90).Enabled);
+        Assert.True(CreateCache().Enabled);
         Assert.False(CreateCache(0).Enabled);
     }
 
@@ -39,7 +39,7 @@ public class AiResponseCacheTests
     [Theory]
     [InlineData("m2", "sys", 1024)] // model differs
     [InlineData("m", "sys2", 1024)] // system prompt differs
-    [InlineData("m", "sys", 512)]   // max tokens differ
+    [InlineData("m", "sys", 512)] // max tokens differ
     public void BuildKey_Differs_WhenAnyInputChanges(string model, string system, int maxTokens)
     {
         var cache = CreateCache();

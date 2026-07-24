@@ -11,6 +11,12 @@ namespace DespatchWeb.EntityClasses
     public partial class DespatchContext
     {
 
+        [DbFunction("EncryptJobIdReversible", "dbo")]
+        public static string EncryptJobIdReversible(int? JobId)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         [DbFunction("UTL_fncClearList_Other", "dbo")]
         public IQueryable<UTL_fncClearList_OtherResult> UTL_fncClearList_Other()
         {
@@ -35,14 +41,14 @@ namespace DespatchWeb.EntityClasses
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }
 
-        [DbFunction("UTL_fncS_GetNationwideService_RawPrice", "dbo")]
-        public static decimal? UTL_fncS_GetNationwideService_RawPrice(int? ClientID, int? FromSuburbID, int? ToSuburbID, int? Speed, int? Size, double? Weight, int? Quantity, int? Type)
+        [DbFunction("UTL_fncMFV_FAF_Rates", "dbo")]
+        public static decimal? UTL_fncMFV_FAF_Rates(int? ClientID, DateTime? Date, int? SpeedID, int? VehicleSizeID)
         {
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }
 
-        [DbFunction("UTL_fncMFV_FAF_Rates", "dbo")]
-        public static decimal? UTL_fncMFV_FAF_Rates(int? ClientID, DateTime? Date, int? SpeedID, int? VehicleSizeID)
+        [DbFunction("UTL_fncS_GetNationwideService_RawPrice", "dbo")]
+        public static decimal? UTL_fncS_GetNationwideService_RawPrice(int? ClientID, int? FromSuburbID, int? ToSuburbID, int? Speed, int? Size, double? Weight, int? Quantity, int? Type)
         {
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }

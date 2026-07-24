@@ -6,7 +6,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using NSubstitute;
 
@@ -20,12 +19,12 @@ namespace DespatchWeb.Tests.Services;
 public class JobChangeRequestServiceTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
+    private readonly IJobCommandRepository _jobCommandRepository = Substitute.For<IJobCommandRepository>();
     private readonly DbContextOptions<DespatchContext> _options;
     private readonly IJobChangeRequestPartnerClient _partnerClient = Substitute.For<IJobChangeRequestPartnerClient>();
+    private readonly JobChangePolicyService _policy = new();
     private readonly ISendToPartnerService _sendToPartner = Substitute.For<ISendToPartnerService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
-    private readonly IJobCommandRepository _jobCommandRepository = Substitute.For<IJobCommandRepository>();
-    private readonly JobChangePolicyService _policy = new();
 
     public JobChangeRequestServiceTests()
     {
@@ -63,6 +62,8 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             .Returns(new PartnerRateForJobResponse { Source = "none" });
     }
 
+    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
+
     private JobChangeRequestService CreateService() =>
         new(CreateFactory(), _policy, _partnerClient, _sendToPartner, _tenantInfo, _jobCommandRepository);
 
@@ -75,71 +76,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     private DespatchContext CreateContext() => new TestDespatchContext(_options);
-
-    /// <summary>
-    /// SQLite-friendly DespatchContext override: tweaks <c>UjcrRowVersion</c>'s value
-    /// generation so EF includes it on INSERT (paired with the interceptor that fills
-    /// the byte[]). Production code still uses the unmodified <see cref="DespatchContext"/>
-    /// against SQL Server, which autofills the rowversion column.
-    /// </summary>
-    private sealed class TestDespatchContext(DbContextOptions<DespatchContext> options) : DespatchContext(options)
-    {
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<TucJobChangeRequest>()
-                .Property(e => e.UjcrRowVersion)
-                .ValueGeneratedNever();
-        }
-    }
-
-    /// <summary>
-    /// Pre-save hook that gives every Added entity's rowversion property a non-null
-    /// byte[] when it would otherwise be inserted as NULL. SQLite-only concern; on
-    /// SQL Server EF skips the column entirely and the server's rowversion type fills it.
-    /// </summary>
-    private sealed class RowVersionFillerInterceptor : SaveChangesInterceptor
-    {
-        public override InterceptionResult<int> SavingChanges(DbContextEventData eventData,
-            InterceptionResult<int> result)
-        {
-            FillEmptyRowVersions(eventData.Context);
-            return base.SavingChanges(eventData, result);
-        }
-
-        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
-            InterceptionResult<int> result, CancellationToken cancellationToken = default)
-        {
-            FillEmptyRowVersions(eventData.Context);
-            return base.SavingChangesAsync(eventData, result, cancellationToken);
-        }
-
-        private static void FillEmptyRowVersions(DbContext? context)
-        {
-            if (context is null)
-            {
-                return;
-            }
-
-            foreach (var entry in context.ChangeTracker.Entries())
-            {
-                if (entry.State != EntityState.Added)
-                {
-                    continue;
-                }
-
-                foreach (PropertyEntry prop in entry.Properties)
-                {
-                    if (prop.Metadata.IsConcurrencyToken
-                        && prop.Metadata.ClrType == typeof(byte[])
-                        && prop.CurrentValue is null)
-                    {
-                        prop.CurrentValue = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 };
-                    }
-                }
-            }
-        }
-    }
 
     [Fact]
     public async Task CreateLocalAsync_returns_error_when_job_not_found()
@@ -1296,5 +1232,68 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         return ctx.TucJobs.Where(j => j.UcjbId == jobId).Select(j => j.PartnerJobGuid).Single();
     }
 
-    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
+    /// <summary>
+    /// SQLite-friendly DespatchContext override: tweaks <c>UjcrRowVersion</c>'s value
+    /// generation so EF includes it on INSERT (paired with the interceptor that fills
+    /// the byte[]). Production code still uses the unmodified <see cref="DespatchContext"/>
+    /// against SQL Server, which autofills the rowversion column.
+    /// </summary>
+    private sealed class TestDespatchContext(DbContextOptions<DespatchContext> options) : DespatchContext(options)
+    {
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<TucJobChangeRequest>()
+                .Property(e => e.UjcrRowVersion)
+                .ValueGeneratedNever();
+        }
+    }
+
+    /// <summary>
+    /// Pre-save hook that gives every Added entity's rowversion property a non-null
+    /// byte[] when it would otherwise be inserted as NULL. SQLite-only concern; on
+    /// SQL Server EF skips the column entirely and the server's rowversion type fills it.
+    /// </summary>
+    private sealed class RowVersionFillerInterceptor : SaveChangesInterceptor
+    {
+        public override InterceptionResult<int> SavingChanges(DbContextEventData eventData,
+            InterceptionResult<int> result)
+        {
+            FillEmptyRowVersions(eventData.Context);
+            return base.SavingChanges(eventData, result);
+        }
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
+            InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            FillEmptyRowVersions(eventData.Context);
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        private static void FillEmptyRowVersions(DbContext? context)
+        {
+            if (context is null)
+            {
+                return;
+            }
+
+            foreach (var entry in context.ChangeTracker.Entries())
+            {
+                if (entry.State != EntityState.Added)
+                {
+                    continue;
+                }
+
+                foreach (var prop in entry.Properties)
+                {
+                    if (prop.Metadata.IsConcurrencyToken
+                        && prop.Metadata.ClrType == typeof(byte[])
+                        && prop.CurrentValue is null)
+                    {
+                        prop.CurrentValue = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 };
+                    }
+                }
+            }
+        }
+    }
 }

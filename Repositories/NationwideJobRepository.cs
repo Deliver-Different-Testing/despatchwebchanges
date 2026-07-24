@@ -26,7 +26,6 @@ public class NationwideJobRepository(
 {
     private readonly ITenantClock _clock = clock;
     private readonly ITenantInfoService _infoService = infoService;
-    private readonly IInboundAgentLinkService _inboundAgentLinkService = inboundAgentLinkService;
 
     public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData,
         IReadOnlyList<string> webhookIds,
@@ -257,27 +256,29 @@ public class NationwideJobRepository(
             .ToListAsync();
 
         // Calculate distances in C#, filter and sort
-        return airports
-            .Select(a => new
-            {
-                a.AirportId,
-                a.Name,
-                Distance = DistanceCalculator.CalculateDistance(
-                    jobLatitude,
-                    jobLongitude,
-                    a.AirportLatitude,
-                    a.AirportLongitude),
-                Timezone = a.TimeZone
-            })
-            .Where(result => result.Distance <= maxDistanceMiles)
-            .OrderBy(result => result.Distance)
-            .Select(result => new AirportSuggestion
-            {
-                Id = result.AirportId,
-                Text = $"{result.Name} ({result.Distance} mi)",
-                Timezone = result.Timezone
-            })
-            .ToList();
+        return
+        [
+            .. airports
+                .Select(a => new
+                {
+                    a.AirportId,
+                    a.Name,
+                    Distance = DistanceCalculator.CalculateDistance(
+                        jobLatitude,
+                        jobLongitude,
+                        a.AirportLatitude,
+                        a.AirportLongitude),
+                    Timezone = a.TimeZone
+                })
+                .Where(result => result.Distance <= maxDistanceMiles)
+                .OrderBy(result => result.Distance)
+                .Select(result => new AirportSuggestion
+                {
+                    Id = result.AirportId,
+                    Text = $"{result.Name} ({result.Distance} mi)",
+                    Timezone = result.Timezone
+                })
+        ];
     }
 
     public async Task<IReadOnlyList<AgentViewModel>> GetAgentsAsync(int jobId)
@@ -411,29 +412,6 @@ public class NationwideJobRepository(
     public Task<AgentInboundEmailResult> GetAgentInboundEmailPreviewAsync(int agentId, int jobId) =>
         EvaluateAgentInboundEmailAsync(agentId, jobId);
 
-    // Decides whether assigning this agent would email the inbound-agent link, and to whom.
-    // No side effects — used both for the pre-flight preview and to gate the actual send.
-    private async Task<AgentInboundEmailResult> EvaluateAgentInboundEmailAsync(int agentId, int jobId)
-    {
-        var agentEmail = await Context.TucAgents
-            .Where(a => a.UcagId == agentId)
-            .Select(a => a.UcagFax)
-            .FirstOrDefaultAsync();
-
-        if (string.IsNullOrWhiteSpace(agentEmail))
-        {
-            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoAgentEmail, null);
-        }
-
-        var link = await _inboundAgentLinkService.BuildJobLinkAsync(jobId);
-        if (string.IsNullOrWhiteSpace(link))
-        {
-            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail);
-        }
-
-        return new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail);
-    }
-
     public async Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
@@ -530,7 +508,7 @@ public class NationwideJobRepository(
 
         agentQuoteTemplateDto.CompletedTimeFormatted =
             _infoService.FormatDateForTenant(agentQuoteTemplateDto.CompletedTime);
-        agentQuoteTemplateDto.InboundUrl = await _inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
+        agentQuoteTemplateDto.InboundUrl = await inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
 
         Log.Information("AgentQuoteTemplateDto for job {JobId} and agent {AgentId}: {@AgentQuoteTemplateDto}",
             jobId,
@@ -670,7 +648,7 @@ public class NationwideJobRepository(
             where jobIds.Contains(j.UcjbId) && j.BookingParentId != null
             join b in Context.TucJobBookings on j.BookingParentId equals b.UcbkId
             where b.SavedFlightNumber != null && b.SavedFlightNumber != ""
-                  && b.FromAirportId != null && b.ToAirportId != null
+                                              && b.FromAirportId != null && b.ToAirportId != null
             select new
             {
                 JobId = j.UcjbId,
@@ -681,22 +659,24 @@ public class NationwideJobRepository(
                 j.UcjbTime
             }).ToListAsync();
 
-        return rows
-            .Select(r => new SavedFlightCandidate
-            {
-                JobId = r.JobId,
-                FromAirportId = r.FromAirportId,
-                ToAirportId = r.ToAirportId,
-                SavedFlightNumber = r.SavedFlightNumber,
-                // Wall-clock departure: date column + time-of-day column, zero
-                // offset so the search keys off the right calendar date.
-                DepartureDate = new DateTimeOffset(
-                    r.UcjbTime.HasValue
-                        ? r.UcjbDate.Date.Add(r.UcjbTime.Value.TimeOfDay)
-                        : r.UcjbDate,
-                    TimeSpan.Zero)
-            })
-            .ToList();
+        return
+        [
+            .. rows
+                .Select(r => new SavedFlightCandidate
+                {
+                    JobId = r.JobId,
+                    FromAirportId = r.FromAirportId,
+                    ToAirportId = r.ToAirportId,
+                    SavedFlightNumber = r.SavedFlightNumber,
+                    // Wall-clock departure: date column + time-of-day column, zero
+                    // offset so the search keys off the right calendar date.
+                    DepartureDate = new DateTimeOffset(
+                        r.UcjbTime.HasValue
+                            ? r.UcjbDate.Date.Add(r.UcjbTime.Value.TimeOfDay)
+                            : r.UcjbDate,
+                        TimeSpan.Zero)
+                })
+        ];
     }
 
     public async Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId) =>
@@ -1115,22 +1095,47 @@ public class NationwideJobRepository(
             dto.WaitTime
         );
 
-        return results
-            .Select(r => new FlightRateDto
-            {
-                JobTypeId = r.JobTypeID ?? 0,
-                Name = r.Name ?? string.Empty,
-                Speed = r.Speed ?? string.Empty,
-                Description = r.Description ?? string.Empty,
-                Rate = r.Rate ?? 0,
-                SaleRate = r.SaleRate ?? 0,
-                Availability = r.Availability ?? string.Empty,
-                AvailabilityColour = r.AvailabilityColour ?? string.Empty,
-                BookDate = r.BookDate ?? _clock.TenantNow,
-                Duration = r.Duration,
-                FlightRate = r.FlightRate ?? 0
-            })
-            .ToList();
+        return
+        [
+            .. results
+                .Select(r => new FlightRateDto
+                {
+                    JobTypeId = r.JobTypeID ?? 0,
+                    Name = r.Name ?? string.Empty,
+                    Speed = r.Speed ?? string.Empty,
+                    Description = r.Description ?? string.Empty,
+                    Rate = r.Rate ?? 0,
+                    SaleRate = r.SaleRate ?? 0,
+                    Availability = r.Availability ?? string.Empty,
+                    AvailabilityColour = r.AvailabilityColour ?? string.Empty,
+                    BookDate = r.BookDate ?? _clock.TenantNow,
+                    Duration = r.Duration,
+                    FlightRate = r.FlightRate ?? 0
+                })
+        ];
+    }
+
+    // Decides whether assigning this agent would email the inbound-agent link, and to whom.
+    // No side effects — used both for the pre-flight preview and to gate the actual send.
+    private async Task<AgentInboundEmailResult> EvaluateAgentInboundEmailAsync(int agentId, int jobId)
+    {
+        var agentEmail = await Context.TucAgents
+            .Where(a => a.UcagId == agentId)
+            .Select(a => a.UcagFax)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrWhiteSpace(agentEmail))
+        {
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoAgentEmail, null);
+        }
+
+        var link = await inboundAgentLinkService.BuildJobLinkAsync(jobId);
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail);
+        }
+
+        return new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail);
     }
 
     private static void UpdateFlightJobStatus(TucJob job, FlightSegmentViewModel primaryFlight)
@@ -1559,7 +1564,7 @@ public class NationwideJobRepository(
                 }
             });
 
-        return agentResults.ToList();
+        return [.. agentResults];
     }
 
     private static async Task<decimal?> GetAgentRateAsync(DespatchContext context,

@@ -7,7 +7,7 @@ namespace DespatchWeb.Reporting;
 // distance-line names. Name-based on purpose: PricingBreakdown.IsAccessorial is a dead flag
 // (0 on every engine line - confirmed on DFRNT 671/671). Never read RawBaseAmount here
 // (it lumps accessorials into base - audit invariant #3).
-public static class PriceLineClassifier
+public static partial class PriceLineClassifier
 {
     public enum Bucket
     {
@@ -21,15 +21,15 @@ public static class PriceLineClassifier
         Tolls,
         HazmatDg,
         Surcharge,
-        Other,
+        Other
     }
 
     // The 9 accessorial buckets, in Job Detail column order.
     public static readonly Bucket[] AccessorialBuckets =
-    {
+    [
         Bucket.Weight, Bucket.Cubic, Bucket.Congestion, Bucket.AfterHours,
-        Bucket.WaitTime, Bucket.Tolls, Bucket.HazmatDg, Bucket.Surcharge, Bucket.Other,
-    };
+        Bucket.WaitTime, Bucket.Tolls, Bucket.HazmatDg, Bucket.Surcharge, Bucket.Other
+    ];
 
     public static bool IsAccessorial(Bucket b) => Array.IndexOf(AccessorialBuckets, b) >= 0;
 
@@ -69,14 +69,14 @@ public static class PriceLineClassifier
     {
         if (string.IsNullOrWhiteSpace(chargeName)) return null;
 
-        var incl = Regex.Match(chargeName, @"([\d.]+)\s*mi(?:les)?\s*incl", RegexOptions.IgnoreCase);
-        var chg = Regex.Match(chargeName, @"([\d.]+)\s*mi(?:les)?\s*charged", RegexOptions.IgnoreCase);
+        var incl = IncRegex().Match(chargeName);
+        var chg = ChgRegex().Match(chargeName);
         if (incl.Success || chg.Success)
         {
             return (ParseDec(incl.Groups[1].Value), ParseDec(chg.Groups[1].Value));
         }
 
-        var plain = Regex.Match(chargeName, @"\(([\d.]+)\s*mi(?:les)?\)", RegexOptions.IgnoreCase);
+        var plain = PlainRegex().Match(chargeName);
         if (plain.Success) return (0m, ParseDec(plain.Groups[1].Value));
 
         return null;
@@ -90,9 +90,19 @@ public static class PriceLineClassifier
             var m = ParseMiles(name);
             if (m is { } v) return v.Included + v.Charged;
         }
+
         return null;
     }
 
     private static decimal ParseDec(string s) =>
         decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : 0m;
+
+    [GeneratedRegex(@"([\d.]+)\s*mi(?:les)?\s*incl", RegexOptions.IgnoreCase, "en-NZ")]
+    private static partial Regex IncRegex();
+
+    [GeneratedRegex(@"([\d.]+)\s*mi(?:les)?\s*charged", RegexOptions.IgnoreCase, "en-NZ")]
+    private static partial Regex ChgRegex();
+
+    [GeneratedRegex(@"\(([\d.]+)\s*mi(?:les)?\)", RegexOptions.IgnoreCase, "en-NZ")]
+    private static partial Regex PlainRegex();
 }

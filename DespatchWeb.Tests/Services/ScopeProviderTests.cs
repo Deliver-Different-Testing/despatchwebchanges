@@ -31,7 +31,7 @@ public class ScopeProviderTests : IAsyncDisposable
     private void SetAuthenticated(bool authenticated)
     {
         var identity = authenticated
-            ? new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "test") }, "TestAuth")
+            ? new ClaimsIdentity([new Claim(ClaimTypes.Name, "test")], "TestAuth")
             : new ClaimsIdentity();
         var principal = new ClaimsPrincipal(identity);
         var httpContext = new DefaultHttpContext { User = principal };

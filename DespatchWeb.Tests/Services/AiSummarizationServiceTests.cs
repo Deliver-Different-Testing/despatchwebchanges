@@ -12,16 +12,17 @@ namespace DespatchWeb.Tests.Services;
 public class AiSummarizationServiceTests
 {
     private readonly IAiClientService _aiClientMock = Substitute.For<IAiClientService>();
-    private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
-    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
-    private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly ICourierRepository _courierRepositoryMock = Substitute.For<ICourierRepository>();
-    private readonly ITenantInfoService _tenantInfoMock = Substitute.For<ITenantInfoService>();
+    private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
     {
         MaxTokensPerSummary = 1024
     });
+
+    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly ITenantInfoService _tenantInfoMock = Substitute.For<ITenantInfoService>();
 
     private AiSummarizationService CreateService() => new(
         _aiClientMock,
@@ -48,7 +49,7 @@ public class AiSummarizationServiceTests
             keyFacts = keyFacts ?? [],
             attention = attention ?? [],
             timeline = timeline ?? [],
-            highlights = highlights ?? Array.Empty<string>()
+            highlights = highlights ?? []
         });
 
     private void StubMarkdownResponse(string text, int inputTokens = 50, int outputTokens = 10) =>
@@ -82,28 +83,6 @@ public class AiSummarizationServiceTests
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
                 Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(response);
-    }
-
-    private List<AiMessage> CaptureSendStructured(string toolJson)
-    {
-        List<AiMessage>? captured = null;
-        var response = new AiClientResponse { InputTokens = 100, OutputTokens = 20 };
-        response.ToolCalls.Add(new AiToolCall
-        {
-            ToolUseId = "tool_1",
-            ToolName = "emit_summary",
-            ArgumentsJson = toolJson
-        });
-        _aiClientMock.SendMessageAsync(
-                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
-                Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
-                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns(call =>
-            {
-                captured = call.ArgAt<List<AiMessage>>(1);
-                return response;
-            });
-        return captured ??= [];
     }
 
     // ----- Markdown summaries (notes / events) ------------------------------
@@ -213,7 +192,7 @@ public class AiSummarizationServiceTests
             severity: "Ok",
             keyFacts: ["Client A", "Std", "Akl→Wlg"],
             attention: [],
-            timeline: new object[] { new { label = "Booked", detail = "4h ago", status = "Ok" } },
+            timeline: [new { label = "Booked", detail = "4h ago", status = "Ok" }],
             highlights: ["Customer requested call before delivery"]));
 
         var result = await CreateService().SummarizeJobAsync(1, TestContext.Current.CancellationToken);
@@ -246,9 +225,10 @@ public class AiSummarizationServiceTests
             "Delivery is late",
             severity: "Caution",
             keyFacts: ["Jim Smith"],
-            attention: new object[] {
+            attention:
+            [
                 new { headline = "Delivery 3h past deadline", action = "Call Jim Smith", severity = "Critical" }
-            }));
+            ]));
 
         var result = await CreateService().SummarizeJobAsync(1, TestContext.Current.CancellationToken);
 
@@ -273,7 +253,7 @@ public class AiSummarizationServiceTests
         response.ToolCalls.Add(new AiToolCall
         {
             ToolName = "emit_summary",
-            ArgumentsJson = ToolJson("ok", "Info")
+            ArgumentsJson = ToolJson("ok")
         });
         _aiClientMock.SendMessageAsync(
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
@@ -438,6 +418,7 @@ public class AiSummarizationServiceTests
                 Closed = false, EventType = "Alert", JobNumber = $"J{i}"
             });
         }
+
         _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>()).Returns(tasks);
         StubStructuredResponse(ToolJson("queue is heavy", severity: "Info"));
 

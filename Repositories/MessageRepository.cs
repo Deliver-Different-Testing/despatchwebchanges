@@ -105,6 +105,7 @@ public class MessageRepository(
             .OrderByDescending(m => m.UcmmDate)
             .Take(limit)
             .OrderBy(m => m.UcmmDate)
+            .ThenBy(m => m.UcmmId)
             .Select(m => new ChatMessageViewModel
             {
                 MessageId = m.UcmmId,
@@ -113,7 +114,7 @@ public class MessageRepository(
                 SendFromCourierId = m.UcmmSendFromCourierId,
                 SendToCourierId = m.UcmmSendToCourierId,
                 Message = m.UcmmMessage,
-                MessageTime = m.UcmmTimeSent ?? m.UcmmDate,
+                MessageTime = m.UcmmDate,
                 Read = m.Read,
                 ReadTime = m.TimeRead,
                 Sent = m.UcmmSent,
@@ -128,6 +129,7 @@ public class MessageRepository(
             .OrderByDescending(m => m.UcmmDate)
             .Take(limit)
             .OrderBy(m => m.UcmmDate)
+            .ThenBy(m => m.UcmmId)
             .Select(m => new ChatMessageViewModel
             {
                 MessageId = m.UcmmId,
@@ -136,7 +138,7 @@ public class MessageRepository(
                 SendFromCourierId = m.UcmmSendFromCourierId,
                 SendToCourierId = m.UcmmSendToCourierId,
                 Message = m.UcmmMessage,
-                MessageTime = m.UcmmTimeSent ?? m.UcmmDate,
+                MessageTime = m.UcmmDate,
                 Read = m.Read,
                 ReadTime = m.TimeRead,
                 Sent = m.UcmmSent,

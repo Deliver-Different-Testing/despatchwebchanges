@@ -66,7 +66,10 @@ public partial class JobRepository
                     && (!courierSet || (j.UcjbCourierId.HasValue && request.CourierIds.Contains(j.UcjbCourierId.Value)))
                     && (!speedSet || (j.UcjbSpeed.HasValue && request.SpeedIds.Contains(j.UcjbSpeed.Value)))
                     && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
-                    && (!wildSet || EF.Functions.Like(j.UcjbNumber + " " + (j.UcjbClientRefa ?? "") + " " + (j.UcjbClientRefb ?? ""), wildSearch)))
+                    && (!wildSet ||
+                        EF.Functions.Like(
+                            j.UcjbNumber + " " + (j.UcjbClientRefa ?? "") + " " + (j.UcjbClientRefb ?? ""),
+                            wildSearch)))
                 .Select(j => j.UcjbId);
 
             archiveIdQuery = hdrCtx.TucJobArchives
@@ -78,7 +81,10 @@ public partial class JobRepository
                     && (!courierSet || (j.UcjbCourierId.HasValue && request.CourierIds.Contains(j.UcjbCourierId.Value)))
                     && (!speedSet || (j.UcjbSpeed.HasValue && request.SpeedIds.Contains(j.UcjbSpeed.Value)))
                     && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
-                    && (!wildSet || EF.Functions.Like(j.UcjbNumber + " " + (j.UcjbClientRefa ?? "") + " " + (j.UcjbClientRefb ?? ""), wildSearch)))
+                    && (!wildSet ||
+                        EF.Functions.Like(
+                            j.UcjbNumber + " " + (j.UcjbClientRefa ?? "") + " " + (j.UcjbClientRefb ?? ""),
+                            wildSearch)))
                 .Select(j => j.UcjbId);
         }
 
@@ -115,8 +121,10 @@ public partial class JobRepository
                 DeliveryArrivalUtc = j.DeliveryArrivalTime,
                 PickupTimeUtc = j.PickUpTime,
                 CompletionUtc = j.UcjbComplTime,
-                PickupAddress = ((j.PickupAddressLine3 ?? "") + " " + (j.PickupAddressLine4 ?? "") + ", " + (j.PickupAddressLine5 ?? "") + ", " + (j.PickupAddressLine6 ?? "")).Trim(),
-                DeliveryAddress = ((j.DeliveryAddressLine3 ?? "") + " " + (j.DeliveryAddressLine4 ?? "") + ", " + (j.DeliveryAddressLine5 ?? "") + ", " + (j.DeliveryAddressLine6 ?? "")).Trim(),
+                PickupAddress = ((j.PickupAddressLine3 ?? "") + " " + (j.PickupAddressLine4 ?? "") + ", " +
+                                 (j.PickupAddressLine5 ?? "") + ", " + (j.PickupAddressLine6 ?? "")).Trim(),
+                DeliveryAddress = ((j.DeliveryAddressLine3 ?? "") + " " + (j.DeliveryAddressLine4 ?? "") + ", " +
+                                   (j.DeliveryAddressLine5 ?? "") + ", " + (j.DeliveryAddressLine6 ?? "")).Trim()
             })
             .TagWith("PriceDetail - Live Headers").ToListAsync(ct));
 
@@ -133,12 +141,14 @@ public partial class JobRepository
                 j.RatedManually, j.BookingParentId, j.UcjbWeight, j.Cubic, j.UcjbQty, j.TotalDistance,
                 j.UcjbDate, j.PickUpTime, j.UcjbComplTime, j.PickupArrivalTime, j.DeliveryArrivalTime,
                 j.PickupAddressLine3, j.PickupAddressLine4, j.PickupAddressLine5, j.PickupAddressLine6,
-                j.DeliveryAddressLine3, j.DeliveryAddressLine4, j.DeliveryAddressLine5, j.DeliveryAddressLine6,
+                j.DeliveryAddressLine3, j.DeliveryAddressLine4, j.DeliveryAddressLine5, j.DeliveryAddressLine6
             })
             .TagWith("PriceDetail - Archive Headers").ToListAsync(ct));
 
-        var clientIdsForLookup = archiveHeadersRaw.Where(x => x.UcjbClientId.HasValue).Select(x => x.UcjbClientId!.Value).Distinct().ToList();
-        var speedIdsForLookup = archiveHeadersRaw.Where(x => x.UcjbSpeed.HasValue).Select(x => x.UcjbSpeed!.Value).Distinct().ToList();
+        var clientIdsForLookup = archiveHeadersRaw.Where(x => x.UcjbClientId.HasValue)
+            .Select(x => x.UcjbClientId!.Value).Distinct().ToList();
+        var speedIdsForLookup = archiveHeadersRaw.Where(x => x.UcjbSpeed.HasValue).Select(x => x.UcjbSpeed!.Value)
+            .Distinct().ToList();
         var clientNames = await InIdChunksAsync(clientIdsForLookup, chunk => hdrCtx.TucClients
             .Where(c => chunk.Contains(c.UcclId))
             .Select(c => new { c.UcclId, c.UcclName })
@@ -155,7 +165,9 @@ public partial class JobRepository
             JobId = j.UcjbId,
             JobNo = j.UcjbNumber,
             ClientId = j.UcjbClientId,
-            ClientName = j.UcjbClientId.HasValue && clientNameMap.TryGetValue(j.UcjbClientId.Value, out var cn) ? cn : "",
+            ClientName = j.UcjbClientId.HasValue && clientNameMap.TryGetValue(j.UcjbClientId.Value, out var cn)
+                ? cn
+                : "",
             Reference = j.Reference,
             Service = j.UcjbSpeed.HasValue && speedNameMap.TryGetValue(j.UcjbSpeed.Value, out var sn) ? sn : "",
             HeaderAmount = j.HeaderAmount,
@@ -174,8 +186,10 @@ public partial class JobRepository
             DeliveryArrivalUtc = j.DeliveryArrivalTime,
             PickupTimeUtc = j.PickUpTime,
             CompletionUtc = j.UcjbComplTime,
-            PickupAddress = ((j.PickupAddressLine3 ?? "") + " " + (j.PickupAddressLine4 ?? "") + ", " + (j.PickupAddressLine5 ?? "") + ", " + (j.PickupAddressLine6 ?? "")).Trim(),
-            DeliveryAddress = ((j.DeliveryAddressLine3 ?? "") + " " + (j.DeliveryAddressLine4 ?? "") + ", " + (j.DeliveryAddressLine5 ?? "") + ", " + (j.DeliveryAddressLine6 ?? "")).Trim(),
+            PickupAddress = ((j.PickupAddressLine3 ?? "") + " " + (j.PickupAddressLine4 ?? "") + ", " +
+                             (j.PickupAddressLine5 ?? "") + ", " + (j.PickupAddressLine6 ?? "")).Trim(),
+            DeliveryAddress = ((j.DeliveryAddressLine3 ?? "") + " " + (j.DeliveryAddressLine4 ?? "") + ", " +
+                               (j.DeliveryAddressLine5 ?? "") + ", " + (j.DeliveryAddressLine6 ?? "")).Trim()
         }).ToList();
 
         // ---- Dims from tucJobItems / tucJobItemsArchive -------------------------------------
@@ -196,9 +210,11 @@ public partial class JobRepository
                 FormatDim(i.Items, i.Length, i.Depth, i.Height, i.Weight))));
 
         foreach (var h in liveHeaders)
-            if (dimsByJob.TryGetValue(h.JobId, out var d)) h.Dims = d;
+            if (dimsByJob.TryGetValue(h.JobId, out var d))
+                h.Dims = d;
         foreach (var h in archiveHeaders)
-            if (dimsByJob.TryGetValue(h.JobId, out var d)) h.Dims = d;
+            if (dimsByJob.TryGetValue(h.JobId, out var d))
+                h.Dims = d;
 
         // ---- Current lines ------------------------------------------------------------------
 
@@ -209,7 +225,7 @@ public partial class JobRepository
                 JobId = p.JobId!.Value,
                 ChargeName = p.ChargeName ?? "",
                 ChargeAmount = p.ChargeAmount,
-                CourierPay = p.CostAmount,
+                CourierPay = p.CostAmount
             })
             .TagWith("PriceDetail - Live Lines").ToListAsync(ct));
 
@@ -220,7 +236,7 @@ public partial class JobRepository
                 JobId = p.JobId!.Value,
                 ChargeName = p.ChargeName ?? "",
                 ChargeAmount = p.ChargeAmount,
-                CourierPay = p.CostAmount,
+                CourierPay = p.CostAmount
             })
             .TagWith("PriceDetail - Archive Lines").ToListAsync(ct));
 
@@ -228,14 +244,14 @@ public partial class JobRepository
 
         var liveHistory = await InIdChunksAsync(liveIds, chunk => jjCtx.JobDeliveryJourneys
             .Where(s => chunk.Contains(s.JobId)
-                && (s.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated)
-                    || (s.ChangeType == nameof(DeliveryJourneyChangeType.JobUpdate)
-                        && s.FieldName != null
-                        && (s.FieldName == "PricingBreakdown"
-                            || s.FieldName.StartsWith("Pricing")
-                            || s.FieldName == "ucjbAmount"
-                            || s.FieldName == "FuelSurchargeAmount"
-                            || s.FieldName == "ucjbVoid"))))
+                        && (s.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated)
+                            || (s.ChangeType == nameof(DeliveryJourneyChangeType.JobUpdate)
+                                && s.FieldName != null
+                                && (s.FieldName == "PricingBreakdown"
+                                    || s.FieldName.StartsWith("Pricing")
+                                    || s.FieldName == "ucjbAmount"
+                                    || s.FieldName == "FuelSurchargeAmount"
+                                    || s.FieldName == "ucjbVoid"))))
             .Select(s => new PricingChangeRow
             {
                 JobId = s.JobId,
@@ -246,7 +262,7 @@ public partial class JobRepository
                 AtUtc = s.UpdatedAt,
                 UpdatedByType = s.UpdatedByType ?? "",
                 StaffFirstName = s.Staff != null ? s.Staff.UcstFirstName : null,
-                StaffLastName = s.Staff != null ? s.Staff.UcstLastName : null,
+                StaffLastName = s.Staff != null ? s.Staff.UcstLastName : null
             })
             .TagWith("PriceDetail - Live Pricing History").ToListAsync(ct));
         liveHistory = liveHistory.OrderBy(h => h.AtUtc).ToList();
@@ -254,22 +270,23 @@ public partial class JobRepository
         // Archive journey has no Staff nav - fetch names via one batched lookup.
         var archiveHistoryRaw = await InIdChunksAsync(archiveIds, chunk => jjCtx.JobDeliveryJourneyArchives
             .Where(s => chunk.Contains(s.JobId)
-                && (s.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated)
-                    || (s.ChangeType == nameof(DeliveryJourneyChangeType.JobUpdate)
-                        && s.FieldName != null
-                        && (s.FieldName == "PricingBreakdown"
-                            || s.FieldName.StartsWith("Pricing")
-                            || s.FieldName == "ucjbAmount"
-                            || s.FieldName == "FuelSurchargeAmount"
-                            || s.FieldName == "ucjbVoid"))))
+                        && (s.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated)
+                            || (s.ChangeType == nameof(DeliveryJourneyChangeType.JobUpdate)
+                                && s.FieldName != null
+                                && (s.FieldName == "PricingBreakdown"
+                                    || s.FieldName.StartsWith("Pricing")
+                                    || s.FieldName == "ucjbAmount"
+                                    || s.FieldName == "FuelSurchargeAmount"
+                                    || s.FieldName == "ucjbVoid"))))
             .Select(s => new
             {
-                s.JobId, s.ChangeType, s.FieldName, s.OldValue, s.NewValue, s.UpdatedAt, s.UpdatedByType, s.StaffId,
+                s.JobId, s.ChangeType, s.FieldName, s.OldValue, s.NewValue, s.UpdatedAt, s.UpdatedByType, s.StaffId
             })
             .TagWith("PriceDetail - Archive Pricing History").ToListAsync(ct));
         archiveHistoryRaw = archiveHistoryRaw.OrderBy(x => x.UpdatedAt).ToList();
 
-        var staffIds = archiveHistoryRaw.Where(x => x.StaffId.HasValue).Select(x => x.StaffId!.Value).Distinct().ToList();
+        var staffIds = archiveHistoryRaw.Where(x => x.StaffId.HasValue).Select(x => x.StaffId!.Value).Distinct()
+            .ToList();
         var staffRaw = await InIdChunksAsync(staffIds, chunk => jjCtx.TucStaffs
             .Where(s => chunk.Contains(s.UcstId))
             .Select(s => new { s.UcstId, s.UcstFirstName, s.UcstLastName })
@@ -287,7 +304,7 @@ public partial class JobRepository
             AtUtc = x.UpdatedAt,
             UpdatedByType = x.UpdatedByType ?? "",
             StaffFirstName = x.StaffId is { } sid && staffNames.TryGetValue(sid, out var n) ? n.First : null,
-            StaffLastName = x.StaffId is { } sid2 && staffNames.TryGetValue(sid2, out var n2) ? n2.Last : null,
+            StaffLastName = x.StaffId is { } sid2 && staffNames.TryGetValue(sid2, out var n2) ? n2.Last : null
         }).ToList();
 
         // ---- Merge (live precedence when a job appears in both) -----------------------------
@@ -308,11 +325,19 @@ public partial class JobRepository
             var parentIds = childrenNeedingParent.Select(h => h.BookingParentId!.Value).Distinct().ToList();
             var parentLiveLines = await InIdChunksAsync(parentIds, chunk => pbCtx.PricingBreakdowns
                 .Where(p => p.JobId != null && chunk.Contains(p.JobId.Value))
-                .Select(p => new PriceDetailLineRow { JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? "", ChargeAmount = p.ChargeAmount, CourierPay = p.CostAmount })
+                .Select(p => new PriceDetailLineRow
+                {
+                    JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? "", ChargeAmount = p.ChargeAmount,
+                    CourierPay = p.CostAmount
+                })
                 .TagWith("PriceDetail - Split-child Parent Lines (Live)").ToListAsync(ct));
             var parentArchiveLines = await InIdChunksAsync(parentIds, chunk => pbCtx.PricingBreakdownArchives
                 .Where(p => p.JobId != null && chunk.Contains(p.JobId.Value))
-                .Select(p => new PriceDetailLineRow { JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? "", ChargeAmount = p.ChargeAmount, CourierPay = p.CostAmount })
+                .Select(p => new PriceDetailLineRow
+                {
+                    JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? "", ChargeAmount = p.ChargeAmount,
+                    CourierPay = p.CostAmount
+                })
                 .TagWith("PriceDetail - Split-child Parent Lines (Archive)").ToListAsync(ct));
             var parentLinesByJob = parentLiveLines.Concat(parentArchiveLines)
                 .GroupBy(pl => pl.JobId).ToDictionary(g => g.Key, g => g.ToList());
@@ -325,7 +350,7 @@ public partial class JobRepository
                     JobId = child.JobId,
                     ChargeName = pl.ChargeName,
                     ChargeAmount = pl.ChargeAmount,
-                    CourierPay = pl.CourierPay,
+                    CourierPay = pl.CourierPay
                 }));
             }
         }
@@ -347,7 +372,8 @@ public partial class JobRepository
     private static string FormatDim(int hu, double? l, double? d, double? h, double w)
     {
         var lwh = (l.HasValue && d.HasValue && h.HasValue && (l > 0 || d > 0 || h > 0))
-            ? $", {l:0.##}x{d:0.##}x{h:0.##}" : "";
+            ? $", {l:0.##}x{d:0.##}x{h:0.##}"
+            : "";
         return $"{hu} HU{lwh}, {w:0.##} lb";
     }
 
@@ -366,6 +392,7 @@ public partial class JobRepository
             for (var k = 0; k < take; k++) slice.Add(ids[i + k]);
             result.AddRange(await queryFn(slice));
         }
+
         return result;
     }
 }

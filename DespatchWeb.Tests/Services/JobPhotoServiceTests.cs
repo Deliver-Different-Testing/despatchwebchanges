@@ -13,8 +13,8 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobPhotoServiceTests
 {
-    private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
+    private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
 
     private JobPhotoService CreateService() => new(_s3ClientMock, _clock);
 
@@ -115,7 +115,8 @@ public class JobPhotoServiceTests
         var service = CreateService();
         var file = CreateMockFile("test.jpg", "image/jpeg", 100);
 
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>()).ThrowsAsync(new AmazonS3Exception("S3 Error"));
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AmazonS3Exception("S3 Error"));
 
         // Act
         var result = await service.UploadJobPhotoOrSignatureAsync(1, file, JobPhotoType.Delivery);
@@ -490,7 +491,7 @@ public class JobPhotoServiceTests
             ["DeliverySignatures/2024/07/5-"] = "DeliverySignatures/2024/07/5-20240705120000.png",
             ["DeliveryPhotos/2024/07/5-"] = "DeliveryPhotos/2024/07/5-20240705120100.jpg",
             ["PickupScannedDocuments/2024/07/5-"] = "PickupScannedDocuments/2024/07/5-20240705120200.pdf",
-            ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg",
+            ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg"
         };
         StubListByPrefixMap(keysByPrefix);
         _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
@@ -639,5 +640,4 @@ public class JobPhotoServiceTests
 
         return fileMock;
     }
-
 }

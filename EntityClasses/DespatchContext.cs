@@ -4458,6 +4458,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.RateShortRr)
                 .HasDefaultValue(52, "DF_tucClient_RateShortRR")
                 .HasColumnName("RateShortRR");
+            entity.Property(e => e.RecalcRecurringFuel).HasDefaultValue(true);
             entity.Property(e => e.ReferenceAdefineList).HasColumnName("ReferenceADefineList");
             entity.Property(e => e.ReferenceAmandatory).HasColumnName("ReferenceAMandatory");
             entity.Property(e => e.ReferenceAmessage)
@@ -4473,7 +4474,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ReferenceCmessage)
                 .HasMaxLength(500)
                 .HasColumnName("ReferenceCMessage");
-            entity.Property(e => e.RecalcRecurringFuel).HasDefaultValue(true);
             entity.Property(e => e.RerateJobs).HasDefaultValue(true, "RerateJobs");
             entity.Property(e => e.RuralDeliveryRateCodeId).HasColumnName("RuralDeliveryRateCodeID");
             entity.Property(e => e.Sddenabled)
@@ -7422,6 +7422,8 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50);
             entity.Property(e => e.Mfv).HasColumnName("MFV");
             entity.Property(e => e.Notes).HasColumnType("ntext");
+            entity.Property(e => e.ServiceDescription).HasMaxLength(500);
+            entity.Property(e => e.ServiceType).HasMaxLength(100);
             entity.Property(e => e.ShortName).HasMaxLength(50);
             entity.Property(e => e.ShowPhotosWhenChild).HasDefaultValue(true);
             entity.Property(e => e.SuccessRate).HasColumnType("decimal(18, 4)");

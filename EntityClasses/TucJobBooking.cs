@@ -418,6 +418,8 @@ public partial class TucJobBooking
 
     public string SavedFlightNumber { get; set; }
 
+    public bool ContentsUnknownAtPickup { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucJobBooking BookingParent { get; set; }

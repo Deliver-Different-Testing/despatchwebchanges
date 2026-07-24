@@ -17,12 +17,14 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class RecurringJobRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteTestDatabase _db = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock =
+        Substitute.For<IClearListEnvelopeService>();
+
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly DespatchContext _context;
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly SqliteTestDatabase _db = new();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public RecurringJobRepositoryTests()
     {
@@ -165,7 +167,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert - Both parent and child should be updated
         if (_context.TucJobBookings != null)
         {
-            var parentJob = await _context.TucJobBookings.FindAsync([parentJobId], TestContext.Current.CancellationToken);
+            var parentJob =
+                await _context.TucJobBookings.FindAsync([parentJobId], TestContext.Current.CancellationToken);
             var childJob = await _context.TucJobBookings.FindAsync([childJobId], TestContext.Current.CancellationToken);
 
             Assert.Equal(newClientId, parentJob!.UcbkClientId);
@@ -494,12 +497,14 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
 
-        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ?? throw new InvalidOperationException());
+        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ??
+                                                    throw new InvalidOperationException());
         Assert.Null(exception);
         return;
 
         // Act & Assert - Should not throw ArgumentOutOfRangeException
-        async Task<PaginatedResponse<PrebookListViewModel>> Act() => await repository.GetRecurringJobsListAsync(request);
+        async Task<PaginatedResponse<PrebookListViewModel>> Act() =>
+            await repository.GetRecurringJobsListAsync(request);
     }
 
     [Fact]
@@ -614,7 +619,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
 
-        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ?? throw new InvalidOperationException());
+        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ??
+                                                    throw new InvalidOperationException());
         Assert.Null(exception);
 
         var result = await repository.GetRecurringJobsListAsync(request);
@@ -624,7 +630,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         return;
 
         // Act - Should not throw for mixed dates
-        async Task<PaginatedResponse<PrebookListViewModel>> Act() => await repository.GetRecurringJobsListAsync(request);
+        async Task<PaginatedResponse<PrebookListViewModel>> Act() =>
+            await repository.GetRecurringJobsListAsync(request);
     }
 
     [Fact]
@@ -702,7 +709,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Arrange
         var repository = CreateRepository();
 
-        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<JobGroupViewModel>>?)Act ?? throw new InvalidOperationException());
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<JobGroupViewModel>>?)Act ??
+                                                        throw new InvalidOperationException());
         return;
 
         // Act & Assert
@@ -817,7 +825,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Amount, newAmount.ToString(CultureInfo.InvariantCulture));
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Amount,
+            newAmount.ToString(CultureInfo.InvariantCulture));
         _context.ChangeTracker.Clear();
 
         // Assert
@@ -941,7 +950,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert
         var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
         var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
-        var secondChild = await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
+        var secondChild =
+            await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
 
         Assert.Equal(newContact, parent!.PickupFromContact);
         Assert.Equal(newContact, firstChild!.PickupFromContact);
@@ -972,7 +982,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert
         var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
         var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
-        var secondChild = await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
+        var secondChild =
+            await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
 
         Assert.Equal(newContact, parent!.DeliverToContact);
         Assert.Null(firstChild!.DeliverToContact); // First child should NOT be updated
@@ -1199,7 +1210,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         Assert.Equal(2, result.Count);
-        Assert.All(result, j => Assert.True(j.Id == 100 || j.Id == 102));
+        Assert.All(result, j => Assert.True(j.Id is 100 or 102));
     }
 
     [Fact]
@@ -1262,7 +1273,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false), // Recurring
-            CreateJobBookingWithDates(101, TestDates.Now, null, null, true, true)   // One-off
+            CreateJobBookingWithDates(101, TestDates.Now, null, null, true, true) // One-off
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
@@ -1461,9 +1472,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Monday = 1, Tuesday = 2, Wednesday = 4
         _context.TucJobBookings.AddRange(
-            CreateJobBookingWithDays(100, 1, true),   // Monday only
-            CreateJobBookingWithDays(101, 3, true),   // Monday + Tuesday
-            CreateJobBookingWithDays(102, 4, true)    // Wednesday only
+            CreateJobBookingWithDays(100, 1, true), // Monday only
+            CreateJobBookingWithDays(101, 3, true), // Monday + Tuesday
+            CreateJobBookingWithDays(102, 4, true) // Wednesday only
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
@@ -1902,7 +1913,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repo = CreateRepository();
         var result = await repo.CreateCreateAheadBackfillAsync(new CreateCreateAheadBackfillRequest
         {
-            JobId = jobId, Dates = Array.Empty<DateOnly>()
+            JobId = jobId, Dates = []
         });
 
         Assert.Equal(0, result.JobsCreated);
@@ -1934,7 +1945,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repo = CreateRepository();
         var result = await repo.CreateCreateAheadBackfillAsync(new CreateCreateAheadBackfillRequest
         {
-            JobId = jobId, Dates = new[] { new DateOnly(2024, 6, 17) }
+            JobId = jobId, Dates = [new DateOnly(2024, 6, 17)]
         });
 
         Assert.Equal(0, result.JobsCreated);
@@ -1958,6 +1969,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         {
             _context.TucClients.Add(CreateClient(1, "TESTCLIENT"));
         }
+
         return new TucJobBooking
         {
             UcbkId = id,
@@ -1972,5 +1984,4 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
             RecurringMode = (byte)RecurringMode.Active
         };
     }
-
 }

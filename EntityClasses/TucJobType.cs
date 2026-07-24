@@ -95,6 +95,10 @@ public partial class TucJobType
 
     public int? DeliveryWindowMinutesAfter { get; set; }
 
+    public string ServiceType { get; set; }
+
+    public string ServiceDescription { get; set; }
+
     public virtual ICollection<AirFreightRate> AirFreightRates { get; set; } = new List<AirFreightRate>();
 
     public virtual TucJobTypeGrouping Grouping { get; set; }
