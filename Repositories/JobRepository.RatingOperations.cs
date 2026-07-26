@@ -43,6 +43,48 @@ public partial class JobRepository
         return jobDetails;
     }
 
+    /// <inheritdoc />
+    public async Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(DespatchContext context, int jobId)
+    {
+        var jobDetails = await context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobRatingUsMapping())
+            .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(jobDetails);
+
+        // Precompute the airport-match flags on the SAME connection. Without this, the
+        // downstream rating path (CallRatingProcedureAsync) re-reads the job row via the
+        // repository's own connection — which self-blocks against an open transaction that
+        // holds locks on the (still-uncommitted) row, e.g. during a split re-rate.
+        var isFromAirport = await context.DoesAddressMatchAirportAsync(jobId, true);
+        var isToAirport = await context.DoesAddressMatchAirportAsync(jobId, false);
+
+        return jobDetails with
+        {
+            PrecomputedIsFromAddressAirport = isFromAirport,
+            PrecomputedIsToAddressAirport = isToAirport
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(
+        DespatchContext context, int jobId, bool isArchived)
+    {
+        var jobDetails = isArchived
+            ? await context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobMappings.JobRatingNzArchiveMapping())
+                .FirstOrDefaultAsync()
+            : await context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobMappings.JobRatingNzMapping())
+                .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(jobDetails);
+        return jobDetails;
+    }
+
     /// <summary>
     /// Retrieves prebook job details required for US tenant rating calculations.
     /// </summary>

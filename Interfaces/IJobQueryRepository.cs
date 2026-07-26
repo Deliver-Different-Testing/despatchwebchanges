@@ -101,6 +101,21 @@ public interface IJobQueryRepository
     Task<JobLateCallDto?> GetJobForLateCallAsync(int jobId);
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
     Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId, bool isArchived);
+
+    /// <summary>
+    /// Reads US rating details on the supplied <paramref name="context"/> (rather than the
+    /// repository's own connection) so the read can participate in an open transaction — used
+    /// by the split re-rate, which must read the still-uncommitted child rows without
+    /// self-blocking on the transaction's locks. Also precomputes the airport-match flags on
+    /// the same connection so the downstream rating path performs no further child-row reads.
+    /// </summary>
+    Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(DespatchContext context, int jobId);
+
+    /// <summary>
+    /// NZ counterpart of <see cref="GetJobDetailsForRatingAsync(DespatchContext, int)"/> — reads
+    /// rating details on the supplied <paramref name="context"/> so the read joins an open transaction.
+    /// </summary>
+    Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(DespatchContext context, int jobId, bool isArchived);
     Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);
     Task<IReadOnlyList<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);
