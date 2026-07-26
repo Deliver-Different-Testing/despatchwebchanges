@@ -857,7 +857,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Split Job'));
 
             // Confirmation dialog should be visible
-            expect(screen.getByText('Split Job', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: 'Split Job'})).toBeInTheDocument();
             expect(screen.getByText('Are you sure you wish to split this job?')).toBeInTheDocument();
 
             fireEvent.click(screen.getByText('OK'));

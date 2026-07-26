@@ -434,6 +434,25 @@ public class JobPhotoServiceTests
         Assert.Empty(result);
     }
 
+    // Pickup signatures live in the PickupSignatures S3 folder (mirroring DeliverySignatures);
+    // GetPickupPhotosAsync must search it so the signature shows in the job-detail pickup grid.
+    [Fact]
+    public async Task GetPickupPhotosAsync_SignatureInPickupSignaturesFolder_IsFound()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string signatureKey = "PickupSignatures/2024/07/1-20240705120000.png";
+        StubSingleObjectForPrefix("PickupSignatures/2024/07/1-", signatureKey);
+
+        // Act
+        var result = await service.GetPickupPhotosAsync(1, 2024, 7);
+
+        // Assert
+        Assert.Contains(result, p => p.S3Key == signatureKey);
+    }
+
     [Fact]
     public async Task GetAttachedFilesAsync_ReturnsLegacyFlatAndDatedObjects()
     {
@@ -482,7 +501,7 @@ public class JobPhotoServiceTests
     [Fact]
     public async Task ArchiveJobCapturedMediaAsync_ArchivesCapturedMedia_MovesEachUnderArchivePrefix()
     {
-        // Arrange — one object in each of the four captured-media folders for the completion month.
+        // Arrange — one object in each of the five captured-media folders for the completion month.
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
@@ -491,7 +510,8 @@ public class JobPhotoServiceTests
             ["DeliverySignatures/2024/07/5-"] = "DeliverySignatures/2024/07/5-20240705120000.png",
             ["DeliveryPhotos/2024/07/5-"] = "DeliveryPhotos/2024/07/5-20240705120100.jpg",
             ["PickupScannedDocuments/2024/07/5-"] = "PickupScannedDocuments/2024/07/5-20240705120200.pdf",
-            ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg"
+            ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg",
+            ["PickupSignatures/2024/07/5-"] = "PickupSignatures/2024/07/5-20240705120400.png"
         };
         StubListByPrefixMap(keysByPrefix);
         _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
@@ -503,8 +523,8 @@ public class JobPhotoServiceTests
         var result = await service.ArchiveJobCapturedMediaAsync(5, 2024, 7);
 
         // Assert
-        Assert.Equal(4, result.TotalFiles);
-        Assert.Equal(4, result.SuccessfulFiles);
+        Assert.Equal(5, result.TotalFiles);
+        Assert.Equal(5, result.SuccessfulFiles);
         Assert.Equal(0, result.FailedFiles);
         Assert.True(result.IsSuccess);
 
