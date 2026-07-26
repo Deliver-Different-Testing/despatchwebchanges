@@ -20,6 +20,8 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
 
 // MUI Icons
 import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
@@ -41,8 +43,6 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import RedoIcon from '@mui/icons-material/Redo';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlined';
 
-import LinearProgress from '@mui/material/LinearProgress';
-
 import type {AppPage, DispatchJob} from '../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../services/toastService';
 import * as api from '../../services/jobListApi';
@@ -54,6 +54,9 @@ import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {DispatchDialog, type DispatchType} from '../dialogs/dispatch-dialog';
 import {SendToLiveConfirmationDialog} from '../dialogs/send-to-live-confirmation-dialog';
 import {RestoreCompletedConfirmationDialog} from '../dialogs/restore-completed-confirmation-dialog';
+import {SplitJobProgressDialog} from '../dialogs/split-job-progress-dialog';
+import {DialogShell, DialogHeader, DialogFooter, sectionPaperSx} from '../dialogs/shared';
+import {type HeaderVariant} from '../dialogs/shared/styles';
 import {openJobInSearch} from '../../services/navigationService';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
@@ -99,6 +102,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         title: string;
         message: string;
         onConfirm: () => Promise<void>;
+        icon?: React.ReactNode;
+        variant?: HeaderVariant;
     } | null>(null);
     const [sendToLiveTarget, setSendToLiveTarget] = useState<{id: number; jobNo: string} | null>(null);
     const [splitJobLoading, setSplitJobLoading] = useState(false);
@@ -166,6 +171,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogConfig({
             title: 'Unassign Flight?',
             message: `Are you sure you wish to unassign flight ${activeJob.assignedFlight?.flightNumber} from ${activeJob.jobNo}?`,
+            icon: <AirplanemodeInactiveIcon/>,
+            variant: 'warning',
             onConfirm: async () => {
                 try {
                     await api.restoreNationwideJob(activeJob.id);
@@ -184,6 +191,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogConfig({
             title: 'Unassign Agent?',
             message: `Are you sure you wish to unassign agent ${activeJob.assignedAgent?.agentName} from ${activeJob.jobNo}?`,
+            icon: <PersonRemoveIcon/>,
+            variant: 'warning',
             onConfirm: async () => {
                 try {
                     await api.restoreNationwideJob(activeJob.id);
@@ -444,6 +453,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogConfig({
             title: 'Split Job',
             message: 'Are you sure you wish to split this job?',
+            icon: <CallSplitIcon/>,
+            variant: 'primary',
             onConfirm: async () => {
                 await executeSplitJobFlow({
                     job: targetJob,
@@ -461,6 +472,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogConfig({
             title: 'Set First Job?',
             message: 'Are you sure you wish to set this as the First Job?',
+            icon: <FirstPageIcon/>,
+            variant: 'primary',
             onConfirm: async () => {
                 if (activeJob.courierData?.courierId) {
                     try {
@@ -793,44 +806,34 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 onConfirm={handleSendToLiveConfirm}
             />
             {/* Generic Confirmation Dialog */}
-            <Dialog
-                open={confirmDialogOpen}
-                onClose={() => setConfirmDialogOpen(false)}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogTitle>{confirmDialogConfig?.title}</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2">{confirmDialogConfig?.message}</Typography>
+            <DialogShell open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
+                <DialogHeader
+                    icon={confirmDialogConfig?.icon ?? <HelpOutlineIcon/>}
+                    title={confirmDialogConfig?.title}
+                    variant={confirmDialogConfig?.variant ?? 'primary'}
+                    onClose={() => setConfirmDialogOpen(false)}
+                />
+                <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
+                    <Box sx={{p: 3}}>
+                        <Paper elevation={0} sx={sectionPaperSx}>
+                            <Typography variant="body2">{confirmDialogConfig?.message}</Typography>
+                        </Paper>
+                    </Box>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
-                    <Button
-                        onClick={async () => {
-                            setConfirmDialogOpen(false);
-                            if (confirmDialogConfig?.onConfirm) {
-                                await confirmDialogConfig.onConfirm();
-                            }
-                        }}
-                        variant="contained"
-                    >
-                        OK
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                <DialogFooter
+                    onCancel={() => setConfirmDialogOpen(false)}
+                    onConfirm={async () => {
+                        setConfirmDialogOpen(false);
+                        if (confirmDialogConfig?.onConfirm) {
+                            await confirmDialogConfig.onConfirm();
+                        }
+                    }}
+                    confirmLabel="OK"
+                    confirmColor={confirmDialogConfig?.variant === 'warning' ? 'warning' : 'primary'}
+                />
+            </DialogShell>
             {/* Split Job Loading Dialog */}
-            <Dialog
-                open={splitJobLoading}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogContent sx={{textAlign: 'center', py: 3}}>
-                    <LinearProgress sx={{mb: 2}}/>
-                    <Typography variant="body2">
-                        Splitting job {activeJob.jobNo}...
-                    </Typography>
-                </DialogContent>
-            </Dialog>
+            <SplitJobProgressDialog open={splitJobLoading} jobNo={activeJob.jobNo}/>
             {/* Universal Dispatch Dialog */}
             <DispatchDialog
                 open={dispatchDialog.open}
