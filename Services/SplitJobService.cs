@@ -591,12 +591,15 @@ public class SplitJobService(
             decimal rate;
             if (isUs)
             {
-                var details = await jobRepository.GetJobDetailsForRatingAsync(childId);
+                // Read on the split transaction's own connection — the children were just
+                // inserted in this uncommitted transaction, so a read on a separate connection
+                // would block on its locks until the command timeout (SQL error 258).
+                var details = await jobRepository.GetJobDetailsForRatingAsync(context, childId);
                 rate = (await rateJobService.GetJobRateUsAsync(details)).Rate;
             }
             else
             {
-                var details = await jobRepository.GetJobDetailsForRatingNzAsync(childId, false);
+                var details = await jobRepository.GetJobDetailsForRatingNzAsync(context, childId, false);
                 rate = (await rateJobService.GetJobRateNzAsync(details)).Rate;
             }
 

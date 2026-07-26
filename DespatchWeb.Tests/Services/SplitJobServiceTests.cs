@@ -51,6 +51,15 @@ public class SplitJobServiceTests : IAsyncDisposable
         _jobRepositoryMock.GetJobDetailsForRatingAsync(Arg.Any<int>())
             .Returns(new JobRatingDetailsDto());
 
+        // Split re-rate reads details on the transaction's own connection (the context
+        // overloads) so the read joins the open transaction instead of self-blocking.
+        _jobRepositoryMock
+            .GetJobDetailsForRatingNzAsync(Arg.Any<DespatchContext>(), Arg.Any<int>(), Arg.Any<bool>())
+            .Returns(new JobRatingDetailsDtoNz());
+        _jobRepositoryMock
+            .GetJobDetailsForRatingAsync(Arg.Any<DespatchContext>(), Arg.Any<int>())
+            .Returns(new JobRatingDetailsDto());
+
         SeedLookupData();
     }
 
@@ -764,7 +773,7 @@ public class SplitJobServiceTests : IAsyncDisposable
         //   pickup leg: UcjbFrom = job.UcjbFrom (default null)
         //   delivery leg: UcjbFrom = 1 (Unknown suburb, the meeting point)
         _jobRepositoryMock
-            .GetJobDetailsForRatingNzAsync(Arg.Any<int>(), Arg.Any<bool>())
+            .GetJobDetailsForRatingNzAsync(Arg.Any<DespatchContext>(), Arg.Any<int>(), Arg.Any<bool>())
             .Returns(callInfo =>
             {
                 var jobId = callInfo.Arg<int>();
@@ -817,6 +826,43 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Equal(50.00m, pickup.UcjbAmount);
         Assert.Equal(50.00m, delivery.UcjbAmount);
         Assert.Equal(100.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_Nz_ReRatesChildrenOnTheTransactionConnection()
+    {
+        // Regression guard for the split-jobs timeout (SQL error 258): the re-rate must read
+        // each freshly-inserted child on the split transaction's own connection — via the
+        // context overload — not on the repository's separate connection, which would block on
+        // the transaction's locks. The real lock-timeout isn't reproducible under SQLite, so we
+        // pin the invariant that establishes the fix.
+        SeedJob();
+        var service = CreateService();
+
+        await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        // Both children re-rated via the transaction-context overload...
+        await _jobRepositoryMock.Received(2)
+            .GetJobDetailsForRatingNzAsync(Arg.Any<DespatchContext>(), Arg.Any<int>(), Arg.Any<bool>());
+        // ...and never via the connection-less overload during the split.
+        await _jobRepositoryMock.DidNotReceive()
+            .GetJobDetailsForRatingNzAsync(Arg.Any<int>(), Arg.Any<bool>());
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_Us_ReRatesChildrenOnTheTransactionConnection()
+    {
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        SeedJob();
+        var service = CreateService();
+
+        await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await _jobRepositoryMock.Received(2)
+            .GetJobDetailsForRatingAsync(Arg.Any<DespatchContext>(), Arg.Any<int>());
+        await _jobRepositoryMock.DidNotReceive().GetJobDetailsForRatingAsync(Arg.Any<int>());
     }
 
     [Fact]

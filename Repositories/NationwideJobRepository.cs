@@ -476,7 +476,14 @@ public class NationwideJobRepository(
             return;
         }
 
-        var smppSetting = await Context.TblSmppsettings.FirstOrDefaultAsync();
+        var smppSetting = await Context.TblSmppsettings
+            .Select(s => new
+            {
+                s.AgentEmailSubject,
+                s.AgentEmailMessage,
+                s.AgentEmailReplyAddress
+            })
+            .FirstOrDefaultAsync();
 
         var staffId = _infoService.GetStaffId();
 
@@ -527,7 +534,7 @@ public class NationwideJobRepository(
             SendToEmailAddress = agentEmail
         };
 
-        Context.Add(request);
+        await Context.AddAsync(request);
         await Context.SaveChangesAsync();
     }
 
@@ -1130,12 +1137,9 @@ public class NationwideJobRepository(
         }
 
         var link = await inboundAgentLinkService.BuildJobLinkAsync(jobId);
-        if (string.IsNullOrWhiteSpace(link))
-        {
-            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail);
-        }
-
-        return new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail);
+        return string.IsNullOrWhiteSpace(link) 
+            ? new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail) 
+            : new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail);
     }
 
     private static void UpdateFlightJobStatus(TucJob job, FlightSegmentViewModel primaryFlight)
