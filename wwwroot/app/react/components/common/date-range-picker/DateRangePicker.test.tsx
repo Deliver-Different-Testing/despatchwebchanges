@@ -22,11 +22,21 @@ function createDefaultProps(overrides?: Partial<DateRangePickerProps>): DateRang
     };
 }
 
+function setUsCustomer(isUs: boolean): void {
+    (window as any).serverConfig = {isUSCustomer: isUs};
+}
+
 describe('DateRangePicker', () => {
     let user: UserEvent;
+    const originalServerConfig = (window as any).serverConfig;
 
     beforeEach(() => {
         user = setupUser();
+        setUsCustomer(false); // NZ format by default; US-specific behaviour has its own block
+    });
+
+    afterEach(() => {
+        (window as any).serverConfig = originalServerConfig;
     });
 
     it('renders all range toggle buttons', () => {
@@ -99,5 +109,41 @@ describe('DateRangePicker', () => {
         const fromInput = screen.getByDisplayValue('01/01/2024');
         fireEvent.change(fromInput, {target: {value: '15/06/2024'}});
         expect(props.onFromDateChange).not.toHaveBeenCalled();
+    });
+
+    it('parses day-first (NZ) input and commits the correct date', () => {
+        const props = createDefaultProps({dateSearchRange: 'custom'});
+        renderWithTheme(<DateRangePicker {...props} />);
+
+        const fromInput = screen.getByDisplayValue('01/01/2024');
+        fireEvent.change(fromInput, {target: {value: '15/06/2024'}}); // 15 June
+        fireEvent.blur(fromInput);
+
+        const committed = (props.onFromDateChange as jest.Mock).mock.calls[0][0] as dayjs.Dayjs;
+        expect(committed.format('YYYY-MM-DD')).toBe('2024-06-15');
+    });
+
+    describe('US customer (isUSCustomer=true)', () => {
+        beforeEach(() => setUsCustomer(true));
+
+        it('renders month-first placeholder and values', () => {
+            renderWithTheme(<DateRangePicker {...createDefaultProps({dateSearchRange: 'custom'})} />);
+
+            expect(screen.getAllByPlaceholderText('MM/DD/YYYY').length).toBe(2);
+            expect(screen.getByDisplayValue('01/01/2024')).toBeInTheDocument(); // From
+            expect(screen.getByDisplayValue('01/31/2024')).toBeInTheDocument(); // To (month-first)
+        });
+
+        it('parses month-first (US) input and commits the correct date', () => {
+            const props = createDefaultProps({dateSearchRange: 'custom'});
+            renderWithTheme(<DateRangePicker {...props} />);
+
+            const fromInput = screen.getByDisplayValue('01/01/2024');
+            fireEvent.change(fromInput, {target: {value: '06/15/2024'}}); // June 15
+            fireEvent.blur(fromInput);
+
+            const committed = (props.onFromDateChange as jest.Mock).mock.calls[0][0] as dayjs.Dayjs;
+            expect(committed.format('YYYY-MM-DD')).toBe('2024-06-15');
+        });
     });
 });

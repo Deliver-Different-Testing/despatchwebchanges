@@ -22,6 +22,8 @@ import {
     formatLongDate,
     formatShortDateTime,
     formatShortDate,
+    getInputDateFormat,
+    parseInputDate,
     formatTime,
     formatRelativeDateTime,
     formatRelativeTime,
@@ -166,6 +168,57 @@ describe('dateUtils', () => {
         it('uses tenant setting when isUs not specified', () => {
             (window as any).serverConfig = {isUSCustomer: false};
             expect(formatLongDate(testDate)).toBe('15/Jan/2024');
+        });
+    });
+
+    describe('getInputDateFormat', () => {
+        it.each([
+            [true, 'MM/DD/YYYY'],
+            [false, 'DD/MM/YYYY'],
+        ])('returns numeric format for isUs=%s', (isUs, expected) => {
+            expect(getInputDateFormat(isUs)).toBe(expected);
+        });
+
+        it.each([
+            [{isUSCustomer: true}, 'MM/DD/YYYY'],
+            [{isUSCustomer: false}, 'DD/MM/YYYY'],
+            [undefined, 'MM/DD/YYYY'],
+        ])('falls back to tenant setting for serverConfig=%j', (config, expected) => {
+            if (config !== undefined) (window as any).serverConfig = config;
+            expect(getInputDateFormat()).toBe(expected);
+        });
+    });
+
+    describe('parseInputDate', () => {
+        it('parses month-first when US', () => {
+            const result = parseInputDate('03/04/2025', true);
+            expect(result?.isValid()).toBe(true);
+            expect(result?.format('YYYY-MM-DD')).toBe('2025-03-04');
+        });
+
+        it('parses day-first when non-US', () => {
+            const result = parseInputDate('03/04/2025', false);
+            expect(result?.isValid()).toBe(true);
+            expect(result?.format('YYYY-MM-DD')).toBe('2025-04-03');
+        });
+
+        it('accepts single-digit day/month', () => {
+            const result = parseInputDate('3/4/2025', false);
+            expect(result?.format('YYYY-MM-DD')).toBe('2025-04-03');
+        });
+
+        it.each([
+            ['not-a-date'],
+            ['2025-03-04'],
+            ['03/04'],
+            [''],
+        ])('returns null for invalid input %j', (input) => {
+            expect(parseInputDate(input, false)).toBeNull();
+        });
+
+        it('falls back to tenant setting when isUs not specified', () => {
+            (window as any).serverConfig = {isUSCustomer: false};
+            expect(parseInputDate('03/04/2025')?.format('YYYY-MM-DD')).toBe('2025-04-03');
         });
     });
 
