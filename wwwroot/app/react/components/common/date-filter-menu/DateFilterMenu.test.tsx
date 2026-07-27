@@ -108,6 +108,45 @@ describe('DateFilterMenu', () => {
         });
     });
 
+    describe('Locale-aware date format', () => {
+        const originalServerConfig = (window as any).serverConfig;
+
+        afterEach(() => {
+            (window as any).serverConfig = originalServerConfig;
+        });
+
+        const openCustomDates = async () => {
+            fireEvent.click(screen.getByRole('button'));
+            const customDatesLabel = await screen.findByText('Custom Dates');
+            fireEvent.click(customDatesLabel.closest('label')!);
+            return waitFor(() => {
+                expect(screen.getAllByTestId('mock-date-picker')).toHaveLength(2);
+            });
+        };
+
+        it('uses US format (MM/DD/YYYY) for US customers', async () => {
+            (window as any).serverConfig = {isUSCustomer: true};
+            renderWithProviders(<DateFilterMenu {...defaultProps} />);
+
+            await openCustomDates();
+
+            screen.getAllByTestId('mock-date-picker').forEach(picker => {
+                expect(picker).toHaveAttribute('data-format', 'MM/DD/YYYY');
+            });
+        });
+
+        it('uses NZ format (DD/MM/YYYY) for non-US customers', async () => {
+            (window as any).serverConfig = {isUSCustomer: false};
+            renderWithProviders(<DateFilterMenu {...defaultProps} />);
+
+            await openCustomDates();
+
+            screen.getAllByTestId('mock-date-picker').forEach(picker => {
+                expect(picker).toHaveAttribute('data-format', 'DD/MM/YYYY');
+            });
+        });
+    });
+
     describe('Interactions', () => {
         it('should call onRefreshData when Apply is clicked', async () => {
             const onRefreshData = jest.fn();

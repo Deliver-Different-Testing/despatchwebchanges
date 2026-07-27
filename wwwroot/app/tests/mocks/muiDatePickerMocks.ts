@@ -85,7 +85,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, any>(
 
 // Mock DatePicker - includes grid cells for tests that interact with calendar
 export const DatePicker = forwardRef<HTMLInputElement, any>(
-    ({label, value, onChange, onAccept, disabled, open, onOpen, onClose, enableAccessibleFieldDOMStructure, shouldRespectLeadingZeros, slotProps, format: _format, ...props}, ref) => {
+    ({label, value, onChange, onAccept, disabled, open, onOpen, onClose, enableAccessibleFieldDOMStructure, shouldRespectLeadingZeros, slotProps, format, ...props}, ref) => {
         const [isOpen, setIsOpen] = React.useState(open ?? false);
 
         const fieldOnBlur = slotProps?.field?.onBlur;
@@ -131,6 +131,7 @@ export const DatePicker = forwardRef<HTMLInputElement, any>(
         return React.createElement('div', {
                 'data-testid': 'mock-date-picker',
                 'data-accessible-field': enableAccessibleFieldDOMStructure !== false ? 'true' : 'false',
+                'data-format': format,
             },
             React.createElement('label', null, label),
             React.createElement('input', {

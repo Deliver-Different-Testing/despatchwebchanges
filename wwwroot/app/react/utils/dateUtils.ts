@@ -167,6 +167,34 @@ export function formatShortDate(date: Date | Dayjs | string, isUs?: boolean): st
 }
 
 /**
+ * Numeric date-input format (locale-aware): US MM/DD/YYYY vs NZ DD/MM/YYYY.
+ * @param isUs - Whether to use US format (defaults to tenant setting)
+ * @returns Format string suitable for a numeric date field / dayjs .format()
+ */
+export function getInputDateFormat(isUs?: boolean): string {
+    return (isUs ?? isUsCustomer()) ? 'MM/DD/YYYY' : 'DD/MM/YYYY';
+}
+
+/**
+ * Parse a numeric date string in the tenant's input format.
+ * Avoids the customParseFormat plugin by reordering the day/month components
+ * according to the locale before constructing the dayjs object.
+ * @param input - Date string like "03/04/2025"
+ * @param isUs - Whether the input is US-ordered (defaults to tenant setting)
+ * @returns Parsed Dayjs, or null if the string is not a valid date
+ */
+export function parseInputDate(input: string, isUs?: boolean): Dayjs | null {
+    const match = input.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return null;
+    const useUs = isUs ?? isUsCustomer();
+    const [, first, second, yyyy] = match;
+    const dd = useUs ? second : first;
+    const mm = useUs ? first : second;
+    const d = dayjs(`${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`);
+    return d.isValid() ? d : null;
+}
+
+/**
  * Format time only (HH:mm)
  * @param date - Date to format
  * @returns Formatted time string (e.g., "14:30")

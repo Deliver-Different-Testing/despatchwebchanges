@@ -26,16 +26,8 @@ import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import Popover from '@mui/material/Popover';
-import dayjs, {Dayjs} from 'dayjs';
-
-/** Parse a DD/MM/YYYY string into a dayjs object without relying on customParseFormat plugin. */
-function parseDDMMYYYY(input: string): Dayjs | null {
-    const match = input.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!match) return null;
-    const [, dd, mm, yyyy] = match;
-    const d = dayjs(`${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`);
-    return d.isValid() ? d : null;
-}
+import {Dayjs} from 'dayjs';
+import {getInputDateFormat, parseInputDate} from '../../../utils/dateUtils';
 
 export interface DateRangePickerProps {
     dateSearchRange: string;
@@ -68,24 +60,25 @@ interface DateInputProps {
 }
 
 const DateInput: React.FC<DateInputProps> = ({value, onChange}) => {
-    const [text, setText] = useState(value?.isValid() ? value.format('DD/MM/YYYY') : '');
+    const inputFormat = getInputDateFormat();
+    const [text, setText] = useState(value?.isValid() ? value.format(inputFormat) : '');
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     useEffect(() => {
         if (value?.isValid()) {
-            setText(value.format('DD/MM/YYYY'));
+            setText(value.format(inputFormat));
         }
-    }, [value]);
+    }, [value, inputFormat]);
 
     const commitText = useCallback((input: string) => {
-        const parsed = parseDDMMYYYY(input);
+        const parsed = parseInputDate(input);
         if (parsed) {
             onChange(parsed);
         } else {
             // Revert to last valid value
-            setText(value?.isValid() ? value.format('DD/MM/YYYY') : '');
+            setText(value?.isValid() ? value.format(inputFormat) : '');
         }
-    }, [onChange, value]);
+    }, [onChange, value, inputFormat]);
 
     const handleCalendarChange = useCallback((newValue: Dayjs | null) => {
         if (newValue?.isValid()) {
@@ -99,7 +92,7 @@ const DateInput: React.FC<DateInputProps> = ({value, onChange}) => {
             <TextField
                 size="small"
                 fullWidth
-                placeholder="DD/MM/YYYY"
+                placeholder={inputFormat}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onBlur={() => commitText(text)}

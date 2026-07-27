@@ -27,7 +27,7 @@ import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, {Dayjs} from 'dayjs';
-import {getIanaTimezone, getTimezoneName} from '../../../utils/dateUtils';
+import {getIanaTimezone, getInputDateFormat, getTimezoneName} from '../../../utils/dateUtils';
 
 // Types
 export interface DateFilterData {
@@ -445,7 +445,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                     label="Start Date"
                                     value={startDate}
                                     onChange={(newValue) => newValue && setStartDate(newValue)}
-                                    format="DD/MM/YYYY"
+                                    format={getInputDateFormat()}
                                     slotProps={{
                                         field: {
                                             onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
@@ -457,7 +457,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                     label="End Date"
                                     value={endDate}
                                     onChange={(newValue) => newValue && setEndDate(newValue)}
-                                    format="DD/MM/YYYY"
+                                    format={getInputDateFormat()}
                                     slotProps={{
                                         field: {
                                             onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
