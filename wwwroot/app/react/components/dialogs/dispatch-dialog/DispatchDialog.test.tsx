@@ -10,7 +10,7 @@ import React from 'react';
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {DispatchDialog} from './DispatchDialog';
 import type {DispatchDialogProps, DispatchMode} from './types';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithTheme, renderWithProviders} from '../../../__testUtils__';
 import {setupUser} from '../../../__testUtils__/setupUser';
 import type {PartnerRateForJobResponse, EventGroupItem} from '../../../services/jobListApi';
 import type {ISuggestion} from '../../../../interfaces/job.interface';
@@ -40,11 +40,19 @@ jest.mock('../../../services/apiClient', () => ({
     },
 }));
 
+// AgentEmailFields (rendered for a chosen Agent on a single job) fetches the inbound-email
+// preview via this service. Mock it so agent-email cases can drive willEmail/defaults.
+jest.mock('../../../services/dispatchExecutorApi', () => ({
+    getAgentInboundEmailPreview: jest.fn(),
+}));
+
 import {autocompleteSearch} from '../../../services/jobDetailApi';
 import {apiClient} from '../../../services/apiClient';
+import {getAgentInboundEmailPreview} from '../../../services/dispatchExecutorApi';
 
 const mockedAutocompleteSearch = autocompleteSearch as jest.Mock;
 const mockedApiClientGet = apiClient.get as jest.Mock;
+const mockPreview = getAgentInboundEmailPreview as jest.Mock;
 
 const rateCardResponse: PartnerRateForJobResponse = {
     rateCardRate: 85.00,
@@ -93,10 +101,13 @@ async function pickCourierAndConfirm() {
 beforeEach(() => {
     mockedAutocompleteSearch.mockReset();
     mockedApiClientGet.mockReset();
+    mockPreview.mockReset();
     mockedAutocompleteSearch.mockResolvedValue(mockCourierResults);
     mockedApiClientGet.mockImplementation((_url: string, params: {isNetworkPartner: boolean}) => {
         return Promise.resolve(params.isNetworkPartner ? mockNpResults : mockAgentResults);
     });
+    // Default: no email will be sent — agent-email cases override per test.
+    mockPreview.mockResolvedValue({status: 'NoAgentEmail', agentEmail: null, willEmail: false});
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────
@@ -394,6 +405,74 @@ describe('DispatchDialog', () => {
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
             // The footer button label is the disabled state until a partner is picked.
             expect(within(screen.getByRole('dialog')).getByRole('button', {name: /Send to Partner/})).toBeInTheDocument();
+        });
+    });
+
+    describe('Agent email template', () => {
+        const DEFAULT_SUBJECT = 'New job assigned [JobNumber]';
+        const DEFAULT_BODY = 'Hi [AgentName]\n\nYou have been assigned a new job [JobNumber]. [InboundUrl]';
+
+        // Select the Agent radio and pick AgentOne so AgentEmailFields mounts (single job).
+        async function pickAgent() {
+            fireEvent.click(screen.getByRole('radio', {name: /Agent/}));
+            const search = screen.getByPlaceholderText(/Search agent/);
+            fireEvent.focus(search);
+            fireEvent.change(search, {target: {value: 'One'}});
+            const option = await screen.findByRole('option', {name: /AgentOne/});
+            fireEvent.click(option);
+        }
+
+        it('shows the editable Subject/Message fields seeded from defaults and forwards the edits on confirm', async () => {
+            const user = setupUser();
+            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+            mockPreview.mockResolvedValue({
+                status: 'Queued',
+                agentEmail: 'agent@example.com',
+                willEmail: true,
+                defaultSubject: DEFAULT_SUBJECT,
+                defaultBody: DEFAULT_BODY,
+            });
+
+            renderWithProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+
+            await pickAgent();
+
+            expect(await screen.findByLabelText('Subject')).toHaveValue(DEFAULT_SUBJECT);
+            const bodyInput = screen.getByLabelText('Message');
+            expect(bodyInput).toHaveValue(DEFAULT_BODY);
+
+            await user.clear(bodyInput);
+            await user.click(bodyInput);
+            await user.paste('Edited body for the agent');
+
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
+
+            await waitFor(() => {
+                expect(onDispatchCourier).toHaveBeenCalledWith(
+                    'Agent',
+                    {id: 201, text: 'AgentOne'},
+                    DEFAULT_SUBJECT,
+                    'Edited body for the agent',
+                );
+            });
+        });
+
+        it('hides the fields and forwards undefined overrides when no email will be sent', async () => {
+            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+            mockPreview.mockResolvedValue({status: 'NoAgentEmail', agentEmail: null, willEmail: false});
+
+            renderWithProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+
+            await pickAgent();
+
+            expect(await screen.findByText(/no email address on file/i)).toBeInTheDocument();
+            expect(screen.queryByLabelText('Message')).not.toBeInTheDocument();
+
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
+
+            await waitFor(() => {
+                expect(onDispatchCourier).toHaveBeenCalledWith('Agent', {id: 201, text: 'AgentOne'});
+            });
         });
     });
 });

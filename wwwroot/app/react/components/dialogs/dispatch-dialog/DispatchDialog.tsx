@@ -30,7 +30,7 @@ import HandshakeIcon from '@mui/icons-material/Handshake';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import type {SxProps, Theme} from '@mui/material';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {DialogShell, DialogHeader, DialogFooter, AgentEmailFields, type AgentEmailState} from '../shared';
 
 import {autocompleteSearch} from '../../../services/jobDetailApi';
 import {apiClient} from '../../../services/apiClient';
@@ -38,7 +38,6 @@ import type {ISuggestion} from '../../../../interfaces/job.interface';
 import type {EventGroupItem} from '../../../services/jobListApi';
 
 import {PartnerRatePanel} from './PartnerRatePanel';
-import {AgentInboundEmailNotice} from '../shared/AgentInboundEmailNotice';
 import type {DispatchDialogProps, DispatchMode, DispatchType} from './types';
 
 const SECTION_LABEL_SX = {
@@ -135,6 +134,9 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     const [options, setOptions] = useState<ISuggestion[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
 
+    // Editable agent-email template (Agent option, single job). Fed by AgentEmailFields.
+    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: ''});
+
     // DFRNT Partner state
     const [partnerOptions, setPartnerOptions] = useState<EventGroupItem[]>([]);
     const [partnerOptionsLoading, setPartnerOptionsLoading] = useState(false);
@@ -155,6 +157,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setDestination(existingDestination ?? null);
         setInputValue(existingDestination?.text ?? '');
         setOptions([]);
+        setAgentEmail({willEmail: false, subject: '', body: ''});
         setSelectedPartnerId('');
         setAgreedRate(0);
         setAgreedRateValid(false);
@@ -201,6 +204,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setDestination(null);
         setInputValue('');
         setOptions([]);
+        setAgentEmail({willEmail: false, subject: '', body: ''});
         setSubmitError('');
     }, []);
 
@@ -230,7 +234,13 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                 await onSendToPartner({id: partner.id, text: partner.text}, agreedRate);
             } else {
                 if (!destination) return;
-                await onDispatchCourier(selectedType, destination);
+                // Only the Agent path (with an email actually going out) carries the edited
+                // template; Courier/NP keep the bare two-arg call.
+                if (selectedType === 'Agent' && agentEmail.willEmail) {
+                    await onDispatchCourier(selectedType, destination, agentEmail.subject, agentEmail.body);
+                } else {
+                    await onDispatchCourier(selectedType, destination);
+                }
             }
         } catch (err) {
             const message = err instanceof Error && err.message ? err.message : 'Dispatch failed.';
@@ -238,7 +248,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         } finally {
             setSubmitting(false);
         }
-    }, [selectedType, partnerOptions, selectedPartnerId, agreedRate, destination, onSendToPartner, onDispatchCourier]);
+    }, [selectedType, partnerOptions, selectedPartnerId, agreedRate, destination, agentEmail, onSendToPartner, onDispatchCourier]);
 
     const showPartnerRatePanel = selectedType === 'DfrntPartner' && selectedPartnerId !== '';
 
@@ -354,9 +364,15 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                         </Box>
                     )}
 
-                    {/* Inbound-agent email pre-flight — only for a chosen Agent on a single job */}
+                    {/* Inbound-agent email pre-flight + editable template — only for a chosen
+                        Agent on a single job. Keyed by agent+job so it reseeds when either changes. */}
                     {selectedType === 'Agent' && destination && mode.kind === 'single' && (
-                        <AgentInboundEmailNotice agentId={destination.id} jobId={mode.jobId}/>
+                        <AgentEmailFields
+                            key={`${destination.id}-${mode.jobId}`}
+                            agentId={destination.id}
+                            jobId={mode.jobId}
+                            onChange={setAgentEmail}
+                        />
                     )}
 
                     {/* DFRNT Partner panel */}

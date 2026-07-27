@@ -714,6 +714,8 @@ export function useJobActions({
     const dispatchDialogConfirmCourier = useCallback(async (
         type: 'Courier' | 'Agent' | 'NP',
         destination: ISuggestion,
+        emailSubject?: string,
+        emailBody?: string,
     ) => {
         const j = jobRef.current;
         if (!j) return;
@@ -729,7 +731,7 @@ export function useJobActions({
                         'A flight must be assigned to the flight portion before an agent can be assigned.',
                     );
                 }
-                const result = await assignAgentToJob(j.id, destination.id);
+                const result = await assignAgentToJob(j.id, destination.id, false, emailSubject, emailBody);
                 await refreshAndNotify();
                 setDispatchDialog((s) => ({...s, open: false}));
                 const base = `Assigned agent ${destination.text} to job ${j.jobNo}`;
