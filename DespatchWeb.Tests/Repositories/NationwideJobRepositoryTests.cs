@@ -15,12 +15,14 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class NationwideJobRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteTestDatabase _db = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock =
+        Substitute.For<IClearListEnvelopeService>();
+
     private readonly DespatchContext _context;
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly SqliteTestDatabase _db = new();
     private readonly IInboundAgentLinkService _inboundAgentLinkServiceMock = Substitute.For<IInboundAgentLinkService>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private FakeTenantClock _clock = new(TestDates.Now);
 
     public NationwideJobRepositoryTests()
@@ -235,7 +237,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Create airports - one nearby, one far away
         _context.TblAirports.AddRange(
             CreateAirport(1, "Auckland Airport", -37.0082m, 174.7850m, true), // Close
-            CreateAirport(2, "Sydney Airport", -33.9399m, 151.1753m, true)   // Far
+            CreateAirport(2, "Sydney Airport", -33.9399m, 151.1753m, true) // Far
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -312,7 +314,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Create job with delivery coordinates in Auckland, pickup far away
         _context.TucJobs.Add(CreateJobWithCoordinates(jobId, "JOB001",
-            pickupLat: 40.7128m, pickupLong: -74.0060m,    // New York (far)
+            pickupLat: 40.7128m, pickupLong: -74.0060m, // New York (far)
             deliveryLat: -36.8485m, deliveryLong: 174.7633m)); // Auckland
 
         _context.TblAirports.Add(CreateAirport(1, "Auckland Airport", -37.0082m, 174.7850m, true));
@@ -668,7 +670,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
         Assert.Equal("Custom subject JOB001", message.Subject);
-        Assert.Equal("Custom body for Test Agent", message.UcmmMessage);
+        // Body is rendered to branded HTML at send time; the substituted text is inside it.
+        Assert.Contains("Custom body for Test Agent", message.UcmmMessage);
     }
 
     [Fact]
@@ -696,7 +699,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert
         Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
-        Assert.Equal("Ref [NotARealField] for JOB001", message.UcmmMessage);
+        // Unknown token survives verbatim inside the rendered HTML body.
+        Assert.Contains("Ref [NotARealField] for JOB001", message.UcmmMessage);
     }
 
     [Fact]
@@ -1123,7 +1127,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.RestoreNationwideJobAsync(jobId);
 
         // Assert
-        var flights = await _context.TucJobNationwides.Where(f => f.UcnwJobId == jobId).ToListAsync(TestContext.Current.CancellationToken);
+        var flights = await _context.TucJobNationwides.Where(f => f.UcnwJobId == jobId)
+            .ToListAsync(TestContext.Current.CancellationToken);
         Assert.Empty(flights);
     }
 
@@ -1165,7 +1170,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var queryParams = new JobQueryParams();
 
         // Act
-        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false, clientIds: string.Empty, NationwideWidget.JobList, [], cancellationToken: TestContext.Current.CancellationToken);
+        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false,
+            clientIds: string.Empty, NationwideWidget.JobList, [],
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result);
@@ -1201,7 +1208,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
         Assert.Equal("NZ123", flightRecord.UcnwFlightNo);
         Assert.Equal("JOB001-F", flightRecord.UcnwJobNumber);
@@ -1499,7 +1508,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var journeyRecord = await _context.JobDeliveryJourneys
-            .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment", TestContext.Current.CancellationToken);
+            .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment",
+                TestContext.Current.CancellationToken);
         Assert.NotNull(journeyRecord);
         Assert.Equal(1, journeyRecord.StaffId);
         Assert.Equal("Staff", journeyRecord.UpdatedByType);
@@ -1542,7 +1552,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var note = await _context.TucNotes
-            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)NoteType.FlightUpdate, TestContext.Current.CancellationToken);
+            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)NoteType.FlightUpdate,
+                TestContext.Current.CancellationToken);
         Assert.NotNull(note);
         Assert.Contains("Flight", note.NoteText);
         Assert.Contains("123", note.NoteText); // Flight number from segment
@@ -1570,7 +1581,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - no flight record should be created
-        var flightRecords = await _context.TucJobNationwides.Where(f => f.UcnwJobId == 100).ToListAsync(TestContext.Current.CancellationToken);
+        var flightRecords = await _context.TucJobNationwides.Where(f => f.UcnwJobId == 100)
+            .ToListAsync(TestContext.Current.CancellationToken);
         Assert.Empty(flightRecords);
     }
 
@@ -1657,8 +1669,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - both flight record and journey record should exist (atomic save)
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
-        var journeyRecord = await _context.JobDeliveryJourneys.FirstOrDefaultAsync(j => j.JobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
+        var journeyRecord =
+            await _context.JobDeliveryJourneys.FirstOrDefaultAsync(j => j.JobId == 100,
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(flightRecord);
         Assert.NotNull(journeyRecord);
@@ -1796,7 +1812,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - primary flight should have leg number 1 (constant value)
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
         Assert.Equal(1, flightRecord.UcnwLegNumber);
     }
@@ -1868,7 +1886,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     /// When no PackageReadyTime is provided, the delivery (final mile) job's start time should be
     /// calculated as: arrival time + airport processing time (default 60 minutes).
     /// </summary>
-
     [Fact]
     public async Task AddJobNationwideAsync_WhenNoPackageReadyTime_SetsDeliveryJobStartTimeToArrivalPlusProcessingTime()
     {
@@ -1923,7 +1940,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
-        var customPackageReadyTime = new DateTimeOffset(2024, 6, 15, 16, 30, 0, TimeSpan.Zero); // 2.5 hours after arrival
+        var customPackageReadyTime =
+            new DateTimeOffset(2024, 6, 15, 16, 30, 0, TimeSpan.Zero); // 2.5 hours after arrival
 
         var parentJob = CreateJobWithParent(1, "JOB001");
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
@@ -1977,7 +1995,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
-        var arrivalAirport = CreateAirportWithProcessingTime(2, "Los Angeles Airport", "LAX", true, customProcessingTime);
+        var arrivalAirport =
+            CreateAirportWithProcessingTime(2, "Los Angeles Airport", "LAX", true, customProcessingTime);
         _context.TblAirports.AddRange(departureAirport, arrivalAirport);
 
         var timeZone1 = CreateTimeZone(1, "Pacific/Auckland", "NZST");
@@ -1986,7 +2005,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime); // PackageReadyTime defaults to null, forcing calculation
+        var request =
+            CreateFlightRequest(100, 1, 2, departureTime,
+                arrivalTime); // PackageReadyTime defaults to null, forcing calculation
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -2181,7 +2202,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     /// When assigning a flight, the pickup job's DeliverByTime should be set to:
     /// departure time - airport processing time (so the package arrives at the airport on time).
     /// </summary>
-
     [Fact]
     public async Task AddJobNationwideAsync_SetsPickupJobDeliverByTime_ToDepartureMinusProcessingTime()
     {
@@ -2199,7 +2219,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, pickupJob);
 
-        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, departureAirportProcessingTime);
+        var airport =
+            CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, departureAirportProcessingTime);
         _context.TblAirports.Add(airport);
 
         var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
@@ -2297,7 +2318,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         Assert.Null(exception);
 
         // Verify flight was assigned
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
         return;
 
@@ -2408,7 +2431,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     /// The flight record (TucJobNationwide) should store the correct ETD (Estimated Time of Departure)
     /// and ETA (Estimated Time of Arrival) from the flight segments.
     /// </summary>
-
     [Fact]
     public async Task AddJobNationwideAsync_StoresCorrectFlightETDAndETA()
     {
@@ -2437,7 +2459,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Flight record should have exact ETD and ETA from segment
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(flightRecord);
         Assert.Equal(departureTime.DateTime, flightRecord.UcnwEtd);
@@ -2544,7 +2568,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     /// Issue #3: The processing time must default to 60 minutes (1 hour) when not set,
     /// consistent with AddJobNationwideAsync.
     /// </summary>
-
     [Fact]
     public async Task CalculateCargoReadyTimeAsync_WhenAirportHasProcessingTime_ReturnsConfiguredProcessingTime()
     {
@@ -2978,7 +3001,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         return job;
     }
 
-    private static TucJob CreateAgentJobWithGrouping(int id, string jobNumber, TucJob parent, TucJobTypeGrouping grouping)
+    private static TucJob CreateAgentJobWithGrouping(int id, string jobNumber, TucJob parent,
+        TucJobTypeGrouping grouping)
     {
         var jobType = new TucJobType
         {
@@ -3006,7 +3030,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         return job;
     }
 
-    private static TblAirport CreateAirportWithProcessingTime(int id, string name, string code, bool active, int processingTime) => new()
+    private static TblAirport CreateAirportWithProcessingTime(int id, string name, string code, bool active,
+        int processingTime) => new()
     {
         AirportId = id,
         Name = name,
@@ -3386,8 +3411,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken));
         Assert.Contains("already has a flight assigned", ex.Message);
     }
 
@@ -3476,5 +3501,4 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         Assert.NotEqual(packageReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
     }
-
 }

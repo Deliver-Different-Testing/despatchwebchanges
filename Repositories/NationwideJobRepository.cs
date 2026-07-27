@@ -301,7 +301,7 @@ public class NationwideJobRepository(
     }
 
     public async Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false,
-        string? emailSubject = null, string? emailBody = null)
+        string emailSubject = null, string emailBody = null)
     {
         var job = await Context.TucJobs
             .AsTracking()
@@ -463,7 +463,7 @@ public class NationwideJobRepository(
             .FirstOrDefaultAsync();
 
     public async Task SendAgentRequestMessageAsync(int agentId, int jobId, string? emailSubject = null,
-        string? emailBody = null)
+        string emailBody = null)
     {
         var agentEmail = await Context.TucAgents
             .Where(a => a.UcagId == agentId)
@@ -477,9 +477,6 @@ public class NationwideJobRepository(
             return;
         }
 
-        // The subject/body template is hardcoded (and optionally overridden per-send by the
-        // dispatcher); the reply-to comes from the shared ReplyToEmailAddress env var (same as
-        // the POD email in PodReportService).
         var replyToAddress = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
                              ?? "support@deliverdifferent.com";
 
@@ -536,12 +533,16 @@ public class NationwideJobRepository(
         var body = AgentEmailTemplates.Substitute(
             string.IsNullOrWhiteSpace(emailBody) ? AgentEmailTemplates.DefaultBody : emailBody, tokens);
 
+        // The external mailer sends the body as HTML, so render the plain-text template into a
+        // branded, inline-styled fragment; otherwise the newlines collapse onto a single line.
+        var htmlBody = AgentEmailTemplates.RenderHtmlBody(body);
+
         var request = new TucManualMessage
         {
             JobId = jobId,
             Subject = subject,
             ReplyToEmailAddress = replyToAddress,
-            UcmmMessage = body,
+            UcmmMessage = htmlBody,
             UcmmStaffId = staffId,
             SendToEmailAddress = agentEmail
         };
@@ -649,7 +650,7 @@ public class NationwideJobRepository(
             .Select(nj => nj.WebhookAlertId)
             .Distinct()
             .ToListAsync();
-    
+
     public async Task<IReadOnlyList<SavedFlightCandidate>> GetSavedFlightCandidatesAsync(IReadOnlyList<int> jobIds)
     {
         if (jobIds is null || jobIds.Count == 0)
@@ -1142,8 +1143,8 @@ public class NationwideJobRepository(
         }
 
         var link = await inboundAgentLinkService.BuildJobLinkAsync(jobId);
-        return string.IsNullOrWhiteSpace(link) 
-            ? new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail) 
+        return string.IsNullOrWhiteSpace(link)
+            ? new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail)
             : new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail);
     }
 
