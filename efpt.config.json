@@ -247,10 +247,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[tblSMPPSettings]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[tblUndeliverableLocation]",
          "ObjectType": 0
       },
@@ -583,18 +579,18 @@
          "ObjectType": 1
       },
       {
-        "Name": "[dbo].[UTL_stpJob_RestoreDevice]",
-        "ObjectType": 1
+         "Name": "[dbo].[UTL_stpJob_RestoreDevice]",
+         "ObjectType": 1
       },
-     {
+      {
          "Name": "[dbo].[UTL_stpPPD_ExclusiveAmount]",
          "ObjectType": 1
       },
       {
-        "Name": "[dbo].[EncryptJobIdReversible]",
-        "ObjectType": 2
+         "Name": "[dbo].[EncryptJobIdReversible]",
+         "ObjectType": 2
       },
-     {
+      {
          "Name": "[dbo].[UTL_fncClearList_Other]",
          "ObjectType": 2
       },
@@ -610,9 +606,9 @@
          "Name": "[dbo].[UTL_fncJob_RawBaseToAmount]",
          "ObjectType": 2
       },
-     {
-       "Name": "[dbo].[UTL_fncMFV_FAF_Rates]",
-       "ObjectType": 2
+      {
+         "Name": "[dbo].[UTL_fncMFV_FAF_Rates]",
+         "ObjectType": 2
       },
       {
          "Name": "[dbo].[UTL_fncS_GetNationwideService_RawPrice]",

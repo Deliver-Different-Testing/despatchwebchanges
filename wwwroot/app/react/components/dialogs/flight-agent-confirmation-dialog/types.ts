@@ -113,6 +113,8 @@ export interface FlightAgentDialogResult {
     packageReadyTime?: Dayjs;
     packageDeliverByTime?: Dayjs;
     packageDeliveryNotes?: string;
+    emailSubject?: string;
+    emailBody?: string;
 }
 
 // Component props

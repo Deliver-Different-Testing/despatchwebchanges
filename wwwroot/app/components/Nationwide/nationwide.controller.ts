@@ -1434,7 +1434,8 @@ class NationwideControl extends BaseController {
 
             this.applyScope();
 
-            await this.nationwideService.assignAgentToJob(job.id, agent.id, result.shouldAssignToStopJobs ?? false);
+            await this.nationwideService.assignAgentToJob(job.id, agent.id, result.shouldAssignToStopJobs ?? false,
+                result.emailSubject, result.emailBody);
 
             if (result.awb) {
                 await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb, false);

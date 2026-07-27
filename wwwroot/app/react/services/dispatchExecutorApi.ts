@@ -104,20 +104,29 @@ export interface AgentInboundEmailResult {
     status: AgentInboundEmailStatus;
     agentEmail: string | null;
     willEmail: boolean;
+    /** Hardcoded default subject template (returned by the preview endpoint only). */
+    defaultSubject?: string;
+    /** Hardcoded default body template (returned by the preview endpoint only). */
+    defaultBody?: string;
 }
 
 /**
  * Assign an agent to a job. Returns whether the agent was emailed the inbound-agent
  * link (best-effort — the assignment itself always succeeds if this resolves).
+ *
+ * `emailSubject`/`emailBody` optionally override the hardcoded default templates for this
+ * send (the dispatcher's edits from the confirmation dialog); omit to use the defaults.
  */
 export async function assignAgentToJob(
     jobId: number,
     agentId: number,
     includeStopJobs = false,
+    emailSubject?: string,
+    emailBody?: string,
 ): Promise<AgentInboundEmailResult> {
     return apiClient.post<AgentInboundEmailResult>(
         'nationwideJob/AssignAgentToJob',
-        {jobId, agentId, includeStopJobs},
+        {jobId, agentId, includeStopJobs, emailSubject, emailBody},
     );
 }
 

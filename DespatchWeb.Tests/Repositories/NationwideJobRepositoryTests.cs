@@ -567,7 +567,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var agent = CreateAgent(agentId, "Test Agent");
         agent.UcagFax = "agent@example.com";
         _context.TucAgents.Add(agent);
-        _context.TblSmppsettings.Add(CreateAgentEmailSmppSetting());
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
@@ -584,8 +583,151 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         Assert.Equal("agent@example.com", result.AgentEmail);
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
         Assert.Equal("agent@example.com", message.SendToEmailAddress);
-        Assert.Equal("Job JOB001", message.Subject);
+        Assert.Equal("New job assigned JOB001", message.Subject);
+        var expectedReplyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
+                              ?? "support@deliverdifferent.com";
+        Assert.Equal(expectedReplyTo, message.ReplyToEmailAddress);
         Assert.Contains("https://inbound.example.com/TOKEN123", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_SubstitutesTemplateTokensFromJobAndFinalArrivalLeg()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        var job = CreateJob(jobId, "JOB001");
+        job.DeliveryAddressLine1 = "ACME Freight";
+        job.DeliveryAddressLine3 = "12";
+        job.DeliveryAddressLine4 = "Queen Street";
+        job.DeliveryAddressLine6 = "Auckland";
+        job.DeliverToContact = "Jane Doe";
+        job.DeliverToPhone = "021 555 1234";
+        job.UcjbQty = 3;
+        job.UcjbWeight = 25.5;
+        _context.TucJobs.Add(job);
+
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+
+        // One arrival leg (the SQLite test schema has a unique constraint on UcnwJobId, so a
+        // single leg per job; the "final leg = latest ETA" ordering is plain LINQ over legs).
+        _context.TucJobNationwides.Add(new TucJobNationwide
+        {
+            UcnwId = 1, UcnwJobId = jobId, WebhookAlertId = "w1", UcnwLegNumber = 1,
+            UcnwFlightNo = "NZ200", UcnwEtd = TestDates.Now.AddHours(2), UcnwEta = TestDates.Now.AddHours(4),
+            DepartureAirportCity = "Auckland"
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _tenantInfoServiceMock.FormatDateForTenant(Arg.Any<DateTime?>()).Returns("FORMATTED_ETA");
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        var body = message.UcmmMessage;
+        Assert.Contains("Hi Test Agent", body);
+        Assert.Contains("new job JOB001", body);
+        Assert.Contains("ACME Freight 12 Queen Street Auckland", body);
+        Assert.Contains("https://inbound.example.com/TOKEN123", body);
+        Assert.Contains("arriving on NZ200 at FORMATTED_ETA from Auckland", body);
+        Assert.Contains("with 3 items weighing 25.5", body);
+        Assert.Contains("contact name is Jane Doe and you can call them on 021 555 1234", body);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WithProvidedSubjectAndBody_UsesOverrideAndSubstitutes()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act — dispatcher-edited template overrides the hardcoded default
+        await repository.AddAgentToJobAsync(agentId, jobId, false,
+            "Custom subject [JobNumber]", "Custom body for [AgentName]");
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Custom subject JOB001", message.Subject);
+        Assert.Equal("Custom body for Test Agent", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_UnknownTokenInEditedTemplate_LeftIntactWithoutThrowing()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act — a token with no matching field must survive verbatim, not throw
+        var result = await repository.AddAgentToJobAsync(agentId, jobId, false,
+            null, "Ref [NotARealField] for [JobNumber]");
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Ref [NotARealField] for JOB001", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_QueuesMessageUsingHardcodedDefaultsAndEnvReplyTo()
+    {
+        // Arrange — the template is hardcoded and reply-to comes from the env var, not the DB.
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("New job assigned JOB001", message.Subject);
+        var expectedReplyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
+                              ?? "support@deliverdifferent.com";
+        Assert.Equal(expectedReplyTo, message.ReplyToEmailAddress);
+        Assert.Contains("Hi Test Agent", message.UcmmMessage);
     }
 
     [Fact]
@@ -596,7 +738,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         const int agentId = 1;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
         _context.TucAgents.Add(CreateAgent(agentId, "Test Agent")); // UcagFax null
-        _context.TblSmppsettings.Add(CreateAgentEmailSmppSetting());
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
@@ -622,7 +763,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var agent = CreateAgent(agentId, "Test Agent");
         agent.UcagFax = "agent@example.com";
         _context.TucAgents.Add(agent);
-        _context.TblSmppsettings.Add(CreateAgentEmailSmppSetting());
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
@@ -651,7 +791,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var agent = CreateAgent(agentId, "Test Agent");
         agent.UcagFax = "agent@example.com";
         _context.TucAgents.Add(agent);
-        _context.TblSmppsettings.Add(CreateAgentEmailSmppSetting());
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
@@ -2771,25 +2910,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         CreatedBy = "Test",
         LastModifiedBy = "Test"
     };
-
-    private static TblSmppsetting CreateAgentEmailSmppSetting()
-    {
-        // The legacy tblSMPPSettings has many NOT NULL string columns; default them all to
-        // empty so the SQLite insert succeeds, then set only the agent-email fields we assert on.
-        var setting = new TblSmppsetting { SettingId = 1 };
-        foreach (var prop in typeof(TblSmppsetting).GetProperties())
-        {
-            if (prop.PropertyType == typeof(string) && prop.CanWrite)
-            {
-                prop.SetValue(setting, string.Empty);
-            }
-        }
-
-        setting.AgentEmailSubject = "Job [JobNo]";
-        setting.AgentEmailMessage = "View your job here: [InboundUrl]";
-        setting.AgentEmailReplyAddress = "reply@example.com";
-        return setting;
-    }
 
     private static TucJobNationwide CreateJobNationwide(int id, int jobId, string webhookId) => new()
     {
