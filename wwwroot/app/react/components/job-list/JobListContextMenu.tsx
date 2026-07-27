@@ -295,6 +295,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const assignAgentFromDialog = async (
         targetJob: DispatchJob,
         destination: {id: number; text: string},
+        emailSubject?: string,
+        emailBody?: string,
     ) => {
         const canAssign = await canAssignAgentToJob(targetJob.id);
         if (!canAssign) {
@@ -302,7 +304,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 'A flight must be assigned to the flight portion before an agent can be assigned.',
             );
         }
-        const result = await assignAgentToJob(targetJob.id, destination.id);
+        const result = await assignAgentToJob(targetJob.id, destination.id, false, emailSubject, emailBody);
         setDispatchDialog((s) => ({...s, open: false}));
         await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
         const base = `Job ${targetJob.jobNo} assigned to ${destination.text}`;
@@ -321,13 +323,15 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleDispatchDialogConfirmCourier = async (
         type: 'Courier' | 'Agent' | 'NP',
         destination: {id: number; text: string},
+        emailSubject?: string,
+        emailBody?: string,
     ) => {
         // Single-job dispatch from the context menu. If the job already has a
         // courier assigned, treat the action as a re-dispatch so the server
         // releases the previous courier; otherwise allocate fresh.
         const targetJob = activeJob;
         if (type === 'Agent') {
-            await assignAgentFromDialog(targetJob, destination);
+            await assignAgentFromDialog(targetJob, destination, emailSubject, emailBody);
             return;
         }
         if (type !== 'Courier') {

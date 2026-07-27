@@ -34,8 +34,17 @@ export interface DispatchDialogProps {
     /** Initial value shown in the destination Autocomplete (used to render the current courier/agent on the row). */
     existingDestination?: ISuggestion;
     onClose: () => void;
-    /** Called when the operator picks a Courier / Agent / NP. Implementation decides what API to call. */
-    onDispatchCourier: (type: 'Courier' | 'Agent' | 'NP', destination: ISuggestion) => Promise<void>;
+    /**
+     * Called when the operator picks a Courier / Agent / NP. Implementation decides what API to call.
+     * For an Agent that will be emailed the inbound-agent link, `emailSubject`/`emailBody` carry the
+     * dispatcher's edited template (undefined ⇒ use the server defaults).
+     */
+    onDispatchCourier: (
+        type: 'Courier' | 'Agent' | 'NP',
+        destination: ISuggestion,
+        emailSubject?: string,
+        emailBody?: string,
+    ) => Promise<void>;
     /** Called when the operator picks a partner + sets a rate. */
     onSendToPartner: (partner: ISuggestion, agreedRate: number) => Promise<void>;
     /** Loads the rate for a (pairingId, jobId) pair. Required when DFRNT Partner is enabled. */

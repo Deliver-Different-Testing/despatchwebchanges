@@ -5,8 +5,7 @@
  * Handles both flight and agent assignment confirmation with cargo processing calculations.
  */
 
-import React, {useState, useEffect, useCallback, useRef} from 'react';
-import {useQuery} from '@tanstack/react-query';
+import React, {useState, useEffect, useCallback} from 'react';
 import DialogContent from '@mui/material/DialogContent';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -49,9 +48,7 @@ import {
     FlightAgentDialogResult,
     FlightSegment,
 } from './types';
-import {DialogShell, DialogHeader, DialogFooter, sectionPaperSx, sectionLabelSx, dialogFieldSx} from '../shared';
-import {AgentInboundEmailNotice} from '../shared/AgentInboundEmailNotice';
-import {getAgentInboundEmailPreview} from '../../../services/dispatchExecutorApi';
+import {DialogShell, DialogHeader, DialogFooter, AgentEmailFields, type AgentEmailState} from '../shared';
 
 dayjs.extend(duration);
 dayjs.extend(utc);
@@ -112,10 +109,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     const [assignToStopJobs, setAssignToStopJobs] = useState(false);
     const [deliveryNotes, setDeliveryNotes] = useState('');
 
-    // Agent-email template (editable per-send; seeded from the hardcoded server defaults)
-    const [emailSubject, setEmailSubject] = useState('');
-    const [emailBody, setEmailBody] = useState('');
-    const templateSeededRef = useRef(false);
+    // Agent-email template (editable per-send; owned by AgentEmailFields, reported back here)
+    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: ''});
     const [packageReadyTime, setPackageReadyTime] = useState<Dayjs | null>(null);
     const [deliveryByTime, setDeliveryByTime] = useState<Dayjs | null>(null);
     const [packageTimeEditEnabled, setPackageTimeEditEnabled] = useState(false);
@@ -142,15 +137,6 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     const [flightNumber, setFlightNumber] = useState('');
     const [_departureTimeZone, setDepartureTimeZone] = useState('');
     const [_arrivalTimeZone, setArrivalTimeZone] = useState('');
-
-    // Inbound-agent email preview (agent mode): whether a link will be sent + the default
-    // subject/body templates. Same queryKey as AgentInboundEmailNotice, so the cache is shared.
-    const {data: emailPreview} = useQuery({
-        queryKey: ['agentInboundEmailPreview', agent?.id ?? 0, jobId],
-        queryFn: ({signal}) => getAgentInboundEmailPreview(agent!.id, jobId, {signal}),
-        enabled: open && mode === 'agent' && !!agent && agent.id > 0 && jobId > 0,
-        staleTime: 30_000,
-    });
 
     // Computed values
     const isAwbDisabled = !!existingAwb;
@@ -420,9 +406,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setAwb(existingAwb || '');
             setAssignToStopJobs(false);
             setDeliveryNotes('');
-            setEmailSubject('');
-            setEmailBody('');
-            templateSeededRef.current = false;
+            setAgentEmail({willEmail: false, subject: '', body: ''});
             setPackageTimeEditEnabled(false);
             setShowWarning(false);
             setCargoProcessing(null);
@@ -443,15 +427,6 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             evaluateCurrentScenario();
         }
     }, [open, cargoProcessing, packageReadyTime, deliveryByTime, evaluateCurrentScenario]);
-
-    // Seed the editable email template from the server defaults once per open (agent mode).
-    useEffect(() => {
-        if (open && mode === 'agent' && !templateSeededRef.current && emailPreview?.defaultBody !== undefined) {
-            setEmailSubject(emailPreview.defaultSubject ?? '');
-            setEmailBody(emailPreview.defaultBody ?? '');
-            templateSeededRef.current = true;
-        }
-    }, [open, mode, emailPreview]);
 
     // Handlers
     const handleSetNextMorning = () => {
@@ -475,7 +450,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     };
 
     const handleConfirm = () => {
-        const sendsAgentEmail = mode === 'agent' && !!emailPreview?.willEmail;
+        const sendsAgentEmail = mode === 'agent' && agentEmail.willEmail;
         const result: FlightAgentDialogResult = {
             shouldAssign: true,
             awb: awb || undefined,
@@ -483,8 +458,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             packageReadyTime: packageReadyTime ?? undefined,
             packageDeliverByTime: deliveryByTime ?? undefined,
             packageDeliveryNotes: deliveryNotes || undefined,
-            emailSubject: sendsAgentEmail ? emailSubject : undefined,
-            emailBody: sendsAgentEmail ? emailBody : undefined,
+            emailSubject: sendsAgentEmail ? agentEmail.subject : undefined,
+            emailBody: sendsAgentEmail ? agentEmail.body : undefined,
         };
         onConfirm(result);
     };
@@ -810,35 +785,12 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                         <Divider/>
 
                         {mode === 'agent' && agent && (
-                            <AgentInboundEmailNotice agentId={agent.id} jobId={jobId}/>
-                        )}
-
-                        {mode === 'agent' && agent && emailPreview?.willEmail && (
-                            <Box>
-                                <Typography sx={sectionLabelSx}>Agent email</Typography>
-                                <Paper elevation={0} sx={sectionPaperSx}>
-                                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                                        <TextField
-                                            fullWidth
-                                            size="small"
-                                            label="Subject"
-                                            value={emailSubject}
-                                            onChange={(e) => setEmailSubject(e.target.value)}
-                                            sx={dialogFieldSx}
-                                        />
-                                        <TextField
-                                            fullWidth
-                                            multiline
-                                            minRows={8}
-                                            label="Message"
-                                            value={emailBody}
-                                            onChange={(e) => setEmailBody(e.target.value)}
-                                            helperText="Tokens like [AgentName], [JobNumber] and [InboundUrl] are replaced with the job’s details when the email is sent."
-                                            sx={dialogFieldSx}
-                                        />
-                                    </Box>
-                                </Paper>
-                            </Box>
+                            <AgentEmailFields
+                                key={`${agent.id}-${jobId}`}
+                                agentId={agent.id}
+                                jobId={jobId}
+                                onChange={setAgentEmail}
+                            />
                         )}
 
                         {/* Delivery Notes */}
