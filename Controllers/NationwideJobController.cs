@@ -346,7 +346,8 @@ public class NationwideJobController(
             }
 
             var result = await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value,
-                jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false);
+                jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false,
+                jobRequestModel.EmailSubject, jobRequestModel.EmailBody);
 
             return Ok(new
             {
@@ -648,7 +649,9 @@ public class NationwideJobController(
             {
                 status = preview.Status.ToString(),
                 agentEmail = preview.AgentEmail,
-                willEmail = preview.WillEmail
+                willEmail = preview.WillEmail,
+                defaultSubject = AgentEmailTemplates.DefaultSubject,
+                defaultBody = AgentEmailTemplates.DefaultBody
             });
         }
         catch (Exception e)

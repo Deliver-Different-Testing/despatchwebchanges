@@ -89,7 +89,7 @@ describe('addSelectedAgentToJob', () => {
 
         await ctrl.addSelectedAgentToJob({} as MouseEvent, {id: 1, text: 'Agent'}, makeDeliveryJob(10));
 
-        expect(ctrl.nationwideService.assignAgentToJob).toHaveBeenCalledWith(10, 1, true);
+        expect(ctrl.nationwideService.assignAgentToJob).toHaveBeenCalledWith(10, 1, true, undefined, undefined);
         expect(ctrl.DispatchData.updateJobDetail).toHaveBeenCalled();
         expect(ctrl.getJobList).toHaveBeenCalled();
         expect(ctrl.selectJob).toHaveBeenCalledWith(freshJob);

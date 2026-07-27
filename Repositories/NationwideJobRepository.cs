@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Reflection;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -301,7 +300,8 @@ public class NationwideJobRepository(
         return results;
     }
 
-    public async Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
+    public async Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false,
+        string? emailSubject = null, string? emailBody = null)
     {
         var job = await Context.TucJobs
             .AsTracking()
@@ -395,7 +395,7 @@ public class NationwideJobRepository(
             var preview = await EvaluateAgentInboundEmailAsync(agentId, jobId);
             if (preview.WillEmail)
             {
-                await SendAgentRequestMessageAsync(agentId, jobId);
+                await SendAgentRequestMessageAsync(agentId, jobId, emailSubject, emailBody);
             }
 
             return preview;
@@ -462,7 +462,8 @@ public class NationwideJobRepository(
             .Select(fc => fc.CarrierCode)
             .FirstOrDefaultAsync();
 
-    public async Task SendAgentRequestMessageAsync(int agentId, int jobId)
+    public async Task SendAgentRequestMessageAsync(int agentId, int jobId, string? emailSubject = null,
+        string? emailBody = null)
     {
         var agentEmail = await Context.TucAgents
             .Where(a => a.UcagId == agentId)
@@ -476,59 +477,70 @@ public class NationwideJobRepository(
             return;
         }
 
-        var smppSetting = await Context.TblSmppsettings
-            .Select(s => new
-            {
-                s.AgentEmailSubject,
-                s.AgentEmailMessage,
-                s.AgentEmailReplyAddress
-            })
-            .FirstOrDefaultAsync();
+        // The subject/body template is hardcoded (and optionally overridden per-send by the
+        // dispatcher); the reply-to comes from the shared ReplyToEmailAddress env var (same as
+        // the POD email in PodReportService).
+        var replyToAddress = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
+                             ?? "support@deliverdifferent.com";
 
         var staffId = _infoService.GetStaffId();
 
-        // Create an object
-        var agentQuoteTemplateDto = await Context.TucJobs
+        var jobData = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => new AgentQuoteTemplateDto
+            .Select(j => new
             {
-                DeliveryAddressLine5 = j.DeliveryAddressLine5,
-                JobNo = j.UcjbNumber,
-                ReferenceA = j.UcjbClientRefa,
-                ReferenceB = j.UcjbClientRefb,
-                JobDate = j.UcjbDate,
-                SuburbFrom = j.DeliveryAddressLine6,
-                ToAddress = new AddressViewModel(
-                    j.DeliveryAddressLine1,
-                    j.DeliveryAddressLine2,
-                    j.DeliveryAddressLine3,
-                    j.DeliveryAddressLine4,
-                    j.DeliveryAddressLine5,
-                    j.DeliveryAddressLine6,
-                    j.DeliveryAddressLine7,
-                    j.DeliveryAddressLine8).FullAddress,
-                CompletedTime = j.UcjbComplTime,
-                PodName = j.UcjbPodname,
-                SuburbTo = j.DeliveryAddressLine6
+                j.UcjbNumber,
+                DeliveryCompany = j.DeliveryAddressLine1,
+                DeliveryStreetNumber = j.DeliveryAddressLine3,
+                DeliveryStreetName = j.DeliveryAddressLine4,
+                DeliveryCity = j.DeliveryAddressLine6,
+                j.UcjbQty,
+                j.UcjbWeight,
+                DeliveryContactName = j.DeliverToContact,
+                DeliveryContactPhone = j.DeliverToPhone
             })
             .FirstOrDefaultAsync();
+        ArgumentNullException.ThrowIfNull(jobData);
 
-        agentQuoteTemplateDto.CompletedTimeFormatted =
-            _infoService.FormatDateForTenant(agentQuoteTemplateDto.CompletedTime);
-        agentQuoteTemplateDto.InboundUrl = await inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
+        // Flight number / ETA / origin come from the final arrival leg (latest ETA); nulls sort last.
+        var finalLeg = await Context.TucJobNationwides
+            .Where(n => n.UcnwJobId == jobId)
+            .OrderByDescending(n => n.UcnwEta)
+            .ThenByDescending(n => n.UcnwLegNumber)
+            .Select(n => new { n.UcnwFlightNo, n.UcnwEta, n.DepartureAirportCity })
+            .FirstOrDefaultAsync();
 
-        Log.Information("AgentQuoteTemplateDto for job {JobId} and agent {AgentId}: {@AgentQuoteTemplateDto}",
-            jobId,
-            agentId,
-            agentQuoteTemplateDto);
-        var subject = FormatDelimMessage(smppSetting.AgentEmailSubject, "[", "]", agentQuoteTemplateDto);
-        var body = FormatDelimMessage(smppSetting.AgentEmailMessage, "[", "]", agentQuoteTemplateDto);
+        var agentName = await GetAgentNameAsync(agentId);
+        var inboundUrl = await inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
+
+        var tokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AgentName"] = agentName ?? string.Empty,
+            ["JobNumber"] = jobData.UcjbNumber ?? string.Empty,
+            ["DeliveryCompany"] = jobData.DeliveryCompany ?? string.Empty,
+            ["DeliveryStreetNumber"] = jobData.DeliveryStreetNumber ?? string.Empty,
+            ["DeliveryStreetName"] = jobData.DeliveryStreetName ?? string.Empty,
+            ["DeliveryCity"] = jobData.DeliveryCity ?? string.Empty,
+            ["InboundUrl"] = inboundUrl,
+            ["FlightNumber"] = finalLeg?.UcnwFlightNo ?? string.Empty,
+            ["FlightETA"] = _infoService.FormatDateForTenant(finalLeg?.UcnwEta) ?? string.Empty,
+            ["FromSuburbCity"] = finalLeg?.DepartureAirportCity ?? string.Empty,
+            ["Quantity"] = jobData.UcjbQty?.ToString() ?? string.Empty,
+            ["Weight"] = jobData.UcjbWeight?.ToString() ?? string.Empty,
+            ["DeliveryContactName"] = jobData.DeliveryContactName ?? string.Empty,
+            ["DeliveryContactPhone"] = jobData.DeliveryContactPhone ?? string.Empty
+        };
+
+        var subject = AgentEmailTemplates.Substitute(
+            string.IsNullOrWhiteSpace(emailSubject) ? AgentEmailTemplates.DefaultSubject : emailSubject, tokens);
+        var body = AgentEmailTemplates.Substitute(
+            string.IsNullOrWhiteSpace(emailBody) ? AgentEmailTemplates.DefaultBody : emailBody, tokens);
 
         var request = new TucManualMessage
         {
             JobId = jobId,
             Subject = subject,
-            ReplyToEmailAddress = smppSetting.AgentEmailReplyAddress,
+            ReplyToEmailAddress = replyToAddress,
             UcmmMessage = body,
             UcmmStaffId = staffId,
             SendToEmailAddress = agentEmail
@@ -637,12 +649,7 @@ public class NationwideJobRepository(
             .Select(nj => nj.WebhookAlertId)
             .Distinct()
             .ToListAsync();
-
-    // Live jobs (among jobIds) whose source booking template carries a saved
-    // flight number and both airports — the candidates for auto-assigning the
-    // recurring flight on push-to-live. The template is joined via the new
-    // job's BookingParentID (which points back to the booking it materialised
-    // from). Date + time are combined client-side to keep the wall-clock value.
+    
     public async Task<IReadOnlyList<SavedFlightCandidate>> GetSavedFlightCandidatesAsync(IReadOnlyList<int> jobIds)
     {
         if (jobIds is null || jobIds.Count == 0)
@@ -1122,8 +1129,6 @@ public class NationwideJobRepository(
         ];
     }
 
-    // Decides whether assigning this agent would email the inbound-agent link, and to whom.
-    // No side effects — used both for the pre-flight preview and to gate the actual send.
     private async Task<AgentInboundEmailResult> EvaluateAgentInboundEmailAsync(int agentId, int jobId)
     {
         var agentEmail = await Context.TucAgents
@@ -1598,36 +1603,6 @@ public class NationwideJobRepository(
         return rates
             .Select(r => r.Rate)
             .FirstOrDefault();
-    }
-
-    private static string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
-    {
-        var message = string.Empty;
-        while (!string.IsNullOrEmpty(format) && format.Length > 0)
-        {
-            var c = format[..1];
-            format = format[1..];
-
-            if (c == startDelim)
-            {
-                var endDelimIndex = format.IndexOf(endDelim, StringComparison.Ordinal);
-                var fieldName = format[..endDelimIndex];
-                format = format[(endDelimIndex + 1)..];
-
-                var props = typeof(T).GetRuntimeProperties();
-                var p = props.First(x => string.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
-
-                message += p.GetValue(data)?.ToString();
-            }
-            else
-            {
-                message += c;
-            }
-        }
-
-        message = message.Replace("  ", " ");
-        message = message.Trim();
-        return message;
     }
 
     private async Task<int> GetAirportProcessingTimeAsync(int airportId) =>

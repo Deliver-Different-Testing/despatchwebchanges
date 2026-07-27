@@ -18,6 +18,10 @@ jest.mock('../../../services/dispatchExecutorApi', () => ({
     getAgentInboundEmailPreview: jest.fn(() => new Promise(() => { /* never resolves */ })),
 }));
 
+import {getAgentInboundEmailPreview} from '../../../services/dispatchExecutorApi';
+const mockPreview = getAgentInboundEmailPreview as jest.Mock;
+const neverResolves = () => new Promise(() => { /* never resolves */ });
+
 // Create a theme for testing
 const theme = createTheme();
 
@@ -813,6 +817,95 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             expect(await screen.findByText('07:00 - 23:00')).toBeInTheDocument();
+        });
+    });
+
+    describe('Agent Email Template', () => {
+        const DEFAULT_SUBJECT = 'New job assigned [JobNumber]';
+        const DEFAULT_BODY = 'Hi [AgentName]\n\nYou have been assigned a new job [JobNumber]. [InboundUrl]';
+
+        const willEmailPreview = {
+            status: 'Queued',
+            agentEmail: 'agent@example.com',
+            willEmail: true,
+            defaultSubject: DEFAULT_SUBJECT,
+            defaultBody: DEFAULT_BODY,
+        };
+
+        afterEach(() => {
+            // Restore the never-resolving default the other suites rely on.
+            mockPreview.mockImplementation(neverResolves);
+        });
+
+        it('renders subject and body fields seeded from the server default templates', async () => {
+            mockPreview.mockResolvedValue(willEmailPreview);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog {...defaultProps} mode="agent" agent={createAgent()}/>
+            );
+
+            expect(await screen.findByLabelText('Subject')).toHaveValue(DEFAULT_SUBJECT);
+            expect(screen.getByLabelText('Message')).toHaveValue(DEFAULT_BODY);
+        });
+
+        it('passes the edited subject and body to onConfirm', async () => {
+            const user = setupUser();
+            const onConfirm = jest.fn();
+            mockPreview.mockResolvedValue(willEmailPreview);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="agent"
+                    agent={createAgent()}
+                    onConfirm={onConfirm}
+                />
+            );
+
+            const bodyInput = await screen.findByLabelText('Message');
+            await user.clear(bodyInput);
+            await user.click(bodyInput);
+            await user.paste('Edited body for the agent');
+
+            await user.click(screen.getByText('Confirm Assignment'));
+
+            expect(onConfirm).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    emailSubject: DEFAULT_SUBJECT,
+                    emailBody: 'Edited body for the agent',
+                })
+            );
+        });
+
+        it('hides the email fields and omits the template when no email will be sent', async () => {
+            const user = setupUser();
+            const onConfirm = jest.fn();
+            mockPreview.mockResolvedValue({
+                status: 'NoAgentEmail',
+                agentEmail: null,
+                willEmail: false,
+                defaultSubject: DEFAULT_SUBJECT,
+                defaultBody: DEFAULT_BODY,
+            });
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="agent"
+                    agent={createAgent()}
+                    onConfirm={onConfirm}
+                />
+            );
+
+            // The warning notice resolves; the editable fields must not appear.
+            await waitFor(() => expect(mockPreview).toHaveBeenCalled());
+            expect(screen.queryByLabelText('Message')).not.toBeInTheDocument();
+
+            await user.click(screen.getByText('Confirm Assignment'));
+
+            const result = onConfirm.mock.calls[0][0];
+            expect(result.emailSubject).toBeUndefined();
+            expect(result.emailBody).toBeUndefined();
         });
     });
 

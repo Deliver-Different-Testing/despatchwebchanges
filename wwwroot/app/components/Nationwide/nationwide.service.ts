@@ -137,11 +137,14 @@ class NationwideService {
         };
     }
 
-    async assignAgentToJob(jobId: number, agentId: number, includeStopJobs: boolean): Promise<any> {
+    async assignAgentToJob(jobId: number, agentId: number, includeStopJobs: boolean,
+        emailSubject?: string, emailBody?: string): Promise<any> {
         await this.$http.post("nationwideJob/AssignAgentToJob", {
             jobId,
             agentId,
-            includeStopJobs
+            includeStopJobs,
+            emailSubject,
+            emailBody
         });
     }
 

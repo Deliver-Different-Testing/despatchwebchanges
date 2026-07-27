@@ -149,6 +149,8 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
                 packageReadyTime: result.packageReadyTime,
                 packageDeliverByTime: result.packageDeliverByTime,
                 packageDeliveryNotes: result.packageDeliveryNotes,
+                emailSubject: result.emailSubject,
+                emailBody: result.emailBody,
             };
         } catch (error) {
             console.error('FlightAgentConfirmationDialogService: Error in agentConfirmationDialog', error);
