@@ -20,6 +20,7 @@ public sealed record FlightRateCalculationDto
     public int VehicleSizeId { get; init; }
     public bool DangerousGoods { get; init; }
     public decimal DryIceWeight { get; init; }
-    public int? WaitTime { get; init; } = 0;
+    public int? PickupWaitTime { get; init; } = 0;
+    public int? DeliveryWaitTime { get; init; } = 0;
     public decimal? Ppd { get; init; }
 }

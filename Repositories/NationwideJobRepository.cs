@@ -749,6 +749,8 @@ public class NationwideJobRepository(
                 VehicleSizeId = j.UcjbSize ?? 0,
                 DangerousGoods = j.Dgdocument ?? false,
                 DryIceWeight = j.DryIceWeight ?? 0,
+                PickupWaitTime = j.WaitedPickUp ?? 0,
+                DeliveryWaitTime = j.WaitedDelivery ?? 0,
                 Ppd = 0
             })
             .FirstOrDefaultAsync();
@@ -1107,7 +1109,8 @@ public class NationwideJobRepository(
             dto.VehicleSizeId,
             dto.DangerousGoods,
             dto.DryIceWeight,
-            dto.WaitTime
+            dto.PickupWaitTime,
+            dto.DeliveryWaitTime
         );
 
         return
@@ -1484,7 +1487,8 @@ public class NationwideJobRepository(
                 ToState = j.DeliveryAddressLine5,
                 TotalPallets = null,
                 ExtraStopOffs = true,
-                WaitTime = null,
+                PickupWaitTime = j.WaitedPickUp ?? 0,
+                DeliveryWaitTime = j.WaitedDelivery ?? 0,
                 Cubic = null
             })
             .FirstOrDefaultAsync();
@@ -1528,7 +1532,8 @@ public class NationwideJobRepository(
             ToState = jobDetail.ToState,
             TotalPallets = jobDetail.TotalPallets,
             ExtraStopOffs = jobDetail.ExtraStopOffs,
-            WaitTime = jobDetail.WaitTime,
+            PickupWaitTime = jobDetail.PickupWaitTime,
+            DeliveryWaitTime = jobDetail.DeliveryWaitTime,
             Cubic = jobDetail.Cubic
         };
     }
@@ -1596,7 +1601,8 @@ public class NationwideJobRepository(
             nationwideJob.VehicleSizeId,
             nationwideJob.DangerousGoods,
             nationwideJob.DryIceWeight,
-            nationwideJob.WaitTime,
+            nationwideJob.PickupWaitTime,
+            nationwideJob.DeliveryWaitTime,
             agent.AgentVehicleId,
             cancellationToken: ct
         );
