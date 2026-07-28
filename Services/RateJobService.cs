@@ -141,7 +141,8 @@ public sealed class RateJobService(
                 TotalPallets = jobDetails.TotalPallets,
                 ExtraStopOffs = jobDetails.ExtraStopOffs,
                 DryIceWeight = (int)jobDetails.DryIceWeight,
-                WaitTime = jobDetails.WaitTime,
+                PickupWaitTime = jobDetails.PickupWaitTime,
+                DeliveryWaitTime = jobDetails.DeliveryWaitTime,
                 FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
                 FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
                 ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
@@ -280,7 +281,8 @@ public sealed class RateJobService(
                 TotalPallets = jobDetails.TotalPallets,
                 ExtraStopOffs = jobDetails.ExtraStopOffs,
                 DryIceWeight = (int)jobDetails.DryIceWeight,
-                WaitTime = jobDetails.WaitTime,
+                PickupWaitTime = jobDetails.PickupWaitTime,
+                DeliveryWaitTime = jobDetails.DeliveryWaitTime,
                 FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
                 FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
                 ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
@@ -895,7 +897,7 @@ public sealed class RateJobService(
             PrivateRes = dto.PrivateRes,
             HasDgDocuments = dto.HasDgDocuments,
             TruckStartTime = dto.TruckStartTime,
-            TruckHours = dto.TruckHours ?? (dto.WaitTime > 0 ? dto.WaitTime : null)
+            TruckHours = dto.TruckHours ?? (dto.PickupWaitTime > 0 ? dto.PickupWaitTime : null)
         };
 
     /// <summary>

@@ -82,7 +82,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DD_stpGetAgentDistanceRateResult>> DD_stpGetAgentDistanceRateAsync(int? clientID, int? fromZipCode, string fromState, int? toZipCode, string toState, decimal? totalMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? waitTime, int? agentVehicleID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DD_stpGetAgentDistanceRateResult>> DD_stpGetAgentDistanceRateAsync(int? clientID, int? fromZipCode, string fromState, int? toZipCode, string toState, decimal? totalMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, int? agentVehicleID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -195,8 +195,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "WaitTime",
-                    Value = waitTime ?? Convert.DBNull,
+                    ParameterName = "PickupWaitTime",
+                    Value = pickupWaitTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryWaitTime",
+                    Value = deliveryWaitTime ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
                 new SqlParameter
@@ -207,14 +213,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DD_stpGetAgentDistanceRateResult>("EXEC @returnValue = [dbo].[DD_stpGetAgentDistanceRate] @ClientID = @ClientID, @FromZipCode = @FromZipCode, @FromState = @FromState, @ToZipCode = @ToZipCode, @ToState = @ToState, @TotalMiles = @TotalMiles, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @WaitTime = @WaitTime, @AgentVehicleID = @AgentVehicleID", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DD_stpGetAgentDistanceRateResult>("EXEC @returnValue = [dbo].[DD_stpGetAgentDistanceRate] @ClientID = @ClientID, @FromZipCode = @FromZipCode, @FromState = @FromState, @ToZipCode = @ToZipCode, @ToState = @ToState, @TotalMiles = @TotalMiles, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime, @AgentVehicleID = @AgentVehicleID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<List<DD_stpGetCarrierFlightRateResult>> DD_stpGetCarrierFlightRateAsync(int? clientID, string fromCity, string fromState, string toCity, string toState, string carrierCode, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? waitTime, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DD_stpGetCarrierFlightRateResult>> DD_stpGetCarrierFlightRateAsync(int? clientID, string fromCity, string fromState, string toCity, string toState, string carrierCode, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -328,20 +334,26 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "WaitTime",
-                    Value = waitTime ?? Convert.DBNull,
+                    ParameterName = "PickupWaitTime",
+                    Value = pickupWaitTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryWaitTime",
+                    Value = deliveryWaitTime ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DD_stpGetCarrierFlightRateResult>("EXEC @returnValue = [dbo].[DD_stpGetCarrierFlightRate] @ClientID = @ClientID, @FromCity = @FromCity, @FromState = @FromState, @ToCity = @ToCity, @ToState = @ToState, @CarrierCode = @CarrierCode, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @WaitTime = @WaitTime", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DD_stpGetCarrierFlightRateResult>("EXEC @returnValue = [dbo].[DD_stpGetCarrierFlightRate] @ClientID = @ClientID, @FromCity = @FromCity, @FromState = @FromState, @ToCity = @ToCity, @ToState = @ToState, @CarrierCode = @CarrierCode, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<List<DD_stpJob_InsertExceleratorResult>> DD_stpJob_InsertExceleratorAsync(string bookedBy, string fromAddress, string fromStreet, string fromBuilding, string fromCompany, string fromCity, string fromState, int? fromZipCode, string fromCountry, string speed, int? speedID, string toAddress, string toStreet, string toBuilding, string toCompany, string toCity, string toState, int? toZipCode, string toCountry, string toAddressType, string referenceA, string referenceB, int? vehicleSizeID, string totalWeight, string totalDistance, string @return, string courierNotes, string clientNotes, string pickupNotes, string deliveryNotes, string fromContactName, string fromPhoneNumber, string toContactName, string toPhoneNumber, string type, string pickUpFrom, string quantity, string leaveNotHome, string jobNotificationType, string jobNotificationEmail, string jobNotificationMobile, string toAddressCode, string fromAddressCode, int? clientID, DateTime? time, bool? hold, decimal? fixedAmount, decimal? agentAmount, int? agentCourierID, decimal? fuelSurchargeAmount, string ourRef, string pickUpLatitude, string pickUpLongitude, string deliveryLatitude, string deliveryLongitude, int? pickup, int? dropoff, bool? privateRes, DateTime? truckStartTime, double? truckHours, string jobNumber, int? storageState, int? deliveryState, int? sourceId, int? totalPallets, int? extraStopOffs, decimal? dryIceWeight, decimal? cubic, int? waitTime, int? dGClass, bool? dGDocs, int? loggedInContactId, int? accessorialChargeGroupId, DateTime? deliverByDateTime, string pickupTimeZone, string deliverByTimeZone, string recurringName, string recurringDays, string recurringFrequency, int? recurringHoliday, int? recurringInitialDays, DateTime? tenantCurrentTime, int? dimensionsType, string cubicList, string weightList, string barcodeList, bool? forceTucJobPush, int? jobBookingID, DateTime? pickupReadyDateTime, OutputParameter<int?> jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DD_stpJob_InsertExceleratorResult>> DD_stpJob_InsertExceleratorAsync(string bookedBy, string fromAddress, string fromStreet, string fromBuilding, string fromCompany, string fromCity, string fromState, int? fromZipCode, string fromCountry, string speed, int? speedID, string toAddress, string toStreet, string toBuilding, string toCompany, string toCity, string toState, int? toZipCode, string toCountry, string toAddressType, string referenceA, string referenceB, int? vehicleSizeID, string totalWeight, string totalDistance, string @return, string courierNotes, string clientNotes, string pickupNotes, string deliveryNotes, string fromContactName, string fromPhoneNumber, string toContactName, string toPhoneNumber, string type, string pickUpFrom, string quantity, string leaveNotHome, string jobNotificationType, string jobNotificationEmail, string jobNotificationMobile, string toAddressCode, string fromAddressCode, int? clientID, DateTime? time, bool? hold, decimal? fixedAmount, decimal? agentAmount, int? agentCourierID, decimal? fuelSurchargeAmount, string ourRef, string pickUpLatitude, string pickUpLongitude, string deliveryLatitude, string deliveryLongitude, int? pickup, int? dropoff, bool? privateRes, DateTime? truckStartTime, double? truckHours, string jobNumber, int? storageState, int? deliveryState, int? sourceId, int? totalPallets, int? extraStopOffs, decimal? dryIceWeight, decimal? cubic, int? pickupWaitTime, int? deliveryWaitTime, int? dGClass, bool? dGDocs, int? loggedInContactId, int? accessorialChargeGroupId, DateTime? deliverByDateTime, string pickupTimeZone, string deliverByTimeZone, string recurringName, string recurringDays, string recurringFrequency, int? recurringHoliday, int? recurringInitialDays, DateTime? tenantCurrentTime, int? dimensionsType, string cubicList, string weightList, string barcodeList, bool? forceTucJobPush, int? jobBookingID, DateTime? pickupReadyDateTime, OutputParameter<int?> jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobID = new SqlParameter
             {
@@ -834,8 +846,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "WaitTime",
-                    Value = waitTime ?? Convert.DBNull,
+                    ParameterName = "PickupWaitTime",
+                    Value = pickupWaitTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryWaitTime",
+                    Value = deliveryWaitTime ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
                 new SqlParameter
@@ -968,7 +986,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DD_stpJob_InsertExceleratorResult>("EXEC @returnValue = [dbo].[DD_stpJob_InsertExcelerator] @BookedBy = @BookedBy, @FromAddress = @FromAddress, @FromStreet = @FromStreet, @FromBuilding = @FromBuilding, @FromCompany = @FromCompany, @FromCity = @FromCity, @FromState = @FromState, @FromZipCode = @FromZipCode, @FromCountry = @FromCountry, @Speed = @Speed, @SpeedID = @SpeedID, @ToAddress = @ToAddress, @ToStreet = @ToStreet, @ToBuilding = @ToBuilding, @ToCompany = @ToCompany, @ToCity = @ToCity, @ToState = @ToState, @ToZipCode = @ToZipCode, @ToCountry = @ToCountry, @ToAddressType = @ToAddressType, @ReferenceA = @ReferenceA, @ReferenceB = @ReferenceB, @VehicleSizeID = @VehicleSizeID, @TotalWeight = @TotalWeight, @TotalDistance = @TotalDistance, @Return = @Return, @CourierNotes = @CourierNotes, @ClientNotes = @ClientNotes, @PickupNotes = @PickupNotes, @DeliveryNotes = @DeliveryNotes, @FromContactName = @FromContactName, @FromPhoneNumber = @FromPhoneNumber, @ToContactName = @ToContactName, @ToPhoneNumber = @ToPhoneNumber, @Type = @Type, @PickUpFrom = @PickUpFrom, @Quantity = @Quantity, @LeaveNotHome = @LeaveNotHome, @JobNotificationType = @JobNotificationType, @JobNotificationEmail = @JobNotificationEmail, @JobNotificationMobile = @JobNotificationMobile, @ToAddressCode = @ToAddressCode, @FromAddressCode = @FromAddressCode, @ClientID = @ClientID, @Time = @Time, @Hold = @Hold, @FixedAmount = @FixedAmount, @JobID = @JobID OUTPUT, @AgentAmount = @AgentAmount, @AgentCourierID = @AgentCourierID, @FuelSurchargeAmount = @FuelSurchargeAmount, @OurRef = @OurRef, @Message = @Message OUTPUT, @PickUpLatitude = @PickUpLatitude, @PickUpLongitude = @PickUpLongitude, @DeliveryLatitude = @DeliveryLatitude, @DeliveryLongitude = @DeliveryLongitude, @Pickup = @Pickup, @Dropoff = @Dropoff, @PrivateRes = @PrivateRes, @TruckStartTime = @TruckStartTime, @TruckHours = @TruckHours, @JobNumber = @JobNumber, @StorageState = @StorageState, @DeliveryState = @DeliveryState, @SourceId = @SourceId, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @DryIceWeight = @DryIceWeight, @Cubic = @Cubic, @WaitTime = @WaitTime, @DGClass = @DGClass, @DGDocs = @DGDocs, @LoggedInContactId = @LoggedInContactId, @AccessorialChargeGroupId = @AccessorialChargeGroupId, @DeliverByDateTime = @DeliverByDateTime, @PickupTimeZone = @PickupTimeZone, @DeliverByTimeZone = @DeliverByTimeZone, @RecurringName = @RecurringName, @RecurringDays = @RecurringDays, @RecurringFrequency = @RecurringFrequency, @RecurringHoliday = @RecurringHoliday, @RecurringInitialDays = @RecurringInitialDays, @TenantCurrentTime = @TenantCurrentTime, @DimensionsType = @DimensionsType, @CubicList = @CubicList, @WeightList = @WeightList, @BarcodeList = @BarcodeList, @ForceTucJobPush = @ForceTucJobPush, @JobBookingID = @JobBookingID, @PickupReadyDateTime = @PickupReadyDateTime", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DD_stpJob_InsertExceleratorResult>("EXEC @returnValue = [dbo].[DD_stpJob_InsertExcelerator] @BookedBy = @BookedBy, @FromAddress = @FromAddress, @FromStreet = @FromStreet, @FromBuilding = @FromBuilding, @FromCompany = @FromCompany, @FromCity = @FromCity, @FromState = @FromState, @FromZipCode = @FromZipCode, @FromCountry = @FromCountry, @Speed = @Speed, @SpeedID = @SpeedID, @ToAddress = @ToAddress, @ToStreet = @ToStreet, @ToBuilding = @ToBuilding, @ToCompany = @ToCompany, @ToCity = @ToCity, @ToState = @ToState, @ToZipCode = @ToZipCode, @ToCountry = @ToCountry, @ToAddressType = @ToAddressType, @ReferenceA = @ReferenceA, @ReferenceB = @ReferenceB, @VehicleSizeID = @VehicleSizeID, @TotalWeight = @TotalWeight, @TotalDistance = @TotalDistance, @Return = @Return, @CourierNotes = @CourierNotes, @ClientNotes = @ClientNotes, @PickupNotes = @PickupNotes, @DeliveryNotes = @DeliveryNotes, @FromContactName = @FromContactName, @FromPhoneNumber = @FromPhoneNumber, @ToContactName = @ToContactName, @ToPhoneNumber = @ToPhoneNumber, @Type = @Type, @PickUpFrom = @PickUpFrom, @Quantity = @Quantity, @LeaveNotHome = @LeaveNotHome, @JobNotificationType = @JobNotificationType, @JobNotificationEmail = @JobNotificationEmail, @JobNotificationMobile = @JobNotificationMobile, @ToAddressCode = @ToAddressCode, @FromAddressCode = @FromAddressCode, @ClientID = @ClientID, @Time = @Time, @Hold = @Hold, @FixedAmount = @FixedAmount, @JobID = @JobID OUTPUT, @AgentAmount = @AgentAmount, @AgentCourierID = @AgentCourierID, @FuelSurchargeAmount = @FuelSurchargeAmount, @OurRef = @OurRef, @Message = @Message OUTPUT, @PickUpLatitude = @PickUpLatitude, @PickUpLongitude = @PickUpLongitude, @DeliveryLatitude = @DeliveryLatitude, @DeliveryLongitude = @DeliveryLongitude, @Pickup = @Pickup, @Dropoff = @Dropoff, @PrivateRes = @PrivateRes, @TruckStartTime = @TruckStartTime, @TruckHours = @TruckHours, @JobNumber = @JobNumber, @StorageState = @StorageState, @DeliveryState = @DeliveryState, @SourceId = @SourceId, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @DryIceWeight = @DryIceWeight, @Cubic = @Cubic, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime, @DGClass = @DGClass, @DGDocs = @DGDocs, @LoggedInContactId = @LoggedInContactId, @AccessorialChargeGroupId = @AccessorialChargeGroupId, @DeliverByDateTime = @DeliverByDateTime, @PickupTimeZone = @PickupTimeZone, @DeliverByTimeZone = @DeliverByTimeZone, @RecurringName = @RecurringName, @RecurringDays = @RecurringDays, @RecurringFrequency = @RecurringFrequency, @RecurringHoliday = @RecurringHoliday, @RecurringInitialDays = @RecurringInitialDays, @TenantCurrentTime = @TenantCurrentTime, @DimensionsType = @DimensionsType, @CubicList = @CubicList, @WeightList = @WeightList, @BarcodeList = @BarcodeList, @ForceTucJobPush = @ForceTucJobPush, @JobBookingID = @JobBookingID, @PickupReadyDateTime = @PickupReadyDateTime", sqlParameters, cancellationToken);
 
             jobID?.SetValue(parameterJobID.Value);
             message?.SetValue(parameterMessage.Value);
@@ -977,7 +995,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DD_stpJob_Rate_DescribedAsync(int? clientID, int? speedID, int? fromZipCode, string fromState, decimal? fromLat, decimal? fromLong, int? toZipCode, string toState, decimal? toLat, decimal? toLong, decimal? totalDistance, decimal? fromMiles, decimal? toMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? booked, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? waitTime, int? fromAgentId, int? fromAirportId, int? toAgentId, int? toAirportId, bool? isFromAddressAirport, bool? isToAddressAirport, int? dimensionsType, OutputParameter<string> description, OutputParameter<decimal?> rate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DD_stpJob_Rate_DescribedAsync(int? clientID, int? speedID, int? fromZipCode, string fromState, decimal? fromLat, decimal? fromLong, int? toZipCode, string toState, decimal? toLat, decimal? toLong, decimal? totalDistance, decimal? fromMiles, decimal? toMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? booked, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, int? fromAgentId, int? fromAirportId, int? toAgentId, int? toAirportId, bool? isFromAddressAirport, bool? isToAddressAirport, int? dimensionsType, OutputParameter<string> description, OutputParameter<decimal?> rate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterDescription = new SqlParameter
             {
@@ -1161,8 +1179,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "WaitTime",
-                    Value = waitTime ?? Convert.DBNull,
+                    ParameterName = "PickupWaitTime",
+                    Value = pickupWaitTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryWaitTime",
+                    Value = deliveryWaitTime ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
                 new SqlParameter
@@ -1211,7 +1235,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpJob_Rate_Described] @ClientID = @ClientID, @SpeedID = @SpeedID, @FromZipCode = @FromZipCode, @FromState = @FromState, @FromLat = @FromLat, @FromLong = @FromLong, @ToZipCode = @ToZipCode, @ToState = @ToState, @ToLat = @ToLat, @ToLong = @ToLong, @TotalDistance = @TotalDistance, @FromMiles = @FromMiles, @ToMiles = @ToMiles, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @Booked = @Booked, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @WaitTime = @WaitTime, @FromAgentId = @FromAgentId, @FromAirportId = @FromAirportId, @ToAgentId = @ToAgentId, @ToAirportId = @ToAirportId, @IsFromAddressAirport = @IsFromAddressAirport, @IsToAddressAirport = @IsToAddressAirport, @Description = @Description OUTPUT, @Rate = @Rate OUTPUT, @DimensionsType = @DimensionsType", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpJob_Rate_Described] @ClientID = @ClientID, @SpeedID = @SpeedID, @FromZipCode = @FromZipCode, @FromState = @FromState, @FromLat = @FromLat, @FromLong = @FromLong, @ToZipCode = @ToZipCode, @ToState = @ToState, @ToLat = @ToLat, @ToLong = @ToLong, @TotalDistance = @TotalDistance, @FromMiles = @FromMiles, @ToMiles = @ToMiles, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @Booked = @Booked, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime, @FromAgentId = @FromAgentId, @FromAirportId = @FromAirportId, @ToAgentId = @ToAgentId, @ToAirportId = @ToAirportId, @IsFromAddressAirport = @IsFromAddressAirport, @IsToAddressAirport = @IsToAddressAirport, @Description = @Description OUTPUT, @Rate = @Rate OUTPUT, @DimensionsType = @DimensionsType", sqlParameters, cancellationToken);
 
             description?.SetValue(parameterDescription.Value);
             rate?.SetValue(parameterRate.Value);

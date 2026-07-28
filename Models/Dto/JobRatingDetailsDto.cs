@@ -36,7 +36,8 @@ public record JobRatingDetailsDto
     public int TotalPallets { get; init; }
     public int ExtraStopOffs { get; init; }
     public decimal DryIceWeight { get; init; }
-    public int WaitTime { get; init; }
+    public int PickupWaitTime { get; init; }
+    public int DeliveryWaitTime { get; init; }
 
     // Flight-specific properties
     public int? FromAirportId { get; init; }

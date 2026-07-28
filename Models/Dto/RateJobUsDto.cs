@@ -36,7 +36,8 @@ public sealed record RateJobUsDto
 
     public int DryIceWeight { get; init; }
 
-    public int WaitTime { get; init; }
+    public int PickupWaitTime { get; init; }
+    public int DeliveryWaitTime { get; init; }
 
     public int? FromAgentId { get; init; }
 

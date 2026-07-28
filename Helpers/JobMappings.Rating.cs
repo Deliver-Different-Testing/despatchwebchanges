@@ -43,7 +43,8 @@ public static partial class JobMappings
             TotalPallets = job.TucJobItemJobs.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = 0,
+            PickupWaitTime = job.WaitedPickUp ?? 0,
+            DeliveryWaitTime = job.WaitedDelivery ?? 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -97,7 +98,8 @@ public static partial class JobMappings
             TotalPallets = job.TucJobItemJobs.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = job.WaitedPickUp ?? 0,
+            PickupWaitTime = job.WaitedPickUp ?? 0,
+            DeliveryWaitTime = job.WaitedDelivery ?? 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -195,7 +197,8 @@ public static partial class JobMappings
             TotalPallets = 0,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = job.WaitedPickUp ?? 0,
+            PickupWaitTime = job.WaitedPickUp ?? 0,
+            DeliveryWaitTime = job.WaitedDelivery ?? 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -288,7 +291,8 @@ public static partial class JobMappings
             TotalPallets = job.TucJobBookingItemBookings.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = 0,
+            PickupWaitTime = 0,
+            DeliveryWaitTime = 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -348,7 +352,8 @@ public static partial class JobMappings
             TotalPallets = job.TucJobBookingItemBookings.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = 0,
+            PickupWaitTime = 0,
+            DeliveryWaitTime = 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,

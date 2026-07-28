@@ -341,7 +341,8 @@ public class RateJobServiceTests : IDisposable
             TotalPallets = 2,
             ExtraStopOffs = 1,
             DryIceWeight = 5m,
-            WaitTime = 30,
+            PickupWaitTime = 30,
+            DeliveryWaitTime = 0,
             Quantity = 3,
             Cubic = 1.5m,
             IsPrebook = true,
@@ -368,7 +369,7 @@ public class RateJobServiceTests : IDisposable
         Assert.Equal(2, capturedDto.TotalPallets);
         Assert.Equal(1, capturedDto.ExtraStopOffs);
         Assert.Equal(5, capturedDto.DryIceWeight);
-        Assert.Equal(30, capturedDto.WaitTime);
+        Assert.Equal(30, capturedDto.PickupWaitTime);
         Assert.Equal(3, capturedDto.Quantity);
         Assert.Equal(1.5m, capturedDto.Cubic);
         Assert.True(capturedDto.IsPrebook);

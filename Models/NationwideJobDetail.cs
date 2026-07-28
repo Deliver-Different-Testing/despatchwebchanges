@@ -18,5 +18,6 @@ namespace DespatchWeb.Models;
         public decimal? Cubic { get; init; }
         public int? TotalPallets { get; init; }
         public bool ExtraStopOffs { get; init; }
-        public int? WaitTime { get; init; }
+        public int? PickupWaitTime { get; init; }
+        public int? DeliveryWaitTime { get; init; }
 }
