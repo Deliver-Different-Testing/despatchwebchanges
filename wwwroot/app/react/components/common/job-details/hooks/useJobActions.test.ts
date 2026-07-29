@@ -1267,4 +1267,35 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
         delete (window as any).ReactEditParcelDimensionsDialog;
     });
+
+    describe('dispatchDialogUnassignCourier', () => {
+        it('clears the courier on a recurring job by sending an empty value through updateField', async () => {
+            const job = createMockJob({preBook: true});
+            const {result, mockUpdateField, mockRefreshAndNotify} = setup({job});
+
+            await act(async () => {
+                await result.current.dispatchDialogUnassignCourier();
+            });
+
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    field: JobProperty.CourierID,
+                    value: '',
+                    isRecurring: true,
+                }),
+            );
+            expect(mockRefreshAndNotify).toHaveBeenCalled();
+        });
+
+        it('closes the dispatch dialog after a successful unassign', async () => {
+            const job = createMockJob({preBook: true});
+            const {result} = setup({job});
+
+            await act(async () => {
+                await result.current.dispatchDialogUnassignCourier();
+            });
+
+            expect(result.current.dispatchDialog.open).toBe(false);
+        });
+    });
 });

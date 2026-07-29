@@ -507,7 +507,7 @@ public class RecurringJobRepository(
             .ToListAsync();
 
         var existingDateSet = existingLiveDates
-            .Select(d => DateOnly.FromDateTime(d))
+            .Select(DateOnly.FromDateTime)
             .ToHashSet();
 
         // Load holidays for the window. Matches uspPrebookSet's
@@ -521,12 +521,12 @@ public class RecurringJobRepository(
             .Distinct()
             .ToListAsync();
 
-        var holidaySet = holidayDates.Select(d => DateOnly.FromDateTime(d)).ToHashSet();
+        var holidaySet = holidayDates.Select(DateOnly.FromDateTime).ToHashSet();
 
         // Load schedule-active DOWs once when the template is schedule-bound
         // so we don't hit the DB per candidate day. TblBulkRunSchedule.DayOfWeek
         // is a short, cast up so the ISO-DOW comparison stays in one type.
-        HashSet<int> scheduleActiveDows = new();
+        HashSet<int> scheduleActiveDows = [];
         if ((meta.ScheduleId ?? 0) > 0 && !string.IsNullOrEmpty(meta.ScheduleName))
         {
             var clientId = meta.UcbkClientId ?? 0;
@@ -536,7 +536,7 @@ public class RecurringJobRepository(
                 .Select(s => s.DayOfWeek)
                 .Distinct()
                 .ToListAsync();
-            scheduleActiveDows = rawDows.Select(d => (int)d).ToHashSet();
+            scheduleActiveDows = [.. rawDows.Select(d => (int)d)];
         }
 
         var candidates = new List<CreateAheadBackfillCandidate>();
@@ -559,36 +559,35 @@ public class RecurringJobRepository(
             var daysMask = meta.UcbkDays ?? "1111100";
             bool patternMatch;
 
-            if (freq is 0 or 1)
+            switch (freq)
             {
-                patternMatch = MaskMatches(daysMask, patternDow);
-            }
-            else if (freq == 2)
-            {
-                // Fortnightly: same DATEDIFF(WEEK, ucbkFirstDue, target) % 2
-                // parity check the SP uses.
-                patternMatch = MaskMatches(daysMask, patternDow)
-                               && meta.UcbkFirstDue.HasValue
-                               && WeeksBetween(DateOnly.FromDateTime(meta.UcbkFirstDue.Value), d) % 2 == 0;
-            }
-            else if (freq is 4 or 8 or 16)
-            {
-                var firstOfMonth = new DateOnly(d.Year, d.Month, 1);
-                var weekOfMonth = WeeksBetween(firstOfMonth, d) + 1;
-                var wantedWeek = freq switch { 4 => 1, 8 => 2, 16 => 3, _ => 0 };
-                patternMatch = MaskMatches(daysMask, patternDow) && weekOfMonth == wantedWeek;
-            }
-            else if (freq == 32)
-            {
-                patternMatch = d == FirstWorkdayOfMonth(d);
-            }
-            else if (freq == 64)
-            {
-                patternMatch = d == LastWorkdayOfMonth(d);
-            }
-            else
-            {
-                patternMatch = MaskMatches(daysMask, patternDow);
+                case 0 or 1:
+                    patternMatch = MaskMatches(daysMask, patternDow);
+                    break;
+                case 2:
+                    // Fortnightly: same DATEDIFF(WEEK, ucbkFirstDue, target) % 2
+                    // parity check the SP uses.
+                    patternMatch = MaskMatches(daysMask, patternDow)
+                                   && meta.UcbkFirstDue.HasValue
+                                   && WeeksBetween(DateOnly.FromDateTime(meta.UcbkFirstDue.Value), d) % 2 == 0;
+                    break;
+                case 4 or 8 or 16:
+                {
+                    var firstOfMonth = new DateOnly(d.Year, d.Month, 1);
+                    var weekOfMonth = WeeksBetween(firstOfMonth, d) + 1;
+                    var wantedWeek = freq switch { 4 => 1, 8 => 2, 16 => 3, _ => 0 };
+                    patternMatch = MaskMatches(daysMask, patternDow) && weekOfMonth == wantedWeek;
+                    break;
+                }
+                case 32:
+                    patternMatch = d == FirstWorkdayOfMonth(d);
+                    break;
+                case 64:
+                    patternMatch = d == LastWorkdayOfMonth(d);
+                    break;
+                default:
+                    patternMatch = MaskMatches(daysMask, patternDow);
+                    break;
             }
 
             if (!patternMatch)
@@ -1085,7 +1084,7 @@ public class RecurringJobRepository(
         }
     }
 
-    // ISO 1=Mon..7=Sun position lookup on the tucJobBooking.ucbkDays mask.
+    // ISO 1=Mon.7=Sun position lookup on the tucJobBooking.ucbkDays mask.
     private static bool MaskMatches(string daysMask, int isoDow)
     {
         if (string.IsNullOrEmpty(daysMask) || isoDow < 1 || isoDow > daysMask.Length)
@@ -1278,8 +1277,12 @@ public class RecurringJobRepository(
                 break;
 
             case JobProperty.CourierId:
+                int? courierIdValue = string.IsNullOrWhiteSpace(value) || value == "0"
+                    ? null
+                    : ParseValue<int>(value, property);
+
                 await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.CourierId, ParseValue<int>(value, property)));
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.CourierId, courierIdValue));
                 break;
 
             case JobProperty.InactiveBy:

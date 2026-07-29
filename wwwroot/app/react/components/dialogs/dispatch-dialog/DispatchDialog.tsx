@@ -15,6 +15,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import DialogContent from '@mui/material/DialogContent';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -29,6 +30,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import type {SxProps, Theme} from '@mui/material';
 import {DialogShell, DialogHeader, DialogFooter, AgentEmailFields, type AgentEmailState} from '../shared';
 
@@ -118,6 +120,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     existingDestination,
     onClose,
     onDispatchCourier,
+    onUnassignCourier,
     onSendToPartner,
     fetchRate,
     getPartnerOptions,
@@ -249,6 +252,28 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
             setSubmitting(false);
         }
     }, [selectedType, partnerOptions, selectedPartnerId, agreedRate, destination, agentEmail, onSendToPartner, onDispatchCourier]);
+
+    const handleUnassign = useCallback(async () => {
+        if (!onUnassignCourier) return;
+        setSubmitError('');
+        setSubmitting(true);
+        try {
+            await onUnassignCourier();
+        } catch (err) {
+            const message = err instanceof Error && err.message ? err.message : 'Unassign failed.';
+            setSubmitError(message);
+        } finally {
+            setSubmitting(false);
+        }
+    }, [onUnassignCourier]);
+
+    // Only offer "Unassign courier" for a recurring job that currently has a
+    // courier assigned, and only while the Courier radio is active.
+    const showUnassign =
+        mode.kind === 'recurring' &&
+        selectedType === 'Courier' &&
+        Boolean(existingDestination) &&
+        Boolean(onUnassignCourier);
 
     const showPartnerRatePanel = selectedType === 'DfrntPartner' && selectedPartnerId !== '';
 
@@ -422,6 +447,13 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                         />
                     )}
 
+                    {showUnassign && (
+                        <Alert severity="info">
+                            Unassigning removes the courier from this recurring job so future jobs are
+                            generated without one. Jobs already created keep their assigned courier.
+                        </Alert>
+                    )}
+
                     {submitError && <Alert severity="error">{submitError}</Alert>}
                 </Box>
             </DialogContent>
@@ -433,6 +465,18 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                 confirmIcon={confirmIcon}
                 confirmDisabled={!canConfirm}
                 submitting={submitting}
+                secondaryAction={showUnassign ? (
+                    <Button
+                        onClick={handleUnassign}
+                        variant="text"
+                        color="error"
+                        disabled={submitting}
+                        startIcon={<PersonRemoveIcon/>}
+                        sx={{minHeight: 44}}
+                    >
+                        Unassign courier
+                    </Button>
+                ) : undefined}
             />
         </DialogShell>
     );

@@ -770,6 +770,24 @@ export function useJobActions({
         }
     }, [isRecurringJob, dispatchJob, updateField, refreshAndNotify]);
 
+    // Unassign: clear the courier on a recurring job booking. Mirrors the
+    // recurring branch of dispatchDialogConfirmCourier but sends an empty value,
+    // which the server maps to a NULL CourierId (same clear-by-empty-string idiom
+    // as the route field). Only wired for recurring jobs; the dialog gates the
+    // affordance so this never runs for a live tucJob.
+    const dispatchDialogUnassignCourier = useCallback(async () => {
+        const j = jobRef.current;
+        if (!j) return;
+        try {
+            await updateField({job: j, field: JobProperty.CourierID, value: '', isRecurring: j.preBook});
+            await refreshAndNotify();
+            setDispatchDialog((s) => ({...s, open: false}));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unassign failed';
+            throw new Error(message, {cause: err});
+        }
+    }, [updateField, refreshAndNotify]);
+
     // Confirm: DFRNT Partner picked in the dispatch dialog. Sends the job to the
     // partner with the agreed rate. Recurring + bulk + archived jobs disable
     // this radio at the dialog level — this callback only fires for standard
@@ -1462,6 +1480,7 @@ export function useJobActions({
         dispatchDialog,
         closeDispatchDialog,
         dispatchDialogConfirmCourier,
+        dispatchDialogUnassignCourier,
         dispatchDialogConfirmPartner,
     };
 }
