@@ -408,6 +408,104 @@ describe('DispatchDialog', () => {
         });
     });
 
+    describe('Unassign courier action', () => {
+        const recurringMode: DispatchMode = {kind: 'recurring', jobId: 7, jobNo: 'R007'};
+        const assignedCourier: ISuggestion = {id: 50, text: 'ABC Couriers'};
+
+        it('shows "Unassign courier" for a recurring job that already has a courier', () => {
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({
+                        mode: recurringMode,
+                        existingDestination: assignedCourier,
+                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                    })}
+                />,
+            );
+            expect(screen.getByRole('button', {name: /Unassign courier/})).toBeInTheDocument();
+        });
+
+        it('hides "Unassign courier" for a recurring job with no courier assigned', () => {
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({
+                        mode: recurringMode,
+                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                    })}
+                />,
+            );
+            expect(screen.queryByRole('button', {name: /Unassign courier/})).not.toBeInTheDocument();
+        });
+
+        it('hides "Unassign courier" for a single (non-recurring) job even with a courier', () => {
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({
+                        existingDestination: assignedCourier,
+                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                    })}
+                />,
+            );
+            expect(screen.queryByRole('button', {name: /Unassign courier/})).not.toBeInTheDocument();
+        });
+
+        it('hides "Unassign courier" once a non-Courier type is selected', () => {
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({
+                        mode: recurringMode,
+                        existingDestination: assignedCourier,
+                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                    })}
+                />,
+            );
+            fireEvent.click(screen.getByRole('radio', {name: /Agent/}));
+            expect(screen.queryByRole('button', {name: /Unassign courier/})).not.toBeInTheDocument();
+        });
+
+        it('explains that already-created jobs keep their courier while the action is available', () => {
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({
+                        mode: recurringMode,
+                        existingDestination: assignedCourier,
+                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                    })}
+                />,
+            );
+            expect(screen.getByText(/already created keep their assigned courier/i)).toBeInTheDocument();
+        });
+
+        it('calls onUnassignCourier when the action is clicked', async () => {
+            const onUnassignCourier = jest.fn().mockResolvedValue(undefined);
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({mode: recurringMode, existingDestination: assignedCourier, onUnassignCourier})}
+                />,
+            );
+
+            fireEvent.click(screen.getByRole('button', {name: /Unassign courier/}));
+
+            await waitFor(() => {
+                expect(onUnassignCourier).toHaveBeenCalled();
+            });
+        });
+
+        it('surfaces an error from onUnassignCourier inline without closing the dialog', async () => {
+            const onUnassignCourier = jest.fn().mockRejectedValue(new Error('unassign blew up'));
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({mode: recurringMode, existingDestination: assignedCourier, onUnassignCourier})}
+                />,
+            );
+
+            fireEvent.click(screen.getByRole('button', {name: /Unassign courier/}));
+
+            expect(await screen.findByText(/unassign blew up/)).toBeInTheDocument();
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+        });
+    });
+
     describe('Agent email template', () => {
         const DEFAULT_SUBJECT = 'New job assigned [JobNumber]';
         const DEFAULT_BODY = 'Hi [AgentName]\n\nYou have been assigned a new job [JobNumber]. [InboundUrl]';

@@ -795,6 +795,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 existingDestination={job.assignedCourier}
                 onClose={actions.closeDispatchDialog}
                 onDispatchCourier={actions.dispatchDialogConfirmCourier}
+                onUnassignCourier={actions.dispatchDialogUnassignCourier}
                 onSendToPartner={actions.dispatchDialogConfirmPartner}
                 fetchRate={getPartnerRateForJob}
                 getPartnerOptions={getActivePartnerOptions}

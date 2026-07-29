@@ -26,6 +26,9 @@ export interface DialogFooterProps {
     /** Hides the confirm button entirely, leaving only Cancel/Close — used for
      * read-only (view-only) dialogs. */
     hideConfirm?: boolean;
+    /** Optional extra action rendered between Cancel and Confirm (e.g. an
+     * "Unassign" destructive secondary action). */
+    secondaryAction?: React.ReactNode;
 }
 
 export const DialogFooter: React.FC<DialogFooterProps> = ({
@@ -38,6 +41,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
     confirmDisabled = false,
     submitting = false,
     hideConfirm = false,
+    secondaryAction,
 }) => (
     <DialogActions
         sx={(theme) => ({
@@ -56,6 +60,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
         >
             {cancelLabel}
         </Button>
+        {secondaryAction}
         {!hideConfirm && (
             <Button
                 onClick={onConfirm}

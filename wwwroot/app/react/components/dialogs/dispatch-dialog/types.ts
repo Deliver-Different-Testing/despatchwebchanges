@@ -45,6 +45,12 @@ export interface DispatchDialogProps {
         emailSubject?: string,
         emailBody?: string,
     ) => Promise<void>;
+    /**
+     * Called when the operator clears the courier on a recurring job. The
+     * "Unassign courier" action is only rendered for recurring jobs that
+     * currently have a courier assigned, so this is optional.
+     */
+    onUnassignCourier?: () => Promise<void>;
     /** Called when the operator picks a partner + sets a rate. */
     onSendToPartner: (partner: ISuggestion, agreedRate: number) => Promise<void>;
     /** Loads the rate for a (pairingId, jobId) pair. Required when DFRNT Partner is enabled. */

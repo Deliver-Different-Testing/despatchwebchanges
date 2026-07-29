@@ -853,6 +853,49 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         Assert.Equal(newCourierId, updatedJob!.CourierId);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("0")]
+    public async Task UpdateRecurringJobAsync_CourierId_EmptyOrZeroClearsToNull(string value)
+    {
+        const int jobId = 100;
+        var booking = CreateJobBooking(jobId);
+        booking.CourierId = 42;
+        _context.TucJobBookings.Add(booking);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, value);
+        _context.ChangeTracker.Clear();
+
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Null(updatedJob!.CourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_ClearIsSingleRowOnly()
+    {
+        // Unassign is symmetric with assign: it clears only the target booking
+        // row, never the child bookings of the recurring family.
+        const int parentId = 100;
+        const int childId = 101;
+        var parent = CreateJobBooking(parentId);
+        parent.CourierId = 42;
+        var child = CreateJobBooking(childId, bookingParentId: parentId);
+        child.CourierId = 42;
+        _context.TucJobBookings.AddRange(parent, child);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(parentId, JobProperty.CourierId, "");
+        _context.ChangeTracker.Clear();
+
+        var updatedParent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
+        var updatedChild = await _context.TucJobBookings.FindAsync([childId], TestContext.Current.CancellationToken);
+        Assert.Null(updatedParent!.CourierId);
+        Assert.Equal(42, updatedChild!.CourierId);
+    }
+
     [Fact]
     public async Task UpdateRecurringJobAsync_Time_UpdatesParentAndChildren()
     {
