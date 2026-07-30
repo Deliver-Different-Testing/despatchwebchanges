@@ -40,7 +40,7 @@ public sealed class ClientAccessValidatorService(IClientRepository clientRepo) :
 
         var hasAccess = clientContacts?
             .Select(c => c.Id)
-            .Any(x => requestedClientIds.Contains(x)) ?? false;
+            .Any(requestedClientIds.Contains) ?? false;
 
         if (!hasAccess)
         {

@@ -691,7 +691,8 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
     return (
         <Box
             sx={{
-                height: 'calc(100vh - 205px)',
+                height: '100%',
+                minHeight: 0,
                 display: 'flex',
                 flexDirection: 'column',
                 backgroundColor: 'grey.50',

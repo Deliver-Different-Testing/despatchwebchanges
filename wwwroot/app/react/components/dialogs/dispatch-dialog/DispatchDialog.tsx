@@ -449,8 +449,9 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
 
                     {showUnassign && (
                         <Alert severity="info">
-                            Unassigning removes the courier from this recurring job so future jobs are
-                            generated without one. Jobs already created keep their assigned courier.
+                            Unassigning removes the courier from this recurring job and from any
+                            upcoming jobs already created that aren&apos;t completed yet. Completed jobs
+                            keep their assigned courier.
                         </Alert>
                     )}
 

@@ -12,11 +12,12 @@ public static class DaysOfWeekExtensions
                 : string.Join(", ", days.GetSelectedDays().Select(d => d.ToString()));
 
         private DaysOfWeek[] GetSelectedDays() =>
-            Enum.GetValues<DaysOfWeek>()
+        [
+            .. Enum.GetValues<DaysOfWeek>()
                 .Where(d => d != DaysOfWeek.None && d != DaysOfWeek.Weekdays && d != DaysOfWeek.Weekend &&
                             d != DaysOfWeek.All)
                 .Where(d => days.HasFlag(d))
-                .ToArray();
+        ];
 
         /// <summary>
         /// Converts the DaysOfWeek flags to a 7-character binary string in MTWTFSS order.

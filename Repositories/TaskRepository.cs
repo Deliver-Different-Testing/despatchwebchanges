@@ -18,10 +18,17 @@ public class TaskRepository(
 {
     private const int InternetUserStaffId = 33;
 
-    private static readonly HashSet<string> AutoResponseTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Web", "Email", "Text"
-    };
+    // tucEvent column lengths (EntityClasses/DespatchContext.cs). Values are clipped to fit before
+    // insert so an over-length string can't raise SQL Server error 8152 ("String or binary data
+    // would be truncated"), which surfaces to the user as a 500 when adding a task.
+    private const int DespatcherMaxLength = 15;
+    private const int ContactMaxLength = 30;
+    private const int NotesMaxLength = 1000;
+    private const int DescriptionMaxLength = 255;
+    private const int JobNumberMaxLength = 50;
+
+    private static readonly HashSet<string> AutoResponseTypes =
+        new(StringComparer.OrdinalIgnoreCase) { "Web", "Email", "Text" };
 
     internal static readonly Expression<Func<TucEvent, TaskViewModel>> ProjectToTaskViewModel = e => new TaskViewModel
     {
@@ -395,9 +402,9 @@ public class TaskRepository(
         // Batch create all events
         var events = eventGroupViewModels.Select(eventGroup => new TucEvent
         {
-            UcevJobNumber = job.UcjbNumber,
+            UcevJobNumber = job.UcjbNumber.Truncate(JobNumberMaxLength),
             UcevClientId = job.UcjbClientId ?? 0,
-            UcevContact = job.UcjbContact,
+            UcevContact = job.UcjbContact.Truncate(ContactMaxLength),
             UcevDate = currentDate,
             UcevTime = currentDate,
             UcevType = eventGroup.EventType.Id,
@@ -406,14 +413,14 @@ public class TaskRepository(
             UcevStaffIdin = eventGroup.AssignTo?.Id,
             UcevStaffIdout = null,
             UcevResponseTime = null,
-            UcevNotes = eventGroup.Notes,
+            UcevNotes = eventGroup.Notes.Truncate(NotesMaxLength),
             UcevPageCourier = false,
             UcevClosed = false,
             UcevOriginator = staffId,
-            UcevDescription = eventGroup.EventType.Text,
+            UcevDescription = eventGroup.EventType.Text.Truncate(DescriptionMaxLength),
             UcevCourierId = job.UcjbCourierId,
             UcevJobId = job.UcjbId,
-            UcevDespatcher = dispatcherName,
+            UcevDespatcher = dispatcherName.Truncate(DespatcherMaxLength),
             UcevJobType = job.UcjbSpeed,
             UcevDueTime = eventGroup.DueTime ?? currentDate
         }).ToList();
@@ -685,9 +692,9 @@ public class TaskRepository(
         // Create and add the new event
         var newEvent = new TucEvent
         {
-            UcevJobNumber = jobNo,
+            UcevJobNumber = jobNo.Truncate(JobNumberMaxLength),
             UcevClientId = clientId,
-            UcevContact = contact,
+            UcevContact = contact.Truncate(ContactMaxLength),
             UcevDate = date.DateTime,
             UcevTime = time.DateTime,
             UcevType = type,
@@ -696,14 +703,14 @@ public class TaskRepository(
             UcevStaffIdin = staffIdIn,
             UcevStaffIdout = staffIdOut,
             UcevResponseTime = responseTime?.DateTime,
-            UcevNotes = notes,
+            UcevNotes = notes.Truncate(NotesMaxLength),
             UcevPageCourier = pageCourier,
             UcevClosed = closed,
             UcevOriginator = originator,
-            UcevDescription = description,
+            UcevDescription = description.Truncate(DescriptionMaxLength),
             UcevCourierId = courierId,
             UcevJobId = jobId,
-            UcevDespatcher = despatcher,
+            UcevDespatcher = despatcher.Truncate(DespatcherMaxLength),
             UcevJobType = jobType,
             UcevDueTime = dueTime?.DateTime ?? currentDate
         };
