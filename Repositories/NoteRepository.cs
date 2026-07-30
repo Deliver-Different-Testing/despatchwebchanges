@@ -290,26 +290,31 @@ public class NoteRepository(
         }
 
         // Join note type names and convert UTC to tenant timezone
-        return history.Select(h => new NoteHistoryViewModel
-        {
-            NoteHistoryId = h.NoteHistoryId,
-            NoteId = h.NoteId,
-            EditedBy = h.EditedBy,
-            EditedByName = h.EditedByName,
-            EditedAt = infoService.ConvertUtcToTenantTimeZone(h.EditedAt.DateTime),
-            OldNoteText = h.OldNoteText,
-            NewNoteText = h.NewNoteText,
-            OldNoteTypeId = h.OldNoteTypeId,
-            OldNoteTypeName = h.OldNoteTypeId.HasValue && noteTypes.TryGetValue(h.OldNoteTypeId.Value, out var oldName)
-                ? oldName
-                : h.OldNoteTypeName,
-            NewNoteTypeId = h.NewNoteTypeId,
-            NewNoteTypeName = h.NewNoteTypeId.HasValue && noteTypes.TryGetValue(h.NewNoteTypeId.Value, out var newName)
-                ? newName
-                : h.NewNoteTypeName,
-            OldIsImportant = h.OldIsImportant,
-            NewIsImportant = h.NewIsImportant
-        }).ToList();
+        return
+        [
+            .. history.Select(h => new NoteHistoryViewModel
+            {
+                NoteHistoryId = h.NoteHistoryId,
+                NoteId = h.NoteId,
+                EditedBy = h.EditedBy,
+                EditedByName = h.EditedByName,
+                EditedAt = infoService.ConvertUtcToTenantTimeZone(h.EditedAt.DateTime),
+                OldNoteText = h.OldNoteText,
+                NewNoteText = h.NewNoteText,
+                OldNoteTypeId = h.OldNoteTypeId,
+                OldNoteTypeName = h.OldNoteTypeId.HasValue &&
+                                  noteTypes.TryGetValue(h.OldNoteTypeId.Value, out var oldName)
+                    ? oldName
+                    : h.OldNoteTypeName,
+                NewNoteTypeId = h.NewNoteTypeId,
+                NewNoteTypeName = h.NewNoteTypeId.HasValue &&
+                                  noteTypes.TryGetValue(h.NewNoteTypeId.Value, out var newName)
+                    ? newName
+                    : h.NewNoteTypeName,
+                OldIsImportant = h.OldIsImportant,
+                NewIsImportant = h.NewIsImportant
+            })
+        ];
     }
 
     private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
@@ -521,7 +526,7 @@ public class NoteRepository(
         var notes = await Context.GetActiveNotesByJobIdAsync(effectiveJobId);
         if (notes.Count == 0)
         {
-            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, false, tenantTimeZone);
+            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, false);
             if (fallback != null)
             {
                 return [fallback];
@@ -543,7 +548,7 @@ public class NoteRepository(
         var notes = await query.ToListAsync();
         if (notes.Count == 0)
         {
-            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, true, tenantTimeZone);
+            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, true);
             if (fallback != null)
             {
                 return [fallback];
@@ -551,7 +556,7 @@ public class NoteRepository(
         }
 
         // Order in memory as TucNoteViewModel.CreatedDate is DateTimeOffset which some providers don't support in ORDER BY
-        notes = notes.OrderByDescending(note => note.CreatedDate).ToList();
+        notes = [.. notes.OrderByDescending(note => note.CreatedDate)];
         UpdateNoteDate(notes, tenantTimeZone);
         return notes;
     }
@@ -564,7 +569,7 @@ public class NoteRepository(
     /// Prefers the requested job's own UcjbNotes, falling back to the family root's.
     /// </summary>
     private async Task<TucNoteViewModel> BuildUcjbNotesFallbackAsync(
-        int jobId, int effectiveJobId, bool isArchived, string tenantTimeZone)
+        int jobId, int effectiveJobId, bool isArchived)
     {
         var candidates = isArchived
             ? await GetArchivedUcjbNotesCandidatesAsync(jobId, effectiveJobId)

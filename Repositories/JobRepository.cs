@@ -45,20 +45,23 @@ public partial class JobRepository(
     /// <returns>The set of job IDs that were actually found and updated.</returns>
     public async Task<IReadOnlySet<int>> UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data)
     {
-        data = data.Select(item => new JobManualPriceModel
-        {
-            Id = item.Id,
-            Amount = item.Amount ?? 0,
-            RawBaseAmount = item.RawBaseAmount,
-            Fuel = item.Fuel ?? 0,
-            Ppd = item.Ppd ?? 0,
-            CourierPayment = item.CourierPayment ?? 0,
-            CourierFuel = item.CourierFuel ?? 0,
-            CourierBonus = item.CourierBonus ?? 0,
-            StatusName = item.StatusName,
-            CourierCode = item.CourierCode,
-            Void = item.Void
-        }).ToList();
+        data =
+        [
+            .. data.Select(item => new JobManualPriceModel
+            {
+                Id = item.Id,
+                Amount = item.Amount ?? 0,
+                RawBaseAmount = item.RawBaseAmount,
+                Fuel = item.Fuel ?? 0,
+                Ppd = item.Ppd ?? 0,
+                CourierPayment = item.CourierPayment ?? 0,
+                CourierFuel = item.CourierFuel ?? 0,
+                CourierBonus = item.CourierBonus ?? 0,
+                StatusName = item.StatusName,
+                CourierCode = item.CourierCode,
+                Void = item.Void
+            })
+        ];
 
         // Validation logic remains the same
         if (
@@ -909,7 +912,7 @@ public partial class JobRepository(
                     .Distinct()
                     .ToListAsync();
 
-                courierIds = courierIds.Union(bulkCourierIds).ToList();
+                courierIds = [.. courierIds.Union(bulkCourierIds)];
 
                 await Context.TblBulkJobs
                     .Where(b => linkedBulkJobIds.Contains(b.BulkJobId))
@@ -1744,7 +1747,7 @@ public partial class JobRepository(
                                                                               )
                                                                                 AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);
                                                                               """;
-        await Context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
+        await Context.Database.ExecuteSqlRawAsync(sql, [.. parameters]);
     }
 
     /// <summary>
@@ -3196,62 +3199,65 @@ public partial class JobRepository(
 
         // Apply timezone conversion to pickup and delivery times for consistent export
         var tenantTimeZone = _infoService.GetTenantTimeZone();
-        return allJobs.Select(j => new JobDownloadModel
-        {
-            Id = j.Id,
-            ParentId = j.ParentId,
-            JobNumber = j.JobNumber,
-            BookDate = j.BookDate,
-            Amount = j.Amount,
-            Fuel = j.Fuel,
-            Ppd = j.Ppd,
-            CourierPayment = j.CourierPayment,
-            CourierFuel = j.CourierFuel,
-            CourierBonus = j.CourierBonus,
-            Quantity = j.Quantity,
-            Weight = j.Weight,
-            Size = j.Size,
-            Cubic = j.IsArchived ? archivedCubicByJobId.GetValueOrDefault(j.Id) : j.Cubic,
-            PickupAddressLine1 = j.PickupAddressLine1,
-            PickupAddressLine2 = j.PickupAddressLine2,
-            PickupAddressLine3 = j.PickupAddressLine3,
-            PickupAddressLine4 = j.PickupAddressLine4,
-            PickupAddressLine5 = j.PickupAddressLine5,
-            PickupAddressLine6 = j.PickupAddressLine6,
-            PickupAddressLine7 = j.PickupAddressLine7,
-            PickupAddressLine8 = j.PickupAddressLine8,
-            DeliveryAddressLine1 = j.DeliveryAddressLine1,
-            DeliveryAddressLine2 = j.DeliveryAddressLine2,
-            DeliveryAddressLine3 = j.DeliveryAddressLine3,
-            DeliveryAddressLine4 = j.DeliveryAddressLine4,
-            DeliveryAddressLine5 = j.DeliveryAddressLine5,
-            DeliveryAddressLine6 = j.DeliveryAddressLine6,
-            DeliveryAddressLine7 = j.DeliveryAddressLine7,
-            DeliveryAddressLine8 = j.DeliveryAddressLine8,
-            ClientReferenceA = j.ClientReferenceA,
-            ClientReferenceB = j.ClientReferenceB,
-            ClientReferenceC = j.ClientReferenceC,
-            CustomerName = j.CustomerName,
-            PickedUpDate = j.PickedUpDate.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(j.PickedUpDate.Value, tenantTimeZone).DateTime
-                : j.PickedUpDate,
-            DeliveredDate = j.DeliveredDate.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(j.DeliveredDate.Value, tenantTimeZone).DateTime
-                : j.DeliveredDate,
-            AgentAirlineName = j.AgentAirlineName,
-            AWB = j.AWB,
-            StatusName = j.StatusName,
-            InvoiceNumber = j.InvoiceNumber,
-            InvoiceDate = j.InvoiceDate,
-            IsArchived = j.IsArchived,
-            LoggedInContact = j.LoggedInContact,
-            RawBaseAmount = j.RawBaseAmount,
-            CourierCode = j.CourierCode,
-            Void = j.Void,
-            OurReference = j.OurReference,
-            Speed = j.Speed,
-            Notes = j.Notes
-        }).ToList();
+        return
+        [
+            .. allJobs.Select(j => new JobDownloadModel
+            {
+                Id = j.Id,
+                ParentId = j.ParentId,
+                JobNumber = j.JobNumber,
+                BookDate = j.BookDate,
+                Amount = j.Amount,
+                Fuel = j.Fuel,
+                Ppd = j.Ppd,
+                CourierPayment = j.CourierPayment,
+                CourierFuel = j.CourierFuel,
+                CourierBonus = j.CourierBonus,
+                Quantity = j.Quantity,
+                Weight = j.Weight,
+                Size = j.Size,
+                Cubic = j.IsArchived ? archivedCubicByJobId.GetValueOrDefault(j.Id) : j.Cubic,
+                PickupAddressLine1 = j.PickupAddressLine1,
+                PickupAddressLine2 = j.PickupAddressLine2,
+                PickupAddressLine3 = j.PickupAddressLine3,
+                PickupAddressLine4 = j.PickupAddressLine4,
+                PickupAddressLine5 = j.PickupAddressLine5,
+                PickupAddressLine6 = j.PickupAddressLine6,
+                PickupAddressLine7 = j.PickupAddressLine7,
+                PickupAddressLine8 = j.PickupAddressLine8,
+                DeliveryAddressLine1 = j.DeliveryAddressLine1,
+                DeliveryAddressLine2 = j.DeliveryAddressLine2,
+                DeliveryAddressLine3 = j.DeliveryAddressLine3,
+                DeliveryAddressLine4 = j.DeliveryAddressLine4,
+                DeliveryAddressLine5 = j.DeliveryAddressLine5,
+                DeliveryAddressLine6 = j.DeliveryAddressLine6,
+                DeliveryAddressLine7 = j.DeliveryAddressLine7,
+                DeliveryAddressLine8 = j.DeliveryAddressLine8,
+                ClientReferenceA = j.ClientReferenceA,
+                ClientReferenceB = j.ClientReferenceB,
+                ClientReferenceC = j.ClientReferenceC,
+                CustomerName = j.CustomerName,
+                PickedUpDate = j.PickedUpDate.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(j.PickedUpDate.Value, tenantTimeZone).DateTime
+                    : j.PickedUpDate,
+                DeliveredDate = j.DeliveredDate.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(j.DeliveredDate.Value, tenantTimeZone).DateTime
+                    : j.DeliveredDate,
+                AgentAirlineName = j.AgentAirlineName,
+                AWB = j.AWB,
+                StatusName = j.StatusName,
+                InvoiceNumber = j.InvoiceNumber,
+                InvoiceDate = j.InvoiceDate,
+                IsArchived = j.IsArchived,
+                LoggedInContact = j.LoggedInContact,
+                RawBaseAmount = j.RawBaseAmount,
+                CourierCode = j.CourierCode,
+                Void = j.Void,
+                OurReference = j.OurReference,
+                Speed = j.Speed,
+                Notes = j.Notes
+            })
+        ];
     }
 
     /// <summary>

@@ -406,6 +406,32 @@ describe('TaskCalendarView', () => {
         });
     });
 
+    describe('Layout', () => {
+        // Regression: the calendar root must fill its flex parent so the parent
+        // bounds its height and the inner region scrolls. A fixed viewport height
+        // (calc(100vh - Npx)) overshoots the real flex space, and the ancestor
+        // overflow:hidden clips the bottom with no scrollbar.
+        it('fills its container height instead of a fixed viewport height', () => {
+            const props = createDefaultProps();
+            const {container} = renderWithProviders(<TaskCalendarView {...props} />);
+
+            const root = container.firstChild as HTMLElement;
+
+            expect(root).toHaveStyle({height: '100%'});
+            expect(root).not.toHaveStyle({height: 'calc(100vh - 205px)'});
+        });
+
+        it('makes the view region scrollable', () => {
+            const props = createDefaultProps();
+            const {container} = renderWithProviders(<TaskCalendarView {...props} />);
+
+            const root = container.firstChild as HTMLElement;
+            const scrollRegion = root.lastElementChild as HTMLElement;
+
+            expect(scrollRegion).toHaveStyle({overflow: 'auto'});
+        });
+    });
+
     describe('Empty State', () => {
         it('renders calendar with no tasks', () => {
             const props = createDefaultProps({tasks: []});

@@ -463,7 +463,7 @@ describe('DispatchDialog', () => {
             expect(screen.queryByRole('button', {name: /Unassign courier/})).not.toBeInTheDocument();
         });
 
-        it('explains that already-created jobs keep their courier while the action is available', () => {
+        it('explains that unassigning also clears upcoming created jobs while completed jobs keep their courier', () => {
             renderWithTheme(
                 <DispatchDialog
                     {...makeProps({
@@ -473,7 +473,10 @@ describe('DispatchDialog', () => {
                     })}
                 />,
             );
-            expect(screen.getByText(/already created keep their assigned courier/i)).toBeInTheDocument();
+            expect(
+                screen.getByText(/upcoming jobs already created that aren't completed yet/i),
+            ).toBeInTheDocument();
+            expect(screen.getByText(/Completed jobs\s+keep their assigned courier/i)).toBeInTheDocument();
         });
 
         it('calls onUnassignCourier when the action is clicked', async () => {

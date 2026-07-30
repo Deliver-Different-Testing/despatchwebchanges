@@ -897,6 +897,104 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_CascadesToFutureMaterialisedJobs()
+    {
+        // The create-ahead window spins tomorrow's occurrence into a standalone
+        // tucJob before the operator gets to it, so a template-only write never
+        // reaches it. Assigning the courier on the template must also re-drive
+        // the already-materialised future job. TenantToday = 2024-06-15.
+        const int jobId = 100;
+        const int newCourierId = 42;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        _context.TucJobs.Add(CreateMaterialisedJob(
+            ucjbId: 5000, bookingParentId: jobId, date: new DateTime(2024, 6, 16), courierId: 7));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, newCourierId.ToString());
+        _context.ChangeTracker.Clear();
+
+        var futureJob = await _context.TucJobs.FindAsync([5000], TestContext.Current.CancellationToken);
+        Assert.Equal(newCourierId, futureJob!.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_UnassignCascadesToFutureMaterialisedJobs()
+    {
+        // Unassign is symmetric with assign: clearing the template courier also
+        // clears it on future not-yet-actioned materialised jobs.
+        const int jobId = 100;
+        var booking = CreateJobBooking(jobId);
+        booking.CourierId = 42;
+        _context.TucJobBookings.Add(booking);
+        _context.TucJobs.Add(CreateMaterialisedJob(
+            ucjbId: 5000, bookingParentId: jobId, date: new DateTime(2024, 6, 16), courierId: 42));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, "");
+        _context.ChangeTracker.Clear();
+
+        var futureJob = await _context.TucJobs.FindAsync([5000], TestContext.Current.CancellationToken);
+        Assert.Null(futureJob!.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_CascadesToChildLegMaterialisedJobs()
+    {
+        // A multi-leg recurring job materialises one tucJob per leg, each tied
+        // back to its own booking template via BookingParentId. Re-driving the
+        // parent must reach every leg of the future occurrence, not just the
+        // pickup leg.
+        const int parentId = 100;
+        const int childId = 101;
+        const int newCourierId = 42;
+        _context.TucJobBookings.AddRange(
+            CreateJobBooking(parentId),
+            CreateJobBooking(childId, bookingParentId: parentId));
+        _context.TucJobs.AddRange(
+            CreateMaterialisedJob(5000, parentId, new DateTime(2024, 6, 16), courierId: 7),
+            CreateMaterialisedJob(5001, childId, new DateTime(2024, 6, 16), courierId: 7));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(parentId, JobProperty.CourierId, newCourierId.ToString());
+        _context.ChangeTracker.Clear();
+
+        var parentLeg = await _context.TucJobs.FindAsync([5000], TestContext.Current.CancellationToken);
+        var childLeg = await _context.TucJobs.FindAsync([5001], TestContext.Current.CancellationToken);
+        Assert.Equal(newCourierId, parentLeg!.UcjbCourierId);
+        Assert.Equal(newCourierId, childLeg!.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_DoesNotTouchPastDoneOrVoidJobs()
+    {
+        // Only future, not-yet-actioned jobs are re-driven. A job that already
+        // ran (past date), one already completed, and a voided one all keep
+        // their original courier. TenantToday = 2024-06-15.
+        const int jobId = 100;
+        const int newCourierId = 42;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        _context.TucJobs.AddRange(
+            CreateMaterialisedJob(6000, jobId, new DateTime(2024, 6, 14), courierId: 7), // past
+            CreateMaterialisedJob(6001, jobId, new DateTime(2024, 6, 16), courierId: 7, done: true), // done
+            CreateMaterialisedJob(6002, jobId, new DateTime(2024, 6, 16), courierId: 7, isVoid: true)); // void
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, newCourierId.ToString());
+        _context.ChangeTracker.Clear();
+
+        var pastJob = await _context.TucJobs.FindAsync([6000], TestContext.Current.CancellationToken);
+        var doneJob = await _context.TucJobs.FindAsync([6001], TestContext.Current.CancellationToken);
+        var voidJob = await _context.TucJobs.FindAsync([6002], TestContext.Current.CancellationToken);
+        Assert.Equal(7, pastJob!.UcjbCourierId);
+        Assert.Equal(7, doneJob!.UcjbCourierId);
+        Assert.Equal(7, voidJob!.UcjbCourierId);
+    }
+
+    [Fact]
     public async Task UpdateRecurringJobAsync_Time_UpdatesParentAndChildren()
     {
         // Arrange
@@ -1595,6 +1693,26 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UcbkCbd = cbd,
         UcbkAttention = attention ?? false,
         UcbkJobNumber = $"JOB{id}"
+    };
+
+    // A live tucJob materialised from a recurring booking template. Ties back
+    // to the template (parent or child leg) via BookingParentId — the same
+    // shape the create-ahead materialiser produces.
+    private static TucJob CreateMaterialisedJob(
+        int ucjbId,
+        int bookingParentId,
+        DateTime date,
+        int? courierId = null,
+        bool done = false,
+        bool isVoid = false) => new()
+    {
+        UcjbId = ucjbId,
+        BookingParentId = bookingParentId,
+        UcjbNumber = $"JOB{ucjbId}",
+        UcjbDate = date,
+        UcjbCourierId = courierId,
+        UcjbJobDone = done,
+        UcjbVoid = isVoid
     };
 
     private static TucJobBooking CreateJobBookingWithDates(

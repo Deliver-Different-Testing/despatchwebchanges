@@ -575,7 +575,7 @@ public class RecurringJobRepository(
                 {
                     var firstOfMonth = new DateOnly(d.Year, d.Month, 1);
                     var weekOfMonth = WeeksBetween(firstOfMonth, d) + 1;
-                    var wantedWeek = freq switch { 4 => 1, 8 => 2, 16 => 3, _ => 0 };
+                    var wantedWeek = freq switch { 4 => 1, 8 => 2, _ => 3 }; // _ = 16, per the enclosing case
                     patternMatch = MaskMatches(daysMask, patternDow) && weekOfMonth == wantedWeek;
                     break;
                 }
@@ -1283,6 +1283,27 @@ public class RecurringJobRepository(
 
                 await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.CourierId, courierIdValue));
+
+                // Cascade to already-materialised future occurrences. With a
+                // create-ahead window (RecurringInitialDays >= 1) tomorrow's job
+                // is spun into a standalone tucJob before the operator edits the
+                // template, so a template-only write never reaches it. Re-drive
+                // every not-yet-actioned future job in the booking family (all
+                // legs) so changing/clearing the courier takes effect on
+                // tomorrow's run; completed and voided jobs are left untouched.
+                var today = _clock.TenantToday;
+                var familyTemplateIds = await Context.TucJobBookings
+                    .Where(b => b.UcbkId == jobId || b.BookingParentId == jobId)
+                    .Select(b => b.UcbkId)
+                    .ToListAsync();
+
+                await Context.TucJobs
+                    .Where(j => j.BookingParentId.HasValue
+                                && familyTemplateIds.Contains(j.BookingParentId.Value)
+                                && j.UcjbDate >= today
+                                && !j.UcjbJobDone
+                                && !j.UcjbVoid)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbCourierId, courierIdValue));
                 break;
 
             case JobProperty.InactiveBy:

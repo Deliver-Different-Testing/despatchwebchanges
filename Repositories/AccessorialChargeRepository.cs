@@ -131,13 +131,15 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             .Select(j => new { j.UcjbId, j.AccessorialChargeGroupId })
             .ToListAsync();
 
-        return children
-            .Select((j, i) => new PortionJobInfoDto
-            {
-                JobId = j.UcjbId,
-                Label = i < labels.Length ? labels[i] : $"Portion {i + 1}",
-                AccessorialChargeGroupId = j.AccessorialChargeGroupId
-            })
-            .ToList();
+        return
+        [
+            .. children
+                .Select((j, i) => new PortionJobInfoDto
+                {
+                    JobId = j.UcjbId,
+                    Label = i < labels.Length ? labels[i] : $"Portion {i + 1}",
+                    AccessorialChargeGroupId = j.AccessorialChargeGroupId
+                })
+        ];
     }
 }
