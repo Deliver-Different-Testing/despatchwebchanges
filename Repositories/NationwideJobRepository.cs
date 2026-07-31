@@ -489,6 +489,7 @@ public class NationwideJobRepository(
             .Select(j => new
             {
                 j.UcjbNumber,
+                j.ParentId,
                 DeliveryCompany = j.DeliveryAddressLine1,
                 DeliveryStreetNumber = j.DeliveryAddressLine3,
                 DeliveryStreetName = j.DeliveryAddressLine4,
@@ -501,9 +502,16 @@ public class NationwideJobRepository(
             .FirstOrDefaultAsync();
         ArgumentNullException.ThrowIfNull(jobData);
 
-        // Flight number / ETA / origin come from the final arrival leg (latest ETA); nulls sort last.
+        // Flight legs are stored against the flight job, but the agent is usually assigned to a
+        // sibling (pickup/delivery) job under the same parent. Resolve the leg across the whole
+        // family so the flight tokens fill regardless of which family member was emailed.
+        // Final arrival leg = latest ETA, then latest leg number.
+        var parentId = jobData.ParentId ?? jobId;
         var finalLeg = await Context.TucJobNationwides
-            .Where(n => n.UcnwJobId == jobId)
+            .Where(n => Context.TucJobs
+                .Where(j => j.UcjbId == parentId || j.ParentId == parentId)
+                .Select(j => (int?)j.UcjbId)
+                .Contains(n.UcnwJobId))
             .OrderByDescending(n => n.UcnwEta)
             .ThenByDescending(n => n.UcnwLegNumber)
             .Select(n => new { n.UcnwFlightNo, n.UcnwEta, n.DepartureAirportCity })
@@ -511,6 +519,8 @@ public class NationwideJobRepository(
 
         var agentName = await GetAgentNameAsync(agentId);
         var inboundUrl = await inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
+
+        var weightUnit = _infoService.IsUsTenant() ? "lb" : "kg";
 
         var tokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -525,7 +535,9 @@ public class NationwideJobRepository(
             ["FlightETA"] = _infoService.FormatDateForTenant(finalLeg?.UcnwEta) ?? string.Empty,
             ["FromSuburbCity"] = finalLeg?.DepartureAirportCity ?? string.Empty,
             ["Quantity"] = jobData.UcjbQty?.ToString() ?? string.Empty,
-            ["Weight"] = jobData.UcjbWeight?.ToString() ?? string.Empty,
+            ["Weight"] = jobData.UcjbWeight.HasValue
+                ? $"{jobData.UcjbWeight.Value} {weightUnit}"
+                : string.Empty,
             ["DeliveryContactName"] = jobData.DeliveryContactName ?? string.Empty,
             ["DeliveryContactPhone"] = jobData.DeliveryContactPhone ?? string.Empty
         };

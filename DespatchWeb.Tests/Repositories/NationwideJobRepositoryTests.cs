@@ -646,6 +646,123 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SendAgentRequestMessageAsync_FlightLegOnSiblingJob_FillsFlightTokensFromFamily()
+    {
+        // Arrange — the agent is assigned to the delivery child job, but the flight legs live on a
+        // sibling flight job under the same parent. The email must still resolve the flight details
+        // from the family rather than leaving them blank.
+        const int parentJobId = 1;
+        const int deliveryJobId = 100;
+        const int flightJobId = 200;
+        const int agentId = 1;
+
+        var parentJob = CreateJob(parentJobId, "JOB001");
+
+        var deliveryJob = CreateJob(deliveryJobId, "JOB001d");
+        deliveryJob.ParentId = parentJobId;
+        deliveryJob.DeliveryAddressLine1 = "ACME Freight";
+        deliveryJob.DeliveryAddressLine3 = "12";
+        deliveryJob.DeliveryAddressLine4 = "Queen Street";
+        deliveryJob.DeliveryAddressLine6 = "Auckland";
+        deliveryJob.DeliverToContact = "Jane Doe";
+        deliveryJob.DeliverToPhone = "021 555 1234";
+        deliveryJob.UcjbQty = 3;
+        deliveryJob.UcjbWeight = 25.5;
+
+        var flightJob = CreateJob(flightJobId, "JOB001f");
+        flightJob.ParentId = parentJobId;
+
+        _context.TucJobs.AddRange(parentJob, deliveryJob, flightJob);
+
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+
+        // The only flight leg is on the sibling flight job, not the delivery job the agent is on.
+        _context.TucJobNationwides.Add(new TucJobNationwide
+        {
+            UcnwId = 1, UcnwJobId = flightJobId, WebhookAlertId = "w1", UcnwLegNumber = 1,
+            UcnwFlightNo = "NZ200", UcnwEtd = TestDates.Now.AddHours(2), UcnwEta = TestDates.Now.AddHours(4),
+            DepartureAirportCity = "Auckland"
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _tenantInfoServiceMock.FormatDateForTenant(Arg.Any<DateTime?>()).Returns("FORMATTED_ETA");
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(deliveryJobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act — send for the delivery child job (the one the agent is assigned to)
+        await repository.SendAgentRequestMessageAsync(agentId, deliveryJobId);
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("arriving on NZ200 at FORMATTED_ETA from Auckland", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task SendAgentRequestMessageAsync_NonUsTenant_WeightShownInKg()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        var job = CreateJob(jobId, "JOB001");
+        job.UcjbQty = 2;
+        job.UcjbWeight = 23;
+        _context.TucJobs.Add(job);
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SendAgentRequestMessageAsync(agentId, jobId);
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("weighing 23 kg", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task SendAgentRequestMessageAsync_UsTenant_WeightShownInLb()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        var job = CreateJob(jobId, "JOB001");
+        job.UcjbQty = 2;
+        job.UcjbWeight = 23;
+        _context.TucJobs.Add(job);
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SendAgentRequestMessageAsync(agentId, jobId);
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("weighing 23 lb", message.UcmmMessage);
+    }
+
+    [Fact]
     public async Task AddAgentToJobAsync_WithProvidedSubjectAndBody_UsesOverrideAndSubstitutes()
     {
         // Arrange
