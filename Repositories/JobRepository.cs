@@ -5692,7 +5692,7 @@ public partial class JobRepository(
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(j => j.RatedManually, true));
 
-        await SaveNoteAsync(jobId, note);
+        await SaveNoteAsync(jobId, note, noteType: NoteType.PricingUpdate);
     }
 
     /// <summary>
@@ -5832,7 +5832,7 @@ public partial class JobRepository(
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(j => j.RatedManually, true));
 
-        await CreateNewRecurringJobNote(prebookJobId, note, false);
+        await CreateNewRecurringJobNote(prebookJobId, note, false, NoteType.PricingUpdate);
     }
 
     private async Task SetArchiveJobAsManuallyPriceAsync(int jobId)

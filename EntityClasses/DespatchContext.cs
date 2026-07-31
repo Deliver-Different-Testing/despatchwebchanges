@@ -3662,6 +3662,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CompanyAddress).HasMaxLength(100);
             entity.Property(e => e.CompanyBankNumber).HasMaxLength(100);
             entity.Property(e => e.ComposerExtrasPath).HasMaxLength(500);
+            entity.Property(e => e.ConsolidateFuel).HasDefaultValue(true, "DF_TblSettings_ConsolidateFuel");
             entity.Property(e => e.ConsolidatedContractorSupplierRef).HasMaxLength(100);
             entity.Property(e => e.ContactUsEmailSubject)
                 .IsRequired()
@@ -7366,14 +7367,21 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())", "DF_tucNote_CreatedDate")
                 .HasColumnType("datetime");
+            entity.Property(e => e.CreatedDateUtc)
+                .HasDefaultValueSql("(sysutcdatetime())", "DF_tucNote_CreatedDateUTC")
+                .HasColumnName("CreatedDateUTC");
             entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.NoteText).IsRequired();
             entity.Property(e => e.NoteTypeId).HasColumnName("NoteTypeID");
             entity.Property(e => e.ProcessedNotificationDate).HasColumnType("datetime");
+            entity.Property(e => e.ProcessedNotificationDateUtc).HasColumnName("ProcessedNotificationDateUTC");
             entity.Property(e => e.UpdatedDate)
                 .HasDefaultValueSql("(getdate())", "DF_tucNote_UpdatedDate")
                 .HasColumnType("datetime");
+            entity.Property(e => e.UpdatedDateUtc)
+                .HasDefaultValueSql("(sysutcdatetime())", "DF_tucNote_UpdatedDateUTC")
+                .HasColumnName("UpdatedDateUTC");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TucNoteCreatedByNavigations)
                 .HasForeignKey(d => d.CreatedBy)
@@ -7413,13 +7421,20 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())", "DF_tucNoteArchive_CreatedDate")
                 .HasColumnType("datetime");
+            entity.Property(e => e.CreatedDateUtc)
+                .HasDefaultValueSql("(sysutcdatetime())", "DF_tucNoteArchive_CreatedDateUTC")
+                .HasColumnName("CreatedDateUTC");
             entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.NoteText).IsRequired();
             entity.Property(e => e.NoteTypeId).HasColumnName("NoteTypeID");
+            entity.Property(e => e.ProcessedNotificationDateUtc).HasColumnName("ProcessedNotificationDateUTC");
             entity.Property(e => e.UpdatedDate)
                 .HasDefaultValueSql("(getdate())", "DF_tucNoteArchive_UpdatedDate")
                 .HasColumnType("datetime");
+            entity.Property(e => e.UpdatedDateUtc)
+                .HasDefaultValueSql("(sysutcdatetime())", "DF_tucNoteArchive_UpdatedDateUTC")
+                .HasColumnName("UpdatedDateUTC");
         });
 
         modelBuilder.Entity<TucNoteHistory>(entity =>

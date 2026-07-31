@@ -356,7 +356,8 @@ public class NationwideJobRepository(
                     NoteTypeId = (int)NoteType.AgentUpdate,
                     NoteText = $"Agent {agentName} assigned",
                     CreatedBy = _infoService.GetStaffId(),
-                    CreatedDate = currentDate
+                    CreatedDate = currentDate,
+                    CreatedDateUtc = _clock.UtcNow
                 };
 
                 await Context.AddAsync(stopJobNote);
@@ -370,7 +371,8 @@ public class NationwideJobRepository(
             NoteTypeId = (int)NoteType.AgentUpdate,
             NoteText = $"Agent {agentName} assigned",
             CreatedBy = _infoService.GetStaffId(),
-            CreatedDate = currentDate
+            CreatedDate = currentDate,
+            CreatedDateUtc = _clock.UtcNow
         };
         await Context.TucNotes.AddAsync(note);
 
@@ -462,7 +464,7 @@ public class NationwideJobRepository(
             .Select(fc => fc.CarrierCode)
             .FirstOrDefaultAsync();
 
-    public async Task SendAgentRequestMessageAsync(int agentId, int jobId, string? emailSubject = null,
+    public async Task SendAgentRequestMessageAsync(int agentId, int jobId, string emailSubject = null,
         string emailBody = null)
     {
         var agentEmail = await Context.TucAgents

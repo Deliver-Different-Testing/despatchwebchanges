@@ -8,5 +8,7 @@ public enum NoteType
     AgentUpdate = 4,
     ConsignmentNote = 5,
     PickupNotes = 9,
-    DeliveryNotes = 10
+    DeliveryNotes = 10,
+    PricingUpdate = 1100,
+    AddressUpdate = 1101
 }

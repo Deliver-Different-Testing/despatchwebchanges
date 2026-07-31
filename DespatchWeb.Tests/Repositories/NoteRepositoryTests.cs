@@ -113,6 +113,34 @@ public class NoteRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SaveNoteAsync_NewActiveNote_SetsCreatedDateUtcFromClock()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobs.Add(CreateJob(jobId, "JOB100"));
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = 0,
+            JobId = jobId,
+            NoteText = "UTC note",
+            NoteTypeId = 1,
+            IsImportant = false
+        };
+
+        // Act
+        await repository.SaveNoteAsync(viewModel, TestContext.Current.CancellationToken);
+
+        // Assert — UTC column captures the clock's UTC instant
+        var note = await _context.TucNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(_clock.UtcNow, note.CreatedDateUtc);
+    }
+
+    [Fact]
     public async Task GetNotesByJobIdAsync_NoTucNoteRows_FallsBackToUcjbNotesColumn()
     {
         // Arrange — a job whose pickup note only ever landed in the UcjbNotes column

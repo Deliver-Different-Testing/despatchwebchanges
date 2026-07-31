@@ -353,6 +353,7 @@ public class NoteRepository(
         {
             var archivedNote = viewModel.ToArchivedEntity();
             archivedNote.CreatedDate = currentTime;
+            archivedNote.CreatedDateUtc = clock.UtcNow;
             archivedNote.CreatedBy = staffId;
 
             var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, true);
@@ -378,6 +379,7 @@ public class NoteRepository(
 
         var activeNote = viewModel.ToEntity();
         activeNote.CreatedDate = currentTime;
+        activeNote.CreatedDateUtc = clock.UtcNow;
         activeNote.CreatedBy = staffId;
 
         var isPrebook = viewModel.JobBookingId.HasValue;
@@ -444,6 +446,7 @@ public class NoteRepository(
             archivedNote.NoteText = viewModel.NoteText;
             archivedNote.IsImportant = viewModel.IsImportant;
             archivedNote.UpdatedDate = currentTime;
+            archivedNote.UpdatedDateUtc = clock.UtcNow;
             archivedNote.UpdatedBy = staffId;
 
             var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, true);
@@ -470,6 +473,7 @@ public class NoteRepository(
         activeNote.NoteText = viewModel.NoteText;
         activeNote.IsImportant = viewModel.IsImportant;
         activeNote.UpdatedDate = currentTime;
+        activeNote.UpdatedDateUtc = clock.UtcNow;
         activeNote.UpdatedBy = staffId;
 
         if (isPrebook)

@@ -729,6 +729,7 @@ public partial class BaseJobRepository(
         noteType = await ConfirmNoteTypeExists(noteType);
 
         var now = clock.TenantNow;
+        var nowUtc = clock.UtcNow;
         var staffId = infoService.GetStaffId();
 
         var newNotes = jobIds.Select(jobId => new TucNote
@@ -739,9 +740,11 @@ public partial class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedDate = now,
+                CreatedDateUtc = nowUtc,
                 CreatedBy = staffId,
                 UpdatedBy = staffId,
-                UpdatedDate = now
+                UpdatedDate = now,
+                UpdatedDateUtc = nowUtc
             })
             .ToList();
 
@@ -763,6 +766,7 @@ public partial class BaseJobRepository(
         noteType = await ConfirmNoteTypeExists(noteType);
 
         var now = clock.TenantNow;
+        var nowUtc = clock.UtcNow;
         var staffId = infoService.GetStaffId();
 
         var newNotes = jobIds.Select(jobId => new TucNoteArchive
@@ -772,9 +776,11 @@ public partial class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedDate = now,
+                CreatedDateUtc = nowUtc,
                 CreatedBy = staffId,
                 UpdatedBy = staffId,
-                UpdatedDate = now
+                UpdatedDate = now,
+                UpdatedDateUtc = nowUtc
             })
             .ToList();
 
@@ -792,6 +798,7 @@ public partial class BaseJobRepository(
             noteType = await ConfirmNoteTypeExists(noteType);
 
             var now = clock.TenantNow;
+            var nowUtc = clock.UtcNow;
             var staffId = infoService.GetStaffId();
 
             var newNote = new TucNote
@@ -802,9 +809,11 @@ public partial class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedDate = now,
+                CreatedDateUtc = nowUtc,
                 CreatedBy = staffId,
                 UpdatedBy = staffId,
-                UpdatedDate = now
+                UpdatedDate = now,
+                UpdatedDateUtc = nowUtc
             };
 
             await Context.TucNotes.AddAsync(newNote);
@@ -902,7 +911,8 @@ public partial class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedBy = infoService.GetStaffId(),
-                CreatedDate = clock.TenantNow
+                CreatedDate = clock.TenantNow,
+                CreatedDateUtc = clock.UtcNow
             };
             await Context.AddAsync(newNote);
             await Context.SaveChangesAsync();
@@ -925,6 +935,7 @@ public partial class BaseJobRepository(
         {
             var staffId = infoService.GetStaffId();
             var currentTime = clock.TenantNow;
+            var currentTimeUtc = clock.UtcNow;
 
             var strategy = Context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
@@ -945,6 +956,7 @@ public partial class BaseJobRepository(
                         .SetProperty(e => e.IsImportant, isImportant)
                         .SetProperty(e => e.UpdatedBy, staffId)
                         .SetProperty(e => e.UpdatedDate, currentTime)
+                        .SetProperty(e => e.UpdatedDateUtc, currentTimeUtc)
                     );
 
                 if (rowsAffected == 0)
