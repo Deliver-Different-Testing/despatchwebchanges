@@ -225,6 +225,7 @@ public sealed class TimeZoneSuggestion : Suggestion
 public sealed class NoteTypeViewModel : Suggestion
 {
     public bool IsPublic { get; set; }
+    public bool IsCourierFacing { get; set; }
     public string Description { get; set; }
 }
 

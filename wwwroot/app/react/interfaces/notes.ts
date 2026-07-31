@@ -48,6 +48,7 @@ export interface NoteType {
     id?: number;
     text: string;
     isPublic: boolean;
+    isCourierFacing?: boolean;
     description?: string;
 }
 

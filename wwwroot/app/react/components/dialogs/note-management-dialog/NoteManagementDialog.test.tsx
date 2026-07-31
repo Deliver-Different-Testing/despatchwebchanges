@@ -54,6 +54,7 @@ const mockNoteTypes: NoteType[] = [
     {id: 1, text: 'General', isPublic: false, description: 'General notes'},
     {id: 2, text: 'Customer', isPublic: true, description: 'Customer-visible notes'},
     {id: 3, text: 'Internal', isPublic: false},
+    {id: 4, text: 'Dispatch', isPublic: false, isCourierFacing: true, description: 'Courier-visible notes'},
 ];
 
 const mockNote: JobNote = {
@@ -128,8 +129,8 @@ describe('NoteManagementDialog', () => {
         expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
 
-    // ── Note type selection: public warning + description toggle (single render) ─
-    it('shows public note warning and toggles description visibility', async () => {
+    // ── Note type selection: public + courier warnings + description toggle (single render) ─
+    it('shows public and courier note warnings and toggles description visibility', async () => {
         const props = createMockProps();
         await act(async () => {
             renderWithTheme(<NoteManagementDialog {...props} />);
@@ -156,6 +157,59 @@ describe('NoteManagementDialog', () => {
             await userEvent.click(customerOption);
         });
         expect(await screen.findByText(/public note that will be visible to clients/)).toBeInTheDocument();
+        expect(screen.queryByText(/courier note that will be visible to couriers/)).not.toBeInTheDocument();
+
+        // Select courier-facing type
+        await act(async () => {
+            await userEvent.click(screen.getByRole('combobox'));
+        });
+        const dispatchOption = await screen.findByText('Dispatch');
+        await act(async () => {
+            await userEvent.click(dispatchOption);
+        });
+        expect(await screen.findByText(/courier note that will be visible to couriers/)).toBeInTheDocument();
+        expect(screen.queryByText(/public note that will be visible to clients/)).not.toBeInTheDocument();
+    });
+
+    // ── Create note type: courier-facing checkbox reveals warning and flows to onCreateNoteType ─
+    it('creates a courier-facing note type with a warning shown while ticked', async () => {
+        const props = createMockProps();
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
+        });
+
+        await waitFor(() => {
+            expect(props.onLoadNoteTypes).toHaveBeenCalled();
+        });
+
+        // Open the "Create New Note Type" sub-form
+        await act(async () => {
+            await userEvent.click(screen.getByRole('button', {name: 'Add note type'}));
+        });
+
+        expect(await screen.findByText('Create New Note Type')).toBeInTheDocument();
+
+        // Name the new type
+        const nameField = screen.getByRole('textbox', {name: /note type name/i});
+        fireEvent.change(nameField, {target: {value: 'Dispatch'}});
+
+        // Tick courier-facing → warning appears
+        const courierCheckbox = screen.getByRole('checkbox', {name: /is courier facing note type/i});
+        await act(async () => {
+            await userEvent.click(courierCheckbox);
+        });
+        expect(await screen.findByText(/courier note types are visible to couriers/i)).toBeInTheDocument();
+
+        // Submit the new type
+        await act(async () => {
+            await userEvent.click(screen.getByRole('button', {name: 'Create Note Type'}));
+        });
+
+        await waitFor(() => {
+            expect(props.onCreateNoteType).toHaveBeenCalledWith(
+                expect.objectContaining({text: 'Dispatch', isCourierFacing: true})
+            );
+        });
     });
 
     // ── Note content: type text, toggle important, save enabled (single render) ─

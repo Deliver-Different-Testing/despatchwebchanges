@@ -42,6 +42,7 @@ export const mockNoteTypes: NoteType[] = [
     { id: 1, text: 'General', isPublic: true, description: 'General notes' },
     { id: 2, text: 'Internal', isPublic: false, description: 'Internal staff notes' },
     { id: 3, text: 'Client', isPublic: true, description: 'Client-facing notes' },
+    { id: 4, text: 'Dispatch', isPublic: false, isCourierFacing: true, description: 'Courier-facing notes' },
 ];
 
 export const noteHandlers = [
