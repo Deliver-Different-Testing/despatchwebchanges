@@ -1,7 +1,7 @@
 import type {CSSProperties} from 'react';
 import {alpha, createTheme, Theme} from '@mui/material/styles';
 import {DialogTransition} from './DialogTransition';
-import {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette, aiColors} from './palettes';
+import {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette, aiColors, shellColors} from './palettes';
 
 /**
  * Material Design 3 typography role variants.
@@ -52,7 +52,7 @@ declare module '@mui/material/styles' {
 // Re-export the shared palette constants so existing imports from this module
 // keep working. The values themselves live in the framework-free palettes.ts,
 // which the AngularJS Material theme imports too — one source of truth.
-export {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette};
+export {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette, shellColors};
 
 /**
  * MUI Theme - Matching AngularJS Material Theme
@@ -133,36 +133,36 @@ export const tokens = {
 // Shared colors (non-primary)
 export const sharedColors = {
     success: {
-        main: '#4CAF50',
-        light: '#81C784',
-        dark: '#388E3C',
-        lighter: '#E8F5E9',
+        main: '#13b964',   // DFRNT Green
+        light: '#5fd199',
+        dark: '#0b7d44',
+        lighter: '#e5f8ee',
         contrast: '#FFFFFF',
     },
     warning: {
-        main: '#FF9800',
-        light: '#FFB74D',
-        dark: '#F57C00',
-        lighter: '#FFF3E0',
+        main: '#fe811a',   // DFRNT Orange
+        light: '#ffab63',
+        dark: '#b3560b',
+        lighter: '#fff3e6',
         contrast: '#000000',
     },
     error: {
-        main: '#F44336',
-        light: '#E57373',
-        dark: '#D32F2F',
-        lighter: '#FFEBEE',
+        main: '#dc3246',   // DFRNT Red
+        light: '#e97b88',
+        dark: '#93212f',
+        lighter: '#fdeaec',
         contrast: '#FFFFFF',
     },
     info: {
-        main: '#2196F3',
-        light: '#64B5F6',
-        dark: '#1976D2',
-        lighter: '#E3F2FD',
+        main: '#2a4eff',   // DFRNT Reflex Blue
+        light: '#7d92ff',
+        dark: '#1b31a8',
+        lighter: '#eaeeff',
         contrast: '#FFFFFF',
     },
     // Surface colors - matching Angular Material
     surface: {
-        default: '#FAFAFA',
+        default: '#f4f2f1',   // DFRNT Light Grey page background
         paper: '#FFFFFF',
         elevated: '#FFFFFF',
         // MD3 tonal surface-container tiers (warm-neutral, derived from the
@@ -193,10 +193,13 @@ export const sharedColors = {
  * @param isUsCustomer - true for US customers (blue theme), false for non-US (yellow theme)
  */
 export function createAppTheme(isUsCustomer: boolean): Theme {
+    // Single DFRNT brand: both tenants resolve to the same Cyan ramp. The
+    // isUsCustomer flag is retained by callers for locale/labels only, never colour.
     const primaryPalette = isUsCustomer ? dfrntPrimaryPalette : urgentPrimaryPalette;
 
-    // For yellow theme, contrast colors need to be dark
-    const primaryContrastText = isUsCustomer ? '#FFFFFF' : 'rgba(0, 0, 0, 0.87)';
+    // Cyan is a light hue — contained primary surfaces take dark Ink text (~10:1),
+    // not white (which fails WCAG on cyan).
+    const primaryContrastText = '#0d0c2c';
 
     const colors = {
         primary: {
@@ -409,6 +412,19 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             tokens.shadow.xl,
         ],
         components: {
+            // The app shell is a fixed Ink-Blue bar (brand navy) with white content
+            // in every context — decoupled from `primary` (which is the cyan accent).
+            MuiAppBar: {
+                defaultProps: {
+                    elevation: 0,
+                },
+                styleOverrides: {
+                    root: {
+                        backgroundColor: shellColors.appBar,
+                        color: shellColors.textPrimary,
+                    },
+                },
+            },
             MuiTypography: {
                 defaultProps: {
                     // Render MD3 role variants with semantically appropriate elements.

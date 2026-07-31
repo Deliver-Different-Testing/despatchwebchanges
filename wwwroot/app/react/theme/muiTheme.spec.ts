@@ -25,24 +25,14 @@ function getLessVar(name: string): string {
 }
 
 describe('MUI theme palettes', () => {
-    it('US theme uses blue primary', () => {
-        const theme = createAppTheme(true);
-        expect(theme.palette.primary.main).toBe('#2196f3');
+    it('both tenants use the DFRNT cyan primary (single brand)', () => {
+        expect(createAppTheme(true).palette.primary.main).toBe('#3bc7f4');
+        expect(createAppTheme(false).palette.primary.main).toBe('#3bc7f4');
     });
 
-    it('NZ theme uses warm amber primary', () => {
-        const theme = createAppTheme(false);
-        expect(theme.palette.primary.main).toBe('#f4c430');
-    });
-
-    it('US theme has white contrast text on primary', () => {
-        const theme = createAppTheme(true);
-        expect(theme.palette.primary.contrastText).toBe('#FFFFFF');
-    });
-
-    it('NZ theme has dark contrast text on primary', () => {
-        const theme = createAppTheme(false);
-        expect(theme.palette.primary.contrastText).toBe('rgba(0, 0, 0, 0.87)');
+    it('primary carries dark Ink contrast text (cyan is a light hue)', () => {
+        expect(createAppTheme(true).palette.primary.contrastText).toBe('#0d0c2c');
+        expect(createAppTheme(false).palette.primary.contrastText).toBe('#0d0c2c');
     });
 
     it('both themes share the same secondary (accent) palette', () => {
@@ -52,17 +42,17 @@ describe('MUI theme palettes', () => {
         expect(nz.palette.secondary.main).toBe(accentPalette[500]);
     });
 
-    it('both themes share the same semantic colors', () => {
+    it('both themes share the same DFRNT semantic colors', () => {
         const theme = createAppTheme(true);
-        expect(theme.palette.success.main).toBe('#4CAF50');
-        expect(theme.palette.warning.main).toBe('#FF9800');
-        expect(theme.palette.error.main).toBe('#F44336');
-        expect(theme.palette.info.main).toBe('#2196F3');
+        expect(theme.palette.success.main).toBe('#13b964');
+        expect(theme.palette.warning.main).toBe('#fe811a');
+        expect(theme.palette.error.main).toBe('#dc3246');
+        expect(theme.palette.info.main).toBe('#2a4eff');
     });
 
     it('background colors match expected values', () => {
         const theme = createAppTheme(true);
-        expect(theme.palette.background.default).toBe('#FAFAFA');
+        expect(theme.palette.background.default).toBe('#f4f2f1');
         expect(theme.palette.background.paper).toBe('#FFFFFF');
     });
 
@@ -228,8 +218,8 @@ describe('MUI ↔ LESS variable sync', () => {
 
     describe('surface and background', () => {
         it('@main-background-color matches MUI surface.default', () => {
-            expect(getLessVar('@main-background-color').toUpperCase())
-                .toBe(sharedColors.surface.default);
+            expect(getLessVar('@main-background-color').toLowerCase())
+                .toBe(sharedColors.surface.default.toLowerCase());
         });
 
         it('@card-background matches MUI surface.paper', () => {

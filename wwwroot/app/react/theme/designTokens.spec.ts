@@ -2,7 +2,7 @@ import {aiColors, aiAccentColor} from './designTokens';
 
 describe('designTokens', () => {
     it('exposes the AI accent as a light/main/dark ramp', () => {
-        expect(aiColors.main).toBe('#7c4dff');
+        expect(aiColors.main).toBe('#824ae0');
         expect(aiColors.light).toBeDefined();
         expect(aiColors.dark).toBeDefined();
     });

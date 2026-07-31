@@ -37,22 +37,23 @@ export const accentMdPalette = toMdPalette(
     },
 );
 
+// Single DFRNT brand — both palettes resolve to the same Cyan ramp. Cyan is a
+// light hue, so only its darkest shades (700–900) carry white text; everything
+// else (incl. the 500 main) takes dark Ink text.
+const cyanContrast = {
+    contrastDefaultColor: 'dark' as const,
+    contrastDarkColors: ['50', '100', '200', '300', '400', '500', '600', 'A100', 'A200', 'A400', 'A700'],
+    contrastLightColors: ['700', '800', '900'],
+};
+
 export const urgentPrimaryMdPalette = toMdPalette(
     accentValues(urgentPrimaryPalette),
-    {
-        contrastDefaultColor: 'light',
-        contrastDarkColors: ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', 'A100', 'A200', 'A400', 'A700'],
-        contrastLightColors: [],
-    },
+    cyanContrast,
 );
 
 export const professionalPrimaryMdPalette = toMdPalette(
     accentValues(dfrntPrimaryPalette),
-    {
-        contrastDefaultColor: 'light',
-        contrastDarkColors: ['50', '100', '200', '300', '400', 'A100'],
-        contrastLightColors: ['500', '600', '700', '800', '900', 'A200', 'A400', 'A700'],
-    },
+    cyanContrast,
 );
 
 /** Coerce a palette's numeric keys to the string-keyed record Material wants. */

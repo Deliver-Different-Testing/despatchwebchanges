@@ -792,6 +792,36 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task AddAgentToJobAsync_CustomBodyWithoutInboundUrlToken_StillIncludesAcceptButton()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act — dispatcher-edited body that drops the [InboundUrl] token entirely
+        await repository.AddAgentToJobAsync(agentId, jobId, false,
+            null, "Please accept, pick up, and complete the job in the portal.");
+
+        // Assert — the accept-job CTA is structural, so it renders from the resolved
+        // inbound link even though the body copy never mentions [InboundUrl].
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("Your next step", message.UcmmMessage);
+        Assert.Contains("https://inbound.example.com/TOKEN123", message.UcmmMessage);
+        Assert.Contains("Accept job &amp; upload POD", message.UcmmMessage);
+    }
+
+    [Fact]
     public async Task AddAgentToJobAsync_UnknownTokenInEditedTemplate_LeftIntactWithoutThrowing()
     {
         // Arrange

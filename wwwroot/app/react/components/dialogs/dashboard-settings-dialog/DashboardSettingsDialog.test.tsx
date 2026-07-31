@@ -302,11 +302,11 @@ describe('DashboardSettingsDialog', () => {
         });
     });
 
-    // ── Dispatch BETA toggle ────────────────────────────────────────
-    describe('Dispatch BETA toggle', () => {
+    // ── Dispatch version toggle ─────────────────────────────────────
+    describe('Dispatch version toggle', () => {
         it('is hidden unless showDispatchBetaToggle is set', () => {
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
-            expect(screen.queryByText('Try the new Dispatch')).not.toBeInTheDocument();
+            expect(screen.queryByText('Dispatch version')).not.toBeInTheDocument();
         });
 
         it('renders the toggle and emits dispatchBetaEnabled on save when enabled', async () => {
@@ -322,7 +322,7 @@ describe('DashboardSettingsDialog', () => {
                 />,
             );
 
-            expect(screen.getByText('Try the new Dispatch')).toBeInTheDocument();
+            expect(screen.getByText('Dispatch version')).toBeInTheDocument();
 
             const betaRow = screen.getByText('Use the new Dispatch').closest('div[class*="Paper"]') as HTMLElement;
             await user.click(within(betaRow).getByRole('switch'));

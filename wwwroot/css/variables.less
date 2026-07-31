@@ -1,22 +1,22 @@
 @standard-grey: #999;
 
-// Primary colors - aligned with MUI theme (muiTheme.ts)
-@primary-blue: #2196f3;
-@primary-green: #4CAF50;
-@primary-color: #2196f3;
-@primary-warning: #FF9800;
-@error-red: #F44336;
+// Primary colors - aligned with MUI theme (muiTheme.ts). Single DFRNT brand: Cyan.
+@primary-blue: #3bc7f4;
+@primary-green: #13b964;
+@primary-color: #3bc7f4;
+@primary-warning: #fe811a;
+@error-red: #dc3246;
 
-// Theme colors (US = blue, Non-US = warm amber)
-@theme-us-primary: #2196f3;
-@theme-nz-primary: #f4c430;
+// Theme colors - single DFRNT Cyan brand for every tenant
+@theme-us-primary: #3bc7f4;
+@theme-nz-primary: #3bc7f4;
 
-// NZ tenant colors - matches MUI urgentPrimaryPalette
-@nz-primary: #f4c430;
-@nz-primary-dark: #d4a324;
+// Retained tenant vars - now the same DFRNT Cyan (darker step for hover/borders)
+@nz-primary: #3bc7f4;
+@nz-primary-dark: #1590c0;
 
-// Page and container backgrounds - matches MUI surface.default
-@main-background-color: #FAFAFA;
+// Page and container backgrounds - matches MUI surface.default (DFRNT Light Grey)
+@main-background-color: #f4f2f1;
 @page-background: @main-background-color;
 @card-background: #ffffff;
 @surface-background: #ffffff;
@@ -34,23 +34,24 @@
 @hover-color: rgba(0, 0, 0, 0.04);
 @active-color: rgba(0, 0, 0, 0.12);
 
-// Status chip colors
-@status-new-bg: #EBF5FF;
-@status-new-text: #1E40AF;
-@status-awaiting-bg: #F3E8FF;
-@status-awaiting-text: #6B21A8;
-@status-despatched-bg: #FEF3C7;
-@status-despatched-text: #92400E;
-@status-undeliverable-bg: #FEE2E2;
-@status-undeliverable-text: #991B1B;
+// Status chip colors (soft bg + dark text) - DFRNT ramp tints
+@status-new-bg: #eaeeff;        // Reflex 50
+@status-new-text: #132279;      // Reflex 800
+@status-awaiting-bg: #f3edfc;   // Grape 50
+@status-awaiting-text: #3f226e; // Grape 800
+@status-despatched-bg: #fff3e6; // Orange 50
+@status-despatched-text: #853f08; // Orange 800
+@status-undeliverable-bg: #fdeaec; // Red 50
+@status-undeliverable-text: #6c1823; // Red 800
 
-// Status colors
-@status-blue: #BFDBFE; // New, Preassigned
-@status-green: #BBF7D0; // Despatched, Accepted
-@status-green-dark: #86EFAC; // Picked up, In Transit, Out for Delivery
-@status-red-light: #FCA5A5; // Rejected, Late Pickup, Late Delivery, Warning
-@status-red: #DC2626; // Undeliverable
-@status-gray: #9CA3AF; // Completed, Awaiting POD, Assuming Completed
+// Status colors - DFRNT ramp. Black-text groups take light tints; white-text
+// groups (@status-red, @status-gray) take a dark-enough step for legibility.
+@status-blue: #aab8ff; // New, Preassigned (Reflex 200)
+@status-green: #a1e3c1; // Despatched, Accepted (Green 200)
+@status-green-dark: #5fd199; // Picked up, In Transit, Out for Delivery (Green 300)
+@status-red-light: #f1adb5; // Rejected, Late Pickup, Late Delivery, Warning (Red 200)
+@status-red: #bb2a3c; // Undeliverable (Red 600 - white text ~5.5:1)
+@status-gray: #78716c; // Completed, Awaiting POD, Assuming Completed (warm gray 600 - white text)
 
 // Spacing
 @brand: #333;

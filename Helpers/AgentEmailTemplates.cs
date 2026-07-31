@@ -55,8 +55,11 @@ public static partial class AgentEmailTemplates
     /// for email-client compatibility. Text is HTML-escaped. The action link is lifted out of the
     /// body copy and rendered as a standalone pill CTA in its own section at the foot of the card,
     /// so it reads as the deliberate next step rather than an inline link in a sentence.
+    /// The CTA is structural: when <paramref name="ctaUrl"/> is supplied it always renders,
+    /// regardless of whether the (freely editable) body copy mentions the link. It falls back to
+    /// scraping the first URL out of the body only when no explicit link is provided.
     /// </remarks>
-    public static string RenderHtmlBody(string plainBody)
+    public static string RenderHtmlBody(string plainBody, string ctaUrl = null)
     {
         if (string.IsNullOrWhiteSpace(plainBody))
         {
@@ -65,8 +68,11 @@ public static partial class AgentEmailTemplates
 
         var normalised = plainBody.Replace("\r\n", "\n");
 
-        // Pull the first action link out of the copy; it becomes the standalone CTA below.
-        var ctaUrl = UrlRegex().Match(normalised) is { Success: true } match ? match.Value : null;
+        // Prefer the explicit link; otherwise pull the first action link out of the copy. Either
+        // way, bare URLs are stripped from the paragraphs so the CTA is never duplicated inline.
+        ctaUrl = string.IsNullOrWhiteSpace(ctaUrl)
+            ? UrlRegex().Match(normalised) is { Success: true } match ? match.Value : null
+            : ctaUrl;
 
         var paragraphs = normalised
             .Split(["\n\n"], StringSplitOptions.None)

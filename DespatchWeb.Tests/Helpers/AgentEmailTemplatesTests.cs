@@ -84,6 +84,29 @@ public class AgentEmailTemplatesRenderHtmlBodyTests
     }
 
     [Fact]
+    public void ExplicitCtaUrl_RendersCtaEvenWhenBodyHasNoUrl()
+    {
+        var html = AgentEmailTemplates.RenderHtmlBody(
+            "Please accept in the portal.", "https://inbound.example.com/TOKEN");
+
+        Assert.Contains("Your next step", html);
+        Assert.Contains("""<a href="https://inbound.example.com/TOKEN""", html);
+        Assert.Contains("Accept job &amp; upload POD", html);
+        Assert.Contains("border-radius:999px", html); // pill button
+        Assert.Contains("Please accept in the portal.", html); // body copy retained
+    }
+
+    [Fact]
+    public void ExplicitCtaUrl_NotDuplicatedWhenBodyAlsoContainsSameUrl()
+    {
+        var html = AgentEmailTemplates.RenderHtmlBody(
+            "Use the button below. https://inbound.example.com/TOKEN", "https://inbound.example.com/TOKEN");
+
+        Assert.Equal(1, CountOccurrences(html, "Your next step"));
+        Assert.Equal(1, CountOccurrences(html, "https://inbound.example.com/TOKEN"));
+    }
+
+    [Fact]
     public void TokenValueWithMarkupCharacters_IsHtmlEscaped()
     {
         var html = AgentEmailTemplates.RenderHtmlBody("Going to Smith & Co <HQ>");

@@ -5,11 +5,13 @@
  * from the Job Search preference) so each operator's choice is independent and
  * persists across sessions.
  *
- * **Default OFF (classic V1):** users land on the AngularJS dispatch page unless
- * they explicitly opt in to V2 (only a stored `'true'` enables the React page).
+ * **Default ON (React V2):** users land on the rebuilt React dispatch page
+ * unless they explicitly opt out (only a stored `'false'` falls back to the
+ * classic AngularJS page). Users who previously opted in ('true') stay on V2,
+ * and anyone who never touched the setting now gets V2 too.
  *
  * Read by:
- *   - the `home` (`/`) route `redirectTo` (sends to `/dispatchV2` only when opted in)
+ *   - the `home` (`/`) route `redirectTo` (sends to `/dispatchV2` unless opted out)
  *   - the dashboard settings dialog (renders the toggle for both versions)
  *
  * Mirrors `wwwroot/app/react/pages/job-search/lib/betaPreference.ts`.
@@ -21,10 +23,10 @@ const STORAGE_KEY = `dispatchBetaEnabled-${ContactID}`;
 
 export function getDispatchBetaEnabled(): boolean {
     try {
-        // Default OFF: only an explicit opt-in (`'true'`) uses the React page.
-        return localStorage.getItem(STORAGE_KEY) === 'true';
+        // Default ON: only an explicit opt-out (`'false'`) uses the classic page.
+        return localStorage.getItem(STORAGE_KEY) !== 'false';
     } catch {
-        return false;
+        return true;
     }
 }
 

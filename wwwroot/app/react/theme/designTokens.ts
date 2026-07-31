@@ -8,10 +8,13 @@
  */
 
 import {sharedColors} from './muiTheme';
-import {accentPalette, aiColors, grossModeColor} from './palettes';
+import {accentPalette, aiColors, grossModeColor, shellColors} from './palettes';
 
-/** Toolbar / dark-accent color (#57534e) */
-export const toolbarColor = accentPalette[600];
+/** Ink-Blue shell colour (#0d0c2c) — app bar, side-nav header, dark chrome. */
+export const toolbarColor = shellColors.appBar;
+
+/** Full Ink-Blue shell token set (bar/panel/border/text). */
+export {shellColors};
 
 /** Surface / dialog body background (#FAFAFA) */
 export const surfaceDefault = sharedColors.surface.default;
