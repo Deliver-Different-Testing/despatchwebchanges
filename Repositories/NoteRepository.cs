@@ -225,7 +225,8 @@ public class NoteRepository(
             {
                 Id = nt.NoteTypeId,
                 Text = nt.NoteTypeName,
-                IsPublic = nt.IsPublic
+                IsPublic = nt.IsPublic,
+                IsCourierFacing = nt.IsCourierFacing
             })
             .ToListAsync();
 
@@ -235,6 +236,7 @@ public class NoteRepository(
         {
             IsActive = true,
             IsPublic = noteType.IsPublic,
+            IsCourierFacing = noteType.IsCourierFacing,
             NoteTypeName = noteType.Text,
             Description = noteType.Description
         };

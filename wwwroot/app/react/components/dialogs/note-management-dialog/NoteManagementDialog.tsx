@@ -27,6 +27,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import NoteAltIcon from '@mui/icons-material/NoteAlt';
 import PersonIcon from '@mui/icons-material/Person';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
@@ -93,6 +94,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     const [newNoteTypeName, setNewNoteTypeName] = useState('');
     const [newNoteTypeDescription, setNewNoteTypeDescription] = useState('');
     const [newNoteTypeIsPublic, setNewNoteTypeIsPublic] = useState(false);
+    const [newNoteTypeIsCourierFacing, setNewNoteTypeIsCourierFacing] = useState(false);
     const [isCreatingNoteType, setIsCreatingNoteType] = useState(false);
 
     // Description toggle
@@ -167,6 +169,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
         setNewNoteTypeName('');
         setNewNoteTypeDescription('');
         setNewNoteTypeIsPublic(false);
+        setNewNoteTypeIsCourierFacing(false);
     };
 
     const selectedNoteType = useMemo(() => {
@@ -174,6 +177,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     }, [noteTypes, noteTypeId]);
 
     const isSelectedNoteTypePublic = selectedNoteType?.isPublic ?? false;
+    const isSelectedNoteTypeCourierFacing = selectedNoteType?.isCourierFacing ?? false;
 
     const validate = (): boolean => {
         if (!noteText.trim()) {
@@ -237,6 +241,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             const newType: NoteType = {
                 text: newNoteTypeName.trim(),
                 isPublic: newNoteTypeIsPublic,
+                isCourierFacing: newNoteTypeIsCourierFacing,
                 description: newNoteTypeDescription.trim() || undefined,
             };
 
@@ -295,6 +300,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                         </Typography>
                         <IconButton
                             size="small"
+                            aria-label="Add note type"
                             onClick={() => setShowNoteTypeCreator(!showNoteTypeCreator)}
                             sx={(theme) => ({
                                 color: theme.palette.text.secondary,
@@ -368,6 +374,17 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                             This is a public note that will be visible to clients
                         </Alert>
                     )}
+
+                    {/* Courier Note Warning */}
+                    {isSelectedNoteTypeCourierFacing && (
+                        <Alert
+                            severity="info"
+                            icon={<LocalShippingIcon />}
+                            sx={{mt: 1.5, borderRadius: 2}}
+                        >
+                            This is a courier note that will be visible to couriers
+                        </Alert>
+                    )}
                 </Box>
 
                 {/* Note Type Creator */}
@@ -427,6 +444,25 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                     sx={{mt: 1, borderRadius: 2}}
                                 >
                                     Public note types are visible to clients
+                                </Alert>
+                            )}
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={newNoteTypeIsCourierFacing}
+                                        onChange={(e) => setNewNoteTypeIsCourierFacing(e.target.checked)}
+                                        color="primary"
+                                    />
+                                }
+                                label="Is Courier Facing Note Type"
+                            />
+                            {newNoteTypeIsCourierFacing && (
+                                <Alert
+                                    severity="warning"
+                                    icon={<LocalShippingIcon />}
+                                    sx={{mt: 1, borderRadius: 2}}
+                                >
+                                    Courier note types are visible to couriers
                                 </Alert>
                             )}
                         </Box>

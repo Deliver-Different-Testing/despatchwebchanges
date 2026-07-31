@@ -326,6 +326,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         {
             Text = "New Note Type",
             IsPublic = true,
+            IsCourierFacing = true,
             Description = "Test description"
         };
 
@@ -338,6 +339,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         Assert.NotNull(savedType);
         Assert.True(savedType.IsActive);
         Assert.True(savedType.IsPublic);
+        Assert.True(savedType.IsCourierFacing);
         Assert.Equal("Test description", savedType.Description);
     }
 
@@ -963,7 +965,7 @@ public class NoteRepositoryTests : IAsyncDisposable
             new TucNoteType
             {
                 NoteTypeId = 3, NoteTypeName = "Active Type 2", IsActive = true, IsPublic = true,
-                IsSystemDefined = false
+                IsCourierFacing = true, IsSystemDefined = false
             }
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -976,7 +978,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         // Assert
         Assert.Equal(2, result.Count);
         Assert.Contains(result, nt => nt.Text == "Active Type 1");
-        Assert.Contains(result, nt => nt.Text == "Active Type 2");
+        Assert.Contains(result, nt => nt.Text == "Active Type 2" && nt.IsCourierFacing);
         Assert.DoesNotContain(result, nt => nt.Text == "Inactive Type");
     }
 
