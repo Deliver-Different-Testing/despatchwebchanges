@@ -1207,13 +1207,16 @@ public partial class JobRepository
     {
         var staffId = _infoService.GetStaffId();
         var currentDate = _clock.TenantNow;
+        var currentDateUtc = _clock.UtcNow;
 
         var newNote = new TucNote
         {
             CreatedBy = staffId,
             CreatedDate = currentDate,
+            CreatedDateUtc = currentDateUtc,
             UpdatedBy = staffId,
             UpdatedDate = currentDate,
+            UpdatedDateUtc = currentDateUtc,
             JobId = isLiveJob ? jobId : null,
             JobBookingId = !isLiveJob ? jobId : null,
             NoteText = updateNote,

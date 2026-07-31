@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -165,7 +166,8 @@ public partial class JobRepository
         }
 
         var printableRate = rate ?? 0;
-        await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
+        await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true,
+            noteType: NoteType.PricingUpdate);
     }
 
     /// <inheritdoc cref="IJobCommandRepository.SetJobRatedManuallyAsync" />
@@ -342,7 +344,8 @@ public partial class JobRepository
             var noteText = previousRate.HasValue
                 ? $"Rate updated to {rate} from {previousRate.Value}"
                 : $"Rate updated to {rate}";
-            await SaveNoteAsync(jobId, noteText, true, JobType.Recurring == jobType);
+            await SaveNoteAsync(jobId, noteText, true, JobType.Recurring == jobType,
+                NoteType.PricingUpdate);
         }
         catch (Exception e)
         {

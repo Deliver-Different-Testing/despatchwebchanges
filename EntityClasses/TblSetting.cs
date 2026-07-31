@@ -345,5 +345,7 @@ public partial class TblSetting
 
     public string ConsolidatedContractorSupplierRef { get; set; }
 
+    public bool ConsolidateFuel { get; set; }
+
     public virtual TucStaff InternetJobStaff { get; set; }
 }

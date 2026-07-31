@@ -463,6 +463,61 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         Assert.All(notes, n => Assert.True(n.IsImportant));
     }
 
+    [Fact]
+    public async Task SaveNoteAsync_WithPricingUpdate_SetsNoteTypeAndUtcTimestamps()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int staffId = 7;
+        var tenantTime = new DateTime(2024, 8, 20, 15, 30, 0);
+        _tenantInfoServiceMock.GetStaffId().Returns(staffId);
+        _clock = new FakeTenantClock(tenantTime);
+
+        _context.TucNoteTypes.Add(new TucNoteType
+        {
+            NoteTypeId = (int)NoteType.PricingUpdate, NoteTypeName = "Pricing Update",
+            IsActive = true, IsPublic = false, IsSystemDefined = true
+        });
+        _context.TucJobs.Add(CreateJob(jobId, "JOB100"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SaveNoteAsync(jobId, "Repriced from 10 to 20", true, noteType: NoteType.PricingUpdate);
+
+        // Assert
+        var note = await _context.TucNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal((int)NoteType.PricingUpdate, note.NoteTypeId);
+        Assert.Equal(_clock.UtcNow, note.CreatedDateUtc);
+        Assert.Equal(_clock.UtcNow, note.UpdatedDateUtc);
+        // Wall-clock column stays tenant-local, not UTC.
+        Assert.Equal(tenantTime, note.CreatedDate);
+    }
+
+    [Fact]
+    public async Task SaveNoteAsync_UnknownNoteType_FallsBackToInternalNote()
+    {
+        // Arrange — PricingUpdate row missing from tucNoteType, so it must fall back.
+        const int jobId = 101;
+        _context.TucNoteTypes.Add(new TucNoteType
+        {
+            NoteTypeId = (int)NoteType.InternalNote, NoteTypeName = "Internal Note",
+            IsActive = true, IsPublic = false, IsSystemDefined = true
+        });
+        _context.TucJobs.Add(CreateJob(jobId, "JOB101"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SaveNoteAsync(jobId, "Repriced", true, noteType: NoteType.PricingUpdate);
+
+        // Assert
+        var note = await _context.TucNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal((int)NoteType.InternalNote, note.NoteTypeId);
+    }
+
     // ---- Sargable date filters (fix: avoid .Date/.TimeOfDay on the column) ----
     // These predicates are tested in-memory (LINQ-to-objects) because SQLite cannot translate the
     // legacy .Date/.TimeOfDay forms; the rewrite must preserve the original calendar-day semantics.
@@ -739,5 +794,9 @@ public class BaseJobRepositoryTests : IAsyncDisposable
             bool isImportant = false,
             NoteType noteType = NoteType.InternalNote)
             => base.SaveMultipleBulkNotesAsync(bulkJobIds, noteText, isImportant, noteType);
+
+        public new Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
+            bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote, bool saveChanges = true)
+            => base.SaveNoteAsync(jobId, noteText, isImportant, isRecurringJob, noteType, saveChanges);
     }
 }

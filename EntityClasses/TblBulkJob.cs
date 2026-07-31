@@ -261,6 +261,8 @@ public partial class TblBulkJob
 
     public bool ContentsUnknownAtPickup { get; set; }
 
+    public int? RouteId { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucClient Client { get; set; }

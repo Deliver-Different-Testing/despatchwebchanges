@@ -56,7 +56,7 @@ public sealed class AddAgentRecoveryJobService(
             var currentDate = clock.TenantNow;
 
             // Add Note
-            var note = CreateNote(job.UcjbId, agentName, staffId, currentDate);
+            var note = CreateNote(job.UcjbId, agentName, staffId, currentDate, clock.UtcNow);
             await commandRepository.AddEntityAsync(note);
 
             // Add Recovery Agent Record
@@ -280,16 +280,19 @@ public sealed class AddAgentRecoveryJobService(
     /// <summary>
     /// Creates a note entity recording the addition of a recovery agent to a job.
     /// </summary>
-    private static TucNote CreateNote(int jobId, string newAgent, int staffId, DateTime currentDate) =>
+    private static TucNote CreateNote(int jobId, string newAgent, int staffId, DateTime currentDate,
+        DateTime currentDateUtc) =>
         new()
         {
             JobId = jobId,
             NoteText = $"Recovery agent {newAgent} has been added.",
             CreatedBy = staffId,
             CreatedDate = currentDate,
+            CreatedDateUtc = currentDateUtc,
             NoteTypeId = (int)NoteType.AgentUpdate,
             UpdatedBy = staffId,
-            UpdatedDate = currentDate
+            UpdatedDate = currentDate,
+            UpdatedDateUtc = currentDateUtc
         };
 
     /// <summary>

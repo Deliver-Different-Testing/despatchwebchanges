@@ -152,7 +152,7 @@ public sealed class AddStopJobService(
             // Add note
             if (!string.IsNullOrEmpty(extras.JobNotes))
             {
-                var note = CreateNote(job.UcjbId, extras.JobNotes, staffId, currentDate);
+                var note = CreateNote(job.UcjbId, extras.JobNotes, staffId, currentDate, clock.UtcNow);
                 await commandRepository.AddEntityAsync(note);
             }
 
@@ -287,7 +287,7 @@ public sealed class AddStopJobService(
         // Add note
         if (!string.IsNullOrEmpty(extras.JobNotes))
         {
-            var note = CreateBookingNote(job.UcbkId, extras.JobNotes, staffId, currentDate);
+            var note = CreateBookingNote(job.UcbkId, extras.JobNotes, staffId, currentDate, clock.UtcNow);
             await commandRepository.AddEntityAsync(note);
         }
 
@@ -399,31 +399,37 @@ public sealed class AddStopJobService(
     /// <summary>
     /// Creates a note entity for a live job.
     /// </summary>
-    private static TucNote CreateNote(int jobId, string noteText, int staffId, DateTime currentDate) =>
+    private static TucNote CreateNote(int jobId, string noteText, int staffId, DateTime currentDate,
+        DateTime currentDateUtc) =>
         new()
         {
             JobId = jobId,
             NoteText = noteText,
             CreatedBy = staffId,
             CreatedDate = currentDate,
+            CreatedDateUtc = currentDateUtc,
             NoteTypeId = (int)NoteType.InternalNote,
             UpdatedBy = staffId,
-            UpdatedDate = currentDate
+            UpdatedDate = currentDate,
+            UpdatedDateUtc = currentDateUtc
         };
 
     /// <summary>
     /// Creates a note entity for a recurring job booking.
     /// </summary>
-    private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate) =>
+    private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate,
+        DateTime currentDateUtc) =>
         new()
         {
             JobBookingId = jobBookingId,
             NoteText = noteText,
             CreatedBy = staffId,
             CreatedDate = currentDate,
+            CreatedDateUtc = currentDateUtc,
             NoteTypeId = (int)NoteType.InternalNote,
             UpdatedBy = staffId,
-            UpdatedDate = currentDate
+            UpdatedDate = currentDate,
+            UpdatedDateUtc = currentDateUtc
         };
 
     /// <summary>

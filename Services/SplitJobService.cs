@@ -514,7 +514,8 @@ public class SplitJobService(
                 NoteTypeId = (int)NoteType.InternalNote,
                 NoteText = $"SPLIT Part 1 of 2. {parentNotesText}",
                 CreatedBy = staffId,
-                CreatedDate = now
+                CreatedDate = now,
+                CreatedDateUtc = now
             },
             new TucNote
             {
@@ -522,7 +523,8 @@ public class SplitJobService(
                 NoteTypeId = (int)NoteType.InternalNote,
                 NoteText = $"SPLIT Part 2 of 2. {parentNotesText}",
                 CreatedBy = staffId,
-                CreatedDate = now
+                CreatedDate = now,
+                CreatedDateUtc = now
             });
 
         await context.SaveChangesAsync(ct);

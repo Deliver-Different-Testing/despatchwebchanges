@@ -19,6 +19,8 @@ public partial class TucNoteType
 
     public bool IsSystemDefined { get; set; }
 
+    public bool IsCourierFacing { get; set; }
+
     public virtual ICollection<TblBulkJobNote> TblBulkJobNotes { get; set; } = new List<TblBulkJobNote>();
 
     public virtual ICollection<TucNoteHistory> TucNoteHistoryNewNoteTypes { get; set; } = new List<TucNoteHistory>();
