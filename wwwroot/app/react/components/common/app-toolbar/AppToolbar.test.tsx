@@ -95,7 +95,7 @@ describe('AppToolbar', () => {
             renderWithTheme(<AppToolbar {...defaultProps} />);
             const logo = screen.getByAltText('DFRNT');
             expect(logo).toBeInTheDocument();
-            expect(logo).toHaveAttribute('src', 'images/dfrnt_logo.png');
+            expect(logo).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
         });
 
         it('should render the logo with custom URL', () => {

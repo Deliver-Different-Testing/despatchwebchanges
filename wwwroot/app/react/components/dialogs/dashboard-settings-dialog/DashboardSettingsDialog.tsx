@@ -22,7 +22,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
-import ScienceIcon from '@mui/icons-material/Science';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 import {aiAccentColor} from '../../../theme/designTokens';
 import {AutoMateLogo} from '../../common/auto-mate-logo/AutoMateLogo';
@@ -49,9 +49,9 @@ export interface DashboardSettingsConfig {
     showTaskRefresh?: boolean;
     showDashboards?: boolean;
     showAiToggle?: boolean;
-    /** Show the "Try the React (BETA) Job Search" toggle. Job Search settings only. */
+    /** Show the "Use the new Job Search" toggle (on by default). Job Search settings only. */
     showJobSearchBetaToggle?: boolean;
-    /** Show the "Try the React (BETA) Dispatch" toggle. Dispatch settings only. */
+    /** Show the "Use the new Dispatch" toggle (on by default). Dispatch settings only. */
     showDispatchBetaToggle?: boolean;
     /**
      * Replace the Dashboard panels section with a notice that panel options have
@@ -124,10 +124,10 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? false);
     const [aiAutoOpen, setAiAutoOpen] = useState<boolean>(initialAiAutoOpen ?? false);
     const [jobSearchBetaEnabled, setJobSearchBetaEnabled] = useState<boolean>(
-        initialJobSearchBetaEnabled ?? false,
+        initialJobSearchBetaEnabled ?? true,
     );
     const [dispatchBetaEnabled, setDispatchBetaEnabled] = useState<boolean>(
-        initialDispatchBetaEnabled ?? false,
+        initialDispatchBetaEnabled ?? true,
     );
     const [boxes, setBoxes] = useState<Record<string, DashboardBox>>(() => {
         // Deep clone the boxes
@@ -532,7 +532,8 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
 
                 {config.showAiToggle && <Divider />}
 
-                {/* Job Search BETA toggle — opt-in for the React rebuild of /jobSearch.
+                {/* Job Search version toggle — the React rebuild of /jobSearch is
+                    now the default; this switches back to the classic page.
                     Only rendered when the caller (V1/V2 controller) sets
                     `showJobSearchBetaToggle: true`. Caller persists localStorage
                     and triggers the route redirect after Save. */}
@@ -550,10 +551,10 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     justifyContent: 'center',
                                 })}
                             >
-                                <ScienceIcon color="primary" />
+                                <AutoAwesomeIcon color="primary" />
                             </Box>
                             <Typography variant="h6" sx={{fontWeight: 600}}>
-                                Try the new Job Search
+                                Job Search version
                             </Typography>
                         </Stack>
 
@@ -575,26 +576,13 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         >
                             <Stack direction="row" sx={{alignItems: 'center', justifyContent: 'space-between'}}>
                                 <Box>
-                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                        <Typography variant="subtitle2" sx={{fontWeight: 600}}>
-                                            Use the new Job Search
-                                        </Typography>
-                                        <Chip
-                                            label="BETA"
-                                            size="small"
-                                            sx={{
-                                                height: 18,
-                                                fontSize: '0.625rem',
-                                                fontWeight: 700,
-                                                bgcolor: aiAccentColor,
-                                                color: 'common.white',
-                                            }}
-                                        />
-                                    </Box>
+                                    <Typography variant="subtitle2" sx={{fontWeight: 600}}>
+                                        Use the new Job Search
+                                    </Typography>
                                     <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                                        Opens the rebuilt Job Search page — faster filtering, quicker loads, and
-                                        modern dialogs. Switch back to the classic page any time. Applies to your
-                                        account only.
+                                        The rebuilt Job Search is now the default — faster filtering, quicker loads,
+                                        and modern dialogs. Turn this off to go back to the classic page. Applies to
+                                        your account only.
                                     </Typography>
                                 </Box>
                                 <Switch
@@ -609,11 +597,11 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
 
                 {config.showJobSearchBetaToggle && <Divider />}
 
-                {/* Dispatch BETA toggle — opt-in for the React rebuild of the
-                    home/dispatch page. Only rendered when the caller (home
-                    controller / dispatchV2 route) sets `showDispatchBetaToggle:
-                    true`. Caller persists localStorage and triggers the route
-                    redirect after Save. */}
+                {/* Dispatch version toggle — the React rebuild of the home/dispatch
+                    page is now the default; this switches back to the classic
+                    page. Only rendered when the caller (home controller /
+                    dispatchV2 route) sets `showDispatchBetaToggle: true`. Caller
+                    persists localStorage and triggers the route redirect after Save. */}
                 {config.showDispatchBetaToggle && (
                     <Box sx={{p: 3}}>
                         <Stack direction="row" spacing={1.5} sx={{alignItems: 'center', mb: 2}}>
@@ -628,10 +616,10 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     justifyContent: 'center',
                                 })}
                             >
-                                <ScienceIcon color="primary" />
+                                <AutoAwesomeIcon color="primary" />
                             </Box>
                             <Typography variant="h6" sx={{fontWeight: 600}}>
-                                Try the new Dispatch
+                                Dispatch version
                             </Typography>
                         </Stack>
 
@@ -653,27 +641,14 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         >
                             <Stack direction="row" sx={{alignItems: 'center', justifyContent: 'space-between'}}>
                                 <Box>
-                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                        <Typography variant="subtitle2" sx={{fontWeight: 600}}>
-                                            Use the new Dispatch
-                                        </Typography>
-                                        <Chip
-                                            label="BETA"
-                                            size="small"
-                                            sx={{
-                                                height: 18,
-                                                fontSize: '0.625rem',
-                                                fontWeight: 700,
-                                                bgcolor: aiAccentColor,
-                                                color: 'common.white',
-                                            }}
-                                        />
-                                    </Box>
+                                    <Typography variant="subtitle2" sx={{fontWeight: 600}}>
+                                        Use the new Dispatch
+                                    </Typography>
                                     <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                                        Opens the rebuilt Dispatch page — faster loads, modern dialogs, and more
-                                        customisation options like choosing your columns. Saved layouts follow your
-                                        account, so they persist across browsers and computers. Switch back to the
-                                        classic page any time. Applies to your account only.
+                                        The rebuilt Dispatch is now the default — faster loads, modern dialogs, and
+                                        more customisation options like choosing your columns. Saved layouts follow
+                                        your account, so they persist across browsers and computers. Turn this off to
+                                        go back to the classic page. Applies to your account only.
                                     </Typography>
                                 </Box>
                                 <Switch

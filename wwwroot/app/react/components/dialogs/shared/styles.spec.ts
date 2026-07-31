@@ -31,9 +31,9 @@ describe('headerSurfaceSx (solid header)', () => {
         expect('background' in headerSurfaceSx(theme)).toBe(false);
     });
 
-    it('uses white text on the blue tenant and dark text on the amber tenant', () => {
-        expect(headerSurfaceSx(createAppTheme(true)).color).toBe('#FFFFFF');
-        expect(headerSurfaceSx(createAppTheme(false)).color).toBe('rgba(0, 0, 0, 0.87)');
+    it('uses Ink text on the cyan header fill for every tenant (single brand)', () => {
+        expect(headerSurfaceSx(createAppTheme(true)).color).toBe('#0d0c2c');
+        expect(headerSurfaceSx(createAppTheme(false)).color).toBe('#0d0c2c');
     });
 });
 

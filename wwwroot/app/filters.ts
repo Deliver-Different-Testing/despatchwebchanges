@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import dayjs, {Dayjs} from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import {findIana} from "windows-iana";
@@ -6,6 +6,14 @@ import {findIana} from "windows-iana";
 // Register the required plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+/**
+ * Formats a date/time value with a dayjs format string
+ */
+export function momentFormatFilter(dateString: string | Date | Dayjs, format: string): string {
+    if (!dateString) return '';
+    return dayjs(dateString).format(format);
+}
 
 /**
  * Formats byte values into human-readable format

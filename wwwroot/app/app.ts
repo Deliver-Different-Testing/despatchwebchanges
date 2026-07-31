@@ -13,7 +13,7 @@ import JobDetailComponent from "./components/common/job-details/job-details.comp
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
-import {bytesFilter, replaceFilter, timezoneShortFilter} from "./filters";
+import {bytesFilter, momentFormatFilter, replaceFilter, timezoneShortFilter} from "./filters";
 import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
@@ -84,20 +84,13 @@ app.config(["$mdThemingProvider", "APP_CONFIG",
 // Set theme CSS custom properties based on the customer region
 app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     const root = document.documentElement;
-    if (appConfig.US_Customer) {
-        root.style.setProperty('--theme-primary', '#2196f3');
-        root.style.setProperty('--theme-primary-light', 'rgba(33, 150, 243, 0.15)');
-        root.style.setProperty('--theme-primary-medium', 'rgba(33, 150, 243, 0.3)');
-        root.style.setProperty('--theme-primary-strong', 'rgba(33, 150, 243, 0.5)');
-        document.body.classList.add('theme-us');
-    } else {
-        // Match MUI theme urgentPrimaryPalette[500] - warm amber gold
-        root.style.setProperty('--theme-primary', '#f4c430');
-        root.style.setProperty('--theme-primary-light', 'rgba(244, 196, 48, 0.15)');
-        root.style.setProperty('--theme-primary-medium', 'rgba(244, 196, 48, 0.3)');
-        root.style.setProperty('--theme-primary-strong', 'rgba(244, 196, 48, 0.5)');
-        document.body.classList.add('theme-nz');
-    }
+    // Single DFRNT brand — Cyan #3bc7f4 = rgb(59, 199, 244) for every tenant.
+    root.style.setProperty('--theme-primary', '#3bc7f4');
+    root.style.setProperty('--theme-primary-light', 'rgba(59, 199, 244, 0.15)');
+    root.style.setProperty('--theme-primary-medium', 'rgba(59, 199, 244, 0.3)');
+    root.style.setProperty('--theme-primary-strong', 'rgba(59, 199, 244, 0.5)');
+    // Body class retained for non-colour tenant differences (labels, locale, features).
+    document.body.classList.add(appConfig.US_Customer ? 'theme-us' : 'theme-nz');
 }]);
 
 // Log state transition errors so route resolve failures are visible in the console
@@ -199,6 +192,7 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
 app.filter("bytes", () => bytesFilter);
 app.filter('replace', () => replaceFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
+app.filter('momentFormat', () => momentFormatFilter);
 app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components

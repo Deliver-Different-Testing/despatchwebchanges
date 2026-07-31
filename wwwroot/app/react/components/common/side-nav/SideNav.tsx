@@ -28,7 +28,7 @@ import MapIcon from '@mui/icons-material/Map';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import dayjs from 'dayjs';
-import {accentPalette, dfrntPrimaryPalette, urgentPrimaryPalette} from '../../../theme/muiTheme';
+import {accentPalette, shellColors} from '../../../theme/muiTheme';
 import {NavItem, SideNavProps} from "./SideNav.types";
 
 const drawerWidth = 264;
@@ -160,7 +160,7 @@ export const SideNav: React.FC<SideNavProps> = ({
     }, [onNavigate, onClose]);
 
     const initials = getInitials(userName);
-    const headerBg = (isUsCustomer ? dfrntPrimaryPalette : urgentPrimaryPalette)[800];
+    const headerBg = shellColors.appBar;
 
     return (
         <Drawer

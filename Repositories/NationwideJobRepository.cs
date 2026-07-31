@@ -549,7 +549,7 @@ public class NationwideJobRepository(
 
         // The external mailer sends the body as HTML, so render the plain-text template into a
         // branded, inline-styled fragment; otherwise the newlines collapse onto a single line.
-        var htmlBody = AgentEmailTemplates.RenderHtmlBody(body);
+        var htmlBody = AgentEmailTemplates.RenderHtmlBody(body, inboundUrl);
 
         var request = new TucManualMessage
         {

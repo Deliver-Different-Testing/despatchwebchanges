@@ -72,7 +72,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     title,
     breadcrumbs,
     firstName,
-    logoUrl = 'images/dfrnt_logo.png',
+    logoUrl = 'images/dfrnt_logo_reversed.png',
     children,
     onLogoClick,
     onMenuHover,
@@ -87,10 +87,6 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     <AppBar
         position="static"
         elevation={1}
-        sx={(theme) => ({
-            bgcolor: theme.palette.primary.main,
-            color: theme.palette.primary.contrastText,
-        })}
     >
         <Toolbar
             sx={{
@@ -123,7 +119,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                     sx={(theme) => ({
                         mx: {xs: 1, sm: 2},
                         my: 1.5,
-                        borderColor: alpha(theme.palette.primary.contrastText, 0.24),
+                        borderColor: alpha(theme.palette.common.white, 0.24),
                         display: hasMultipleCrumbs
                             ? {xs: 'none', sm: 'block'}
                             : 'block',

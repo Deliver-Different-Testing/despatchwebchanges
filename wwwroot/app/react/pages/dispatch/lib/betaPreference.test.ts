@@ -9,8 +9,8 @@ describe('dispatch betaPreference', () => {
         localStorage.clear();
     });
 
-    it('defaults to false (classic V1) when nothing is stored', () => {
-        expect(getDispatchBetaEnabled()).toBe(false);
+    it('defaults to true (React V2) when nothing is stored', () => {
+        expect(getDispatchBetaEnabled()).toBe(true);
     });
 
     it('round-trips true / false through localStorage', () => {
@@ -23,18 +23,18 @@ describe('dispatch betaPreference', () => {
         expect(getDispatchBetaEnabled()).toBe(false);
     });
 
-    it('only an explicit "true" opts in; any other value is V1', () => {
+    it('only an explicit "false" opts out; any other value is V2', () => {
         localStorage.setItem(STORAGE_KEY, 'yes');
-        expect(getDispatchBetaEnabled()).toBe(false);
-        localStorage.setItem(STORAGE_KEY, 'true');
         expect(getDispatchBetaEnabled()).toBe(true);
+        localStorage.setItem(STORAGE_KEY, 'false');
+        expect(getDispatchBetaEnabled()).toBe(false);
     });
 
-    it('defaults to false when localStorage.getItem throws (private browsing)', () => {
+    it('defaults to true when localStorage.getItem throws (private browsing)', () => {
         const spy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
             throw new Error('unavailable');
         });
-        expect(getDispatchBetaEnabled()).toBe(false);
+        expect(getDispatchBetaEnabled()).toBe(true);
         spy.mockRestore();
     });
 
