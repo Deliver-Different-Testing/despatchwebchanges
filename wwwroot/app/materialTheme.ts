@@ -37,18 +37,25 @@ export const accentMdPalette = toMdPalette(
     },
 );
 
-// Single DFRNT brand — both palettes resolve to the same Cyan ramp. Cyan is a
-// light hue, so only its darkest shades (700–900) carry white text; everything
-// else (incl. the 500 main) takes dark Ink text.
+// US (professional) primary = Cyan. Cyan is a light hue, so only its darkest shades
+// (700–900) carry white text; everything else (incl. the 500 main) takes dark Ink text.
 const cyanContrast = {
     contrastDefaultColor: 'dark' as const,
     contrastDarkColors: ['50', '100', '200', '300', '400', '500', '600', 'A100', 'A200', 'A400', 'A700'],
     contrastLightColors: ['700', '800', '900'],
 };
 
+// Non-US (urgent) primary = warm amber-gold. Gold stays light across the whole ramp,
+// so every shade takes dark text — white would be illegible even on 700–900.
+const goldContrast = {
+    contrastDefaultColor: 'dark' as const,
+    contrastDarkColors: ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', 'A100', 'A200', 'A400', 'A700'],
+    contrastLightColors: [] as string[],
+};
+
 export const urgentPrimaryMdPalette = toMdPalette(
     accentValues(urgentPrimaryPalette),
-    cyanContrast,
+    goldContrast,
 );
 
 export const professionalPrimaryMdPalette = toMdPalette(

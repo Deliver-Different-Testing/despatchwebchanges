@@ -98,6 +98,16 @@ describe('AppToolbar', () => {
             expect(logo).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
         });
 
+        it('should render the reversed (white) logo for US tenants', () => {
+            renderWithTheme(<AppToolbar {...defaultProps} isUsCustomer={true} />);
+            expect(screen.getByAltText('DFRNT')).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
+        });
+
+        it('should render the dark logo for NZ tenants (gold bar)', () => {
+            renderWithTheme(<AppToolbar {...defaultProps} isUsCustomer={false} />);
+            expect(screen.getByAltText('DFRNT')).toHaveAttribute('src', 'images/dfrnt_logo.png');
+        });
+
         it('should render the logo with custom URL', () => {
             renderWithTheme(
                 <AppToolbar {...defaultProps} logoUrl="custom/logo.png" />

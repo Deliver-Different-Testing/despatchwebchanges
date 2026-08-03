@@ -67,10 +67,32 @@ workflow:
 test:backend:
   stage: .pre
   image: mcr.microsoft.com/dotnet/sdk:10.0
+  # Retry on any non-test failure reason (a dead/evicted K8s pod can be tagged with
+  # several of these). Genuine test failures are `script_failure`, deliberately kept OUT
+  # of the list so failing tests still fail fast and block the merge.
   retry:
     max: 2
-    when: runner_system_failure
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - scheduler_failure
+      - data_integrity_failure
   allow_failure: false
+  variables:
+    # Force workstation GC: Server GC reserves per-core heaps sized off the node's core
+    # count (not the pod cgroup), a classic K8s OOM driver for this in-process test run.
+    DOTNET_gcServer: "0"
+    DOTNET_GCConserveMemory: "9"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    DOTNET_NOLOGO: "1"
+    # Guaranteed pod headroom so it isn't OOMKilled/evicted. Only applied if the runner
+    # allows overwrites (otherwise silently ignored, never a hard failure).
+    KUBERNETES_CPU_REQUEST: "2"
+    KUBERNETES_CPU_LIMIT: "4"
+    KUBERNETES_MEMORY_REQUEST: "4Gi"
+    KUBERNETES_MEMORY_LIMIT: "6Gi"
   cache:
     key: dotnet-packages
     paths:

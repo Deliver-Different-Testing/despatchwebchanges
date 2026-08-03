@@ -7,13 +7,14 @@
 @primary-warning: #fe811a;
 @error-red: #dc3246;
 
-// Theme colors - single DFRNT Cyan brand for every tenant
+// Theme colors - US tenants = DFRNT Cyan, non-US (NZ) tenants = warm amber-gold.
+// Runtime switching is carried by the --theme-primary* CSS vars set in app.ts.
 @theme-us-primary: #3bc7f4;
-@theme-nz-primary: #3bc7f4;
+@theme-nz-primary: #f4c430;
 
-// Retained tenant vars - now the same DFRNT Cyan (darker step for hover/borders)
-@nz-primary: #3bc7f4;
-@nz-primary-dark: #1590c0;
+// NZ tenant vars - warm amber-gold (darker step for hover/borders)
+@nz-primary: #f4c430;
+@nz-primary-dark: #d4a324;
 
 // Page and container backgrounds - matches MUI surface.default (DFRNT Light Grey)
 @main-background-color: #f4f2f1;

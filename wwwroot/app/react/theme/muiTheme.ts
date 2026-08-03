@@ -193,12 +193,11 @@ export const sharedColors = {
  * @param isUsCustomer - true for US customers (blue theme), false for non-US (yellow theme)
  */
 export function createAppTheme(isUsCustomer: boolean): Theme {
-    // Single DFRNT brand: both tenants resolve to the same Cyan ramp. The
-    // isUsCustomer flag is retained by callers for locale/labels only, never colour.
+    // US tenants → DFRNT Cyan; non-US (NZ) tenants → the warm amber-gold "urgent" ramp.
     const primaryPalette = isUsCustomer ? dfrntPrimaryPalette : urgentPrimaryPalette;
 
-    // Cyan is a light hue — contained primary surfaces take dark Ink text (~10:1),
-    // not white (which fails WCAG on cyan).
+    // Both Cyan and gold are light hues — contained primary surfaces take dark Ink
+    // text (high contrast), not white (which fails WCAG on either).
     const primaryContrastText = '#0d0c2c';
 
     const colors = {
@@ -412,16 +411,17 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             tokens.shadow.xl,
         ],
         components: {
-            // The app shell is a fixed Ink-Blue bar (brand navy) with white content
-            // in every context — decoupled from `primary` (which is the cyan accent).
+            // App shell bar. US keeps the fixed Ink-Blue brand navy with white
+            // content; NZ takes its warm gold primary with dark Ink content (white
+            // is illegible on gold), matching the tenant's amber brand.
             MuiAppBar: {
                 defaultProps: {
                     elevation: 0,
                 },
                 styleOverrides: {
                     root: {
-                        backgroundColor: shellColors.appBar,
-                        color: shellColors.textPrimary,
+                        backgroundColor: isUsCustomer ? shellColors.appBar : primaryPalette[500],
+                        color: isUsCustomer ? shellColors.textPrimary : primaryContrastText,
                     },
                 },
             },

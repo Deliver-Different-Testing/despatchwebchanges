@@ -38,6 +38,8 @@ export interface AppToolbarProps {
     onMenuClick?: () => void;
     /** Show a BETA chip next to the page title (V2 pages). */
     beta?: boolean;
+    /** true → US Ink-Blue bar (white content); false → NZ gold bar (dark Ink content). */
+    isUsCustomer?: boolean;
 }
 
 function greetUser(userName: string): string {
@@ -72,16 +74,24 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     title,
     breadcrumbs,
     firstName,
-    logoUrl = 'images/dfrnt_logo_reversed.png',
+    logoUrl,
     children,
     onLogoClick,
     onMenuHover,
     onMenuClick,
     beta,
+    isUsCustomer = true,
 }) => {
     const greeting = greetUser(firstName);
     const resolvedCrumbs = resolveCrumbs(breadcrumbs, title);
     const hasMultipleCrumbs = resolvedCrumbs.length > 1;
+
+    // The bar fill is dark for US (Ink navy) and light for NZ (gold), so its
+    // "on-colour" — used for the reversed logo, dividers and hover scrims —
+    // flips with the tenant to stay legible.
+    const onBar = isUsCustomer ? '#ffffff' : '#0d0c2c';
+    const resolvedLogo = logoUrl
+        ?? (isUsCustomer ? 'images/dfrnt_logo_reversed.png' : 'images/dfrnt_logo.png');
 
     return (
     <AppBar
@@ -98,7 +108,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
             {/* Logo - Brand Identity */}
             <Box
                 component="img"
-                src={logoUrl}
+                src={resolvedLogo}
                 alt="DFRNT"
                 onClick={onLogoClick}
                 sx={{
@@ -116,14 +126,14 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                 <Divider
                     orientation="vertical"
                     flexItem
-                    sx={(theme) => ({
+                    sx={{
                         mx: {xs: 1, sm: 2},
                         my: 1.5,
-                        borderColor: alpha(theme.palette.common.white, 0.24),
+                        borderColor: alpha(onBar, 0.24),
                         display: hasMultipleCrumbs
                             ? {xs: 'none', sm: 'block'}
                             : 'block',
-                    })}
+                    }}
                 />
             )}
 
@@ -221,12 +231,12 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                     aria-label="Open navigation menu"
                     onMouseEnter={onMenuHover}
                     onClick={onMenuClick}
-                    sx={(theme) => ({
+                    sx={{
                         ml: 0.5,
                         '&:hover': {
-                            bgcolor: alpha(theme.palette.common.white, 0.12),
+                            bgcolor: alpha(onBar, 0.12),
                         },
-                    })}
+                    }}
                 >
                     <MenuIcon />
                 </IconButton>

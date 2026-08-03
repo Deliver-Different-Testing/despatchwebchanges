@@ -20,11 +20,12 @@ describe('AngularJS Material palettes share the palette source of truth', () => 
         expect(professionalPrimaryMdPalette['A700']).toBe(dfrntPrimaryPalette.A700);
     });
 
-    it('urgentPrimary resolves to the same single-brand cyan palette', () => {
+    it('urgentPrimary matches the shared amber-gold palette, distinct from cyan', () => {
         expect(urgentPrimaryMdPalette['500']).toBe(urgentPrimaryPalette[500]);
         expect(urgentPrimaryMdPalette['700']).toBe(urgentPrimaryPalette[700]);
-        // Single brand: the retired amber tenant now equals the cyan primary.
-        expect(urgentPrimaryPalette[500]).toBe(dfrntPrimaryPalette[500]);
+        expect(urgentPrimaryPalette[500]).toBe('#f4c430');
+        // Non-US tenants get a genuinely different brand from the US cyan primary.
+        expect(urgentPrimaryPalette[500]).not.toBe(dfrntPrimaryPalette[500]);
     });
 
     it('accent matches the shared warm-gray ramp and keeps its A-keys', () => {
@@ -41,8 +42,10 @@ describe('AngularJS Material palettes share the palette source of truth', () => 
         }
     });
 
-    it('the cyan primary palettes default to dark (Ink) text — cyan is a light hue', () => {
+    it('both primary palettes default to dark (Ink) text — cyan and gold are light hues', () => {
         expect(professionalPrimaryMdPalette.contrastDefaultColor).toBe('dark');
         expect(urgentPrimaryMdPalette.contrastDefaultColor).toBe('dark');
+        // Gold stays light across its whole ramp, so no shade takes white text.
+        expect(urgentPrimaryMdPalette.contrastLightColors).toHaveLength(0);
     });
 });
