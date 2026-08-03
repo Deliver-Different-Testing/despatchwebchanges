@@ -57,6 +57,7 @@ export const mockAppliedCharges: JobAccessorialChargeDto[] = [
         calculatedAmount: 10.80,
         calculationOrder: 10,
         addedAtStage: 'dispatch',
+        alwaysApply: false,
     },
 ];
 

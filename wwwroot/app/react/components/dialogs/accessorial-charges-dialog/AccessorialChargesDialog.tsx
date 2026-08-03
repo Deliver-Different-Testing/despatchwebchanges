@@ -449,6 +449,10 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
         setIsLoadingApplied(false);
         setIsAddingCharges(false);
         setActivePortionJobId(portionJobId);
+        // Sync the ref immediately - getActiveJobId/getActiveGroupId read this ref, and it
+        // otherwise only updates on the next render (too late for a load call issued right
+        // after resetAndLoad, e.g. on mount or refresh, which would resolve the wrong job).
+        activePortionJobIdRef.current = portionJobId;
     }, []);
 
     // We need a ref to loadAll so the effect can call it after state resets
@@ -565,8 +569,12 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     }, []);
 
     const handleRefresh = useCallback((): void => {
+        // Reload the same portion (or main job) that's already active, so
+        // activePortionJobId doesn't change - the pendingLoadRef/effect combo
+        // only fires on an actual state change, so we call the loader directly
+        // instead of relying on that side channel.
         resetAndLoad(activePortionJobIdRef.current);
-        pendingLoadRef.current = true;
+        void loadAllRef.current();
     }, [resetAndLoad]);
 
     // Ask Auto-Mate for a re-rate anomaly + suggested charges, then pre-select the
@@ -661,6 +669,8 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     }, [autoSavePercentageCharges]);
 
     const handleDeleteRow = useCallback(async (charge: JobAccessorialChargeDto): Promise<void> => {
+        if (charge.alwaysApply) return; // locked - always included on this rate
+
         setAppliedRowState(prev => ({
             ...prev,
             [charge.jobAccessorialChargeId]: { ...prev[charge.jobAccessorialChargeId], isDeleting: true },
@@ -977,7 +987,17 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                         }}
                                                     >
                                                         <TableCell>
-                                                            <Typography variant="body2">{charge.name}</Typography>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                <Typography variant="body2">{charge.name}</Typography>
+                                                                {charge.alwaysApply && (
+                                                                    <Chip
+                                                                        label="ALWAYS"
+                                                                        size="small"
+                                                                        title="Always included on this rate - cannot be removed"
+                                                                        sx={{ height: 18, fontSize: '0.625rem', fontWeight: 600, bgcolor: 'grey.600', color: 'common.white' }}
+                                                                    />
+                                                                )}
+                                                            </Box>
                                                             <Typography variant="caption" sx={{
                                                                 color: "text.secondary"
                                                             }}>
@@ -1109,8 +1129,8 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                     size="small"
                                                                     color="error"
                                                                     onClick={() => handleDeleteRow(charge)}
-                                                                    disabled={row.isSaving || row.isDeleting}
-                                                                    title="Remove"
+                                                                    disabled={row.isSaving || row.isDeleting || charge.alwaysApply}
+                                                                    title={charge.alwaysApply ? 'Always included on this rate - cannot be removed' : 'Remove'}
                                                                 >
                                                                     {row.isDeleting ? (
                                                                         <CircularProgress size={16} />
