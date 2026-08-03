@@ -15,6 +15,8 @@ public partial class AccessorialChargeGroupMember
 
     public int DisplayOrder { get; set; }
 
+    public bool AlwaysApply { get; set; }
+
     public DateTime? Created { get; set; }
 
     public string CreatedBy { get; set; }
