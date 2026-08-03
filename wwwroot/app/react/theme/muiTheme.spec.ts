@@ -4,6 +4,7 @@ import {
     createAppTheme,
     dfrntPrimaryPalette,
     urgentPrimaryPalette,
+    shellColors,
     accentPalette,
     tokens,
     sharedColors,
@@ -25,14 +26,25 @@ function getLessVar(name: string): string {
 }
 
 describe('MUI theme palettes', () => {
-    it('both tenants use the DFRNT cyan primary (single brand)', () => {
+    it('US tenants use the DFRNT cyan primary, non-US tenants the amber-gold urgent primary', () => {
+        expect(createAppTheme(true).palette.primary.main).toBe(dfrntPrimaryPalette[500]);
         expect(createAppTheme(true).palette.primary.main).toBe('#3bc7f4');
-        expect(createAppTheme(false).palette.primary.main).toBe('#3bc7f4');
+        expect(createAppTheme(false).palette.primary.main).toBe(urgentPrimaryPalette[500]);
+        expect(createAppTheme(false).palette.primary.main).toBe('#f4c430');
     });
 
-    it('primary carries dark Ink contrast text (cyan is a light hue)', () => {
+    it('primary carries dark Ink contrast text for both tenants (cyan and gold are light hues)', () => {
         expect(createAppTheme(true).palette.primary.contrastText).toBe('#0d0c2c');
         expect(createAppTheme(false).palette.primary.contrastText).toBe('#0d0c2c');
+    });
+
+    it('US keeps the Ink-Blue app bar; NZ takes the gold primary bar with dark Ink content', () => {
+        const usBar = (createAppTheme(true).components?.MuiAppBar?.styleOverrides?.root ?? {}) as Record<string, string>;
+        const nzBar = (createAppTheme(false).components?.MuiAppBar?.styleOverrides?.root ?? {}) as Record<string, string>;
+        expect(usBar.backgroundColor).toBe(shellColors.appBar);
+        expect(usBar.color).toBe(shellColors.textPrimary);
+        expect(nzBar.backgroundColor).toBe(urgentPrimaryPalette[500]);
+        expect(nzBar.color).toBe('#0d0c2c');
     });
 
     it('both themes share the same secondary (accent) palette', () => {

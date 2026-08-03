@@ -260,8 +260,9 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     }), []);
 
     // When the selected job is already dispatched, the map shows that courier's
-    // whole route (V1 selectJob → getCurrentJobs). Reuses the current-work query
-    // key so it shares cache with the Current Work box.
+    // whole route (V1 selectJob → getCurrentJobs). Uses its own currentWorkMap
+    // key: the Current Work box keys the same params under an infinite query, so
+    // sharing the key would clash cache shapes (plain vs {pages}) and crash it.
     const mapCourierId = selectedCourierId(currentJob);
     const mapCourierParams = useMemo(() => ({
         courierId: mapCourierId,
@@ -271,7 +272,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         pageSize: 50,
     }), [mapCourierId]);
     const {data: mapCourierWork} = useQuery({
-        queryKey: queryKeys.dispatch.currentWork(mapCourierParams),
+        queryKey: queryKeys.dispatch.currentWorkMap(mapCourierParams),
         queryFn: ({signal}) => fetchCurrentWorkJobs(mapCourierParams, {signal}),
         enabled: !!mapCourierId,
     });

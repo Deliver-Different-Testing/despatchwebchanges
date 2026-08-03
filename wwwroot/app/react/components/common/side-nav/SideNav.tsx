@@ -28,7 +28,7 @@ import MapIcon from '@mui/icons-material/Map';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import dayjs from 'dayjs';
-import {accentPalette, shellColors} from '../../../theme/muiTheme';
+import {accentPalette, shellColors, urgentPrimaryPalette} from '../../../theme/muiTheme';
 import {NavItem, SideNavProps} from "./SideNav.types";
 
 const drawerWidth = 264;
@@ -160,7 +160,12 @@ export const SideNav: React.FC<SideNavProps> = ({
     }, [onNavigate, onClose]);
 
     const initials = getInitials(userName);
-    const headerBg = shellColors.appBar;
+    // US → Ink navy header with white content; NZ → gold header with dark Ink
+    // content (white is illegible on gold), matching the app bar. `onHeader` is the
+    // rgb triplet for the header's on-colour so the alpha scrims flip with the tenant.
+    const headerBg = isUsCustomer ? shellColors.appBar : urgentPrimaryPalette[500];
+    const onHeader = isUsCustomer ? '255, 255, 255' : '13, 12, 44';
+    const onHeaderSolid = isUsCustomer ? '#fff' : '#0d0c2c';
 
     return (
         <Drawer
@@ -186,7 +191,7 @@ export const SideNav: React.FC<SideNavProps> = ({
             <Box
                 sx={{
                     bgcolor: headerBg,
-                    color: 'white',
+                    color: onHeaderSolid,
                     px: 2.5,
                     pt: 3,
                     pb: 2.5,
@@ -201,8 +206,8 @@ export const SideNav: React.FC<SideNavProps> = ({
                         mb: 1.25,
                         fontSize: '1.25rem',
                         fontWeight: 600,
-                        color: '#fff',
-                        bgcolor: 'rgba(255,255,255,0.2)',
+                        color: onHeaderSolid,
+                        bgcolor: `rgba(${onHeader}, 0.2)`,
                     }}
                 >
                     {initials || <AccountCircleIcon sx={{fontSize: 36}} />}
@@ -213,7 +218,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                         letterSpacing: '0.08em',
                         textTransform: 'uppercase',
                         fontWeight: 700,
-                        color: 'rgba(255,255,255,0.60)',
+                        color: `rgba(${onHeader}, 0.60)`,
                         lineHeight: 1.4,
                     }}
                 >
@@ -223,7 +228,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                     sx={{
                         fontSize: '1rem',
                         fontWeight: 600,
-                        color: 'rgba(255,255,255,0.95)',
+                        color: `rgba(${onHeader}, 0.95)`,
                         lineHeight: 1.3,
                     }}
                 >
@@ -238,11 +243,11 @@ export const SideNav: React.FC<SideNavProps> = ({
                         mt: 0.75,
                     }}
                 >
-                    <CalendarTodayOutlinedIcon sx={{fontSize: 13, color: 'rgba(255,255,255,0.60)'}} />
+                    <CalendarTodayOutlinedIcon sx={{fontSize: 13, color: `rgba(${onHeader}, 0.60)`}} />
                     <Typography
                         sx={{
                             fontSize: '0.7rem',
-                            color: 'rgba(255,255,255,0.60)',
+                            color: `rgba(${onHeader}, 0.60)`,
                             lineHeight: 1.2,
                         }}
                     >

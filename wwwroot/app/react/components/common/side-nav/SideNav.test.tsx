@@ -46,6 +46,20 @@ describe('SideNav', () => {
             );
             expect(screen.getByText('Test Company')).toBeInTheDocument();
         });
+
+        it('uses the gold header for NZ tenants and the Ink-Blue header for US tenants', () => {
+            const {rerender} = renderWithTheme(
+                <SideNav {...defaultProps} isUsCustomer={false} companyName="Acme" />
+            );
+            expect(screen.getByText('Acme').parentElement).toHaveStyle({backgroundColor: '#f4c430'});
+
+            rerender(
+                <ThemeProvider theme={theme}>
+                    <SideNav {...defaultProps} isUsCustomer={true} companyName="Acme" />
+                </ThemeProvider>
+            );
+            expect(screen.getByText('Acme').parentElement).toHaveStyle({backgroundColor: '#0d0c2c'});
+        });
     });
 
     describe('Navigation Items', () => {

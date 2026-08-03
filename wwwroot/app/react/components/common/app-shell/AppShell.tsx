@@ -67,6 +67,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 title={title}
                 breadcrumbs={breadcrumbs}
                 firstName={firstName}
+                isUsCustomer={isUsCustomer}
                 logoUrl={logoUrl}
                 onLogoClick={onLogoClick}
                 onMenuHover={handleMenuHover}

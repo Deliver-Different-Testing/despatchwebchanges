@@ -2,7 +2,7 @@
  * QueryClient and queryKeys Tests
  */
 
-import {QueryClient} from '@tanstack/react-query';
+import {QueryClient, hashKey} from '@tanstack/react-query';
 import type {queryClient as QueryClientType} from './queryClient';
 
 // We need jest.isolateModules to re-import queryClient.ts with different
@@ -306,6 +306,32 @@ describe('queryKeys', () => {
 
         it('generates deliveryJourney key with jobId', () => {
             expect(queryKeys.tasks.deliveryJourney(300)).toEqual(['tasks', 'deliveryJourney', 300]);
+        });
+    });
+
+    describe('dispatch', () => {
+        const params = {
+            courierId: 7,
+            startDate: 'today-start',
+            endDate: 'today-end',
+            page: 0,
+            pageSize: 50,
+        } as any;
+
+        it('generates currentWork key with params', () => {
+            expect(queryKeys.dispatch.currentWork(params)).toEqual(['dispatch', 'currentWork', params]);
+        });
+
+        it('generates currentWorkMap key with params', () => {
+            expect(queryKeys.dispatch.currentWorkMap(params)).toEqual(['dispatch', 'currentWorkMap', params]);
+        });
+
+        // Regression: the map-courier plain query must NOT collide with the
+        // CurrentWorkBox infinite query's cache entry (a plain-vs-infinite shape
+        // clash throws `pages.length` inside the infinite observer).
+        it('currentWorkMap does not collide with currentWork for identical params', () => {
+            expect(hashKey(queryKeys.dispatch.currentWork(params)))
+                .not.toEqual(hashKey(queryKeys.dispatch.currentWorkMap(params)));
         });
     });
 

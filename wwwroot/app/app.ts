@@ -84,12 +84,16 @@ app.config(["$mdThemingProvider", "APP_CONFIG",
 // Set theme CSS custom properties based on the customer region
 app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     const root = document.documentElement;
-    // Single DFRNT brand — Cyan #3bc7f4 = rgb(59, 199, 244) for every tenant.
-    root.style.setProperty('--theme-primary', '#3bc7f4');
-    root.style.setProperty('--theme-primary-light', 'rgba(59, 199, 244, 0.15)');
-    root.style.setProperty('--theme-primary-medium', 'rgba(59, 199, 244, 0.3)');
-    root.style.setProperty('--theme-primary-strong', 'rgba(59, 199, 244, 0.5)');
-    // Body class retained for non-colour tenant differences (labels, locale, features).
+    // US tenants → DFRNT Cyan #3bc7f4 = rgb(59, 199, 244); non-US (NZ) tenants →
+    // the warm amber-gold "urgent" brand #f4c430 = rgb(244, 196, 48).
+    const primary = appConfig.US_Customer
+        ? {hex: '#3bc7f4', rgb: '59, 199, 244'}
+        : {hex: '#f4c430', rgb: '244, 196, 48'};
+    root.style.setProperty('--theme-primary', primary.hex);
+    root.style.setProperty('--theme-primary-light', `rgba(${primary.rgb}, 0.15)`);
+    root.style.setProperty('--theme-primary-medium', `rgba(${primary.rgb}, 0.3)`);
+    root.style.setProperty('--theme-primary-strong', `rgba(${primary.rgb}, 0.5)`);
+    // Body class also drives non-colour tenant differences (labels, locale, features).
     document.body.classList.add(appConfig.US_Customer ? 'theme-us' : 'theme-nz');
 }]);
 
