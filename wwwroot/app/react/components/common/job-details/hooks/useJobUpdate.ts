@@ -176,8 +176,7 @@ export function useJobUpdate(
             } else {
                 showToast(`${job.jobNo} updated`, 'success');
             }
-            await invalidateJob(job.id);
-            await invalidateJobLists();
+            await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
             if (!response?.pending && RERATE_FIELDS.has(field) && !job.ratedManually) {
                 await checkForRateChange(job);
@@ -227,8 +226,7 @@ export function useJobUpdate(
             } else {
                 showToast(`${job.jobNo} updated`, 'success');
             }
-            await invalidateJob(job.id);
-            await invalidateJobLists();
+            await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
             if (!response?.pending && !job.ratedManually) {
                 await checkForRateChange(job);
@@ -242,8 +240,7 @@ export function useJobUpdate(
     const updatePodMutation = useMutation({
         mutationFn: (data: UpdatePodDetailsRequest) => updatePodDetails(data),
         onSuccess: async (_data, variables) => {
-           await invalidateJob(variables.jobId);
-           await invalidateJobLists();
+           await Promise.all([invalidateJob(variables.jobId), invalidateJobLists()]);
         },
         onError: () => {
             showToast('Failed to update POD details.', 'error');
@@ -288,8 +285,7 @@ export function useJobUpdate(
             } else {
                 showToast('Job dispatched successfully', 'success');
             }
-            await invalidateJob(job.id);
-            await invalidateJobLists();
+            await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
         },
         onError: () => {
             showToast('Failed to dispatch job.', 'error');
@@ -301,9 +297,11 @@ export function useJobUpdate(
         setIsApplyingRate(true);
         try {
             await applyJobRate(pendingRateChange.jobId, pendingRateChange.isPrebook);
-            await invalidateJob(pendingRateChange.jobId);
-            await invalidateJobLists();
-            await queryClient.invalidateQueries({queryKey: ['notes']});
+            await Promise.all([
+                invalidateJob(pendingRateChange.jobId),
+                invalidateJobLists(),
+                queryClient.invalidateQueries({queryKey: ['notes']}),
+            ]);
             showToast('Price updated', 'success');
         } catch {
             showToast('Failed to apply new price. Please try again.', 'error');

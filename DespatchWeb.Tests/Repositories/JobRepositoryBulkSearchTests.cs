@@ -32,6 +32,10 @@ public class JobRepositoryBulkSearchTests : IDisposable
     private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
     private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
+
+    private readonly ISplitPricingPreviewService _splitPricingPreviewServiceMock =
+        Substitute.For<ISplitPricingPreviewService>();
+
     private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
@@ -75,6 +79,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
         _priceReportServiceMock,
         _pdfOverlayClientMock,
         _splitJobServiceMock,
+        _splitPricingPreviewServiceMock,
         _sendToPartnerServiceMock,
         _partnerJobGateMock,
         _flightAssignmentServiceMock);

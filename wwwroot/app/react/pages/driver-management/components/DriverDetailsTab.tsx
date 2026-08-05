@@ -28,6 +28,42 @@ interface DriverDetailsTabProps {
     showToast: ShowToastFn;
 }
 
+const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '\u2014';
+    return dayjs(dateStr).format('DD/MM/YYYY');
+};
+
+const InfoRow = ({label, value}: { label: string; value: React.ReactNode }) => (
+    <Box sx={{display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': {borderBottom: 'none'}}}>
+        <Typography
+            variant="body2"
+            sx={{
+                color: "text.secondary",
+                fontWeight: 500
+            }}>{label}</Typography>
+        <Typography variant="body2">{value}</Typography>
+    </Box>
+);
+
+const BoolBadge = ({value}: { value?: boolean }) => (
+    <Box component="span" sx={{
+        px: 1, py: 0.25, borderRadius: 1, fontSize: '0.8125rem', fontWeight: 500,
+        bgcolor: value ? 'success.light' : 'grey.200',
+        color: value ? 'success.contrastText' : 'text.secondary',
+    }}>
+        {value ? 'Yes' : 'No'}
+    </Box>
+);
+
+const InfoCard = ({icon, title, children}: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
+    <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
+        <PanelHeader icon={icon} title={title} />
+        <CardContent>
+            {children}
+        </CardContent>
+    </Card>
+);
+
 export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _showToast}) => {
     const [searchText, setSearchText] = useState('');
     const [selectedDriverId, setSelectedDriverId] = useState<number>(0);
@@ -38,42 +74,6 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
     const handleDriverSelect = (_event: unknown, value: FleetOption | null) => {
         setSelectedDriverId(value?.id ?? 0);
     };
-
-    const formatDate = (dateStr?: string) => {
-        if (!dateStr) return '\u2014';
-        return dayjs(dateStr).format('DD/MM/YYYY');
-    };
-
-    const InfoRow = ({label, value}: { label: string; value: React.ReactNode }) => (
-        <Box sx={{display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': {borderBottom: 'none'}}}>
-            <Typography
-                variant="body2"
-                sx={{
-                    color: "text.secondary",
-                    fontWeight: 500
-                }}>{label}</Typography>
-            <Typography variant="body2">{value}</Typography>
-        </Box>
-    );
-
-    const BoolBadge = ({value}: { value?: boolean }) => (
-        <Box component="span" sx={{
-            px: 1, py: 0.25, borderRadius: 1, fontSize: '0.8125rem', fontWeight: 500,
-            bgcolor: value ? 'success.light' : 'grey.200',
-            color: value ? 'success.contrastText' : 'text.secondary',
-        }}>
-            {value ? 'Yes' : 'No'}
-        </Box>
-    );
-
-    const InfoCard = ({icon, title, children}: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
-        <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
-            <PanelHeader icon={icon} title={title} />
-            <CardContent>
-                {children}
-            </CardContent>
-        </Card>
-    );
 
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>

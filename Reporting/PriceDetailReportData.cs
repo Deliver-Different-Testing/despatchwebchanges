@@ -43,7 +43,7 @@ public sealed class PriceDetailReportData
             var bookedAtStamp = firstInsertUtc.HasValue
                 ? info.ConvertUtcToTenantTimeZone(firstInsertUtc.Value).DateTime.ToString(
                     info.IsUsTenant() ? "MM-dd HH:mm" : "dd-MM HH:mm", CultureInfo.InvariantCulture)
-                : "";
+                : string.Empty;
 
             jobs.Add(new PriceDetailJob(h, booked, current, changes, AsBookedSourceOf(history), bookedAtStamp));
         }
@@ -83,7 +83,7 @@ public sealed class PriceDetailReportData
         var deltas = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
         foreach (var h in history.Where(h => h.FieldName.StartsWith("Pricing: ", StringComparison.Ordinal)))
         {
-            var name = h.FieldName.Substring("Pricing: ".Length).Trim();
+            var name = h.FieldName["Pricing: ".Length..].Trim();
             deltas[name] = deltas.GetValueOrDefault(name) + (ParseDec(h.NewValue) - ParseDec(h.OldValue));
         }
 
@@ -98,10 +98,9 @@ public sealed class PriceDetailReportData
     private static AsBookedSource AsBookedSourceOf(List<PricingChangeRow> history)
     {
         var created = history.FirstOrDefault(h => h.FieldName == "CreatedBySp");
-        var sp = created?.NewValue?.ToLowerInvariant() ?? "";
+        var sp = created?.NewValue?.ToLowerInvariant() ?? string.Empty;
         if (sp.Contains("prebook")) return AsBookedSource.NightlySp;
-        if (string.IsNullOrEmpty(sp)) return AsBookedSource.Manual;
-        return AsBookedSource.Engine;
+        return string.IsNullOrEmpty(sp) ? AsBookedSource.Manual : AsBookedSource.Engine;
     }
 
     private static (List<string> Summary, List<PriceChangeLogEntry> Log) BuildChanges(
@@ -139,11 +138,14 @@ public sealed class PriceDetailReportData
                     line = $"line renamed: {r.OldValue} -> {r.NewValue}";
             }
             else if (r.FieldName.StartsWith("Pricing: ", StringComparison.Ordinal))
-                line = $"{r.FieldName.Substring(9).Trim()}: {ParseDec(r.OldValue):C} -> {ParseDec(r.NewValue):C}";
-            else if (r.FieldName is "ucjbVoid" && Truthy(r.NewValue))
-                line = "VOIDED";
-            else if (r.FieldName is "ucjbAmount" or "FuelSurchargeAmount")
-                line = $"{r.FieldName}: {r.OldValue} -> {r.NewValue}";
+                line = $"{r.FieldName[9..].Trim()}: {ParseDec(r.OldValue):C} -> {ParseDec(r.NewValue):C}";
+            else
+                line = r.FieldName switch
+                {
+                    "ucjbVoid" when Truthy(r.NewValue) => "VOIDED",
+                    "ucjbAmount" or "FuelSurchargeAmount" => $"{r.FieldName}: {r.OldValue} -> {r.NewValue}",
+                    _ => line
+                };
 
             if (line is not null) summary.Add($"{stamp} [{r.ActorName}] {line}");
         }
@@ -154,12 +156,12 @@ public sealed class PriceDetailReportData
     // Parses "Name: $146.25" - names can contain colons/spaces so split on the last ": $".
     private static bool TryParseNamed(string raw, out string name, out decimal amount)
     {
-        name = "";
+        name = string.Empty;
         amount = 0m;
         var idx = raw.LastIndexOf(": $", StringComparison.Ordinal);
         if (idx < 0) return false;
         name = raw[..idx].Trim().TrimEnd(':').Trim();
-        return decimal.TryParse(raw[(idx + 3)..].Replace(",", ""), NumberStyles.Any,
+        return decimal.TryParse(raw[(idx + 3)..].Replace(",", string.Empty), NumberStyles.Any,
             CultureInfo.InvariantCulture, out amount);
     }
 

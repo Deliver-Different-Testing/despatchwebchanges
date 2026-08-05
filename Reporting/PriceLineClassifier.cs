@@ -53,11 +53,12 @@ public static partial class PriceLineClassifier
         if (n.Contains("wait")) return Bucket.WaitTime;
         if (n.Contains("toll")) return Bucket.Tolls;
         if (n.Contains("dangerous goods") || n.Contains("hazmat") || n == "dg") return Bucket.HazmatDg;
-        if (n.Contains("surcharge")) return Bucket.Surcharge;
-
-        // Holiday, Stop Offs, Pallets, Dry Ice, Items, Manually Rated, Extra Stop, and anything
-        // else the engine emits that we don't have a dedicated bucket for.
-        return Bucket.Other;
+        return n.Contains("surcharge")
+            ? Bucket.Surcharge
+            :
+            // Holiday, Stop Offs, Pallets, Dry Ice, Items, Manually Rated, Extra Stop, and anything
+            // else the engine emits that we don't have a dedicated bucket for.
+            Bucket.Other;
     }
 
     // Parses miles from a distance-line name.

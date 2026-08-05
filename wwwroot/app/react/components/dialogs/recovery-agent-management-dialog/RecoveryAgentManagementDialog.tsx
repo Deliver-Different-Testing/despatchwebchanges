@@ -128,9 +128,13 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
+    // Re-seed local job state when the parent passes a different job, derived
+    // during render rather than in an effect (avoids the extra post-paint commit).
+    const [prevInitialJob, setPrevInitialJob] = useState(initialJob);
+    if (initialJob !== prevInitialJob) {
+        setPrevInitialJob(initialJob);
         setJob(initialJob);
-    }, [initialJob]);
+    }
 
     useEffect(() => {
         if (!open) return;

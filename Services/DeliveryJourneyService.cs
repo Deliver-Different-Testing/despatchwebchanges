@@ -18,6 +18,19 @@ public sealed partial class DeliveryJourneyService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService) : IDeliveryJourneyService
 {
+    // The dispatcher field (ucjbDispID) is journalled by the tucJob update
+    // trigger as a generic JobUpdate row whose Old/NewValue hold the tucStaff
+    // id as text. These helpers resolve those ids to "First Last" names so the
+    // timeline reads "Dispatcher: Jane Doe" rather than "Dispatcher: 5".
+    private const string DispatcherFieldName = "ucjbDispID";
+
+    // Status IDs from tucJobStatus (confirmed via sql-scripts/
+    // recurring-delivery-journey-investigation.sql #5). No flag columns
+    // exist on the status table, so we hard-code the bucket mapping.
+    private static readonly HashSet<int> CompletedStatusIds = [6, 13];
+    private static readonly HashSet<int> VoidedStatusIds = [3, 10, 1000, 1001];
+    private static readonly HashSet<int> PendingStatusIds = [0, 16, 100];
+
     /// <summary>
     /// Retrieves the complete delivery journey timeline for a job, including tasks, notes, messages, and status updates.
     /// Queries are executed in parallel for performance.
@@ -41,20 +54,15 @@ public sealed partial class DeliveryJourneyService(
 
         await Task.WhenAll(tasksTask, messagesTask, notesTask, statusUpdatesTask);
 
-        return (await tasksTask)
+        return
+        [
+            .. (await tasksTask)
             .Concat(await messagesTask)
             .Concat(await notesTask)
             .Concat(await statusUpdatesTask)
             .OrderByDescending(x => x.Date)
-            .ToList();
+        ];
     }
-
-    // Status IDs from tucJobStatus (confirmed via sql-scripts/
-    // recurring-delivery-journey-investigation.sql #5). No flag columns
-    // exist on the status table, so we hard-code the bucket mapping.
-    private static readonly HashSet<int> CompletedStatusIds = [6, 13];
-    private static readonly HashSet<int> VoidedStatusIds = [3, 10, 1000, 1001];
-    private static readonly HashSet<int> PendingStatusIds = [0, 16, 100];
 
     public async Task<RecurringJourneyDto> GetDeliveryJourneyForRecurringBookingAsync(int bookingId, int limit = 200)
     {
@@ -137,13 +145,15 @@ public sealed partial class DeliveryJourneyService(
             .GroupBy(c => c.ParentJobId)
             .ToDictionary(
                 g => g.Key,
-                g => (IReadOnlyList<RecurringJourneyChildDto>)g
-                    .Select(c => new RecurringJourneyChildDto
-                    {
-                        JobId = c.UcjbId,
-                        JobNumber = c.UcjbNumber
-                    })
-                    .ToList());
+                g => (IReadOnlyList<RecurringJourneyChildDto>)
+                [
+                    .. g
+                        .Select(c => new RecurringJourneyChildDto
+                        {
+                            JobId = c.UcjbId,
+                            JobNumber = c.UcjbNumber
+                        })
+                ]);
 
         var timezone = infoService.GetTenantTimeZone();
 
@@ -250,10 +260,13 @@ public sealed partial class DeliveryJourneyService(
                 Time = e.UcevTime,
                 Closed = e.UcevClosed,
                 Despatcher = e.UcevDespatcher,
-                AssignedToFirstName = e.UcevStaffIdinNavigation != null ? e.UcevStaffIdinNavigation.UcstFirstName : null,
+                AssignedToFirstName =
+                    e.UcevStaffIdinNavigation != null ? e.UcevStaffIdinNavigation.UcstFirstName : null,
                 AssignedToLastName = e.UcevStaffIdinNavigation != null ? e.UcevStaffIdinNavigation.UcstLastName : null,
-                CompletedByFirstName = e.UcevStaffIdoutNavigation != null ? e.UcevStaffIdoutNavigation.UcstFirstName : null,
-                CompletedByLastName = e.UcevStaffIdoutNavigation != null ? e.UcevStaffIdoutNavigation.UcstLastName : null,
+                CompletedByFirstName =
+                    e.UcevStaffIdoutNavigation != null ? e.UcevStaffIdoutNavigation.UcstFirstName : null,
+                CompletedByLastName =
+                    e.UcevStaffIdoutNavigation != null ? e.UcevStaffIdoutNavigation.UcstLastName : null,
                 Audits = e.TucEventAudits
                     .OrderByDescending(a => a.UceaChangedAt)
                     .Select(a => new EventAuditDto
@@ -269,32 +282,37 @@ public sealed partial class DeliveryJourneyService(
             .TagWith("DeliveryJourney - Tasks")
             .ToListAsync();
 
-        return eventDtos.Select(dto => new DeliveryJourneyViewModel
-        {
-            Id = Guid.NewGuid(),
-            JobId = jobId,
-            Title = dto.Description,
-            Icon = "task",
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(
-                (dto.Date ?? DateTime.MinValue).CombineWithTime(dto.Time),
-                timezone),
-            Tags = new[]
-                {
-                    "Task",
-                    dto.Closed ? "Completed" : "In Progress",
-                    $"Created by {dto.Despatcher}",
-                    !string.IsNullOrEmpty(dto.AssignedToFirstName)
-                        ? $"Assigned to {dto.AssignedToFirstName} {dto.AssignedToLastName}"
-                        : null,
-                    !string.IsNullOrEmpty(dto.CompletedByFirstName)
-                        ? $"Completed by {dto.CompletedByFirstName} {dto.CompletedByLastName}"
-                        : null
-                }
-                .Concat(dto.Audits.Select(a =>
-                    $"{a.ChangeType}: {a.ColumnName} changed by {a.StaffFirstName ?? "Unknown"} {a.StaffLastName ?? string.Empty} at {infoService.ConvertUtcToTenantTimeZone(a.ChangedAt):g}"))
-                .Where(tag => !string.IsNullOrWhiteSpace(tag))
-                .ToList()
-        }).ToList();
+        return
+        [
+            .. eventDtos.Select(dto => new DeliveryJourneyViewModel
+            {
+                Id = Guid.NewGuid(),
+                JobId = jobId,
+                Title = dto.Description,
+                Icon = "task",
+                Date = TimeZoneHelper.SetDateTimeWithTimeZone(
+                    (dto.Date ?? DateTime.MinValue).CombineWithTime(dto.Time),
+                    timezone),
+                Tags =
+                [
+                    .. new[]
+                        {
+                            "Task",
+                            dto.Closed ? "Completed" : "In Progress",
+                            $"Created by {dto.Despatcher}",
+                            !string.IsNullOrEmpty(dto.AssignedToFirstName)
+                                ? $"Assigned to {dto.AssignedToFirstName} {dto.AssignedToLastName}"
+                                : null,
+                            !string.IsNullOrEmpty(dto.CompletedByFirstName)
+                                ? $"Completed by {dto.CompletedByFirstName} {dto.CompletedByLastName}"
+                                : null
+                        }
+                        .Concat(dto.Audits.Select(a =>
+                            $"{a.ChangeType}: {a.ColumnName} changed by {a.StaffFirstName ?? "Unknown"} {a.StaffLastName ?? string.Empty} at {infoService.ConvertUtcToTenantTimeZone(a.ChangedAt):g}"))
+                        .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                ]
+            })
+        ];
     }
 
     /// <summary>
@@ -313,7 +331,7 @@ public sealed partial class DeliveryJourneyService(
                 .Where(h => h.Note != null && h.Note.JobId == jobId)
             : context.TucNoteHistories
                 .Where(h => h.ArchiveNoteId != null &&
-                    context.TucNoteArchives.Any(a => a.NoteId == h.ArchiveNoteId && a.JobId == jobId));
+                            context.TucNoteArchives.Any(a => a.NoteId == h.ArchiveNoteId && a.JobId == jobId));
 
         var histories = await historyQuery
             .OrderBy(h => h.EditedAtUtc)
@@ -323,39 +341,47 @@ public sealed partial class DeliveryJourneyService(
                 h.EditedAtUtc,
                 h.OldNoteText,
                 h.NewNoteText,
-                EditedByFirstName = context.TucStaffs.Where(s => s.UcstId == h.EditedBy).Select(s => s.UcstFirstName).FirstOrDefault(),
-                EditedByLastName = context.TucStaffs.Where(s => s.UcstId == h.EditedBy).Select(s => s.UcstLastName).FirstOrDefault()
+                EditedByFirstName = context.TucStaffs.Where(s => s.UcstId == h.EditedBy).Select(s => s.UcstFirstName)
+                    .FirstOrDefault(),
+                EditedByLastName = context.TucStaffs.Where(s => s.UcstId == h.EditedBy).Select(s => s.UcstLastName)
+                    .FirstOrDefault()
             })
             .TagWith(isLiveJob ? "DeliveryJourney - Live Note Histories" : "DeliveryJourney - Archived Note Histories")
             .ToListAsync();
 
-        return histories.Select(h =>
-        {
-            var editedByName = !string.IsNullOrEmpty(h.EditedByFirstName)
-                ? $"{h.EditedByFirstName} {h.EditedByLastName}"
-                : "System";
-            var editDate = infoService.ConvertUtcToTenantTimeZone(h.EditedAtUtc);
-
-            return new DeliveryJourneyViewModel
+        return
+        [
+            .. histories.Select(h =>
             {
-                Id = Guid.NewGuid(),
-                JobId = jobId,
-                Title = string.IsNullOrEmpty(h.OldNoteText)
-                    ? $"Note added by {editedByName}"
-                    : $"Note edited by {editedByName}",
-                Icon = "sticky_note_2",
-                Description = h.NewNoteText,
-                Date = editDate,
-                Tags = new[]
+                var editedByName = !string.IsNullOrEmpty(h.EditedByFirstName)
+                    ? $"{h.EditedByFirstName} {h.EditedByLastName}"
+                    : "System";
+                var editDate = infoService.ConvertUtcToTenantTimeZone(h.EditedAtUtc);
+
+                return new DeliveryJourneyViewModel
                 {
-                    "Note",
-                    $"Edited by {editedByName} on {editDate.ToString(dateFormat)}",
-                    !string.IsNullOrEmpty(h.OldNoteText)
-                        ? $"Previous: {h.OldNoteText}"
-                        : null
-                }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
-            };
-        }).ToList();
+                    Id = Guid.NewGuid(),
+                    JobId = jobId,
+                    Title = string.IsNullOrEmpty(h.OldNoteText)
+                        ? $"Note added by {editedByName}"
+                        : $"Note edited by {editedByName}",
+                    Icon = "sticky_note_2",
+                    Description = h.NewNoteText,
+                    Date = editDate,
+                    Tags =
+                    [
+                        .. new[]
+                        {
+                            "Note",
+                            $"Edited by {editedByName} on {editDate.ToString(dateFormat)}",
+                            !string.IsNullOrEmpty(h.OldNoteText)
+                                ? $"Previous: {h.OldNoteText}"
+                                : null
+                        }.Where(tag => !string.IsNullOrWhiteSpace(tag))
+                    ]
+                };
+            })
+        ];
     }
 
     /// <summary>
@@ -390,63 +416,68 @@ public sealed partial class DeliveryJourneyService(
             .TagWith("DeliveryJourney - Messages")
             .ToListAsync();
 
-        return messageTemps.Select(m => new DeliveryJourneyViewModel
-        {
-            Id = Guid.NewGuid(),
-            JobId = jobId,
-            Title = m.Subject,
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(m.UcmmDate, timezone),
-            Description = m.UcmmMessage,
-            Icon = "sms",
-            Tags = new List<string>()
-                .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
-                    ? new[]
-                    {
-                        "Direct Message",
-                        !string.IsNullOrEmpty(m.SendToCourierName)
-                            ? $"{m.SendToCourierName}, {m.SendToCourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendToStaffFirstName)
-                            ? $"{m.SendToStaffFirstName}, {m.SendToStaffLastName}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendFromCourierName)
-                            ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendFromStaffFirstName)
-                            ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
-                            : null,
-                        m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
-                    }
-                    : Array.Empty<string>())
-                .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
-                    ? new[]
-                    {
-                        "Email",
-                        $"Sent to {m.SendToEmailAddress}",
-                        !string.IsNullOrEmpty(m.SendFromCourierName)
-                            ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendFromStaffFirstName)
-                            ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
-                            : null
-                    }
-                    : Array.Empty<string>())
-                .Concat(!string.IsNullOrEmpty(m.SendToMobile)
-                    ? new[]
-                    {
-                        "SMS",
-                        $"Sent to {m.SendToMobile}",
-                        !string.IsNullOrEmpty(m.SendFromCourierName)
-                            ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
-                            : null,
-                        !string.IsNullOrEmpty(m.SendFromStaffFirstName)
-                            ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
-                            : null
-                    }
-                    : Array.Empty<string>())
-                .Where(tag => !string.IsNullOrWhiteSpace(tag))
-                .ToList()
-        }).ToList();
+        return
+        [
+            .. messageTemps.Select(m => new DeliveryJourneyViewModel
+            {
+                Id = Guid.NewGuid(),
+                JobId = jobId,
+                Title = m.Subject,
+                Date = TimeZoneHelper.SetDateTimeWithTimeZone(m.UcmmDate, timezone),
+                Description = m.UcmmMessage,
+                Icon = "sms",
+                Tags =
+                [
+                    .. new List<string>()
+                        .Concat(m.UcmmSendToCourierId.HasValue || m.UcmmSendToStaffId.HasValue
+                            ? new[]
+                            {
+                                "Direct Message",
+                                !string.IsNullOrEmpty(m.SendToCourierName)
+                                    ? $"{m.SendToCourierName}, {m.SendToCourierSurname}"
+                                    : null,
+                                !string.IsNullOrEmpty(m.SendToStaffFirstName)
+                                    ? $"{m.SendToStaffFirstName}, {m.SendToStaffLastName}"
+                                    : null,
+                                !string.IsNullOrEmpty(m.SendFromCourierName)
+                                    ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
+                                    : null,
+                                !string.IsNullOrEmpty(m.SendFromStaffFirstName)
+                                    ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
+                                    : null,
+                                m.TimeRead.HasValue ? $"Read at {m.TimeRead?.ToString("g")}" : null
+                            }
+                            : Array.Empty<string>())
+                        .Concat(!string.IsNullOrEmpty(m.SendToEmailAddress)
+                            ? new[]
+                            {
+                                "Email",
+                                $"Sent to {m.SendToEmailAddress}",
+                                !string.IsNullOrEmpty(m.SendFromCourierName)
+                                    ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
+                                    : null,
+                                !string.IsNullOrEmpty(m.SendFromStaffFirstName)
+                                    ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
+                                    : null
+                            }
+                            : Array.Empty<string>())
+                        .Concat(!string.IsNullOrEmpty(m.SendToMobile)
+                            ? new[]
+                            {
+                                "SMS",
+                                $"Sent to {m.SendToMobile}",
+                                !string.IsNullOrEmpty(m.SendFromCourierName)
+                                    ? $"{m.SendFromCourierName}, {m.SendFromCourierSurname}"
+                                    : null,
+                                !string.IsNullOrEmpty(m.SendFromStaffFirstName)
+                                    ? $"{m.SendFromStaffFirstName}, {m.SendFromStaffLastName}"
+                                    : null
+                            }
+                            : Array.Empty<string>())
+                        .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                ]
+            })
+        ];
     }
 
     /// <summary>
@@ -479,8 +510,12 @@ public sealed partial class DeliveryJourneyService(
                     OldAgentName = s.OldAgent.UcagName,
                     NewJobStatusName = s.NewJobStatus.UcjsName,
                     OldJobStatusName = s.OldJobStatus.UcjsName,
-                    NewCourierName = s.NewCourier != null ? s.NewCourier.UccrName + " " + s.NewCourier.UccrSurname : null,
-                    OldCourierName = s.OldCourier != null ? s.OldCourier.UccrName + " " + s.OldCourier.UccrSurname : null
+                    NewCourierName = s.NewCourier != null
+                        ? s.NewCourier.UccrName + " " + s.NewCourier.UccrSurname
+                        : null,
+                    OldCourierName = s.OldCourier != null
+                        ? s.OldCourier.UccrName + " " + s.OldCourier.UccrSurname
+                        : null
                 })
                 .TagWith("DeliveryJourney - Live Status Updates")
                 .ToListAsync();
@@ -532,12 +567,6 @@ public sealed partial class DeliveryJourneyService(
         return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdateTemps, jobId, currentArchivedBreakdownTotal);
     }
 
-    // The dispatcher field (ucjbDispID) is journalled by the tucJob update
-    // trigger as a generic JobUpdate row whose Old/NewValue hold the tucStaff
-    // id as text. These helpers resolve those ids to "First Last" names so the
-    // timeline reads "Dispatcher: Jane Doe" rather than "Dispatcher: 5".
-    private const string DispatcherFieldName = "ucjbDispID";
-
     private static bool IsDispatcherRow(string changeType, string fieldName) =>
         changeType == nameof(DeliveryJourneyChangeType.JobUpdate) && fieldName == DispatcherFieldName;
 
@@ -554,15 +583,17 @@ public sealed partial class DeliveryJourneyService(
             return rows;
         }
 
-        return rows
-            .Select(r => IsDispatcherRow(r.ChangeType, r.FieldName)
-                ? r with
-                {
-                    OldValue = ResolveDispatcherValue(r.OldValue, names),
-                    NewValue = ResolveDispatcherValue(r.NewValue, names)
-                }
-                : r)
-            .ToList();
+        return
+        [
+            .. rows
+                .Select(r => IsDispatcherRow(r.ChangeType, r.FieldName)
+                    ? r with
+                    {
+                        OldValue = ResolveDispatcherValue(r.OldValue, names),
+                        NewValue = ResolveDispatcherValue(r.NewValue, names)
+                    }
+                    : r)
+        ];
     }
 
     private async Task<List<JobDeliveryJourneyArchiveDto>> ResolveDispatcherNamesAsync(
@@ -578,15 +609,17 @@ public sealed partial class DeliveryJourneyService(
             return rows;
         }
 
-        return rows
-            .Select(r => IsDispatcherRow(r.ChangeType, r.FieldName)
-                ? r with
-                {
-                    OldValue = ResolveDispatcherValue(r.OldValue, names),
-                    NewValue = ResolveDispatcherValue(r.NewValue, names)
-                }
-                : r)
-            .ToList();
+        return
+        [
+            .. rows
+                .Select(r => IsDispatcherRow(r.ChangeType, r.FieldName)
+                    ? r with
+                    {
+                        OldValue = ResolveDispatcherValue(r.OldValue, names),
+                        NewValue = ResolveDispatcherValue(r.NewValue, names)
+                    }
+                    : r)
+        ];
     }
 
     private static async Task<Dictionary<int, string>> ResolveStaffNamesAsync(
@@ -655,27 +688,29 @@ public sealed partial class DeliveryJourneyService(
             runningTotal -= groupDelta;
         }
 
-        return orderedGroups
-            .Select(group =>
-            {
-                var first = group.First();
-                var localDate = infoService.ConvertUtcToTenantTimeZone(group.Key);
-                var isCreation = first.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated);
-                var creation = isCreation ? BuildCreationDisplay(first.NewValue, localDate) : default;
-
-                return new DeliveryJourneyViewModel
+        return
+        [
+            .. orderedGroups
+                .Select(group =>
                 {
-                    Id = Guid.NewGuid(),
-                    JobId = jobId,
-                    Date = localDate,
-                    Title = GetTitle(first),
-                    Description = isCreation ? creation.Description : GetDescription(group.ToList()),
-                    Icon = GetIcon(first.ChangeType, first.FieldName),
-                    Tags = isCreation ? creation.Tags : BuildTags(group).ToList(),
-                    GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
-                };
-            })
-            .ToList();
+                    var first = group.First();
+                    var localDate = infoService.ConvertUtcToTenantTimeZone(group.Key);
+                    var isCreation = first.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated);
+                    var creation = isCreation ? BuildCreationDisplay(first.NewValue, localDate) : default;
+
+                    return new DeliveryJourneyViewModel
+                    {
+                        Id = Guid.NewGuid(),
+                        JobId = jobId,
+                        Date = localDate,
+                        Title = GetTitle(first),
+                        Description = isCreation ? creation.Description : GetDescription([.. group]),
+                        Icon = GetIcon(first.ChangeType, first.FieldName),
+                        Tags = isCreation ? creation.Tags : [.. BuildTags(group)],
+                        GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
+                    };
+                })
+        ];
     }
 
     /// <summary>
@@ -713,27 +748,29 @@ public sealed partial class DeliveryJourneyService(
             runningTotal -= groupDelta;
         }
 
-        return orderedGroups
-            .Select(group =>
-            {
-                var first = group.First();
-                var localDate = infoService.ConvertUtcToTenantTimeZone(group.Key);
-                var isCreation = first.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated);
-                var creation = isCreation ? BuildCreationDisplay(first.NewValue, localDate) : default;
-
-                return new DeliveryJourneyViewModel
+        return
+        [
+            .. orderedGroups
+                .Select(group =>
                 {
-                    Id = Guid.NewGuid(),
-                    JobId = jobId,
-                    Date = localDate,
-                    Title = GetTitle(first),
-                    Description = isCreation ? creation.Description : GetDescription(group.ToList()),
-                    Icon = GetIcon(first.ChangeType, first.FieldName),
-                    Tags = isCreation ? creation.Tags : BuildTags(group).ToList(),
-                    GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
-                };
-            })
-            .ToList();
+                    var first = group.First();
+                    var localDate = infoService.ConvertUtcToTenantTimeZone(group.Key);
+                    var isCreation = first.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated);
+                    var creation = isCreation ? BuildCreationDisplay(first.NewValue, localDate) : default;
+
+                    return new DeliveryJourneyViewModel
+                    {
+                        Id = Guid.NewGuid(),
+                        JobId = jobId,
+                        Date = localDate,
+                        Title = GetTitle(first),
+                        Description = isCreation ? creation.Description : GetDescription([.. group]),
+                        Icon = GetIcon(first.ChangeType, first.FieldName),
+                        Tags = isCreation ? creation.Tags : [.. BuildTags(group)],
+                        GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
+                    };
+                })
+        ];
     }
 
     /// <summary>

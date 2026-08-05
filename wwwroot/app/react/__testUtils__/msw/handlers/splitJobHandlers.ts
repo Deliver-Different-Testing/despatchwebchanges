@@ -26,6 +26,60 @@ export const splitJobHandlers = [
         return new HttpResponse(null, { status: 200 });
     }),
 
+    // Preview how the price divides across the legs (read-only)
+    http.post('*/job/PreviewSplitPricing', async ({ request }) => {
+        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
+            return new HttpResponse('Missing CSRF header', { status: 400 });
+        }
+
+        const body = await request.json();
+        const { jobId, meetingPointAddress } = (body ?? {}) as {
+            jobId?: number;
+            meetingPointAddress?: unknown;
+        };
+
+        if (typeof jobId !== 'number' || !meetingPointAddress) {
+            return new HttpResponse('Invalid parameters', { status: 400 });
+        }
+
+        return HttpResponse.json({
+            basis: 'RoadMiles',
+            parentTotalRevenue: 89,
+            parentTotalCost: 50,
+            isSynthesised: false,
+            legs: [
+                {
+                    sequence: 1,
+                    letterSuffix: 'A',
+                    jobNumber: 'KT1314VA',
+                    miles: 5.6,
+                    sharePercent: 70,
+                    totalRevenue: 62.3,
+                    totalCost: 35,
+                    lines: [
+                        { name: 'Base Part A', revenue: 44.8, cost: 22.4 },
+                        { name: 'Base Fuel Part A', revenue: 11.2, cost: 8.4 },
+                        { name: 'Congestion Part A', revenue: 6.3, cost: 4.2 },
+                    ],
+                },
+                {
+                    sequence: 2,
+                    letterSuffix: 'B',
+                    jobNumber: 'KT1314VB',
+                    miles: 2.4,
+                    sharePercent: 30,
+                    totalRevenue: 26.7,
+                    totalCost: 15,
+                    lines: [
+                        { name: 'Base Part B', revenue: 19.2, cost: 9.6 },
+                        { name: 'Base Fuel Part B', revenue: 4.8, cost: 3.6 },
+                        { name: 'Congestion Part B', revenue: 2.7, cost: 1.8 },
+                    ],
+                },
+            ],
+        });
+    }),
+
     // Restore split jobs (uses repeated query params, null body)
     http.post('*/job/RestoreSplitJobs', ({ request }) => {
         if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {

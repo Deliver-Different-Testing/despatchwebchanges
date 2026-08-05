@@ -9,6 +9,7 @@ public static class JobServiceCollectionExtensions
     {
         services.AddScoped<ICreateJobService, CreateJobService>();
         services.AddScoped<ISplitJobService, SplitJobService>();
+        services.AddScoped<ISplitPricingPreviewService, SplitPricingPreviewService>();
         services.AddScoped<IAddStopJobService, AddStopJobService>();
         services.AddScoped<IDispatchJobService, DispatchJobService>();
         services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();

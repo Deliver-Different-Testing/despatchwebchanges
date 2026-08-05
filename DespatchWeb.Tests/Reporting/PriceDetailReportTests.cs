@@ -217,6 +217,88 @@ public class PriceDetailReportTests
         Assert.Equal(100m, jobs.Single(j => j.Header.JobNo == "E500V-child").CurrentLinesTotal);
     }
 
+    // ---- split legs: per-leg attributed lines ----------------------------------------------
+    // Post-fix, a split leg has its own lines stored on the parent with ChildJobId set. The report
+    // must surface them under the leg (so it no longer inherits the parent's whole breakdown) while
+    // the parent keeps every row as the invoice-level total.
+
+    [Fact]
+    public void Split_leg_lines_are_surfaced_under_the_leg_and_kept_on_the_parent()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        var lines = new List<PriceDetailLineRow>
+        {
+            LegLine(parentId, legA, "Base Part A", 44.80m),
+            LegLine(parentId, legA, "Congestion Part A", 6.30m),
+            LegLine(parentId, legB, "Base Part B", 19.20m),
+            LegLine(parentId, legB, "Congestion Part B", 2.70m)
+        };
+
+        var result = JobRepository.WithSplitLegLines(lines);
+
+        // Parent keeps all four rows — the total a split must not change.
+        Assert.Equal(73.00m, result.Where(l => l.JobId == parentId).Sum(l => l.ChargeAmount));
+        // Each leg carries only its own share.
+        Assert.Equal(51.10m, result.Where(l => l.JobId == legA).Sum(l => l.ChargeAmount));
+        Assert.Equal(21.90m, result.Where(l => l.JobId == legB).Sum(l => l.ChargeAmount));
+        Assert.Equal(
+            new[] {"Base Part A", "Congestion Part A"},
+            result.Where(l => l.JobId == legA).Select(l => l.ChargeName).Order());
+    }
+
+    [Fact]
+    public void Split_leg_projection_leaves_unattributed_lines_untouched()
+    {
+        // Ordinary jobs and legacy splits carry no ChildJobId, so nothing is duplicated and the
+        // parent-inherits fallback downstream still applies.
+        var lines = new List<PriceDetailLineRow>
+        {
+            new() {JobId = 100, ChargeName = "Base", ChargeAmount = 64.00m},
+            new() {JobId = 100, ChargeName = "Congestion", ChargeAmount = 9.00m}
+        };
+
+        var result = JobRepository.WithSplitLegLines(lines);
+
+        Assert.Equal(2, result.Count);
+        Assert.All(result, l => Assert.Equal(100, l.JobId));
+    }
+
+    [Fact]
+    public void Split_leg_lines_reach_the_report_rollups()
+    {
+        // End to end through From(): the leg's CurrentLinesTotal matches its own header, closing the
+        // header-vs-lines gap the Price Detail Findings sheet flagged on both parts of KT1314V.
+        var parentHeader = Header("KT1314V", 73m);
+        var legHeader = new PriceDetailHeaderRow
+        {
+            JobId = parentHeader.JobId + 1,
+            JobNo = "KT1314VA",
+            HeaderAmount = 51.10m,
+            BookingParentId = parentHeader.JobId
+        };
+        var raw = new PriceDetailReportRaw
+        {
+            Headers = [parentHeader, legHeader],
+            CurrentLines = JobRepository.WithSplitLegLines(
+            [
+                LegLine(parentHeader.JobId, legHeader.JobId, "Base Part A", 44.80m),
+                LegLine(parentHeader.JobId, legHeader.JobId, "Congestion Part A", 6.30m),
+                LegLine(parentHeader.JobId, parentHeader.JobId + 2, "Base Part B", 19.20m),
+                LegLine(parentHeader.JobId, parentHeader.JobId + 2, "Congestion Part B", 2.70m)
+            ]),
+            History = []
+        };
+
+        var jobs = PriceDetailReportData.From(raw, InfoMock()).Jobs;
+
+        var leg = jobs.Single(j => j.Header.JobNo == "KT1314VA");
+        Assert.Equal(51.10m, leg.CurrentLinesTotal);
+        Assert.Equal(0m, leg.HeaderVsLinesGap);
+        Assert.Equal(73.00m, jobs.Single(j => j.Header.JobNo == "KT1314V").CurrentLinesTotal);
+    }
+
     // ---- Findings: zone <-> mileage restructure --------------------------------------------
 
     [Fact]
@@ -254,7 +336,7 @@ public class PriceDetailReportTests
             NewValue = h.NewValue, AtUtc = h.AtUtc, UpdatedByType = h.UpdatedByType, StaffFirstName = h.StaffFirstName,
             StaffLastName = h.StaffLastName
         }).ToList();
-        return new() { Headers = [header], CurrentLines = lines, History = hist };
+        return new PriceDetailReportRaw { Headers = [header], CurrentLines = lines, History = hist };
     }
 
     private static PriceDetailHeaderRow Header(string jobNo, decimal headerAmount, int? bookingParentId = null) =>
@@ -266,6 +348,10 @@ public class PriceDetailReportTests
 
     private static PriceDetailLineRow Line(string name, decimal amount) =>
         new() { ChargeName = name, ChargeAmount = amount };
+
+    // A line stored on the split parent but attributed to one of its legs.
+    private static PriceDetailLineRow LegLine(int parentJobId, int legJobId, string name, decimal amount) =>
+        new() { JobId = parentJobId, ChildJobId = legJobId, ChargeName = name, ChargeAmount = amount };
 
     private static PricingChangeRow Insert(string newVal, DateTime atUtc) =>
         new()

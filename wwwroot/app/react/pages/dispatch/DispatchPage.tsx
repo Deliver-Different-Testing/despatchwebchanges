@@ -403,10 +403,12 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
 
     const invalidateAfterDispatch = useCallback(async (job: DispatchJob) => {
-        await queryClient.invalidateQueries({queryKey: queryKeys.dispatch.all});
-        await queryClient.invalidateQueries({
-            queryKey: queryKeys.jobs.detail(job.id, job.isBulkJob ? 'bulk' : 'standard'),
-        });
+        await Promise.all([
+            queryClient.invalidateQueries({queryKey: queryKeys.dispatch.all}),
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.jobs.detail(job.id, job.isBulkJob ? 'bulk' : 'standard'),
+            }),
+        ]);
     }, []);
 
     const handleDispatchCourier = useCallback(async (

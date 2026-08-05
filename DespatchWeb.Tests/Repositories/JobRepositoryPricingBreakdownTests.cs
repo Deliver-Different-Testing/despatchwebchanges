@@ -171,6 +171,90 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         Assert.Equal("Job 1 Charge", result[0].Name);
     }
 
+    // ── Split legs (KT1314V) ───────────────────────────────────────────────────────────────────
+    //
+    // A leg's lines are stored on the parent with ChildJobId pointing at the leg. Returning the
+    // parent's whole breakdown to a leg made both parts of KT1314V report the parent's full
+    // US$89.00 / US$50.00 while their own headers each read US$44.50.
+
+    [Fact]
+    public async Task GetJobPriceBreakdownAsync_ForSplitLeg_ReturnsOnlyThatLegsLines()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        _context.TucJobs.AddRange(
+            CreateSplitParent(parentId, "KT1314V"),
+            CreateSplitLeg(legA, "KT1314VA", parentId),
+            CreateSplitLeg(legB, "KT1314VB", parentId));
+        _context.PricingBreakdowns.AddRange(
+            CreatePricingBreakdown(1, parentId, null, "Base Part A", 44.80m, 22.40m, legA),
+            CreatePricingBreakdown(2, parentId, null, "Congestion Part A", 6.30m, 4.20m, legA),
+            CreatePricingBreakdown(3, parentId, null, "Base Part B", 19.20m, 9.60m, legB),
+            CreatePricingBreakdown(4, parentId, null, "Congestion Part B", 2.70m, 1.80m, legB));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        var legAResult = await repository.GetJobPriceBreakdownAsync(legA, isPrebook: false, isArchived: false);
+        var legBResult = await repository.GetJobPriceBreakdownAsync(legB, isPrebook: false, isArchived: false);
+        var parentResult = await repository.GetJobPriceBreakdownAsync(parentId, isPrebook: false, isArchived: false);
+
+        Assert.Equal(new[] {"Base Part A", "Congestion Part A"}, legAResult.Select(r => r.Name).Order());
+        Assert.Equal(51.10m, legAResult.Sum(r => r.Amount));
+        Assert.Equal(new[] {"Base Part B", "Congestion Part B"}, legBResult.Select(r => r.Name).Order());
+        Assert.Equal(21.90m, legBResult.Sum(r => r.Amount));
+
+        // The parent stays the invoice-level view: every row, summing to the untouched total.
+        Assert.Equal(4, parentResult.Count);
+        Assert.Equal(73.00m, parentResult.Sum(r => r.Amount));
+    }
+
+    [Fact]
+    public async Task GetJobPriceBreakdownAsync_ForLegacySplitLeg_StillFallsBackToTheParentsLines()
+    {
+        // Jobs split before per-leg lines existed have no attributed rows at all. Those keep the
+        // original fallback rather than rendering an empty breakdown.
+        const int parentId = 100;
+        const int legA = 101;
+        _context.TucJobs.AddRange(
+            CreateSplitParent(parentId, "OLD001"),
+            CreateSplitLeg(legA, "OLD001A", parentId));
+        _context.PricingBreakdowns.AddRange(
+            CreatePricingBreakdown(1, parentId, null, "Base", 64.00m, 32.00m),
+            CreatePricingBreakdown(2, parentId, null, "Congestion", 9.00m, 6.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        var result = await repository.GetJobPriceBreakdownAsync(legA, isPrebook: false, isArchived: false);
+
+        Assert.Equal(new[] {"Base", "Congestion"}, result.Select(r => r.Name).Order());
+    }
+
+    [Fact]
+    public async Task GetJobPriceBreakdownAsync_ForSplitLegWithNoLinesOfItsOwn_ReturnsEmpty()
+    {
+        // Once any leg carries attributed rows, a leg with none of its own genuinely has no pricing
+        // — it must not borrow its sibling's or the parent's.
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        _context.TucJobs.AddRange(
+            CreateSplitParent(parentId, "KT1314V"),
+            CreateSplitLeg(legA, "KT1314VA", parentId),
+            CreateSplitLeg(legB, "KT1314VB", parentId));
+        _context.PricingBreakdowns.Add(
+            CreatePricingBreakdown(1, parentId, null, "Base Part A", 89.00m, 50.00m, legA));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        var result = await repository.GetJobPriceBreakdownAsync(legB, isPrebook: false, isArchived: false);
+
+        Assert.Empty(result);
+    }
+
     [Fact]
     public async Task GetJobPriceBreakdownAsync_WithNonExistentArchivedJob_ReturnsEmptyList()
     {
@@ -702,14 +786,32 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         UcbkJobNumber = jobNumber
     };
 
-    private static PricingBreakdown CreatePricingBreakdown(int id, int? jobId, int? prebookJobId, string name, decimal amount, decimal? costAmount = null) => new()
+    private static PricingBreakdown CreatePricingBreakdown(int id, int? jobId, int? prebookJobId, string name, decimal amount, decimal? costAmount = null, int? childJobId = null) => new()
     {
         PricingBreakdownId = id,
         JobId = jobId,
         PrebookJobId = prebookJobId,
         ChargeName = name,
         ChargeAmount = amount,
-        CostAmount = costAmount
+        CostAmount = costAmount,
+        ChildJobId = childJobId
+    };
+
+    /// <summary>A split parent — ParentId points at itself, so it resolves as its own effective job.</summary>
+    private static TucJob CreateSplitParent(int id, string jobNumber) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = jobNumber,
+        ParentId = id,
+        RootParentId = id
+    };
+
+    private static TucJob CreateSplitLeg(int id, string jobNumber, int parentId) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = jobNumber,
+        ParentId = parentId,
+        RootParentId = parentId
     };
 
     private static PricingBreakdownArchive CreatePricingBreakdownArchive(int id, int? jobId, string name, decimal amount, decimal? costAmount = null) => new()

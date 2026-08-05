@@ -168,9 +168,13 @@ export function RecurringJobFields({
     const [initialDaysDraft, setInitialDaysDraft] = React.useState<string>(
         String(currentInitialDays)
     );
-    React.useEffect(() => {
+    // Re-sync the draft when the caller refreshes the job, derived during render
+    // rather than in an effect (avoids the extra post-paint commit).
+    const [prevInitialDays, setPrevInitialDays] = React.useState(currentInitialDays);
+    if (currentInitialDays !== prevInitialDays) {
+        setPrevInitialDays(currentInitialDays);
         setInitialDaysDraft(String(currentInitialDays));
-    }, [currentInitialDays]);
+    }
 
     if (!job.preBook) return null;
 

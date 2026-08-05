@@ -223,7 +223,8 @@ public partial class JobRepository
             .Select(p => new PriceDetailLineRow
             {
                 JobId = p.JobId!.Value,
-                ChargeName = p.ChargeName ?? "",
+                ChildJobId = p.ChildJobId,
+                ChargeName = p.ChargeName ?? string.Empty,
                 ChargeAmount = p.ChargeAmount,
                 CourierPay = p.CostAmount
             })
@@ -234,7 +235,7 @@ public partial class JobRepository
             .Select(p => new PriceDetailLineRow
             {
                 JobId = p.JobId!.Value,
-                ChargeName = p.ChargeName ?? "",
+                ChargeName = p.ChargeName ?? string.Empty,
                 ChargeAmount = p.ChargeAmount,
                 CourierPay = p.CostAmount
             })
@@ -255,12 +256,12 @@ public partial class JobRepository
             .Select(s => new PricingChangeRow
             {
                 JobId = s.JobId,
-                ChangeType = s.ChangeType ?? "",
+                ChangeType = s.ChangeType ?? string.Empty,
                 FieldName = s.FieldName!,
                 OldValue = s.OldValue,
                 NewValue = s.NewValue,
                 AtUtc = s.UpdatedAt,
-                UpdatedByType = s.UpdatedByType ?? "",
+                UpdatedByType = s.UpdatedByType ?? string.Empty,
                 StaffFirstName = s.Staff != null ? s.Staff.UcstFirstName : null,
                 StaffLastName = s.Staff != null ? s.Staff.UcstLastName : null
             })
@@ -297,12 +298,12 @@ public partial class JobRepository
         var archiveHistory = archiveHistoryRaw.Select(x => new PricingChangeRow
         {
             JobId = x.JobId,
-            ChangeType = x.ChangeType ?? "",
+            ChangeType = x.ChangeType ?? string.Empty,
             FieldName = x.FieldName!,
             OldValue = x.OldValue,
             NewValue = x.NewValue,
             AtUtc = x.UpdatedAt,
-            UpdatedByType = x.UpdatedByType ?? "",
+            UpdatedByType = x.UpdatedByType ?? string.Empty,
             StaffFirstName = x.StaffId is { } sid && staffNames.TryGetValue(sid, out var n) ? n.First : null,
             StaffLastName = x.StaffId is { } sid2 && staffNames.TryGetValue(sid2, out var n2) ? n2.Last : null
         }).ToList();
@@ -313,8 +314,13 @@ public partial class JobRepository
         var lines = MergePreferLive(liveLines, archiveLines, l => l.JobId);
         var history = MergePreferLive(liveHistory, archiveHistory, h => h.JobId);
 
+        // ---- Split legs: surface each leg's own attributed lines ----------------------------
+
+        lines = WithSplitLegLines(lines);
+
         // ---- Split-child fallback: children with no own lines inherit parent lines ---------
-        // Mirrors GetJobPriceBreakdownAsync:4196-4210 (live) / 4155-4170 (archive).
+        // Only reached by splits made before per-leg lines existed — a leg with attributed rows is
+        // already in jobsWithLines below. Mirrors GetJobPriceBreakdownAsync's legacy fallback.
 
         var jobsWithLines = lines.Select(l => l.JobId).ToHashSet();
         var childrenNeedingParent = headers
@@ -327,7 +333,7 @@ public partial class JobRepository
                 .Where(p => p.JobId != null && chunk.Contains(p.JobId.Value))
                 .Select(p => new PriceDetailLineRow
                 {
-                    JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? "", ChargeAmount = p.ChargeAmount,
+                    JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? string.Empty, ChargeAmount = p.ChargeAmount,
                     CourierPay = p.CostAmount
                 })
                 .TagWith("PriceDetail - Split-child Parent Lines (Live)").ToListAsync(ct));
@@ -335,7 +341,7 @@ public partial class JobRepository
                 .Where(p => p.JobId != null && chunk.Contains(p.JobId.Value))
                 .Select(p => new PriceDetailLineRow
                 {
-                    JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? "", ChargeAmount = p.ChargeAmount,
+                    JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? string.Empty, ChargeAmount = p.ChargeAmount,
                     CourierPay = p.CostAmount
                 })
                 .TagWith("PriceDetail - Split-child Parent Lines (Archive)").ToListAsync(ct));
@@ -358,6 +364,36 @@ public partial class JobRepository
         return new PriceDetailReportRaw { Headers = headers, CurrentLines = lines, History = history };
     }
 
+    // A split leg's lines are stored on the parent with ChildJobId pointing at the leg, so they also
+    // need to appear under the leg. The parent keeps the whole set (it is the invoice-level total);
+    // each leg then reports only its own share instead of inheriting the parent's whole breakdown,
+    // which is what made both parts of KT1314V show the parent's full revenue and cost.
+    // internal so DespatchWeb.Tests can exercise it directly (InternalsVisibleTo is set).
+    internal static List<PriceDetailLineRow> WithSplitLegLines(List<PriceDetailLineRow> lines)
+    {
+        var legLines = lines
+            .Where(l => l.ChildJobId is { } childId && childId != l.JobId)
+            .Select(l => new PriceDetailLineRow
+            {
+                JobId = l.ChildJobId!.Value,
+                ChildJobId = l.ChildJobId,
+                ChargeName = l.ChargeName,
+                ChargeAmount = l.ChargeAmount,
+                CourierPay = l.CourierPay
+            })
+            .ToList();
+
+        if (legLines.Count == 0)
+        {
+            return lines;
+        }
+
+        var merged = new List<PriceDetailLineRow>(lines.Count + legLines.Count);
+        merged.AddRange(lines);
+        merged.AddRange(legLines);
+        return merged;
+    }
+
     // Prefer live rows; append archive rows only for job ids not present in the live set.
     // internal so DespatchWeb.Tests can exercise it directly (InternalsVisibleTo is set).
     internal static List<T> MergePreferLive<T>(List<T> live, List<T> archive, Func<T, int> jobIdOf)
@@ -373,7 +409,7 @@ public partial class JobRepository
     {
         var lwh = (l.HasValue && d.HasValue && h.HasValue && (l > 0 || d > 0 || h > 0))
             ? $", {l:0.##}x{d:0.##}x{h:0.##}"
-            : "";
+            : string.Empty;
         return $"{hu} HU{lwh}, {w:0.##} lb";
     }
 

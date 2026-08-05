@@ -464,14 +464,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         await restoreJobs([job.id]);
                     }
                     showToast(`${job.jobNo} restored.`, 'success');
-                    await invalidateLists();
-                    await invalidateDetail();
+                    await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;
 
                 case 'swapPod':
                     await w.ReactSwapPodsDialog?.open(job.jobNo, {showToast});
-                    await invalidateLists();
-                    await invalidateDetail();
+                    await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;
 
                 case 'sendPod':
@@ -490,8 +488,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     const locked = actionId === 'lock';
                     await setJobLocked(job.id, locked, !!job.preBook);
                     showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
-                    await invalidateLists();
-                    await invalidateDetail();
+                    await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;
                 }
 
@@ -504,8 +501,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     } else {
                         showToast(`${job.jobNo} un-split.`, 'success');
                     }
-                    await invalidateLists();
-                    await invalidateDetail();
+                    await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;
                 }
 
@@ -536,10 +532,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             await allocateJobs(destination.id, [currentJob.id]);
         }
         showToast(`Job ${currentJob.jobNo} dispatched to ${destination.text}`, 'success');
-        await queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all});
-        await queryClient.invalidateQueries({
-            queryKey: queryKeys.jobs.detail(currentJob.id, isBulkJob ? 'bulk' : 'standard'),
-        });
+        await Promise.all([
+            queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all}),
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.jobs.detail(currentJob.id, isBulkJob ? 'bulk' : 'standard'),
+            }),
+        ]);
         setDispatchDialogOpen(false);
     }, [currentJob, isBulkJob, showToast]);
 

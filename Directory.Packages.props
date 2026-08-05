@@ -8,13 +8,13 @@
     <PackageVersion Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.3" />
     <PackageVersion Include="Anthropic" Version="12.39.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.101.6" />
+      <PackageVersion Include="AWSSDK.S3" Version="4.0.101.7"/>
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.100.7" />
     <PackageVersion Include="AWSSDK.SSO" Version="4.0.100.7" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageVersion Include="Magick.NET-Q8-AnyCPU" Version="14.16.0" />
-    <PackageVersion Include="DeliverDifferentReporting" Version="2.0.43" />
+      <PackageVersion Include="DeliverDifferentReporting" Version="2.0.44"/>
     <PackageVersion Include="PdfSharp" Version="6.2.4" />
     <PackageVersion Include="ExcelDataReader" Version="$(ExcelDataReaderVersion)" />
     <PackageVersion Include="ExcelDataReader.DataSet" Version="$(ExcelDataReaderVersion)" />

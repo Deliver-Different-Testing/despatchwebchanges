@@ -5,18 +5,27 @@
  * 1. Validate (archived check)
  * 2. Address dialog (meeting point)
  * 3. Courier dialog (optional courier for delivery leg)
- * 4. API call (split job — synchronous from frontend's perspective)
- * 5. Toast (success/failure)
+ * 4. Pricing dialog (confirm how the price divides across the legs)
+ * 5. API call (split job — synchronous from frontend's perspective)
+ * 6. Toast (success/failure)
  *
- * No confirmation dialog — the caller handles that
- * (context menu uses its confirm dialog; the AngularJS template button uses window.confirm).
+ * No *intent* confirmation dialog — the caller handles that (context menu uses its confirm dialog;
+ * the AngularJS template button uses window.confirm). The pricing dialog in step 4 is separate: it
+ * confirms the money, and cancelling it leaves the job unsplit.
  */
 
 import type {DispatchJob} from '../interfaces/dispatchJob';
 import type {ShowToastFn} from './toastService';
-import {splitJob} from './splitJobApi';
+import {
+    previewSplitPricing,
+    splitJob,
+    type SplitPricingAllocationItem,
+    type SplitPricingPreview,
+} from './splitJobApi';
 import {openEditAddressDialog} from '../components/dialogs/edit-address-dialog/edit-address-dialog-react.module';
 import {openSplitJobCourierDialog} from '../components/dialogs/split-job-courier-dialog/openSplitJobCourierDialog';
+import {openSplitPricingDialog} from '../components/dialogs/split-pricing-dialog/openSplitPricingDialog';
+import type {SplitPricingResult} from '../components/dialogs/split-pricing-dialog/SplitPricingDialog';
 
 export interface SplitJobFlowOptions {
     job: DispatchJob;
@@ -69,6 +78,37 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
 
     const courierIdForLegB = courierResult.action === 'assign' ? courierResult.courierId : null;
 
+    // ── Pricing dialog ──
+    // Only the preview is best-effort: it writes nothing, so when it can't be loaded we fall through
+    // to the split with no allocation and let the server derive the division rather than blocking the
+    // split outright. A dialog that fails to open is different — the user never saw the numbers, so
+    // nothing is split.
+    let preview: SplitPricingPreview | null = null;
+    try {
+        preview = await previewSplitPricing({jobId: job.id, meetingPointAddress});
+    } catch (error) {
+        console.error('Split pricing preview failed:', error);
+        showToast('Could not preview split pricing — the split will use the calculated division.', 'warning');
+    }
+
+    let pricingAllocation: SplitPricingAllocationItem[] | null = null;
+    if (preview) {
+        let pricingResult: SplitPricingResult;
+        try {
+            pricingResult = await openSplitPricingDialog(job.jobNo, preview);
+        } catch (error) {
+            console.error('Split pricing dialog failed:', error);
+            showToast('Could not confirm split pricing — the job has not been split.', 'error');
+            return;
+        }
+
+        if (pricingResult.action === 'cancel') {
+            return;
+        }
+
+        pricingAllocation = pricingResult.allocation;
+    }
+
     // ── API call ──
     setLoading?.(true);
     try {
@@ -76,6 +116,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
             jobId: job.id,
             meetingPointAddress,
             courierIdForLegB,
+            pricingAllocation,
         });
         showToast(`Job ${job.jobNo} successfully split`, 'success');
         try {
