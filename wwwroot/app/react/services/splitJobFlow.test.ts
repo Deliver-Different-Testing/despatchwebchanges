@@ -40,6 +40,12 @@ const CONFIRMED_ALLOCATION = [
     {sequence: 2, sharePercent: 30},
 ];
 
+// A congestion charge only leg A incurred, set apart from the overall 70/30.
+const CONFIRMED_LINE_ALLOCATION = [
+    {pricingBreakdownId: 3, sequence: 1, sharePercent: 100},
+    {pricingBreakdownId: 3, sequence: 2, sharePercent: 0},
+];
+
 // ── Helpers ────────────────────────────────────────────────────────────
 
 function createMockJob(overrides?: Partial<DispatchJob>): DispatchJob {
@@ -103,11 +109,13 @@ beforeEach(() => {
         parentTotalRevenue: 89,
         parentTotalCost: 50,
         isSynthesised: false,
+        parentLines: [],
         legs: [],
     });
     mockedOpenSplitPricingDialog.mockResolvedValue({
         action: 'confirm',
         allocation: CONFIRMED_ALLOCATION,
+        lineAllocation: [],
     });
 
     mockedSplitJob.mockResolvedValue(undefined);
@@ -269,7 +277,25 @@ describe('executeSplitJobFlow', () => {
                 'warning',
             );
             expect(mockedSplitJob).toHaveBeenCalledWith(
-                expect.objectContaining({pricingAllocation: null}),
+                expect.objectContaining({pricingAllocation: null, lineAllocation: null}),
+            );
+        });
+
+        it('forwards the per-line overrides the user set in the dialog', async () => {
+            mockedOpenSplitPricingDialog.mockResolvedValue({
+                action: 'confirm',
+                allocation: CONFIRMED_ALLOCATION,
+                lineAllocation: CONFIRMED_LINE_ALLOCATION,
+            });
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedSplitJob).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    pricingAllocation: CONFIRMED_ALLOCATION,
+                    lineAllocation: CONFIRMED_LINE_ALLOCATION,
+                }),
             );
         });
     });
@@ -285,6 +311,7 @@ describe('executeSplitJobFlow', () => {
                 meetingPointAddress: expect.objectContaining({fullAddress: '15 Meeting St, Auckland'}),
                 courierIdForLegB: null,
                 pricingAllocation: CONFIRMED_ALLOCATION,
+                lineAllocation: [],
             });
             expect(opts.showToast).toHaveBeenCalledWith('Job J001 successfully split', 'success');
             expect(opts.onComplete).toHaveBeenCalled();

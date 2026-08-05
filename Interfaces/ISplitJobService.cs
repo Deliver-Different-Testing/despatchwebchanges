@@ -23,6 +23,10 @@ public interface ISplitJobService
     /// Optional per-leg shares confirmed by the user. When null the service derives the split from
     /// per-leg road miles, falling back to straight-line miles, then leg rates, then an even split.
     /// </param>
+    /// <param name="lineAllocation">
+    /// Optional per-line shares for charges that shouldn't follow the overall split — a congestion
+    /// charge only one leg's route incurred, say. Lines not listed use <paramref name="pricingAllocation"/>.
+    /// </param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>
     /// A tuple where PickupJobId is the newly created pickup child job
@@ -34,6 +38,7 @@ public interface ISplitJobService
         AddressViewModel meetingPointAddress,
         int? courierIdForLegB = null,
         IReadOnlyList<SplitPricingAllocationItem>? pricingAllocation = null,
+        IReadOnlyList<SplitPricingLineAllocationItem>? lineAllocation = null,
         CancellationToken ct = default);
 
     /// <summary>
@@ -41,7 +46,9 @@ public interface ISplitJobService
     /// depends on the parent's relationship type:
     /// <list type="bullet">
     /// <item><b>SplitParent</b> — propagates the field to all non-void children and redistributes
-    /// the parent's fixed total proportionally across them (one job's price divided across legs).</item>
+    /// the parent's fixed total across them in their existing proportions, rescaling each leg's
+    /// breakdown lines to match (one job's price divided across legs). Keeping the proportions
+    /// preserves the division agreed when the job was split, including any per-line shares.</item>
     /// <item><b>Multi</b> (multi-drop) — re-rates the parent and every non-void child independently,
     /// so each part is priced for the new vehicle/speed/etc. (the total moves). Parts flagged
     /// RatedManually are left untouched. The field value is assumed already written to every part by

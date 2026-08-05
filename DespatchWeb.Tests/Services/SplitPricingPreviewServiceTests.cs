@@ -128,6 +128,27 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task PreviewAsync_ReturnsTheUndividedParentLines_SoASingleLineCanBeOverridden()
+    {
+        SeedKt1314V();
+
+        var preview = await CreateService().PreviewAsync(100, MeetingPoint(),
+            TestContext.Current.CancellationToken);
+
+        // Original names, not the "Part A" copies — this is what the dialog offers a share against.
+        Assert.Equal(new[] { "Base", "Base Fuel", "Congestion" }, preview.ParentLines.Select(l => l.Name));
+        Assert.Equal(89.00m, preview.ParentLines.Sum(l => l.Revenue));
+        Assert.Equal(50.00m, preview.ParentLines.Sum(l => l.Cost));
+
+        // Every parent line is addressable, and its per-leg copies point back at it.
+        Assert.All(preview.ParentLines, l => Assert.True(l.PricingBreakdownId > 0));
+        var congestionId = preview.ParentLines.Single(l => l.Name == "Congestion").PricingBreakdownId;
+        Assert.Equal(
+            congestionId,
+            preview.Legs.First().Lines.Single(l => l.Name == "Congestion Part A").PricingBreakdownId);
+    }
+
+    [Fact]
     public async Task PreviewAsync_WritesNothing()
     {
         SeedKt1314V();
@@ -183,6 +204,8 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
         Assert.Equal(89.00m, preview.ParentTotalRevenue);
         Assert.Equal(50.00m, preview.ParentTotalCost);
         Assert.Equal("Manually Rated Part A", preview.Legs.First().Lines.Single().Name);
+        // The synthesised line has no row behind it, so it can't be singled out in the dialog.
+        Assert.Equal(0, preview.ParentLines.Single().PricingBreakdownId);
     }
 
     [Fact]

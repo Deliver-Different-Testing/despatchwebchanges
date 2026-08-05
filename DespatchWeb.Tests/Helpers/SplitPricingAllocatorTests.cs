@@ -130,6 +130,96 @@ public class SplitPricingAllocatorTests
     }
 
     [Fact]
+    public void Allocate_GivesAnOverriddenLineItsOwnShares_LeavingTheOtherLinesOnTheLegSplit()
+    {
+        // Leg A drove through the congestion zone; leg B didn't. The overall split stays 70/30.
+        var allocated = Allocate(
+            Kt1314VLines(),
+            Legs(7m, 3m),
+            [new LineShareOverride(Congestion.PricingBreakdownId, 1, 100m),
+                new LineShareOverride(Congestion.PricingBreakdownId, 2, 0m)]);
+
+        var congestion = allocated.Where(l => l.PricingBreakdownId == 3).ToList();
+        Assert.Equal(9.00m, congestion[0].ChargeAmount);
+        Assert.Equal(6.00m, congestion[0].CostAmount);
+        Assert.Equal(0.00m, congestion[1].ChargeAmount);
+        Assert.Equal(0.00m, congestion[1].CostAmount);
+
+        // The untouched lines still follow the legs.
+        Assert.Equal(44.80m, allocated.First(l => l.ChargeName == "Base Part A").ChargeAmount);
+        Assert.Equal(19.20m, allocated.First(l => l.ChargeName == "Base Part B").ChargeAmount);
+        Assert.Equal(11.20m, allocated.First(l => l.ChargeName == "Base Fuel Part A").ChargeAmount);
+    }
+
+    [Fact]
+    public void Allocate_PreservesTheParentTotal_EvenWithAnOverriddenLine()
+    {
+        // The invoice guarantee has to survive per-line overrides too.
+        var lines = Kt1314VLines();
+        var allocated = Allocate(
+            lines,
+            Legs(7m, 3m),
+            [new LineShareOverride(3, 1, 100m), new LineShareOverride(3, 2, 0m)]);
+
+        Assert.Equal(lines.Sum(l => l.ChargeAmount), allocated.Sum(l => l.ChargeAmount));
+        Assert.Equal(lines.Sum(l => l.CostAmount ?? 0m), allocated.Sum(l => l.CostAmount ?? 0m));
+    }
+
+    [Fact]
+    public void Allocate_NormalisesAnOverride_ThatDoesNotAddUpToOneHundred()
+    {
+        var allocated = Allocate(
+            [Base],
+            Legs(7m, 3m),
+            [new LineShareOverride(1, 1, 3m), new LineShareOverride(1, 2, 1m)]);
+
+        Assert.Equal(48.00m, allocated[0].ChargeAmount);
+        Assert.Equal(16.00m, allocated[1].ChargeAmount);
+    }
+
+    [Fact]
+    public void Allocate_TreatsAMissingLegAsZero_SoOneLegCanTakeTheWholeLine()
+    {
+        // Only leg 2 is named, so leg 1 weighs nothing.
+        var allocated = Allocate([Congestion], Legs(7m, 3m), [new LineShareOverride(3, 2, 100m)]);
+
+        Assert.Equal(0.00m, allocated[0].ChargeAmount);
+        Assert.Equal(9.00m, allocated[1].ChargeAmount);
+    }
+
+    [Fact]
+    public void Allocate_IgnoresOverrides_ForAnUnknownLineOrWithNoShareAtAll()
+    {
+        // A stale line id and an all-zero override both fall back to the leg split rather than
+        // silently becoming an even division.
+        var allocated = Allocate(
+            [Base, Congestion],
+            Legs(7m, 3m),
+            [new LineShareOverride(999, 1, 100m),
+                new LineShareOverride(3, 1, 0m),
+                new LineShareOverride(3, 2, 0m)]);
+
+        Assert.Equal(44.80m, allocated[0].ChargeAmount);
+        Assert.Equal(19.20m, allocated[1].ChargeAmount);
+        Assert.Equal(6.30m, allocated[2].ChargeAmount);
+        Assert.Equal(2.70m, allocated[3].ChargeAmount);
+    }
+
+    [Fact]
+    public void Allocate_ScalesMileageInTheName_ByTheLinesOwnShare()
+    {
+        // The base line's name carries the miles; an override on that line has to move them too,
+        // or PriceLineClassifier.ParseMiles reads a distance the leg never drove.
+        var allocated = Allocate(
+            [new ParentLine(1, "Base (100 miles)", 64.00m, null)],
+            Legs(7m, 3m),
+            [new LineShareOverride(1, 1, 25m), new LineShareOverride(1, 2, 75m)]);
+
+        Assert.Equal("Base (25 miles) Part A", allocated[0].ChargeName);
+        Assert.Equal("Base (75 miles) Part B", allocated[1].ChargeName);
+    }
+
+    [Fact]
     public void EnsureLines_SynthesisesASingleLine_WhenTheParentHasNoBreakdown()
     {
         var lines = EnsureLines([], 44.50m, 25.00m);

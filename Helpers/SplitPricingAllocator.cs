@@ -12,7 +12,9 @@ namespace DespatchWeb.Helpers;
 /// <remarks>
 /// Each parent line becomes one line per leg, named "<c>{original} Part {suffix}</c>". The legs of
 /// a line always sum back to the original amount (the last leg absorbs the rounding remainder), so
-/// the parent's line total — and therefore the client invoice — is unchanged by a split.
+/// the parent's line total — and therefore the client invoice — is unchanged by a split. That holds
+/// per line, so an individual line can be given its own shares (see <see cref="LineShareOverride"/>)
+/// without disturbing the rest.
 /// </remarks>
 public static partial class SplitPricingAllocator
 {
@@ -63,6 +65,16 @@ public static partial class SplitPricingAllocator
         decimal Miles,
         decimal? SharePercentOverride = null);
 
+    /// <summary>
+    /// One leg's share of a single parent line, as confirmed by the user. Overrides the leg-level
+    /// shares for that line only — for a charge one leg incurred and the other didn't, such as a
+    /// congestion charge on a route only one courier drove.
+    /// </summary>
+    /// <param name="PricingBreakdownId">The parent line this applies to; 0 for the synthesised line.</param>
+    /// <param name="Sequence">The leg the share applies to (1 = pickup leg, 2 = delivery leg).</param>
+    /// <param name="SharePercent">The leg's share of this line, as a percentage. Normalised per line.</param>
+    public sealed record LineShareOverride(int PricingBreakdownId, int Sequence, decimal SharePercent);
+
     /// <summary>A line to be written against one leg.</summary>
     public sealed record AllocatedLine(
         int Sequence,
@@ -70,7 +82,8 @@ public static partial class SplitPricingAllocator
         string ChargeName,
         decimal ChargeAmount,
         decimal? CostAmount,
-        bool IsAccessorial);
+        bool IsAccessorial,
+        int PricingBreakdownId);
 
     /// <summary>
     /// Returns each leg's fractional share, in the order the legs were supplied. Shares always sum
@@ -138,9 +151,16 @@ public static partial class SplitPricingAllocator
     /// Divides every parent line across the legs. Returns the lines grouped leg-by-leg in the order
     /// the parent lines were supplied.
     /// </summary>
+    /// <param name="lines">The parent lines to divide.</param>
+    /// <param name="legs">The legs and their weighting.</param>
+    /// <param name="lineOverrides">
+    /// Per-line shares the user set in the split pricing dialog. A line named here is divided by its
+    /// own shares instead of the leg-level ones; every other line still follows <paramref name="legs"/>.
+    /// </param>
     public static IReadOnlyList<AllocatedLine> Allocate(
         IReadOnlyList<ParentLine> lines,
-        IReadOnlyList<LegWeight> legs)
+        IReadOnlyList<LegWeight> legs,
+        IReadOnlyList<LineShareOverride>? lineOverrides = null)
     {
         if (legs.Count == 0 || lines.Count == 0)
         {
@@ -148,17 +168,50 @@ public static partial class SplitPricingAllocator
         }
 
         var shares = Shares(legs);
+        var overridesByLine = BuildLineShares(lineOverrides, legs);
         var allocated = new List<AllocatedLine>(lines.Count * legs.Count);
 
         foreach (var line in lines)
         {
-            var revenues = DistributeAmount(line.ChargeAmount, shares);
-            var costs = line.CostAmount.HasValue ? DistributeAmount(line.CostAmount.Value, shares) : null;
+            var lineShares = overridesByLine.GetValueOrDefault(line.PricingBreakdownId) ?? shares;
+            var revenues = DistributeAmount(line.ChargeAmount, lineShares);
+            var costs = line.CostAmount.HasValue ? DistributeAmount(line.CostAmount.Value, lineShares) : null;
 
-            allocated.AddRange(legs.Select((t, i) => new AllocatedLine(t.Sequence, t.LetterSuffix, LegChargeName(line.ChargeName, t.LetterSuffix, shares[i]), revenues[i], costs?[i], line.IsAccessorial)));
+            allocated.AddRange(legs.Select((t, i) => new AllocatedLine(t.Sequence, t.LetterSuffix, LegChargeName(line.ChargeName, t.LetterSuffix, lineShares[i]), revenues[i], costs?[i], line.IsAccessorial, line.PricingBreakdownId)));
         }
 
         return allocated;
+    }
+
+    /// <summary>
+    /// Turns the user's per-line overrides into normalised shares in <paramref name="legs"/> order.
+    /// A leg the user left out of a line weighs zero — that is how "this charge belongs entirely to
+    /// the other leg" is expressed. Lines whose shares total zero are dropped so they fall back to
+    /// the leg-level split rather than being divided evenly by accident.
+    /// </summary>
+    private static Dictionary<int, IReadOnlyList<decimal>> BuildLineShares(
+        IReadOnlyList<LineShareOverride>? lineOverrides,
+        IReadOnlyList<LegWeight> legs)
+    {
+        var byLine = new Dictionary<int, IReadOnlyList<decimal>>();
+        if (lineOverrides is null || lineOverrides.Count == 0)
+        {
+            return byLine;
+        }
+
+        foreach (var group in lineOverrides.GroupBy(o => o.PricingBreakdownId))
+        {
+            var weights = legs
+                .Select(leg => Math.Max(0m, group.FirstOrDefault(o => o.Sequence == leg.Sequence)?.SharePercent ?? 0m))
+                .ToList();
+
+            if (weights.Sum() > 0m)
+            {
+                byLine[group.Key] = SharesFromWeights(weights);
+            }
+        }
+
+        return byLine;
     }
 
     /// <summary>

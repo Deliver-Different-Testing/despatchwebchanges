@@ -18,6 +18,17 @@ export interface SplitPricingAllocationItem {
 }
 
 /**
+ * One leg's confirmed share of a single breakdown line, for a charge that shouldn't follow the
+ * overall split — a congestion charge only one leg's route incurred, for example.
+ */
+export interface SplitPricingLineAllocationItem {
+    /** The parent breakdown line this override applies to; 0 for the synthesised line. */
+    pricingBreakdownId: number;
+    sequence: number;
+    sharePercent: number;
+}
+
+/**
  * Request model for splitting a job with a meeting point address.
  */
 export interface SplitJobRequest {
@@ -26,15 +37,29 @@ export interface SplitJobRequest {
     courierIdForLegB?: number | null;
     /** Omitted for callers that don't confirm pricing — the server then derives the split itself. */
     pricingAllocation?: SplitPricingAllocationItem[] | null;
+    /** Only the lines the user adjusted; every other line follows `pricingAllocation`. */
+    lineAllocation?: SplitPricingLineAllocationItem[] | null;
 }
 
 /** How the proposed per-leg shares were derived. */
 export type SplitPricingBasis = 'RoadMiles' | 'StraightLine' | 'UserConfirmed' | 'LegRates' | 'EvenSplit';
 
 export interface SplitPricingLine {
+    /** The parent line this was divided out of; 0 for the synthesised line. */
+    pricingBreakdownId: number;
     name: string;
     revenue: number;
     cost: number;
+}
+
+/** One of the parent's lines, before it is divided — what a per-line share is set against. */
+export interface SplitPricingParentLine {
+    pricingBreakdownId: number;
+    /** The original charge name, without a "Part {suffix}". */
+    name: string;
+    revenue: number;
+    cost: number;
+    isAccessorial: boolean;
 }
 
 export interface SplitPricingLeg {
@@ -54,6 +79,8 @@ export interface SplitPricingPreview {
     parentTotalCost: number;
     /** True when the job has no itemised lines and a single synthesised line is being divided. */
     isSynthesised: boolean;
+    /** The undivided lines behind the split, each of which can be given its own share. */
+    parentLines: SplitPricingParentLine[];
     legs: SplitPricingLeg[];
 }
 

@@ -18,7 +18,27 @@ public sealed class SplitPricingPreviewDto
     /// <summary>True when the parent has no itemised lines and a single synthesised line is being divided.</summary>
     public bool IsSynthesised { get; init; }
 
+    /// <summary>
+    /// The undivided lines behind the split, so the dialog can offer a share per line rather than
+    /// having to reconstruct the originals by summing the legs.
+    /// </summary>
+    public required IReadOnlyList<SplitPricingParentLineDto> ParentLines { get; init; }
+
     public required IReadOnlyList<SplitPricingLegDto> Legs { get; init; }
+}
+
+/// <summary>One of the parent's lines, before it is divided.</summary>
+public sealed class SplitPricingParentLineDto
+{
+    /// <summary>Identifies the line when overriding its share; 0 for the synthesised line.</summary>
+    public int PricingBreakdownId { get; init; }
+
+    /// <summary>The original charge name, without a "Part {suffix}".</summary>
+    public required string Name { get; init; }
+
+    public decimal Revenue { get; init; }
+    public decimal Cost { get; init; }
+    public bool IsAccessorial { get; init; }
 }
 
 /// <summary>One leg of a proposed split.</summary>
@@ -44,6 +64,9 @@ public sealed class SplitPricingLegDto
 /// <summary>One proposed breakdown line on a leg.</summary>
 public sealed class SplitPricingLineDto
 {
+    /// <summary>The parent line this was divided out of; 0 for the synthesised line.</summary>
+    public int PricingBreakdownId { get; init; }
+
     public required string Name { get; init; }
     public decimal Revenue { get; init; }
     public decimal Cost { get; init; }
