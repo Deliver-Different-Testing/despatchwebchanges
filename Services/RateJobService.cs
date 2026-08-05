@@ -640,6 +640,14 @@ public sealed class RateJobService(
         return result;
     }
 
+    /// <inheritdoc />
+    public Task<double> GetRoadDistanceMilesAsync(
+        decimal? fromLatitude,
+        decimal? fromLongitude,
+        decimal? toLatitude,
+        decimal? toLongitude) =>
+        CalculateRoadDistance(fromLatitude, fromLongitude, toLatitude, toLongitude);
+
     /// <summary>
     /// Calculates the road distance in miles between two coordinates using the HERE Maps API.
     /// </summary>

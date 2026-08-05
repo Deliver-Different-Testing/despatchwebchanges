@@ -3,6 +3,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
@@ -1245,6 +1246,279 @@ public class SplitJobServiceTests : IAsyncDisposable
             Sequence = 3,
             UcjbVoid = true
         });
+        _seedContext.SaveChanges();
+    }
+
+    // ── Per-leg pricing lines (KT1314V) ────────────────────────────────────────────────────────
+    //
+    // Before this, the split wrote only a flat half of the parent total to each leg's header and
+    // created no breakdown lines at all, so the Price Breakdown modal fell back to the parent's
+    // lines and both parts reported the parent's full revenue and cost.
+
+    [Fact]
+    public async Task SplitJobAsync_CreatesPerLegLines_AttributedToEachLeg()
+    {
+        SeedJob(configure: j => j.UcjbAmount = 89.00m);
+        SeedParentPricingLines();
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+
+        // Every line now exists per part — "Base Part A", "Base Part B", "Congestion Part A/B" —
+        // rather than the parent's three lines being re-read by both legs.
+        Assert.Equal(6, lines.Count);
+        Assert.All(lines, l => Assert.Equal(100, l.JobId));
+        Assert.Equal(
+            new[] { "Base Fuel Part A", "Base Part A", "Congestion Part A" },
+            lines.Where(l => l.ChildJobId == pickupId).Select(l => l.ChargeName).Order());
+        Assert.Equal(
+            new[] { "Base Fuel Part B", "Base Part B", "Congestion Part B" },
+            lines.Where(l => l.ChildJobId == deliveryId).Select(l => l.ChargeName).Order());
+
+        // No unattributed rows survive — otherwise the parent total would double.
+        Assert.DoesNotContain(lines, l => l.ChildJobId == null);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_LeavesTheParentLineTotalUnchanged_SoTheInvoiceIsUnaffected()
+    {
+        SeedJob(configure: j => j.UcjbAmount = 89.00m);
+        SeedParentPricingLines();
+        var service = CreateService();
+
+        await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var lines = await verifyCtx.PricingBreakdowns
+            .Where(p => p.JobId == 100)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(89.00m, lines.Sum(l => l.ChargeAmount));
+        Assert.Equal(50.00m, lines.Sum(l => l.CostAmount ?? 0m));
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_SetsEachLegsHeaderFromItsOwnLines()
+    {
+        SeedJob(configure: j => j.UcjbAmount = 89.00m);
+        SeedParentPricingLines();
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        foreach (var (leg, legId) in new[] { (pickup, pickupId), (delivery, deliveryId) })
+        {
+            var legLines = lines.Where(l => l.ChildJobId == legId).ToList();
+
+            // The tile and the modal now agree: the header is the sum of the leg's own lines.
+            Assert.Equal(legLines.Sum(l => l.ChargeAmount), leg.UcjbAmount);
+            // Driver pay is attributed per leg instead of all sitting on the parent.
+            Assert.Equal(legLines.Sum(l => l.CostAmount ?? 0m), leg.CourierPayment);
+            // Fuel no longer vanishes at part level.
+            Assert.Equal(
+                legLines.Where(l => l.ChargeName!.Contains("Fuel")).Sum(l => l.ChargeAmount),
+                leg.FuelSurchargeAmount);
+            Assert.True(leg.FuelSurchargeAmount > 0m);
+        }
+
+        Assert.Equal(89.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
+        Assert.Equal(50.00m, (pickup.CourierPayment ?? 0m) + (delivery.CourierPayment ?? 0m));
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_DividesByRoadMiles_AndRecordsPerLegDistance()
+    {
+        // "If you drive 90% of the trip, you get 90% of the total." The itemised lines are the
+        // total that gets divided — 89.00 here, matching the KT1314V parent.
+        SeedJob(configure: j =>
+        {
+            j.UcjbAmount = 89.00m;
+            j.PickUpLatitude = -37.00m;
+            j.PickUpLongitude = 174.76m;
+            j.DeliveryLatitude = -36.80m;
+            j.DeliveryLongitude = 174.76m;
+        });
+        SeedParentPricingLines();
+
+        // Leg A (from the job's pickup) covers 9 miles; leg B (from the meeting point) covers 1.
+        _rateJobServiceMock
+            .GetRoadDistanceMilesAsync(Arg.Any<decimal?>(), Arg.Any<decimal?>(), Arg.Any<decimal?>(),
+                Arg.Any<decimal?>())
+            .Returns(call => call.ArgAt<decimal?>(0) == -37.00m ? 9d : 1d);
+
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // 90% / 10% of the 89.00 line total.
+        Assert.Equal(80.10m, pickup.UcjbAmount);
+        Assert.Equal(8.90m, delivery.UcjbAmount);
+        Assert.Equal(89.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
+
+        // Per-leg miles are captured, where previously both parts recorded 0.
+        Assert.Equal(9m, pickup.TotalDistance);
+        Assert.Equal(1m, delivery.TotalDistance);
+
+        // Mileage is the primary basis — the rating engine isn't consulted at all.
+        await _rateJobServiceMock.DidNotReceive().GetJobRateNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_FallsBackToStraightLineMiles_WhenNoRoadDistanceIsAvailable()
+    {
+        // Leg A spans 0.15 degrees of latitude, leg B 0.05 — roughly a 3:1 split.
+        SeedJob(configure: j =>
+        {
+            j.UcjbAmount = 100.00m;
+            j.PickUpLatitude = -37.00m;
+            j.PickUpLongitude = 174.76m;
+            j.DeliveryLatitude = -36.80m;
+            j.DeliveryLongitude = 174.76m;
+        });
+
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.InRange(pickup.UcjbAmount ?? 0m, 74.00m, 76.00m);
+        Assert.Equal(100.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
+
+        // A straight-line estimate must not be written into the road-miles column.
+        Assert.Null(pickup.TotalDistance);
+        Assert.Null(delivery.TotalDistance);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_HonoursTheConfirmedAllocation_WithoutRatingOrRouting()
+    {
+        SeedJob(configure: j => j.UcjbAmount = 89.00m);
+        SeedParentPricingLines();
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            pricingAllocation:
+            [
+                new SplitPricingAllocationItem { Sequence = 1, SharePercent = 70m },
+                new SplitPricingAllocationItem { Sequence = 2, SharePercent = 30m }
+            ],
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // 70% of 89.00 = 62.30, with the last leg absorbing the per-line remainder.
+        Assert.Equal(62.30m, pickup.UcjbAmount);
+        Assert.Equal(26.70m, delivery.UcjbAmount);
+
+        // What the user confirmed is applied verbatim — no distance lookup, no rating call.
+        await _rateJobServiceMock.DidNotReceiveWithAnyArgs()
+            .GetRoadDistanceMilesAsync(default, default, default, default);
+        await _rateJobServiceMock.DidNotReceive().GetJobRateNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_SynthesisesALine_WhenTheParentHasNoBreakdown()
+    {
+        // A flat/manually-priced parent has nothing itemised to divide, but each leg still needs a
+        // row so its header and the Price Breakdown modal agree.
+        SeedJob(configure: j =>
+        {
+            j.UcjbAmount = 100.00m;
+            j.CourierPayment = 60.00m;
+        });
+        var service = CreateService();
+
+        var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, lines.Count);
+        Assert.Equal(
+            new[] { "Manually Rated Part A", "Manually Rated Part B" },
+            lines.Select(l => l.ChargeName).Order());
+        Assert.Equal(100.00m, lines.Sum(l => l.ChargeAmount));
+        Assert.Equal(60.00m, lines.Sum(l => l.CostAmount ?? 0m));
+        Assert.Equal(50.00m, lines.First(l => l.ChildJobId == pickupId).ChargeAmount);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ReSplit_DividesOnlyTheLegBeingSplit()
+    {
+        SeedJob(configure: j => j.UcjbAmount = 100.00m);
+        SeedParentPricingLines(baseAmount: 100.00m, fuelAmount: 0m, congestionAmount: 0m);
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+        var (subPickupId, subDeliveryId) = await service.SplitJobAsync(deliveryId, "TestUser",
+            CreateMeetingPointAddress(), ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+
+        // The first split's surviving sibling keeps its own rows; only the re-split leg's rows are
+        // replaced. Every row still hangs off the root, so the invoice total is still 100.
+        Assert.All(lines, l => Assert.Equal(100, l.JobId));
+        Assert.Equal(100.00m, lines.Sum(l => l.ChargeAmount));
+        Assert.Equal(50.00m, lines.Where(l => l.ChildJobId == pickupId).Sum(l => l.ChargeAmount));
+        Assert.DoesNotContain(lines, l => l.ChildJobId == deliveryId);
+        Assert.Equal(25.00m, lines.Where(l => l.ChildJobId == subPickupId).Sum(l => l.ChargeAmount));
+        Assert.Equal(25.00m, lines.Where(l => l.ChildJobId == subDeliveryId).Sum(l => l.ChargeAmount));
+    }
+
+    /// <summary>
+    /// The KT1314V parent breakdown: Base 64.00/32.00, Base Fuel 16.00/12.00, Congestion 9.00/6.00.
+    /// </summary>
+    private void SeedParentPricingLines(
+        decimal baseAmount = 64.00m, decimal fuelAmount = 16.00m, decimal congestionAmount = 9.00m)
+    {
+        _seedContext.PricingBreakdowns.AddRange(
+            new PricingBreakdown
+            {
+                JobId = 100, ChargeName = "Base", ChargeAmount = baseAmount, CostAmount = baseAmount / 2m
+            },
+            new PricingBreakdown
+            {
+                JobId = 100, ChargeName = "Base Fuel", ChargeAmount = fuelAmount,
+                CostAmount = fuelAmount * 0.75m
+            },
+            new PricingBreakdown
+            {
+                JobId = 100, ChargeName = "Congestion", ChargeAmount = congestionAmount,
+                CostAmount = congestionAmount * 2m / 3m
+            });
         _seedContext.SaveChanges();
     }
 }

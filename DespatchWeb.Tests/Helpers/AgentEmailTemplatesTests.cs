@@ -51,7 +51,7 @@ public class AgentEmailTemplatesRenderHtmlBodyTests
 
         // The link is pulled out of the sentence: the paragraph keeps the copy but not the URL.
         Assert.Contains("Use the button below to accept.</p>", html);
-        Assert.DoesNotContain("<p", html.Substring(html.IndexOf("https://", StringComparison.Ordinal)));
+        Assert.DoesNotContain("<p", html[html.IndexOf("https://", StringComparison.Ordinal)..]);
 
         // The CTA sits in its own keyline-separated section with a "Your next step" eyebrow,
         // after the body copy and before the footer.

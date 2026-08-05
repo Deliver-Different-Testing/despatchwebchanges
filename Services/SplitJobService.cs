@@ -1,7 +1,11 @@
+#nullable enable
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Reporting;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -32,6 +36,7 @@ public class SplitJobService(
         string userName,
         AddressViewModel meetingPointAddress,
         int? courierIdForLegB = null,
+        IReadOnlyList<SplitPricingAllocationItem>? pricingAllocation = null,
         CancellationToken ct = default)
     {
         await using var context = await contextFactory.CreateDbContextAsync(ct);
@@ -63,7 +68,9 @@ public class SplitJobService(
                 var parentJobCourierId = await GetParentJobCourierIdAsync(context, ct);
 
                 // Generate child job numbers using letter suffixes (no SP = no speed suffix appended)
-                var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, job, ct);
+                var childNumbers = await GenerateChildJobNumbersAsync(context, job, ct);
+                var (pickupJobNumber, deliveryJobNumber) =
+                    (childNumbers.PickupJobNumber, childNumbers.DeliveryJobNumber);
 
                 // For US tenants, the tucJob INSERT triggers require non-null suburb IDs
                 // (UTL_fncFuelSurcharge_InclusiveAmount, UTL_fncJob_IsValid, etc.).
@@ -186,11 +193,17 @@ public class SplitJobService(
                 // Consolidate MARS information
                 await ConsolidateMarsInformationAsync(context, jobId, userName, ct);
 
-                // Re-rate the immediate children inside the transaction so the parent amount
-                // is divided across the two legs before commit. A rating failure rolls back
-                // the whole split — better than committing two children at the full parent
+                // Divide the parent's pricing lines across the two legs inside the transaction, so
+                // each leg carries its own itemised breakdown before commit. A rating failure rolls
+                // back the whole split — better than committing two children at the full parent
                 // amount and double-charging the client.
-                await ReRateSplitJobsAsync(context, jobId, job.UcjbAmount ?? 0m, ct);
+                await AllocateSplitPricingAsync(
+                    context,
+                    job,
+                    (pickupJob, childNumbers.PickupSuffix),
+                    (deliveryJob, childNumbers.DeliverySuffix),
+                    pricingAllocation,
+                    ct);
 
                 await transaction.CommitAsync(ct);
 
@@ -531,6 +544,240 @@ public class SplitJobService(
     }
 
     /// <summary>
+    /// The job numbers and letter suffixes generated for a split's two new legs.
+    /// </summary>
+    internal sealed record ChildJobNumbers(
+        string PickupJobNumber,
+        string PickupSuffix,
+        string DeliveryJobNumber,
+        string DeliverySuffix);
+
+    /// <summary>
+    /// Divides the parent's pricing breakdown lines across the two new legs, attributing each new
+    /// row to its leg via <c>PricingBreakdown.ChildJobId</c>, then sets each leg's header totals
+    /// from its own rows.
+    /// </summary>
+    /// <remarks>
+    /// The parent's line total is unchanged — each source line is replaced by per-leg rows summing
+    /// back to it — so a split never flows through to the client invoice. Runs on the caller's
+    /// context so it participates in the split transaction.
+    /// </remarks>
+    private async Task AllocateSplitPricingAsync(
+        DespatchContext context,
+        TucJob parent,
+        (TucJob Job, string Suffix) pickup,
+        (TucJob Job, string Suffix) delivery,
+        IReadOnlyList<SplitPricingAllocationItem>? confirmedAllocation,
+        CancellationToken ct)
+    {
+        var parentAmount = parent.UcjbAmount ?? 0m;
+
+        // Breakdown lines always hang off the effective (root) job. When a leg is itself being
+        // re-split, the rows to divide are that leg's own child-attributed rows, not the root's.
+        var effectiveParentId = parent.ParentId ?? parent.UcjbId;
+        var sourceChildJobId = effectiveParentId == parent.UcjbId ? (int?)null : parent.UcjbId;
+
+        var sourceRows = await context.PricingBreakdowns
+            .Where(p => p.JobId == effectiveParentId && p.ChildJobId == sourceChildJobId)
+            .ToListAsync(ct);
+
+        var sourceLines = sourceRows
+            .Select(p => new SplitPricingAllocator.ParentLine(
+                p.PricingBreakdownId, p.ChargeName ?? string.Empty, p.ChargeAmount, p.CostAmount,
+                p.IsAccessorial))
+            .ToList();
+
+        // A flat or manually-priced parent has nothing itemised to divide — synthesise a single
+        // line so each leg still gets a row and a self-consistent header.
+        var linesToDivide = SplitPricingAllocator.EnsureLines(
+            sourceLines, parentAmount, parent.CourierPayment);
+
+        var legJobs = new[] { pickup, delivery };
+        var (legWeights, basis) = await ResolveLegWeightsAsync(
+            context, pickup, delivery, confirmedAllocation, parentAmount);
+
+        var allocated = SplitPricingAllocator.Allocate(linesToDivide, legWeights);
+
+        if (sourceRows.Count > 0)
+        {
+            context.PricingBreakdowns.RemoveRange(sourceRows);
+        }
+
+        foreach (var line in allocated)
+        {
+            var legJob = legJobs.First(l => l.Suffix == line.LetterSuffix).Job;
+            context.PricingBreakdowns.Add(new PricingBreakdown
+            {
+                JobId = effectiveParentId,
+                PrebookJobId = null,
+                ChildJobId = legJob.UcjbId,
+                ChargeName = line.ChargeName,
+                ChargeAmount = line.ChargeAmount,
+                CostAmount = line.CostAmount,
+                IsAccessorial = line.IsAccessorial
+            });
+        }
+
+        await context.SaveChangesAsync(ct);
+
+        foreach (var leg in legJobs)
+        {
+            var weight = legWeights.First(w => w.LetterSuffix == leg.Suffix);
+            var legLines = allocated.Where(l => l.LetterSuffix == leg.Suffix).ToList();
+            await ApplyLegHeaderAsync(context, leg.Job.UcjbId, legLines, weight.Miles, basis, ct);
+        }
+
+        Log.Information(
+            "Allocated {LineCount} pricing lines across the legs of parent {ParentJobId} on a {Basis} basis. "
+            + "Parent amount: {ParentAmount}",
+            allocated.Count, parent.UcjbId, basis, parentAmount);
+    }
+
+    /// <summary>
+    /// Writes a leg's header totals from the lines just allocated to it: amount, client fuel, driver
+    /// pay, and — when the shares came from real road miles — the leg's distance.
+    /// </summary>
+    private static async Task ApplyLegHeaderAsync(
+        DespatchContext context,
+        int legJobId,
+        IReadOnlyList<SplitPricingAllocator.AllocatedLine> legLines,
+        decimal legMiles,
+        SplitPricingAllocator.AllocationBasis basis,
+        CancellationToken ct)
+    {
+        var revenue = legLines.Sum(l => l.ChargeAmount);
+        var fuel = legLines
+            .Where(l => PriceLineClassifier.Classify(l.ChargeName) == PriceLineClassifier.Bucket.Fuel)
+            .Sum(l => l.ChargeAmount);
+
+        // Leave driver pay null rather than inventing a zero when no source line carried a cost.
+        var cost = legLines.Any(l => l.CostAmount.HasValue)
+            ? legLines.Sum(l => l.CostAmount ?? 0m)
+            : (decimal?)null;
+
+        // TotalDistance is a road-miles column — only populate it from a road-miles basis, never
+        // from a straight-line estimate.
+        var distance = basis == SplitPricingAllocator.AllocationBasis.RoadMiles && legMiles > 0m
+            ? legMiles
+            : (decimal?)null;
+
+        await context.TucJobs
+            .Where(j => j.UcjbId == legJobId)
+            .ExecuteUpdateAsync(j => j
+                .SetProperty(x => x.RatedManually, false)
+                .SetProperty(x => x.UcjbAmount, revenue)
+                .SetProperty(x => x.FuelSurchargeAmount, fuel)
+                .SetProperty(x => x.CourierPayment, cost)
+                .SetProperty(x => x.TotalDistance, distance), ct);
+    }
+
+    /// <summary>
+    /// Resolves each leg's weighting, in priority order: shares the user confirmed, then per-leg
+    /// road miles, then straight-line miles, then each leg's calculated rate, then an even split.
+    /// </summary>
+    private async Task<(IReadOnlyList<SplitPricingAllocator.LegWeight> Legs,
+        SplitPricingAllocator.AllocationBasis Basis)> ResolveLegWeightsAsync(
+        DespatchContext context,
+        (TucJob Job, string Suffix) pickup,
+        (TucJob Job, string Suffix) delivery,
+        IReadOnlyList<SplitPricingAllocationItem>? confirmedAllocation,
+        decimal parentAmount)
+    {
+        var legs = new[] { (Sequence: 1, pickup.Job, pickup.Suffix), (Sequence: 2, delivery.Job, delivery.Suffix) };
+
+        // 1. The user already agreed a split in the dialog — take it verbatim and skip any
+        //    distance or rating call entirely.
+        var confirmed = confirmedAllocation?.Where(a => a.SharePercent > 0m).ToList();
+        if (confirmed is { Count: > 0 } && confirmed.Sum(a => a.SharePercent) > 0m)
+        {
+            var weights = legs
+                .Select(l => new SplitPricingAllocator.LegWeight(
+                    l.Sequence, l.Suffix, 0m,
+                    confirmed.FirstOrDefault(a => a.Sequence == l.Sequence)?.SharePercent ?? 0m))
+                .ToList();
+
+            if (weights.Sum(w => w.SharePercentOverride ?? 0m) > 0m)
+            {
+                return (weights, SplitPricingAllocator.AllocationBasis.UserConfirmed);
+            }
+        }
+
+        // 2/3. Distance — road miles first, then straight-line as a no-network fallback. Both give
+        //      the "% of total trip miles" share the split is meant to express.
+        var roadMiles = new List<decimal>();
+        foreach (var leg in legs)
+        {
+            roadMiles.Add((decimal)await rateJobService.GetRoadDistanceMilesAsync(
+                leg.Job.PickUpLatitude, leg.Job.PickUpLongitude,
+                leg.Job.DeliveryLatitude, leg.Job.DeliveryLongitude));
+        }
+
+        if (roadMiles.Sum() > 0m)
+        {
+            return (Weights(roadMiles), SplitPricingAllocator.AllocationBasis.RoadMiles);
+        }
+
+        var straightLineMiles = legs
+            .Select(l => DistanceCalculator.MilesOrZero(
+                l.Job.PickUpLatitude, l.Job.PickUpLongitude,
+                l.Job.DeliveryLatitude, l.Job.DeliveryLongitude))
+            .ToList();
+
+        if (straightLineMiles.Sum() > 0m)
+        {
+            return (Weights(straightLineMiles), SplitPricingAllocator.AllocationBasis.StraightLine);
+        }
+
+        // 4/5. No usable distance: fall back to the historic rate-proportional split, then even.
+        var rates = await RateLegsAsync(context, [.. legs.Select(l => l.Job.UcjbId)], parentAmount);
+        return rates.Sum() > 0m
+            ? (Weights(rates), SplitPricingAllocator.AllocationBasis.LegRates)
+            : (Weights([1m, 1m]), SplitPricingAllocator.AllocationBasis.EvenSplit);
+
+        List<SplitPricingAllocator.LegWeight> Weights(IReadOnlyList<decimal> byLeg) =>
+            [.. legs.Select((l, i) => new SplitPricingAllocator.LegWeight(l.Sequence, l.Suffix, byLeg[i]))];
+    }
+
+    /// <summary>
+    /// Asks the rating engine for each leg's rate, reading on the split transaction's own
+    /// connection. Returns all-zero rates when the parent has no amount to divide.
+    /// </summary>
+    private async Task<List<decimal>> RateLegsAsync(
+        DespatchContext context,
+        IReadOnlyList<int> legJobIds,
+        decimal parentAmount)
+    {
+        if (parentAmount == 0m)
+        {
+            return [.. legJobIds.Select(_ => 0m)];
+        }
+
+        var isUs = tenantInfoService.IsUsTenant();
+        var rates = new List<decimal>(legJobIds.Count);
+
+        // Rated sequentially, and failures propagate: catching and substituting 0 would silently
+        // reassign the failed leg's share to the others.
+        foreach (var legJobId in legJobIds)
+        {
+            if (isUs)
+            {
+                // Read on the split transaction's own connection — the legs were just inserted in
+                // this uncommitted transaction, so a read on a separate connection would block on
+                // its locks until the command timeout (SQL error 258).
+                var details = await jobRepository.GetJobDetailsForRatingAsync(context, legJobId);
+                rates.Add((await rateJobService.GetJobRateUsAsync(details)).Rate);
+            }
+            else
+            {
+                var details = await jobRepository.GetJobDetailsForRatingNzAsync(context, legJobId, false);
+                rates.Add((await rateJobService.GetJobRateNzAsync(details)).Rate);
+            }
+        }
+
+        return rates;
+    }
+
+    /// <summary>
     /// Rates the immediate children of <paramref name="parentJobId"/> and distributes
     /// <paramref name="parentAmount"/> across them in proportion to each leg's calculated rate.
     /// The total of all child UcjbAmount values after this method runs equals parentAmount exactly
@@ -557,7 +804,16 @@ public class SplitJobService(
         var children = await context.TucJobs
             .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
             .OrderBy(j => j.Sequence)
-            .Select(j => new { j.UcjbId, j.RatedManually, j.UcjbAmount })
+            .Select(j => new
+            {
+                j.UcjbId,
+                j.RatedManually,
+                j.UcjbAmount,
+                j.PickUpLatitude,
+                j.PickUpLongitude,
+                j.DeliveryLatitude,
+                j.DeliveryLongitude
+            })
             .Take(100)
             .ToListAsync(ct);
 
@@ -608,34 +864,28 @@ public class SplitJobService(
             rates.Add((childId, rate));
         }
 
-        // Distribute the remaining (non-manual) amount proportionally based on calculated rates
-        var totalRate = rates.Sum(r => r.Rate);
-        var runningTotal = 0m;
+        // Distribute the remaining (non-manual) amount proportionally based on calculated rates.
+        // When no leg rates — a zone/flat parent, where the engine returns 0 for both legs — fall
+        // back to each leg's share of trip miles before an even split: a driver covering 90% of the
+        // trip should carry 90% of the total.
+        var weights = rates.Sum(r => r.Rate) > 0m
+            ? rates.Select(r => r.Rate).ToList()
+            : rates
+                .Select(r => children.First(c => c.UcjbId == r.JobId))
+                .Select(c => DistanceCalculator.MilesOrZero(
+                    c.PickUpLatitude, c.PickUpLongitude, c.DeliveryLatitude, c.DeliveryLongitude))
+                .ToList();
+
+        var amounts = SplitPricingAllocator.DistributeAmount(
+            amountToDistribute, SplitPricingAllocator.SharesFromWeights(weights));
 
         for (var i = 0; i < rates.Count; i++)
         {
-            decimal amount;
-            if (i == rates.Count - 1)
-            {
-                // Last job absorbs rounding difference to ensure exact balance
-                amount = amountToDistribute - runningTotal;
-            }
-            else if (totalRate == 0m)
-            {
-                // All rates are 0: distribute evenly so the remaining total is still preserved
-                amount = Math.Round(amountToDistribute / rates.Count, 2, MidpointRounding.AwayFromZero);
-            }
-            else
-            {
-                var percentage = rates[i].Rate / totalRate;
-                amount = Math.Round(percentage * amountToDistribute, 2, MidpointRounding.AwayFromZero);
-            }
+            var jobId = rates[i].JobId;
+            var amount = amounts[i];
 
-            runningTotal += amount;
-
-            var i1 = i;
             await context.TucJobs
-                .Where(j => j.UcjbId == rates[i1].JobId)
+                .Where(j => j.UcjbId == jobId)
                 .ExecuteUpdateAsync(j => j
                     .SetProperty(x => x.RatedManually, false)
                     .SetProperty(x => x.UcjbAmount, amount), ct);
@@ -646,24 +896,7 @@ public class SplitJobService(
             rates.Count, parentJobId, parentAmount);
     }
 
-    /// <summary>
-    /// Converts a 0-based index to Excel-style letter suffix (0=A, 25=Z, 26=AA, 27=AB, etc.)
-    /// </summary>
-    private static string GetLetterSuffix(int index)
-    {
-        var result = string.Empty;
-        var n = index;
-
-        do
-        {
-            result = (char)('A' + n % 26) + result;
-            n = n / 26 - 1;
-        } while (n >= 0);
-
-        return result;
-    }
-
-    private static async Task<(string PickupJobNumber, string DeliveryJobNumber)> GenerateChildJobNumbersAsync(
+    internal static async Task<ChildJobNumbers> GenerateChildJobNumbersAsync(
         DespatchContext context,
         TucJob job,
         CancellationToken ct)
@@ -695,10 +928,12 @@ public class SplitJobService(
         }
 
         // Generate letter suffixes for the two new jobs
-        var pickupSuffix = GetLetterSuffix(existingChildCount);
-        var deliverySuffix = GetLetterSuffix(existingChildCount + 1);
+        var pickupSuffix = SplitPricingAllocator.LetterSuffix(existingChildCount);
+        var deliverySuffix = SplitPricingAllocator.LetterSuffix(existingChildCount + 1);
 
-        return ($"{mainJobNumber}{pickupSuffix}", $"{mainJobNumber}{deliverySuffix}");
+        return new ChildJobNumbers(
+            $"{mainJobNumber}{pickupSuffix}", pickupSuffix,
+            $"{mainJobNumber}{deliverySuffix}", deliverySuffix);
     }
 
     private static async Task ConsolidateMarsInformationAsync(

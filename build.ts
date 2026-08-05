@@ -378,6 +378,83 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 `,
                 loader: "js",
             }));
+
+            // ── MUI: redirect to the vendor-react globals so module bundles don't
+            // each embed their own copy of MUI + Emotion. vendor-react exposes
+            // window.MUI (@mui/material barrel), window.MUIStyles
+            // (@mui/material/styles) and window.MUIXDatePickers.
+
+            // @mui/material/styles — named utilities (register before the general
+            // component handler so it wins the resolve for this exact specifier).
+            build.onResolve({filter: /^@mui\/material\/styles$/}, () => ({
+                path: "@mui/material/styles",
+                namespace: "mui-styles-shim",
+            }));
+
+            build.onLoad({filter: /.*/, namespace: "mui-styles-shim"}, () => ({
+                contents: `
+                    const S = window.MUIStyles;
+                    export const alpha = S.alpha;
+                    export const useTheme = S.useTheme;
+                    export const createTheme = S.createTheme;
+                    export const ThemeProvider = S.ThemeProvider;
+                    export const styled = S.styled;
+                    export const useThemeProps = S.useThemeProps;
+                    export const responsiveFontSizes = S.responsiveFontSizes;
+                    export const StyledEngineProvider = S.StyledEngineProvider;
+                    export const useColorScheme = S.useColorScheme;
+                    export const emphasize = S.emphasize;
+                    export const darken = S.darken;
+                    export const lighten = S.lighten;
+                    export const hexToRgb = S.hexToRgb;
+                    export const rgbToHex = S.rgbToHex;
+                    export const decomposeColor = S.decomposeColor;
+                    export const recomposeColor = S.recomposeColor;
+                    export const css = S.css;
+                    export const keyframes = S.keyframes;
+                `,
+                loader: "js",
+            }));
+
+            // @mui/material/<Component> — every such import in the app is a default
+            // import, exposed on the barrel by its (Pascal-cased) last segment.
+            build.onResolve({filter: /^@mui\/material\/[^/]+$/}, (args) => {
+                if (args.path === "@mui/material/styles") return null;
+                return {path: args.path, namespace: "mui-component-shim"};
+            });
+
+            build.onLoad({filter: /.*/, namespace: "mui-component-shim"}, (args) => {
+                const name = args.path.slice("@mui/material/".length);
+                // SvgIcon also exposes named exports (createSvgIcon, svgIconClasses)
+                // that @mui/icons-material depends on and the barrel doesn't carry.
+                if (name === "SvgIcon") {
+                    return {
+                        contents: `
+                            const S = window.MUISvgIcon;
+                            export default S.default;
+                            export const createSvgIcon = S.createSvgIcon;
+                            export const svgIconClasses = S.svgIconClasses;
+                        `,
+                        loader: "js",
+                    };
+                }
+                return {contents: `export default window.MUI.${name};`, loader: "js"};
+            });
+
+            // @mui/x-date-pickers/<Export> — named import matching the last segment
+            // (LocalizationProvider, AdapterDayjs, DatePicker, DateCalendar, ...).
+            build.onResolve({filter: /^@mui\/x-date-pickers\/[^/]+$/}, (args) => ({
+                path: args.path,
+                namespace: "muix-shim",
+            }));
+
+            build.onLoad({filter: /.*/, namespace: "muix-shim"}, (args) => {
+                const name = args.path.slice("@mui/x-date-pickers/".length);
+                return {
+                    contents: `export const ${name} = window.MUIXDatePickers.${name};`,
+                    loader: "js",
+                };
+            });
         },
     };
 }
@@ -428,8 +505,14 @@ function getBuildConfig(
         // React modules use React/ReactDOM from vendor-react + dayjs from vendor-core
         plugins.unshift(createGlobalShimPlugin(false));
         plugins.unshift(createReactGlobalShimPlugin());
+    } else if (bundleType === "vendor-react") {
+        // vendor-react bundles MUI (incl. x-date-pickers' AdapterDayjs); redirect
+        // dayjs to the single window.dayjs configured in vendor-core so the date
+        // pickers share the app's dayjs plugins/timezone setup rather than a
+        // second, unconfigured dayjs instance.
+        plugins.unshift(createGlobalShimPlugin(false));
     }
-    // vendor-react and vendor-core don't need shims - they bundle their own dependencies
+    // vendor-core doesn't need shims - it bundles its own dependencies
 
     const define: Record<string, string> = {
         "process.env.NODE_ENV": forProduction ? '"production"' : '"development"',

@@ -15,6 +15,12 @@ namespace DespatchWeb.Services;
 /// </summary>
 public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJobPhotoService
 {
+    /// <summary>S3 key prefix under which archived (soft-deleted) captured media is retained.</summary>
+    private const string ArchivePrefix = "RestoredArchive/";
+
+    private static readonly HashSet<string> AllowedTypes =
+        ["image/jpeg", "image/png", "image/gif", "image/heic", "image/heif", "application/pdf"];
+
     /// <summary>
     /// Retrieves delivery photos and signatures for a job from S3 storage.
     /// </summary>
@@ -28,7 +34,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
         var key = $"{jobId}-";
 
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Delivery);
-    
+
         // Add defensive check
         if (s3Objects != null && s3Objects.Count != 0)
         {
@@ -70,79 +76,6 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
         // No data
         Log.Information("No pickup photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
         return [];
-    }
-
-    /// <summary>
-    /// TEMP DIAGNOSTIC — lists a set of candidate S3 folders that might hold pickup signatures and
-    /// logs which ones contain objects for this job, across the current and adjacent months. Purely
-    /// observational (no results returned/mutated); intended to confirm the correct folder name so it
-    /// can be wired into <see cref="GetFoldersByPhotoType"/>. Remove once the folder name is confirmed.
-    /// </summary>
-    private async Task LogPickupSignatureCandidatesAsync(string bucketName, string pattern, int year, int month, int jobId)
-    {
-        try
-        {
-            var nextMonth = month == 12 ? 1 : month + 1;
-            var nextYear = month == 12 ? year + 1 : year;
-            var prevMonth = month == 1 ? 12 : month - 1;
-            var prevYear = month == 1 ? year - 1 : year;
-
-            var monthPrefixes = new[]
-            {
-                $"{year}/{month:D2}/",
-                $"{prevYear}/{prevMonth:D2}/",
-                $"{nextYear}/{nextMonth:D2}/"
-            };
-
-            // Plausible names the mobile app might write pickup signatures under. PickupPhotos and
-            // DeliverySignatures are included as controls (we expect those to have hits when present).
-            string[] candidateFolders =
-            [
-                "PickupSignatures",
-                "PickupSignature",
-                "PickUpSignatures",
-                "PickupSigs",
-                "PickupSig",
-                "PickupScannedDocuments",
-                "PickupPhotos",
-                "DeliverySignatures"
-            ];
-
-            foreach (var folder in candidateFolders)
-            {
-                foreach (var monthPrefix in monthPrefixes)
-                {
-                    var prefix = $"{folder}/{monthPrefix}{pattern}";
-                    var response = await s3Client.ListObjectsV2Async(new ListObjectsV2Request
-                    {
-                        BucketName = bucketName,
-                        Prefix = prefix,
-                        MaxKeys = 1000
-                    });
-
-                    var objects = response?.S3Objects;
-                    var foundCount = objects?.Count ?? 0;
-                    if (foundCount > 0)
-                    {
-                        Log.Information(
-                            "[PickupSigProbe] job {JobId} HIT folder={Folder} prefix={Prefix} -> {Count} object(s): {Keys}",
-                            jobId, folder, prefix, foundCount, objects.Select(o => o.Key));
-                    }
-                    else
-                    {
-                        Log.Information(
-                            "[PickupSigProbe] job {JobId} miss folder={Folder} prefix={Prefix}",
-                            jobId, folder, prefix);
-                    }
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
-                    nameof(LogPickupSignatureCandidatesAsync)));
-        }
     }
 
     /// <summary>
@@ -241,9 +174,6 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             };
         }
     }
-
-    /// <summary>S3 key prefix under which archived (soft-deleted) captured media is retained.</summary>
-    private const string ArchivePrefix = "RestoredArchive/";
 
     /// <summary>
     /// Soft-deletes a single captured photo/signature by copying the S3 object under the
@@ -400,8 +330,6 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
 
         return s3Files;
     }
-
-    private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/gif", "image/heic", "image/heif", "application/pdf"];
 
     /// <summary>
     /// Uploads a file attachment for a job to S3. Only allows images and PDFs up to 10MB.
@@ -570,6 +498,80 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
     }
 
     /// <summary>
+    /// TEMP DIAGNOSTIC — lists a set of candidate S3 folders that might hold pickup signatures and
+    /// logs which ones contain objects for this job, across the current and adjacent months. Purely
+    /// observational (no results returned/mutated); intended to confirm the correct folder name so it
+    /// can be wired into <see cref="GetFoldersByPhotoType"/>. Remove once the folder name is confirmed.
+    /// </summary>
+    private async Task LogPickupSignatureCandidatesAsync(string bucketName, string pattern, int year, int month,
+        int jobId)
+    {
+        try
+        {
+            var nextMonth = month == 12 ? 1 : month + 1;
+            var nextYear = month == 12 ? year + 1 : year;
+            var prevMonth = month == 1 ? 12 : month - 1;
+            var prevYear = month == 1 ? year - 1 : year;
+
+            var monthPrefixes = new[]
+            {
+                $"{year}/{month:D2}/",
+                $"{prevYear}/{prevMonth:D2}/",
+                $"{nextYear}/{nextMonth:D2}/"
+            };
+
+            // Plausible names the mobile app might write pickup signatures under. PickupPhotos and
+            // DeliverySignatures are included as controls (we expect those to have hits when present).
+            string[] candidateFolders =
+            [
+                "PickupSignatures",
+                "PickupSignature",
+                "PickUpSignatures",
+                "PickupSigs",
+                "PickupSig",
+                "PickupScannedDocuments",
+                "PickupPhotos",
+                "DeliverySignatures"
+            ];
+
+            foreach (var folder in candidateFolders)
+            {
+                foreach (var monthPrefix in monthPrefixes)
+                {
+                    var prefix = $"{folder}/{monthPrefix}{pattern}";
+                    var response = await s3Client.ListObjectsV2Async(new ListObjectsV2Request
+                    {
+                        BucketName = bucketName,
+                        Prefix = prefix,
+                        MaxKeys = 1000
+                    });
+
+                    var objects = response?.S3Objects;
+                    var foundCount = objects?.Count ?? 0;
+                    if (foundCount > 0 && objects is not null)
+                    {
+                        Log.Information(
+                            "[PickupSigProbe] job {JobId} HIT folder={Folder} prefix={Prefix} -> {Count} object(s): {Keys}",
+                            jobId, folder, prefix, foundCount, objects.Select(o => o.Key));
+                    }
+                    else
+                    {
+                        Log.Information(
+                            "[PickupSigProbe] job {JobId} miss folder={Folder} prefix={Prefix}",
+                            jobId, folder, prefix);
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                    nameof(LogPickupSignatureCandidatesAsync)));
+        }
+    }
+
+    /// <summary>
     /// Searches for S3 objects matching a prefix pattern.
     /// </summary>
     /// <param name="bucketName">The S3 bucket to search in.</param>
@@ -592,7 +594,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             do
             {
                 response = await s3Client.ListObjectsV2Async(request);
-                
+
                 var objects = response?.S3Objects;
                 if (objects is { Count: > 0 })
                 {
@@ -673,10 +675,19 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
                     var foundCount = objects?.Count ?? 0;
 
                     // TEMP DIAGNOSTIC LOGGING — shows exactly which prefix was hit and what keys came back.
-                    Log.Information(
-                        "[PhotoSearch] type={PhotoType} prefix={Prefix} -> {Count} object(s){Keys}",
-                        photoType, prefix, foundCount,
-                        foundCount > 0 ? ": " + string.Join(", ", objects.Select(o => o.Key)) : string.Empty);
+                    if (objects is not null)
+                    {
+                        var test = string.Join(", ", objects.Select(o => o.Key));
+                        Log.Information(
+                            "[PhotoSearch] type={PhotoType} prefix={Prefix} -> {Count} object(s){Keys}",
+                            photoType, prefix, foundCount,
+                            foundCount > 0 ? ": " + test : string.Empty);
+                    }
+                    else
+                    {
+                        Log.Information("S3 Buckets objects is null");
+                    }
+
 
                     if (objects is { Count: > 0 })
                     {
@@ -760,7 +771,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             };
 
             var response = await s3Client.ListObjectsV2Async(request);
-        
+
             // Fix: Add defensive null checking
             var objects = response?.S3Objects;
             if (objects is { Count: > 0 })
@@ -778,12 +789,13 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
 
         return allResults;
     }
-    
-    
+
+
     /// <summary>
     /// Retrieves detailed photo information from S3 objects including base64 encoded image data.
     /// </summary>
-    private async Task<IReadOnlyList<S3PhotoInfo>> GetPhotoInfoFromS3ObjectsAsync(IReadOnlyList<S3Object> s3Objects, string bucketName)
+    private async Task<IReadOnlyList<S3PhotoInfo>> GetPhotoInfoFromS3ObjectsAsync(IReadOnlyList<S3Object> s3Objects,
+        string bucketName)
     {
         var photoInfos = new List<S3PhotoInfo>();
 
@@ -798,10 +810,10 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
                 };
 
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
-            
+
                 var fileName = response.Metadata["FileName"] ?? Path.GetFileName(s3Object.Key);
                 var contentType = response.Headers.ContentType ?? DetermineContentType(Path.GetExtension(fileName));
-            
+
                 // Only load data for images, not for PDFs or other files
                 string data = null;
                 var displayContentType = contentType;

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -45,6 +45,9 @@ public class JobControllerTests : IDisposable
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
 
     private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
+
+    private readonly ISplitPricingPreviewService _splitPricingPreviewServiceMock =
+        Substitute.For<ISplitPricingPreviewService>();
     private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
@@ -97,6 +100,7 @@ public class JobControllerTests : IDisposable
             _priceReportServiceMock,
             _pdfOverlayClientMock,
             _splitJobServiceMock,
+            _splitPricingPreviewServiceMock,
             _sendToPartnerServiceMock,
             _partnerJobGateMock,
             _flightAssignmentServiceMock);
@@ -1223,7 +1227,8 @@ public class JobControllerTests : IDisposable
         _tenantInfoServiceMock.GetStaffInfoAsync()
             .Returns(staffInfo);
         _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(),
-            Arg.Any<int?>(), Arg.Any<CancellationToken>()).Returns((10, 11));
+            Arg.Any<int?>(), Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+            Arg.Any<CancellationToken>()).Returns((10, 11));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1268,7 +1273,8 @@ public class JobControllerTests : IDisposable
 
         _tenantInfoServiceMock.GetStaffInfoAsync()
             .Returns(staffInfo);
-        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42, Arg.Any<CancellationToken>())
+        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42,
+                Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(), Arg.Any<CancellationToken>())
             .Returns((1, 2));
 
         var controller = CreateControllerForSplitJob();
@@ -1279,7 +1285,7 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<OkResult>(result);
         await _splitJobServiceMock.Received().SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42,
-            Arg.Any<CancellationToken>());
+            Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -1307,7 +1313,8 @@ public class JobControllerTests : IDisposable
             .Returns(staffInfo);
         _splitJobServiceMock
             .SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(), Arg.Any<int?>(),
-                Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("Job not found"));
+                Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("Job not found"));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1352,6 +1359,7 @@ public class JobControllerTests : IDisposable
                 Arg.Any<string>(),
                 Arg.Do<AddressViewModel>(addr => capturedAddress = addr),
                 Arg.Any<int?>(),
+                Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
                 Arg.Any<CancellationToken>())
             .Returns((1, 2));
 

@@ -38,6 +38,7 @@ public class JobController(
     IPriceReportService priceReportService,
     IPdfOverlayClient pdfOverlay,
     ISplitJobService splitJobService,
+    ISplitPricingPreviewService splitPricingPreviewService,
     ISendToPartnerService sendToPartnerService,
     IPartnerJobGate partnerJobGate,
     IFlightAssignmentService flightAssignmentService
@@ -1549,6 +1550,40 @@ public class JobController(
         }
     }
 
+    /// <summary>
+    /// Proposes how the job's pricing lines would divide across the two legs of a split, so the user
+    /// can confirm before anything is written. Read-only.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> PreviewSplitPricing([FromBody] SplitPricingPreviewRequest request)
+    {
+        try
+        {
+            var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
+
+            await pricingPermissionService.ValidateJobAccessAsync(request.JobId);
+
+            var preview = await splitPricingPreviewService.PreviewAsync(
+                request.JobId, request.MeetingPointAddress);
+
+            return Json(preview);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            Log.Warning(e, "Unauthorized split pricing preview for job {JobId}", request.JobId);
+            return StatusCode(StatusCodes.Status403Forbidden, e.Message);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", ErrorMessageStringFormatter.Format(e));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> SplitJob([FromBody] SplitJobRequest request)
     {
@@ -1572,7 +1607,8 @@ public class JobController(
                 request.JobId,
                 staffName,
                 request.MeetingPointAddress,
-                request.CourierIdForLegB);
+                request.CourierIdForLegB,
+                request.PricingAllocation);
 
             return Ok();
         }

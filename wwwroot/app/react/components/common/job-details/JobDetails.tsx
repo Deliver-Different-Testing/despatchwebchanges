@@ -321,8 +321,10 @@ export function JobDetails({config}: JobDetailsProps) {
     }, [refreshNonce]);
     const invalidatePhotos = useCallback(async () => {
         if (!jobId) return;
-        await rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'delivery')});
-        await rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'pickup')});
+        await Promise.all([
+            rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'delivery')}),
+            rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'pickup')}),
+        ]);
     }, [rqClient, jobId]);
 
     // Stable toast wrappers for StickyNotes (showToast is already ref-stabilized)

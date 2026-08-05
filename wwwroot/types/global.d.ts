@@ -90,6 +90,18 @@ declare global {
         useQueryClient?: typeof import('@tanstack/react-query').useQueryClient;
         ReactQueryClient?: QueryClient;
 
+        // ── MUI globals (set by vendor-react bundle) ─────────────────────
+        MUI?: typeof import('@mui/material');
+        MUIStyles?: typeof import('@mui/material/styles');
+        MUIXDatePickers?: typeof import('@mui/x-date-pickers') & {
+            AdapterDayjs: typeof import('@mui/x-date-pickers/AdapterDayjs').AdapterDayjs;
+        };
+        MUISvgIcon?: {
+            default: typeof import('@mui/material/SvgIcon').default;
+            createSvgIcon: typeof import('@mui/material/SvgIcon').createSvgIcon;
+            svgIconClasses: typeof import('@mui/material/SvgIcon').svgIconClasses;
+        };
+
         // ── Utility library globals (set by vendor-core bundle) ──────────
         dayjs?: typeof import('dayjs').default;
         windowsIana?: typeof import('windows-iana');

@@ -115,13 +115,42 @@ public sealed class PricingPermissionService(
 
         // Single query: get job IDs that the user HAS access to
         var accessibleJobIds = await context.TblJobs
-            .Where(j => jobIds.Contains(j.JobId) && j.ClientId != null && accessibleClientIds.Contains(j.ClientId.Value))
+            .Where(j => jobIds.Contains(j.JobId) && j.ClientId != null &&
+                        accessibleClientIds.Contains(j.ClientId.Value))
             .Select(j => j.JobId)
             .ToListAsync();
 
         // Return jobs the user does NOT have access to (set difference)
-        return jobIds.Except(accessibleJobIds).ToList();
+        return [.. jobIds.Except(accessibleJobIds)];
     }
+
+    /// <inheritdoc />
+    public void ValidatePricingMode(string pricingMode)
+    {
+        if (string.IsNullOrEmpty(pricingMode))
+        {
+            throw new ArgumentException("Pricing mode is required", nameof(pricingMode));
+        }
+
+        if (!ValidPricingModes.Contains(pricingMode))
+        {
+            throw new ArgumentException(
+                $"Invalid pricing mode: {pricingMode}. Valid modes are: {string.Join(", ", ValidPricingModes)}",
+                nameof(pricingMode));
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<PricingPermissions> GetPricingPermissionsAsync() =>
+        // Return all permissions enabled
+        Task.FromResult(new PricingPermissions
+        {
+            CanModifyPrices = true,
+            CanBulkUpdate = true,
+            CanRecalculate = true,
+            CanSetBaseAmount = true,
+            CanManageBreakdown = true
+        });
 
     /// <summary>
     /// Gets the set of client IDs the current contact has access to.
@@ -138,30 +167,4 @@ public sealed class PricingPermissionService(
         _accessibleClientIds = clientContacts?.Select(c => c.Id).ToHashSet() ?? [];
         return _accessibleClientIds;
     }
-
-    /// <inheritdoc />
-    public void ValidatePricingMode(string pricingMode)
-    {
-        if (string.IsNullOrEmpty(pricingMode))
-        {
-            throw new ArgumentException("Pricing mode is required", nameof(pricingMode));
-        }
-
-        if (!ValidPricingModes.Contains(pricingMode))
-        {
-            throw new ArgumentException($"Invalid pricing mode: {pricingMode}. Valid modes are: {string.Join(", ", ValidPricingModes)}", nameof(pricingMode));
-        }
-    }
-
-    /// <inheritdoc />
-    public Task<PricingPermissions> GetPricingPermissionsAsync() =>
-        // Return all permissions enabled
-        Task.FromResult(new PricingPermissions
-        {
-            CanModifyPrices = true,
-            CanBulkUpdate = true,
-            CanRecalculate = true,
-            CanSetBaseAmount = true,
-            CanManageBreakdown = true
-        });
 }

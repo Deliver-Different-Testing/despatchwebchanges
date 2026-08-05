@@ -1,5 +1,7 @@
+#nullable enable
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 
 namespace DespatchWeb.Interfaces;
 
@@ -17,6 +19,10 @@ public interface ISplitJobService
     /// <param name="userName">The username performing the split.</param>
     /// <param name="meetingPointAddress">The meeting point address data including all address lines.</param>
     /// <param name="courierIdForLegB">Optional courier ID to assign to the delivery leg (Leg B).</param>
+    /// <param name="pricingAllocation">
+    /// Optional per-leg shares confirmed by the user. When null the service derives the split from
+    /// per-leg road miles, falling back to straight-line miles, then leg rates, then an even split.
+    /// </param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>
     /// A tuple where PickupJobId is the newly created pickup child job
@@ -27,6 +33,7 @@ public interface ISplitJobService
         string userName,
         AddressViewModel meetingPointAddress,
         int? courierIdForLegB = null,
+        IReadOnlyList<SplitPricingAllocationItem>? pricingAllocation = null,
         CancellationToken ct = default);
 
     /// <summary>

@@ -52,6 +52,12 @@ public sealed class PriceDetailHeaderRow
 // One row per current PricingBreakdown line (live or archive).
 public sealed class PriceDetailLineRow
 {
+    /// <summary>
+    /// The split leg this line belongs to, when the line is attributed to one. Lines hang off the
+    /// parent job, so this is how a leg's own share is distinguished from the parent's whole set.
+    /// </summary>
+    public int? ChildJobId { get; init; }
+
     public int JobId { get; init; }
     public string ChargeName { get; init; } = "";
     public decimal ChargeAmount { get; init; }

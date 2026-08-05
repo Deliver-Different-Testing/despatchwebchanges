@@ -3672,7 +3672,9 @@ public partial class JobRepository(
                 })
                 .ToListAsync();
 
-            // Fall back to parent's archived rows if this job has none
+            // Fall back to parent's archived rows if this job has none. PricingBreakdownArchive has
+            // no ChildJobId column, so per-leg attribution cannot survive archiving — an archived
+            // split leg still shows the parent's breakdown until that column exists.
             if (archiveBreakdowns.Count == 0 && effectiveArchiveJobId != jobId)
             {
                 archiveBreakdowns = await Context.PricingBreakdownArchives
@@ -3712,11 +3714,18 @@ public partial class JobRepository(
                 })
                 .ToListAsync();
 
-            // Fall back to parent's breakdown rows if the child has none of its own
+            // A split leg's rows live on the parent, attributed to the leg via ChildJobId — so take
+            // only this leg's. Returning the parent's whole breakdown made every leg report the
+            // parent's full revenue and cost while its own header showed a fraction of it.
+            // Splits made before per-leg lines existed have no attributed rows at all; those keep
+            // the original parent fallback rather than rendering an empty breakdown.
             if (pricingBreakdowns.Count == 0 && effectiveJobId != jobId)
             {
+                var hasAttributedRows = await Context.PricingBreakdowns
+                    .AnyAsync(p => p.JobId == effectiveJobId && p.ChildJobId != null);
+
                 pricingBreakdowns = await Context.PricingBreakdowns
-                    .Where(p => p.JobId == effectiveJobId)
+                    .Where(p => p.JobId == effectiveJobId && (!hasAttributedRows || p.ChildJobId == jobId))
                     .Select(p => new ChargeViewModel
                     {
                         ChargeId = p.PricingBreakdownId,

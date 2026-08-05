@@ -11,6 +11,15 @@ public interface IRateJobService
     Task<ApiRerate> GetJobRateUsAsync(JobRatingDetailsDto jobDetails);
 
     /// <summary>
+    /// Road distance in miles between two coordinates, or 0 when any coordinate is missing or zero.
+    /// </summary>
+    Task<double> GetRoadDistanceMilesAsync(
+        decimal? fromLatitude,
+        decimal? fromLongitude,
+        decimal? toLatitude,
+        decimal? toLongitude);
+
+    /// <summary>
     /// Applies bulk price updates from an uploaded spreadsheet and returns the results.
     /// </summary>
     /// <param name="file">The uploaded spreadsheet file (xls, xlsx, or csv).</param>

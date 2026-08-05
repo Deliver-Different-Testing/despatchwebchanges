@@ -20,4 +20,10 @@ public sealed class SplitJobRequest
     /// When null, the delivery leg is created without a courier assignment.
     /// </summary>
     public int? CourierIdForLegB { get; init; }
+
+    /// <summary>
+    /// The per-leg shares the user confirmed in the split pricing dialog. When null the service
+    /// derives the split itself, which keeps the AngularJS template button and API callers working.
+    /// </summary>
+    public IReadOnlyList<SplitPricingAllocationItem>? PricingAllocation { get; init; }
 }
