@@ -20,6 +20,7 @@ import {
     previewSplitPricing,
     splitJob,
     type SplitPricingAllocationItem,
+    type SplitPricingLineAllocationItem,
     type SplitPricingPreview,
 } from './splitJobApi';
 import {openEditAddressDialog} from '../components/dialogs/edit-address-dialog/edit-address-dialog-react.module';
@@ -92,6 +93,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
     }
 
     let pricingAllocation: SplitPricingAllocationItem[] | null = null;
+    let lineAllocation: SplitPricingLineAllocationItem[] | null = null;
     if (preview) {
         let pricingResult: SplitPricingResult;
         try {
@@ -107,6 +109,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
         }
 
         pricingAllocation = pricingResult.allocation;
+        lineAllocation = pricingResult.lineAllocation;
     }
 
     // ── API call ──
@@ -117,6 +120,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
             meetingPointAddress,
             courierIdForLegB,
             pricingAllocation,
+            lineAllocation,
         });
         showToast(`Job ${job.jobNo} successfully split`, 'success');
         try {

@@ -47,6 +47,11 @@ export const splitJobHandlers = [
             parentTotalRevenue: 89,
             parentTotalCost: 50,
             isSynthesised: false,
+            parentLines: [
+                { pricingBreakdownId: 1, name: 'Base', revenue: 64, cost: 32, isAccessorial: false },
+                { pricingBreakdownId: 2, name: 'Base Fuel', revenue: 16, cost: 12, isAccessorial: false },
+                { pricingBreakdownId: 3, name: 'Congestion', revenue: 9, cost: 6, isAccessorial: true },
+            ],
             legs: [
                 {
                     sequence: 1,
@@ -57,9 +62,9 @@ export const splitJobHandlers = [
                     totalRevenue: 62.3,
                     totalCost: 35,
                     lines: [
-                        { name: 'Base Part A', revenue: 44.8, cost: 22.4 },
-                        { name: 'Base Fuel Part A', revenue: 11.2, cost: 8.4 },
-                        { name: 'Congestion Part A', revenue: 6.3, cost: 4.2 },
+                        { pricingBreakdownId: 1, name: 'Base Part A', revenue: 44.8, cost: 22.4 },
+                        { pricingBreakdownId: 2, name: 'Base Fuel Part A', revenue: 11.2, cost: 8.4 },
+                        { pricingBreakdownId: 3, name: 'Congestion Part A', revenue: 6.3, cost: 4.2 },
                     ],
                 },
                 {
@@ -71,9 +76,9 @@ export const splitJobHandlers = [
                     totalRevenue: 26.7,
                     totalCost: 15,
                     lines: [
-                        { name: 'Base Part B', revenue: 19.2, cost: 9.6 },
-                        { name: 'Base Fuel Part B', revenue: 4.8, cost: 3.6 },
-                        { name: 'Congestion Part B', revenue: 2.7, cost: 1.8 },
+                        { pricingBreakdownId: 1, name: 'Base Part B', revenue: 19.2, cost: 9.6 },
+                        { pricingBreakdownId: 2, name: 'Base Fuel Part B', revenue: 4.8, cost: 3.6 },
+                        { pricingBreakdownId: 3, name: 'Congestion Part B', revenue: 2.7, cost: 1.8 },
                     ],
                 },
             ],

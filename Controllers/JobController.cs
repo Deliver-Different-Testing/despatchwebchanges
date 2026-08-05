@@ -1608,7 +1608,8 @@ public class JobController(
                 staffName,
                 request.MeetingPointAddress,
                 request.CourierIdForLegB,
-                request.PricingAllocation);
+                request.PricingAllocation,
+                request.LineAllocation);
 
             return Ok();
         }

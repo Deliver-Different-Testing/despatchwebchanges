@@ -81,14 +81,17 @@ public class SplitPricingPreviewService(
                 SharePercent = Math.Round(shares[i] * 100m, 2, MidpointRounding.AwayFromZero),
                 TotalRevenue = legLines.Sum(l => l.ChargeAmount),
                 TotalCost = legLines.Sum(l => l.CostAmount ?? 0m),
-                Lines = legLines
-                    .Select(l => new SplitPricingLineDto
-                    {
-                        Name = l.ChargeName,
-                        Revenue = l.ChargeAmount,
-                        Cost = l.CostAmount ?? 0m
-                    })
-                    .ToList()
+                Lines =
+                [
+                    .. legLines
+                        .Select(l => new SplitPricingLineDto
+                        {
+                            PricingBreakdownId = l.PricingBreakdownId,
+                            Name = l.ChargeName,
+                            Revenue = l.ChargeAmount,
+                            Cost = l.CostAmount ?? 0m
+                        })
+                ]
             };
         }).ToList();
 
@@ -98,6 +101,18 @@ public class SplitPricingPreviewService(
             ParentTotalRevenue = linesToDivide.Sum(l => l.ChargeAmount),
             ParentTotalCost = linesToDivide.Sum(l => l.CostAmount ?? 0m),
             IsSynthesised = sourceLines.Count == 0,
+            ParentLines =
+            [
+                .. linesToDivide
+                    .Select(l => new SplitPricingParentLineDto
+                    {
+                        PricingBreakdownId = l.PricingBreakdownId,
+                        Name = l.ChargeName,
+                        Revenue = l.ChargeAmount,
+                        Cost = l.CostAmount ?? 0m,
+                        IsAccessorial = l.IsAccessorial
+                    })
+            ],
             Legs = legDtos
         };
     }

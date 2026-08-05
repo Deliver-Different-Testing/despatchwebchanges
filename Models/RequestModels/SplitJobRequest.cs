@@ -26,4 +26,10 @@ public sealed class SplitJobRequest
     /// derives the split itself, which keeps the AngularJS template button and API callers working.
     /// </summary>
     public IReadOnlyList<SplitPricingAllocationItem>? PricingAllocation { get; init; }
+
+    /// <summary>
+    /// Per-line overrides for charges that shouldn't follow the overall split. Only the lines the
+    /// user adjusted are sent; every other line is divided by <see cref="PricingAllocation"/>.
+    /// </summary>
+    public IReadOnlyList<SplitPricingLineAllocationItem>? LineAllocation { get; init; }
 }
