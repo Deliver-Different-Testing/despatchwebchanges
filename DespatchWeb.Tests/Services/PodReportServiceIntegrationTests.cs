@@ -352,4 +352,35 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         Assert.Equal([1], result[0]);  // photo first
         Assert.Equal([2], result[1]);  // signature second
     }
+
+    [Fact]
+    public void ExtractDeliveryImages_KeysTheSignatureCanvasButLeavesThePhotoAlone()
+    {
+        // The appended pages come from these bytes, so the signature has to be keyed here too —
+        // otherwise the overlay POD shows a transparent signature on page 1 and a grey-boxed one
+        // on the appended page. A photo's background is real content and must survive untouched.
+        var flatCanvas = SignatureOnFlatCanvasJpeg();
+        var photos = new List<S3PhotoInfo>
+        {
+            new() { S3Key = "DeliveryPhotos/2026/03/5-a.png", Data = Convert.ToBase64String(flatCanvas) },
+            new() { S3Key = "DeliverySignatures/2026/03/5-s.png", Data = Convert.ToBase64String(flatCanvas) }
+        };
+
+        var result = PodReportService.ExtractDeliveryImages(photos);
+
+        Assert.Equal(flatCanvas, result[0]);          // photo: byte-for-byte unchanged
+        Assert.NotEqual(flatCanvas, result[1]);       // signature: keyed
+        using var signature = new MagickImage(result[1]);
+        Assert.True(signature.HasAlpha);
+    }
+
+    private static byte[] SignatureOnFlatCanvasJpeg()
+    {
+        using var img = new MagickImage(new MagickColor("#d3d3d3"), 400, 200);
+        using var stroke = new MagickImage(new MagickColor("#191970"), 4, 120);
+        img.Composite(stroke, 118, 40, CompositeOperator.Over);
+        img.Format = MagickFormat.Jpeg;
+        img.Quality = 85;
+        return img.ToByteArray();
+    }
 }

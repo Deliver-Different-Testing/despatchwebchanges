@@ -38,10 +38,11 @@ public static class PdfImageAppender
             {
                 try
                 {
-                    // PdfSharp's core decoder only handles JPEG, so normalise every image
-                    // (PNG signatures, GIF, etc.) to JPEG first via ImageMagick.
-                    var jpegBytes = ImageConversionHelper.ConvertToJpeg(imageBytes);
-                    using var imageStream = new MemoryStream(jpegBytes);
+                    // PdfSharp's core decoder handles JPEG and PNG, so normalise every image
+                    // (GIF, HEIC, etc.) to one of those first via ImageMagick. A keyed signature
+                    // must stay PNG — JPEG has no alpha to carry its cut-out background.
+                    var pdfSafeBytes = ImageConversionHelper.ConvertForPdf(imageBytes);
+                    using var imageStream = new MemoryStream(pdfSafeBytes);
                     using var image = XImage.FromStream(imageStream);
 
                     var page = document.AddPage();
