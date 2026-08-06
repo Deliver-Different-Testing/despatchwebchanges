@@ -222,6 +222,24 @@ export function sendPod(jobId: number, toEmail: string): Promise<unknown> {
     return apiClient.get('job/SendPOD', {jobId, toEmail});
 }
 
+export interface SendPodReportRequest {
+    jobId: number;
+    recipients: string[];
+    subject: string;
+    body: string;
+}
+
+/**
+ * Queues the POD report email. Rejects with an ApiError whose `message` is the server's own
+ * text, so callers can show the real reason instead of a generic retry prompt.
+ *
+ * The request renders the PDF inline (S3 photo fetches plus image conversion), so it is given
+ * a longer budget than the client default — the ingress allows 300s.
+ */
+export function sendPodReport(request: SendPodReportRequest): Promise<void> {
+    return apiClient.post('job/SendPodReport', request, {timeout: 180000});
+}
+
 // ── Photos ──────────────────────────────────────────────────────────
 
 export function getJobDeliveryPhotos(

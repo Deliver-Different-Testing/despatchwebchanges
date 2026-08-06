@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
@@ -43,6 +44,8 @@ interface SendPodDialogProps {
     onSend: (data: SendPodRequest) => void;
     sending: boolean;
     sent: boolean;
+    /** Server-supplied failure text, shown inline so the send can be corrected and retried. */
+    errorMessage?: string;
 }
 
 function buildSubject(jobData: SendPodJobData): string {
@@ -82,6 +85,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
     onSend,
     sending,
     sent,
+    errorMessage,
 }) => {
     const [recipients, setRecipients] = useState<string[]>([]);
     const [useBooking, setUseBooking] = useState(false);
@@ -206,6 +210,8 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
 
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
+                    {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+
                     {/* Recipients */}
                     <Box>
                         <Typography variant="body2" sx={sectionLabelSx}>
@@ -348,7 +354,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSend}
-                confirmLabel={sent ? 'Sent!' : 'Send POD PDF'}
+                confirmLabel={sent ? 'Queued' : 'Send POD PDF'}
                 confirmIcon={sent ? <CheckIcon/> : <SendIcon/>}
                 confirmDisabled={recipients.length === 0}
                 submitting={sending}

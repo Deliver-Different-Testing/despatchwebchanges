@@ -1233,7 +1233,7 @@ export function useJobActions({
             trackingEmail: j.trackingEmail || undefined,
         });
         if (result) {
-            showToast('POD report email sent successfully', 'success');
+            showToast('POD report queued for sending', 'success');
         }
     }, [ensureSendPodDialog, showToast]);
 
