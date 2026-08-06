@@ -6,6 +6,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Services;
 using ImageMagick;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using PdfSharp.Pdf;
@@ -13,14 +14,20 @@ using PdfSharp.Pdf.IO;
 
 namespace DespatchWeb.Tests.Services;
 
-public class PodReportServiceIntegrationTests
+public class PodReportServiceIntegrationTests : IAsyncDisposable
 {
+    private readonly SqliteTestDatabase _db = new();
     private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
     private readonly ITenantBrandingService _tenantBrandingServiceMock = Substitute.For<ITenantBrandingService>();
     private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
-    private readonly IEmailSender _emailSenderMock = Substitute.For<IEmailSender>();
+
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        await _db.DisposeAsync();
+    }
 
     private PodReportService CreateService() => new(
         _httpContextAccessorMock,
@@ -28,7 +35,7 @@ public class PodReportServiceIntegrationTests
         _jobRepositoryMock,
         _noteRepositoryMock,
         _jobPhotoServiceMock,
-        _emailSenderMock
+        _db.CreateFactoryMock()
     );
 
     private void SetupHttpContext(string tenantId = "42")
@@ -174,7 +181,7 @@ public class PodReportServiceIntegrationTests
     }
 
     [Fact]
-    public async Task SendPodEmailAsync_SendsToEachRecipientWithPdfAttachment()
+    public async Task SendPodEmailAsync_QueuesOneOutboxRowPerRecipientWithPdfAttached()
     {
         SetupHttpContext();
         _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>()).Returns(new ReportBranding());
@@ -185,16 +192,56 @@ public class PodReportServiceIntegrationTests
 
         await service.SendPodEmailAsync(1, recipients, "Your POD", "Line 1\nLine 2");
 
-        foreach (var recipient in recipients)
+        await using var context = _db.CreateContext();
+        var queued = await context.TucManualMessages.OrderBy(m => m.SendToEmailAddress).ToListAsync();
+
+        Assert.Equal(recipients, queued.Select(m => m.SendToEmailAddress));
+        Assert.All(queued, message =>
         {
-            await _emailSenderMock.Received(1).SendAsync(
-                recipient,
-                "Your POD",
-                Arg.Is<string>(b => b!.Contains("Line 1<br>Line 2")),
-                Arg.Any<string?>(),
-                Arg.Is<EmailAttachment>(att => att!.ContentType == "application/pdf" && att.Content.Length > 0),
-                Arg.Any<CancellationToken>());
-        }
+            Assert.Equal("Your POD", message.Subject);
+            Assert.Equal("Line 1<br>Line 2", message.UcmmMessage);
+            Assert.Equal(1, message.JobId);
+            Assert.True(message.HasAttachment);
+            Assert.Equal("application/pdf", message.FileType);
+            Assert.StartsWith("POD-", message.FileName);
+            Assert.NotEmpty(message.FileContent);
+            Assert.False(message.UcmmSent);
+        });
+    }
+
+    [Fact]
+    public async Task SendPodEmailAsync_QueuedPdfMatchesTheGeneratedReport()
+    {
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>()).Returns(new ReportBranding());
+        _jobRepositoryMock.GetSingleJobById(1).Returns(JobWithItems(1));
+
+        var service = CreateService();
+
+        await service.SendPodEmailAsync(1, ["a@example.com"], "Your POD", "Body");
+
+        await using var context = _db.CreateContext();
+        var queued = await context.TucManualMessages.SingleAsync();
+
+        // A real PDF, not a placeholder — the drainer attaches these bytes verbatim.
+        Assert.Equal("%PDF"u8.ToArray(), queued.FileContent.Take(4));
+    }
+
+    [Fact]
+    public async Task SendPodEmailAsync_NullBody_QueuesEmptyMessageInsteadOfThrowing()
+    {
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>()).Returns(new ReportBranding());
+        _jobRepositoryMock.GetSingleJobById(1).Returns(JobWithItems(1));
+
+        var service = CreateService();
+
+        await service.SendPodEmailAsync(1, ["a@example.com"], "Your POD", null!);
+
+        await using var context = _db.CreateContext();
+        var queued = await context.TucManualMessages.SingleAsync();
+
+        Assert.Equal(string.Empty, queued.UcmmMessage);
     }
 
     [Fact]

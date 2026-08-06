@@ -120,4 +120,44 @@ describe('SendPodDialog — recipients and sending', () => {
         expect(screen.getByText(/sending to \(1\)/i)).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /send pod pdf/i})).toBeEnabled();
     });
+
+    it('reports the send as queued rather than sent', () => {
+        // Delivery is handed to the outbox, so the dialog must not claim the mail has gone out.
+        renderDialog({sent: true});
+
+        expect(screen.getByRole('button', {name: /queued/i})).toBeInTheDocument();
+    });
+});
+
+describe('SendPodDialog — send failures', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockIsAiEnabled.mockReturnValue(false);
+    });
+
+    it('shows the server error and keeps the entered recipients so the send can be retried', async () => {
+        // The old behaviour was a window.alert reading "Failed to send POD report. Please try
+        // again", which hid the real cause and told the user nothing actionable.
+        const {rerender} = renderDialog();
+
+        await userEvent.type(screen.getByPlaceholderText(/add another email address/i), 'ops@acme.test');
+        await userEvent.click(screen.getByRole('button', {name: /^add$/i}));
+
+        rerender(
+            <SendPodDialog
+                {...defaultProps}
+                errorMessage="POD emailing is not configured on this server."
+            />
+        );
+
+        expect(screen.getByRole('alert')).toHaveTextContent('POD emailing is not configured on this server.');
+        expect(screen.getByText('ops@acme.test')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /send pod pdf/i})).toBeEnabled();
+    });
+
+    it('shows no alert before a send is attempted', () => {
+        renderDialog();
+
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
 });

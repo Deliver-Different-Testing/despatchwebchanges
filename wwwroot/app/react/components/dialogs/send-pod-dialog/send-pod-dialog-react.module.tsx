@@ -4,12 +4,15 @@ import {ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import {SendPodDialog, SendPodJobData, SendPodRequest} from './SendPodDialog';
 import {getTheme} from '../../../theme/muiTheme';
+import {sendPodReport} from '../../../services/jobDetailApi';
+import type {ApiError} from '../../../interfaces';
 
 interface DialogState {
     open: boolean;
     jobData: SendPodJobData;
     sending: boolean;
     sent: boolean;
+    error?: string;
     resolve?: (value: boolean) => void;
 }
 
@@ -38,6 +41,7 @@ function renderDialog(): void {
         dialogState.open = false;
         dialogState.sending = false;
         dialogState.sent = false;
+        dialogState.error = undefined;
         dialogState.resolve?.(false);
         dialogState.resolve = undefined;
         renderDialog();
@@ -45,21 +49,11 @@ function renderDialog(): void {
 
     const handleSend = async (data: SendPodRequest) => {
         dialogState.sending = true;
+        dialogState.error = undefined;
         renderDialog();
 
         try {
-            const response = await fetch('/Job/SendPodReport', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify(data),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to send: ${response.statusText}`);
-            }
+            await sendPodReport(data);
 
             dialogState.sending = false;
             dialogState.sent = true;
@@ -76,8 +70,11 @@ function renderDialog(): void {
         } catch (error) {
             console.error('[SendPodDialog] Error sending POD report:', error);
             dialogState.sending = false;
+            // Show the server's own reason — a generic "please try again" hides whether the
+            // address was rejected, the job was missing, or the queue insert failed.
+            dialogState.error = (error as ApiError)?.message
+                || 'Failed to send POD report. Please try again.';
             renderDialog();
-            alert('Failed to send POD report. Please try again.');
         }
     };
 
@@ -93,6 +90,7 @@ function renderDialog(): void {
                 onSend={handleSend}
                 sending={dialogState.sending}
                 sent={dialogState.sent}
+                errorMessage={dialogState.error}
             />
         </ThemeProvider>
     );

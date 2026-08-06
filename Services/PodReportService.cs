@@ -2,9 +2,12 @@
 using DeliverDifferentReporting.Documents;
 using DeliverDifferentReporting.Models;
 using DeliverDifferentReporting.Services;
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using Microsoft.EntityFrameworkCore;
 using QuestPDF;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
@@ -18,7 +21,7 @@ public sealed class PodReportService(
     IJobQueryRepository jobRepository,
     INoteRepository noteRepository,
     IJobPhotoService jobPhotoService,
-    IEmailSender emailSender
+    IDbContextFactory<DespatchContext> contextFactory
 ) : IPodReportService
 {
     private static bool _questPdfInitialized;
@@ -62,6 +65,9 @@ public sealed class PodReportService(
         return (stream.ToArray(), $"POD-{job.JobNo}.xlsx");
     }
 
+    // Queued to tucManualMessage rather than sent over SMTP from here: the external message
+    // processor owns delivery (and the from-address) for every other email in the stack, and it
+    // is the only mail path that is actually configured in the deployed environments.
     public async Task SendPodEmailAsync(int jobId, List<string> recipients, string subject, string body)
     {
         var (pdfBytes, fileName) = await GeneratePodReportAsync(jobId);
@@ -69,15 +75,34 @@ public sealed class PodReportService(
         var replyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
                       ?? "support@deliverdifferent.com";
 
-        var htmlBody = body.Replace("\n", "<br>");
-        var attachment = new EmailAttachment(fileName, "application/pdf", pdfBytes);
+        var htmlBody = (body ?? string.Empty).Replace("\n", "<br>");
 
-        foreach (var recipient in recipients)
+        var messages = recipients.Select(email => new TucManualMessage
         {
-            await emailSender.SendAsync(recipient, subject, htmlBody, replyTo, attachment);
+            SendToEmailAddress = email,
+            ReplyToEmailAddress = replyTo,
+            Subject = subject,
+            UcmmMessage = htmlBody,
+            JobId = jobId,
+            HasAttachment = true,
+            FileName = fileName,
+            FileType = "application/pdf",
+            FileContent = pdfBytes
+        }).ToList();
+
+        try
+        {
+            await using var context = await contextFactory.CreateDbContextAsync();
+            await context.TucManualMessages.AddRangeAsync(messages);
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new PodEmailException(
+                "The POD report could not be queued for sending. Please try again or contact support.", ex);
         }
 
-        Log.Information("Sent POD email for job {JobId} to {RecipientCount} recipients: {Recipients}",
+        Log.Information("Queued POD email for job {JobId} to {RecipientCount} recipients: {Recipients}",
             jobId, recipients.Count, string.Join(", ", recipients));
     }
 

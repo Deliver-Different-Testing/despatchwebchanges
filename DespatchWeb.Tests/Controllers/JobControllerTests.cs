@@ -1489,6 +1489,45 @@ public class JobControllerTests : IDisposable
         Assert.DoesNotContain("prod-rds", objectResult.Value?.ToString());
     }
 
+    private static SendPodReportRequest PodEmailRequest() => new()
+    {
+        JobId = 7,
+        Recipients = ["ops@acme.test"],
+        Subject = "Your POD",
+        Body = "Body"
+    };
+
+    [Fact]
+    public async Task SendPodReport_PodEmailException_ReturnsTheAuthoredMessageVerbatim()
+    {
+        // Without this the message is sanitised to the generic "An unexpected error occurred",
+        // which is exactly what left the "Failed to send POD report" reports undiagnosable.
+        const string authored = "The POD report could not be queued for sending. Please try again or contact support.";
+        _podReportServiceMock
+            .SendPodEmailAsync(7, Arg.Any<List<string>>(), Arg.Any<string>(), Arg.Any<string>())
+            .ThrowsAsync(new PodEmailException(authored));
+
+        var result = await CreateController().SendPodReport(PodEmailRequest());
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.Equal(authored, objectResult.Value);
+    }
+
+    [Fact]
+    public async Task SendPodReport_UnexpectedException_ReturnsSanitisedMessage()
+    {
+        _podReportServiceMock
+            .SendPodEmailAsync(7, Arg.Any<List<string>>(), Arg.Any<string>(), Arg.Any<string>())
+            .ThrowsAsync(new InvalidOperationException("Login failed for user 'sa' on server prod-rds"));
+
+        var result = await CreateController().SendPodReport(PodEmailRequest());
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.DoesNotContain("prod-rds", objectResult.Value?.ToString());
+    }
+
     [Fact]
     public async Task UnSplitJob_ValidJobId_ReturnsMessage()
     {

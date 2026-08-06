@@ -929,6 +929,13 @@ public class JobController(
 
             return Ok();
         }
+        catch (PodEmailException e)
+        {
+            // Authored, user-safe text — returned verbatim so the failure is diagnosable from the
+            // dialog alone. Everything else stays sanitised below.
+            Log.Warning(e, "POD email rejected for job {JobId}: {Message}", request.JobId, e.Message);
+            return StatusCode(500, e.Message);
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "Error sending POD report email for job {JobId}", request.JobId);
