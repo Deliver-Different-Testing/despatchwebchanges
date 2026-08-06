@@ -144,8 +144,12 @@ public sealed class PodReportService(
             .Where(p => p.S3Key.Contains("DeliverySignatures/", StringComparison.OrdinalIgnoreCase)
                         && !string.IsNullOrEmpty(p.Data));
 
-        return deliveryPhotos.Concat(signatures)
-            .Select(p => Convert.FromBase64String(p.Data))
+        // Signatures carry the pad's opaque canvas colour (see SignatureBackgroundRemover); key it
+        // out so the appended page matches the keyed signature stamped on the overlay itself. A
+        // delivery photo's background is real content and is left alone.
+        return deliveryPhotos.Select(p => Convert.FromBase64String(p.Data))
+            .Concat(signatures.Select(p =>
+                SignatureBackgroundRemover.RemoveFlatBackground(Convert.FromBase64String(p.Data))))
             .ToList();
     }
 
@@ -223,10 +227,12 @@ public sealed class PodReportService(
         // FirstOrDefault yields default(S3PhotoInfo) with a null Data when no signature exists —
         // decode only when data is present, otherwise leave the (nullable) signature unset so a
         // POD without a signature still renders instead of throwing.
+        // The pad's opaque canvas colour is baked into the stored JPEG, so key it out before the
+        // report draws it — otherwise it renders as a grey box around the ink.
         var firstSignature = signaturePhotos.FirstOrDefault(p => !string.IsNullOrEmpty(p.Data));
         var signatureBytes = string.IsNullOrEmpty(firstSignature.Data)
             ? null
-            : Convert.FromBase64String(firstSignature.Data);
+            : SignatureBackgroundRemover.RemoveFlatBackground(Convert.FromBase64String(firstSignature.Data));
 
         return new PodData
         {

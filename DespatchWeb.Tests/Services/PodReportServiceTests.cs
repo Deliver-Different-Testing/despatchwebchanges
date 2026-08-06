@@ -1,5 +1,6 @@
 using DespatchWeb.Models;
 using DespatchWeb.Services;
+using ImageMagick;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -18,6 +19,20 @@ file static class PodTestData
         FileName = fileName,
         Data = Convert.ToBase64String(bytes)
     };
+
+    /// <summary>
+    /// A signature as MarsAPI stores it: dark ink over an opaque flat canvas, JPEG-encoded, so the
+    /// canvas colour is baked in with no alpha channel.
+    /// </summary>
+    public static byte[] SignatureJpeg()
+    {
+        using var img = new MagickImage(new MagickColor("#d3d3d3"), 400, 200);
+        using var stroke = new MagickImage(new MagickColor("#191970"), 4, 120);
+        img.Composite(stroke, 118, 40, CompositeOperator.Over);
+        img.Format = MagickFormat.Jpeg;
+        img.Quality = 85;
+        return img.ToByteArray();
+    }
 }
 
 /// <summary>
@@ -187,6 +202,22 @@ public class PodReportServiceTests
         var result = PodReportService.MapToPodData(job, photos);
 
         Assert.Equal(signatureBytes, result.SignatureImage);
+    }
+
+    [Fact]
+    public void MapToPodData_SignatureOnFlatCanvas_KeysOutTheBackground()
+    {
+        // Signatures arrive as opaque JPEGs with the pad's canvas colour baked in, which QuestPDF
+        // then draws as a visible grey box around the ink.
+        var job = new JobViewModel { JobNo = "JOB-4" };
+        var photos = new List<S3PhotoInfo> { PodTestData.SignaturePhoto(PodTestData.SignatureJpeg()) };
+
+        var result = PodReportService.MapToPodData(job, photos);
+
+        using var image = new MagickImage(result.SignatureImage!);
+        Assert.True(image.HasAlpha);
+        using var pixels = image.GetPixels();
+        Assert.Equal(0, pixels.GetPixel(2, 2).ToColor()!.A);
     }
 
     [Fact]
