@@ -1,3 +1,4 @@
+#nullable enable
 namespace DespatchWeb.Models.RequestModels;
 
 public sealed class AgentJobRequestModel

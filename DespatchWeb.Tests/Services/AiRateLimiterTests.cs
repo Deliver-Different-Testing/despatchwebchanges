@@ -39,9 +39,9 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_UserLimitExceeded_ReturnsFalse()
     {
         // Arrange - user has already made 20 requests this minute
-        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("user:")), Arg.Any<CancellationToken>())
+        _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("user:")), Arg.Any<CancellationToken>())
             .Returns("20"u8.ToArray());
-        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("tenant:")), Arg.Any<CancellationToken>())
+        _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("tenant:")), Arg.Any<CancellationToken>())
             .Returns((byte[]?)null);
 
         var service = CreateService();
@@ -57,9 +57,9 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_TenantLimitExceeded_ReturnsFalse()
     {
         // Arrange - user is under limit, but tenant is at 100
-        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("user:")), Arg.Any<CancellationToken>())
+        _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("user:")), Arg.Any<CancellationToken>())
             .Returns("1"u8.ToArray());
-        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("tenant:")), Arg.Any<CancellationToken>())
+        _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("tenant:")), Arg.Any<CancellationToken>())
             .Returns("100"u8.ToArray());
 
         var service = CreateService();
@@ -75,9 +75,9 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_BothUnderLimit_ReturnsTrue()
     {
         // Arrange
-        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("user:")), Arg.Any<CancellationToken>())
+        _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("user:")), Arg.Any<CancellationToken>())
             .Returns("5"u8.ToArray());
-        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("tenant:")), Arg.Any<CancellationToken>())
+        _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("tenant:")), Arg.Any<CancellationToken>())
             .Returns("50"u8.ToArray());
 
         var service = CreateService();

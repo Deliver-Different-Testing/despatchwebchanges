@@ -52,11 +52,11 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 
         // Mock GetCurrentTimeFromTimeZone for specific timezones
         _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(
-                Arg.Is<TimeZone>(tz => tz.Name == PstTimezoneName))
+                Arg.Is<TimeZone>(tz => tz!.Name == PstTimezoneName))
             .Returns(new DateTime(2024, 6, 15, 9, 37, 0));
 
         _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(
-                Arg.Is<TimeZone>(tz => tz.Name == EstTimezoneName))
+                Arg.Is<TimeZone>(tz => tz!.Name == EstTimezoneName))
             .Returns(new DateTime(2024, 6, 15, 12, 37, 0));
 
         // Null timezone falls back to tenant time
@@ -233,7 +233,7 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal(new DateTime(2024, 6, 15, 9, 37, 0), updatedJob.UcjbComplTime); // CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)
 
         _tenantInfoServiceMock.Received(1)
-            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz.Name == PstTimezoneName));
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz!.Name == PstTimezoneName));
     }
 
     [Fact]
@@ -269,7 +269,7 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal(new DateTime(2024, 6, 15, 12, 37, 0), updatedJob.UcjbComplTime); // CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(EST)
 
         _tenantInfoServiceMock.Received(1)
-            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz.Name == EstTimezoneName));
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz!.Name == EstTimezoneName));
     }
 
     [Fact]
@@ -303,7 +303,7 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal(new DateTime(2024, 6, 15, 9, 37, 0), updatedJob.PickUpTime); // PickUpTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)
 
         _tenantInfoServiceMock.Received(1)
-            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz.Name == PstTimezoneName));
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz!.Name == PstTimezoneName));
     }
 
     [Fact]

@@ -254,7 +254,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             sortDirection,
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }), []);
+    }), [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId, sortColumn, sortDirection]);
 
     const fetchConfigBulk = useMemo(() => ({
         fetchFn: fetchBulkJobs,
@@ -272,7 +272,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             bulkJobId: searchCriteria.criteria.bulkJobId,
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }), []);
+    }), [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.bulkJobId]);
 
     const handleSearch = useCallback(() => {
         // Push the current criteria into each JobListPanel — they own their
@@ -313,7 +313,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             disabled: byJobId,
             page: 0,
         });
-    }, [searchCriteria, sortColumn, sortDirection]);
+    }, [sortColumn, sortDirection, searchCriteria.criteria.bulkJobId, searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
     const handleRefreshBox = useCallback(async (boxName: string) => {
         switch (boxName) {
@@ -385,7 +385,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         );
         // Open in a new tab to trigger the browser's native download (matches V1).
         window.open(url, '_blank');
-    }, [searchCriteria]);
+    }, [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
     const handleClientReport = useCallback(() => {
         const url = getClientJobsReportDownloadUrl(
@@ -394,7 +394,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             searchCriteria.selectedClientIds,
         );
         window.open(url, '_blank');
-    }, [searchCriteria]);
+    }, [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedClientIds]);
 
     const handlePriceDetailReport = useCallback(() => {
         const url = getPriceDetailReportDownloadUrl(
@@ -408,7 +408,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             searchCriteria.criteria.jobId,
         );
         window.open(url, '_blank');
-    }, [searchCriteria]);
+    }, [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
     const handleUpload = useCallback(() => {
         const w = window as any;
@@ -489,6 +489,23 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     await setJobLocked(job.id, locked, !!job.preBook);
                     showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
                     await Promise.all([invalidateLists(), invalidateDetail()]);
+                    return;
+                }
+
+                case 'split': {
+                    // Intent confirmation lives with the caller — the context menu uses its own
+                    // dialog, this FAB matches the un-split entry below. The pricing dialog inside
+                    // the flow confirms the money separately.
+                    const confirmed = window.confirm('Are you sure you wish to split this job?');
+                    if (!confirmed) return;
+                    const {executeSplitJobFlow} = await import('../../services/splitJobFlow');
+                    await executeSplitJobFlow({
+                        job,
+                        showToast,
+                        onComplete: () => {
+                            void Promise.all([invalidateLists(), invalidateDetail()]);
+                        },
+                    });
                     return;
                 }
 
@@ -691,40 +708,21 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             default:
                 return null;
         }
-    }, [
-        searchCriteria,
-        handleCriteriaChange,
-        handleSearch,
-        handleDownload,
-        handleClientReport,
-        handleUpload,
-        handleClientSearch,
-        handleCourierSearch,
-        handleSpeedSearch,
-        fetchConfigMain,
-        fetchConfigBulk,
-        showToast,
-        isUsCustomer,
-        selectJob,
-        currentJobId,
-        currentJob,
-        isBulkJob,
-        timeZoneShort,
-    ]);
+    }, [searchCriteria, handleCriteriaChange, handleSearch, handleDownload, handleClientReport, handleUpload, handleClientSearch, handleCourierSearch, handleSpeedSearch, fetchConfigMain, fetchConfigBulk, showToast, isUsCustomer, selectJob, currentJob, isBulkJob, timeZoneShort, searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, handlePriceDetailReport, currentJob?.booked, currentJob?.pickupAddress]);
 
     const subtitleFor = useCallback((boxName: string) => {
         if (boxName === JobSearchBoxes.JobDetail || boxName === JobSearchBoxes.ScanList) {
             return currentJob?.jobNo;
         }
         return undefined;
-    }, [currentJob]);
+    }, [currentJob?.jobNo]);
 
     const lockedFor = useCallback((boxName: string) => {
         if (boxName === JobSearchBoxes.JobDetail) {
             return !!currentJob?.locked;
         }
         return false;
-    }, [currentJob]);
+    }, [currentJob?.locked]);
 
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>

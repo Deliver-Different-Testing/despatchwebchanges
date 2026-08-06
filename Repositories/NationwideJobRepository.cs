@@ -173,14 +173,15 @@ public class NationwideJobRepository(
                 await Context.SaveChangesAsync(cancellationToken);
 
                 // Create journey record (requires primary flight record ID from first save)
+                var flightStaffId = _infoService.GetStaffIdOrNull();
                 var journeyRecord = new JobDeliveryJourney
                 {
                     JobId = requestData.JobId,
                     FlightId = primaryFlightRecord.UcnwId,
                     ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
-                    StaffId = _infoService.GetStaffId(),
+                    StaffId = flightStaffId,
                     UpdatedAt = _clock.UtcNow,
-                    UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+                    UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(flightStaffId)
                 };
                 await Context.JobDeliveryJourneys.AddAsync(journeyRecord, cancellationToken);
 
@@ -376,14 +377,15 @@ public class NationwideJobRepository(
         };
         await Context.TucNotes.AddAsync(note);
 
+        var agentStaffId = _infoService.GetStaffIdOrNull();
         var journeyRecord = new JobDeliveryJourney
         {
             JobId = jobId,
             NewAgentId = agentId,
             UpdatedAt = DateTime.UtcNow,
             ChangeType = nameof(DeliveryJourneyChangeType.AgentAssignment),
-            StaffId = _infoService.GetStaffId(),
-            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+            StaffId = agentStaffId,
+            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(agentStaffId)
         };
         await Context.AddAsync(journeyRecord);
 

@@ -21,6 +21,8 @@
     <PackageReference Include="PdfSharp" />
     <!-- Pin transitive SQLite native lib to a non-vulnerable version (NU1903 / GHSA-2m69-gcr7-jv3q) -->
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
+    <!-- Pin transitive XML signing lib to a non-vulnerable version (NU1903, five advisories against 10.0.7) -->
+    <PackageReference Include="System.Security.Cryptography.Xml" />
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 

@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using DespatchWeb.Reporting;
 
 namespace DespatchWeb.Helpers;
 
@@ -116,8 +115,11 @@ public static partial class SplitPricingAllocator
             return [];
         }
 
+        // Any non-zero total divides proportionally, including an all-negative set of credit lines —
+        // only a total that has cancelled out has no proportional answer, and an even split there is
+        // a last resort the caller logs rather than a silent redistribution.
         var total = weights.Sum();
-        return total > 0m
+        return total != 0m
             ? Normalise(weights.Select(w => w / total).ToList())
             : Normalise(weights.Select(_ => 1m / weights.Count).ToList());
     }
@@ -160,7 +162,7 @@ public static partial class SplitPricingAllocator
     public static IReadOnlyList<AllocatedLine> Allocate(
         IReadOnlyList<ParentLine> lines,
         IReadOnlyList<LegWeight> legs,
-        IReadOnlyList<LineShareOverride>? lineOverrides = null)
+        IReadOnlyList<LineShareOverride> lineOverrides = null)
     {
         if (legs.Count == 0 || lines.Count == 0)
         {
@@ -177,7 +179,9 @@ public static partial class SplitPricingAllocator
             var revenues = DistributeAmount(line.ChargeAmount, lineShares);
             var costs = line.CostAmount.HasValue ? DistributeAmount(line.CostAmount.Value, lineShares) : null;
 
-            allocated.AddRange(legs.Select((t, i) => new AllocatedLine(t.Sequence, t.LetterSuffix, LegChargeName(line.ChargeName, t.LetterSuffix, lineShares[i]), revenues[i], costs?[i], line.IsAccessorial, line.PricingBreakdownId)));
+            allocated.AddRange(legs.Select((t, i) => new AllocatedLine(t.Sequence, t.LetterSuffix,
+                LegChargeName(line.ChargeName, t.LetterSuffix, lineShares[i]), revenues[i], costs?[i],
+                line.IsAccessorial, line.PricingBreakdownId)));
         }
 
         return allocated;
@@ -190,7 +194,7 @@ public static partial class SplitPricingAllocator
     /// the leg-level split rather than being divided evenly by accident.
     /// </summary>
     private static Dictionary<int, IReadOnlyList<decimal>> BuildLineShares(
-        IReadOnlyList<LineShareOverride>? lineOverrides,
+        IReadOnlyList<LineShareOverride> lineOverrides,
         IReadOnlyList<LegWeight> legs)
     {
         var byLine = new Dictionary<int, IReadOnlyList<decimal>>();
@@ -227,17 +231,21 @@ public static partial class SplitPricingAllocator
             : [new ParentLine(0, ManuallyRatedChargeName, parentAmount, parentCost)];
 
     /// <summary>
-    /// Names a leg's copy of a parent line: appends " Part {suffix}", and scales any mileage figure
-    /// in the name by the leg's share so per-leg miles parse correctly out of names like
-    /// "Base (108 miles)". Truncates the original when the suffix would exceed the column length.
+    /// Names a leg's copy of a parent line: appends " Part {suffix}", and scales any distance figure
+    /// in the name by the leg's share so per-leg distance parses correctly out of names like
+    /// "Base (108 miles)" or "Distance (20 km)". Truncates the original when the suffix would exceed
+    /// the column length.
     /// </summary>
-    public static string LegChargeName(string chargeName, string letterSuffix, decimal? mileageShare)
+    /// <param name="distanceShare">
+    /// The leg's share of the trip, or null to leave any figure in the name untouched.
+    /// </param>
+    public static string LegChargeName(string chargeName, string letterSuffix, decimal? distanceShare)
     {
         var name = (chargeName ?? string.Empty).Trim();
 
-        if (mileageShare.HasValue && PriceLineClassifier.ParseMiles(name) is not null)
+        if (distanceShare.HasValue)
         {
-            name = ScaleMiles(name, mileageShare.Value);
+            name = ScaleDistances(name, distanceShare.Value);
         }
 
         var suffix = $" Part {letterSuffix}";
@@ -269,7 +277,7 @@ public static partial class SplitPricingAllocator
 
     // Shares are rounded so they read cleanly in the dialog; the last leg absorbs the drift so the
     // set still totals exactly 1 and Distribute's remainder handling stays exact.
-    private static List<decimal> Normalise(IReadOnlyList<decimal> raw)
+    private static List<decimal> Normalise(List<decimal> raw)
     {
         var shares = new List<decimal>(raw.Count);
         var running = 0m;
@@ -290,24 +298,26 @@ public static partial class SplitPricingAllocator
         return shares;
     }
 
-    // Scales every "<n> mi"/"<n> miles" figure in a charge name, preserving the original's
-    // decimal places so "Base (108 miles)" stays whole-numbered.
-    private static string ScaleMiles(string name, decimal share) =>
-        MilesRegex().Replace(name, match =>
+    // Scales every distance figure in a charge name, preserving both the original's decimal places
+    // (so "Base (108 miles)" stays whole-numbered) and its unit — US lines are priced in miles and
+    // NZ lines in kilometres, and the name has to keep saying whichever it already said. A figure
+    // with no distance unit is a quantity, not a distance, and is left alone.
+    private static string ScaleDistances(string name, decimal share) =>
+        DistanceRegex().Replace(name, match =>
         {
             var raw = match.Groups[1].Value;
-            if (!decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var miles))
+            if (!decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var distance))
             {
                 return match.Value;
             }
 
             var dot = raw.IndexOf('.');
             var decimals = dot < 0 ? 0 : raw.Length - dot - 1;
-            var scaled = Math.Round(miles * share, decimals, MidpointRounding.AwayFromZero);
+            var scaled = Math.Round(distance * share, decimals, MidpointRounding.AwayFromZero);
 
             return scaled.ToString($"F{decimals}", CultureInfo.InvariantCulture) + match.Groups[2].Value;
         });
 
-    [GeneratedRegex(@"([\d.]+)(\s*mi(?:les)?\b)", RegexOptions.IgnoreCase, "en-NZ")]
-    private static partial Regex MilesRegex();
+    [GeneratedRegex(@"([\d.]+)(\s*(?:mi(?:les)?|km)\b)", RegexOptions.IgnoreCase, "en-NZ")]
+    private static partial Regex DistanceRegex();
 }

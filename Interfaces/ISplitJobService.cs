@@ -65,4 +65,37 @@ public interface ISplitJobService
         JobProperty field,
         string value,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Lists the jobs a date change on <paramref name="jobId"/> could cascade to, so the user can
+    /// confirm the blast radius before anything is written. Void legs are excluded outright;
+    /// locked and partner legs are returned with <see cref="DateCascadeFamilyMember.Cascadable"/>
+    /// false so the dialog can show what will not move.
+    /// </summary>
+    /// <param name="jobId">The parent job the user is editing.</param>
+    /// <param name="ct">Cancellation token.</param>
+    Task<DateCascadeFamily> GetDateCascadeFamilyAsync(
+        int jobId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Copies a confirmed date change from a parent job down to its family. Unlike
+    /// <see cref="PropagateUpdateToChildrenAsync"/> this neither redistributes the parent's total
+    /// nor re-rates anything — any resulting price change is surfaced to the user separately and
+    /// applied only if they accept it.
+    /// <para>
+    /// Children always receive <see cref="JobProperty.Date"/>, even when the parent was edited via
+    /// <see cref="JobProperty.BookedTime"/>, so each leg keeps its own time.
+    /// </para>
+    /// </summary>
+    /// <param name="parentJobId">The parent job that was just updated.</param>
+    /// <param name="field">The field edited on the parent; non-date fields are a no-op.</param>
+    /// <param name="value">The new value that was set on the parent.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Which children were updated and which failed.</returns>
+    Task<DateCascadeResult> PropagateDateToChildrenAsync(
+        int parentJobId,
+        JobProperty field,
+        string value,
+        CancellationToken ct = default);
 }

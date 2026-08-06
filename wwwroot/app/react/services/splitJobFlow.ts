@@ -89,7 +89,10 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
         preview = await previewSplitPricing({jobId: job.id, meetingPointAddress});
     } catch (error) {
         console.error('Split pricing preview failed:', error);
-        showToast('Could not preview split pricing — the split will use the calculated division.', 'warning');
+        showToast(
+            `Could not preview split pricing — the split will use the calculated division. ${serverReason(error)}`.trim(),
+            'warning',
+        );
     }
 
     let pricingAllocation: SplitPricingAllocationItem[] | null = null;
@@ -130,8 +133,20 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
         }
     } catch (error) {
         console.error('Splitting job failed:', error);
-        showToast('Error splitting job', 'error');
+        showToast(`Error splitting job. ${serverReason(error)}`.trim(), 'error');
     } finally {
         setLoading?.(false);
     }
+}
+
+/**
+ * The server's own explanation of a failure, or '' when there isn't one.
+ *
+ * Split failures are otherwise indistinguishable from each other on staging and production, where
+ * the backend sanitises unrecognised exceptions and the operator has no access to server logs.
+ * `apiClient` rejects with an `ApiError` whose `message` holds the response body.
+ */
+function serverReason(error: unknown): string {
+    const message = (error as {message?: unknown} | null)?.message;
+    return typeof message === 'string' ? message : '';
 }

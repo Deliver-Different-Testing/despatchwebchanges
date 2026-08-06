@@ -17,11 +17,13 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
     private readonly DespatchContext _seedContext;
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public SplitPricingPreviewServiceTests()
     {
         _seedContext = _db.CreateContext();
         _contextFactoryMock = _db.CreateFactoryMock();
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
     }
 
     public async ValueTask DisposeAsync()
@@ -31,7 +33,8 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
         await _db.DisposeAsync();
     }
 
-    private SplitPricingPreviewService CreateService() => new(_contextFactoryMock, _rateJobServiceMock);
+    private SplitPricingPreviewService CreateService() =>
+        new(_contextFactoryMock, _rateJobServiceMock, _tenantInfoServiceMock);
 
     private static AddressViewModel MeetingPoint() => new(
         addressLine1: "611 5th Ave",
@@ -105,16 +108,16 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
 
         Assert.Equal("KT1314VA", legA.JobNumber);
         Assert.Equal("KT1314VB", legB.JobNumber);
-        Assert.Equal(7m, legA.Miles);
+        Assert.Equal(7m, legA.Distance);
         Assert.Equal(70m, legA.SharePercent);
         Assert.Equal(30m, legB.SharePercent);
 
         // Per-leg lines, named as the bug report's Expected section requires.
         Assert.Equal(
-            new[] {"Base Part A", "Base Fuel Part A", "Congestion Part A"},
+            ["Base Part A", "Base Fuel Part A", "Congestion Part A"],
             legA.Lines.Select(l => l.Name));
         Assert.Equal(
-            new[] {"Base Part B", "Base Fuel Part B", "Congestion Part B"},
+            ["Base Part B", "Base Fuel Part B", "Congestion Part B"],
             legB.Lines.Select(l => l.Name));
 
         Assert.Equal(62.30m, legA.TotalRevenue);
@@ -136,7 +139,7 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
             TestContext.Current.CancellationToken);
 
         // Original names, not the "Part A" copies — this is what the dialog offers a share against.
-        Assert.Equal(new[] { "Base", "Base Fuel", "Congestion" }, preview.ParentLines.Select(l => l.Name));
+        Assert.Equal(["Base", "Base Fuel", "Congestion"], preview.ParentLines.Select(l => l.Name));
         Assert.Equal(89.00m, preview.ParentLines.Sum(l => l.Revenue));
         Assert.Equal(50.00m, preview.ParentLines.Sum(l => l.Cost));
 
@@ -172,7 +175,7 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
             TestContext.Current.CancellationToken);
 
         Assert.Equal("StraightLine", preview.Basis);
-        Assert.All(preview.Legs, l => Assert.True(l.Miles > 0m));
+        Assert.All(preview.Legs, l => Assert.True(l.Distance > 0m));
         Assert.Equal(100m, preview.Legs.Sum(l => l.SharePercent));
         Assert.Equal(89.00m, preview.Legs.Sum(l => l.TotalRevenue));
     }
@@ -186,7 +189,7 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
             TestContext.Current.CancellationToken);
 
         Assert.Equal("EvenSplit", preview.Basis);
-        Assert.All(preview.Legs, l => Assert.Equal(0m, l.Miles));
+        Assert.All(preview.Legs, l => Assert.Equal(0m, l.Distance));
         Assert.All(preview.Legs, l => Assert.Equal(50m, l.SharePercent));
         Assert.Equal(44.50m, preview.Legs.First().TotalRevenue);
     }
@@ -206,6 +209,47 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
         Assert.Equal("Manually Rated Part A", preview.Legs.First().Lines.Single().Name);
         // The synthesised line has no row behind it, so it can't be singled out in the dialog.
         Assert.Equal(0, preview.ParentLines.Single().PricingBreakdownId);
+    }
+
+    [Fact]
+    public async Task PreviewAsync_UsTenant_ReportsLegDistancesInMiles()
+    {
+        SeedKt1314V();
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        _rateJobServiceMock
+            .GetRoadDistanceMilesAsync(Arg.Any<decimal?>(), Arg.Any<decimal?>(), Arg.Any<decimal?>(),
+                Arg.Any<decimal?>())
+            .Returns(call => call.ArgAt<decimal?>(0) == 40.7644m ? 7d : 3d);
+
+        var preview = await CreateService().PreviewAsync(100, MeetingPoint(),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("mi", preview.DistanceUnit);
+        Assert.Equal(7m, preview.Legs.Single(l => l.Sequence == 1).Distance);
+    }
+
+    [Fact]
+    public async Task PreviewAsync_NzTenant_ReportsLegDistancesInKilometres()
+    {
+        // The routing engine answers in miles; NZ reads distance in kilometres, so the figure shown
+        // has to be converted rather than relabelled — and the shares are unaffected either way.
+        SeedKt1314V();
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _rateJobServiceMock
+            .GetRoadDistanceMilesAsync(Arg.Any<decimal?>(), Arg.Any<decimal?>(), Arg.Any<decimal?>(),
+                Arg.Any<decimal?>())
+            .Returns(call => call.ArgAt<decimal?>(0) == 40.7644m ? 7d : 3d);
+
+        var preview = await CreateService().PreviewAsync(100, MeetingPoint(),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("km", preview.DistanceUnit);
+        Assert.Equal(11.27m, preview.Legs.Single(l => l.Sequence == 1).Distance);
+        Assert.Equal(4.83m, preview.Legs.Single(l => l.Sequence == 2).Distance);
+
+        // Converting the display figure must not move the money.
+        Assert.Equal(70m, preview.Legs.Single(l => l.Sequence == 1).SharePercent);
+        Assert.Equal(89.00m, preview.Legs.Sum(l => l.TotalRevenue));
     }
 
     [Fact]

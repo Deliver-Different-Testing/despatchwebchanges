@@ -278,7 +278,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // The compound field deserialised and called the repository with the parcels +
         // weight from the payload. The change-request row's UjcrJobId carries the target.
         await _jobCommandRepository.Received(1).UpdatePackagesForJobAsync(
-            1, Arg.Is<IReadOnlyList<ParcelDimensions>>(p => p.Count == 1 && p[0].Length == 10));
+            1, Arg.Is<IReadOnlyList<ParcelDimensions>>(p => p!.Count == 1 && p[0].Length == 10));
         await _jobCommandRepository.Received(1).UpdateJobWeightAsync(1, 12.5m);
     }
 
@@ -307,7 +307,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.True(approved.Success, approved.Message);
 
         await _jobCommandRepository.Received(1).UpdatePickupAddressAsync(
-            Arg.Is<UpdateAddressRequest>(r => r.JobId == 1 && r.Address.AddressLine1 == "42 Wallaby Way"));
+            Arg.Is<UpdateAddressRequest>(r => r!.JobId == 1 && r.Address.AddressLine1 == "42 Wallaby Way"));
         await _jobCommandRepository.DidNotReceive().UpdateDeliveryAddressAsync(Arg.Any<UpdateAddressRequest>());
     }
 
@@ -334,7 +334,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.True(approved.Success, approved.Message);
 
         await _jobCommandRepository.Received(1).UpdateDeliveryAddressAsync(
-            Arg.Is<UpdateAddressRequest>(r => r.JobId == 1 && r.Address.AddressLine1 == "1 Park Lane"));
+            Arg.Is<UpdateAddressRequest>(r => r!.JobId == 1 && r.Address.AddressLine1 == "1 Park Lane"));
         await _jobCommandRepository.DidNotReceive().UpdatePickupAddressAsync(Arg.Any<UpdateAddressRequest>());
     }
 

@@ -1113,7 +1113,8 @@ public partial class BaseJobRepository(
                 CourierPayment = j.CourierPayment ?? 0,
                 CourierFuel = j.CourierFuel ?? 0,
                 CourierBonus = j.CourierBonus ?? 0,
-                IsPrebook = false
+                IsPrebook = false,
+                RatedManually = j.RatedManually
             })
             .ToListAsync();
 

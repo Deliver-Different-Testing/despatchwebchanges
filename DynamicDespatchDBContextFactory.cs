@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Interceptors;
 using DespatchWeb.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -10,7 +11,8 @@ public class DynamicDespatchDbContextFactory(
     IOptions<DbContextOptions<DespatchContext>> options,
     IConnectionStringManager connectionStringManager,
     IHttpContextAccessor contextAccessor,
-    IServiceProvider serviceProvider)
+    IServiceProvider serviceProvider,
+    StaffSessionContextInterceptor staffSessionContextInterceptor)
     : IDbContextFactory<DespatchContext>
 {
     private readonly DbContextOptions<DespatchContext> _options = options.Value;
@@ -61,7 +63,12 @@ public class DynamicDespatchDbContextFactory(
             sqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
         });
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-        
+
+        // Stamps the acting staff id into SQL session context on each connection
+        // open so the JobDeliveryJourney triggers can attribute the change.
+        optionsBuilder.AddInterceptors(staffSessionContextInterceptor);
+
+
         var scope = serviceProvider.GetRequiredService<IScopeProvider>();
         return new DespatchContext(optionsBuilder.Options, scope);
     }

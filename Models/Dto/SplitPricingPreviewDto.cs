@@ -9,6 +9,12 @@ public sealed class SplitPricingPreviewDto
     /// <summary>How the shares were derived — see <c>SplitPricingAllocator.AllocationBasis</c>.</summary>
     public required string Basis { get; init; }
 
+    /// <summary>
+    /// The unit <see cref="SplitPricingLegDto.Distance"/> is expressed in — "mi" for US tenants,
+    /// "km" everywhere else. The shares themselves are ratios and so are unit-independent.
+    /// </summary>
+    public required string DistanceUnit { get; init; }
+
     /// <summary>The parent's line total, which a split leaves unchanged.</summary>
     public decimal ParentTotalRevenue { get; init; }
 
@@ -53,7 +59,12 @@ public sealed class SplitPricingLegDto
     /// <summary>The job number this leg will be created with.</summary>
     public required string JobNumber { get; init; }
 
-    public decimal Miles { get; init; }
+    /// <summary>
+    /// The leg's distance, in <see cref="SplitPricingPreviewDto.DistanceUnit"/>. Zero when no
+    /// distance could be determined.
+    /// </summary>
+    public decimal Distance { get; init; }
+
     public decimal SharePercent { get; init; }
     public decimal TotalRevenue { get; init; }
     public decimal TotalCost { get; init; }

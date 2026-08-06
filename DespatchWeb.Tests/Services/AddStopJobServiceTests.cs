@@ -101,7 +101,7 @@ public class AddStopJobServiceTests
         // Assert
         Assert.Equal(newJobId, result);
         await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
-            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber.StartsWith(parentJob.UcjbNumber)),
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber.StartsWith(parentJob.UcjbNumber)),
             Arg.Any<CancellationToken>());
     }
 
@@ -120,7 +120,7 @@ public class AddStopJobServiceTests
 
         // Assert - Amount set via SP input, CourierPayment set post-load
         await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
-            Arg.Is<CreateMinimalTucJobInputModel>(m => m.Amount == 20m),
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.Amount == 20m),
             Arg.Any<CancellationToken>());
         Assert.Equal(10m, _createdStopJob.CourierPayment);
     }
@@ -140,7 +140,7 @@ public class AddStopJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<PricingBreakdown>(p =>
-            p.ChargeAmount == 20m &&
+            p!.ChargeAmount == 20m &&
             p.CostAmount == 10m &&
             p.ChargeName == "Extra Stop"));
     }
@@ -161,7 +161,7 @@ public class AddStopJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucNote>(n =>
-            n.JobId == parentJob.UcjbId &&
+            n!.JobId == parentJob.UcjbId &&
             n.NoteText == "Test note" &&
             n.NoteTypeId == (int)NoteType.InternalNote));
     }
@@ -272,7 +272,7 @@ public class AddStopJobServiceTests
         // Assert
         await _jobCommandRepositoryMock.Received().AddPackagesToJobAsync(
             parentJob.UcjbId,
-            Arg.Is<List<TucJobItem>>(items => items.Count == 3));
+            Arg.Is<List<TucJobItem>>(items => items!.Count == 3));
     }
 
     [Fact]
@@ -324,7 +324,7 @@ public class AddStopJobServiceTests
         // Assert
         Assert.Equal(newJobId, result);
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJobBooking>(j =>
-            j.UcbkJobNumber.StartsWith(parentBooking.UcbkJobNumber)));
+            j!.UcbkJobNumber.StartsWith(parentBooking.UcbkJobNumber)));
     }
 
     [Fact]
@@ -342,7 +342,7 @@ public class AddStopJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<PricingBreakdown>(p =>
-            p.PrebookJobId != null &&
+            p!.PrebookJobId != null &&
             p.JobId == null &&
             p.ChargeName == "Extra Stop"));
     }
@@ -363,7 +363,7 @@ public class AddStopJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
-            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001a"),
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001a"),
             Arg.Any<CancellationToken>());
     }
 
@@ -387,7 +387,7 @@ public class AddStopJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
-            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001b"),
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001b"),
             Arg.Any<CancellationToken>());
     }
 
@@ -568,7 +568,7 @@ public class AddStopJobServiceTests
         await service.AddStopInsertRecurringJobAsync(request);
 
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucNote>(n =>
-            n.JobBookingId == parentBooking.UcbkId &&
+            n!.JobBookingId == parentBooking.UcbkId &&
             n.NoteText == "Booking note" &&
             n.NoteTypeId == (int)NoteType.InternalNote));
     }
@@ -757,7 +757,7 @@ public class AddStopJobServiceTests
             .Returns(callInfo =>
             {                                                                                                                                                                   
                 var j = callInfo.Arg<TucJobBooking>();
-                j.UcbkId = newJobId;                                                                                                                                            
+                j!.UcbkId = newJobId;                                                                                                                                            
                 _createdStopBooking = j;                      
                 return Task.CompletedTask;
             });

@@ -190,9 +190,9 @@ public class PodReportServiceIntegrationTests
             await _emailSenderMock.Received(1).SendAsync(
                 recipient,
                 "Your POD",
-                Arg.Is<string>(b => b.Contains("Line 1<br>Line 2")),
+                Arg.Is<string>(b => b!.Contains("Line 1<br>Line 2")),
                 Arg.Any<string?>(),
-                Arg.Is<EmailAttachment>(att => att.ContentType == "application/pdf" && att.Content.Length > 0),
+                Arg.Is<EmailAttachment>(att => att!.ContentType == "application/pdf" && att.Content.Length > 0),
                 Arg.Any<CancellationToken>());
         }
     }

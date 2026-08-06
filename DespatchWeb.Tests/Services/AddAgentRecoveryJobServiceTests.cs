@@ -103,7 +103,7 @@ public class AddAgentRecoveryJobServiceTests
         // Assert - the leg is booked through the maintained create-job path...
         Assert.Equal(newJobId, result);
         await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
-            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001R1"),
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001R1"),
             Arg.Any<CancellationToken>());
 
         // ...then patched into a hidden SplitChild leg.
@@ -146,7 +146,7 @@ public class AddAgentRecoveryJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucNote>(n =>
-            n.JobId == parentJob.UcjbId &&
+            n!.JobId == parentJob.UcjbId &&
             n.NoteText.Contains("Recovery agent") &&
             n.NoteTypeId == (int)NoteType.AgentUpdate));
     }
@@ -167,7 +167,7 @@ public class AddAgentRecoveryJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<JobRecoveryAgent>(r =>
-            r.JobId == newJobId &&
+            r!.JobId == newJobId &&
             r.AgentId == request.AgentId &&
             r.AirportId == request.AirportId &&
             r.IsPrimary == request.IsPrimaryRecoveryAgent));
@@ -268,7 +268,7 @@ public class AddAgentRecoveryJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
-            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001R1"),
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001R1"),
             Arg.Any<CancellationToken>());
     }
 
@@ -292,7 +292,7 @@ public class AddAgentRecoveryJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
-            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001R2"),
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001R2"),
             Arg.Any<CancellationToken>());
     }
 
@@ -349,7 +349,7 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
-            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001R2"),
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001R2"),
             Arg.Any<CancellationToken>());
         Assert.NotNull(_createdLeg);
         Assert.Equal(0m, _createdLeg.UcjbAmount);

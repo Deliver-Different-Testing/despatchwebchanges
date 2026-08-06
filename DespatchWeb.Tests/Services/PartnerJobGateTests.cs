@@ -147,7 +147,7 @@ public class PartnerJobGateTests
         Assert.Equal(7, pending.RequestId);
         await _changeRequestService.Received().CreateLocalAsync(
             Arg.Is<CreateJobChangeRequestRequest>(r =>
-                r.JobId == 1 &&
+                r!.JobId == 1 &&
                 r.FieldName == nameof(JobChangeField.PartnerAgreedRate) &&
                 r.RequestedValue == "100" &&
                 r.Reason == "rate bump"),

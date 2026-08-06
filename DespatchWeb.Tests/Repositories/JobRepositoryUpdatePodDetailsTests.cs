@@ -1,5 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
@@ -473,9 +474,11 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task UpdatePodDetailsAsync_NonExistentJob_DoesNotThrow()
+    public async Task UpdatePodDetailsAsync_NonExistentJob_Throws()
     {
-        // Arrange — job ID doesn't exist in either table
+        // Arrange — job ID doesn't exist in either table. Silently returning here made
+        // a failed completion indistinguishable from a successful one: the client still
+        // toasted "Completed" while the job stayed active.
         var request = new UpdatePodDetailsRequest
         {
             JobId = 99999,
@@ -486,8 +489,48 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
 
         var repo = CreateRepository();
 
-        // Act & Assert — should complete without error (no-op)
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<JobNotFoundException>(() => repo.UpdatePodDetailsAsync(request));
+        Assert.Contains("99999", ex.Message);
+    }
+
+    [Fact]
+    public async Task UpdatePodDetailsAsync_PodNameWithSurroundingWhitespace_IsTrimmed()
+    {
+        // A whitespace-only POD name reads as blank in the UI but is truthy on the
+        // client, which is what let the guided flow skip the POD name prompt.
+        const int jobId = 1100;
+        await using (var ctx = CreateContext())
+        {
+            ctx.TucJobs.Add(new TucJob
+            {
+                UcjbId = jobId,
+                UcjbJobDone = false,
+                UcjbStatus = 5,
+                UcjbVoid = false
+            });
+            await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var request = new UpdatePodDetailsRequest
+        {
+            JobId = jobId,
+            JobStatus = (int)JobStatus.Completed,
+            PodName = "  Jane Doe  ",
+            PodTime = "2026-03-14T10:35:32+13:00"
+        };
+
+        var repo = CreateRepository();
+
+        // Act
         await repo.UpdatePodDetailsAsync(request);
+
+        // Assert
+        await using (var ctx = CreateContext())
+        {
+            var job = await ctx.TucJobs.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
+            Assert.Equal("Jane Doe", job.UcjbPodname);
+        }
     }
 
     [Fact]

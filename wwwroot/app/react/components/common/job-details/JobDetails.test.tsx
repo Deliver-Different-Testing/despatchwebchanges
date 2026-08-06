@@ -153,6 +153,9 @@ const defaultActions = {
     textDialog: {open: false, title: '', label: '', initialValue: ''},
     handleTextDialogSubmit: jest.fn(),
     handleTextDialogCancel: jest.fn(),
+    cascadeDialog: {open: false, jobNumber: '', newDateLabel: '', members: []},
+    handleCascadeChoose: jest.fn(),
+    handleCascadeCancel: jest.fn(),
     editDateAndTime: jest.fn(),
     handleEditPickupAddress: jest.fn(),
     handleEditDeliveryAddress: jest.fn(),
@@ -243,6 +246,8 @@ function setupDefaultMocks(overrides?: {
         toggleReadStatus: jest.fn().mockResolvedValue(undefined),
         dispatchJob: jest.fn().mockResolvedValue(undefined),
         isUpdating: false,
+        pendingRateChanges: [],
+        selectedRateJobIds: new Set<number>(),
     });
 
     mockUseFieldVisibility.mockReturnValue({
@@ -385,6 +390,8 @@ describe('JobDetails', () => {
                 toggleReadStatus,
                 dispatchJob: jest.fn().mockResolvedValue(undefined),
                 isUpdating: false,
+        pendingRateChanges: [],
+        selectedRateJobIds: new Set<number>(),
             });
 
             renderJobDetails({onJobReadChanged});
@@ -533,6 +540,8 @@ describe('JobDetails', () => {
                 toggleReadStatus: jest.fn().mockResolvedValue(undefined),
                 dispatchJob: jest.fn().mockResolvedValue(undefined),
                 isUpdating: true,
+                pendingRateChanges: [],
+                selectedRateJobIds: new Set<number>(),
             });
             renderJobDetails();
 
@@ -624,6 +633,57 @@ describe('JobDetails', () => {
             // Effect runs against fresh data, finds LHP at index 1.
             expect(capturedRelatedJobTabsProps.selectedTabIndex).toBe(1);
             expect(capturedRelatedJobTabsProps.sortedRelatedJobs[1].jobNo).toBe('E256HAMLHP');
+        });
+    });
+
+    describe('price change dialogs', () => {
+        function renderWithPendingRates(pendingRateChanges: unknown[]) {
+            setupDefaultMocks();
+            mockUseJobUpdate.mockReturnValue({
+                updateField: jest.fn().mockResolvedValue(undefined),
+                updateAddress: jest.fn().mockResolvedValue(undefined),
+                toggleReadStatus: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                isUpdating: false,
+                pendingRateChanges,
+                selectedRateJobIds: new Set<number>(pendingRateChanges.map((r: any) => r.jobId)),
+                toggleRateSelection: jest.fn(),
+                toggleAllRateSelection: jest.fn(),
+                isApplyingRate: false,
+                confirmRateChange: jest.fn(),
+                dismissRateChange: jest.fn(),
+                checkForRateChange: jest.fn(),
+                checkForRateChanges: jest.fn(),
+                invalidateJobLists: jest.fn(),
+                invalidateJob: jest.fn(),
+            });
+            renderJobDetails();
+        }
+
+        const rateRow = (jobId: number, jobNo: string) => ({
+            jobId, jobNo, oldPrice: 100, newPrice: 120, description: null, isPrebook: false,
+        });
+
+        it('shows the single-job modal for one price change', () => {
+            renderWithPendingRates([rateRow(1, 'J100')]);
+
+            expect(screen.getByText('Price Change')).toBeInTheDocument();
+            expect(screen.queryByText('Prices changed')).not.toBeInTheDocument();
+        });
+
+        it('shows the family list when a cascade changed several prices', () => {
+            renderWithPendingRates([rateRow(1, 'J100'), rateRow(2, 'J100LHP')]);
+
+            expect(screen.getByText('Prices changed')).toBeInTheDocument();
+            expect(screen.getByText('2 jobs affected')).toBeInTheDocument();
+            expect(screen.queryByText('Price Change')).not.toBeInTheDocument();
+        });
+
+        it('shows neither when nothing changed price', () => {
+            renderWithPendingRates([]);
+
+            expect(screen.queryByText('Price Change')).not.toBeInTheDocument();
+            expect(screen.queryByText('Prices changed')).not.toBeInTheDocument();
         });
     });
 });

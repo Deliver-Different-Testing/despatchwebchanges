@@ -51,6 +51,12 @@ export interface JobUpdateResponse {
     pending?: boolean;
     requestId?: number;
     message?: string;
+    /** Date edits report which jobs actually moved — the parent plus any cascaded children. */
+    updatedJobIds?: number[];
+    /** Children the cascade could not write; the parent's own edit still succeeded. */
+    failedJobIds?: number[];
+    /** The cascade threw as a whole. The parent was still updated. */
+    cascadeFailed?: boolean;
 }
 
 export function updateJobDetail(
@@ -58,7 +64,8 @@ export function updateJobDetail(
     field: string,
     value: unknown,
     isRecurring: boolean,
-    timezone?: string
+    timezone?: string,
+    options?: {cascadeToChildren?: boolean}
 ): Promise<JobUpdateResponse> {
     let processedValue = value;
     if (value instanceof Date || dayjs.isDayjs(value as Dayjs)) {
@@ -67,8 +74,42 @@ export function updateJobDetail(
 
     const url = isRecurring ? 'job/UpdateRecurringJob' : 'job/UpdateJob';
     return apiClient.post<JobUpdateResponse>(url, null, {
-        params: {jobId, field, value: processedValue, isRecurring},
+        params: {
+            jobId,
+            field,
+            value: processedValue,
+            isRecurring,
+            ...(options?.cascadeToChildren ? {cascadeToChildren: true} : {}),
+        },
     });
+}
+
+// ── Date cascade ────────────────────────────────────────────────────
+
+export interface DateCascadeFamilyMember {
+    jobId: number;
+    jobNo: string | null;
+    date: string | null;
+    time: string | null;
+    amount: number | null;
+    ratedManually: boolean;
+    locked: boolean;
+    isPartnerJob: boolean;
+    /** False for locked/partner legs — listed in the dialog but never written to. */
+    cascadable: boolean;
+}
+
+export interface DateCascadeFamily {
+    relationshipTypeId: number | null;
+    members: DateCascadeFamilyMember[];
+}
+
+/**
+ * The linked jobs a date change on this job could move. Backed by the same predicate the
+ * write path uses, so the list the user approves is the list that actually gets written.
+ */
+export function getFamilyForDateChange(jobId: number): Promise<DateCascadeFamily> {
+    return apiClient.get<DateCascadeFamily>('job/GetFamilyForDateChange', {jobId});
 }
 
 /**
@@ -137,6 +178,26 @@ export interface JobRatePreview {
 
 export function previewJobRate(jobId: number): Promise<JobRatePreview> {
     return apiClient.get<JobRatePreview>('job/RecalculateJobRate', {jobId});
+}
+
+export interface JobRateBatchPreview extends JobRatePreview {
+    jobId: number;
+    jobNo: string | null;
+    currentAmount: number;
+    isPrebook: boolean;
+    /** A hand-set price — never offer to overwrite it. */
+    ratedManually: boolean;
+    /** This job could not be rated; the rest of the batch is still valid. */
+    failed: boolean;
+}
+
+/**
+ * Previews rates for a whole family in one round-trip. Used after a date cascade so every
+ * resulting price change can be shown in a single dialog. Throws 403 when the user lacks the
+ * recalculate permission — callers swallow that and simply skip the price step.
+ */
+export function previewJobRates(jobIds: number[]): Promise<JobRateBatchPreview[]> {
+    return apiClient.get<JobRateBatchPreview[]>('job/RecalculateJobRates', {jobIds: jobIds.join(',')});
 }
 
 export function applyJobRate(jobId: number, isPrebook: boolean): Promise<void> {

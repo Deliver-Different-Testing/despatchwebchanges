@@ -106,7 +106,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
         };
 
         _jobQueryRepositoryMock.BulkSearchAsync(
-                Arg.Is<PodSearchRequest>(r => r.BulkJobId == 42),
+                Arg.Is<PodSearchRequest>(r => r!.BulkJobId == 42),
                 Arg.Any<CancellationToken>())
             .Returns(expectedResult);
 
@@ -138,7 +138,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
         };
 
         _jobQueryRepositoryMock.BulkSearchAsync(
-                Arg.Is<PodSearchRequest>(r => !r.BulkJobIdSet),
+                Arg.Is<PodSearchRequest>(r => !r!.BulkJobIdSet),
                 Arg.Any<CancellationToken>())
             .Returns(expectedResult);
 
@@ -171,7 +171,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
         };
 
         _jobQueryRepositoryMock.PodSearchAsync(
-                Arg.Is<PodSearchRequest>(r => r.JobId == 123),
+                Arg.Is<PodSearchRequest>(r => r!.JobId == 123),
                 Arg.Any<CancellationToken>())
             .Returns(expectedResult);
 

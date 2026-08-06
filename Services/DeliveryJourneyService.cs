@@ -293,6 +293,8 @@ public sealed partial class DeliveryJourneyService(
                 Date = TimeZoneHelper.SetDateTimeWithTimeZone(
                     (dto.Date ?? DateTime.MinValue).CombineWithTime(dto.Time),
                     timezone),
+                // The task's creator — not CompletedBy, which is a later actor.
+                PerformedBy = string.IsNullOrWhiteSpace(dto.Despatcher) ? null : dto.Despatcher,
                 Tags =
                 [
                     .. new[]
@@ -353,9 +355,12 @@ public sealed partial class DeliveryJourneyService(
         [
             .. histories.Select(h =>
             {
-                var editedByName = !string.IsNullOrEmpty(h.EditedByFirstName)
+                // The title and tags keep saying "System" for an unknown editor;
+                // PerformedBy stays null so the timeline shows no attribution line.
+                var editedBy = !string.IsNullOrEmpty(h.EditedByFirstName)
                     ? $"{h.EditedByFirstName} {h.EditedByLastName}"
-                    : "System";
+                    : null;
+                var editedByName = editedBy ?? "System";
                 var editDate = infoService.ConvertUtcToTenantTimeZone(h.EditedAtUtc);
 
                 return new DeliveryJourneyViewModel
@@ -368,6 +373,7 @@ public sealed partial class DeliveryJourneyService(
                     Icon = "sticky_note_2",
                     Description = h.NewNoteText,
                     Date = editDate,
+                    PerformedBy = editedBy,
                     Tags =
                     [
                         .. new[]
@@ -426,6 +432,8 @@ public sealed partial class DeliveryJourneyService(
                 Date = TimeZoneHelper.SetDateTimeWithTimeZone(m.UcmmDate, timezone),
                 Description = m.UcmmMessage,
                 Icon = "sms",
+                PerformedBy = FormatActor(m.SendFromStaffFirstName, m.SendFromStaffLastName)
+                              ?? FormatActor(m.SendFromCourierName, m.SendFromCourierSurname),
                 Tags =
                 [
                     .. new List<string>()
@@ -645,6 +653,34 @@ public sealed partial class DeliveryJourneyService(
         return staff.ToDictionary(s => s.UcstId, s => $"{s.UcstFirstName} {s.UcstLastName}".Trim());
     }
 
+    /// <summary>
+    /// The actor for a timestamp group. A named staff member outranks a courier
+    /// anywhere in the group; within each kind the lowest JourneyID wins, which
+    /// keeps the choice deterministic — the underlying query has no ORDER BY.
+    /// Null when no row records an actor.
+    /// </summary>
+    private static string ResolvePerformedBy(IEnumerable<JobDeliveryJourneyDto> group) =>
+        ResolveActor(group
+            .OrderBy(s => s.Id)
+            .Select(s => (s.StaffFirstName, s.StaffLastName, s.CourierName, s.CourierSurname)));
+
+    private static string ResolvePerformedBy(IEnumerable<JobDeliveryJourneyArchiveDto> group) =>
+        ResolveActor(group
+            .OrderBy(s => s.Id)
+            .Select(s => (s.StaffFirstName, s.StaffLastName, s.CourierName, s.CourierSurname)));
+
+    private static string ResolveActor(
+        IEnumerable<(string StaffFirstName, string StaffLastName, string CourierName, string CourierSurname)> rows)
+    {
+        var ordered = rows.ToList();
+
+        return ordered.Select(r => FormatActor(r.StaffFirstName, r.StaffLastName)).FirstOrDefault(n => n != null)
+               ?? ordered.Select(r => FormatActor(r.CourierName, r.CourierSurname)).FirstOrDefault(n => n != null);
+    }
+
+    private static string FormatActor(string firstName, string lastName) =>
+        string.IsNullOrWhiteSpace(firstName) ? null : $"{firstName} {lastName}".Trim();
+
     private static string ResolveDispatcherValue(string rawId, IReadOnlyDictionary<int, string> names) =>
         !string.IsNullOrEmpty(rawId)
         && int.TryParse(rawId, out var id)
@@ -707,6 +743,7 @@ public sealed partial class DeliveryJourneyService(
                         Description = isCreation ? creation.Description : GetDescription([.. group]),
                         Icon = GetIcon(first.ChangeType, first.FieldName),
                         Tags = isCreation ? creation.Tags : [.. BuildTags(group)],
+                        PerformedBy = ResolvePerformedBy(group),
                         GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
                     };
                 })
@@ -767,6 +804,7 @@ public sealed partial class DeliveryJourneyService(
                         Description = isCreation ? creation.Description : GetDescription([.. group]),
                         Icon = GetIcon(first.ChangeType, first.FieldName),
                         Tags = isCreation ? creation.Tags : [.. BuildTags(group)],
+                        PerformedBy = ResolvePerformedBy(group),
                         GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
                     };
                 })
@@ -807,8 +845,6 @@ public sealed partial class DeliveryJourneyService(
     private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyDto> group) =>
         group.SelectMany(s => new[]
             {
-                !string.IsNullOrEmpty(s.StaffFirstName) ? $"By {s.StaffFirstName} {s.StaffLastName}" : null,
-                !string.IsNullOrEmpty(s.CourierName) ? $"By {s.CourierName} {s.CourierSurname}" : null,
                 !string.IsNullOrEmpty(s.FlightNumber) ? $"Flight: {s.FlightNumber}" : null,
                 BuildAgentTag(s.OldAgentName, s.NewAgentName),
                 BuildCourierTag(s.OldCourierName, s.NewCourierName),
@@ -824,8 +860,6 @@ public sealed partial class DeliveryJourneyService(
     private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyArchiveDto> group) =>
         group.SelectMany(s => new[]
             {
-                !string.IsNullOrEmpty(s.StaffFirstName) ? $"By {s.StaffFirstName} {s.StaffLastName}" : null,
-                !string.IsNullOrEmpty(s.CourierName) ? $"By {s.CourierName} {s.CourierSurname}" : null,
                 !string.IsNullOrEmpty(s.FlightNumber) ? $"Flight: {s.FlightNumber}" : null,
                 BuildAgentTag(s.OldAgentName, s.NewAgentName),
                 BuildCourierTag(s.OldCourierName, s.NewCourierName),

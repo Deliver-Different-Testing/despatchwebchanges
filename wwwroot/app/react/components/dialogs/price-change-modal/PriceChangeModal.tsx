@@ -9,11 +9,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckIcon from '@mui/icons-material/Check';
 import EditNoteIcon from '@mui/icons-material/EditNote';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
+import {PriceDelta} from '../shared/PriceDelta';
 
 export interface PriceChangeModalProps {
     open: boolean;
@@ -25,13 +23,6 @@ export interface PriceChangeModalProps {
     onAccept: () => void;
     onKeep: () => void;
     onManualEdit: () => void;
-}
-
-function PriceDelta({oldPrice, newPrice}: {oldPrice: number; newPrice: number}) {
-    const diff = newPrice - oldPrice;
-    if (diff > 0) return <TrendingUpIcon sx={{fontSize: 20, color: 'error.main'}} />;
-    if (diff < 0) return <TrendingDownIcon sx={{fontSize: 20, color: 'success.main'}} />;
-    return <TrendingFlatIcon sx={{fontSize: 20, color: 'text.secondary'}} />;
 }
 
 export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({

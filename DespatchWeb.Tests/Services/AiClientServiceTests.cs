@@ -44,7 +44,8 @@ public class AiClientServiceTests
             "system",
             [new AiMessage { Role = "user", Content = "hi" }],
             1024,
-            cacheResponse: true);
+            cacheResponse: true,
+            ct: TestContext.Current.CancellationToken);
 
         Assert.True(result.ServedFromCache);
         Assert.Equal("cached summary", result.TextContent);

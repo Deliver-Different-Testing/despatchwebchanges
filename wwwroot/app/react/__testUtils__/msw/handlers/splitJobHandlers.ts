@@ -44,6 +44,7 @@ export const splitJobHandlers = [
 
         return HttpResponse.json({
             basis: 'RoadMiles',
+            distanceUnit: 'mi',
             parentTotalRevenue: 89,
             parentTotalCost: 50,
             isSynthesised: false,
@@ -57,7 +58,7 @@ export const splitJobHandlers = [
                     sequence: 1,
                     letterSuffix: 'A',
                     jobNumber: 'KT1314VA',
-                    miles: 5.6,
+                    distance: 5.6,
                     sharePercent: 70,
                     totalRevenue: 62.3,
                     totalCost: 35,
@@ -71,7 +72,7 @@ export const splitJobHandlers = [
                     sequence: 2,
                     letterSuffix: 'B',
                     jobNumber: 'KT1314VB',
-                    miles: 2.4,
+                    distance: 2.4,
                     sharePercent: 30,
                     totalRevenue: 26.7,
                     totalCost: 15,

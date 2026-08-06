@@ -83,7 +83,7 @@ public class DispatchJobServiceTests
 
         // Assert
         await _jobRepositoryMock.Received().AssignCourierToJobAsync(
-            Arg.Is<List<int>>(ids => ids.Contains(1)), courierId);
+            Arg.Is<List<int>>(ids => ids!.Contains(1)), courierId);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class DispatchJobServiceTests
 
         // Assert
         await _jobRepositoryMock.Received().AssignCourierToJobAsync(
-            Arg.Is<List<int>>(ids => ids.Count == 3), courierId);
+            Arg.Is<List<int>>(ids => ids!.Count == 3), courierId);
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public class DispatchJobServiceTests
 
         // Assert
         await _jobRepositoryMock.Received().AssignCourierToChildJobsAsync(
-            Arg.Is<List<int>>(ids => ids.Count == 2), InternalJobStatus.AwaitingPod);
+            Arg.Is<List<int>>(ids => ids!.Count == 2), InternalJobStatus.AwaitingPod);
     }
 
     [Fact]

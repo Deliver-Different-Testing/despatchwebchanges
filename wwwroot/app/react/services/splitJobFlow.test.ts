@@ -327,8 +327,45 @@ describe('executeSplitJobFlow', () => {
 
             await executeSplitJobFlow(opts);
 
-            expect(opts.showToast).toHaveBeenCalledWith('Error splitting job', 'error');
+            expect(opts.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('Error splitting job'),
+                'error',
+            );
             expect(opts.setLoading).toHaveBeenCalledWith(false);
+        });
+
+        it('surfaces the server reason so the failure is diagnosable without logs', async () => {
+            // apiClient rejects with an ApiError carrying the response body. Split failures are
+            // otherwise indistinguishable from each other in staging/production.
+            mockedSplitJob.mockRejectedValue({
+                status: 500,
+                statusText: 'Internal Server Error',
+                message: "Job 42 has flights assigned and cannot be split.",
+            });
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(opts.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('flights assigned'),
+                'error',
+            );
+        });
+
+        it('names the reason the pricing preview failed', async () => {
+            mockedPreviewSplitPricing.mockRejectedValue({
+                status: 403,
+                statusText: 'Forbidden',
+                message: 'You do not have permission to view pricing for this job.',
+            });
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(opts.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('do not have permission'),
+                'warning',
+            );
         });
     });
 });

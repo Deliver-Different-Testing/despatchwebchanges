@@ -11,6 +11,7 @@ const theme = createTheme();
 function createPreview(overrides?: Partial<SplitPricingPreview>): SplitPricingPreview {
     return {
         basis: 'RoadMiles',
+        distanceUnit: 'mi',
         parentTotalRevenue: 89,
         parentTotalCost: 50,
         isSynthesised: false,
@@ -24,7 +25,7 @@ function createPreview(overrides?: Partial<SplitPricingPreview>): SplitPricingPr
                 sequence: 1,
                 letterSuffix: 'A',
                 jobNumber: 'KT1314VA',
-                miles: 5.6,
+                distance: 5.6,
                 sharePercent: 70,
                 totalRevenue: 62.3,
                 totalCost: 35,
@@ -38,7 +39,7 @@ function createPreview(overrides?: Partial<SplitPricingPreview>): SplitPricingPr
                 sequence: 2,
                 letterSuffix: 'B',
                 jobNumber: 'KT1314VB',
-                miles: 2.4,
+                distance: 2.4,
                 sharePercent: 30,
                 totalRevenue: 26.7,
                 totalCost: 15,
@@ -87,11 +88,26 @@ describe('SplitPricingDialog', () => {
         expect(rowFor('Leg total')).toHaveTextContent('$62.30');
         expect(rowFor('Leg total')).toHaveTextContent('$26.70');
 
-        expect(screen.getByText('Split by road miles per leg', {exact: false})).toBeInTheDocument();
+        expect(screen.getByText('Split by road distance per leg', {exact: false})).toBeInTheDocument();
         // The invoice guarantee is stated on screen.
         expect(
             screen.getByText(/splitting does not change what the client is invoiced/i),
         ).toBeInTheDocument();
+    });
+
+    it('labels leg distances in the tenant’s own unit', () => {
+        // NZ reads distance in kilometres; the server sends the figure already converted.
+        renderDialog(createPreview({
+            distanceUnit: 'km',
+            legs: [
+                {...createPreview().legs[0], distance: 9.01},
+                {...createPreview().legs[1], distance: 3.86},
+            ],
+        }));
+
+        expect(screen.getByText('9.01 km')).toBeInTheDocument();
+        expect(screen.getByText('3.86 km')).toBeInTheDocument();
+        expect(screen.queryByText(/\bmi\b/)).not.toBeInTheDocument();
     });
 
     it('confirms with the previewed shares and no line overrides', async () => {

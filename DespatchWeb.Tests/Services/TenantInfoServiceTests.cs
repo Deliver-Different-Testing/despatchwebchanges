@@ -207,6 +207,67 @@ public class TenantInfoServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public void GetStaffIdOrNull_WithValidClaim_ReturnsStaffId()
+    {
+        // Arrange
+        SetupHttpContextWithClaims(("StaffID", "42"));
+        var service = CreateService();
+
+        // Act
+        var result = service.GetStaffIdOrNull();
+
+        // Assert
+        Assert.Equal(42, result);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("abc")]
+    [InlineData("")]
+    public void GetStaffIdOrNull_WithNonPositiveOrUnparseableClaim_ReturnsNull(string claimValue)
+    {
+        // Arrange
+        SetupHttpContextWithClaims(("StaffID", claimValue));
+        var service = CreateService();
+
+        // Act
+        var result = service.GetStaffIdOrNull();
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void GetStaffIdOrNull_WithNoClaim_ReturnsNull()
+    {
+        // Arrange
+        SetupHttpContextWithClaims(); // No claims
+        var service = CreateService();
+
+        // Act
+        var result = service.GetStaffIdOrNull();
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void GetStaffId_WithUnparseableClaim_DoesNotThrow()
+    {
+        // Arrange — GetStaffId used int.Parse, which threw FormatException on a
+        // non-numeric claim rather than falling back to 0.
+        SetupHttpContextWithClaims(("StaffID", "abc"));
+        var service = CreateService();
+
+        // Act
+        var result = service.GetStaffId();
+
+        // Assert
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
     public void GetStaffId_CalledMultipleTimes_ReturnsCachedValue()
     {
         // Arrange

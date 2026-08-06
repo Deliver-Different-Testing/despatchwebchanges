@@ -1,4 +1,8 @@
-﻿using DespatchWeb.EntityClasses;
+﻿// Annotations only: the `?` annotations below are intentional, but the nullable-oblivious EF
+// entity columns are cast to decimal inside SQL-translated projections, where a null yields SQL
+// NULL rather than a client-side dereference.
+#nullable enable annotations
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -82,8 +86,8 @@ public sealed class ClearListEnvelopeService(
         var unassignedJobLocationsQuery = GetUnassignedJobLocationsQueryUs(clearListAreaId);
 
         query = query
-            .Concat(courierLocationsQuery ?? throw new InvalidOperationException())
-            .Concat(unassignedJobLocationsQuery ?? throw new InvalidOperationException());
+            .Concat(courierLocationsQuery)
+            .Concat(unassignedJobLocationsQuery);
 
         return await CalculateEnvelopeAsync(query);
     }
@@ -106,8 +110,8 @@ public sealed class ClearListEnvelopeService(
         var unassignedJobsQuery = GetUnassignedJobLocationsQueryNz(clearListAreaId);
 
         query = query
-            .Concat(courierLocationsQuery ?? throw new InvalidOperationException())
-            .Concat(unassignedJobsQuery ?? throw new InvalidOperationException());
+            .Concat(courierLocationsQuery)
+            .Concat(unassignedJobsQuery);
 
         return await CalculateEnvelopeAsync(query);
     }

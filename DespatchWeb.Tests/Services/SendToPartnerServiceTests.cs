@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -339,6 +339,7 @@ public class SendToPartnerServiceTests : IDisposable
         // null because partner-dispatched jobs no longer carry a local courier.
         await SeedPairingAsync();
         _tenantInfoService.GetStaffId().Returns(7);
+        _tenantInfoService.GetStaffIdOrNull().Returns(7);
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent(new { success = true, trackingNumber = "TRK-J1" })
@@ -359,6 +360,32 @@ public class SendToPartnerServiceTests : IDisposable
         Assert.Equal(7, journey.StaffId);
         Assert.Equal("Staff", journey.UpdatedByType);
         Assert.Contains("TRK-J1", journey.Comments);
+    }
+
+    [Fact]
+    public async Task SendAsync_WithNoStaffContext_WritesJourneyEntryAsSystem()
+    {
+        // CK_JobDeliveryJourney_UserID_Required rejects UpdatedByType 'Staff' with a
+        // null StaffID, so an unattributed write must be recorded as 'System'.
+        // Previously this combination was written and silently swallowed by the
+        // best-effort try/catch, losing the audit row entirely.
+        await SeedPairingAsync();
+        _tenantInfoService.GetStaffIdOrNull().Returns((int?)null);
+        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent(new { success = true, trackingNumber = "TRK-J2" })
+        });
+
+        var result = await CreateService().SendAsync(SampleRequest());
+
+        Assert.True(result.Success);
+        await using var verifyCtx = _db.CreateContext();
+        var journey = await verifyCtx.JobDeliveryJourneys
+            .Where(j => j.JobId == 42)
+            .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
+        Assert.NotNull(journey);
+        Assert.Null(journey.StaffId);
+        Assert.Equal("System", journey.UpdatedByType);
     }
 
     [Fact]
