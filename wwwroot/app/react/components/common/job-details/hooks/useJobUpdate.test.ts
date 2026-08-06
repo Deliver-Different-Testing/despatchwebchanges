@@ -19,6 +19,9 @@ jest.mock('../../../../services/jobDetailApi', () => ({
     restoreJobs: jest.fn(),
     allocateJob: jest.fn(),
     getCourierById: jest.fn(),
+    previewJobRate: jest.fn(),
+    previewJobRates: jest.fn(),
+    applyJobRate: jest.fn(),
 }));
 
 import {
@@ -31,6 +34,8 @@ import {
     restoreJobs,
     allocateJob,
     getCourierById,
+    previewJobRates,
+    applyJobRate,
 } from '../../../../services/jobDetailApi';
 
 const mockUpdateJobDetail = updateJobDetail as jest.MockedFunction<typeof updateJobDetail>;
@@ -42,6 +47,22 @@ const mockUpdateJobReadStatus = updateJobReadStatus as jest.MockedFunction<typeo
 const mockRestoreJobs = restoreJobs as jest.MockedFunction<typeof restoreJobs>;
 const mockAllocateJob = allocateJob as jest.MockedFunction<typeof allocateJob>;
 const mockGetCourierById = getCourierById as jest.MockedFunction<typeof getCourierById>;
+const mockPreviewJobRates = previewJobRates as jest.MockedFunction<typeof previewJobRates>;
+const mockApplyJobRate = applyJobRate as jest.MockedFunction<typeof applyJobRate>;
+
+function ratePreview(jobId: number, currentAmount: number, rate: number, overrides?: Record<string, unknown>) {
+    return {
+        jobId,
+        jobNo: `J${jobId}`,
+        rate,
+        description: null,
+        currentAmount,
+        isPrebook: false,
+        ratedManually: false,
+        failed: false,
+        ...overrides,
+    };
+}
 
 // ── Test Helpers ──────────────────────────────────────────────────────
 
@@ -504,8 +525,25 @@ describe('useJobUpdate', () => {
             expect(invalidateSpy).toHaveBeenCalled();
         });
 
-        it('shows error toast when updatePod fails', async () => {
-            mockUpdatePodDetails.mockRejectedValueOnce(new Error('fail'));
+        it('shows the backend message when updatePod fails with one', async () => {
+            // A 404 from UpdatePODDetails carries an authored reason (e.g. the job no
+            // longer exists) that the operator can actually act on.
+            mockUpdatePodDetails.mockRejectedValueOnce(
+                new Error('Job 99999 could not be completed because it no longer exists.'));
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                try {
+                    await result.current.updatePod({jobId: 99999} as any);
+                } catch { /* expected */ }
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                'Job 99999 could not be completed because it no longer exists.', 'error');
+        });
+
+        it('falls back to a generic error toast when updatePod fails without a message', async () => {
+            mockUpdatePodDetails.mockRejectedValueOnce(new Error(''));
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -673,6 +711,141 @@ describe('useJobUpdate', () => {
             });
 
             await waitFor(() => expect(result.current.isUpdating).toBe(false));
+        });
+    });
+
+    describe('checkForRateChanges (date cascade)', () => {
+        it('queues only the jobs whose price actually moved, all pre-selected', async () => {
+            mockPreviewJobRates.mockResolvedValueOnce([
+                ratePreview(1, 120, 135),
+                ratePreview(2, 45, 45),   // unchanged — must not appear
+                ratePreview(3, 45, 50),
+            ]);
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.checkForRateChanges([1, 2, 3]);
+            });
+
+            expect(mockPreviewJobRates).toHaveBeenCalledWith([1, 2, 3]);
+            expect(result.current.pendingRateChanges.map(r => r.jobId)).toEqual([1, 3]);
+            expect([...result.current.selectedRateJobIds]).toEqual([1, 3]);
+        });
+
+        it('never offers to re-price a manually-priced job', async () => {
+            // A hand-set price must survive a date change. Offering it — even unticked — is a
+            // click away from clobbering it, so it is left out of the dialog entirely.
+            mockPreviewJobRates.mockResolvedValueOnce([
+                ratePreview(1, 120, 135),
+                ratePreview(2, 45, 90, {ratedManually: true}),
+            ]);
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.checkForRateChanges([1, 2]);
+            });
+
+            expect(result.current.pendingRateChanges.map(r => r.jobId)).toEqual([1]);
+        });
+
+        it('drops jobs the backend could not rate', async () => {
+            mockPreviewJobRates.mockResolvedValueOnce([
+                ratePreview(1, 120, 135),
+                ratePreview(2, 45, 90, {failed: true}),
+            ]);
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.checkForRateChanges([1, 2]);
+            });
+
+            expect(result.current.pendingRateChanges.map(r => r.jobId)).toEqual([1]);
+        });
+
+        it('stays silent when the user lacks the recalculate permission', async () => {
+            // Mirrors the deliberate swallow on the single-job probe — no dialog, no toast.
+            mockPreviewJobRates.mockRejectedValueOnce({status: 403, message: 'no permission'});
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.checkForRateChanges([1, 2]);
+            });
+
+            expect(result.current.pendingRateChanges).toEqual([]);
+            expect(mockShowToast).not.toHaveBeenCalled();
+        });
+
+        it('does not call the API for an empty job list', async () => {
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.checkForRateChanges([]);
+            });
+
+            expect(mockPreviewJobRates).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('confirmRateChange (applying a family)', () => {
+        async function queueTwoChanges() {
+            mockPreviewJobRates.mockResolvedValueOnce([ratePreview(1, 120, 135), ratePreview(3, 45, 50)]);
+            const rendered = renderUseJobUpdate();
+            await act(async () => {
+                await rendered.result.current.checkForRateChanges([1, 3]);
+            });
+            return rendered;
+        }
+
+        it('applies every selected job and reports the count', async () => {
+            mockApplyJobRate.mockResolvedValue(undefined);
+            const {result} = await queueTwoChanges();
+
+            await act(async () => {
+                await result.current.confirmRateChange();
+            });
+
+            expect(mockApplyJobRate).toHaveBeenCalledWith(1, false);
+            expect(mockApplyJobRate).toHaveBeenCalledWith(3, false);
+            expect(mockShowToast).toHaveBeenCalledWith('Price updated on 2 jobs', 'success');
+            expect(result.current.pendingRateChanges).toEqual([]);
+        });
+
+        it('applies the rest and names the ones that failed', async () => {
+            mockApplyJobRate.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined);
+            const {result} = await queueTwoChanges();
+
+            await act(async () => {
+                await result.current.confirmRateChange();
+            });
+
+            expect(mockApplyJobRate).toHaveBeenCalledTimes(2);
+            expect(mockShowToast).toHaveBeenCalledWith(
+                'Price updated on 1 of 2 jobs — J1 unchanged', 'warning');
+        });
+
+        it('skips a deselected job', async () => {
+            mockApplyJobRate.mockResolvedValue(undefined);
+            const {result} = await queueTwoChanges();
+
+            act(() => result.current.toggleRateSelection(3));
+            await act(async () => {
+                await result.current.confirmRateChange();
+            });
+
+            expect(mockApplyJobRate).toHaveBeenCalledTimes(1);
+            expect(mockApplyJobRate).toHaveBeenCalledWith(1, false);
+        });
+
+        it('does nothing when the user keeps every price', async () => {
+            const {result} = await queueTwoChanges();
+
+            act(() => result.current.dismissRateChange());
+            await act(async () => {
+                await result.current.confirmRateChange();
+            });
+
+            expect(mockApplyJobRate).not.toHaveBeenCalled();
+            expect(result.current.pendingRateChanges).toEqual([]);
         });
     });
 });

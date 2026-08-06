@@ -68,7 +68,8 @@ public class SplitPricingAllocatorTests
         // Six rows: every line exists on both legs, named per the bug report's Expected section.
         Assert.Equal(6, allocated.Count);
         Assert.Equal(
-            new[] {"Base Part A", "Base Part B", "Base Fuel Part A", "Base Fuel Part B", "Congestion Part A", "Congestion Part B"},
+            ["Base Part A", "Base Part B", "Base Fuel Part A", "Base Fuel Part B", "Congestion Part A", "Congestion Part B"
+            ],
             allocated.Select(l => l.ChargeName));
 
         var legA = allocated.Where(l => l.LetterSuffix == "A").ToList();
@@ -282,5 +283,57 @@ public class SplitPricingAllocatorTests
         Assert.Equal(71.20m, amounts[0]);
         Assert.Equal(17.80m, amounts[1]);
         Assert.Equal(89.00m, amounts.Sum());
+    }
+
+    [Theory]
+    // NZ charge names carry kilometres, so a km figure has to be scaled per leg exactly as miles are
+    // — otherwise both legs keep the parent's full distance in their name.
+    [InlineData("Distance (20 km)", 0.25, "Distance (5 km) Part A")]
+    [InlineData("Base (10.5 km)", 0.5, "Base (5.3 km) Part A")]
+    [InlineData("Distance (20 km incl., 60 km charged)", 0.5, "Distance (10 km incl., 30 km charged) Part A")]
+    // The matched unit is preserved rather than normalised to one or the other.
+    [InlineData("Base (108 miles)", 0.25, "Base (27 miles) Part A")]
+    public void LegChargeName_ScalesKilometresAsWellAsMiles(string original, double share, string expected) =>
+        Assert.Equal(expected, LegChargeName(original, "A", (decimal)share));
+
+    [Fact]
+    public void LegChargeName_LeavesUnitlessNumbersAlone()
+    {
+        // "2" here is a quantity, not a distance — only figures carrying a distance unit move.
+        Assert.Equal("Stop Offs (2) Part A", LegChargeName("Stop Offs (2)", "A", 0.5m));
+    }
+
+    [Fact]
+    public void SharesFromWeights_NegativeTotal_StaysProportionalInsteadOfSplittingEvenly()
+    {
+        // A credit/rebate set sums negative. Proportional scaling is still well-defined, and an even
+        // split would silently move money between the lines.
+        var shares = SharesFromWeights([-100m, -50m]);
+        var amounts = DistributeAmount(-60.00m, shares);
+
+        Assert.Equal(-40.00m, amounts[0]);
+        Assert.Equal(-20.00m, amounts[1]);
+        Assert.Equal(-60.00m, amounts.Sum());
+    }
+
+    [Fact]
+    public void SharesFromWeights_MixedSignsWithNonZeroTotal_StaysProportional()
+    {
+        var shares = SharesFromWeights([100m, -20m]);
+        var amounts = DistributeAmount(80.00m, shares);
+
+        Assert.Equal(100.00m, amounts[0]);
+        Assert.Equal(-20.00m, amounts[1]);
+    }
+
+    [Fact]
+    public void SharesFromWeights_WeightsCancelToZero_FallsBackToAnEvenSplit()
+    {
+        // No proportional answer exists when the weights cancel out; an even split is the only
+        // option left, and callers log it rather than letting it pass unnoticed.
+        var shares = SharesFromWeights([50m, -50m]);
+
+        Assert.Equal(0.5m, shares[0]);
+        Assert.Equal(0.5m, shares[1]);
     }
 }

@@ -1,3 +1,4 @@
+#nullable enable
 using DespatchWeb.Enums;
 
 namespace DespatchWeb.Models.Response;

@@ -1,6 +1,7 @@
 using System.Collections;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -220,7 +221,7 @@ public class JobControllerTests : IDisposable
         var result = await controller.OverlayDocument(42, "  ");
 
         Assert.IsType<BadRequestObjectResult>(result);
-        await _pdfOverlayClientMock.DidNotReceiveWithAnyArgs().RenderJobAsync(default, default!);
+        await _pdfOverlayClientMock.DidNotReceiveWithAnyArgs().RenderJobAsync(0, null!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1239,7 +1240,7 @@ public class JobControllerTests : IDisposable
         // Assert - Verify service is called with correct parameters (no suburb ID)
         Assert.IsType<OkResult>(result);
         await _splitJobServiceMock.Received().SplitJobAsync(42, "Jane Smith", Arg.Is<AddressViewModel>(a =>
-            a.AddressLine1 == "456 New Meeting Point" &&
+            a!.AddressLine1 == "456 New Meeting Point" &&
             a.AddressLine5 == "Wellington" &&
             a.AddressLine7 == "6011" &&
             a.Latitude == -41.2865m &&
@@ -1445,6 +1446,50 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task SplitJob_SplitJobException_ReturnsTheAuthoredMessageVerbatim()
+    {
+        // Without this the message is sanitised to the generic "An unexpected error occurred",
+        // which leaves split failures undiagnosable in staging/production.
+        const string authored = "Splitting isn't set up on this system — the 'SplitChild' job "
+                                + "relationship type is missing. Please contact support.";
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns(new Suggestion { Id = 1, Text = "Test User" });
+        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(),
+                Arg.Any<int?>(), Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+                Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new SplitJobException(authored));
+
+        var result = await CreateControllerForSplitJob().SplitJob(new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointAddress = new AddressViewModel()
+        });
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.Equal(authored, objectResult.Value);
+    }
+
+    [Fact]
+    public async Task SplitJob_UnexpectedException_ReturnsSanitisedMessage()
+    {
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns(new Suggestion { Id = 1, Text = "Test User" });
+        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(),
+                Arg.Any<int?>(), Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+                Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("Login failed for user 'sa' on server prod-rds"));
+
+        var result = await CreateControllerForSplitJob().SplitJob(new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointAddress = new AddressViewModel()
+        });
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.DoesNotContain("prod-rds", objectResult.Value?.ToString());
+    }
+
+    [Fact]
     public async Task UnSplitJob_ValidJobId_ReturnsMessage()
     {
         // Arrange
@@ -1463,6 +1508,47 @@ public class JobControllerTests : IDisposable
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         Assert.Equal(expectedMessage, jsonResult.Value);
+    }
+
+    [Fact]
+    public async Task UpdatePodDetails_JobNotFound_ReturnsNotFoundWithTheAuthoredMessage()
+    {
+        // A 200 here made a completion that wrote nothing look like a success to the
+        // client, which still toasted "Completed" while the job stayed active.
+        const string authored = "Job 99999 could not be completed because it no longer exists.";
+        var request = new UpdatePodDetailsRequest
+        {
+            JobId = 99999,
+            JobStatus = (int)JobStatus.Completed,
+            PodName = "Jane Doe",
+            PodTime = "2026-03-14T10:35:32+13:00"
+        };
+        _jobCommandRepositoryMock.UpdatePodDetailsAsync(request)
+            .ThrowsAsync(new JobNotFoundException(authored));
+
+        var result = await CreateController().UpdatePodDetails(request);
+
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal(authored, notFound.Value);
+    }
+
+    [Fact]
+    public async Task UpdatePodDetails_UnexpectedFailure_Returns500()
+    {
+        var request = new UpdatePodDetailsRequest
+        {
+            JobId = 1,
+            JobStatus = (int)JobStatus.Completed,
+            PodName = "Jane Doe",
+            PodTime = "2026-03-14T10:35:32+13:00"
+        };
+        _jobCommandRepositoryMock.UpdatePodDetailsAsync(request)
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await CreateController().UpdatePodDetails(request);
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
     }
 
     [Fact]
@@ -1524,7 +1610,7 @@ public class JobControllerTests : IDisposable
         await _jobCommandRepositoryMock.Received(1).RestoreJobsAsync(request.JobIds);
         await _jobQueryRepositoryMock.DidNotReceive().GetJobCompletionTimesAsync(Arg.Any<IReadOnlyList<int>>());
         await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs()
-            .ArchiveJobCapturedMediaAsync(default, default, default);
+            .ArchiveJobCapturedMediaAsync(0, 0, 0);
     }
 
     [Fact]
@@ -1543,7 +1629,7 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<OkResult>(result);
         await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs()
-            .ArchiveJobCapturedMediaAsync(default, default, default);
+            .ArchiveJobCapturedMediaAsync(0, 0, 0);
     }
 
     [Fact]
@@ -1648,6 +1734,89 @@ public class JobControllerTests : IDisposable
         var objectResult = (ObjectResult)result;
         Assert.Equal(500, objectResult.StatusCode);
     }
+
+    [Fact]
+    public async Task UpdateJob_DateField_WithoutCascade_DoesNotPropagateToFamily()
+    {
+        // "This job only" must move the parent and nothing else — and must not fall through to
+        // the legacy rate propagation, which would silently redistribute a split family.
+        const int jobId = 1;
+        const string value = "2024-03-12T09:30:00+13:00";
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, JobProperty.BookedTime, value, CancellationToken.None);
+
+        await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
+            .PropagateDateToChildrenAsync(default, default, default!);
+        await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
+            .PropagateUpdateToChildrenAsync(default, default, default!);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(new[] { jobId }, GetIntArray(ok.Value, "updatedJobIds"));
+    }
+
+    [Fact]
+    public async Task UpdateJob_DateField_WithCascade_ReturnsParentAndUpdatedChildren()
+    {
+        const int jobId = 1;
+        const string value = "2024-03-12T09:30:00+13:00";
+
+        _splitJobServiceMock
+            .PropagateDateToChildrenAsync(jobId, JobProperty.BookedTime, value, Arg.Any<CancellationToken>())
+            .Returns(new DateCascadeResult([2, 3], [4]));
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, JobProperty.BookedTime, value, CancellationToken.None,
+            cascadeToChildren: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal([1, 2, 3], GetIntArray(ok.Value, "updatedJobIds"));
+        Assert.Equal([4], GetIntArray(ok.Value, "failedJobIds"));
+    }
+
+    [Fact]
+    public async Task UpdateJob_DateField_CascadeThrows_StillReportsParentUpdated()
+    {
+        // The parent's date is already written; a failing cascade must not read to the user as
+        // "nothing happened" — that is what drove the original rebooking.
+        const int jobId = 1;
+        const string value = "2024-03-12T09:30:00+13:00";
+
+        _splitJobServiceMock
+            .PropagateDateToChildrenAsync(jobId, JobProperty.Date, value, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, JobProperty.Date, value, CancellationToken.None,
+            cascadeToChildren: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(new[] { jobId }, GetIntArray(ok.Value, "updatedJobIds"));
+        Assert.True((bool)ok.Value!.GetType().GetProperty("cascadeFailed")!.GetValue(ok.Value)!);
+    }
+
+    [Fact]
+    public async Task UpdateJob_NonDateRateAffectingField_StillUsesLegacyPropagation()
+    {
+        // Regression guard: only date fields take the new path. Size/weight/speed keep the
+        // existing split-redistribute and multi-re-rate behaviour.
+        const int jobId = 1;
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, JobProperty.Size, "3", CancellationToken.None);
+
+        await _splitJobServiceMock.Received(1)
+            .PropagateUpdateToChildrenAsync(jobId, JobProperty.Size, "3", Arg.Any<CancellationToken>());
+        await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
+            .PropagateDateToChildrenAsync(default, default, default!);
+        Assert.IsType<OkResult>(result);
+    }
+
+    private static int[] GetIntArray(object? value, string propertyName) =>
+        ((IEnumerable<int>)value!.GetType().GetProperty(propertyName)!.GetValue(value)!).ToArray();
 
     [Fact]
     public async Task UpdateRecurringJob_ValidRequest_ReturnsOk()
@@ -3157,11 +3326,11 @@ public class JobControllerTests : IDisposable
 
         Assert.IsType<OkResult>(result);
         await _jobCommandRepositoryMock.Received(1)
-            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 20));
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 20));
         await _jobCommandRepositoryMock.Received(1)
-            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 10));
+            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 10));
         await _jobCommandRepositoryMock.Received(1)
-            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 10));
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 10));
     }
 
     [Fact]
@@ -3184,9 +3353,9 @@ public class JobControllerTests : IDisposable
         await _jobCommandRepositoryMock.DidNotReceive()
             .ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>());
         await _jobCommandRepositoryMock.Received(1)
-            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 20));
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 20));
         await _jobCommandRepositoryMock.Received(1)
-            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 10));
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 10));
     }
 
     [Fact]
@@ -3550,7 +3719,7 @@ public class JobControllerTests : IDisposable
         var result = await controller.Void(new VoidJobRequest { JobId = 2 });
 
         Assert.IsType<OkResult>(result);
-        await _jobCommandRepositoryMock.Received().VoidJobAsync(Arg.Is<VoidJobRequest>(r => r.JobId == 2));
+        await _jobCommandRepositoryMock.Received().VoidJobAsync(Arg.Is<VoidJobRequest>(r => r!.JobId == 2));
     }
 
     [Fact]
@@ -3576,7 +3745,7 @@ public class JobControllerTests : IDisposable
 
         Assert.IsType<OkResult>(result);
         await _dispatchJobServiceMock.Received()
-            .DispatchJobsToCourierAsync(Arg.Is<List<int>>(ids => ids.Contains(6)), 1);
+            .DispatchJobsToCourierAsync(Arg.Is<List<int>>(ids => ids!.Contains(6)), 1);
     }
 
     [Fact]
@@ -3633,7 +3802,7 @@ public class JobControllerTests : IDisposable
 
         Assert.IsType<OkResult>(result);
         await _jobCommandRepositoryMock.Received()
-            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Contains(35)));
+            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Contains(35)));
     }
 
     [Fact]

@@ -33,7 +33,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         // By default, the repository reports every requested job as updated. Individual tests
         // override this to simulate jobs that were skipped (not found / locked).
         _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(ci => ci.Arg<IReadOnlyList<JobManualPriceModel>>()
+            .Returns(ci => ci.Arg<IReadOnlyList<JobManualPriceModel>>()!
                 .Select(m => m.Id).ToHashSet());
     }
 
@@ -258,7 +258,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -320,7 +320,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -399,7 +399,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // Assert - verify RepriceJobWithBaseAmountAsync was used for prebook
         await _jobCommandRepositoryMock.Received().RepriceJobWithBaseAmountAsync(
-            Arg.Is<RepriceJobWithBaseAmountModel>(m => m.IsPrebook == true && m.BaseAmount == 100m));
+            Arg.Is<RepriceJobWithBaseAmountModel>(m => m!.IsPrebook == true && m.BaseAmount == 100m));
 
         // UpdateManualPriceAsync should NOT be called for prebook-only updates
         await _jobCommandRepositoryMock.DidNotReceive().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
@@ -437,7 +437,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -489,7 +489,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -507,7 +507,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // RepriceJobWithBaseAmountAsync should be called for prebook job
         await _jobCommandRepositoryMock.Received().RepriceJobWithBaseAmountAsync(
-            Arg.Is<RepriceJobWithBaseAmountModel>(m => m.JobId == 2 && m.IsPrebook == true));
+            Arg.Is<RepriceJobWithBaseAmountModel>(m => m!.JobId == 2 && m.IsPrebook == true));
     }
 
     [Fact]
@@ -536,7 +536,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -580,7 +580,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -632,7 +632,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -706,7 +706,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -774,7 +774,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
             .Returns(callInfo =>
             {
                 capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels.Select(m => m.Id).ToHashSet();
+                return capturedModels!.Select(m => m.Id).ToHashSet();
             });
 
         var service = CreateService();
@@ -969,7 +969,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
-                return stream.CopyToAsync(callInfo.Arg<Stream>());
+                return stream.CopyToAsync(callInfo.Arg<Stream>()!);
             });
 
         return fileMock;

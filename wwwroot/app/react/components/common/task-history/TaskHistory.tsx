@@ -395,6 +395,23 @@ const EventRow: React.FC<EventRowProps> = ({event, index, spec, densityMode, tim
                 )}
             </Stack>
 
+            {/* Who made the change — omitted entirely when unrecorded */}
+            {event.performedBy && densityMode !== DensityMode.UltraDense && (
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                        mt: -0.25,
+                        lineHeight: 1.3,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    by {event.performedBy}
+                </Typography>
+            )}
+
             {/* Tags */}
             {tagsToShow.length > 0 && (
                 <Stack direction="row" spacing={0.5} useFlexGap sx={{flexWrap: 'wrap', rowGap: 0.5}}>

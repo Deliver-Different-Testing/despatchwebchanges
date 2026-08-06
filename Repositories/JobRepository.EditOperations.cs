@@ -378,7 +378,10 @@ public partial class JobRepository
                     throw new ApplicationException("Voiding a job is not allowed here");
                 }
 
+                // Clear the status alongside the flag - leaving it on Void would keep the job
+                // reporting as voided (RestoreJobsCore resets the same pair).
                 job.UcjbVoid = false;
+                job.UcjbStatus = (int)JobStatus.New;
                 break;
             case JobProperty.SpeedID:
                 job.UcjbSpeed = short.Parse(value);
@@ -440,6 +443,14 @@ public partial class JobRepository
                 job.UcjbContact = job.Contact?.UserName;
                 break;
             case JobProperty.Status:
+                // A voided job keeps the Void status - moving it would report the job as live
+                // revenue in the job-search export, which reads the status column.
+                if (job.UcjbVoid)
+                {
+                    Log.Warning("Ignoring status change on voided job {JobId}", job.UcjbId);
+                    break;
+                }
+
                 var newStatus = int.Parse(value);
                 job.UcjbStatus = newStatus;
 
@@ -648,6 +659,7 @@ public partial class JobRepository
                 }
 
                 archive.UcjbVoid = false;
+                archive.UcjbStatus = (int)JobStatus.New;
                 break;
             case JobProperty.SpeedID:
                 archive.UcjbSpeed = short.Parse(value);
@@ -750,7 +762,8 @@ public partial class JobRepository
 
                 archive.UcjbStatus = internalStatusId switch
                 {
-                    // Handle status changes
+                    // Handle status changes - a voided job keeps the Void status
+                    _ when archive.UcjbVoid => archive.UcjbStatus,
                     (int)InternalJobStatus.AwaitingPod when archive.UcjbStatus != (int)JobStatus.AwaitingPod =>
                         (int)JobStatus.AwaitingPod,
                     (int)InternalJobStatus.NewJobs when archive.UcjbStatus != (int)JobStatus.Dispatched =>
@@ -761,6 +774,12 @@ public partial class JobRepository
                 };
                 break;
             case JobProperty.Status:
+                if (archive.UcjbVoid)
+                {
+                    Log.Warning("Ignoring status change on voided archived job {JobId}", archive.UcjbId);
+                    break;
+                }
+
                 archive.UcjbStatus = int.Parse(value);
                 break;
             case JobProperty.RefA:
@@ -1032,7 +1051,11 @@ public partial class JobRepository
 
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
-                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Void, voidJob));
+                rowsAffected = voidJob
+                    ? await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Void, true))
+                    : await baseQuery.ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.Void, false)
+                        .SetProperty(j => j.JobStatus, (int)JobStatus.New));
                 break;
 
             case JobProperty.ConNote:
@@ -1250,7 +1273,8 @@ public partial class JobRepository
 
         job.UcjbStatus = newInternalStatusId switch
         {
-            // Handle status changes
+            // Handle status changes - a voided job keeps the Void status
+            _ when job.UcjbVoid => job.UcjbStatus,
             (int)InternalJobStatus.AwaitingPod when job.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus
                 .AwaitingPod,
             (int)InternalJobStatus.NewJobs when job.UcjbStatus != (int)JobStatus.Dispatched =>

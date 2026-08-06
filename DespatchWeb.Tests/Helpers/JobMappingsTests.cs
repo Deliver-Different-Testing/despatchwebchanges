@@ -628,6 +628,49 @@ public class JobMappingsTests
         Assert.Equal(250m, result.RawBaseAmount);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void LiveJobDownloadMapping_MapsVoidFlag(bool isVoid)
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbVoid = isVoid,
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.LiveJobDownloadMapping.Compile();
+        var result = mapping(job);
+
+        // Assert
+        Assert.Equal(isVoid, result.Void);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ArchivedJobDownloadMapping_MapsVoidFlag(bool isVoid)
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbVoid = isVoid,
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.ArchivedJobDownloadMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        Assert.Equal(isVoid, result.Void);
+    }
+
     [Fact]
     public void ArchivedJobDownloadMapping_NullDate_ReturnsDefault()
     {

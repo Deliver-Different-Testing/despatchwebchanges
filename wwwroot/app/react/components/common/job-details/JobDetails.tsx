@@ -30,6 +30,8 @@ import {queryKeys} from '../../../query/queryClient';
 import {useJobDetail} from './hooks/useJobDetail';
 import {useJobUpdate} from './hooks/useJobUpdate';
 import {PriceChangeModal} from '../../dialogs/price-change-modal/PriceChangeModal';
+import {FamilyPriceChangeDialog} from '../../dialogs/family-price-change-dialog';
+import {CascadeDateConfirmDialog} from '../../dialogs/cascade-date-confirm-dialog';
 import {useFieldVisibility} from './hooks/useFieldVisibility';
 import {useViewDensity} from './hooks/useViewDensity';
 import {usePodPhotos} from './hooks/usePodPhotos';
@@ -270,7 +272,8 @@ export function JobDetails({config}: JobDetailsProps) {
     // Update mutations
     const {
         updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating, invalidateJobLists,
-        checkForRateChange, pendingRateChange, isApplyingRate, confirmRateChange, dismissRateChange,
+        checkForRateChange, checkForRateChanges, pendingRateChanges, selectedRateJobIds,
+        toggleRateSelection, toggleAllRateSelection, isApplyingRate, confirmRateChange, dismissRateChange,
     } = useJobUpdate(showToast, {
         onPartnerJobBlocked: ({field, value}) => {
             // The user already entered this value via the main edit dialog
@@ -346,6 +349,7 @@ export function JobDetails({config}: JobDetailsProps) {
         invalidateJobLists,
         invalidatePhotos,
         checkForRateChange,
+        checkForRateChanges,
         invalidateAllJobDetails: () => rqClient.invalidateQueries({queryKey: ['jobs', 'detail']}),
         relatedJobs: sortedRelatedJobs,
         onStatusChange: config.onStatusChange,
@@ -729,14 +733,14 @@ export function JobDetails({config}: JobDetailsProps) {
                     </Suspense>
                 </Box>
             )}
-            {/* Price Change Modal */}
-            {pendingRateChange && (
+            {/* Price Change Modal — one job keeps the original modal; a family gets the list. */}
+            {pendingRateChanges.length === 1 && (
                 <PriceChangeModal
                     open={true}
-                    jobNumber={pendingRateChange.jobNo}
-                    oldPrice={pendingRateChange.oldPrice}
-                    newPrice={pendingRateChange.newPrice}
-                    description={pendingRateChange.description}
+                    jobNumber={pendingRateChanges[0].jobNo}
+                    oldPrice={pendingRateChanges[0].oldPrice}
+                    newPrice={pendingRateChanges[0].newPrice}
+                    description={pendingRateChanges[0].description}
                     isApplying={isApplyingRate}
                     onAccept={confirmRateChange}
                     onKeep={dismissRateChange}
@@ -746,6 +750,33 @@ export function JobDetails({config}: JobDetailsProps) {
                     }}
                 />
             )}
+            {pendingRateChanges.length > 1 && (
+                <FamilyPriceChangeDialog
+                    open={true}
+                    rows={pendingRateChanges.map((r) => ({
+                        jobId: r.jobId,
+                        jobNo: r.jobNo,
+                        oldPrice: r.oldPrice,
+                        newPrice: r.newPrice,
+                        ratedManually: !!r.ratedManually,
+                    }))}
+                    selectedIds={selectedRateJobIds}
+                    isApplying={isApplyingRate}
+                    onToggle={toggleRateSelection}
+                    onToggleAll={toggleAllRateSelection}
+                    onAcceptSelected={confirmRateChange}
+                    onKeepAll={dismissRateChange}
+                />
+            )}
+            {/* Cascade date confirmation */}
+            <CascadeDateConfirmDialog
+                open={actions.cascadeDialog.open}
+                jobNumber={actions.cascadeDialog.jobNumber}
+                newDateLabel={actions.cascadeDialog.newDateLabel}
+                members={actions.cascadeDialog.members}
+                onCancel={actions.handleCascadeCancel}
+                onChoose={actions.handleCascadeChoose}
+            />
             {/* Text Input Dialog */}
             <TextInputDialog
                 open={actions.textDialog.open}

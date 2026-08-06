@@ -16,7 +16,7 @@ namespace DespatchWeb.Repositories;
 public partial class JobRepository
 {
     // SQL Server parameter limit is 2100. 2000 leaves headroom for filter params on the same query.
-    internal const int PriceDetailInChunkSize = 2000;
+    private const int PriceDetailInChunkSize = 2000;
 
     public async Task<PriceDetailReportRaw> GetPriceDetailReportAsync(
         PriceDetailReportRequest request, CancellationToken ct = default)
@@ -58,21 +58,16 @@ public partial class JobRepository
         }
         else
         {
-            liveIdQuery = hdrCtx.TucJobs
+            var liveJobs = hdrCtx.TucJobs
                 .Where(j =>
                     j.UcjbDate.Date >= fromDateOnly
                     && j.UcjbDate.Date <= toDateOnly
                     && (!clientSet || (j.UcjbClientId.HasValue && request.ClientIds.Contains(j.UcjbClientId.Value)))
                     && (!courierSet || (j.UcjbCourierId.HasValue && request.CourierIds.Contains(j.UcjbCourierId.Value)))
                     && (!speedSet || (j.UcjbSpeed.HasValue && request.SpeedIds.Contains(j.UcjbSpeed.Value)))
-                    && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
-                    && (!wildSet ||
-                        EF.Functions.Like(
-                            j.UcjbNumber + " " + (j.UcjbClientRefa ?? "") + " " + (j.UcjbClientRefb ?? ""),
-                            wildSearch)))
-                .Select(j => j.UcjbId);
+                    && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch)));
 
-            archiveIdQuery = hdrCtx.TucJobArchives
+            var archiveJobs = hdrCtx.TucJobArchives
                 .Where(j =>
                     j.UcjbDate.HasValue
                     && j.UcjbDate.Value.Date >= fromDateOnly
@@ -80,12 +75,17 @@ public partial class JobRepository
                     && (!clientSet || (j.UcjbClientId.HasValue && request.ClientIds.Contains(j.UcjbClientId.Value)))
                     && (!courierSet || (j.UcjbCourierId.HasValue && request.CourierIds.Contains(j.UcjbCourierId.Value)))
                     && (!speedSet || (j.UcjbSpeed.HasValue && request.SpeedIds.Contains(j.UcjbSpeed.Value)))
-                    && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
-                    && (!wildSet ||
-                        EF.Functions.Like(
-                            j.UcjbNumber + " " + (j.UcjbClientRefa ?? "") + " " + (j.UcjbClientRefb ?? ""),
-                            wildSearch)))
-                .Select(j => j.UcjbId);
+                    && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch)));
+
+            // Same General Search columns as the job search itself, so the export and the grid agree
+            if (wildSet)
+            {
+                liveJobs = liveJobs.Where(JobWildcardSearch.LiveJobMatches(wildSearch));
+                archiveJobs = archiveJobs.Where(JobWildcardSearch.ArchivedJobMatches(wildSearch));
+            }
+
+            liveIdQuery = liveJobs.Select(j => j.UcjbId);
+            archiveIdQuery = archiveJobs.Select(j => j.UcjbId);
         }
 
         var liveIds = await liveIdQuery.Take(maxExportRowsPerSource)
@@ -266,7 +266,7 @@ public partial class JobRepository
                 StaffLastName = s.Staff != null ? s.Staff.UcstLastName : null
             })
             .TagWith("PriceDetail - Live Pricing History").ToListAsync(ct));
-        liveHistory = liveHistory.OrderBy(h => h.AtUtc).ToList();
+        liveHistory = [.. liveHistory.OrderBy(h => h.AtUtc)];
 
         // Archive journey has no Staff nav - fetch names via one batched lookup.
         var archiveHistoryRaw = await InIdChunksAsync(archiveIds, chunk => jjCtx.JobDeliveryJourneyArchives
@@ -284,7 +284,7 @@ public partial class JobRepository
                 s.JobId, s.ChangeType, s.FieldName, s.OldValue, s.NewValue, s.UpdatedAt, s.UpdatedByType, s.StaffId
             })
             .TagWith("PriceDetail - Archive Pricing History").ToListAsync(ct));
-        archiveHistoryRaw = archiveHistoryRaw.OrderBy(x => x.UpdatedAt).ToList();
+        archiveHistoryRaw = [.. archiveHistoryRaw.OrderBy(x => x.UpdatedAt)];
 
         var staffIds = archiveHistoryRaw.Where(x => x.StaffId.HasValue).Select(x => x.StaffId!.Value).Distinct()
             .ToList();
@@ -415,11 +415,17 @@ public partial class JobRepository
 
     // Chunks a Contains(...) list into 2000-id slices to stay under SQL Server's ~2100 parameter
     // limit. queryFn is invoked per chunk; results are concatenated. No-op on empty input.
-    internal static async Task<List<T>> InIdChunksAsync<T>(
+    public static async Task<List<T>> InIdChunksAsync<T>(
         IReadOnlyList<int> ids, Func<IReadOnlyList<int>, Task<List<T>>> queryFn)
     {
-        if (ids.Count == 0) return new List<T>();
-        if (ids.Count <= PriceDetailInChunkSize) return await queryFn(ids);
+        switch (ids.Count)
+        {
+            case 0:
+                return [];
+            case <= PriceDetailInChunkSize:
+                return await queryFn(ids);
+        }
+
         var result = new List<T>(ids.Count);
         for (var i = 0; i < ids.Count; i += PriceDetailInChunkSize)
         {

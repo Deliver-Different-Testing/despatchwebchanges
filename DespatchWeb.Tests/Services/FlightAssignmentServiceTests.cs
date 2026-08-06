@@ -72,7 +72,7 @@ public class FlightAssignmentServiceTests
         await _flightService.Received(1).CreateFlightRuleByDepartureAsync("NZ456", Arg.Any<DateTimeOffset>(), "AKL");
         await _repository.Received(1).AddJobNationwideAsync(
             request,
-            Arg.Is<IReadOnlyList<string>>(ids => ids.Count == 2 && ids.Contains("wh-1") && ids.Contains("wh-2")),
+            Arg.Is<IReadOnlyList<string>>(ids => ids!.Count == 2 && ids.Contains("wh-1") && ids.Contains("wh-2")),
             Arg.Any<CancellationToken>());
     }
 
@@ -89,7 +89,7 @@ public class FlightAssignmentServiceTests
         Assert.Equal(0, result.Unmatched);
         await _repository.Received(1).AddJobNationwideAsync(
             Arg.Is<AssignFlightToJobRequest>(r =>
-                r.JobId == 100 && r.FlightNumber == "NZ123" && r.FlightSegments.Count == 1),
+                r!.JobId == 100 && r.FlightNumber == "NZ123" && r.FlightSegments.Count == 1),
             Arg.Any<IReadOnlyList<string>>(),
             Arg.Any<CancellationToken>());
     }

@@ -28,6 +28,7 @@ jest.mock('./useDialogLoader', () => ({
 // Mock dateUtils — formatDateForApi returns a predictable string
 jest.mock('../../../../utils/dateUtils', () => ({
     formatDateForApi: jest.fn((_date: unknown, _tz?: string) => '2026-03-23T11:45:00+13:00'),
+    formatLongDate: jest.fn((_date: unknown, _isUs?: boolean) => '23 March 2026'),
 }));
 
 // Mock pricingBreakdownApi
@@ -50,6 +51,7 @@ jest.mock('../../../../services/jobDetailApi', () => ({
     getPodSpreadsheetUrl: jest.fn(),
     updateJobDetail: jest.fn().mockResolvedValue(undefined),
     updateBulkJobDetail: jest.fn().mockResolvedValue(undefined),
+    getFamilyForDateChange: jest.fn().mockResolvedValue({relationshipTypeId: null, members: []}),
 }));
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -82,6 +84,7 @@ function setup(opts: SetupOptions = {}) {
     const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
     const mockInvalidateJobLists = jest.fn().mockResolvedValue([]);
     const mockInvalidatePhotos = jest.fn().mockResolvedValue(undefined);
+    const mockCheckForRateChanges = jest.fn().mockResolvedValue(undefined);
 
     const {result} = renderHook(() =>
         useJobActions({
@@ -97,6 +100,7 @@ function setup(opts: SetupOptions = {}) {
             invalidateJobLists: mockInvalidateJobLists,
             invalidatePhotos: mockInvalidatePhotos,
             checkForRateChange: jest.fn().mockResolvedValue(undefined),
+            checkForRateChanges: mockCheckForRateChanges,
             invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
             relatedJobs: [],
         }),
@@ -110,6 +114,7 @@ function setup(opts: SetupOptions = {}) {
         mockRefreshAndNotify,
         mockInvalidateJobLists,
         mockInvalidatePhotos,
+        mockCheckForRateChanges,
     };
 }
 
@@ -124,6 +129,25 @@ function mockDateTimeDialog(returnValue: {value: unknown; fieldName: string; tim
 function clearWindowDialogs() {
     delete (window as any).ReactEditDateTimeDialog;
     delete (window as any).ReactJobFileUploadDialog;
+}
+
+/** The POD time dialog now always opens, so most guided-flow tests need it stubbed. */
+function mockPodTimeDialog(value = dayjs('2026-03-23T11:45:00')) {
+    mockDateTimeDialog({value, fieldName: JobProperty.CompletedTime, timezone: 'Pacific/Auckland'});
+    return value;
+}
+
+/** Stub the POD photo dialog and return its open spy. */
+function mockPhotoDialog(open: jest.Mock = jest.fn().mockResolvedValue(undefined)) {
+    (window as any).ReactJobFileUploadDialog = {open};
+    return open;
+}
+
+/** Flush enough microtasks for the awaited dialog chain to reach the POD Name dialog. */
+async function flushDialogChain() {
+    await act(async () => {
+        for (let i = 0; i < 20; i++) await Promise.resolve();
+    });
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -150,7 +174,8 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
     });
 
     describe('handleDoneClick — completing (guided flow)', () => {
-        it('completes immediately when both POD time and name exist', async () => {
+        it('always prompts for a POD name, pre-filled, even when the job already has one', async () => {
+            mockPodTimeDialog();
             const job = createMockJob({
                 completedTime: dayjs('2026-03-23T11:45:00'),
                 _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
@@ -158,47 +183,153 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             });
             const {result, mockUpdatePod, mockShowToast, mockRefreshAndNotify} = setup({job});
 
-            await act(() => result.current.handleDoneClick());
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+            await flushDialogChain();
+
+            // The operator gets the box, seeded with whoever was on the job already
+            expect(result.current.textDialog.open).toBe(true);
+            expect(result.current.textDialog.title).toBe('POD Name');
+            expect(result.current.textDialog.initialValue).toBe('Bob Smith');
+
+            await act(() => result.current.handleTextDialogSubmit('Jane Doe'));
+            await act(() => donePromise!);
 
             expect(mockUpdatePod).toHaveBeenCalledWith({
                 jobId: 1001,
                 jobStatus: '6',
-                podName: 'Bob Smith',
+                podName: 'Jane Doe',
                 podTime: '2026-03-23T11:45:00+13:00',
             });
             expect(mockShowToast).toHaveBeenCalledWith('J-1001 Completed', 'success');
             expect(mockRefreshAndNotify).toHaveBeenCalled();
         });
 
-        it('prompts for POD time when missing, then completes after user provides it', async () => {
-            const dialogValue = dayjs('2026-03-23T11:45:00');
-            mockDateTimeDialog({
-                value: dialogValue,
-                fieldName: JobProperty.CompletedTime,
-                timezone: 'Pacific/Auckland',
+        it('prompts for a POD name when the existing value is whitespace only', async () => {
+            mockPodTimeDialog();
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: ' ',
             });
+            const {result, mockUpdatePod} = setup({job});
 
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+            await flushDialogChain();
+
+            expect(result.current.textDialog.open).toBe(true);
+            expect(result.current.textDialog.initialValue).toBe('');
+
+            await act(() => result.current.handleTextDialogSubmit('Jane Doe'));
+            await act(() => donePromise!);
+
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({podName: 'Jane Doe'}),
+            );
+        });
+
+        it('completes through UpdatePODDetails alone — no intermediate field writes', async () => {
+            mockPodTimeDialog();
             const job = createMockJob({completedTime: null, podName: 'Bob Smith'});
             const {result, mockUpdateField, mockUpdatePod, mockRefreshAndNotify} = setup({job});
 
-            await act(() => result.current.handleDoneClick());
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+            await flushDialogChain();
+            await act(() => result.current.handleTextDialogSubmit('Bob Smith'));
+            await act(() => donePromise!);
 
-            // Should have saved the completed time
-            expect(mockUpdateField).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    field: JobProperty.CompletedTime,
-                    value: dialogValue,
-                }),
-            );
-            // Should have called updatePod to complete the job
+            // POD time and name are persisted by the single completion call, so the
+            // guided flow must not half-write them through job/UpdateJob first.
+            expect(mockUpdateField).not.toHaveBeenCalled();
             expect(mockUpdatePod).toHaveBeenCalledWith(
                 expect.objectContaining({
                     jobId: 1001,
                     jobStatus: '6',
                     podName: 'Bob Smith',
+                    podTime: '2026-03-23T11:45:00+13:00',
                 }),
             );
             expect(mockRefreshAndNotify).toHaveBeenCalled();
+        });
+
+        it('completes the job before opening the POD photo dialog', async () => {
+            mockPodTimeDialog();
+            const openPhotoDialog = mockPhotoDialog();
+            const job = createMockJob({completedTime: null, podName: 'Bob Smith'});
+            const {result, mockUpdatePod, mockInvalidatePhotos} = setup({job});
+
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+            await flushDialogChain();
+            await act(() => result.current.handleTextDialogSubmit('Bob Smith'));
+            await act(() => donePromise!);
+
+            expect(openPhotoDialog).toHaveBeenCalledWith(1001, 'POD');
+            expect(mockUpdatePod.mock.invocationCallOrder[0])
+                .toBeLessThan(openPhotoDialog.mock.invocationCallOrder[0]);
+            expect(mockInvalidatePhotos).toHaveBeenCalled();
+        });
+
+        it('still completes the job when the POD photo dialog is never dismissed', async () => {
+            mockPodTimeDialog();
+            // Escape and backdrop clicks are blocked on that dialog, so its promise can
+            // stay pending forever — completion must not depend on it resolving.
+            mockPhotoDialog(jest.fn(() => new Promise<void>(() => {})));
+            const job = createMockJob({completedTime: null, podName: 'Bob Smith'});
+            const {result, mockUpdatePod, mockShowToast} = setup({job});
+
+            act(() => {
+                void result.current.handleDoneClick();
+            });
+            await flushDialogChain();
+            await act(() => result.current.handleTextDialogSubmit('Bob Smith'));
+            await flushDialogChain();
+
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({jobStatus: '6', podName: 'Bob Smith'}),
+            );
+            expect(mockShowToast).toHaveBeenCalledWith('J-1001 Completed', 'success');
+        });
+
+        it('refuses to complete a recurring booking', async () => {
+            mockPodTimeDialog();
+            const job = createMockJob({preBook: true, completedTime: null, podName: 'Bob'});
+            const {result, mockUpdatePod, mockUpdateField, mockShowToast} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                'Recurring bookings cannot be completed here. Open the live job for this run.',
+                'warning',
+            );
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+            expect(mockUpdateField).not.toHaveBeenCalled();
+            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+                .not.toHaveBeenCalled();
+        });
+
+        it('refuses to complete a scheduled (bulk) job', async () => {
+            mockPodTimeDialog();
+            const job = createMockJob({isBulkJob: true, completedTime: null, podName: 'Bob'});
+            const {result, mockUpdatePod, mockShowToast} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                'Completing a job is not currently available for scheduled jobs.',
+                'warning',
+            );
+            expect(mockUpdatePod).not.toHaveBeenCalled();
         });
 
         it('stops and shows warning when user cancels POD time dialog', async () => {
@@ -217,19 +348,20 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
         });
 
         it('prompts for POD name when missing (via text dialog), then completes after submit', async () => {
+            mockPodTimeDialog();
             const job = createMockJob({
                 completedTime: dayjs('2026-03-23T11:45:00'),
                 _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
                 podName: '',
             });
-            const {result, mockUpdateField, mockUpdatePod, mockShowToast} = setup({job});
+            const {result, mockUpdatePod, mockShowToast} = setup({job});
 
             // Start the done click — it will open the text dialog and await
             let donePromise: Promise<void>;
-            await act(async () => {
+            act(() => {
                 donePromise = result.current.handleDoneClick();
-                await Promise.resolve();
             });
+            await flushDialogChain();
 
             // The text dialog should now be open
             expect(result.current.textDialog.open).toBe(true);
@@ -240,13 +372,6 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await act(() => result.current.handleTextDialogSubmit('Jane Doe'));
             await act(() => donePromise!);
 
-            // Should have saved the POD name
-            expect(mockUpdateField).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    field: JobProperty.PodName,
-                    value: 'Jane Doe',
-                }),
-            );
             // Should have called updatePod to complete the job
             expect(mockUpdatePod).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -259,6 +384,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
         });
 
         it('stops and shows warning when user cancels POD name dialog', async () => {
+            mockPodTimeDialog();
             const job = createMockJob({
                 completedTime: dayjs('2026-03-23T11:45:00'),
                 _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
@@ -267,10 +393,10 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             const {result, mockShowToast, mockUpdatePod} = setup({job});
 
             let donePromise: Promise<void>;
-            await act(async () => {
+            act(() => {
                 donePromise = result.current.handleDoneClick();
-                await Promise.resolve();
             });
+            await flushDialogChain();
 
             // Cancel the text dialog
             act(() => result.current.handleTextDialogCancel());
@@ -284,28 +410,20 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
         });
 
         it('prompts for both POD time and name when both are missing', async () => {
-            const dialogValue = dayjs('2026-03-23T11:45:00');
-            mockDateTimeDialog({
-                value: dialogValue,
-                fieldName: JobProperty.CompletedTime,
-                timezone: 'Pacific/Auckland',
-            });
+            mockPodTimeDialog();
 
             const job = createMockJob({completedTime: null, podName: ''});
-            const {result, mockUpdateField, mockUpdatePod} = setup({job});
+            const {result, mockUpdatePod} = setup({job});
 
             // Start the flow — first the date dialog resolves, then the text dialog opens
             let donePromise: Promise<void>;
-            await act(async () => {
+            act(() => {
                 donePromise = result.current.handleDoneClick();
-                // Flush microtasks: date dialog resolves, then openTextDialogAsync calls setTextDialog
-                for (let i = 0; i < 10; i++) await Promise.resolve();
             });
+            await flushDialogChain();
 
-            // Date dialog resolved. POD time should have been saved.
-            expect(mockUpdateField).toHaveBeenCalledWith(
-                expect.objectContaining({field: JobProperty.CompletedTime}),
-            );
+            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+                .toHaveBeenCalledWith(expect.objectContaining({title: 'POD Time'}));
 
             // Text dialog should now be open for POD name
             expect(result.current.textDialog.open).toBe(true);
@@ -315,14 +433,12 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await act(() => result.current.handleTextDialogSubmit('Alice'));
             await act(() => donePromise!);
 
-            expect(mockUpdateField).toHaveBeenCalledWith(
-                expect.objectContaining({field: JobProperty.PodName, value: 'Alice'}),
-            );
             expect(mockUpdatePod).toHaveBeenCalledWith(
                 expect.objectContaining({
                     jobId: 1001,
                     jobStatus: '6',
                     podName: 'Alice',
+                    podTime: '2026-03-23T11:45:00+13:00',
                 }),
             );
         });
@@ -344,6 +460,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                     invalidateJobLists: jest.fn().mockResolvedValue([]),
                     invalidatePhotos: jest.fn().mockResolvedValue(undefined),
                     checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                    checkForRateChanges: jest.fn().mockResolvedValue(undefined),
                     invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
                     relatedJobs: [],
                 }),
@@ -362,18 +479,21 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                 completedTime: null,
                 podName: 'Bob',
             });
-            const dialogValue = dayjs('2026-03-23T11:45:00');
-            mockDateTimeDialog({
-                value: dialogValue,
-                fieldName: JobProperty.CompletedTime,
-                timezone: 'Pacific/Auckland',
-            });
+            mockPodTimeDialog();
 
             const {result, mockUpdatePod} = setup({job});
 
-            await act(() => result.current.handleEditCompletedTime());
+            let editPromise: Promise<void>;
+            act(() => {
+                editPromise = result.current.handleEditCompletedTime();
+            });
+            await flushDialogChain();
 
-            // Should have completed the job (POD name was already set)
+            // The POD name is still confirmed even though the job already carries one
+            expect(result.current.textDialog.initialValue).toBe('Bob');
+            await act(() => result.current.handleTextDialogSubmit('Bob'));
+            await act(() => editPromise!);
+
             expect(mockUpdatePod).toHaveBeenCalledWith(
                 expect.objectContaining({jobStatus: '6', podName: 'Bob'}),
             );
@@ -435,6 +555,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
     describe('handleEditPodName — chaining into completion flow', () => {
         it('chains into markJobAsDone when job is not yet done', async () => {
+            mockPodTimeDialog();
             const job = createMockJob({
                 completedTime: dayjs('2026-03-23T11:45:00'),
                 _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
@@ -454,6 +575,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             expect(result.current.textDialog.okLabel).toBe('Complete Job');
 
             await act(() => result.current.handleTextDialogSubmit('Charlie'));
+            await flushDialogChain();
             await act(() => editPromise!);
 
             expect(mockUpdatePod).toHaveBeenCalledWith(
@@ -505,30 +627,34 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
     describe('openTextDialogAsync / text dialog promise integration', () => {
         it('resolves with submitted value in async mode', async () => {
+            mockPodTimeDialog();
             const job = createMockJob({
                 completedTime: dayjs('2026-03-23T11:45:00'),
                 _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
                 podName: '',
             });
-            const {result, mockUpdateField} = setup({job});
+            const {result, mockUpdateField, mockUpdatePod} = setup({job});
 
             let donePromise: Promise<void>;
-            await act(async () => {
+            act(() => {
                 donePromise = result.current.handleDoneClick();
-                await Promise.resolve();
             });
+            await flushDialogChain();
 
             // Submit via text dialog
             await act(() => result.current.handleTextDialogSubmit('Async Name'));
             await act(() => donePromise!);
 
-            // In async mode, the caller (markJobAsDone) saves the field, not handleTextDialogSubmit
-            expect(mockUpdateField).toHaveBeenCalledWith(
-                expect.objectContaining({field: JobProperty.PodName, value: 'Async Name'}),
+            // In async mode the caller (markJobAsDone) owns the value and persists it
+            // through the single completion call, not through handleTextDialogSubmit.
+            expect(mockUpdateField).not.toHaveBeenCalled();
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({podName: 'Async Name'}),
             );
         });
 
         it('resolves with null on cancel in async mode', async () => {
+            mockPodTimeDialog();
             const job = createMockJob({
                 completedTime: dayjs('2026-03-23T11:45:00'),
                 _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
@@ -537,10 +663,10 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             const {result, mockUpdatePod} = setup({job});
 
             let donePromise!: Promise<void>;
-            await act(async () => {
+            act(() => {
                 donePromise = result.current.handleDoneClick();
-                await Promise.resolve();
             });
+            await flushDialogChain();
 
             act(() => result.current.handleTextDialogCancel());
             await act(() => donePromise!);
@@ -574,36 +700,28 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
     });
 
     describe('file upload step (step 3)', () => {
-        it('attempts to open file upload dialog when available', async () => {
-            const openMock = jest.fn().mockResolvedValue(undefined);
-            (window as any).ReactJobFileUploadDialog = {open: openMock};
-
-            const job = createMockJob({
-                completedTime: dayjs('2026-03-23T11:45:00'),
-                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
-                podName: 'Bob',
-            });
-            const {result} = setup({job});
-
-            await act(() => result.current.handleDoneClick());
-
-            expect(openMock).toHaveBeenCalledWith(1001, 'POD');
-        });
-
         it('completes the job even when file upload dialog is not available', async () => {
             // No ReactJobFileUploadDialog on window
+            mockPodTimeDialog();
             const job = createMockJob({
                 completedTime: dayjs('2026-03-23T11:45:00'),
                 _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
                 podName: 'Bob',
             });
-            const {result, mockUpdatePod} = setup({job});
+            const {result, mockUpdatePod, mockInvalidatePhotos} = setup({job});
 
-            await act(() => result.current.handleDoneClick());
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+            await flushDialogChain();
+            await act(() => result.current.handleTextDialogSubmit('Bob'));
+            await act(() => donePromise!);
 
             expect(mockUpdatePod).toHaveBeenCalledWith(
                 expect.objectContaining({jobStatus: '6'}),
             );
+            expect(mockInvalidatePhotos).toHaveBeenCalled();
         });
     });
 });
@@ -692,6 +810,7 @@ describe('useJobActions — handleVoidClick', () => {
                 invalidateJobLists: mockInvalidateJobLists,
                 invalidatePhotos: jest.fn().mockResolvedValue(undefined),
                 checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
                 invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
                 relatedJobs: [],
             }),
@@ -727,6 +846,7 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
                 invalidateJobLists: jest.fn().mockResolvedValue([]),
                 invalidatePhotos: jest.fn().mockResolvedValue(undefined),
                 checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
                 invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
                 relatedJobs: [],
                 onRequestPartnerChange: mockOnRequestPartnerChange,
@@ -774,6 +894,7 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
                 invalidateJobLists: jest.fn().mockResolvedValue([]),
                 invalidatePhotos: jest.fn().mockResolvedValue(undefined),
                 checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
                 invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
                 relatedJobs: [],
                 onRequestPartnerChange: mockOnRequestPartnerChange,
@@ -811,6 +932,7 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
                 invalidateJobLists: jest.fn().mockResolvedValue([]),
                 invalidatePhotos: jest.fn().mockResolvedValue(undefined),
                 checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
                 invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
                 relatedJobs: [],
             }),
@@ -850,6 +972,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
                 invalidateJobLists: jest.fn().mockResolvedValue([]),
                 invalidatePhotos: jest.fn().mockResolvedValue(undefined),
                 checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
                 invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
                 relatedJobs: [],
                 onRequestPartnerChange: mockOnRequestPartnerChange,
@@ -1297,5 +1420,195 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
             expect(result.current.dispatchDialog.open).toBe(false);
         });
+    });
+});
+
+describe('useJobActions — date cascade', () => {
+    const {updateJobDetail, getFamilyForDateChange} = require('../../../../services/jobDetailApi');
+
+    function mockBookedDateDialog() {
+        mockDateTimeDialog({
+            value: dayjs('2026-03-12T09:30:00'),
+            fieldName: JobProperty.BookedTime,
+            timezone: 'Pacific/Auckland',
+        });
+    }
+
+    function mockFamily(members: Array<Record<string, unknown>>) {
+        getFamilyForDateChange.mockResolvedValueOnce({relationshipTypeId: 19, members});
+    }
+
+    const cascadableLeg = (jobId: number) => ({
+        jobId, jobNo: `J-${jobId}`, date: null, time: null, amount: 25,
+        ratedManually: false, locked: false, isPartnerJob: false, cascadable: true,
+    });
+
+    afterEach(() => {
+        clearWindowDialogs();
+        jest.clearAllMocks();
+    });
+
+    it('opens the confirm dialog when the job has cascadable linked jobs', async () => {
+        mockBookedDateDialog();
+        mockFamily([cascadableLeg(2), cascadableLeg(3)]);
+        const {result} = setup();
+
+        act(() => {
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+        });
+        await flushDialogChain();
+
+        expect(result.current.cascadeDialog.open).toBe(true);
+        expect(result.current.cascadeDialog.members).toHaveLength(2);
+        // Nothing is written until the user chooses.
+        expect(updateJobDetail).not.toHaveBeenCalled();
+    });
+
+    it('cascades when the user applies to all, then price-checks every job that moved', async () => {
+        mockBookedDateDialog();
+        mockFamily([cascadableLeg(2)]);
+        updateJobDetail.mockResolvedValueOnce({updatedJobIds: [1001, 2]});
+        const {result, mockCheckForRateChanges, mockShowToast} = setup();
+
+        act(() => {
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+        });
+        await flushDialogChain();
+        await act(async () => {
+            result.current.handleCascadeChoose('all');
+        });
+        await flushDialogChain();
+
+        expect(updateJobDetail).toHaveBeenCalledWith(
+            1001, JobProperty.BookedTime, expect.anything(), false, 'Pacific/Auckland',
+            {cascadeToChildren: true},
+        );
+        expect(mockShowToast).toHaveBeenCalledWith('J-1001 and 1 linked jobs updated', 'success');
+        expect(mockCheckForRateChanges).toHaveBeenCalledWith([1001, 2]);
+    });
+
+    it('writes only the parent when the user picks "this job only"', async () => {
+        mockBookedDateDialog();
+        mockFamily([cascadableLeg(2)]);
+        updateJobDetail.mockResolvedValueOnce({updatedJobIds: [1001]});
+        const {result} = setup();
+
+        act(() => {
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+        });
+        await flushDialogChain();
+        await act(async () => {
+            result.current.handleCascadeChoose('self');
+        });
+        await flushDialogChain();
+
+        expect(updateJobDetail).toHaveBeenCalledWith(
+            1001, JobProperty.BookedTime, expect.anything(), false, 'Pacific/Auckland',
+            {cascadeToChildren: false},
+        );
+    });
+
+    it('writes nothing when the confirm dialog is cancelled', async () => {
+        mockBookedDateDialog();
+        mockFamily([cascadableLeg(2)]);
+        const {result} = setup();
+
+        act(() => {
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+        });
+        await flushDialogChain();
+        await act(async () => {
+            result.current.handleCascadeCancel();
+        });
+        await flushDialogChain();
+
+        expect(updateJobDetail).not.toHaveBeenCalled();
+        expect(result.current.cascadeDialog.open).toBe(false);
+    });
+
+    it('skips the dialog entirely when there is nothing cascadable', async () => {
+        mockBookedDateDialog();
+        // A locked leg is returned so the user could be told, but it cannot be written to.
+        mockFamily([{...cascadableLeg(2), locked: true, cascadable: false}]);
+        updateJobDetail.mockResolvedValueOnce({updatedJobIds: [1001]});
+        const {result, mockShowToast} = setup();
+
+        await act(async () => {
+            await result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+        });
+
+        expect(result.current.cascadeDialog.open).toBe(false);
+        expect(updateJobDetail).toHaveBeenCalledWith(
+            1001, JobProperty.BookedTime, expect.anything(), false, 'Pacific/Auckland',
+            {cascadeToChildren: false},
+        );
+        expect(mockShowToast).toHaveBeenCalledWith('J-1001 updated', 'success');
+    });
+
+    it('warns when some children could not be moved', async () => {
+        mockBookedDateDialog();
+        mockFamily([cascadableLeg(2), cascadableLeg(3)]);
+        updateJobDetail.mockResolvedValueOnce({updatedJobIds: [1001, 2], failedJobIds: [3]});
+        const {result, mockShowToast} = setup();
+
+        act(() => {
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+        });
+        await flushDialogChain();
+        await act(async () => {
+            result.current.handleCascadeChoose('all');
+        });
+        await flushDialogChain();
+
+        expect(mockShowToast).toHaveBeenCalledWith('Date applied to 2 of 3 jobs', 'warning');
+    });
+
+    it('never looks up a family for a non-date field', async () => {
+        mockDateTimeDialog({
+            value: dayjs('2026-03-12T09:30:00'),
+            fieldName: JobProperty.PickupArrivalTime,
+            timezone: 'Pacific/Auckland',
+        });
+        updateJobDetail.mockResolvedValueOnce({});
+        const {result} = setup();
+
+        await act(async () => {
+            await result.current.editDateAndTime(JobProperty.PickupArrivalTime, 'Pickup Arrival');
+        });
+
+        expect(getFamilyForDateChange).not.toHaveBeenCalled();
+    });
+
+    it('routes a partner job to the change-request dialog without touching the family', async () => {
+        mockBookedDateDialog();
+        const onRequestPartnerChange = jest.fn();
+        const {result} = renderHook(() =>
+            useJobActions({
+                job: createMockJob({isPartnerJob: true}),
+                isRecurringJob: false,
+                isUsCustomer: false,
+                showToast: jest.fn(),
+                updateField: jest.fn().mockResolvedValue(undefined),
+                updateAddress: jest.fn().mockResolvedValue(undefined),
+                updatePod: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                refreshAndNotify: jest.fn().mockResolvedValue(undefined),
+                invalidateJobLists: jest.fn().mockResolvedValue([]),
+                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
+                checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
+                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
+                relatedJobs: [],
+                onRequestPartnerChange,
+            }),
+        );
+
+        await act(async () => {
+            await result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+        });
+
+        expect(onRequestPartnerChange).toHaveBeenCalled();
+        expect(getFamilyForDateChange).not.toHaveBeenCalled();
+        expect(updateJobDetail).not.toHaveBeenCalled();
     });
 });

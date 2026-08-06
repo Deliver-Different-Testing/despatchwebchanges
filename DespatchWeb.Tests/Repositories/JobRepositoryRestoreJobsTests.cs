@@ -169,6 +169,6 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         await CreateRepository().RestoreJobsAsync([]);
 
         await _procedures.DidNotReceiveWithAnyArgs()
-            .UTL_stpJob_RestoreDeviceAsync(default, cancellationToken: TestContext.Current.CancellationToken);
+            .UTL_stpJob_RestoreDeviceAsync(null, cancellationToken: TestContext.Current.CancellationToken);
     }
 }

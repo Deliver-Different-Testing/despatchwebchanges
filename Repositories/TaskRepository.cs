@@ -231,6 +231,7 @@ public class TaskRepository(
                             ? $"Task '{existingEvent.TaskTitle}' assigned to {newStaffName}"
                             : $"Task '{existingEvent.TaskTitle}' reassigned from {oldStaffName} to {newStaffName}";
 
+                        var assignStaffId = infoService.GetStaffIdOrNull();
                         await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
                         {
                             JobId = existingEvent.UcevJobId.Value,
@@ -238,8 +239,8 @@ public class TaskRepository(
                             FieldName = "TaskAssignment",
                             OldValue = oldStaffName,
                             NewValue = newStaffName,
-                            StaffId = infoService.GetStaffId(),
-                            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff),
+                            StaffId = assignStaffId,
+                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(assignStaffId),
                             UpdatedAt = DateTime.UtcNow,
                             Comments = comments
                         });
@@ -305,6 +306,7 @@ public class TaskRepository(
 
                     if (existingEvent.UcevJobId.HasValue)
                     {
+                        var unassignStaffId = infoService.GetStaffIdOrNull();
                         await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
                         {
                             JobId = existingEvent.UcevJobId.Value,
@@ -312,8 +314,8 @@ public class TaskRepository(
                             FieldName = "TaskAssignment",
                             OldValue = oldStaffName,
                             NewValue = null,
-                            StaffId = infoService.GetStaffId(),
-                            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff),
+                            StaffId = unassignStaffId,
+                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(unassignStaffId),
                             UpdatedAt = DateTime.UtcNow,
                             Comments = $"Task '{existingEvent.TaskTitle}' unassigned from {oldStaffName}"
                         });

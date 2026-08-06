@@ -83,6 +83,11 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                                 &middot; {timeZoneShort}
                             </Box>
                         )}
+                        {event.performedBy && (
+                            <Box component="span" sx={{ml: 0.5, opacity: 0.85}}>
+                                &middot; by {event.performedBy}
+                            </Box>
+                        )}
                     </>
                 }
                 onClose={onClose}

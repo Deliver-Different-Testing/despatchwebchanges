@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -774,6 +775,133 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         // A job with no items sums to 0 (empty SUM)
         Assert.Equal(0m, result.Single(j => j.JobNumber == "LIVE-NOITEMS").Cubic);
     }
+
+    /// <summary>
+    /// A voided job whose ucjbStatus was later overwritten (e.g. by a manual status change or a
+    /// bulk status upload) must still export as Void - otherwise revenue reports treat it as live.
+    /// </summary>
+    [Fact]
+    public async Task PodSearchDownloadAsync_VoidJobWithNonVoidStatus_ReportsVoid()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            SeedStatuses(context);
+
+            var liveJob = CreateLiveJob(1, "LIVE-VOID", new DateTime(2024, 1, 15));
+            liveJob.UcjbVoid = true;
+            liveJob.UcjbStatus = (int)JobStatus.Dispatched;
+
+            var archivedJob = CreateArchivedJob(101, "ARCH-VOID", new DateTime(2024, 1, 15));
+            archivedJob.UcjbVoid = true;
+            archivedJob.UcjbStatus = (int)JobStatus.Dispatched;
+
+            context.TucJobs.Add(liveJob);
+            context.TucJobArchives.Add(archivedJob);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: string.Empty,
+            wild: string.Empty,
+            clientIds: []
+        );
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.All(result, j =>
+        {
+            Assert.True(j.Void);
+            Assert.Equal("Void", j.StatusName);
+        });
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_NonVoidJob_KeepsItsOwnStatusName()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            SeedStatuses(context);
+
+            var liveJob = CreateLiveJob(1, "LIVE-DISPATCHED", new DateTime(2024, 1, 15));
+            liveJob.UcjbStatus = (int)JobStatus.Dispatched;
+
+            context.TucJobs.Add(liveJob);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: string.Empty,
+            wild: string.Empty,
+            clientIds: []
+        );
+
+        // Assert
+        var job = Assert.Single(result);
+        Assert.False(job.Void);
+        Assert.Equal("Dispatched", job.StatusName);
+    }
+
+    /// <summary>
+    /// Archiving happens in legacy SQL outside this codebase, so a job id can exist in TucJobs and
+    /// TucJobArchives at once. The export must emit it once, taking the live row.
+    /// </summary>
+    [Fact]
+    public async Task PodSearchDownloadAsync_JobInBothTables_ReturnsLiveRowOnce()
+    {
+        // Arrange
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(CreateLiveJob(1, "DUPE-001", new DateTime(2024, 1, 15)));
+            context.TucJobArchives.Add(CreateArchivedJob(1, "DUPE-001", new DateTime(2024, 1, 15)));
+            context.TucJobArchives.Add(CreateArchivedJob(2, "ARCH-ONLY", new DateTime(2024, 1, 16)));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: string.Empty,
+            wild: string.Empty,
+            clientIds: []
+        );
+
+        // Assert - the duplicate collapses to the live row, archive-only jobs are untouched
+        Assert.Equal(2, result.Count);
+        var duplicate = Assert.Single(result, j => j.Id == 1);
+        Assert.False(duplicate.IsArchived);
+        Assert.Contains(result, j => j.Id == 2 && j.IsArchived);
+    }
+
+    /// <summary>
+    /// ucjsID is an identity column, so a seeded row with id 0 would be reassigned - every status
+    /// used by these tests must therefore have a non-zero id.
+    /// </summary>
+    private static void SeedStatuses(DespatchContext context) =>
+        context.TucJobStatuses.AddRange(
+            new TucJobStatus { UcjsId = (int)JobStatus.Dispatched, UcjsName = "Dispatched" },
+            new TucJobStatus { UcjsId = (int)JobStatus.Void, UcjsName = "Void" }
+        );
 
     private static TucJob CreateLiveJob(
         int id,

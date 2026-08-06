@@ -34,6 +34,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
         _tenantInfoServiceMock.GetStaffId().Returns(1);
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns(1);
     }
 
     public async ValueTask DisposeAsync()

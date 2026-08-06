@@ -1,3 +1,4 @@
+#nullable enable
 namespace DespatchWeb.Extensions;
 
 public static class StringExtensions

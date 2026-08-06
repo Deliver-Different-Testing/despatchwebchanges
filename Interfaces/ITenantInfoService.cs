@@ -10,6 +10,14 @@ public interface ITenantInfoService : IDisposable
     DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone);
     string FormatDateForTenant(DateTime? dateTime);
     int GetStaffId();
+
+    /// <summary>
+    /// The logged-in staff member's id, or null when there isn't one (absent,
+    /// unparseable or non-positive claim). Prefer this over <see cref="GetStaffId"/>
+    /// when the value is persisted: <c>0</c> resolves to no staff member and
+    /// violates foreign keys such as <c>FK_JobDeliveryJourney_Staff</c>.
+    /// </summary>
+    int? GetStaffIdOrNull();
     string? GetCurrentTenantId();
     int GetContactId();
     bool IsUsTenant();

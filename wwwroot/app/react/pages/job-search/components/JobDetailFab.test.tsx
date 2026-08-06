@@ -40,3 +40,22 @@ describe('JobDetailFab — Restore action', () => {
         expect(screen.queryByLabelText('Restore Job')).not.toBeInTheDocument();
     });
 });
+
+describe('JobDetailFab — Split action', () => {
+    it('offers Split for a splittable job', () => {
+        renderAndOpen(makeJob({allowSplit: true}));
+        expect(screen.getByLabelText('Split Job')).toBeInTheDocument();
+    });
+
+    it('does not offer Split for a job that is already a leg', () => {
+        // allowSplit is false server-side once a job has a parent (JobMappings.Core).
+        renderAndOpen(makeJob({allowSplit: false}));
+        expect(screen.queryByLabelText('Split Job')).not.toBeInTheDocument();
+    });
+
+    it('does not offer Split for an archived job', () => {
+        // executeSplitJobFlow refuses archived jobs, so offering it would be a dead end.
+        renderAndOpen(makeJob({allowSplit: true, isArchived: true}));
+        expect(screen.queryByLabelText('Split Job')).not.toBeInTheDocument();
+    });
+});

@@ -805,7 +805,7 @@ public class RateJobServiceTests : IDisposable
 
         // Assert
         await _jobCommandRepositoryMock.Received().UpdateJobVoidStatusAsync(
-            Arg.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(2)));
+            Arg.Is<List<int>>(ids => ids!.Count == 2 && ids.Contains(1) && ids.Contains(2)));
     }
 
     [Fact]
@@ -862,7 +862,7 @@ public class RateJobServiceTests : IDisposable
 
         // Assert
         await _jobCommandRepositoryMock.Received().UpdateJobVoidStatusAsync(
-            Arg.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(3) && !ids.Contains(2)));
+            Arg.Is<List<int>>(ids => ids!.Count == 2 && ids.Contains(1) && ids.Contains(3) && !ids.Contains(2)));
     }
 
     [Fact]
@@ -1007,7 +1007,7 @@ public class RateJobServiceTests : IDisposable
         fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
-                return stream.CopyToAsync(callInfo.Arg<Stream>());
+                return stream.CopyToAsync(callInfo.Arg<Stream>()!);
             });
 
         return fileMock;

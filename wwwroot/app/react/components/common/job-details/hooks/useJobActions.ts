@@ -13,7 +13,9 @@ import {JobProperty} from '../../../../../enums/job-property.enum';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {AddressType} from '../../../../../enums/address-type.enum';
 import {useDialogLoader} from './useDialogLoader';
-import {formatDateForApi} from '../../../../utils/dateUtils';
+import {formatDateForApi, formatLongDate} from '../../../../utils/dateUtils';
+import type {DateCascadeFamilyMember} from '../../../../services/jobDetailApi';
+import type {CascadeChoice} from '../../../dialogs/cascade-date-confirm-dialog';
 import {getPriceBreakdowns} from '../../../../services/pricingBreakdownApi';
 import {
     getSpeedList,
@@ -112,6 +114,23 @@ const emptyTextDialog: TextDialogState = {
     field: '',
 };
 
+/** Date fields that can cascade across a job family (mirrors JobController.IsDateCascadeField). */
+const DATE_CASCADE_FIELDS = new Set<string>([JobProperty.Date, JobProperty.BookedTime]);
+
+interface CascadeDialogState {
+    open: boolean;
+    jobNumber: string;
+    newDateLabel: string;
+    members: DateCascadeFamilyMember[];
+}
+
+const emptyCascadeDialog: CascadeDialogState = {
+    open: false,
+    jobNumber: '',
+    newDateLabel: '',
+    members: [],
+};
+
 interface UseJobActionsOptions {
     job: IJob | undefined;
     isRecurringJob: boolean;
@@ -125,6 +144,8 @@ interface UseJobActionsOptions {
     invalidateJobLists: () => Promise<void[]>;
     invalidatePhotos: () => Promise<void>;
     checkForRateChange: (job: IJob) => Promise<void>;
+    /** Batch price probe run after a date cascade, over every job that actually moved. */
+    checkForRateChanges: (jobIds: number[]) => Promise<void>;
     invalidateAllJobDetails: () => Promise<void>;
     relatedJobs: IJob[];
     onStatusChange?: (statusId: number) => void;
@@ -155,6 +176,7 @@ export function useJobActions({
     invalidateJobLists,
     invalidatePhotos,
     checkForRateChange,
+    checkForRateChanges,
     invalidateAllJobDetails,
     relatedJobs,
     onStatusChange,
@@ -235,6 +257,23 @@ export function useJobActions({
         onRequestPartnerChange(gate.changeRequestField, gate.serialise(value), true);
         return true;
     }, [onRequestPartnerChange]);
+
+    // ── Cascade Date Confirm Dialog ────────────────────────────────
+
+    const [cascadeDialog, setCascadeDialog] = useState<CascadeDialogState>(emptyCascadeDialog);
+    // Same promise-resolver pattern as the text dialog below — keeps the flow inline in
+    // editDateAndTime rather than routing through a window-level dialog registry.
+    const cascadeResolveRef = useRef<((choice: CascadeChoice | null) => void) | null>(null);
+
+    const resolveCascade = useCallback((choice: CascadeChoice | null) => {
+        const resolve = cascadeResolveRef.current;
+        cascadeResolveRef.current = null;
+        setCascadeDialog(emptyCascadeDialog);
+        resolve?.(choice);
+    }, []);
+
+    const handleCascadeChoose = useCallback((choice: CascadeChoice) => resolveCascade(choice), [resolveCascade]);
+    const handleCascadeCancel = useCallback(() => resolveCascade(null), [resolveCascade]);
 
     // ── Text Dialog ────────────────────────────────────────────────
 
@@ -360,13 +399,66 @@ export function useJobActions({
         if (j.isBulkJob) {
             const {updateBulkJobDetail} = await import('../../../../services/jobDetailApi');
             await updateBulkJobDetail(j.id, result.fieldName, result.value, result.timezone);
-        } else {
-            const {updateJobDetail} = await import('../../../../services/jobDetailApi');
-            await updateJobDetail(j.id, result.fieldName, result.value, j.preBook, result.timezone);
+            showToast(`${j.jobNo} updated`, 'success');
+            await refreshAndNotify();
+            return;
         }
-        showToast(`${j.jobNo} updated`, 'success');
+
+        const {updateJobDetail, getFamilyForDateChange} = await import('../../../../services/jobDetailApi');
+
+        // Date edits on a family parent ask before moving the linked jobs. The family comes from
+        // the server (not the cached related-jobs list) so what the user approves is exactly what
+        // gets written, void/locked/partner legs already accounted for.
+        let cascadeToChildren = false;
+        if (DATE_CASCADE_FIELDS.has(result.fieldName)) {
+            let family: DateCascadeFamilyMember[] = [];
+            try {
+                family = (await getFamilyForDateChange(j.id)).members;
+            } catch {
+                // Family lookup is advisory — fall through to a plain single-job edit.
+            }
+
+            if (family.some(m => m.cascadable)) {
+                const choice = await new Promise<CascadeChoice | null>((resolve) => {
+                    cascadeResolveRef.current = resolve;
+                    setCascadeDialog({
+                        open: true,
+                        jobNumber: j.jobNo,
+                        newDateLabel: formatLongDate(result.value as Dayjs, isUsCustomer),
+                        members: family,
+                    });
+                });
+                if (choice === null) return;
+                cascadeToChildren = choice === 'all';
+            }
+        }
+
+        const response = await updateJobDetail(
+            j.id, result.fieldName, result.value, j.preBook, result.timezone, {cascadeToChildren});
+
+        const updatedJobIds = response?.updatedJobIds ?? [j.id];
+        const failedCount = response?.failedJobIds?.length ?? 0;
+        if (failedCount > 0) {
+            showToast(
+                `Date applied to ${updatedJobIds.length} of ${updatedJobIds.length + failedCount} jobs`,
+                'warning');
+        } else if (cascadeToChildren && updatedJobIds.length > 1) {
+            showToast(`${j.jobNo} and ${updatedJobIds.length - 1} linked jobs updated`, 'success');
+        } else {
+            showToast(`${j.jobNo} updated`, 'success');
+        }
+
         await refreshAndNotify();
-    }, [ensureDateTimeDialog, showToast, refreshAndNotify, onRequestPartnerChange]);
+
+        // Nothing re-prices itself any more — surface every resulting price change for the user
+        // to accept or decline. Silently swallowed when they lack the recalculate permission.
+        // Manually-priced jobs are filtered out per-job, so a hand-priced parent must not
+        // suppress the probe for its children.
+        if (DATE_CASCADE_FIELDS.has(result.fieldName)) {
+            await checkForRateChanges(updatedJobIds);
+        }
+    }, [ensureDateTimeDialog, showToast, refreshAndNotify, onRequestPartnerChange, isUsCustomer,
+        checkForRateChanges]);
 
     const editDate = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
         const j = jobRef.current;
@@ -564,48 +656,62 @@ export function useJobActions({
     }, [updateField, refreshAndNotify]);
 
     /**
-     * Guided "mark as done" flow — replicates the AngularJS markJobAsDone behaviour.
-     * Prompts for any missing POD fields, offers file upload, then completes.
+     * Guided "mark as done" flow. Confirms the POD time and POD name, completes the
+     * job in a single call, then offers an optional POD photo upload.
+     *
+     * Both fields are always confirmed rather than reused when already populated: a
+     * job materialised from a recurring booking inherits the template's POD name (a
+     * whitespace value renders as blank but is truthy), which silently skipped the
+     * prompt and left the operator unable to record who actually signed.
+     *
      * @param startWith - which field to prompt for first ('time' = default, 'name' = POD Name first)
      */
     const markJobAsDone = useCallback(async (startWith: 'time' | 'name' = 'time') => {
         const j = jobRef.current;
         if (!j) return;
 
+        // Completion is written by job/UpdatePODDetails, which only knows tucJob and
+        // tucJobArchive rows. A recurring booking id or a bulk-schedule id would be
+        // written nowhere at all, so refuse up front instead of failing invisibly.
+        if (j.preBook || isRecurringJob) {
+            showToast('Recurring bookings cannot be completed here. Open the live job for this run.', 'warning');
+            return;
+        }
+        if (j.isBulkJob) {
+            showToast('Completing a job is not currently available for scheduled jobs.', 'warning');
+            return;
+        }
+
         const collectPodTime = async (): Promise<string | null> => {
-            let podTime = j._completedTimeLongStr;
-            if (!j.completedTime) {
-                await ensureDateTimeDialog();
-                const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
-                    title: 'POD Time',
-                    fieldName: JobProperty.CompletedTime,
-                    dateTime: j.completedTime,
-                    defaultTimeZone: (j.deliveryTimeZone as any)?.text,
-                });
-                if (!result?.value) {
-                    showToast('A POD time needs to be provided to close this job.', 'warning');
-                    return null;
-                }
-                await updateField({job: j, field: JobProperty.CompletedTime, value: result.value, isRecurring: j.preBook, timezone: result.timezone});
-                podTime = formatDateForApi(result.value, (j.deliveryTimeZone as any)?.text);
-                await refreshAndNotify();
+            const current = jobRef.current ?? j;
+            await ensureDateTimeDialog();
+            const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
+                title: 'POD Time',
+                fieldName: JobProperty.CompletedTime,
+                dateTime: current.completedTime,
+                defaultTimeZone: (current.deliveryTimeZone as any)?.text,
+            });
+            if (!result?.value) {
+                showToast('A POD time needs to be provided to close this job.', 'warning');
+                return null;
             }
-            return podTime ?? null;
+            return formatDateForApi(result.value, (current.deliveryTimeZone as any)?.text);
         };
 
         const collectPodName = async (): Promise<string | null> => {
-            let podName = j.podName;
-            if (!podName) {
-                const name = await openTextDialogAsync('POD Name', 'POD Name...', JobProperty.PodName, '', 'Complete Job');
-                if (!name) {
-                    showToast('A POD name needs to be provided to close this job.', 'warning');
-                    return null;
-                }
-                podName = name;
-                await updateField({job: j, field: JobProperty.PodName, value: podName, isRecurring: j.preBook});
-                await refreshAndNotify();
+            const current = jobRef.current ?? j;
+            const name = await openTextDialogAsync(
+                'POD Name',
+                'POD Name...',
+                JobProperty.PodName,
+                current.podName?.trim() ?? '',
+                'Complete Job',
+            );
+            if (!name?.trim()) {
+                showToast('A POD name needs to be provided to close this job.', 'warning');
+                return null;
             }
-            return podName;
+            return name.trim();
         };
 
         let podTime: string | null | undefined;
@@ -623,15 +729,10 @@ export function useJobActions({
             if (podName === null) return;
         }
 
-        // POD file upload (optional — user can skip by closing the dialog)
-        try {
-            await ensureJobFileUploadDialog();
-            await window.ReactJobFileUploadDialog?.open?.(j.id, 'POD');
-        } catch {
-            // Upload dialog not available or user cancelled — continue
-        }
-
-        // Mark as done
+        // Complete first. UpdatePODDetails persists the POD name, POD time, done flag
+        // and status in one call, so the job cannot be left active if the operator
+        // walks away from the optional photo dialog below (that dialog blocks Escape
+        // and backdrop clicks, so its promise can stay pending indefinitely).
         await updatePod({
             jobId: j.id,
             jobStatus: '6',
@@ -640,8 +741,16 @@ export function useJobActions({
         });
         showToast(`${j.jobNo} Completed`, 'success');
         await refreshAndNotify();
+
+        // POD file upload (optional — user can skip by closing the dialog)
+        try {
+            await ensureJobFileUploadDialog();
+            await window.ReactJobFileUploadDialog?.open?.(j.id, 'POD');
+        } catch {
+            // Upload dialog not available or user cancelled — the job is already completed
+        }
         await invalidatePhotos();
-    }, [ensureDateTimeDialog, ensureJobFileUploadDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, invalidatePhotos, showToast]);
+    }, [isRecurringJob, ensureDateTimeDialog, ensureJobFileUploadDialog, openTextDialogAsync, updatePod, refreshAndNotify, invalidatePhotos, showToast]);
 
     const handleDoneClick = useCallback(async () => {
         const j = jobRef.current;
@@ -1371,6 +1480,9 @@ export function useJobActions({
         textDialog,
         handleTextDialogSubmit,
         handleTextDialogCancel,
+        cascadeDialog,
+        handleCascadeChoose,
+        handleCascadeCancel,
 
         // Dialog primitives (exposed for MetricsGrid)
         editDateAndTime,

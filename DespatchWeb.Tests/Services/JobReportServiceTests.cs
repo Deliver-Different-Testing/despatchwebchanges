@@ -293,12 +293,12 @@ public class JobReportServiceTests
         // Assert - verify S3 upload was called with a {Prefix}/{yyyy}/{MM}/{filename} key.
         await _s3ClientMock.Received().PutObjectAsync(
             Arg.Is<PutObjectRequest>(r => System.Text.RegularExpressions.Regex.IsMatch(
-                r.Key, @"^Jobs/\d{4}/\d{2}/Jobs-\d{14}$")),
+                r!.Key, @"^Jobs/\d{4}/\d{2}/Jobs-\d{14}$")),
             Arg.Any<CancellationToken>());
 
         // Assert - verify repository update was called
         await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(
-            Arg.Is<IReadOnlyList<JobManualPriceModel>>(l => l.Count == 2));
+            Arg.Is<IReadOnlyList<JobManualPriceModel>>(l => l!.Count == 2));
     }
 
     [Fact]
@@ -355,7 +355,7 @@ public class JobReportServiceTests
             .Returns(callInfo =>
             {
                 stream.Position = 0;
-                return stream.CopyToAsync(callInfo.Arg<Stream>(), callInfo.Arg<CancellationToken>());
+                return stream.CopyToAsync(callInfo.Arg<Stream>()!, callInfo.Arg<CancellationToken>());
             });
 
         return fileMock;
@@ -373,7 +373,7 @@ public class JobReportServiceTests
             .Returns(callInfo =>
             {
                 var ms = new MemoryStream(bytes);
-                return ms.CopyToAsync(callInfo.Arg<Stream>(), callInfo.Arg<CancellationToken>());
+                return ms.CopyToAsync(callInfo.Arg<Stream>()!, callInfo.Arg<CancellationToken>());
             });
 
         return fileMock;

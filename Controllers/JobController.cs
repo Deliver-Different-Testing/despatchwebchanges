@@ -5,6 +5,7 @@ using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -1613,6 +1614,13 @@ public class JobController(
 
             return Ok();
         }
+        catch (SplitJobException e)
+        {
+            // Authored, user-safe text — returned verbatim so the failure is diagnosable from the
+            // toast alone. Everything else stays sanitised below.
+            Log.Warning(e, "Split rejected for job {JobId}: {Message}", request.JobId, e.Message);
+            return StatusCode(500, e.Message);
+        }
         catch (Exception e)
         {
             Log.Error(e, "{Message}", ErrorMessageStringFormatter.Format(e));
@@ -1634,6 +1642,11 @@ public class JobController(
         {
             await jobCommandRepository.UpdatePodDetailsAsync(requestData);
             return Ok();
+        }
+        catch (JobNotFoundException e)
+        {
+            Log.Error(e, "UpdatePodDetails failed for job {JobId}: {Message}", requestData.JobId, e.Message);
+            return NotFound(e.Message);
         }
         catch (Exception e)
         {
@@ -1893,7 +1906,8 @@ public class JobController(
         int jobId,
         JobProperty field,
         string value,
-        CancellationToken ct
+        CancellationToken ct,
+        bool cascadeToChildren = false
     )
     {
         var staffId = infoService.GetStaffId();
@@ -1944,6 +1958,39 @@ public class JobController(
             return StatusCode(500, e.Message + e.InnerException?.Message);
         }
 
+        // Date edits take the confirmed-cascade path instead of the silent rate propagation:
+        // the user has already been shown which linked jobs will move, and any resulting price
+        // change is surfaced separately for them to accept or decline.
+        if (IsDateCascadeField(field))
+        {
+            if (!cascadeToChildren)
+            {
+                Log.Information(
+                    "UpdateJob date edit not cascaded (user chose this job only): job {JobId}, field {JobProperty}",
+                    jobId, field);
+                return Ok(new { updatedJobIds = new[] { jobId } });
+            }
+
+            try
+            {
+                var cascade = await splitJobService.PropagateDateToChildrenAsync(jobId, field, value, ct);
+                return Ok(new
+                {
+                    updatedJobIds = new[] { jobId }.Concat(cascade.UpdatedJobIds).ToArray(),
+                    failedJobIds = cascade.FailedJobIds
+                });
+            }
+            catch (Exception e)
+            {
+                // The parent's date is already written and correct — a failing cascade must not
+                // turn that into an error the user reads as "nothing happened".
+                Log.Error(e,
+                    "Failed to cascade {JobProperty} from job {JobId} to its family. Error: {Message}",
+                    field, jobId, e.Message);
+                return Ok(new { updatedJobIds = new[] { jobId }, cascadeFailed = true });
+            }
+        }
+
         if (!ShouldRecalculateRate(field))
         {
             Log.Information(
@@ -1966,6 +2013,45 @@ public class JobController(
 
         return Ok();
     }
+
+    /// <summary>
+    /// Lists the linked jobs a date change would cascade to, so the UI can confirm the blast
+    /// radius before writing anything.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetFamilyForDateChange(int jobId, CancellationToken ct)
+    {
+        try
+        {
+            var family = await splitJobService.GetDateCascadeFamilyAsync(jobId, ct);
+            return Json(new
+            {
+                relationshipTypeId = family.RelationshipTypeId,
+                members = family.Members.Select(m => new
+                {
+                    jobId = m.JobId,
+                    jobNo = m.JobNumber,
+                    date = m.Date,
+                    time = m.Time,
+                    amount = m.Amount,
+                    ratedManually = m.RatedManually,
+                    locked = m.Locked,
+                    isPartnerJob = m.IsPartnerJob,
+                    cascadable = m.Cascadable
+                })
+            });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(GetFamilyForDateChange)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    internal static bool IsDateCascadeField(JobProperty property) =>
+        property is JobProperty.Date or JobProperty.BookedTime;
 
     internal static bool ShouldRecalculateRate(JobProperty property) =>
         // Properties that affect job rating
@@ -2815,6 +2901,87 @@ public class JobController(
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(RecalculateJobRate)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    /// <summary>
+    /// Previews recalculated rates for a whole family in one call, so a date cascade can show the
+    /// user every price it would change in a single dialog. One permission check covers the batch;
+    /// a job that fails to rate is reported as failed rather than aborting the rest.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> RecalculateJobRates(string jobIds)
+    {
+        try
+        {
+            if (!await pricingPermissionService.CanUsePricingModeAsync("recalculate"))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    "You do not have permission to recalculate job prices");
+            }
+
+            var ids = (jobIds ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(id => int.TryParse(id, out var parsed) ? parsed : 0)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            if (ids.Count == 0)
+            {
+                return Json(Array.Empty<object>());
+            }
+
+            var currentAmounts = await jobQueryRepository.GetJobCurrentAmountsAsync(ids);
+            var results = new List<object>(ids.Count);
+
+            // Sequential on purpose — rating runs stored procs on a single context.
+            foreach (var id in ids)
+            {
+                currentAmounts.TryGetValue(id, out var current);
+
+                try
+                {
+                    await pricingPermissionService.ValidateJobAccessAsync(id);
+                    var rate = await GetJobRateAsync(id, current?.IsPrebook ?? false);
+
+                    results.Add(new
+                    {
+                        jobId = id,
+                        jobNo = current?.JobNo,
+                        rate = rate.Rate,
+                        description = rate.Description,
+                        currentAmount = current?.Amount ?? 0m,
+                        isPrebook = current?.IsPrebook ?? false,
+                        ratedManually = current?.RatedManually ?? false,
+                        failed = false
+                    });
+                }
+                catch (Exception e)
+                {
+                    Log.Warning(e, "Failed to preview rate for job {JobId} in batch", id);
+                    results.Add(new
+                    {
+                        jobId = id,
+                        jobNo = current?.JobNo,
+                        rate = 0m,
+                        description = (string)null,
+                        currentAmount = current?.Amount ?? 0m,
+                        isPrebook = current?.IsPrebook ?? false,
+                        ratedManually = current?.RatedManually ?? false,
+                        failed = true
+                    });
+                }
+            }
+
+            return Json(results);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(RecalculateJobRates)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

@@ -18,8 +18,12 @@ namespace DespatchWeb.Services;
 /// </remarks>
 public class SplitPricingPreviewService(
     IDbContextFactory<DespatchContext> contextFactory,
-    IRateJobService rateJobService) : ISplitPricingPreviewService
+    IRateJobService rateJobService,
+    ITenantInfoService tenantInfoService) : ISplitPricingPreviewService
 {
+    /// <summary>Kilometres per mile — the routing engine answers in miles whatever the tenant.</summary>
+    private const decimal KilometresPerMile = 1.609344m;
+
     /// <inheritdoc />
     public async Task<SplitPricingPreviewDto> PreviewAsync(
         int jobId,
@@ -69,6 +73,10 @@ public class SplitPricingPreviewService(
         var allocated = SplitPricingAllocator.Allocate(linesToDivide, legs);
         var jobNumbers = new[] { childNumbers.PickupJobNumber, childNumbers.DeliveryJobNumber };
 
+        // Distances are computed and weighted in miles throughout — the shares are ratios, so the
+        // unit cancels out. It only matters for the figure shown to the user.
+        var isUs = tenantInfoService.IsUsTenant();
+
         var legDtos = legs.Select((leg, i) =>
         {
             var legLines = allocated.Where(l => l.LetterSuffix == leg.LetterSuffix).ToList();
@@ -77,7 +85,8 @@ public class SplitPricingPreviewService(
                 Sequence = leg.Sequence,
                 LetterSuffix = leg.LetterSuffix,
                 JobNumber = jobNumbers[i],
-                Miles = Math.Round(leg.Miles, 2, MidpointRounding.AwayFromZero),
+                Distance = Math.Round(
+                    isUs ? leg.Miles : leg.Miles * KilometresPerMile, 2, MidpointRounding.AwayFromZero),
                 SharePercent = Math.Round(shares[i] * 100m, 2, MidpointRounding.AwayFromZero),
                 TotalRevenue = legLines.Sum(l => l.ChargeAmount),
                 TotalCost = legLines.Sum(l => l.CostAmount ?? 0m),
@@ -98,6 +107,7 @@ public class SplitPricingPreviewService(
         return new SplitPricingPreviewDto
         {
             Basis = basis.ToString(),
+            DistanceUnit = isUs ? "mi" : "km",
             ParentTotalRevenue = linesToDivide.Sum(l => l.ChargeAmount),
             ParentTotalCost = linesToDivide.Sum(l => l.CostAmount ?? 0m),
             IsSynthesised = sourceLines.Count == 0,

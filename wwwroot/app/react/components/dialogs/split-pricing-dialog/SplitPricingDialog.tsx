@@ -57,7 +57,8 @@ export interface SplitPricingDialogProps {
 }
 
 const BASIS_LABELS: Record<SplitPricingBasis, string> = {
-    RoadMiles: 'Split by road miles per leg',
+    // Unit-neutral wording — the tenant's own unit is shown against each leg.
+    RoadMiles: 'Split by road distance per leg',
     StraightLine: 'Split by straight-line distance per leg',
     UserConfirmed: 'Split by your adjusted shares',
     LegRates: 'Split by each leg’s calculated rate',
@@ -248,12 +249,12 @@ export const SplitPricingDialog: React.FC<SplitPricingDialogProps> = ({
                                                 variant="outlined"
                                                 label={`${leg.effectivePercent}%`}
                                             />
-                                            {leg.miles > 0 && (
+                                            {leg.distance > 0 && (
                                                 <Typography
                                                     variant="caption"
                                                     sx={{color: 'text.secondary'}}
                                                 >
-                                                    {`${leg.miles} mi`}
+                                                    {`${leg.distance} ${preview.distanceUnit}`}
                                                 </Typography>
                                             )}
                                         </Box>

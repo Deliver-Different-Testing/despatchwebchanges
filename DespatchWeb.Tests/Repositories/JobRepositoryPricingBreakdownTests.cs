@@ -200,9 +200,9 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var legBResult = await repository.GetJobPriceBreakdownAsync(legB, isPrebook: false, isArchived: false);
         var parentResult = await repository.GetJobPriceBreakdownAsync(parentId, isPrebook: false, isArchived: false);
 
-        Assert.Equal(new[] {"Base Part A", "Congestion Part A"}, legAResult.Select(r => r.Name).Order());
+        Assert.Equal(["Base Part A", "Congestion Part A"], legAResult.Select(r => r.Name).Order());
         Assert.Equal(51.10m, legAResult.Sum(r => r.Amount));
-        Assert.Equal(new[] {"Base Part B", "Congestion Part B"}, legBResult.Select(r => r.Name).Order());
+        Assert.Equal(["Base Part B", "Congestion Part B"], legBResult.Select(r => r.Name).Order());
         Assert.Equal(21.90m, legBResult.Sum(r => r.Amount));
 
         // The parent stays the invoice-level view: every row, summing to the untouched total.
@@ -229,7 +229,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var result = await repository.GetJobPriceBreakdownAsync(legA, isPrebook: false, isArchived: false);
 
-        Assert.Equal(new[] {"Base", "Congestion"}, result.Select(r => r.Name).Order());
+        Assert.Equal(["Base", "Congestion"], result.Select(r => r.Name).Order());
     }
 
     [Fact]
@@ -456,10 +456,12 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        // Act & Assert - Should not throw
-        var act = async () => await repository.UpdateJobPriceBreakdownAsync(viewModel, isArchived: false);
-        var exception = await Record.ExceptionAsync(act);
+        var exception = await Record.ExceptionAsync(Act);
         Assert.Null(exception);
+        return;
+
+        // Act & Assert - Should not throw
+        async Task Act() => await repository.UpdateJobPriceBreakdownAsync(viewModel, isArchived: false);
     }
 
     [Fact]
@@ -476,10 +478,12 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        // Act & Assert - Should not throw
-        var act = async () => await repository.UpdateJobPriceBreakdownAsync(viewModel, isArchived: false);
-        var exception = await Record.ExceptionAsync(act);
+        var exception = await Record.ExceptionAsync(Act);
         Assert.Null(exception);
+        return;
+
+        // Act & Assert - Should not throw
+        async Task Act() => await repository.UpdateJobPriceBreakdownAsync(viewModel, isArchived: false);
     }
 
     [Fact]
@@ -528,10 +532,12 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         // Arrange
         var repository = CreateRepository();
 
-        // Act & Assert - Should not throw
-        var act = async () => await repository.DeleteJobPriceBreakdownAsync(999, isArchived: false);
-        var exception = await Record.ExceptionAsync(act);
+        var exception = await Record.ExceptionAsync(Act);
         Assert.Null(exception);
+        return;
+
+        // Act & Assert - Should not throw
+        async Task Act() => await repository.DeleteJobPriceBreakdownAsync(999, isArchived: false);
     }
 
     [Fact]

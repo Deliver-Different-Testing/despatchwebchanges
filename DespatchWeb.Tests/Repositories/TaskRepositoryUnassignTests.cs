@@ -1,4 +1,4 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
@@ -26,6 +26,7 @@ public class TaskRepositoryUnassignTests : IAsyncDisposable
         _context = _db.CreateContext();
         _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
         _infoServiceMock.GetStaffId().Returns(99);
+        _infoServiceMock.GetStaffIdOrNull().Returns(99);
     }
 
     public async ValueTask DisposeAsync()

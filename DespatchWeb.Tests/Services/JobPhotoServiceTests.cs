@@ -165,13 +165,13 @@ public class JobPhotoServiceTests
         Assert.True(result);
         await _s3ClientMock.Received(1).CopyObjectAsync(
             Arg.Is<CopyObjectRequest>(r =>
-                r.SourceKey == key &&
+                r!.SourceKey == key &&
                 r.DestinationKey == $"RestoredArchive/{key}" &&
                 r.SourceBucket == "test-bucket" &&
                 r.DestinationBucket == "test-bucket"),
             Arg.Any<CancellationToken>());
         await _s3ClientMock.Received(1).DeleteObjectAsync(
-            Arg.Is<DeleteObjectRequest>(r => r.Key == key),
+            Arg.Is<DeleteObjectRequest>(r => r!.Key == key),
             Arg.Any<CancellationToken>());
     }
 
@@ -397,7 +397,7 @@ public class JobPhotoServiceTests
             .Returns(call =>
             {
                 var req = call.Arg<ListObjectsV2Request>();
-                var objects = req.Prefix == prefix
+                var objects = req!.Prefix == prefix
                     ? new List<S3Object> { new() { Key = key, Size = 3 } }
                     : new List<S3Object>();
                 return new ListObjectsV2Response { S3Objects = objects };
@@ -409,7 +409,7 @@ public class JobPhotoServiceTests
                 var req = call.Arg<GetObjectRequest>();
                 var response = new GetObjectResponse
                 {
-                    Key = req.Key,
+                    Key = req!.Key,
                     ResponseStream = new MemoryStream([1, 2, 3])
                 };
                 response.Metadata.Add("FileName", Path.GetFileName(req.Key));
@@ -467,7 +467,7 @@ public class JobPhotoServiceTests
             .Returns(call =>
             {
                 var req = call.Arg<ListObjectsV2Request>();
-                var objects = req.Prefix switch
+                var objects = req!.Prefix switch
                 {
                     "JobAttachments/1-" => new List<S3Object> { new() { Key = legacyKey, Size = 10 } },
                     "JobAttachments/2024/06/1-" => new List<S3Object> { new() { Key = datedKey, Size = 20 } },
@@ -482,7 +482,7 @@ public class JobPhotoServiceTests
                 var req = call.Arg<GetObjectRequest>();
                 var response = new GetObjectResponse
                 {
-                    Key = req.Key,
+                    Key = req!.Key,
                     ResponseStream = new MemoryStream()
                 };
                 response.Metadata.Add("FileName", req.Key.EndsWith(".pdf") ? "dated.pdf" : "legacy.bin");
@@ -532,13 +532,13 @@ public class JobPhotoServiceTests
         {
             await _s3ClientMock.Received(1).CopyObjectAsync(
                 Arg.Is<CopyObjectRequest>(r =>
-                    r.SourceKey == key &&
+                    r!.SourceKey == key &&
                     r.DestinationKey == $"RestoredArchive/{key}" &&
                     r.SourceBucket == "test-bucket" &&
                     r.DestinationBucket == "test-bucket"),
                 Arg.Any<CancellationToken>());
             await _s3ClientMock.Received(1).DeleteObjectAsync(
-                Arg.Is<DeleteObjectRequest>(r => r.Key == key),
+                Arg.Is<DeleteObjectRequest>(r => r!.Key == key),
                 Arg.Any<CancellationToken>());
         }
     }
@@ -582,7 +582,7 @@ public class JobPhotoServiceTests
             .Returns(call =>
             {
                 var req = call.Arg<ListObjectsV2Request>();
-                List<S3Object> objects = req.Prefix switch
+                List<S3Object> objects = req!.Prefix switch
                 {
                     "DeliveryPhotos/2024/07/5-" => [new S3Object { Key = photoKey, Size = 3 }],
                     _ when req.Prefix.StartsWith("JobAttachments/") =>
@@ -602,9 +602,9 @@ public class JobPhotoServiceTests
         // Assert
         Assert.Equal(1, result.TotalFiles);
         await _s3ClientMock.DidNotReceive().CopyObjectAsync(
-            Arg.Is<CopyObjectRequest>(r => r.SourceKey == attachmentKey), Arg.Any<CancellationToken>());
+            Arg.Is<CopyObjectRequest>(r => r!.SourceKey == attachmentKey), Arg.Any<CancellationToken>());
         await _s3ClientMock.DidNotReceive().DeleteObjectAsync(
-            Arg.Is<DeleteObjectRequest>(r => r.Key == attachmentKey), Arg.Any<CancellationToken>());
+            Arg.Is<DeleteObjectRequest>(r => r!.Key == attachmentKey), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -634,7 +634,7 @@ public class JobPhotoServiceTests
             .Returns(call =>
             {
                 var req = call.Arg<ListObjectsV2Request>();
-                var objects = keysByPrefix.TryGetValue(req.Prefix, out var key)
+                var objects = keysByPrefix.TryGetValue(req!.Prefix, out var key)
                     ? new List<S3Object> { new() { Key = key, Size = 3 } }
                     : new List<S3Object>();
                 return new ListObjectsV2Response { S3Objects = objects };
@@ -655,7 +655,7 @@ public class JobPhotoServiceTests
             .Returns(callInfo =>
             {
                 stream.Position = 0;
-                return stream.CopyToAsync(callInfo.Arg<Stream>());
+                return stream.CopyToAsync(callInfo.Arg<Stream>()!);
             });
 
         return fileMock;

@@ -778,6 +778,277 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
+    private async Task SeedCouriersAsync(params TucCourier[] couriers)
+    {
+        await using var context = _db.CreateContext();
+        context.TucCouriers.AddRange(couriers);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static TucStaff Staff(int id, string first, string last) =>
+        new() { UcstId = id, UcstFirstName = first, UcstLastName = last, CreatedBy = "test", LastModifiedBy = "test" };
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromStaffOnStatusRow()
+    {
+        // Arrange
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Jane Doe", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromCourierWhenNoStaff()
+    {
+        // Arrange
+        await SeedCouriersAsync(new TucCourier
+        {
+            UccrId = 9, Code = "C9", UccrName = "Sam", UccrSurname = "Rider",
+            UccrEmail = "sam@test.com", UccrMobile = "1",
+            Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T"
+        });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Courier",
+            CourierId = 9,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Sam Rider", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_LeavesPerformedByNull_ForSystemRow()
+    {
+        // Arrange - trigger-written rows carry no actor. The UI renders nothing
+        // rather than claiming "System" performed the change.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "SYSTEM",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Null(Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_PrefersStaffOverCourier_WithinTimestampGroup()
+    {
+        // Arrange - rows sharing an UpdatedAt collapse into one card; a named
+        // staff member outranks a courier as the actor.
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedCouriersAsync(new TucCourier
+        {
+            UccrId = 9, Code = "C9", UccrName = "Sam", UccrSurname = "Rider",
+            UccrEmail = "sam@test.com", UccrMobile = "1",
+            Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T"
+        });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        var sharedTimestamp = new DateTime(2024, 1, 15, 14, 0, 0);
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1, JobId = 1, ChangeType = "JobStatus",
+                UpdatedByType = "Courier", CourierId = 9, UpdatedAt = sharedTimestamp
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2, JobId = 1, ChangeType = "JobStatus",
+                UpdatedByType = "Staff", StaffId = 5, UpdatedAt = sharedTimestamp
+            });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Jane Doe", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_PicksLowestJourneyId_WhenGroupHasTwoStaffActors()
+    {
+        // Arrange - the query has no ORDER BY, so the actor must be chosen
+        // deterministically by JourneyID rather than by row arrival order.
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"), Staff(6, "John", "Roe"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        var sharedTimestamp = new DateTime(2024, 1, 15, 14, 0, 0);
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 20, JobId = 1, ChangeType = "JobStatus",
+                UpdatedByType = "Staff", StaffId = 6, UpdatedAt = sharedTimestamp
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 10, JobId = 1, ChangeType = "JobStatus",
+                UpdatedByType = "Staff", StaffId = 5, UpdatedAt = sharedTimestamp
+            });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Jane Doe", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_DoesNotEmitByActorTag_OnStatusRows()
+    {
+        // Arrange - attribution moved to its own field, so the duplicate
+        // "By <name>" chip must be gone.
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.DoesNotContain(Assert.Single(result).Tags, t => t.StartsWith("By ", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_OnJobCreatedRow()
+    {
+        // Arrange - once the trigger stamps StaffID, a JobCreated card shows both
+        // the inserting SP and the person whose action triggered it.
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobCreated",
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            FieldName = "CreatedBySp",
+            NewValue = "uspPrebookSet",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var entry = Assert.Single(result);
+        Assert.Equal("Jane Doe", entry.PerformedBy);
+        Assert.Contains("Created by uspPrebookSet", entry.Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromArchivedStatusRow()
+    {
+        // Arrange
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act — no TucJob row, so the service takes the archived path.
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var entry = Assert.Single(result);
+        Assert.Equal("Jane Doe", entry.PerformedBy);
+        Assert.DoesNotContain(entry.Tags, t => t.StartsWith("By ", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromNoteEditor()
+    {
+        // Arrange
+        await SeedStaffAsync(Staff(1, "Alice", "Smith"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1, JobId = 1, NoteText = "Note body",
+            CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0), CreatedBy = 1, NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedBy = 1,
+            EditedAtUtc = new DateTime(2024, 1, 15, 16, 0, 0),
+            OldNoteText = "Old body", NewNoteText = "Note body"
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Alice Smith", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_LeavesPerformedByNull_ForUnattributedNote_ButTitleStillSaysSystem()
+    {
+        // Arrange - an unknown editor keeps the existing "by System" wording in
+        // the title while the dedicated attribution field stays empty.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1, JobId = 1, NoteText = "Note body",
+            CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0), CreatedBy = 1, NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedBy = 999,
+            EditedAtUtc = new DateTime(2024, 1, 15, 16, 0, 0),
+            OldNoteText = "", NewNoteText = "Note body"
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var entry = Assert.Single(result);
+        Assert.Null(entry.PerformedBy);
+        Assert.Equal("Note added by System", entry.Title);
+    }
+
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithJobStatusChange_ReturnsStatusUpdateEntry()
     {

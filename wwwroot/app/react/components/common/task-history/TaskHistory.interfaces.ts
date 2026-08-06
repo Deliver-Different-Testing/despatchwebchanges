@@ -28,6 +28,8 @@ export interface DeliveryJourney {
     status: 'completed' | 'current' | 'todo' | 'pending' | 'waiting';
     notes: string;
     grandTotalAfter?: number | null;
+    /** Staff member or courier who made the change; absent when unrecorded. */
+    performedBy?: string | null;
     _dateStr?: string;
 }
 
@@ -58,6 +60,7 @@ export interface DeliveryJourneyDto {
     status: string;
     notes: string;
     grandTotalAfter?: number | null;
+    performedBy?: string | null;
 }
 // Backward compatibility aliases
 export type IDeliveryHistoryConfig = DeliveryHistoryConfig;

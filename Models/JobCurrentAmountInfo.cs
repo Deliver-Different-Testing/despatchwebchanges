@@ -12,4 +12,9 @@ public sealed class JobCurrentAmountInfo
     public decimal CourierFuel { get; init; }
     public decimal CourierBonus { get; init; }
     public bool IsPrebook { get; init; }
+
+    /// <summary>
+    /// A hand-set price. Callers offering a recalculated rate must leave these alone.
+    /// </summary>
+    public bool RatedManually { get; init; }
 }

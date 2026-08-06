@@ -21,3 +21,17 @@ public enum DeliveryJourneyUpdatedByType
     Courier,
     System
 }
+
+public static class DeliveryJourneyUpdatedBy
+{
+    /// <summary>
+    /// The <c>UpdatedByType</c> that pairs with a given staff id.
+    /// <c>CK_JobDeliveryJourney_UserID_Required</c> requires the actor column
+    /// named by <c>UpdatedByType</c> to be populated, so a null staff id must be
+    /// recorded as <c>System</c> rather than an unattributed <c>Staff</c> row.
+    /// </summary>
+    public static string TypeForStaffId(int? staffId) =>
+        staffId is null
+            ? nameof(DeliveryJourneyUpdatedByType.System)
+            : nameof(DeliveryJourneyUpdatedByType.Staff);
+}

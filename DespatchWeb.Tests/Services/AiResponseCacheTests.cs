@@ -77,7 +77,7 @@ public class AiResponseCacheTests
     [Fact]
     public async Task GetAsync_ReturnsNull_WhenAbsent()
     {
-        _cache.GetAsync("k", Arg.Any<CancellationToken>()).Returns((byte[])null);
+        _cache.GetAsync("k", Arg.Any<CancellationToken>()).Returns((byte[]?)null);
 
         var result = await CreateCache().GetAsync("k", TestContext.Current.CancellationToken);
 

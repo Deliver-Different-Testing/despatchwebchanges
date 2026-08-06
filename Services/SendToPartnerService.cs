@@ -150,15 +150,16 @@ public sealed class SendToPartnerService(
         try
         {
             await using var ctx = await contextFactory.CreateDbContextAsync();
+            var staffId = tenantInfoService.GetStaffIdOrNull();
             var dispatchedToPartnerRecord = new JobDeliveryJourney
             {
                 JobId = jobId,
                 ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
                 FieldName = "partnerJobGuid",
                 NewValue = trackingNumber,
-                StaffId = ResolveStaffIdOrNull(),
+                StaffId = staffId,
                 UpdatedAt = DateTime.UtcNow,
-                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff),
+                UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId),
                 Comments = string.IsNullOrWhiteSpace(trackingNumber)
                     ? "Job sent to partner"
                     : $"Job sent to partner; tracking {trackingNumber}"
@@ -171,22 +172,6 @@ public sealed class SendToPartnerService(
         {
             Log.Warning(ex,
                 "Job {JobId}: failed to record partner-dispatch journey entry (audit-only, ignored)", jobId);
-        }
-    }
-
-    // ITenantInfoService.GetStaffId throws when there's no HTTP user context (background calls,
-    // tests without a mocked tenant). Audit columns prefer "we don't know" (null) over a misleading
-    // staff #0, so swallow and return null.
-    private int? ResolveStaffIdOrNull()
-    {
-        try
-        {
-            var id = tenantInfoService.GetStaffId();
-            return id > 0 ? id : null;
-        }
-        catch
-        {
-            return null;
         }
     }
 

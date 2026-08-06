@@ -1,5 +1,6 @@
 ﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -258,11 +259,11 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SplitJobAsync_JobNotFound_ThrowsInvalidOperationException()
+    public async Task SplitJobAsync_JobNotFound_ThrowsSplitJobException()
     {
         var service = CreateService();
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<SplitJobException>(
             (Func<Task<(int PickupJobId, int DeliveryJobId)>>?)Act ?? throw new InvalidOperationException());
         Assert.Contains("Job 999 not found", ex.Message);
         return;
@@ -273,7 +274,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SplitJobAsync_JobWithFlightAssignment_ThrowsInvalidOperationException()
+    public async Task SplitJobAsync_JobWithFlightAssignment_ThrowsSplitJobException()
     {
         SeedJob();
         _seedContext.TucJobNationwides.Add(new TucJobNationwide
@@ -292,7 +293,7 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         var service = CreateService();
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<SplitJobException>(
             (Func<Task<(int PickupJobId, int DeliveryJobId)>>?)Act ?? throw new InvalidOperationException());
         Assert.Contains("flights assigned", ex.Message);
         return;
@@ -682,6 +683,84 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SplitJobAsync_NoUnknownSuburb_FallsBackToParentSuburbs()
+    {
+        // NZ tenants run the gazetted suburb list and have no row named "Unknown", so the
+        // US-shaped fallback finds nothing. The meeting-point side must still land on a real
+        // suburb — a null there is rejected by the legacy tucJob insert triggers and by
+        // NZ zone-based rating ("FromId is required" / "ToId is required").
+        RemoveUnknownSuburb();
+        SeedJob(configure: j =>
+        {
+            j.UcjbFrom = 10;
+            j.UcjbTo = 20;
+        });
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Each leg keeps the parent's own suburb pair — the combination the parent already
+        // rated and inserted with, so nothing downstream sees a value it hasn't accepted.
+        Assert.Equal(10, pickup.UcjbFrom);
+        Assert.Equal(20, pickup.UcjbTo);
+        Assert.Equal(10, delivery.UcjbFrom);
+        Assert.Equal(20, delivery.UcjbTo);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_NoUnknownSuburbAndParentHasNoSuburb_StillSplits()
+    {
+        // Nothing to substitute, so the split proceeds exactly as it did before the fallback existed
+        // rather than gaining a new way to fail — the insert triggers or the rating engine decide.
+        RemoveUnknownSuburb();
+        SeedJob();
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(pickup.UcjbTo);
+        Assert.Null(delivery.UcjbFrom);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_MissingRelationshipType_ThrowsSplitJobExceptionNamingIt()
+    {
+        _seedContext.TblJobRelationshipTypes.RemoveRange(
+            _seedContext.TblJobRelationshipTypes.Where(r => r.SystemName == "SplitChild"));
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        SeedJob();
+        var service = CreateService();
+
+        var ex = await Assert.ThrowsAsync<SplitJobException>(Act);
+        Assert.Contains("SplitChild", ex.Message);
+        return;
+
+        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(100, "TestUser",
+            CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+    }
+
+    private void RemoveUnknownSuburb()
+    {
+        _seedContext.TucSuburbs.RemoveRange(_seedContext.TucSuburbs.Where(s => s.UcsuName == "Unknown"));
+        _seedContext.SaveChanges();
+    }
+
+    [Fact]
     public async Task SplitJobAsync_DispatchFieldsCopiedToChildJobs_WhenCourierAssigned()
     {
         // Fix: dispatch fields must be copied so tucJob_Insert_ClearListAreaOrder trigger
@@ -787,7 +866,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             .Returns(callInfo =>
             {
                 var dto = callInfo.Arg<JobRatingDetailsDtoNz>();
-                return new ApiRerate { Rate = dto.FromId == 1 ? 70m : 30m };
+                return new ApiRerate { Rate = dto!.FromId == 1 ? 70m : 30m };
             });
 
         var service = CreateService();
@@ -879,9 +958,12 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         var service = CreateService();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        // Surfaced as SplitJobException so the user is told which leg failed instead of the
+        // sanitised generic 500 the raw exception would have become.
+        var ex = await Assert.ThrowsAsync<SplitJobException>(async () =>
             await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
                 ct: TestContext.Current.CancellationToken));
+        Assert.Contains("leg 1", ex.Message);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
         // No children persisted — the transaction rolled back.
@@ -1080,8 +1162,6 @@ public class SplitJobServiceTests : IAsyncDisposable
         await using var verifyCtx = new DespatchContext(_db.Options);
         var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
 
-        decimal Amount(string chargeName) => lines.Single(l => l.ChargeName == chargeName).ChargeAmount;
-
         // The legs keep their 61/28 division of the new total, and each leg's lines keep their
         // proportions within it.
         Assert.Equal(46.74m, Amount("Base Part A"));
@@ -1097,6 +1177,9 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Equal(68.54m, lines.Where(l => l.ChildJobId == 101).Sum(l => l.ChargeAmount));
         Assert.Equal(31.46m, lines.Where(l => l.ChildJobId == 102).Sum(l => l.ChargeAmount));
         Assert.Equal(100.00m, lines.Sum(l => l.ChargeAmount));
+        return;
+
+        decimal Amount(string chargeName) => lines.Single(l => l.ChargeName == chargeName).ChargeAmount;
     }
 
     [Fact]
@@ -1346,6 +1429,299 @@ public class SplitJobServiceTests : IAsyncDisposable
         await _rateJobServiceMock.DidNotReceive().RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
     }
 
+    // Wall-clock ISO the frontend sends for a corrected booked date/time.
+    private const string NewDateValue = "2024-03-12T09:30:00+13:00";
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_SplitParent_WritesDateToChildrenWithoutRedistributing()
+    {
+        // A date correction on a split parent must reach every non-void leg, but must NOT
+        // redistribute the parent's total the way an ordinary rate-relevant edit does —
+        // pricing is now an explicit user decision made in the price dialog.
+        SeedSplitFamilyJob();
+
+        var service = CreateService();
+
+        var result = await service.PropagateDateToChildrenAsync(100, JobProperty.Date, NewDateValue,
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(101, JobProperty.Date, NewDateValue);
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(102, JobProperty.Date, NewDateValue);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(103, JobProperty.Date, Arg.Any<string>());
+        Assert.Equal([101, 102], result.UpdatedJobIds);
+        Assert.Empty(result.FailedJobIds);
+
+        // Amounts untouched — no redistribution, no re-rate.
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var legs = await verifyCtx.TucJobs.Where(j => j.UcjbId == 101 || j.UcjbId == 102)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        Assert.All(legs, leg => Assert.Equal(25.00m, leg.UcjbAmount));
+        await _rateJobServiceMock.DidNotReceive().RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+    }
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_Multi_WritesDateToPartsAndDoesNotReRate()
+    {
+        // Multi parts normally re-rate on a rate-relevant edit. A date cascade must only move
+        // the date — the price dialog decides whether any price actually changes.
+        SeedMultiPartJob();
+
+        var service = CreateService();
+
+        var result = await service.PropagateDateToChildrenAsync(100, JobProperty.Date, NewDateValue,
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(101, JobProperty.Date, NewDateValue);
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(102, JobProperty.Date, NewDateValue);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(103, JobProperty.Date, Arg.Any<string>());
+        // The parent was already written by the caller — never rewrite it here.
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(100, JobProperty.Date, Arg.Any<string>());
+        Assert.Equal([101, 102], result.UpdatedJobIds);
+
+        await _rateJobServiceMock.DidNotReceive().RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+        await _rateJobServiceMock.DidNotReceive().RateJobUsAsync(Arg.Any<JobRatingDetailsDto>());
+    }
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_BulkParent_WritesDateToBulkChildren()
+    {
+        // The reported bug: a bulk/schedule family (relType 19/20) cascaded nothing at all,
+        // so a parent booked on the wrong day could not be corrected without rebooking.
+        SeedBulkFamilyJob();
+
+        var service = CreateService();
+
+        var result = await service.PropagateDateToChildrenAsync(100, JobProperty.Date, NewDateValue,
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(101, JobProperty.Date, NewDateValue);
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(102, JobProperty.Date, NewDateValue);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(103, JobProperty.Date, Arg.Any<string>());
+        Assert.Equal([101, 102], result.UpdatedJobIds);
+    }
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_BulkParent_IgnoresChildWithoutBulkChildRelationshipType()
+    {
+        // UTL_stpJob_InsertFromTblBulkJob can leave a stale tblBulkJob id in tucJob.ParentID when
+        // the parent bulk row was voided before release, so ParentId alone can collide with an
+        // unrelated live job. The BulkChild relType guard is what makes the match safe.
+        SeedBulkFamilyJob();
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 104,
+            UcjbNumber = "JOB-OTHER",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            JobRelationshipTypeId = (int)JobRelationshipTypes.Single,
+            Sequence = 4
+        });
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var service = CreateService();
+
+        var result = await service.PropagateDateToChildrenAsync(100, JobProperty.Date, NewDateValue,
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(104, JobProperty.Date, Arg.Any<string>());
+        Assert.DoesNotContain(104, result.UpdatedJobIds);
+    }
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_BookedTimeOnParent_SendsDateOnlyToChildren()
+    {
+        // BookedTime writes ucjbDate AND ucjbTime. Legs legitimately run to their own times
+        // (LHP early, DEL later), so children receive JobProperty.Date — which writes the date
+        // alone — and keep their own ucjbTime.
+        SeedBulkFamilyJob();
+
+        var service = CreateService();
+
+        await service.PropagateDateToChildrenAsync(100, JobProperty.BookedTime, NewDateValue,
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(101, JobProperty.Date, NewDateValue);
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(102, JobProperty.Date, NewDateValue);
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .UpdateJobAsync(Arg.Any<int>(), JobProperty.BookedTime, Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_ExcludesLockedAndPartnerChildren()
+    {
+        // A locked leg was deliberately frozen; a partner leg has its own change-request policy
+        // that a direct write would bypass. Neither may be cascaded to.
+        SeedBulkFamilyJob(configureChild101: j => j.UcjbLocked = true,
+            configureChild102: j => j.PartnerJobGuid = Guid.NewGuid());
+
+        var service = CreateService();
+
+        var result = await service.PropagateDateToChildrenAsync(100, JobProperty.Date, NewDateValue,
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .UpdateJobAsync(Arg.Any<int>(), Arg.Any<JobProperty>(), Arg.Any<string>());
+        Assert.Empty(result.UpdatedJobIds);
+    }
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_NonDateField_DoesNothing()
+    {
+        // Only date fields cascade. Weight/size/speed stay per-drop and keep the legacy
+        // PropagateUpdateToChildrenAsync behaviour instead.
+        SeedBulkFamilyJob();
+
+        var service = CreateService();
+
+        var result = await service.PropagateDateToChildrenAsync(100, JobProperty.Weight, "12",
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .UpdateJobAsync(Arg.Any<int>(), Arg.Any<JobProperty>(), Arg.Any<string>());
+        Assert.Empty(result.UpdatedJobIds);
+    }
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_SingleJob_DoesNotPropagate()
+    {
+        SeedJob(jobId: 200, jobNumber: "JOB-200");
+
+        var service = CreateService();
+
+        var result = await service.PropagateDateToChildrenAsync(200, JobProperty.Date, NewDateValue,
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .UpdateJobAsync(Arg.Any<int>(), Arg.Any<JobProperty>(), Arg.Any<string>());
+        Assert.Empty(result.UpdatedJobIds);
+    }
+
+    [Fact]
+    public async Task PropagateDateToChildrenAsync_ChildUpdateThrows_ContinuesAndReportsFailure()
+    {
+        // One bad leg must not strand the rest — the parent's date is already correct and the
+        // user needs to know exactly which children missed out.
+        SeedBulkFamilyJob();
+        _jobCommandRepositoryMock.UpdateJobAsync(101, JobProperty.Date, NewDateValue)
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var service = CreateService();
+
+        var result = await service.PropagateDateToChildrenAsync(100, JobProperty.Date, NewDateValue,
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(102, JobProperty.Date, NewDateValue);
+        Assert.Equal([102], result.UpdatedJobIds);
+        Assert.Equal([101], result.FailedJobIds);
+    }
+
+    [Fact]
+    public async Task GetDateCascadeFamilyAsync_BulkParent_ExcludesVoidAndFlagsLockedAsNotCascadable()
+    {
+        // The confirm dialog lists locked/partner legs so the user can see what will NOT move,
+        // but they must never be counted as cascadable. Void legs are dropped entirely.
+        SeedBulkFamilyJob(configureChild101: j => j.UcjbLocked = true);
+
+        var service = CreateService();
+
+        var family = await service.GetDateCascadeFamilyAsync(100, TestContext.Current.CancellationToken);
+
+        Assert.Equal((int)JobRelationshipTypes.BulkParent, family.RelationshipTypeId);
+        Assert.Equal([101, 102], family.Members.Select(m => m.JobId));
+        Assert.False(family.Members.Single(m => m.JobId == 101).Cascadable);
+        Assert.True(family.Members.Single(m => m.JobId == 101).Locked);
+        Assert.True(family.Members.Single(m => m.JobId == 102).Cascadable);
+    }
+
+    [Fact]
+    public async Task GetDateCascadeFamilyAsync_SingleJob_ReturnsNoMembers()
+    {
+        SeedJob(jobId: 200, jobNumber: "JOB-200");
+
+        var service = CreateService();
+
+        var family = await service.GetDateCascadeFamilyAsync(200, TestContext.Current.CancellationToken);
+
+        Assert.Empty(family.Members);
+    }
+
+    /// <summary>
+    /// Seeds a SplitParent job (100, $50) with two live legs (101, 102 at $25 each) and one
+    /// void leg (103), linked by RootParentId the way SplitJobService creates them.
+    /// </summary>
+    private void SeedSplitFamilyJob()
+    {
+        SeedJob(jobId: 100, jobNumber: "JOB-100", configure: j =>
+        {
+            j.JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent;
+            j.RootParentId = 100;
+        });
+
+        foreach (var (id, suffix, sequence, isVoid) in
+                 new[] { (101, "A", 1, false), (102, "B", 2, false), (103, "C", 3, true) })
+        {
+            _seedContext.TucJobs.Add(new TucJob
+            {
+                UcjbId = id,
+                UcjbNumber = $"JOB-100{suffix}",
+                UcjbSpeed = 1,
+                UcjbStatus = 3,
+                UcjbAmount = 25.00m,
+                UcjbDate = new DateTime(2024, 1, 15),
+                JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild,
+                ParentId = 100,
+                RootParentId = 100,
+                Sequence = sequence,
+                UcjbVoid = isVoid
+            });
+        }
+
+        _seedContext.SaveChanges();
+    }
+
+    /// <summary>
+    /// Seeds a BulkParent job (100) with two live BulkChild legs (101, 102) and one void leg
+    /// (103), linked by ParentId as UTL_stpJob_InsertFromTblBulkJob writes them.
+    /// </summary>
+    private void SeedBulkFamilyJob(
+        Action<TucJob>? configureChild101 = null,
+        Action<TucJob>? configureChild102 = null)
+    {
+        SeedJob(jobId: 100, jobNumber: "JOB-100", configure: j =>
+        {
+            j.JobRelationshipTypeId = (int)JobRelationshipTypes.BulkParent;
+            j.RootParentId = 100;
+        });
+
+        var children = new List<TucJob>();
+        foreach (var (id, suffix, sequence, isVoid) in
+                 new[] { (101, "LHP", 1, false), (102, "DEL", 2, false), (103, "OLD", 3, true) })
+        {
+            children.Add(new TucJob
+            {
+                UcjbId = id,
+                UcjbNumber = $"JOB-100{suffix}",
+                UcjbSpeed = 1,
+                UcjbStatus = 3,
+                UcjbAmount = 25.00m,
+                UcjbDate = new DateTime(2024, 1, 15),
+                UcjbTime = new DateTime(2024, 1, 15, 8 + sequence, 0, 0),
+                JobRelationshipTypeId = (int)JobRelationshipTypes.BulkChild,
+                ParentId = 100,
+                RootParentId = 100,
+                Sequence = sequence,
+                UcjbVoid = isVoid
+            });
+        }
+
+        configureChild101?.Invoke(children[0]);
+        configureChild102?.Invoke(children[1]);
+        _seedContext.TucJobs.AddRange(children);
+        _seedContext.SaveChanges();
+    }
+
     /// <summary>
     /// Seeds a Multi (multi-drop) parent job (100) with two live children (101, 102) and one
     /// void child (103). <paramref name="configureChild101"/> lets a test tweak child 101.
@@ -1422,10 +1798,10 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Equal(6, lines.Count);
         Assert.All(lines, l => Assert.Equal(100, l.JobId));
         Assert.Equal(
-            new[] { "Base Fuel Part A", "Base Part A", "Congestion Part A" },
+            ["Base Fuel Part A", "Base Part A", "Congestion Part A"],
             lines.Where(l => l.ChildJobId == pickupId).Select(l => l.ChargeName).Order());
         Assert.Equal(
-            new[] { "Base Fuel Part B", "Base Part B", "Congestion Part B" },
+            ["Base Fuel Part B", "Base Part B", "Congestion Part B"],
             lines.Where(l => l.ChildJobId == deliveryId).Select(l => l.ChargeName).Order());
 
         // No unattributed rows survive — otherwise the parent total would double.
@@ -1591,7 +1967,7 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         // What the user confirmed is applied verbatim — no distance lookup, no rating call.
         await _rateJobServiceMock.DidNotReceiveWithAnyArgs()
-            .GetRoadDistanceMilesAsync(default, default, default, default);
+            .GetRoadDistanceMilesAsync(null, null, null, null);
         await _rateJobServiceMock.DidNotReceive().GetJobRateNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
     }
 
@@ -1628,9 +2004,6 @@ public class SplitJobServiceTests : IAsyncDisposable
         await using var verifyCtx = new DespatchContext(_db.Options);
         var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
 
-        decimal Amount(int legJobId, string chargeName) =>
-            lines.Single(l => l.ChildJobId == legJobId && l.ChargeName == chargeName).ChargeAmount;
-
         Assert.Equal(9.00m, Amount(pickupId, "Congestion Part A"));
         Assert.Equal(0.00m, Amount(deliveryId, "Congestion Part B"));
         Assert.Equal(41.60m, Amount(pickupId, "Base Part A"));
@@ -1653,6 +2026,10 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Equal(15.40m, delivery.CourierPayment);
         Assert.Equal(10.40m, pickup.FuelSurchargeAmount);
         Assert.Equal(5.60m, delivery.FuelSurchargeAmount);
+        return;
+
+        decimal Amount(int legJobId, string chargeName) =>
+            lines.Single(l => l.ChildJobId == legJobId && l.ChargeName == chargeName).ChargeAmount;
     }
 
     [Fact]
@@ -1675,7 +2052,7 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         Assert.Equal(2, lines.Count);
         Assert.Equal(
-            new[] { "Manually Rated Part A", "Manually Rated Part B" },
+            ["Manually Rated Part A", "Manually Rated Part B"],
             lines.Select(l => l.ChargeName).Order());
         Assert.Equal(100.00m, lines.Sum(l => l.ChargeAmount));
         Assert.Equal(60.00m, lines.Sum(l => l.CostAmount ?? 0m));

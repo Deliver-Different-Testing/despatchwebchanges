@@ -623,7 +623,7 @@ public class CourierControllerTests
         // Assert
         await _courierRepository
             .Received(1)
-            .GetCourierEmailsAsync(Arg.Is<PaginatedRequest>(r => r.OrderBy == "code"));
+            .GetCourierEmailsAsync(Arg.Is<PaginatedRequest>(r => r!.OrderBy == "code"));
     }
 
     [Fact]
@@ -642,7 +642,7 @@ public class CourierControllerTests
         // Assert
         await _courierRepository
             .Received(1)
-            .GetCourierEmailsAsync(Arg.Is<PaginatedRequest>(r => r.SortDescending == true));
+            .GetCourierEmailsAsync(Arg.Is<PaginatedRequest>(r => r!.SortDescending == true));
     }
 
     [Fact]
@@ -722,7 +722,7 @@ public class CourierControllerTests
         // Assert
         await _courierRepository
             .Received(1)
-            .GetCourierDailyEarningsAsync(Arg.Is<PaginatedRequest>(r => r.OrderBy == "earnings"));
+            .GetCourierDailyEarningsAsync(Arg.Is<PaginatedRequest>(r => r!.OrderBy == "earnings"));
     }
 
     [Fact]
@@ -741,6 +741,6 @@ public class CourierControllerTests
         // Assert
         await _courierRepository
             .Received(1)
-            .GetCourierDailyEarningsAsync(Arg.Is<PaginatedRequest>(r => r.SortDescending == true));
+            .GetCourierDailyEarningsAsync(Arg.Is<PaginatedRequest>(r => r!.SortDescending == true));
     }
 }

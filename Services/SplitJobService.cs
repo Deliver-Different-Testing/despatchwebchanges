@@ -1,6 +1,7 @@
 #nullable enable
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -30,6 +31,12 @@ public class SplitJobService(
     private const int HandOffLeaveType = 23;
     private const int PrivateResidenceDeliverTo = 1;
 
+    /// <summary>
+    /// Only date fields cascade across a family. Weight/size/speed and the like stay per-drop
+    /// and keep the legacy <see cref="PropagateUpdateToChildrenAsync"/> behaviour.
+    /// </summary>
+    private static readonly JobProperty[] DateCascadeFields = [JobProperty.Date, JobProperty.BookedTime];
+
     /// <inheritdoc />
     public async Task<(int PickupJobId, int DeliveryJobId)> SplitJobAsync(
         int jobId,
@@ -56,14 +63,14 @@ public class SplitJobService(
                 var job = await context.TucJobs
                               .AsTracking()
                               .FirstOrDefaultAsync(j => j.UcjbId == jobId, ct)
-                          ?? throw new InvalidOperationException($"Job {jobId} not found");
+                          ?? throw new SplitJobException($"Job {jobId} not found — it may have been archived.");
 
                 var (parentRelTypeId, childRelTypeId) = await GetRelationshipTypeIdsAsync(context, ct);
 
                 var hasFlightAssigned = await context.TucJobNationwides.AnyAsync(n => n.UcnwJobId == jobId, ct);
                 if (hasFlightAssigned)
                 {
-                    throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
+                    throw new SplitJobException($"Job {jobId} has flights assigned and cannot be split.");
                 }
 
                 var parentJobCourierId = await GetParentJobCourierIdAsync(context, ct);
@@ -73,10 +80,10 @@ public class SplitJobService(
                 var (pickupJobNumber, deliveryJobNumber) =
                     (childNumbers.PickupJobNumber, childNumbers.DeliveryJobNumber);
 
-                // For US tenants, the tucJob INSERT triggers require non-null suburb IDs
+                // The tucJob INSERT triggers require non-null suburb IDs
                 // (UTL_fncFuelSurcharge_InclusiveAmount, UTL_fncJob_IsValid, etc.).
-                // Mirror DD_stpJob_Excelerator_Insert which uses the "Unknown" suburb as fallback.
-                var meetingPointSuburbId = await GetUnknownSuburbIdAsync(context, ct);
+                var (pickupMeetingPointSuburbId, deliveryMeetingPointSuburbId) =
+                    await ResolveMeetingPointSuburbIdsAsync(context, job, ct);
 
                 // Capture original courier ID before modifying parent
                 var originalCourierId = job.UcjbCourierId;
@@ -108,7 +115,7 @@ public class SplitJobService(
                 pickupJob.UcjbDispId = job.UcjbDispId;
                 pickupJob.UcjbFrom = job.UcjbFrom;
                 pickupJob.UcjbFromAddr = job.UcjbFromAddr;
-                pickupJob.UcjbTo = meetingPointSuburbId;
+                pickupJob.UcjbTo = pickupMeetingPointSuburbId;
                 pickupJob.UcjbToAddr = meetingPointAddress.FullAddress;
                 pickupJob.DeliverToPrivateBusiness = PrivateResidenceDeliverTo;
                 pickupJob.DeliverToLeaveId = HandOffLeaveType;
@@ -149,7 +156,7 @@ public class SplitJobService(
                     deliveryJob.UcjbDispId = job.UcjbDispId;
                 }
 
-                deliveryJob.UcjbFrom = meetingPointSuburbId;
+                deliveryJob.UcjbFrom = deliveryMeetingPointSuburbId;
                 deliveryJob.UcjbFromAddr = meetingPointAddress.FullAddress;
                 deliveryJob.UcjbTo = job.UcjbTo;
                 deliveryJob.UcjbToAddr = job.UcjbToAddr;
@@ -268,6 +275,137 @@ public class SplitJobService(
                     parentJobId, parentInfo.JobRelationshipTypeId, parentInfo.UcjbVoid, field);
                 break;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<DateCascadeFamily> GetDateCascadeFamilyAsync(
+        int jobId,
+        CancellationToken ct = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(ct);
+
+        var parent = await context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new { j.JobRelationshipTypeId, j.RootParentId })
+            .FirstOrDefaultAsync(ct);
+
+        if (parent is null)
+        {
+            return DateCascadeFamily.Empty;
+        }
+
+        var members = await CascadeChildQuery(context, jobId, parent.RootParentId, parent.JobRelationshipTypeId)
+            .Select(j => new DateCascadeFamilyMember(
+                j.UcjbId,
+                j.UcjbNumber,
+                j.UcjbDate,
+                j.UcjbTime,
+                j.UcjbAmount,
+                j.RatedManually,
+                j.UcjbLocked ?? false,
+                j.PartnerJobGuid != null))
+            .ToListAsync(ct);
+
+        return new DateCascadeFamily(parent.JobRelationshipTypeId, members);
+    }
+
+    /// <inheritdoc />
+    public async Task<DateCascadeResult> PropagateDateToChildrenAsync(
+        int parentJobId,
+        JobProperty field,
+        string value,
+        CancellationToken ct = default)
+    {
+        if (!DateCascadeFields.Contains(field))
+        {
+            Log.Information(
+                "Date cascade skipped — field {Field} is not a date field, parent {ParentJobId}",
+                field, parentJobId);
+            return DateCascadeResult.Empty;
+        }
+
+        var family = await GetDateCascadeFamilyAsync(parentJobId, ct);
+        var targets = family.Members.Where(m => m.Cascadable).ToList();
+
+        if (targets.Count == 0)
+        {
+            Log.Information(
+                "Date cascade skipped — parent {ParentJobId} relType={RelType} has no cascadable children "
+                + "({MemberCount} member(s) found), field {Field}",
+                parentJobId, family.RelationshipTypeId, family.Members.Count, field);
+            return DateCascadeResult.Empty;
+        }
+
+        // BookedTime writes ucjbDate AND ucjbTime. Legs legitimately run to their own times
+        // (LHP early, DEL later), so children get Date — the date alone — either way.
+        const JobProperty childField = JobProperty.Date;
+
+        Log.Information(
+            "Date cascade starting — parent {ParentJobId} relType={RelType}, field {Field} -> {ChildField}, "
+            + "{ChildCount} child(ren) {ChildJobIds}",
+            parentJobId, family.RelationshipTypeId, field, childField,
+            targets.Count, targets.Select(t => t.JobId));
+
+        var updated = new List<int>(targets.Count);
+        var failed = new List<int>();
+
+        foreach (var target in targets)
+        {
+            try
+            {
+                await jobCommandRepository.UpdateJobAsync(target.JobId, childField, value);
+                updated.Add(target.JobId);
+            }
+            catch (Exception ex)
+            {
+                failed.Add(target.JobId);
+                Log.Warning(ex,
+                    "Failed to cascade {Field} to child job {ChildId} of parent {ParentJobId}",
+                    childField, target.JobId, parentJobId);
+            }
+        }
+
+        Log.Information(
+            "Date cascade finished — parent {ParentJobId}, {SuccessCount}/{ChildCount} children updated, "
+            + "failed {FailedJobIds}",
+            parentJobId, updated.Count, targets.Count, failed);
+
+        return new DateCascadeResult(updated, failed);
+    }
+
+    /// <summary>
+    /// The single authority on which jobs belong to a parent's cascadable family. Both the
+    /// confirm dialog and the write path go through this, so the list the user approves is
+    /// exactly the list that gets written.
+    /// </summary>
+    private static IQueryable<TucJob> CascadeChildQuery(
+        DespatchContext context,
+        int parentJobId,
+        int? rootParentId,
+        int? relationshipTypeId)
+    {
+        var live = context.TucJobs.Where(j => !j.UcjbVoid);
+
+        var children = relationshipTypeId switch
+        {
+            // Split families span a whole tree, so RootParentId (not ParentId) is the anchor —
+            // otherwise a split-of-a-split's grandchildren are missed.
+            (int)JobRelationshipTypes.SplitParent => live.Where(j =>
+                j.RootParentId == (rootParentId ?? parentJobId) && j.UcjbId != (rootParentId ?? parentJobId)),
+
+            (int)JobRelationshipTypes.Multi => live.Where(j => j.ParentId == parentJobId),
+
+            // UTL_stpJob_InsertFromTblBulkJob can leave a stale tblBulkJob id in tucJob.ParentID
+            // when the parent bulk row was voided before release, so ParentId alone can collide
+            // with an unrelated live job. The relType guard is what makes the match safe.
+            (int)JobRelationshipTypes.BulkParent => live.Where(j =>
+                j.ParentId == parentJobId
+                && j.JobRelationshipTypeId == (int)JobRelationshipTypes.BulkChild),
+
+            _ => live.Where(_ => false)
+        };
+
+        return children.OrderBy(j => j.Sequence);
     }
 
     /// <summary>
@@ -481,12 +619,14 @@ public class SplitJobService(
             .ToListAsync(ct);
 
         var parentRelTypeId = relTypes.FirstOrDefault(r => r.SystemName == ParentSystemName)?.JobRelationshipTypeId
-                              ?? throw new InvalidOperationException(
-                                  $"Job relationship type '{ParentSystemName}' not found");
+                              ?? throw new SplitJobException(
+                                  $"Splitting isn't set up on this system — the '{ParentSystemName}' job "
+                                  + "relationship type is missing. Please contact support.");
 
         var childRelTypeId = relTypes.FirstOrDefault(r => r.SystemName == ChildSystemName)?.JobRelationshipTypeId
-                             ?? throw new InvalidOperationException(
-                                 $"Job relationship type '{ChildSystemName}' not found");
+                             ?? throw new SplitJobException(
+                                 $"Splitting isn't set up on this system — the '{ChildSystemName}' job "
+                                 + "relationship type is missing. Please contact support.");
 
         return (parentRelTypeId, childRelTypeId);
     }
@@ -503,14 +643,48 @@ public class SplitJobService(
             .FirstOrDefaultAsync(ct);
 
     /// <summary>
-    /// Returns the "Unknown" suburb ID used as fallback for US tenants.
-    /// Mirrors DD_stpJob_Excelerator_Insert: SELECT SuburbID FROM tblSuburb WHERE Name = N'Unknown'
+    /// Resolves the suburb both legs use for the meeting point, which has an address but no suburb
+    /// of its own.
     /// </summary>
-    private static async Task<int?> GetUnknownSuburbIdAsync(DespatchContext context, CancellationToken ct) =>
-        await context.TucSuburbs
+    /// <remarks>
+    /// Prefers the "Unknown" suburb, mirroring DD_stpJob_Excelerator_Insert
+    /// (<c>SELECT SuburbID FROM tblSuburb WHERE Name = N'Unknown'</c>) — that row exists on US
+    /// tenants. NZ tenants run the gazetted suburb list and have no such row, so we fall back to the
+    /// parent's own suburbs rather than leaving the meeting-point side null: the legacy tucJob insert
+    /// triggers and NZ zone-based rating both reject a null suburb, which failed the whole split.
+    /// The parent's pair is the combination it already rated and inserted with, so nothing downstream
+    /// sees a value it hasn't already accepted, and leg amounts come from the pricing allocation
+    /// rather than from re-rating. A parent with no suburb of its own leaves nothing to substitute,
+    /// so that case keeps the previous null and is logged rather than blocked.
+    /// </remarks>
+    private static async Task<(int? Pickup, int? Delivery)> ResolveMeetingPointSuburbIdsAsync(
+        DespatchContext context,
+        TucJob job,
+        CancellationToken ct)
+    {
+        var unknownSuburbId = await context.TucSuburbs
             .Where(s => s.UcsuName == "Unknown")
             .Select(s => (int?)s.UcsuId)
             .FirstOrDefaultAsync(ct);
+
+        if (unknownSuburbId.HasValue)
+        {
+            return (unknownSuburbId, unknownSuburbId);
+        }
+
+        if (!job.UcjbTo.HasValue || !job.UcjbFrom.HasValue)
+        {
+            // Nothing better to substitute, so leave it as it has always been rather than blocking a
+            // split that may well work — the insert triggers or the rating engine will say so.
+            Log.Warning(
+                "No \"Unknown\" suburb and job {JobId} has no suburb of its own "
+                + "(from {FromSuburbId}, to {ToSuburbId}) — splitting with a null meeting-point suburb",
+                job.UcjbId, job.UcjbFrom, job.UcjbTo);
+        }
+
+        // The pickup leg ends at the meeting point and the delivery leg starts there.
+        return (job.UcjbTo, job.UcjbFrom);
+    }
 
     private async Task CreateSplitJobNotesAsync(
         DespatchContext context,
@@ -523,7 +697,7 @@ public class SplitJobService(
         var now = tenantClock.UtcNow;
         var parentNotesText = string.IsNullOrWhiteSpace(parentNotes) ? string.Empty : $"  {parentNotes}";
 
-        context.TucNotes.AddRange(
+        await context.TucNotes.AddRangeAsync(
             new TucNote
             {
                 JobId = pickupJobId,
@@ -807,21 +981,32 @@ public class SplitJobService(
         var rates = new List<decimal>(legJobIds.Count);
 
         // Rated sequentially, and failures propagate: catching and substituting 0 would silently
-        // reassign the failed leg's share to the others.
-        foreach (var legJobId in legJobIds)
+        // reassign the failed leg's share to the others. They are re-thrown as SplitJobException so
+        // the user is told which stage failed instead of getting the sanitised generic 500.
+        for (var i = 0; i < legJobIds.Count; i++)
         {
-            if (isUs)
+            try
             {
-                // Read on the split transaction's own connection — the legs were just inserted in
-                // this uncommitted transaction, so a read on a separate connection would block on
-                // its locks until the command timeout (SQL error 258).
-                var details = await jobRepository.GetJobDetailsForRatingAsync(context, legJobId);
-                rates.Add((await rateJobService.GetJobRateUsAsync(details)).Rate);
+                if (isUs)
+                {
+                    // Read on the split transaction's own connection — the legs were just inserted in
+                    // this uncommitted transaction, so a read on a separate connection would block on
+                    // its locks until the command timeout (SQL error 258).
+                    var details = await jobRepository.GetJobDetailsForRatingAsync(context, legJobIds[i]);
+                    rates.Add((await rateJobService.GetJobRateUsAsync(details)).Rate);
+                }
+                else
+                {
+                    var details = await jobRepository.GetJobDetailsForRatingNzAsync(context, legJobIds[i], false);
+                    rates.Add((await rateJobService.GetJobRateNzAsync(details)).Rate);
+                }
             }
-            else
+            catch (Exception ex) when (ex is not SplitJobException)
             {
-                var details = await jobRepository.GetJobDetailsForRatingNzAsync(context, legJobId, false);
-                rates.Add((await rateJobService.GetJobRateNzAsync(details)).Rate);
+                Log.Error(ex, "Failed to rate leg {LegNumber} ({LegJobId}) while splitting", i + 1, legJobIds[i]);
+                throw new SplitJobException(
+                    $"The rating engine couldn't price leg {i + 1} of this split, so nothing was split. "
+                    + "Check the job's suburbs, speed and size, then try again.");
             }
         }
 
@@ -967,6 +1152,17 @@ public class SplitJobService(
             return;
         }
 
+        // Rows that cancel out (a charge and an equal credit) have no proportional answer, so the
+        // rescale falls back to an even split and moves money between the lines. Rare and not worth
+        // blocking a re-price over, but never silent.
+        if (rows.Sum(r => r.ChargeAmount) == 0m)
+        {
+            Log.Warning(
+                "Leg {LegJobId} of parent {ParentJobId} has {RowCount} pricing lines totalling zero — "
+                + "rescaling to {NewAmount} by an even split, which will not preserve the lines' shape",
+                legJobId, effectiveParentId, rows.Count, newAmount);
+        }
+
         var lineAmounts = SplitPricingAllocator.DistributeAmount(
             newAmount, SplitPricingAllocator.SharesFromWeights([.. rows.Select(r => r.ChargeAmount)]));
 
@@ -1035,5 +1231,4 @@ public class SplitJobService(
             Log.Warning(ex, "Failed to consolidate MARS information for job {JobId}.", jobId);
         }
     }
-
 }

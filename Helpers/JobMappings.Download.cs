@@ -36,6 +36,7 @@ public static partial class JobMappings
             Size = j.UcjbSize,
             Cubic = j.TucJobItemJobs.Sum(i => i.Cubic),
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+            Void = j.UcjbVoid,
             PickupAddressLine1 = j.PickupAddressLine1,
             PickupAddressLine2 = j.PickupAddressLine2,
             PickupAddressLine3 = j.PickupAddressLine3,
@@ -97,6 +98,7 @@ public static partial class JobMappings
             // Cubic is summed from tucJobItemsArchive by JobId in the repository - TucJobArchive
             // has no JobId-keyed item navigation (TucJobItemsArchives is keyed by ChildJobId).
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+            Void = j.UcjbVoid,
             PickupAddressLine1 = j.PickupAddressLine1,
             PickupAddressLine2 = j.PickupAddressLine2,
             PickupAddressLine3 = j.PickupAddressLine3,

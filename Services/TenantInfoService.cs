@@ -183,7 +183,11 @@ public sealed class TenantInfoService(
     /// Gets the current staff member's ID from user claims.
     /// </summary>
     /// <returns>The staff ID, or 0 if not found.</returns>
-    public int GetStaffId() => int.Parse(ClaimValue("StaffID") ?? "0");
+    public int GetStaffId() => GetStaffIdOrNull() ?? 0;
+
+    /// <inheritdoc />
+    public int? GetStaffIdOrNull() =>
+        int.TryParse(ClaimValue("StaffID"), out var staffId) && staffId > 0 ? staffId : null;
 
     /// <inheritdoc />
     public string? GetCurrentTenantId() => ClaimValue("CurrentTenantID");

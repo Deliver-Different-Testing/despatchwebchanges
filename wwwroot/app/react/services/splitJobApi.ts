@@ -66,7 +66,8 @@ export interface SplitPricingLeg {
     sequence: number;
     letterSuffix: string;
     jobNumber: string;
-    miles: number;
+    /** In the preview's `distanceUnit`. Zero when no distance could be determined. */
+    distance: number;
     sharePercent: number;
     totalRevenue: number;
     totalCost: number;
@@ -75,6 +76,8 @@ export interface SplitPricingLeg {
 
 export interface SplitPricingPreview {
     basis: SplitPricingBasis;
+    /** The unit each leg's `distance` is in — "mi" for US tenants, "km" elsewhere. */
+    distanceUnit: string;
     parentTotalRevenue: number;
     parentTotalCost: number;
     /** True when the job has no itemised lines and a single synthesised line is being divided. */

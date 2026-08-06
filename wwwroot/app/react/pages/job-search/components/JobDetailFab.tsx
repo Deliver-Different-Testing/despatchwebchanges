@@ -49,6 +49,9 @@ const ACTIONS: FabAction[] = [
         available: job => !job.preBook && (!!job.locked && !job.invoiced)},
     {id: 'lock', label: 'Lock Job', icon: 'lock_open',
         available: job => !job.preBook && !job.bulkJob && !job.locked && !job.invoiced},
+    {id: 'split', label: 'Split Job', icon: 'shuffle',
+        // Archived jobs are refused by executeSplitJobFlow, so offering it would be a dead end.
+        available: job => !!job.allowSplit && !job.isArchived},
     {id: 'unsplit', label: 'UnSplit Job', icon: 'undo',
         available: job => !job.preBook && !job.locked && job.jobRelationshipTypeId === 8},
 ];

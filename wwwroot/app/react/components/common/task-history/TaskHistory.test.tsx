@@ -70,6 +70,7 @@ const createMockDeliveryEvents = (): DeliveryJourney[] => [
         tags: ['priority', 'express'],
         status: 'completed',
         notes: 'Customer requested express delivery',
+        performedBy: 'Jane Doe',
         _dateStr: 'Jan 15, 2025 9:00 AM',
     },
     {
@@ -490,6 +491,43 @@ describe('TaskHistory', () => {
             // UltraDense: notes still hidden
             await user.click(densityButton);
             expect(screen.queryByText('Customer requested express delivery')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Performed by', () => {
+        it('shows the actor under the title only for events that have one, and hides it in UltraDense', async () => {
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const props = createDefaultProps();
+            renderWithProviders(<TaskHistory {...props} />);
+
+            // Only the first fixture has performedBy, so exactly one line appears.
+            expect(await screen.findByText('by Jane Doe')).toBeInTheDocument();
+            expect(screen.getAllByText(/^by /)).toHaveLength(1);
+
+            // The event without performedBy renders no attribution line at all.
+            const withoutActor = screen.getByText('Dispatched to Courier').closest('[role="listitem"]');
+            expect(withoutActor).not.toBeNull();
+            expect(within(withoutActor as HTMLElement).queryByText(/^by /)).not.toBeInTheDocument();
+
+            // Normal → Dense: still shown (matches the date caption)
+            const densityButton = screen.getAllByRole('button')[0];
+            await user.click(densityButton);
+            expect(screen.getByText('by Jane Doe')).toBeInTheDocument();
+
+            // Dense → UltraDense: hidden, like the date caption and Total chip
+            await user.click(densityButton);
+            expect(screen.queryByText('by Jane Doe')).not.toBeInTheDocument();
+        });
+
+        it('shows the actor in the details dialog subtitle', async () => {
+            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const props = createDefaultProps();
+            renderWithProviders(<TaskHistory {...props} />);
+
+            await user.click(await screen.findByText('Order Received'));
+
+            const dialog = await screen.findByRole('dialog');
+            expect(within(dialog).getByText(/by Jane Doe/)).toBeInTheDocument();
         });
     });
 });

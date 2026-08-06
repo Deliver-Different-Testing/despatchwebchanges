@@ -1,6 +1,7 @@
 ﻿using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -556,6 +557,14 @@ public partial class JobRepository(
     /// <param name="data">POD update request with job ID and POD details.</param>
     public async Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data)
     {
+        // A POD name of blanks reads as empty everywhere it is displayed, so store it as
+        // empty rather than letting whitespace pass for a signature.
+        var podName = data.PodName?.Trim() ?? string.Empty;
+
+        Log.Information(
+            "UpdatePodDetails requested: job {JobId}, status {JobStatus}, podName {PodName}, podTime {PodTime}",
+            data.JobId, data.JobStatus, podName, data.PodTime);
+
         // Find if a job is in active or archive table (tracked for mutation via SaveChanges)
         var activeJob = await Context.TucJobs
             .AsTracking()
@@ -572,9 +581,12 @@ public partial class JobRepository(
                 .AsTracking()
                 .FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
             if (archivedJob == null)
-                // Job isn't found in either table
             {
-                return;
+                // Returning quietly here made a completion that wrote nothing look identical
+                // to one that worked - the caller still reported the job as completed while
+                // it stayed active.
+                throw new JobNotFoundException(
+                    $"Job {data.JobId} could not be completed because it no longer exists.");
             }
 
             parentId = archivedJob.ParentId;
@@ -593,25 +605,36 @@ public partial class JobRepository(
 
         var completionTime = ParsePodTime(data.PodTime, deliveryTimeZone);
 
-        // Update the already-tracked job entity directly (no re-query needed)
+        // Update the already-tracked job entity directly (no re-query needed).
+        // A POD arriving after a void is still recorded, but must not move the job off the Void
+        // status - the job-search export reads that column to decide what counts as revenue.
         if (isArchived)
         {
             archivedJob.UcjbJobDone = true;
-            archivedJob.UcjbStatus = data.JobStatus;
-            archivedJob.UcjbPodname = data.PodName;
+            archivedJob.UcjbPodname = podName;
             archivedJob.UcjbComplTime = completionTime;
             archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
+
+            if (!archivedJob.UcjbVoid)
+            {
+                archivedJob.UcjbStatus = data.JobStatus;
+            }
         }
         else
         {
             activeJob.UcjbJobDone = true;
-            activeJob.UcjbStatus = data.JobStatus;
-            activeJob.UcjbPodname = data.PodName;
+            activeJob.UcjbPodname = podName;
             activeJob.UcjbComplTime = completionTime;
             activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
+
+            if (!activeJob.UcjbVoid)
+            {
+                activeJob.UcjbStatus = data.JobStatus;
+            }
         }
 
         // Update parent job if all siblings are complete (only relevant for child jobs)
+        var parentCompleted = false;
         if (parentId != null)
         {
             var hasUncompletedSiblings = await Context.TucJobs
@@ -626,13 +649,19 @@ public partial class JobRepository(
                 await UpdateParentJobCompletionDetailsAsync(
                     parentId.Value,
                     data.JobStatus,
-                    data.PodName,
+                    podName,
                     completionTime,
                     isArchived);
+                parentCompleted = true;
             }
         }
 
         await Context.SaveChangesAsync();
+
+        Log.Information(
+            "UpdatePodDetails write complete: job {JobId}, archived {IsArchived}, completionTime {CompletionTime}, "
+            + "parentId {ParentId}, parentCompleted {ParentCompleted}",
+            data.JobId, isArchived, completionTime, parentId, parentCompleted);
     }
 
     /// <summary>
@@ -2270,6 +2299,7 @@ public partial class JobRepository(
                     .Where(child => parentIds.Contains(child.ParentId.Value)
                                     && child.UcjbCourierId == null
                                     && child.JobRelationshipType.AutoDespatchToOtherChildJobs == true
+                                    && !child.UcjbVoid
                                     && !jobIds.Contains(child.UcjbId))
                     .Select(child => new
                     {
@@ -2379,6 +2409,7 @@ public partial class JobRepository(
             return false;
         }
 
+        var staffId = _infoService.GetStaffIdOrNull();
         await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
         {
             JobId = jobId,
@@ -2386,9 +2417,9 @@ public partial class JobRepository(
             FieldName = "ucjbQty",
             OldValue = currentQty.ToString(),
             NewValue = newQty.ToString(),
-            StaffId = _infoService.GetStaffId(),
+            StaffId = staffId,
             UpdatedAt = DateTime.UtcNow,
-            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId)
         });
         await Context.SaveChangesAsync();
 
@@ -2578,10 +2609,15 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
         var jobSearch = (data.Job ?? string.Empty).Trim().ToLower();
-        var wildSearch = (data.Wild ?? string.Empty).ToLower();
+
+        // Filter on the bulk job row before the joins so the shared wildcard predicate can be used.
+        // A specific bulk job id still ignores every other filter, the wildcard included.
+        var bulkJobRows = data is { BulkJobIdSet: false, WildSet: true }
+            ? Context.TblBulkJobs.Where(JobWildcardSearch.BulkJobMatches($"%{data.Wild}%"))
+            : Context.TblBulkJobs;
 
         // Build the base query
-        var query = from j in Context.TblBulkJobs
+        var query = from j in bulkJobRows
             join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
             join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
@@ -2610,47 +2646,6 @@ public partial class JobRepository(
                           && (!data.CourierSet || (j.CourierId.HasValue && data.CourierIds.Contains(j.CourierId.Value)))
                           && (!data.SpeedSet || data.SpeedIds.Contains(j.Speed))
                           && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), $"%{jobSearch}%"))
-                          && (
-                              !data.WildSet
-                              || EF.Functions.Like(
-                                  (j.FromAddress ?? string.Empty)
-                                  + " "
-                                  + (j.Contact ?? string.Empty)
-                                  + " "
-                                  + (j.FromSuburb ?? string.Empty)
-                                  + " "
-                                  + (j.ToAddress ?? string.Empty)
-                                  + " "
-                                  + (j.DeliverToContact ?? string.Empty)
-                                  + " "
-                                  + (j.ToSuburb ?? string.Empty)
-                                  + " "
-                                  + (j.ClientRefa ?? string.Empty)
-                                  + " "
-                                  + (j.ClientRefb ?? string.Empty)
-                                  + " "
-                                  + (j.OurRef ?? string.Empty)
-                                  + " "
-                                  + j.JobNumber.ToLower()
-                                  + " "
-                                  + j.Barcode.ToLower()
-                                  + " "
-                                  + (j.PickupFromContact ?? string.Empty)
-                                  + " "
-                                  + (j.PickupFromPhone ?? string.Empty)
-                                  + " "
-                                  + (j.DeliverToPhone ?? string.Empty)
-                                  + " "
-                                  + (j.ProofOfDeliveryEmail ?? string.Empty)
-                                  + " "
-                                  + (j.ProofOfDeliveryMobile ?? string.Empty)
-                                  + " "
-                                  + (j.TrackingEmail ?? string.Empty)
-                                  + " "
-                                  + (j.TrackingMobile ?? string.Empty),
-                                  wildSearch
-                              )
-                          )
                 )
             orderby j.BookDate, j.BookTime, j.JobId, j.BulkJobId
             select new DispatchJobViewModel
@@ -2836,72 +2831,14 @@ public partial class JobRepository(
 
             if (data is { JobIdSet: false, WildSet: true })
             {
-                liveJobsQuery = liveJobsQuery.Where(j =>
-                    j.TucJobNationwides.Any(nw => EF.Functions.Like(
-                        (nw.UcnwFlightNo ?? string.Empty) + " " +
-                        (nw.AircraftName ?? string.Empty) + " " +
-                        (nw.CarrierFsCode ?? string.Empty) + " " +
-                        (nw.DepartureAirportName ?? string.Empty) + " " +
-                        (nw.ArrivalAirportName ?? string.Empty),
-                        wildSearch))
-                    ||
-                    EF.Functions.Like(
-                        (j.UcjbFromAddr ?? string.Empty) + " " +
-                        (j.PickupFromContact ?? string.Empty) + " " +
-                        (j.UcjbFromNavigation.UcsuName ?? string.Empty) + " " +
-                        (j.UcjbToAddr ?? string.Empty) + " " +
-                        (j.DeliverToContact ?? string.Empty) + " " +
-                        (j.UcjbToNavigation.UcsuName ?? string.Empty) + " " +
-                        (j.UcjbClientRefa ?? string.Empty) + " " +
-                        (j.UcjbClientRefb ?? string.Empty) + " " +
-                        (j.UcjbOurRef ?? string.Empty) + " " +
-                        j.UcjbNumber + " " +
-                        (j.Barcode ?? string.Empty) + " " +
-                        (j.UcjbContact ?? string.Empty) + " " +
-                        (j.CustomJobName ?? string.Empty) + " " +
-                        (j.UcjbPodname ?? string.Empty) + " " +
-                        (j.UcjbContactPhone ?? string.Empty) + " " +
-                        (j.PickupFromPhone ?? string.Empty) + " " +
-                        (j.DeliverToPhone ?? string.Empty) + " " +
-                        (j.ProofOfDeliveryEmail ?? string.Empty) + " " +
-                        (j.ProofOfDeliveryMobile ?? string.Empty) + " " +
-                        (j.TrackingEmail ?? string.Empty) + " " +
-                        (j.TrackingMobile ?? string.Empty),
-                        wildSearch
-                    )
-                    ||
-                    j.UcjbClient.TblClientContacts.Any(cc =>
-                        EF.Functions.Like(
-                            (cc.Contact.UcctFirstname ?? string.Empty) + " " +
-                            (cc.Contact.UcctSurname ?? string.Empty),
-                            wildSearch))
-                );
-
-                archivedJobsQuery = archivedJobsQuery.Where(j =>
-                    EF.Functions.Like(
-                        (j.UcjbFromAddr ?? string.Empty) + " " +
-                        (j.PickUpFromContact ?? string.Empty) + " " +
-                        (j.UcjbToAddr ?? string.Empty) + " " +
-                        (j.DeliverToContact ?? string.Empty) + " " +
-                        (j.UcjbClientRefa ?? string.Empty) + " " +
-                        (j.UcjbClientRefb ?? string.Empty) + " " +
-                        (j.UcjbOurRef ?? string.Empty) + " " +
-                        j.UcjbNumber + " " +
-                        (j.Barcode ?? string.Empty) + " " +
-                        (j.UcjbContact ?? string.Empty) + " " +
-                        (j.CustomJobName ?? string.Empty) + " " +
-                        (j.UcjbPodname ?? string.Empty) + " " +
-                        (j.UcjbContactPhone ?? string.Empty) + " " +
-                        (j.PickUpFromPhone ?? string.Empty) + " " +
-                        (j.DeliverToPhone ?? string.Empty) + " " +
-                        (j.ProofOfDeliveryEmail ?? string.Empty) + " " +
-                        (j.ProofOfDeliveryMobile ?? string.Empty) + " " +
-                        (j.TrackingEmail ?? string.Empty) + " " +
-                        (j.TrackingMobile ?? string.Empty),
-                        wildSearch
-                    )
-                );
+                liveJobsQuery = liveJobsQuery.Where(JobWildcardSearch.LiveJobMatches(wildSearch));
+                archivedJobsQuery = archivedJobsQuery.Where(JobWildcardSearch.ArchivedJobMatches(wildSearch));
             }
+
+            // Archiving runs in legacy SQL outside this codebase, so a job id can exist in TucJobs
+            // and TucJobArchives at once. Drop archived duplicates (live wins) before counting so
+            // the job is neither listed twice nor counted twice in the total.
+            archivedJobsQuery = ExcludeLiveDuplicates(archivedJobsQuery, archivedJobsContext.TucJobs);
 
             // Get counts and data in parallel for better performance
             var liveCountTask = liveJobsQuery
@@ -3087,72 +3024,13 @@ public partial class JobRepository(
         // Apply SAME wildcard search as PodSearchAsync
         if (!jobIdSet && wildSet)
         {
-            liveJobsQuery = liveJobsQuery.Where(j =>
-                j.TucJobNationwides.Any(nw => EF.Functions.Like(
-                    (nw.UcnwFlightNo ?? string.Empty) + " " +
-                    (nw.AircraftName ?? string.Empty) + " " +
-                    (nw.CarrierFsCode ?? string.Empty) + " " +
-                    (nw.DepartureAirportName ?? string.Empty) + " " +
-                    (nw.ArrivalAirportName ?? string.Empty),
-                    wildSearch))
-                ||
-                EF.Functions.Like(
-                    (j.UcjbFromAddr ?? string.Empty) + " " +
-                    (j.PickupFromContact ?? string.Empty) + " " +
-                    (j.UcjbFromNavigation.UcsuName ?? string.Empty) + " " +
-                    (j.UcjbToAddr ?? string.Empty) + " " +
-                    (j.DeliverToContact ?? string.Empty) + " " +
-                    (j.UcjbToNavigation.UcsuName ?? string.Empty) + " " +
-                    (j.UcjbClientRefa ?? string.Empty) + " " +
-                    (j.UcjbClientRefb ?? string.Empty) + " " +
-                    (j.UcjbOurRef ?? string.Empty) + " " +
-                    j.UcjbNumber + " " +
-                    (j.Barcode ?? string.Empty) + " " +
-                    (j.UcjbContact ?? string.Empty) + " " +
-                    (j.CustomJobName ?? string.Empty) + " " +
-                    (j.UcjbPodname ?? string.Empty) + " " +
-                    (j.UcjbContactPhone ?? string.Empty) + " " +
-                    (j.PickupFromPhone ?? string.Empty) + " " +
-                    (j.DeliverToPhone ?? string.Empty) + " " +
-                    (j.ProofOfDeliveryEmail ?? string.Empty) + " " +
-                    (j.ProofOfDeliveryMobile ?? string.Empty) + " " +
-                    (j.TrackingEmail ?? string.Empty) + " " +
-                    (j.TrackingMobile ?? string.Empty),
-                    wildSearch
-                )
-                ||
-                j.UcjbClient.TblClientContacts.Any(cc =>
-                    EF.Functions.Like(
-                        (cc.Contact.UcctFirstname ?? string.Empty) + " " +
-                        (cc.Contact.UcctSurname ?? string.Empty),
-                        wildSearch))
-            );
-
-            archivedJobsQuery = archivedJobsQuery.Where(j =>
-                EF.Functions.Like(
-                    (j.UcjbFromAddr ?? string.Empty) + " " +
-                    (j.PickUpFromContact ?? string.Empty) + " " +
-                    (j.UcjbToAddr ?? string.Empty) + " " +
-                    (j.DeliverToContact ?? string.Empty) + " " +
-                    (j.UcjbClientRefa ?? string.Empty) + " " +
-                    (j.UcjbClientRefb ?? string.Empty) + " " +
-                    (j.UcjbOurRef ?? string.Empty) + " " +
-                    j.UcjbNumber + " " +
-                    (j.Barcode ?? string.Empty) + " " +
-                    (j.UcjbContact ?? string.Empty) + " " +
-                    (j.CustomJobName ?? string.Empty) + " " +
-                    (j.UcjbPodname ?? string.Empty) + " " +
-                    (j.UcjbContactPhone ?? string.Empty) + " " +
-                    (j.PickUpFromPhone ?? string.Empty) + " " +
-                    (j.DeliverToPhone ?? string.Empty) + " " +
-                    (j.ProofOfDeliveryEmail ?? string.Empty) + " " +
-                    (j.ProofOfDeliveryMobile ?? string.Empty) + " " +
-                    (j.TrackingEmail ?? string.Empty) + " " +
-                    (j.TrackingMobile ?? string.Empty),
-                    wildSearch
-                )
-            );
+            liveJobsQuery = liveJobsQuery.Where(JobWildcardSearch.LiveJobMatches(wildSearch));
+            archivedJobsQuery = archivedJobsQuery.Where(JobWildcardSearch.ArchivedJobMatches(wildSearch));
         }
+
+        // Keep the export consistent with PodSearchAsync: a job present in both tables is exported
+        // once, from the live row.
+        archivedJobsQuery = ExcludeLiveDuplicates(archivedJobsQuery, archivedJobsContext.TucJobs);
 
         // Cap each source to prevent unbounded export result sets
         const int maxExportRowsPerSource = 50000;
@@ -3165,9 +3043,11 @@ public partial class JobRepository(
             .TagWith("PodSearchDownload - Live Jobs")
             .ToListAsync();
 
-        var archivedJobsTask = archivedJobsQuery
+        var cappedArchivedJobsQuery = archivedJobsQuery
             .OrderBy(j => j.UcjbNumber)
-            .Take(maxExportRowsPerSource)
+            .Take(maxExportRowsPerSource);
+
+        var archivedJobsTask = cappedArchivedJobsQuery
             .Select(JobMappings.ArchivedJobDownloadMapping)
             .TagWith("PodSearchDownload - Archived Jobs")
             .ToListAsync();
@@ -3175,19 +3055,14 @@ public partial class JobRepository(
         await Task.WhenAll(liveJobsTask, archivedJobsTask);
 
         // Archived jobs have no JobId-keyed item navigation (TucJobArchive.TucJobItemsArchives is
-        // keyed by ChildJobId), so sum tucJobItemsArchive.Cubic by JobId via a correlated subquery.
-        // Live-job cubic is summed inline in LiveJobDownloadMapping via the TucJobItemJobs navigation.
-        var archivedCubicByJobId = await archivedJobsQuery
-            .Take(maxExportRowsPerSource)
-            .Select(j => new
-            {
-                j.UcjbId,
-                Cubic = archivedJobsContext.TucJobItemsArchives
-                    .Where(i => i.JobId == j.UcjbId)
-                    .Sum(i => i.Cubic)
-            })
+        // keyed by ChildJobId), so sum tucJobItemsArchive.Cubic by JobId over the exported archive
+        // rows. Live-job cubic is summed inline in LiveJobDownloadMapping via TucJobItemJobs.
+        var archivedCubicByJobId = await archivedJobsContext.TucJobItemsArchives
+            .Where(i => cappedArchivedJobsQuery.Any(j => j.UcjbId == i.JobId))
+            .GroupBy(i => i.JobId)
+            .Select(g => new { JobId = g.Key, Cubic = g.Sum(i => i.Cubic) })
             .TagWith("PodSearchDownload - Archived Job Cubic")
-            .ToDictionaryAsync(x => x.UcjbId, x => x.Cubic);
+            .ToDictionaryAsync(x => x.JobId, x => x.Cubic);
 
         // Combine and sort by job number
         // Note: No parent/child filtering applied - download returns all jobs matching search criteria
@@ -3199,6 +3074,11 @@ public partial class JobRepository(
 
         // Apply timezone conversion to pickup and delivery times for consistent export
         var tenantTimeZone = _infoService.GetTenantTimeZone();
+
+        // ucjbVoid is the field voiding definitively owns; ucjbStatus can be moved off Void
+        // afterwards (manual status change, bulk status upload, POD), which would otherwise
+        // export a voided job as live revenue. Report the void status name whenever the flag is set.
+        var voidStatusName = await GetVoidStatusNameAsync(liveJobsContext);
         return
         [
             .. allJobs.Select(j => new JobDownloadModel
@@ -3245,7 +3125,7 @@ public partial class JobRepository(
                     : j.DeliveredDate,
                 AgentAirlineName = j.AgentAirlineName,
                 AWB = j.AWB,
-                StatusName = j.StatusName,
+                StatusName = j.Void ? voidStatusName : j.StatusName,
                 InvoiceNumber = j.InvoiceNumber,
                 InvoiceDate = j.InvoiceDate,
                 IsArchived = j.IsArchived,
@@ -3591,6 +3471,29 @@ public partial class JobRepository(
             .OrderBy(s => s.UcjsName)
             .Select(s => new Suggestion { Id = s.UcjsId, Text = s.UcjsName })
             .ToListAsync();
+
+    /// <summary>
+    /// Filters archived jobs down to those with no live row of the same id. Archiving is performed
+    /// by legacy SQL outside this codebase, so nothing guarantees the two tables are exclusive;
+    /// live-precedence matches MergePreferLive in the price-detail report.
+    /// </summary>
+    /// <param name="archivedJobs">Archived-job query to filter.</param>
+    /// <param name="liveJobs">Live-job set from the <em>same</em> context, so the exclusion
+    /// translates to a single NOT EXISTS rather than a client-side round trip.</param>
+    private static IQueryable<TucJobArchive> ExcludeLiveDuplicates(
+        IQueryable<TucJobArchive> archivedJobs,
+        IQueryable<TucJob> liveJobs) =>
+        archivedJobs.Where(a => !liveJobs.Any(live => live.UcjbId == a.UcjbId));
+
+    /// <summary>
+    /// Resolves the display name of the Void status from the lookup table, falling back to the
+    /// enum name if the row is missing so exports never surface a blank status for a voided job.
+    /// </summary>
+    private static async Task<string> GetVoidStatusNameAsync(DespatchContext context) =>
+        await context.TucJobStatuses
+            .Where(s => s.UcjsId == (int)JobStatus.Void)
+            .Select(s => s.UcjsName)
+            .FirstOrDefaultAsync() ?? nameof(JobStatus.Void);
 
     /// <summary>
     /// Retrieves event types for customer service, general events, and partner-task events.
@@ -4766,7 +4669,7 @@ public partial class JobRepository(
                     .SetProperty(j => j.FdcourierId, (int?)null)
                     .SetProperty(j => j.FirstJob, false)
                     .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.NewJobs)
-                    .SetProperty(j => j.UcjbPodname, (string?)null));
+                    .SetProperty(j => j.UcjbPodname, (string)null));
 
             Log.Information(
                 "RestoreJobsCore restored job {JobId} to New/NewJobs (courier cleared, completion/dispatch state reset; POD name cleared so the job re-enters the dispatch view).",
@@ -5473,6 +5376,12 @@ public partial class JobRepository(
                 continue;
             }
 
+            if (match.UcjbVoid)
+            {
+                Log.Warning("Skipping status update for voided job {DId}", d.Id);
+                continue;
+            }
+
             if (statusLookup.TryGetValue(d.StatusName, out var statusId))
             {
                 match.UcjbStatus = statusId;
@@ -5504,9 +5413,13 @@ public partial class JobRepository(
             if (parentJob != null)
             {
                 parentJob.UcjbJobDone = true;
-                parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname = podName;
                 parentJob.UcjbComplTime = completionTime;
+
+                if (!parentJob.UcjbVoid)
+                {
+                    parentJob.UcjbStatus = jobStatus;
+                }
             }
         }
         else
@@ -5519,9 +5432,13 @@ public partial class JobRepository(
             if (parentJob != null)
             {
                 parentJob.UcjbJobDone = true;
-                parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname = podName;
                 parentJob.UcjbComplTime = completionTime;
+
+                if (!parentJob.UcjbVoid)
+                {
+                    parentJob.UcjbStatus = jobStatus;
+                }
             }
         }
     }

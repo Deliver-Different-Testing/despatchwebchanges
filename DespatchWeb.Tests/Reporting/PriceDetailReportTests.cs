@@ -244,7 +244,7 @@ public class PriceDetailReportTests
         Assert.Equal(51.10m, result.Where(l => l.JobId == legA).Sum(l => l.ChargeAmount));
         Assert.Equal(21.90m, result.Where(l => l.JobId == legB).Sum(l => l.ChargeAmount));
         Assert.Equal(
-            new[] {"Base Part A", "Congestion Part A"},
+            ["Base Part A", "Congestion Part A"],
             result.Where(l => l.JobId == legA).Select(l => l.ChargeName).Order());
     }
 
