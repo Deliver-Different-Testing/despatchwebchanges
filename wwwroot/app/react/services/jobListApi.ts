@@ -212,6 +212,26 @@ export interface PartnerRateForJobResponse {
     derivedRevenue?: number | null;
     /** Optional human-readable hint or error explanation. */
     message?: string | null;
+    /**
+     * Whether the partner can carry this route under the mapped service code.
+     * null = IM couldn't find out (partner unreachable). Only warn on an explicit false —
+     * a peer outage must not read as "the lane is closed".
+     */
+    serviceAvailable?: boolean | null;
+    /** Why serviceAvailable is false. */
+    serviceabilityMessage?: string | null;
+    /** What the partner CAN carry on this route. */
+    alternatives?: PartnerServiceabilityAlternative[];
+}
+
+export interface PartnerServiceabilityAlternative {
+    /** Local speed id, where the operator can switch the job to this service. */
+    jobTypeId: number | null;
+    partnerServiceCode: string;
+    serviceName: string;
+    totalCharge: number | null;
+    currency: string | null;
+    transitDays: number | null;
 }
 
 export async function getPartnerRateForJob(pairingId: number, jobId: number): Promise<PartnerRateForJobResponse> {

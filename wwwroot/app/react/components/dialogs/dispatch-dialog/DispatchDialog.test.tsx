@@ -576,4 +576,39 @@ describe('DispatchDialog', () => {
             });
         });
     });
+    describe('unserviceable partner lane', () => {
+        const unserviceableRate = {
+            rateCardRate: 85.00,
+            liveQuotes: [],
+            source: 'rate_card' as const,
+            serviceAvailable: false,
+            serviceabilityMessage: "Partner reports service 'STD' is not available on this route.",
+            alternatives: [
+                {jobTypeId: 11, partnerServiceCode: 'OVERNIGHT', serviceName: 'Overnight', totalCharge: 24.50, currency: 'NZD', transitDays: 1},
+            ],
+        };
+
+        async function openPartnerTabWith(rate: unknown) {
+            renderWithTheme(<DispatchDialog {...makeProps({fetchRate: jest.fn().mockResolvedValue(rate)})} />);
+            fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
+            // The Partner Select stays disabled until getPartnerOptions resolves.
+            const select = await screen.findByRole('combobox', {name: 'Partner'});
+            await waitFor(() => expect(select).not.toHaveAttribute('aria-disabled', 'true'));
+            fireEvent.mouseDown(select);
+            fireEvent.click(await screen.findByRole('option', {name: 'PartnerCo'}));
+        }
+
+        it('reframes the confirm button as "Send anyway" when the partner cannot carry the route', async () => {
+            await openPartnerTabWith(unserviceableRate);
+
+            expect(await screen.findByRole('button', {name: /Send anyway/})).toBeInTheDocument();
+        });
+
+        it('keeps the normal label when the route is fine', async () => {
+            await openPartnerTabWith({...unserviceableRate, serviceAvailable: true, alternatives: []});
+
+            expect(await screen.findByRole('button', {name: /Send to Partner/})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Send anyway/})).not.toBeInTheDocument();
+        });
+    });
 });

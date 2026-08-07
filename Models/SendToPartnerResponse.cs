@@ -31,6 +31,19 @@ public sealed class PartnerRateForJobResponse
 
     /// <summary>Optional hint or error explanation from IM.</summary>
     public string? Message { get; init; }
+
+    /// <summary>
+    /// Whether the partner can actually carry this route under the mapped service code.
+    /// Null means IM couldn't find out (partner unreachable) — the dialog must not warn on null,
+    /// only on an explicit false.
+    /// </summary>
+    public bool? ServiceAvailable { get; init; }
+
+    /// <summary>Why <see cref="ServiceAvailable"/> is false.</summary>
+    public string? ServiceabilityMessage { get; init; }
+
+    /// <summary>Services the partner CAN carry on this route.</summary>
+    public List<PartnerServiceabilityAlternativeResponse> Alternatives { get; init; } = [];
 }
 
 public sealed class PartnerRateQuoteResponse
@@ -61,4 +74,18 @@ public sealed class PartnerInboundJobActionResponse
     public bool Success { get; init; }
     public string? ErrorMessage { get; init; }
     public PartnerInboundJobAcceptanceStateResponse? NewState { get; init; }
+}
+
+/// <summary>
+/// A service the partner reports as available on the route, when the one we asked for is not.
+/// JobTypeId is populated where a local speed maps onto it, so the operator can act on it.
+/// </summary>
+public sealed class PartnerServiceabilityAlternativeResponse
+{
+    public int? JobTypeId { get; init; }
+    public string PartnerServiceCode { get; init; } = string.Empty;
+    public string ServiceName { get; init; } = string.Empty;
+    public decimal? TotalCharge { get; init; }
+    public string? Currency { get; init; }
+    public int? TransitDays { get; init; }
 }

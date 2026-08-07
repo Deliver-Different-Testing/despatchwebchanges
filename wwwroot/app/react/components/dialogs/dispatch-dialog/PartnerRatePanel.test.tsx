@@ -172,4 +172,58 @@ describe('PartnerRatePanel', () => {
 
         expect(await screen.findByText(/No pre-agreed rate/)).toBeInTheDocument();
     });
+    describe('lane serviceability', () => {
+        const unserviceable: PartnerRateForJobResponse = {
+            rateCardRate: null,
+            liveQuotes: [],
+            source: 'percentage',
+            percentageOfClientCharge: 60,
+            derivedRate: 60.00,
+            serviceAvailable: false,
+            serviceabilityMessage: "Partner reports service 'STD' is not available on this route.",
+            alternatives: [
+                {jobTypeId: 11, partnerServiceCode: 'OVERNIGHT', serviceName: 'Overnight', totalCharge: 24.50, currency: 'NZD', transitDays: 1},
+                {jobTypeId: 12, partnerServiceCode: 'ECONOMY', serviceName: 'Economy', totalCharge: 18.00, currency: 'NZD', transitDays: 2},
+            ],
+        };
+
+        it('warns and lists what the partner can carry when the lane is unserviceable', async () => {
+            renderPanel({fetchRate: jest.fn().mockResolvedValue(unserviceable)});
+
+            expect(await screen.findByText(/not available on this route/i)).toBeInTheDocument();
+            expect(screen.getByText(/OVERNIGHT/)).toBeInTheDocument();
+            expect(screen.getByText(/ECONOMY/)).toBeInTheDocument();
+        });
+
+        it('still shows the derived pricing alongside the warning', async () => {
+            renderPanel({fetchRate: jest.fn().mockResolvedValue(unserviceable)});
+
+            await screen.findByText(/not available on this route/i);
+            expect(screen.getByDisplayValue('60.00')).toBeInTheDocument();
+        });
+
+        it('says nothing when the partner could not be asked', async () => {
+            renderPanel({
+                fetchRate: jest.fn().mockResolvedValue({
+                    ...unserviceable,
+                    serviceAvailable: null,
+                    serviceabilityMessage: 'Partner API error: ServiceUnavailable',
+                    alternatives: [],
+                }),
+            });
+
+            await screen.findByDisplayValue('60.00');
+            // null is "we don't know" — warning it would train operators to ignore a real one.
+            expect(screen.queryByText(/not available on this route/i)).not.toBeInTheDocument();
+        });
+
+        it('says nothing when the lane is serviceable', async () => {
+            renderPanel({
+                fetchRate: jest.fn().mockResolvedValue({...unserviceable, serviceAvailable: true, alternatives: []}),
+            });
+
+            await screen.findByDisplayValue('60.00');
+            expect(screen.queryByText(/not available on this route/i)).not.toBeInTheDocument();
+        });
+    });
 });

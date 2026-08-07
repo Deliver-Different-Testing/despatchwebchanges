@@ -25,8 +25,8 @@ public partial class JobRepository
 
         var fromDateOnly = request.FromDate.Date;
         var toDateOnly = request.ToDate.Date;
-        var wild = request.Wild ?? "";
-        var jobText = request.Job ?? "";
+        var wild = request.Wild ?? string.Empty;
+        var jobText = request.Job ?? string.Empty;
         var jobSearch = $"%{jobText.Trim()}%";
         var wildSearch = $"%{wild}%";
 
@@ -102,9 +102,10 @@ public partial class JobRepository
                 JobId = j.UcjbId,
                 JobNo = j.UcjbNumber,
                 ClientId = j.UcjbClientId,
-                ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : "",
-                Reference = j.UcjbClientRefa ?? "",
-                Service = j.UcjbSpeedNavigation != null ? (j.UcjbSpeedNavigation.ShortName ?? "") : "",
+                ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
+                Reference = j.UcjbClientRefa ?? string.Empty,
+                Service =
+                    j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName ?? string.Empty : string.Empty,
                 HeaderAmount = j.UcjbAmount,
                 HeaderFuel = j.FuelSurchargeAmount,
                 Void = j.UcjbVoid,
@@ -121,10 +122,14 @@ public partial class JobRepository
                 DeliveryArrivalUtc = j.DeliveryArrivalTime,
                 PickupTimeUtc = j.PickUpTime,
                 CompletionUtc = j.UcjbComplTime,
-                PickupAddress = ((j.PickupAddressLine3 ?? "") + " " + (j.PickupAddressLine4 ?? "") + ", " +
-                                 (j.PickupAddressLine5 ?? "") + ", " + (j.PickupAddressLine6 ?? "")).Trim(),
-                DeliveryAddress = ((j.DeliveryAddressLine3 ?? "") + " " + (j.DeliveryAddressLine4 ?? "") + ", " +
-                                   (j.DeliveryAddressLine5 ?? "") + ", " + (j.DeliveryAddressLine6 ?? "")).Trim()
+                PickupAddress = ((j.PickupAddressLine3 ?? string.Empty) + " " + (j.PickupAddressLine4 ?? string.Empty) +
+                                 ", " +
+                                 (j.PickupAddressLine5 ?? string.Empty) + ", " + (j.PickupAddressLine6 ?? string.Empty))
+                    .Trim(),
+                DeliveryAddress = ((j.DeliveryAddressLine3 ?? string.Empty) + " " +
+                                   (j.DeliveryAddressLine4 ?? string.Empty) + ", " +
+                                   (j.DeliveryAddressLine5 ?? string.Empty) + ", " +
+                                   (j.DeliveryAddressLine6 ?? string.Empty)).Trim()
             })
             .TagWith("PriceDetail - Live Headers").ToListAsync(ct));
 
@@ -134,7 +139,7 @@ public partial class JobRepository
             .Select(j => new
             {
                 j.UcjbId, j.UcjbNumber, j.UcjbClientId, j.UcjbSpeed,
-                Reference = j.UcjbClientRefa ?? "",
+                Reference = j.UcjbClientRefa ?? string.Empty,
                 HeaderAmount = j.UcjbAmount,
                 HeaderFuel = j.FuelSurchargeAmount,
                 Void = j.UcjbVoid,
@@ -153,12 +158,12 @@ public partial class JobRepository
             .Where(c => chunk.Contains(c.UcclId))
             .Select(c => new { c.UcclId, c.UcclName })
             .ToListAsync(ct));
-        var clientNameMap = clientNames.ToDictionary(c => c.UcclId, c => c.UcclName ?? "");
+        var clientNameMap = clientNames.ToDictionary(c => c.UcclId, c => c.UcclName ?? string.Empty);
         var speedNames = await InIdChunksAsync(speedIdsForLookup, chunk => hdrCtx.TucJobTypes
             .Where(s => chunk.Contains(s.UcjtId))
             .Select(s => new { s.UcjtId, s.ShortName })
             .ToListAsync(ct));
-        var speedNameMap = speedNames.ToDictionary(s => s.UcjtId, s => s.ShortName ?? "");
+        var speedNameMap = speedNames.ToDictionary(s => s.UcjtId, s => s.ShortName ?? string.Empty);
 
         var archiveHeaders = archiveHeadersRaw.Select(j => new PriceDetailHeaderRow
         {
@@ -167,9 +172,11 @@ public partial class JobRepository
             ClientId = j.UcjbClientId,
             ClientName = j.UcjbClientId.HasValue && clientNameMap.TryGetValue(j.UcjbClientId.Value, out var cn)
                 ? cn
-                : "",
+                : string.Empty,
             Reference = j.Reference,
-            Service = j.UcjbSpeed.HasValue && speedNameMap.TryGetValue(j.UcjbSpeed.Value, out var sn) ? sn : "",
+            Service = j.UcjbSpeed.HasValue && speedNameMap.TryGetValue(j.UcjbSpeed.Value, out var sn)
+                ? sn
+                : string.Empty,
             HeaderAmount = j.HeaderAmount,
             HeaderFuel = j.HeaderFuel,
             Void = j.Void,
@@ -186,10 +193,14 @@ public partial class JobRepository
             DeliveryArrivalUtc = j.DeliveryArrivalTime,
             PickupTimeUtc = j.PickUpTime,
             CompletionUtc = j.UcjbComplTime,
-            PickupAddress = ((j.PickupAddressLine3 ?? "") + " " + (j.PickupAddressLine4 ?? "") + ", " +
-                             (j.PickupAddressLine5 ?? "") + ", " + (j.PickupAddressLine6 ?? "")).Trim(),
-            DeliveryAddress = ((j.DeliveryAddressLine3 ?? "") + " " + (j.DeliveryAddressLine4 ?? "") + ", " +
-                               (j.DeliveryAddressLine5 ?? "") + ", " + (j.DeliveryAddressLine6 ?? "")).Trim()
+            PickupAddress = ((j.PickupAddressLine3 ?? string.Empty) + " " + (j.PickupAddressLine4 ?? string.Empty) +
+                             ", " +
+                             (j.PickupAddressLine5 ?? string.Empty) + ", " + (j.PickupAddressLine6 ?? string.Empty))
+                .Trim(),
+            DeliveryAddress = ((j.DeliveryAddressLine3 ?? string.Empty) + " " +
+                               (j.DeliveryAddressLine4 ?? string.Empty) + ", " +
+                               (j.DeliveryAddressLine5 ?? string.Empty) + ", " +
+                               (j.DeliveryAddressLine6 ?? string.Empty)).Trim()
         }).ToList();
 
         // ---- Dims from tucJobItems / tucJobItemsArchive -------------------------------------
@@ -326,39 +337,42 @@ public partial class JobRepository
         var childrenNeedingParent = headers
             .Where(h => !jobsWithLines.Contains(h.JobId) && h.BookingParentId is not null)
             .ToList();
-        if (childrenNeedingParent.Count > 0)
-        {
-            var parentIds = childrenNeedingParent.Select(h => h.BookingParentId!.Value).Distinct().ToList();
-            var parentLiveLines = await InIdChunksAsync(parentIds, chunk => pbCtx.PricingBreakdowns
-                .Where(p => p.JobId != null && chunk.Contains(p.JobId.Value))
-                .Select(p => new PriceDetailLineRow
-                {
-                    JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? string.Empty, ChargeAmount = p.ChargeAmount,
-                    CourierPay = p.CostAmount
-                })
-                .TagWith("PriceDetail - Split-child Parent Lines (Live)").ToListAsync(ct));
-            var parentArchiveLines = await InIdChunksAsync(parentIds, chunk => pbCtx.PricingBreakdownArchives
-                .Where(p => p.JobId != null && chunk.Contains(p.JobId.Value))
-                .Select(p => new PriceDetailLineRow
-                {
-                    JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? string.Empty, ChargeAmount = p.ChargeAmount,
-                    CourierPay = p.CostAmount
-                })
-                .TagWith("PriceDetail - Split-child Parent Lines (Archive)").ToListAsync(ct));
-            var parentLinesByJob = parentLiveLines.Concat(parentArchiveLines)
-                .GroupBy(pl => pl.JobId).ToDictionary(g => g.Key, g => g.ToList());
 
-            foreach (var child in childrenNeedingParent)
+        if (childrenNeedingParent.Count <= 0)
+        {
+            return new PriceDetailReportRaw { Headers = headers, CurrentLines = lines, History = history };
+        }
+
+        var parentIds = childrenNeedingParent.Select(h => h.BookingParentId!.Value).Distinct().ToList();
+        var parentLiveLines = await InIdChunksAsync(parentIds, chunk => pbCtx.PricingBreakdowns
+            .Where(p => p.JobId != null && chunk.Contains(p.JobId.Value))
+            .Select(p => new PriceDetailLineRow
             {
-                if (!parentLinesByJob.TryGetValue(child.BookingParentId!.Value, out var pls)) continue;
-                lines.AddRange(pls.Select(pl => new PriceDetailLineRow
-                {
-                    JobId = child.JobId,
-                    ChargeName = pl.ChargeName,
-                    ChargeAmount = pl.ChargeAmount,
-                    CourierPay = pl.CourierPay
-                }));
-            }
+                JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? string.Empty, ChargeAmount = p.ChargeAmount,
+                CourierPay = p.CostAmount
+            })
+            .TagWith("PriceDetail - Split-child Parent Lines (Live)").ToListAsync(ct));
+        var parentArchiveLines = await InIdChunksAsync(parentIds, chunk => pbCtx.PricingBreakdownArchives
+            .Where(p => p.JobId != null && chunk.Contains(p.JobId.Value))
+            .Select(p => new PriceDetailLineRow
+            {
+                JobId = p.JobId!.Value, ChargeName = p.ChargeName ?? string.Empty, ChargeAmount = p.ChargeAmount,
+                CourierPay = p.CostAmount
+            })
+            .TagWith("PriceDetail - Split-child Parent Lines (Archive)").ToListAsync(ct));
+        var parentLinesByJob = parentLiveLines.Concat(parentArchiveLines)
+            .GroupBy(pl => pl.JobId).ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var child in childrenNeedingParent)
+        {
+            if (!parentLinesByJob.TryGetValue(child.BookingParentId!.Value, out var pls)) continue;
+            lines.AddRange(pls.Select(pl => new PriceDetailLineRow
+            {
+                JobId = child.JobId,
+                ChargeName = pl.ChargeName,
+                ChargeAmount = pl.ChargeAmount,
+                CourierPay = pl.CourierPay
+            }));
         }
 
         return new PriceDetailReportRaw { Headers = headers, CurrentLines = lines, History = history };
@@ -407,7 +421,7 @@ public partial class JobRepository
     // "3 HU, 20x30x40, 100 lb" per item. Zero-dim items still render (weight is meaningful alone).
     private static string FormatDim(int hu, double? l, double? d, double? h, double w)
     {
-        var lwh = (l.HasValue && d.HasValue && h.HasValue && (l > 0 || d > 0 || h > 0))
+        var lwh = l.HasValue && d.HasValue && h.HasValue && (l > 0 || d > 0 || h > 0)
             ? $", {l:0.##}x{d:0.##}x{h:0.##}"
             : string.Empty;
         return $"{hu} HU{lwh}, {w:0.##} lb";

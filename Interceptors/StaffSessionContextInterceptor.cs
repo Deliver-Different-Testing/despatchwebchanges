@@ -18,8 +18,8 @@ namespace DespatchWeb.Interceptors;
 /// </summary>
 public class StaffSessionContextInterceptor(IHttpContextAccessor contextAccessor) : DbConnectionInterceptor
 {
-    internal const string StaffIdClaimType = "StaffID";
-    internal const string SessionContextKey = "StaffID";
+    private const string StaffIdClaimType = "StaffID";
+    private const string SessionContextKey = "StaffID";
 
     public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
     {
