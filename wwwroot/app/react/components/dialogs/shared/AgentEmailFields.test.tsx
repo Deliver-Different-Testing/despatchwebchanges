@@ -51,6 +51,9 @@ describe('AgentEmailFields', () => {
         await waitFor(() =>
             expect(lastReport(onChange)).toEqual({willEmail: true, subject: DEFAULT_SUBJECT, body: DEFAULT_BODY}),
         );
+        // The parent feeds this straight into the assign call, so it must never see the
+        // pre-seed empty template — not even transiently.
+        expect(onChange).not.toHaveBeenCalledWith({willEmail: true, subject: '', body: ''});
     });
 
     it('reports the edited body up through onChange', async () => {

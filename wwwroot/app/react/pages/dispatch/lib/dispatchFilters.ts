@@ -40,7 +40,7 @@ function readIntervalSeconds(key: string): number {
     }
 }
 
-function hasStoredInterval(key: string): boolean {
+function hasStoredKey(key: string): boolean {
     try {
         return localStorage.getItem(key) != null;
     } catch {
@@ -62,7 +62,7 @@ function hasStoredInterval(key: string): boolean {
 export function loadRefreshIntervals(): DispatchRefreshIntervals {
     const jobs = readIntervalSeconds(REFRESH_INTERVAL_KEY);
     const driver = readIntervalSeconds(DRIVER_LOCATION_REFRESH_KEY);
-    const tasks = hasStoredInterval(TASK_REFRESH_KEY)
+    const tasks = hasStoredKey(TASK_REFRESH_KEY)
         ? readIntervalSeconds(TASK_REFRESH_KEY)
         : jobs;
     return {
@@ -105,6 +105,42 @@ export function loadSelectedViews(): DfrntPageViewModel[] {
     } catch {
         return [];
     }
+}
+
+/** True once the dispatcher has made (or explicitly cleared) a view selection. */
+export function hasStoredViewSelection(): boolean {
+    return hasStoredKey(SELECTED_VIEWS_KEY);
+}
+
+/**
+ * Write the dispatcher's selected views. Stores the full objects (not just ids)
+ * because the map reads their centre coordinates back via `loadSelectedViews`.
+ * An empty array is written as `[]` rather than removing the key — a present but
+ * empty selection is what makes "cleared" stick across reloads.
+ */
+export function persistSelectedViews(views: DfrntPageViewModel[]): void {
+    try {
+        localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify(views));
+    } catch { /* private browsing — ignore */ }
+}
+
+/**
+ * Resolve which views start selected, mirroring home.controller's
+ * `initializeViews`. Selection is rebuilt from the fresh server list so stored
+ * ids the server no longer returns fall away, and the first view is only
+ * auto-selected on a genuine first visit — an explicitly cleared selection
+ * (`hasStoredState`) stays cleared.
+ */
+export function resolveInitialViewSelection(
+    serverViews: DfrntPageViewModel[],
+    storedIds: number[],
+    hasStoredState: boolean,
+): number[] {
+    if (serverViews.length === 0) return [];
+    const stored = new Set(storedIds);
+    const selected = serverViews.filter(v => stored.has(v.id)).map(v => v.id);
+    if (selected.length === 0 && !hasStoredState) return [serverViews[0].id];
+    return selected;
 }
 
 /**

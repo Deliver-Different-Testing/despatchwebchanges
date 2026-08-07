@@ -118,6 +118,31 @@ describe('SideNav', () => {
             expect(onNavigate).toHaveBeenCalledWith('taskDashboard');
         });
 
+        it('navigates straight to the V2 dispatch and job search pages', () => {
+            const onNavigate = jest.fn();
+            renderWithTheme(<SideNav {...defaultProps} onNavigate={onNavigate} />);
+
+            fireEvent.click(screen.getByText('Dashboard'));
+            expect(onNavigate).toHaveBeenLastCalledWith('dispatchV2');
+
+            fireEvent.click(screen.getByText('Job Search'));
+            expect(onNavigate).toHaveBeenLastCalledWith('jobSearchV2');
+        });
+
+        it('falls back to the classic pages for operators who opted out of V2', () => {
+            localStorage.setItem('dispatchBetaEnabled-0', 'false');
+            localStorage.setItem('jobSearchBetaEnabled-0', 'false');
+            const onNavigate = jest.fn();
+            renderWithTheme(<SideNav {...defaultProps} onNavigate={onNavigate} />);
+
+            fireEvent.click(screen.getByText('Dashboard'));
+            expect(onNavigate).toHaveBeenLastCalledWith('home');
+
+            fireEvent.click(screen.getByText('Job Search'));
+            expect(onNavigate).toHaveBeenLastCalledWith('jobSearch');
+            localStorage.clear();
+        });
+
         it('should call onClose when item is clicked', () => {
             const onClose = jest.fn();
             renderWithTheme(<SideNav {...defaultProps} onClose={onClose} />);

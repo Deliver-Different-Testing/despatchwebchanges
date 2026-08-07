@@ -177,6 +177,7 @@ export const queryKeys = {
         clearListEnvelope: (clearListId: number) => ['dispatch', 'clearListEnvelope', clearListId] as const,
         currentWork: (params: JobListSearchParams) => ['dispatch', 'currentWork', params] as const,
         currentWorkMap: (params: JobListSearchParams) => ['dispatch', 'currentWorkMap', params] as const,
+        pageViews: (pageId: number) => ['dispatch', 'pageViews', pageId] as const,
         driverOverview: ['dispatch', 'driverOverview'] as const,
         driverLocations: (viewIds: number[], startDate?: string, endDate?: string) =>
             ['dispatch', 'driverLocations', viewIds, startDate, endDate] as const,
