@@ -2,7 +2,7 @@
  * Agent inbound-email pre-flight + editable template.
  *
  * Shown before assigning an agent: an info/warning alert saying whether the inbound-agent
- * link will be emailed, and — when it will — editable Subject/Message fields seeded once from
+ * link will be emailed, and — when it will — editable Subject/Message fields that fall back to
  * the hardcoded server defaults. Edits are reported to the parent via `onChange`, which passes
  * them to the assign call so the dispatcher can tailor the email per-send.
  *
@@ -11,7 +11,7 @@
  * reseeds from that agent/job's defaults.
  */
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -43,20 +43,17 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
         staleTime: 30_000,
     });
 
-    const [subject, setSubject] = useState('');
-    const [body, setBody] = useState('');
-    const seededRef = useRef(false);
+    // Only the operator's edits are held in state; the server defaults are applied during
+    // render so the very first commit that shows the fields already carries them. Seeding
+    // in an effect instead would leave a commit where the template is still empty, which
+    // the parent would report upward (and could assign with).
+    const [subjectEdit, setSubjectEdit] = useState<string | null>(null);
+    const [bodyEdit, setBodyEdit] = useState<string | null>(null);
 
     const willEmail = data?.willEmail ?? false;
-
-    // Seed the editable template from the server defaults once, when they arrive.
-    useEffect(() => {
-        if (!seededRef.current && data?.defaultBody !== undefined) {
-            setSubject(data.defaultSubject ?? '');
-            setBody(data.defaultBody ?? '');
-            seededRef.current = true;
-        }
-    }, [data]);
+    // `??` not `||` — clearing a field must stay cleared rather than snap back to the default.
+    const subject = subjectEdit ?? data?.defaultSubject ?? '';
+    const body = bodyEdit ?? data?.defaultBody ?? '';
 
     // Report the current state upward whenever it changes so the parent can pass the edits
     // (or the default seed) into the assign call.
@@ -94,7 +91,7 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
                             size="small"
                             label="Subject"
                             value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
+                            onChange={(e) => setSubjectEdit(e.target.value)}
                             sx={dialogFieldSx}
                         />
                         <TextField
@@ -103,7 +100,7 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
                             minRows={8}
                             label="Message"
                             value={body}
-                            onChange={(e) => setBody(e.target.value)}
+                            onChange={(e) => setBodyEdit(e.target.value)}
                             helperText="Tokens like [AgentName], [JobNumber] and [InboundUrl] are replaced with the job’s details when the email is sent."
                             sx={dialogFieldSx}
                         />

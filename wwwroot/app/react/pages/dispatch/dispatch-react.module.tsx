@@ -18,6 +18,7 @@ import {ReactQueryProvider} from '../../query';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {DispatchPage, DispatchPageProps, DispatchLayoutBridge} from './DispatchPage';
 import type {DispatchFilters, DispatchRefreshIntervals} from './lib/dispatchFilters';
+import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import type {ImportLayoutsResult} from '../job-search/lib/layoutPersistence';
 
 export interface MountDispatchPageConfig extends DispatchPageProps {}
@@ -29,6 +30,11 @@ let layoutBridge: DispatchLayoutBridge | null = null;
 // (e.g. the route controller resolves page views right after mount). Held here
 // and flushed once the bridge registers, so the initial selection isn't lost.
 let pendingFilters: Partial<DispatchFilters> | null = null;
+// The host toolbar registers its Views-menu listener as soon as its controller
+// runs, which can be before the React bridge exists. Held here and attached on
+// bridge-ready, mirroring `pendingFilters`.
+let pendingViewsListener: ((views: DfrntPageViewModel[]) => void) | null = null;
+let unregisterViewsListener: (() => void) | null = null;
 
 export function mountDispatchPage(
     containerId: string,
@@ -72,6 +78,9 @@ export function mountDispatchPage(
                                 bridge.updateFilters(pendingFilters);
                                 pendingFilters = null;
                             }
+                            if (pendingViewsListener) {
+                                unregisterViewsListener = bridge.registerViewsListener(pendingViewsListener);
+                            }
                             config.onLayoutBridgeReady?.(bridge);
                         }}
                     />
@@ -92,6 +101,8 @@ export function unmountDispatchPage(): void {
     dispatchContainer = null;
     layoutBridge = null;
     pendingFilters = null;
+    pendingViewsListener = null;
+    unregisterViewsListener = null;
 }
 
 export function setCurrentLayoutName(name: string): void {
@@ -121,6 +132,27 @@ export function updateFilters(filters: Partial<DispatchFilters>): void {
         // Bridge not mounted yet — remember the latest and flush on ready.
         pendingFilters = {...pendingFilters, ...filters};
     }
+}
+
+/**
+ * Subscribe the host toolbar's Views menu to the page's view list + selection.
+ * Only one listener is supported (there is a single toolbar).
+ */
+export function registerViewsListener(listener: (views: DfrntPageViewModel[]) => void): () => void {
+    if (layoutBridge) {
+        unregisterViewsListener = layoutBridge.registerViewsListener(listener);
+    } else {
+        pendingViewsListener = listener;
+    }
+    return () => {
+        if (pendingViewsListener === listener) pendingViewsListener = null;
+        unregisterViewsListener?.();
+        unregisterViewsListener = null;
+    };
+}
+
+export function setViewSelection(viewIds: number[]): void {
+    layoutBridge?.setViewSelection(viewIds);
 }
 
 export function updateRefreshIntervals(intervals: Partial<DispatchRefreshIntervals>): void {
@@ -155,6 +187,8 @@ declare global {
             promptDeleteLayout: typeof promptDeleteLayout;
             promptRenameLayout: typeof promptRenameLayout;
             updateFilters: typeof updateFilters;
+            registerViewsListener: typeof registerViewsListener;
+            setViewSelection: typeof setViewSelection;
             updateRefreshIntervals: typeof updateRefreshIntervals;
             setEditMode: typeof setEditMode;
             openInterCourierCharge: typeof openInterCourierCharge;
@@ -173,6 +207,8 @@ window.ReactDispatch = {
     promptDeleteLayout,
     promptRenameLayout,
     updateFilters,
+    registerViewsListener,
+    setViewSelection,
     updateRefreshIntervals,
     setEditMode,
     openInterCourierCharge,

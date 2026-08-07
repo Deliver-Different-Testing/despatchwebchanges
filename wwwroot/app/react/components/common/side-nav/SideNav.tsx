@@ -29,6 +29,8 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import dayjs from 'dayjs';
 import {accentPalette, shellColors, urgentPrimaryPalette} from '../../../theme/muiTheme';
+import {getDispatchBetaEnabled} from '../../../pages/dispatch/lib/betaPreference';
+import {getJobSearchBetaEnabled} from '../../../pages/job-search/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
 
 const drawerWidth = 264;
@@ -99,8 +101,10 @@ export const SideNav: React.FC<SideNavProps> = ({
                 id: 'dashboard',
                 label: 'Dashboard',
                 icon: <DashboardIcon />,
-                state: 'home',
-                matchStates: ['dispatchV2'],
+                // Link straight at the React page so the nav skips the classic
+                // route's redirect hop; operators who opted out still get V1.
+                state: getDispatchBetaEnabled() ? 'dispatchV2' : 'home',
+                matchStates: ['home', 'dispatchV2'],
             },
             {
                 id: 'shipping',
@@ -124,8 +128,8 @@ export const SideNav: React.FC<SideNavProps> = ({
                 id: 'jobSearch',
                 label: 'Job Search',
                 icon: <SearchIcon />,
-                state: 'jobSearch',
-                matchStates: ['jobSearchV2'],
+                state: getJobSearchBetaEnabled() ? 'jobSearchV2' : 'jobSearch',
+                matchStates: ['jobSearch', 'jobSearchV2'],
             },
             {
                 id: 'recurringJobs',

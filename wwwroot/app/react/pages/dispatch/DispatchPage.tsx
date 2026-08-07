@@ -46,11 +46,18 @@ import {executeAddStopFlow} from './lib/addStopFlow';
 import {
     DispatchFilters,
     loadDispatchFilters,
+    loadSelectedViewIds,
     loadSelectedViews,
+    hasStoredViewSelection,
+    persistSelectedViews,
+    resolveInitialViewSelection,
     filtersKey,
     DispatchRefreshIntervals,
     loadRefreshIntervals,
 } from './lib/dispatchFilters';
+import {useDispatchViews} from './hooks/useDispatchViews';
+import {ViewsRail} from './components/ViewsRail';
+import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import {CurrentWorkBox} from './components/CurrentWorkBox';
 import {SupportsBox} from './components/SupportsBox';
 import {DriverLocationsBox} from './components/DriverLocationsBox';
@@ -68,6 +75,14 @@ export interface DispatchLayoutBridge {
     promptRenameLayout: (layoutName: string) => Promise<string | null>;
     /** Push new toolbar filters (selected views + date range) into the page. */
     updateFilters: (filters: Partial<DispatchFilters>) => void;
+    /**
+     * Subscribe the host's Views menu to the page's view list + selection.
+     * Fires immediately with the current state and on every change; returns an
+     * unsubscribe function.
+     */
+    registerViewsListener: (listener: (views: DfrntPageViewModel[]) => void) => () => void;
+    /** Replace the selected views (the host toolbar's Views menu). */
+    setViewSelection: (viewIds: number[]) => void;
     /** Push new auto-refresh intervals (from the settings dialog) into the page. */
     updateRefreshIntervals: (intervals: Partial<DispatchRefreshIntervals>) => void;
     /** Set layout edit mode (driven by the toolbar's Layouts → Edit layout toggle). */
@@ -188,6 +203,73 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     const [filters, setFilters] = useState<DispatchFilters>(() => loadDispatchFilters());
     const applyFilters = useCallback((next: Partial<DispatchFilters>) => {
         setFilters(prev => ({...prev, ...next}));
+    }, []);
+
+    // ── Page views (the job list's scope) ──────────────────────────────
+    // The definitions come from the server; the selection lives in `filters`
+    // and is mirrored to localStorage so V1 and the host toolbar see it too.
+    const {data: pageViews, isLoading: viewsLoading} = useDispatchViews(LegacyAppPage.Dispatch);
+    const viewsRef = useRef<DfrntPageViewModel[]>([]);
+    viewsRef.current = pageViews ?? [];
+    const selectedViewIdsRef = useRef(filters.despatchViewIds);
+    selectedViewIdsRef.current = filters.despatchViewIds;
+
+    const applyViewSelection = useCallback((ids: number[]) => {
+        // Normalise to server order so the persisted selection is stable
+        // regardless of the order the dispatcher clicked the pills in.
+        const selected = viewsRef.current.filter(v => ids.includes(v.id));
+        persistSelectedViews(selected.map(v => ({...v, selected: true})));
+        setFilters(prev => (
+            prev.despatchViewIds.join(',') === selected.map(v => v.id).join(',')
+                ? prev
+                : {...prev, despatchViewIds: selected.map(v => v.id)}
+        ));
+    }, []);
+
+    const toggleView = useCallback((viewId: number) => {
+        const current = selectedViewIdsRef.current;
+        applyViewSelection(
+            current.includes(viewId) ? current.filter(id => id !== viewId) : [...current, viewId],
+        );
+    }, [applyViewSelection]);
+
+    const clearViews = useCallback(() => applyViewSelection([]), [applyViewSelection]);
+
+    // Resolve the starting selection once the server list lands: restore what
+    // was stored, drop views that no longer exist, and only fall back to the
+    // first view on a genuine first visit (V1 `initializeViews`).
+    const viewsSeededRef = useRef(false);
+    useEffect(() => {
+        if (viewsSeededRef.current || !pageViews || pageViews.length === 0) return;
+        viewsSeededRef.current = true;
+        applyViewSelection(
+            resolveInitialViewSelection(pageViews, loadSelectedViewIds(), hasStoredViewSelection()),
+        );
+    }, [pageViews, applyViewSelection]);
+
+    // The host toolbar's Views menu mirrors this selection; it registers a
+    // listener and pushes its own changes back through `setViewSelection`.
+    const decoratedViews = useMemo<DfrntPageViewModel[]>(
+        () => (pageViews ?? []).map(v => ({...v, selected: filters.despatchViewIds.includes(v.id)})),
+        [pageViews, filters.despatchViewIds],
+    );
+    const decoratedViewsRef = useRef(decoratedViews);
+    const viewsListenerRef = useRef<((views: DfrntPageViewModel[]) => void) | null>(null);
+    // Hold the first notification until the list has actually loaded, so the
+    // toolbar menu keeps its spinner instead of flashing "No views available".
+    const viewsLoadedRef = useRef(false);
+    viewsLoadedRef.current = !viewsLoading;
+    useEffect(() => {
+        decoratedViewsRef.current = decoratedViews;
+        if (!viewsLoading) viewsListenerRef.current?.(decoratedViews);
+    }, [decoratedViews, viewsLoading]);
+
+    const registerViewsListener = useCallback((listener: (views: DfrntPageViewModel[]) => void) => {
+        viewsListenerRef.current = listener;
+        if (viewsLoadedRef.current) listener(decoratedViewsRef.current);
+        return () => {
+            if (viewsListenerRef.current === listener) viewsListenerRef.current = null;
+        };
     }, []);
 
     // Auto-refresh intervals (ms; false = off), seeded from localStorage and
@@ -343,13 +425,15 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             promptDeleteLayout,
             promptRenameLayout,
             updateFilters: applyFilters,
+            registerViewsListener,
+            setViewSelection: applyViewSelection,
             updateRefreshIntervals: applyRefreshIntervals,
             setEditMode,
             openInterCourierCharge,
             jobCreated,
             importLegacyLayouts: boxLayout.importLegacyLayouts,
         });
-    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, promptSaveLayout, promptDeleteLayout, promptRenameLayout, applyFilters, applyRefreshIntervals, openInterCourierCharge, jobCreated]);
+    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, promptSaveLayout, promptDeleteLayout, promptRenameLayout, applyFilters, registerViewsListener, applyViewSelection, applyRefreshIntervals, openInterCourierCharge, jobCreated]);
 
     const fetchConfigMain = useMemo(() => {
         const baseParams = {
@@ -378,7 +462,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             refetchInterval: refreshIntervals.jobsMs,
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filters, refreshIntervals.jobsMs, clearListId]);
+    }, [refreshIntervals.jobsMs, clearListId, filters.startDate, filters.endDate, filters.useTime, filters.despatchViewIds]);
 
     const handleRefreshBox = useCallback((boxName: string) => {
         // Each box refetches via React Query (or the job-details bridge). The
@@ -549,6 +633,16 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         onJobsLoaded={handleJobsLoaded}
                         setSelectJobCallback={(cb) => { selectInListRef.current = cb; }}
                         headerSlot={headerSlot}
+                        topSlot={
+                            <ViewsRail
+                                views={pageViews ?? []}
+                                selectedIds={filters.despatchViewIds}
+                                isUsCustomer={isUsCustomer}
+                                loading={viewsLoading}
+                                onToggle={toggleView}
+                                onClearAll={clearViews}
+                            />
+                        }
                     />
                 );
 
@@ -649,14 +743,14 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             default:
                 return null;
         }
-    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, refreshIntervals, mapJobs, mapCourierWork, mapView, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode]);
+    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, mapJobs, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode, pageViews, viewsLoading, toggleView, clearViews, mapCourierWork?.jobs, mapView.center, mapView.zoom, refreshIntervals.jobsMs, refreshIntervals.tasksMs, refreshIntervals.driverLocationsMs]);
 
     const subtitleFor = useCallback((boxName: string) => {
         if (boxName === DispatchBoxes.JobDetail) {
             return currentJob?.jobNo;
         }
         return undefined;
-    }, [currentJob]);
+    }, [currentJob?.jobNo]);
 
     // Header controls that are driven from DispatchPage state (vs. a box's own
     // local state, which boxes portal into the header themselves): Driver

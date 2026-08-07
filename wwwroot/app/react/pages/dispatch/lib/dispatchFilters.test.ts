@@ -11,7 +11,18 @@ import {
     loadDispatchFilters,
     loadRefreshIntervals,
     filtersKey,
+    persistSelectedViews,
+    resolveInitialViewSelection,
 } from './dispatchFilters';
+import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
+
+const view = (id: number, name: string): DfrntPageViewModel => ({
+    id,
+    name,
+    centerLatitude: -36.8,
+    centerLongitude: 174.7,
+    selected: false,
+});
 
 describe('dispatchFilters', () => {
     beforeEach(() => localStorage.clear());
@@ -130,6 +141,49 @@ describe('dispatchFilters', () => {
             localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY, 'not a number');
             localStorage.setItem(TASK_REFRESH_KEY, '0');
             expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: false});
+        });
+    });
+
+    describe('persistSelectedViews', () => {
+        it('writes the full view objects so the map can read their coordinates back', () => {
+            persistSelectedViews([{...view(11, 'North'), selected: true}]);
+            expect(loadSelectedViews()).toEqual([
+                {id: 11, name: 'North', centerLatitude: -36.8, centerLongitude: 174.7, selected: true},
+            ]);
+        });
+
+        it('marks an explicitly cleared selection so it survives a reload', () => {
+            persistSelectedViews([]);
+            expect(localStorage.getItem(SELECTED_VIEWS_KEY)).toBe('[]');
+            expect(loadSelectedViewIds()).toEqual([]);
+        });
+    });
+
+    describe('resolveInitialViewSelection', () => {
+        const views = [view(11, 'North'), view(22, 'Central'), view(33, 'South')];
+
+        it('defaults to the first view on a first visit (nothing stored)', () => {
+            expect(resolveInitialViewSelection(views, [], false)).toEqual([11]);
+        });
+
+        it('keeps an explicitly cleared selection cleared', () => {
+            expect(resolveInitialViewSelection(views, [], true)).toEqual([]);
+        });
+
+        it('restores the stored selection in server order', () => {
+            expect(resolveInitialViewSelection(views, [33, 11], true)).toEqual([11, 33]);
+        });
+
+        it('drops stored ids the server no longer returns', () => {
+            expect(resolveInitialViewSelection(views, [22, 999], true)).toEqual([22]);
+        });
+
+        it('falls back to the first view when every stored id is stale', () => {
+            expect(resolveInitialViewSelection(views, [999], false)).toEqual([11]);
+        });
+
+        it('returns [] when the tenant has no views configured', () => {
+            expect(resolveInitialViewSelection([], [], false)).toEqual([]);
         });
     });
 

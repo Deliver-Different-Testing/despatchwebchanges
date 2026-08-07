@@ -262,6 +262,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
                                                               headerSlot,
+                                                              topSlot,
                                                               setJobsCallback,
                                                               setRefreshCallback,
                                                               setSelectJobCallback,
@@ -799,6 +800,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             {fetchConfig && hookData.isFetching && (
                 <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 }} />
             )}
+            {topSlot}
             <JobListStatsHeader stats={stats}/>
             {headerSlot && (
                 <HeaderSlotPortal slot={headerSlot}>

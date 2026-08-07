@@ -1,6 +1,6 @@
 import React from 'react';
 import { setupUser } from '../../__testUtils__/setupUser';
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
@@ -10,17 +10,33 @@ const sampleJob = {id: 55, jobNo: 'JOB-55', assignedCourier: undefined};
 // the HERE Maps SDK); stub them so the smoke test exercises the shell wiring.
 // The job-list stub exposes a button that fires onJobSelect so tests can drive
 // the page's selection (and the Dispatch affordance that depends on it).
+const jobListFetchConfig: {initialParams?: {despatchViewIds?: number[]}} = {};
 jest.mock('../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, onJobSelect, onJobsLoaded}: {
+    JobListPanel: ({storagePrefix, onJobSelect, onJobsLoaded, topSlot, fetchConfig}: {
         storagePrefix: string;
         onJobSelect?: (j: unknown) => void;
         onJobsLoaded?: (jobs: unknown[]) => void;
-    }) => (
-        <div data-testid={`mock-job-list-${storagePrefix}`}>
-            <button onClick={() => onJobSelect?.(sampleJob)}>select-sample-job</button>
-            <button onClick={() => onJobsLoaded?.([sampleJob])}>load-jobs</button>
-        </div>
-    ),
+        topSlot?: React.ReactNode;
+        fetchConfig?: {initialParams?: {despatchViewIds?: number[]}};
+    }) => {
+        if (storagePrefix === 'dispatchJobList') jobListFetchConfig.initialParams = fetchConfig?.initialParams;
+        return (
+            <div data-testid={`mock-job-list-${storagePrefix}`}>
+                {topSlot}
+                <button onClick={() => onJobSelect?.(sampleJob)}>select-sample-job</button>
+                <button onClick={() => onJobsLoaded?.([sampleJob])}>load-jobs</button>
+            </div>
+        );
+    },
+}));
+
+const serverViews = [
+    {id: 11, name: 'Auckland', centerLatitude: -36.85, centerLongitude: 174.76, selected: false},
+    {id: 22, name: 'Airport', centerLatitude: -37.0, centerLongitude: 174.79, selected: false},
+];
+const fetchPageViewsMock = jest.fn().mockResolvedValue(serverViews);
+jest.mock('../../services/dispatchViewsApi', () => ({
+    fetchPageViews: (...a: unknown[]) => fetchPageViewsMock(...a),
 }));
 
 const dispatchMapProps: {
@@ -95,6 +111,7 @@ jest.mock('../../components/dialogs/dispatch-dialog', () => ({
 
 import {DispatchPage} from './DispatchPage';
 import {SELECTED_VIEWS_KEY} from './lib/dispatchFilters';
+import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof DispatchPage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -256,6 +273,98 @@ describe('DispatchPage', () => {
 
             await screen.findByRole('button', {name: 'Job actions'});
             expect(dispatchMapProps.jobs).toEqual([{jobId: 55, jobNo: 'JOB-55', pickupAddress: undefined, deliveryAddress: undefined, assignedCourier: undefined, statusId: undefined}]);
+        });
+    });
+
+    describe('views rail', () => {
+        const railPill = (name: string) => screen.getByRole('button', {name});
+
+        it('selects the first view on a first visit and persists it', async () => {
+            renderPage();
+
+            expect(await screen.findByRole('button', {name: 'Auckland', pressed: true})).toBeInTheDocument();
+            expect(railPill('Airport')).toHaveAttribute('aria-pressed', 'false');
+            expect(fetchPageViewsMock).toHaveBeenCalledWith(LegacyAppPage.Dispatch);
+            expect(JSON.parse(localStorage.getItem(SELECTED_VIEWS_KEY)!)).toEqual([
+                expect.objectContaining({id: 11, selected: true}),
+            ]);
+            expect(jobListFetchConfig.initialParams?.despatchViewIds).toEqual([11]);
+        });
+
+        it('restores a stored selection instead of defaulting', async () => {
+            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([{...serverViews[1], selected: true}]));
+            renderPage();
+
+            expect(await screen.findByRole('button', {name: 'Airport', pressed: true})).toBeInTheDocument();
+            expect(railPill('Auckland')).toHaveAttribute('aria-pressed', 'false');
+        });
+
+        it('scopes the job list and persists when a view is toggled on', async () => {
+            const user = setupUser();
+            renderPage();
+            await screen.findByRole('button', {name: 'Auckland', pressed: true});
+
+            await user.click(railPill('Airport'));
+
+            expect(railPill('Airport')).toHaveAttribute('aria-pressed', 'true');
+            expect(jobListFetchConfig.initialParams?.despatchViewIds).toEqual([11, 22]);
+            expect(JSON.parse(localStorage.getItem(SELECTED_VIEWS_KEY)!).map((v: {id: number}) => v.id))
+                .toEqual([11, 22]);
+        });
+
+        it('clears the selection and keeps it cleared in storage', async () => {
+            const user = setupUser();
+            renderPage();
+            await screen.findByRole('button', {name: 'Auckland', pressed: true});
+
+            await user.click(screen.getByRole('button', {name: 'Clear'}));
+
+            expect(railPill('Auckland')).toHaveAttribute('aria-pressed', 'false');
+            expect(localStorage.getItem(SELECTED_VIEWS_KEY)).toBe('[]');
+            expect(screen.getByText('Select a view to load jobs.')).toBeInTheDocument();
+            expect(jobListFetchConfig.initialParams?.despatchViewIds).toEqual([]);
+        });
+
+        it('holds the first host notification until the views have loaded', async () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+            const listener = jest.fn();
+            bridge.registerViewsListener(listener);
+            // Still loading — the toolbar keeps its spinner rather than
+            // flashing "No views available".
+            expect(listener).not.toHaveBeenCalled();
+
+            await screen.findByRole('button', {name: 'Auckland', pressed: true});
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it('keeps the host toolbar in sync in both directions', async () => {
+            const user = setupUser();
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+            const listener = jest.fn();
+            const unregister = bridge.registerViewsListener(listener);
+            await screen.findByRole('button', {name: 'Auckland', pressed: true});
+
+            // React → host: the loaded list arrives with the resolved selection.
+            expect(listener).toHaveBeenLastCalledWith([
+                expect.objectContaining({id: 11, name: 'Auckland', selected: true}),
+                expect.objectContaining({id: 22, name: 'Airport', selected: false}),
+            ]);
+
+            // Host → React: the toolbar menu drives the rail.
+            await act(async () => bridge.setViewSelection([22]));
+            expect(railPill('Airport')).toHaveAttribute('aria-pressed', 'true');
+            expect(railPill('Auckland')).toHaveAttribute('aria-pressed', 'false');
+
+            listener.mockClear();
+            unregister();
+            await user.click(railPill('Auckland'));
+            expect(listener).not.toHaveBeenCalled();
         });
     });
 

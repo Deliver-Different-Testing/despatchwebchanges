@@ -221,6 +221,19 @@ describe('JobListPanel', () => {
             const row = screen.getByText('J010').closest('tr');
             expect(row).toHaveClass('Mui-selected');
         });
+
+        it('renders topSlot content above the stats header', () => {
+            renderWithProviders(
+                <JobListPanel {...createDefaultProps({
+                    topSlot: <div data-testid="top-slot">Views</div>,
+                })}/>
+            );
+
+            const slot = screen.getByTestId('top-slot');
+            expect(slot).toBeInTheDocument();
+            expect(slot.compareDocumentPosition(screen.getByText('Total')))
+                .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+        });
     });
 
     describe('Category Filtering', () => {

@@ -6,6 +6,7 @@
  * received from the home controller after DTO mapping.
  */
 
+import type React from 'react';
 import type {Dayjs} from 'dayjs';
 import type {AddressViewModel} from './address';
 import type {ShowToastFn} from '../services/toastService';
@@ -319,6 +320,11 @@ export interface JobListPanelProps {
      * instead of the toolbar.
      */
     headerSlot?: HTMLElement | null;
+    /**
+     * Content rendered as the card's first row, above the stats header. Used by
+     * the dispatch page for the views rail; left unset elsewhere.
+     */
+    topSlot?: React.ReactNode;
     /** Called by mount module to allow pushing jobs from AngularJS (legacy, used when no fetchConfig) */
     setJobsCallback?: (cb: (jobs: DispatchJob[], totalCount: number) => void) => void;
     /** Called by mount module to allow triggering refresh from AngularJS */

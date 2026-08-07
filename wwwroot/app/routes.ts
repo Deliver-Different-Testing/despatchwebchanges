@@ -24,7 +24,6 @@ import {
 import {createDefaultDispatchLayout, createDispatchBoxes} from './react/pages/dispatch/lib/boxDefinitions';
 import {
     loadDateFilter as loadDispatchDateFilter,
-    SELECTED_VIEWS_KEY as DISPATCH_SELECTED_VIEWS_KEY,
     DATE_FILTER_KEY as DISPATCH_DATE_FILTER_KEY,
     REFRESH_INTERVAL_KEY as DISPATCH_REFRESH_INTERVAL_KEY,
     DRIVER_LOCATION_REFRESH_KEY as DISPATCH_DRIVER_LOC_REFRESH_KEY,
@@ -227,7 +226,7 @@ class RouterConfig {
                     });
                 }]
             },
-            controller: ['$scope', '$stateParams', 'toastrService', 'APP_CONFIG', 'DispatchData', '$http', '$interval',
+            controller: ['$scope', '$stateParams', 'toastrService', 'APP_CONFIG', '$http', '$interval',
                 function (
                     $scope: angular.IScope,
                     $stateParams: angular.ui.IStateParamsService,
@@ -238,9 +237,6 @@ class RouterConfig {
                         showInfoToast: (m: string) => void;
                     },
                     appConfig: { US_Customer: boolean },
-                    dispatchData: {
-                        getSelectedViews: (pageId: number) => Promise<DfrntPageViewModel[]>;
-                    },
                     $http: angular.IHttpService,
                     $interval: angular.IIntervalService
                 ) {
@@ -263,19 +259,14 @@ class RouterConfig {
 
                     const readLayouts = (): ILayout[] => loadLayouts(layoutStorageKeys, defaultLayout);
 
-                    // ── Views + date filter — scope the job list & driver
-                    // locations, pushed into React via window.ReactDispatch.updateFilters.
-                    // Persisted under the same keys V1 home uses (shared selection). ──
+                    // ── Date filter — scopes the job list & driver locations,
+                    // pushed into React via window.ReactDispatch.updateFilters.
+                    // Persisted under the same key V1 home uses. The view
+                    // selection is owned by React (the job list's views rail);
+                    // the toolbar menu below is a mirror of it. ──
                     const initialDate = loadDispatchDateFilter();
-                    const persistSelectedViews = (views: DfrntPageViewModel[]) => {
-                        try {
-                            localStorage.setItem(DISPATCH_SELECTED_VIEWS_KEY, JSON.stringify(views));
-                        } catch { /* private browsing — ignore */ }
-                    };
                     const pushFilters = () => {
-                        const selected = (ctrl.views ?? []).filter(v => v.selected);
                         window.ReactDispatch?.updateFilters({
-                            despatchViewIds: selected.map(v => v.id),
                             startDate: ctrl.dateFilterData.startDate,
                             endDate: ctrl.dateFilterData.endDate,
                             useTime: ctrl.dateFilterData.useTime,
@@ -307,17 +298,15 @@ class RouterConfig {
 
                         toggleView: (_view: DfrntPageViewModel) => {
                             // The directive has already flipped `selected` on the
-                            // matching ctrl.views item; persist + push.
-                            persistSelectedViews(ctrl.views.filter(v => v.selected));
-                            pushFilters();
+                            // matching ctrl.views item; hand the new selection to
+                            // React, which owns it and echoes it back below.
+                            window.ReactDispatch?.setViewSelection(
+                                ctrl.views.filter(v => v.selected).map(v => v.id),
+                            );
                         },
 
                         clearAllViews: () => {
-                            ctrl.views.forEach(v => {
-                                v.selected = false;
-                            });
-                            persistSelectedViews([]);
-                            pushFilters();
+                            window.ReactDispatch?.setViewSelection([]);
                         },
 
                         refreshDataTimeSpan: (dateFilterData: IDateFilterData) => {
@@ -602,37 +591,16 @@ class RouterConfig {
                         },
                     });
 
-                    // Load the dispatcher's page views, mark the persisted
-                    // selection, and seed the toolbar. Mirrors home.controller's
-                    // loadPageViews/initializeViews; then pushes the resolved
-                    // view + date filters into React.
-                    const initViews = async () => {
-                        try {
-                            const serverViews = await dispatchData.getSelectedViews(AppPage.Dispatch);
-                            const hasSavedState = localStorage.getItem(DISPATCH_SELECTED_VIEWS_KEY) !== null;
-                            let savedIds = new Set<number>();
-                            try {
-                                const saved = JSON.parse(localStorage.getItem(DISPATCH_SELECTED_VIEWS_KEY) ?? '[]') as DfrntPageViewModel[];
-                                if (Array.isArray(saved)) savedIds = new Set(saved.map(v => v.id));
-                            } catch { /* ignore */ }
-
-                            const views = (serverViews ?? []).map(v => ({...v, selected: savedIds.has(v.id)}));
-                            // First visit (no saved state): default to the first view.
-                            if (views.length > 0 && !views.some(v => v.selected) && !hasSavedState) {
-                                views[0].selected = true;
-                                persistSelectedViews(views.filter(v => v.selected));
-                            }
-                            ctrl.views = views;
-                        } catch (err) {
-                            console.error('[dispatchV2] failed to load page views', err);
-                            ctrl.views = [];
-                        } finally {
-                            ctrl.viewsInitialized = true;
-                            $scope.$applyAsync();
-                            pushFilters();
-                        }
-                    };
-                    void initViews();
+                    // Mirror React's view list + selection into the toolbar's
+                    // Views menu. React loads the views and owns the selection
+                    // (the job list's views rail); this keeps the menu's
+                    // checkboxes and badge in step with it.
+                    const unregisterViews = window.ReactDispatch!.registerViewsListener(views => {
+                        ctrl.views = views;
+                        ctrl.viewsInitialized = true;
+                        $scope.$applyAsync();
+                    });
+                    pushFilters();
 
                     // Unread-messages badge — poll every 60s (mirrors home's
                     // getUnreadMessageCount interval).
@@ -646,6 +614,7 @@ class RouterConfig {
 
                     $scope.$on('$destroy', () => {
                         $interval.cancel(unreadPoll);
+                        unregisterViews();
                         window.ReactDispatch!.unmount();
                     });
                 }
