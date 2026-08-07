@@ -2273,7 +2273,7 @@ public class CourierRepository(
         return await context.TblDespatchViews
             .Where(v => v.ShowOnAssistDespatch == true &&
                         clearListNames.Contains(v.Name) &&
-                        v.WhereCondition != null && v.WhereCondition != "")
+                        v.WhereCondition != null && v.WhereCondition != string.Empty)
             .TagWith("GetClearLists - Wave 2: Has Area Filters")
             .AnyAsync(cancellationToken);
     }

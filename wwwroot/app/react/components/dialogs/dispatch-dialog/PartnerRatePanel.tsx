@@ -17,6 +17,8 @@ import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import TextField from '@mui/material/TextField';
 import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -32,6 +34,11 @@ export interface PartnerRatePanelProps {
     onRateChange: (rate: number, valid: boolean) => void;
     /** Disables the rate input (used while the parent submits). */
     disabled?: boolean;
+    /**
+     * Fires when the partner conclusively reports it cannot carry this route, so the parent can
+     * reframe its confirm button as "Send anyway". Never fires true for an unreachable partner.
+     */
+    onServiceabilityChange?: (unserviceable: boolean) => void;
 }
 
 const SECTION_LABEL_SX = {
@@ -54,6 +61,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
     fetchRate,
     onRateChange,
     disabled,
+    onServiceabilityChange,
 }) => {
     const [loading, setLoading] = useState(false);
     const [rateResult, setRateResult] = useState<PartnerRateForJobResponse | null>(null);
@@ -99,6 +107,10 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
             .finally(() => setLoading(false));
     }, [partnerId, jobId, fetchRate]);
 
+    useEffect(() => {
+        onServiceabilityChange?.(rateResult?.serviceAvailable === false);
+    }, [rateResult, onServiceabilityChange]);
+
     const handleQuoteSelect = useCallback((index: number, quote: PartnerRateQuote) => {
         setSelectedQuoteIndex(index);
         setManualRate(quote.totalCharge.toFixed(2));
@@ -119,8 +131,46 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
 
     if (!rateResult) return null;
 
+    // Only an explicit false is a verdict. null means IM couldn't reach the partner, and warning
+    // on that would train operators to ignore the warning that actually matters.
+    const laneUnserviceable = rateResult.serviceAvailable === false;
+    const alternatives = rateResult.alternatives ?? [];
+
     return (
         <>
+            {laneUnserviceable && (
+                <Alert severity="warning" sx={{mb: 2}}>
+                    <AlertTitle>Partner cannot service this route</AlertTitle>
+                    <Typography variant="body2" sx={{mb: alternatives.length > 0 ? 1 : 0}}>
+                        {rateResult.serviceabilityMessage
+                            ?? 'The partner does not offer this speed between these locations.'}
+                    </Typography>
+                    {alternatives.length > 0 && (
+                        <>
+                            <Typography variant="body2" sx={{fontWeight: 500}}>
+                                This partner can do:
+                            </Typography>
+                            <Box component="ul" sx={{m: 0, pl: 2.5}}>
+                                {alternatives.map((a) => (
+                                    <li key={a.partnerServiceCode}>
+                                        <Typography variant="body2">
+                                            {a.partnerServiceCode} — {a.serviceName}
+                                            {a.totalCharge != null
+                                                && ` (${a.currency ?? ''} ${a.totalCharge.toFixed(2)})`}
+                                            {a.transitDays != null && `, ${a.transitDays} day`}
+                                        </Typography>
+                                    </li>
+                                ))}
+                            </Box>
+                        </>
+                    )}
+                    <Typography variant="body2" sx={{mt: 1}}>
+                        Change the job&apos;s speed, then send again — or send anyway and it may be
+                        rejected.
+                    </Typography>
+                </Alert>
+            )}
+
             <Box>
                 <Typography variant="body2" sx={SECTION_LABEL_SX}>Pricing</Typography>
 

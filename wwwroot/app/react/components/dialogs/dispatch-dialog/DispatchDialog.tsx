@@ -144,6 +144,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     const [partnerOptions, setPartnerOptions] = useState<EventGroupItem[]>([]);
     const [partnerOptionsLoading, setPartnerOptionsLoading] = useState(false);
     const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('');
+    const [partnerLaneUnserviceable, setPartnerLaneUnserviceable] = useState(false);
     const [agreedRate, setAgreedRate] = useState(0);
     const [agreedRateValid, setAgreedRateValid] = useState(false);
 
@@ -292,7 +293,13 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         Agent: <SupportAgentIcon/>,
         NP: <AccountTreeIcon/>,
     };
-    const confirmLabel = submitting ? CONFIRM_LABELS[selectedType].busy : CONFIRM_LABELS[selectedType].idle;
+    // The operator has been shown the warning and the alternatives; reframing the button makes it
+    // explicit that confirming now overrides a known objection rather than proceeding normally.
+    const confirmLabel = submitting
+        ? CONFIRM_LABELS[selectedType].busy
+        : (selectedType === 'DfrntPartner' && partnerLaneUnserviceable)
+            ? 'Send anyway'
+            : CONFIRM_LABELS[selectedType].idle;
     const confirmIcon = CONFIRM_ICONS[selectedType];
 
     // Wrap the disabled DFRNT Partner radio in a Tooltip — Tooltip needs a
@@ -443,6 +450,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                             jobId={mode.kind === 'bulk' ? 0 : mode.jobId}
                             fetchRate={fetchRate}
                             onRateChange={handlePartnerRateChange}
+                            onServiceabilityChange={setPartnerLaneUnserviceable}
                             disabled={submitting}
                         />
                     )}

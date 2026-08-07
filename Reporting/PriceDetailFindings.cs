@@ -26,11 +26,11 @@ public static class PriceDetailFindings
                     job.Current.Any(l => l.ChargeName.Contains("Fuel", StringComparison.OrdinalIgnoreCase));
                 if (!hasFuelLine && Within(job.Header.HeaderAmount ?? 0m, implied))
                     findings.Add(new PriceFinding(no, "Header fuel, no fuel line",
-                        $"Header {(job.Header.HeaderAmount ?? 0m):C} = lines {job.CurrentLinesTotal:C} x1.25 but no fuel breakdown line (+{gap:C}).",
+                        $"Header {job.Header.HeaderAmount ?? 0m:C} = lines {job.CurrentLinesTotal:C} x1.25 but no fuel breakdown line (+{gap:C}).",
                         "High"));
                 else
                     findings.Add(new PriceFinding(no, "Header <> lines",
-                        $"Header {(job.Header.HeaderAmount ?? 0m):C} vs sum of lines {job.CurrentLinesTotal:C} (gap {gap:C}).",
+                        $"Header {job.Header.HeaderAmount ?? 0m:C} vs sum of lines {job.CurrentLinesTotal:C} (gap {gap:C}).",
                         "Medium"));
             }
 
