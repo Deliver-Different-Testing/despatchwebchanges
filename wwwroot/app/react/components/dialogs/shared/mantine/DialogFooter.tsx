@@ -7,27 +7,9 @@
  * pill-shaped via the theme's Button default radius.
  */
 import React from 'react';
-import {Button, type ButtonProps, Group} from '@mantine/core';
+import {Button, Group} from '@mantine/core';
 import {dialogFooterBorder} from './styles';
-
-export interface DialogFooterProps {
-    onCancel: () => void;
-    onConfirm: () => void;
-    confirmLabel: React.ReactNode;
-    cancelLabel?: React.ReactNode;
-    /** Icon shown before the confirm label (hidden by the loader while submitting). */
-    confirmIcon?: React.ReactNode;
-    /** Mantine theme colour for the confirm button. Defaults to the theme primary (Cyan). */
-    confirmColor?: ButtonProps['color'];
-    /** Disables the confirm button independently of `submitting`. */
-    confirmDisabled?: boolean;
-    /** When true, shows a loader on confirm and disables both buttons. */
-    submitting?: boolean;
-    /** Drops the confirm button entirely — for view-only dialogs that only need a close. */
-    hideConfirm?: boolean;
-    /** Extra control rendered between Cancel and Confirm (e.g. a "Skip" or "Reset"). */
-    secondaryAction?: React.ReactNode;
-}
+import {DialogFooterProps} from "./DialogFooterProps";
 
 export const DialogFooter: React.FC<DialogFooterProps> = ({
     onCancel,
@@ -39,6 +21,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
     confirmDisabled = false,
     submitting = false,
     hideConfirm = false,
+    hideCancel = false,
     secondaryAction,
 }) => (
     <Group
@@ -48,9 +31,11 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
         py="md"
         style={{borderTop: dialogFooterBorder, backgroundColor: 'var(--mantine-color-white)'}}
     >
-        <Button variant="default" onClick={onCancel} disabled={submitting} miw={100}>
-            {cancelLabel}
-        </Button>
+        {!hideCancel && (
+            <Button variant="default" onClick={onCancel} disabled={submitting} miw={100}>
+                {cancelLabel}
+            </Button>
+        )}
         {secondaryAction}
         {!hideConfirm && (
             <Button

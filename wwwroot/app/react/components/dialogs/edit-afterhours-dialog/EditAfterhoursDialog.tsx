@@ -1,37 +1,15 @@
 /**
  * React Edit Afterhours Dialog
  *
- * A modern replacement for the AngularJS edit-afterhours-dialog using MUI components.
+ * A modern replacement for the AngularJS edit-afterhours-dialog.
  * Allows users to create or edit afterhours schedules for couriers.
  *
  * Uses React Query for data fetching with automatic caching and loading states.
  */
 
 import React, {useState, useCallback, useEffect, useMemo} from 'react';
-import {alpha} from '@mui/material/styles';
-import DialogContent from '@mui/material/DialogContent';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import Checkbox from '@mui/material/Checkbox';
-import ListItemText from '@mui/material/ListItemText';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import Paper from '@mui/material/Paper';
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import Chip from '@mui/material/Chip';
-import type {SelectChangeEvent} from '@mui/material/Select';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import PersonIcon from '@mui/icons-material/Person';
-import TimerIcon from '@mui/icons-material/Timer';
-import EventIcon from '@mui/icons-material/Event';
-import SaveIcon from '@mui/icons-material/Save';
-import WarningIcon from '@mui/icons-material/Warning';
+import {Alert, Box, Group, MultiSelect, Paper, Select, Stack, Text, TextInput, alpha} from '@mantine/core';
+import {Calendar, Clock, Save, Timer, TriangleAlert, User} from 'lucide-react';
 import {
     AfterHoursCourierSchedule,
     TimeZoneOption,
@@ -41,7 +19,9 @@ import {
 } from '../../../interfaces';
 import {useCourierSearch, useTimeZoneOptions} from '../../../hooks/useCourierApi';
 import type {ShowToastFn} from '../../../services/toastService';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {Icon} from '../../common/icon/Icon';
+import {SearchSelect} from '../../common/search-select/SearchSelect';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
 
 export interface EditAfterhoursDialogProps {
     open: boolean;
@@ -61,6 +41,15 @@ interface ValidationErrors {
     timeLogic?: string;
 }
 
+const courierKey = (courier: CourierSuggestion) => courier.id;
+const courierLabel = (courier: CourierSuggestion) => courier.text;
+
+/** Courier suggestion text is typically "Code (Name)", or just the code. */
+function deriveCourierCode(text: string): string {
+    const parts = text.split('(');
+    return parts.length > 1 ? parts[0].trim() : text;
+}
+
 export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
     open,
     schedule,
@@ -72,8 +61,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
     const isNewSchedule = !schedule || schedule.afterHoursScheduleId === 0;
 
     // Form state
-    const [courierId, setCourierId] = useState<number>(0);
-    const [courierName, setCourierName] = useState<string>('');
+    const [selectedCourier, setSelectedCourier] = useState<CourierSuggestion | null>(null);
     const [courierCode, setCourierCode] = useState<string>('');
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [startTime, setStartTime] = useState<string>('');
@@ -84,6 +72,9 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
     const [courierSearchText, setCourierSearchText] = useState<string>('');
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const courierId = selectedCourier?.id ?? 0;
+    const courierName = selectedCourier?.text ?? '';
 
     // React Query hooks
     const {
@@ -124,20 +115,18 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
     // Reset form when dialog opens
     useEffect(() => {
         if (open && schedule) {
-            setCourierId(schedule.courierId);
-            setCourierName(schedule.courierName);
+            setSelectedCourier({id: schedule.courierId, text: schedule.courierName});
             setCourierCode(schedule.courierCode);
             setSelectedDays(schedule.days || []);
             setStartTime(schedule.startTime || '');
             setEndTime(schedule.endTime || '');
-            setCourierSearchText(schedule.courierName || '');
+            setCourierSearchText('');
             setValidationErrors({});
             setIsSubmitting(false);
             // selectedTimeZone is set by the useEffect above when timeZoneOptions load
         } else if (open && !schedule) {
             // New schedule - reset all fields
-            setCourierId(0);
-            setCourierName('');
+            setSelectedCourier(null);
             setCourierCode('');
             setSelectedDays([]);
             setStartTime('');
@@ -151,21 +140,8 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
 
     // Handle courier selection
     const handleCourierSelect = useCallback((courier: CourierSuggestion | null) => {
-        if (courier) {
-            setCourierId(courier.id);
-            setCourierName(courier.text);
-            // Extract courier code if present (format is typically "Code (Name)" or just "Code")
-            const parts = courier.text.split('(');
-            if (parts.length > 1) {
-                setCourierCode(parts[0].trim());
-            } else {
-                setCourierCode(courier.text);
-            }
-        } else {
-            setCourierId(0);
-            setCourierName('');
-            setCourierCode('');
-        }
+        setSelectedCourier(courier);
+        setCourierCode(courier ? deriveCourierCode(courier.text) : '');
     }, []);
 
     // Calculate duration
@@ -241,13 +217,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
 
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
-    }, [courierId, selectedDays, startTime, endTime, isUsTenant, selectedTimeZone]);
-
-    // Handle days change
-    const handleDaysChange = (event: SelectChangeEvent<string[]>) => {
-        const value = event.target.value;
-        setSelectedDays(typeof value === 'string' ? value.split(',') : value);
-    };
+    }, [startTime, endTime, isUsTenant, selectedTimeZone, selectedDays.length]);
 
     // Get selected days text
     const getSelectedDaysText = (): string => {
@@ -289,286 +259,163 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
 
     if (!open) return null;
 
+    const title = `${isNewSchedule ? 'Create' : 'Edit'} Afterhours Schedule`;
+
     return (
-        <DialogShell
-            open={open}
-            onClose={onClose}
-            slotProps={{
-                paper: {
-                    sx: {
-                        overflow: 'hidden',
-                        minWidth: 500,
-                        maxWidth: 600,
-                    },
-                },
-            }}
-        >
+        <DialogShell opened={open} onClose={onClose} label={title}>
             <DialogHeader
-                icon={<ScheduleIcon />}
-                title={`${isNewSchedule ? 'Create' : 'Edit'} Afterhours Schedule`}
+                icon={<Icon lucide={Clock}/>}
+                title={title}
                 subtitle="Set courier availability outside business hours"
                 onClose={onClose}
                 closeDisabled={isSubmitting}
             />
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
                 {/* Driver Selection Section */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 2.5,
-                        mb: 2.5,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                    }}
-                >
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
-                        <PersonIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" sx={{
-                            fontWeight: 500
-                        }}>
-                            {isNewSchedule ? 'Select' : 'Change'} Driver
-                        </Typography>
-                    </Box>
+                <Paper {...sectionPaperProps} mb="lg">
+                    <Group gap="xs" mb="md" wrap="nowrap">
+                        <Box c="dimmed" style={{display: 'flex'}}>
+                            <Icon lucide={User}/>
+                        </Box>
+                        <Text fw={500}>{isNewSchedule ? 'Select' : 'Change'} Driver</Text>
+                    </Group>
 
-                    <Autocomplete
+                    <SearchSelect<CourierSuggestion>
+                        label="Search driver..."
+                        placeholder="Type at least 2 characters"
+                        value={selectedCourier}
+                        onChange={handleCourierSelect}
                         options={courierOptions}
-                        getOptionLabel={(option) => option.text}
+                        onSearchChange={setCourierSearchText}
                         loading={isSearchingCouriers}
-                        inputValue={courierSearchText}
-                        onInputChange={(_, value) => {
-                            setCourierSearchText(value);
-                        }}
-                        onChange={(_, value) => handleCourierSelect(value)}
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                        renderInput={({slotProps: autoSlotProps, ...params}) => (
-                            <TextField
-                                {...params}
-                                label="Search driver..."
-                                placeholder="Type at least 2 characters"
-                                error={!!validationErrors.courier}
-                                helperText={validationErrors.courier}
-                                slotProps={{
-                                    ...autoSlotProps,
-                                    input: {
-                                        ...autoSlotProps.input,
-                                        endAdornment: (
-                                            <>
-                                                {isSearchingCouriers ? <CircularProgress size={20} /> : null}
-                                                {autoSlotProps.input.endAdornment}
-                                            </>
-                                        ),
-                                    },
-                                }}
-                            />
-                        )}
-                        noOptionsText={courierSearchText.length < 2 ? 'Type to search...' : 'No drivers found'}
+                        getOptionKey={courierKey}
+                        getOptionLabel={courierLabel}
+                        error={validationErrors.courier}
                     />
 
                     {/* Current selection info for existing schedules */}
                     {!isNewSchedule && courierName && (
-                        <Box
-                            sx={{
-                                mt: 1.5,
-                                p: 1.5,
-                                bgcolor: 'grey.100',
-                                borderRadius: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
+                        <Group
+                            gap="xs"
+                            mt="sm"
+                            p="sm"
+                            wrap="nowrap"
+                            style={{
+                                backgroundColor: 'var(--mantine-color-gray-1)',
+                                borderRadius: 'var(--mantine-radius-sm)',
                             }}
                         >
-                            <Typography variant="body2" sx={{
-                                color: "text.secondary"
-                            }}>
-                                Current driver:
-                            </Typography>
-                            <Typography variant="body2" sx={{
-                                fontWeight: 600
-                            }}>
-                                {courierName}
-                            </Typography>
+                            <Text size="sm" c="dimmed">Current driver:</Text>
+                            <Text size="sm" fw={600}>{courierName}</Text>
                             {courierCode && (
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: "text.secondary",
-                                        fontStyle: "italic"
-                                    }}>
-                                    ({courierCode})
-                                </Typography>
+                                <Text size="sm" c="dimmed" fs="italic">({courierCode})</Text>
                             )}
-                        </Box>
+                        </Group>
                     )}
                 </Paper>
 
                 {/* Schedule Details Section */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 2.5,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                    }}
-                >
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 3}}>
-                        <ScheduleIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" sx={{
-                            fontWeight: 500
-                        }}>
-                            Schedule Details
-                        </Typography>
-                    </Box>
-
-                    {/* Days of Week Selection */}
-                    <FormControl fullWidth sx={{mb: 2.5}} error={!!validationErrors.days}>
-                        <InputLabel>Days of Week</InputLabel>
-                        <Select
-                            multiple
-                            value={selectedDays}
-                            onChange={handleDaysChange}
-                            input={<OutlinedInput label="Days of Week" />}
-                            renderValue={(selected) => (
-                                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
-                                    {selected.map((day) => (
-                                        <Chip key={day} label={day} size="small" />
-                                    ))}
-                                </Box>
-                            )}
-                        >
-                            {DAYS_OF_WEEK.map((day) => (
-                                <MenuItem key={day} value={day}>
-                                    <Checkbox checked={selectedDays.includes(day)} />
-                                    <ListItemText primary={day} />
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        {validationErrors.days && (
-                            <Typography variant="caption" color="error" sx={{mt: 0.5}}>
-                                {validationErrors.days}
-                            </Typography>
-                        )}
-                        {selectedDays.length > 0 && (
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    color: "text.secondary",
-                                    mt: 0.5
-                                }}>
-                                {getSelectedDaysText()}
-                            </Typography>
-                        )}
-                    </FormControl>
-
-                    {/* Time Inputs */}
-                    <Box sx={{display: 'flex', gap: 2, mb: 2.5}}>
-                        <TextField
-                            label="Start Time"
-                            type="time"
-                            value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
-                            error={!!validationErrors.startTime}
-                            helperText={validationErrors.startTime}
-                            slotProps={{inputLabel: {shrink: true}}}
-                            fullWidth
-                        />
-                        <TextField
-                            label="End Time"
-                            type="time"
-                            value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
-                            error={!!validationErrors.endTime}
-                            helperText={validationErrors.endTime}
-                            slotProps={{inputLabel: {shrink: true}}}
-                            fullWidth
-                        />
-                    </Box>
-
-                    {/* Timezone Selection (US only) */}
-                    {isUsTenant && (
-                        <FormControl fullWidth sx={{mb: 2.5}} error={!!validationErrors.timeZone}>
-                            <InputLabel>Timezone</InputLabel>
-                            <Select
-                                value={selectedTimeZone?.id || ''}
-                                onChange={(e) => {
-                                    const selected = timeZoneOptions.find(t => t.id === e.target.value);
-                                    setSelectedTimeZone(selected || null);
-                                }}
-                                label="Timezone"
-                                disabled={isLoadingTimeZones}
-                            >
-                                {timeZoneOptions.map((tz) => (
-                                    <MenuItem key={tz.id} value={tz.id}>
-                                        {tz.text}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                            {validationErrors.timeZone && (
-                                <Typography variant="caption" color="error" sx={{mt: 0.5}}>
-                                    {validationErrors.timeZone}
-                                </Typography>
-                            )}
-                        </FormControl>
-                    )}
-
-                    {/* Duration Display */}
-                    {duration && (
-                        <Box
-                            sx={(theme) => ({
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1.5,
-                                p: 1.5,
-                                bgcolor: alpha(theme.palette.info.main, 0.08),
-                                borderRadius: 1,
-                                mb: 2,
-                            })}
-                        >
-                            <TimerIcon sx={{color: 'info.main'}} />
-                            <Typography variant="body2" sx={{
-                                color: "text.secondary"
-                            }}>
-                                Total Duration
-                            </Typography>
-                            <Typography
-                                variant="body1"
-                                sx={{
-                                    fontWeight: 600,
-                                    ml: 'auto'
-                                }}>
-                                {duration}
-                            </Typography>
+                <Paper {...sectionPaperProps}>
+                    <Group gap="xs" mb="lg" wrap="nowrap">
+                        <Box c="dimmed" style={{display: 'flex'}}>
+                            <Icon lucide={Clock}/>
                         </Box>
-                    )}
+                        <Text fw={500}>Schedule Details</Text>
+                    </Group>
 
-                    {/* Next Day Indicator */}
-                    {isNextDay && (
-                        <Alert
-                            severity="warning"
-                            icon={<EventIcon />}
-                            sx={{mb: 2}}
-                        >
-                            This shift spans across midnight into <strong>{getEffectiveEndDay()}</strong>
-                        </Alert>
-                    )}
+                    <Stack gap="lg">
+                        {/* Days of Week Selection */}
+                        <Box>
+                            <MultiSelect
+                                label="Days of Week"
+                                data={[...DAYS_OF_WEEK]}
+                                value={selectedDays}
+                                onChange={setSelectedDays}
+                                error={validationErrors.days}
+                                clearable
+                            />
+                            {selectedDays.length > 0 && (
+                                <Text size="xs" c="dimmed" mt={4}>{getSelectedDaysText()}</Text>
+                            )}
+                        </Box>
 
-                    {/* Time Logic Error */}
-                    {validationErrors.timeLogic && (
-                        <Alert severity="error" icon={<WarningIcon />}>
-                            {validationErrors.timeLogic}
-                        </Alert>
-                    )}
+                        {/* Time Inputs */}
+                        <Group gap="md" grow align="flex-start">
+                            {/*
+                              * Plain time inputs, not `@mantine/dates`: these values are
+                              * wall-clock "HH:mm" strings that must round-trip unchanged.
+                              */}
+                            <TextInput
+                                label="Start Time"
+                                type="time"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.currentTarget.value)}
+                                error={validationErrors.startTime}
+                            />
+                            <TextInput
+                                label="End Time"
+                                type="time"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.currentTarget.value)}
+                                error={validationErrors.endTime}
+                            />
+                        </Group>
+
+                        {/* Timezone Selection (US only) */}
+                        {isUsTenant && (
+                            <Select
+                                label="Timezone"
+                                data={timeZoneOptions.map(tz => ({value: String(tz.id), label: tz.text}))}
+                                value={selectedTimeZone ? String(selectedTimeZone.id) : null}
+                                onChange={(value) => {
+                                    setSelectedTimeZone(timeZoneOptions.find(t => String(t.id) === value) ?? null);
+                                }}
+                                error={validationErrors.timeZone}
+                                disabled={isLoadingTimeZones}
+                            />
+                        )}
+
+                        {/* Duration Display */}
+                        {duration && (
+                            <Group
+                                gap="sm"
+                                p="sm"
+                                wrap="nowrap"
+                                style={{
+                                    backgroundColor: alpha('var(--mantine-color-reflex-6)', 0.08),
+                                    borderRadius: 'var(--mantine-radius-sm)',
+                                }}
+                            >
+                                <Box c="reflex.6" style={{display: 'flex'}}>
+                                    <Icon lucide={Timer}/>
+                                </Box>
+                                <Text size="sm" c="dimmed">Total Duration</Text>
+                                <Text fw={600} ml="auto">{duration}</Text>
+                            </Group>
+                        )}
+
+                        {/* Next Day Indicator */}
+                        {isNextDay && (
+                            <Alert color="orange" icon={<Icon lucide={Calendar}/>}>
+                                This shift spans across midnight into <strong>{getEffectiveEndDay()}</strong>
+                            </Alert>
+                        )}
+
+                        {/* Time Logic Error */}
+                        {validationErrors.timeLogic && (
+                            <Alert color="red" icon={<Icon lucide={TriangleAlert}/>}>
+                                {validationErrors.timeLogic}
+                            </Alert>
+                        )}
+                    </Stack>
                 </Paper>
-            </DialogContent>
+            </Box>
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
                 confirmLabel={isSubmitting ? 'Saving...' : `${isNewSchedule ? 'Create' : 'Save'} Schedule`}
-                confirmIcon={<SaveIcon />}
+                confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={!isFormValid || isSubmitting}
                 submitting={isSubmitting}
             />

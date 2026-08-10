@@ -10,7 +10,8 @@
  * Compose with <DialogHeader>, a content region and <DialogFooter> as children.
  */
 import React from 'react';
-import {Modal, type ModalProps} from '@mantine/core';
+import {Modal} from '@mantine/core';
+import {DialogShellProps} from "./DialogShellProps";
 
 /**
  * Widths for the MUI `maxWidth` breakpoints the dialogs used to size by. Mantine
@@ -24,30 +25,28 @@ export const dialogSize = {
     lg: 1000,
 } as const;
 
-export interface DialogShellProps extends Omit<ModalProps, 'title' | 'opened' | 'onClose'> {
-    opened: boolean;
-    onClose: () => void;
-    /** Modal width. Defaults to `dialogSize.sm` (the design's ~480–600 band). */
-    size?: ModalProps['size'];
-}
-
+/**
+ * Composed from `Modal.Root`/`Overlay`/`Content`/`Body` rather than the `Modal`
+ * shorthand purely so `label` can reach the `role="dialog"` element — `Modal`
+ * forwards its extra props to the root, which is not the dialog node.
+ */
 export const DialogShell: React.FC<DialogShellProps> = ({
     opened,
     onClose,
     size = dialogSize.sm,
+    label,
     children,
     styles,
+    overlayProps,
     ...rest
 }) => (
-    <Modal
+    <Modal.Root
         opened={opened}
         onClose={onClose}
         size={size}
         centered
-        withCloseButton={false}
         padding={0}
         radius="xl"
-        overlayProps={{backgroundOpacity: 0.55, blur: 2}}
         {...rest}
         styles={{
             content: {overflow: 'hidden'},
@@ -55,8 +54,11 @@ export const DialogShell: React.FC<DialogShellProps> = ({
             ...styles,
         }}
     >
-        {children}
-    </Modal>
+        <Modal.Overlay backgroundOpacity={0.55} blur={2} {...overlayProps} />
+        <Modal.Content aria-label={label}>
+            <Modal.Body>{children}</Modal.Body>
+        </Modal.Content>
+    </Modal.Root>
 );
 
 export default DialogShell;

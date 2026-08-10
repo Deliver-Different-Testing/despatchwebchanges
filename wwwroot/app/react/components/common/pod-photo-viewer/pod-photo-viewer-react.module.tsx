@@ -7,10 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {PodPhotoViewer, PodPhoto} from './PodPhotoViewer';
-import {getTheme} from '../../../theme/muiTheme';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 
 // State management for the viewer
 interface ViewerState {
@@ -42,12 +40,8 @@ function renderViewer(): void {
         renderViewer();
     };
 
-    // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
-
     viewerRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
+        <DfrntMantineProvider>
             <PodPhotoViewer
                 isOpen={viewerState.isOpen}
                 photos={viewerState.photos}
@@ -55,7 +49,7 @@ function renderViewer(): void {
                 timeZone={viewerState.timeZone}
                 onClose={handleClose}
             />
-        </ThemeProvider>
+        </DfrntMantineProvider>
     );
 }
 

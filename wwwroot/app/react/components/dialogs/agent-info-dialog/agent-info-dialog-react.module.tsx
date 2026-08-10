@@ -8,11 +8,9 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { AgentInfoDialog } from './AgentInfoDialog';
 import { AgentInfo } from '../../../interfaces';
-import { getTheme } from '../../../theme/muiTheme';
+import { DfrntMantineProvider } from '../../../theme/DfrntMantineProvider';
 import { agentApi } from '../../../services/agentApi';
 
 interface DialogState {
@@ -57,18 +55,15 @@ class AgentInfoDialogManager {
             this.renderDialog();
         };
 
-        const currentTheme = getTheme();
-
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
+            <DfrntMantineProvider>
                 <AgentInfoDialog
                     open={this.dialogState.open}
                     agent={this.dialogState.agent}
                     isLoading={this.dialogState.isLoading}
                     onClose={handleClose}
                 />
-            </ThemeProvider>
+            </DfrntMantineProvider>
         );
     }
 

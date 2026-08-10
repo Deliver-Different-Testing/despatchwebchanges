@@ -321,6 +321,10 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\common\react-app-shell\react-app-shell.scope.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\search-select\SearchSelectProps.tsx" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\shared\mantine\DialogFooterProps.tsx" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\shared\mantine\DialogHeaderProps.tsx" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\shared\mantine\DialogShellProps.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\interfaces\ai.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\interfaces\dispatchLayout.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\interfaces\jobChangeRequest.ts" />

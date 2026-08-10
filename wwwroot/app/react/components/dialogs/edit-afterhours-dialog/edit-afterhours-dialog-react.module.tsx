@@ -8,11 +8,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {EditAfterhoursDialog} from './EditAfterhoursDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {AfterHoursCourierSchedule} from '../../../interfaces';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
@@ -63,23 +60,17 @@ function renderDialog(): void {
         dialogState.toastService.showToast(message, type);
     };
 
-    // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
-
     dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <EditAfterhoursDialog
-                    open={dialogState.open}
-                    schedule={dialogState.schedule}
-                    isUsTenant={dialogState.isUsTenant}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
+        <DfrntMantineProvider>
+            <EditAfterhoursDialog
+                open={dialogState.open}
+                schedule={dialogState.schedule}
+                isUsTenant={dialogState.isUsTenant}
+                onClose={handleClose}
+                onSave={handleSave}
+                showToast={handleShowToast}
+            />
+        </DfrntMantineProvider>
     );
 }
 
