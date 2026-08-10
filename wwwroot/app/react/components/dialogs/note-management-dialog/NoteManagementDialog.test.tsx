@@ -5,13 +5,11 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {ThemeProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {NoteManagementDialog} from './NoteManagementDialog';
 import {NoteManagementDialogProps} from './types';
 import {JobNote, NoteType} from '../../../interfaces/notes';
-import { testTheme } from '../../../__testUtils__';
+import { renderWithMantineProviders } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 
 // Shared fast userEvent instance (see setupUser).
@@ -32,23 +30,8 @@ jest.mock('../../../hooks/useNotesApi', () => ({
     })),
 }));
 
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {retry: false, gcTime: 0},
-        },
-    });
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={testTheme}>
-                {ui}
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
-};
+// renderWithMantineProviders supplies a fresh no-retry, zero-gcTime QueryClient.
+const renderWithTheme = (ui: React.ReactElement) => renderWithMantineProviders(ui);
 
 const mockNoteTypes: NoteType[] = [
     {id: 1, text: 'General', isPublic: false, description: 'General notes'},

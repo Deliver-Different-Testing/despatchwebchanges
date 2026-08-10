@@ -8,10 +8,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {RecoveryAgentManagementDialog} from './RecoveryAgentManagementDialog';
-import {getTheme} from '../../../theme/muiTheme';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {nationwideApi} from '../../../services/nationwideApi';
 import {toastService} from '../../../services/toastService';
 import type {RecoveryAgentJobViewModel} from '../../../interfaces/nationwideJobs';
@@ -53,11 +51,9 @@ class RecoveryAgentManagementDialogManager {
             this.resolveCurrent = undefined;
         };
 
-        const currentTheme = getTheme();
 
         this.dialogRoot.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
+            <DfrntMantineProvider>
                 <RecoveryAgentManagementDialog
                     open={this.dialogState.open}
                     job={this.dialogState.job}
@@ -77,7 +73,7 @@ class RecoveryAgentManagementDialogManager {
                     }}
                     showToast={(message, type) => toastService.showToast(message, type)}
                 />
-            </ThemeProvider>
+            </DfrntMantineProvider>
         );
     }
 

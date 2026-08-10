@@ -97,6 +97,13 @@ if (typeof window !== 'undefined') {
 
     // Mock scrollTo
     window.scrollTo = jest.fn();
+
+    // jsdom does not implement scrollIntoView, and Mantine's Combobox (Select,
+    // MultiSelect, Autocomplete, SearchSelect) calls it when it moves the active
+    // option — without this every dropdown interaction throws.
+    if (!Element.prototype.scrollIntoView) {
+        Element.prototype.scrollIntoView = jest.fn();
+    }
 }
 
 // Global variables declared in cshtml templates at runtime
