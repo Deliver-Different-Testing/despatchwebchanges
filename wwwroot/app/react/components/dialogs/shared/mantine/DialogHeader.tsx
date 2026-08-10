@@ -23,6 +23,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
     onClose,
     variant = 'primary',
     closeDisabled = false,
+    actions,
 }) => {
     const fg = headerOnColor(variant);
     return (
@@ -38,6 +39,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
                     <Text fz="sm" c={fg} style={{opacity: 0.85}}>{subtitle}</Text>
                 )}
             </Box>
+            {actions}
             <ActionIcon
                 variant="subtle"
                 onClick={onClose}

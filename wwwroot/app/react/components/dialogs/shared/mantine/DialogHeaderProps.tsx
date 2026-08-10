@@ -10,4 +10,10 @@ export interface DialogHeaderProps {
     variant?: HeaderVariant;
     /** Disables the close button (e.g. while a submit is in flight). */
     closeDisabled?: boolean;
+    /**
+     * Extra controls rendered immediately before the close button — a refresh
+     * or overflow menu. Style them with `headerOnColor`/`headerOverlayColor` so
+     * they read on the header fill.
+     */
+    actions?: React.ReactNode;
 }

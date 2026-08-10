@@ -1,5 +1,6 @@
 import React from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {screen, within} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {AccessorialChargesDialog} from './AccessorialChargesDialog';
 import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
@@ -29,7 +30,7 @@ const mockIsAiEnabled = isAiEnabled as jest.Mock;
 const job = {id: 123, accessorialChargeGroupId: 5, amount: 100, weight: 10, quantity: 1};
 
 function renderDialog() {
-    return render(
+    return renderWithMantine(
         <AccessorialChargesDialog open job={job as never} onClose={jest.fn()} showToast={jest.fn()} />,
     );
 }
