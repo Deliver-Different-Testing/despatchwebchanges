@@ -22,11 +22,11 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StopIcon from '@mui/icons-material/Stop';
-import {AiSummaryResponse} from '../../../services/aiAssistantApi';
 import {aiAccentColor} from '../../../theme/designTokens';
 import {formatRelativeTime} from '../../../utils/dateUtils';
 import {AiMarkdownRenderer} from './AiMarkdownRenderer';
 import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
+import type {AiSummaryResponse} from '../../../interfaces/ai';
 
 interface AiSummaryPanelProps {
     title: string;

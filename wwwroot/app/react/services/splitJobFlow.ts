@@ -19,14 +19,12 @@ import type {ShowToastFn} from './toastService';
 import {
     previewSplitPricing,
     splitJob,
-    type SplitPricingAllocationItem,
-    type SplitPricingLineAllocationItem,
-    type SplitPricingPreview,
 } from './splitJobApi';
 import {openEditAddressDialog} from '../components/dialogs/edit-address-dialog/edit-address-dialog-react.module';
 import {openSplitJobCourierDialog} from '../components/dialogs/split-job-courier-dialog/openSplitJobCourierDialog';
 import {openSplitPricingDialog} from '../components/dialogs/split-pricing-dialog/openSplitPricingDialog';
 import type {SplitPricingResult} from '../components/dialogs/split-pricing-dialog/SplitPricingDialog';
+import {SplitPricingAllocationItem, SplitPricingLineAllocationItem, SplitPricingPreview} from "../interfaces/splitJobs";
 
 export interface SplitJobFlowOptions {
     job: DispatchJob;

@@ -51,38 +51,11 @@ import {
     getTimezoneAbbreviation
 } from '../../utils/dateUtils';
 import {useColumnResize} from './useColumnResize';
+import type {ColumnDef} from './jobListColumns';
 import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
 import {JobListLegendDialog} from './JobListLegendDialog';
 import {FLIGHT_INDICATORS, INDICATORS, renderLegendMarker, renderTableIndicator} from './jobListIndicators';
 import {NoData} from '../common/no-data/NoData';
-
-// ── Column Definitions ───────────────────────────────────────────────
-
-interface ColumnDef {
-    key: string;
-    label: string;
-    sortable: boolean;
-    width: number;
-    align?: 'left' | 'center' | 'right';
-    hideForUs?: boolean;
-    showOnlyJobSearch?: boolean;
-}
-
-const ALL_COLUMNS: ColumnDef[] = [
-    {key: 'priority', label: '', sortable: false, width: 50, align: 'center'},
-    {key: 'date', label: 'Date', sortable: true, width: 80},
-    {key: 'time', label: 'Time', sortable: true, width: 80},
-    {key: 'speed', label: 'Speed', sortable: true, width: 80},
-    {key: 'isArchived', label: 'Archived', sortable: true, width: 80, showOnlyJobSearch: true},
-    {key: 'vehicle', label: 'Vehicle', sortable: true, width: 100},
-    {key: 'jobNo', label: 'Job No', sortable: true, width: 130},
-    {key: 'client', label: 'Client', sortable: true, width: 85, hideForUs: true},
-    {key: 'pickup', label: 'Pickup', sortable: true, width: 120},
-    {key: 'delivery', label: 'Delivery', sortable: true, width: 380},
-    {key: 'courier', label: 'Courier', sortable: true, width: 150},
-    {key: 'remaining', label: 'Remaining', sortable: true, width: 110, align: 'right'},
-    {key: 'status', label: 'Status', sortable: true, width: 100},
-];
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -426,6 +399,8 @@ interface JobListTableProps {
     densityMode: DensityMode;
     columnWidths: Record<string, number>;
     onColumnWidthsChange: (widths: Record<string, number>) => void;
+    /** Columns to render, already filtered and ordered by the panel. */
+    columns: ColumnDef[];
     isUsCustomer?: boolean;
     appPage?: number;
     isJobSearchPage?: boolean;
@@ -448,6 +423,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                                               densityMode,
                                                               columnWidths,
                                                               onColumnWidthsChange,
+                                                              columns,
                                                               isUsCustomer,
                                                               appPage,
                                                               isJobSearchPage,
@@ -467,11 +443,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         }, 60_000);
         return () => clearInterval(timer);
     }, []);
-
-    const columns = useMemo(() => ALL_COLUMNS.filter((col) => {
-        if (col.hideForUs && isUsCustomer) return false;
-        return !(col.showOnlyJobSearch && !isJobSearchPage);
-    }), [isUsCustomer, isJobSearchPage]);
 
     const [legendOpen, setLegendOpen] = useState(false);
 

@@ -65,7 +65,8 @@ export interface JobSearchLayoutBridge {
     /** Opens the MUI "Rename Layout" dialog and resolves with the new name (or null if cancelled). */
     promptRenameLayout: (layoutName: string) => Promise<string | null>;
     /** Set layout edit mode (driven by the toolbar's Layouts → Edit layout toggle). */
-    setEditMode: (enabled: boolean) => void;
+    resetCurrentLayout: () => void;
+    setColumnEditMode: (enabled: boolean) => void;
     /** Opens the Inter-Courier Charge dialog, wired to this page's toast. */
     openInterCourierCharge: () => Promise<void>;
     /** Copy the user's V1 layouts into this page's (V2) layout store. */
@@ -79,9 +80,10 @@ export interface JobSearchPageProps {
     timeZoneShort?: string;
     deepLinkJobId?: number;
     /** Called once with imperative handles for the AppShell toolbar to drive layout selection. */
+    /** Leave "Edit columns" mode; routes back through the toolbar so its menu stays in sync. */
+    onExitColumnEditMode?: () => void;
     onLayoutBridgeReady?: (bridge: JobSearchLayoutBridge) => void;
     /** Leave edit mode (in-shell "Done editing" button). Routes back through the toolbar. */
-    onExitEditMode?: () => void;
 }
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
@@ -90,8 +92,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 timeZone,
                                                                 timeZoneShort,
                                                                 deepLinkJobId,
+                                                                onExitColumnEditMode,
                                                                 onLayoutBridgeReady,
-                                                                onExitEditMode,
                                                             }) => {
     const storageKeys = useMemo<LayoutStorageKeys>(() => ({
         layoutsKey: `layoutsCSV2-${ContactID}`,
@@ -112,9 +114,13 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
     const [currentJobId, setCurrentJobId] = useState<number | undefined>();
     const [isBulkJob, setIsBulkJob] = useState(false);
-    // Layout edit mode: reveals drag handles / collapse / resize on the boxes.
-    // Off by default for a clean, locked view (Edit/Done toggle).
-    const [editMode, setEditMode] = useState(false);
+    // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
+    // layout column stepper in the shell and each list's column editor.
+    const [columnEditMode, setColumnEditMode] = useState(false);
+    const handleExitColumnEditMode = useCallback(() => {
+        setColumnEditMode(false);
+        onExitColumnEditMode?.();
+    }, [onExitColumnEditMode]);
     const betaBanner = useDismissibleBanner(`jobSearchBetaBannerDismissed-${ContactID}`);
     const [sortColumn, setSortColumn] = useState<string | undefined>();
     const [sortDirection, setSortDirection] = useState<string | undefined>();
@@ -230,7 +236,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             promptSaveLayout,
             promptDeleteLayout,
             promptRenameLayout,
-            setEditMode,
+            resetCurrentLayout: boxLayout.resetCurrentLayout,
+            setColumnEditMode,
             openInterCourierCharge,
             importLegacyLayouts: boxLayout.importLegacyLayouts,
         });
@@ -597,6 +604,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             case JobSearchBoxes.JobList:
                 return (
                     <JobListPanel
+                        columnEditMode={columnEditMode}
+                        onExitColumnEditMode={handleExitColumnEditMode}
                         showToast={showToast}
                         isUsCustomer={isUsCustomer}
                         appPage={AppPage.JobSearch}
@@ -616,6 +625,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             case JobSearchBoxes.BulkJobList:
                 return (
                     <JobListPanel
+                        columnEditMode={columnEditMode}
+                        onExitColumnEditMode={handleExitColumnEditMode}
                         showToast={showToast}
                         isUsCustomer={isUsCustomer}
                         appPage={AppPage.JobSearch}
@@ -769,19 +780,17 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     layout={boxLayout.layout}
                     layoutVersion={boxLayout.layoutVersion}
                     boxes={boxLayout.boxes}
-                    isDefaultLayout={boxLayout.isDefaultLayout}
                     renderBoxContent={renderBoxContent}
                     onRefreshBox={handleRefreshBox}
-                    onToggleCollapse={boxLayout.toggleBoxCollapse}
                     boxSubtitle={subtitleFor}
                     boxLocked={lockedFor}
                     onColumnSizes={boxLayout.setColumnSizes}
                     onBoxHeights={boxLayout.setBoxHeights}
                     onMoveBox={boxLayout.moveBox}
+                    columnEditMode={columnEditMode}
+                    onExitColumnEditMode={handleExitColumnEditMode}
                     onAddColumn={boxLayout.addColumn}
                     onRemoveColumn={boxLayout.removeColumn}
-                    editMode={editMode}
-                    onExitEditMode={onExitEditMode}
                 />
                 {/* Job-detail FAB. Layout Edit/Done lives in the toolbar's
                     Layouts dropdown (driven via the bridge). */}

@@ -86,6 +86,7 @@ describe('tasksApi', () => {
             ['sorting', {orderBy: 'dueDate', orderDirection: 'desc'}],
             ['courierId', {courierId: 10}],
             ['jobId', {jobId: 123}],
+            ['limit', {limit: 1000}],
         ])('should pass %s filter', async (_, filters) => {
             mockApiClient.get.mockResolvedValueOnce([]);
             await getAllTasks(filters);

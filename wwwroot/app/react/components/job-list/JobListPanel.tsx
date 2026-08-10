@@ -21,6 +21,8 @@ import type {
 import {JobListStatsHeader} from './JobListStatsHeader';
 import {JobListToolbar} from './JobListToolbar';
 import {JobListViewOptions} from './JobListViewOptions';
+import {JobListColumnEditor} from './JobListColumnEditor';
+import {availableColumns, DEFAULT_COLUMN_WIDTHS, orderColumns} from './jobListColumns';
 import {HeaderSlotPortal} from '../common/header-slot/HeaderSlotPortal';
 import {JobListTable} from './JobListTable';
 import {JobListContextMenu} from './JobListContextMenu';
@@ -38,6 +40,7 @@ import {
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
 import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
+import {jobListStorageKey, loadJobListCategory, persistJobListCategory, toStatusFilter} from './jobListPreferences';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
 import {DispatchDialog} from '../dialogs/dispatch-dialog';
@@ -45,21 +48,6 @@ import {RestoreCompletedConfirmationDialog} from '../dialogs/restore-completed-c
 
 // ── Constants ────────────────────────────────────────────────────────
 
-const DEFAULT_COLUMN_WIDTHS: Record<string, number> = {
-    priority: 50,
-    date: 80,
-    time: 80,
-    speed: 80,
-    isArchived: 80,
-    vehicle: 100,
-    jobNo: 130,
-    client: 85,
-    pickup: 120,
-    delivery: 380,
-    courier: 150,
-    remaining: 110,
-    status: 100,
-};
 
 const DEFAULT_STORAGE_PREFIX = 'jobListReact';
 
@@ -261,6 +249,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
+                                                              columnEditMode,
+                                                              onExitColumnEditMode,
                                                               headerSlot,
                                                               topSlot,
                                                               setJobsCallback,
@@ -268,10 +258,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               setSelectJobCallback,
                                                               setUpdateSearchParamsCallback,
                                                           }) => {
-    const getStorageKey = useCallback((suffix: string): string => {
-        const contactId = window.ContactID ?? 0;
-        return `${storagePrefix}_${suffix}_${contactId}`;
-    }, [storagePrefix]);
+    const getStorageKey = useCallback(
+        (suffix: string): string => jobListStorageKey(storagePrefix, suffix),
+        [storagePrefix],
+    );
 
     // ── Prefetch note types (cached forever, removes waterfall from job detail) ──
     useEffect(() => {
@@ -304,7 +294,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     // ── UI State ─────────────────────────────────────────────────────
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<JobCategory>(defaultCategory || 'all');
+    const [selectedCategory, setSelectedCategory] = useState<JobCategory>(
+        () => loadJobListCategory(storagePrefix) ?? defaultCategory ?? 'all',
+    );
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [sortState, setSortState] = useState<JobListSort>(() => {
@@ -330,6 +322,20 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         } catch { /* ignore */
         }
         return {...DEFAULT_COLUMN_WIDTHS};
+    });
+    const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+        try {
+            const saved = localStorage.getItem(getStorageKey('columnOrder'));
+            if (saved) return JSON.parse(saved);
+        } catch { /* ignore */ }
+        return [];
+    });
+    const [hiddenColumns, setHiddenColumns] = useState<string[]>(() => {
+        try {
+            const saved = localStorage.getItem(getStorageKey('hiddenColumns'));
+            if (saved) return JSON.parse(saved);
+        } catch { /* ignore */ }
+        return [];
     });
     const [loggedInCouriersOnly, setLoggedInCouriersOnly] = useState(() => {
         try {
@@ -389,9 +395,15 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [fetchConfig, setUpdateSearchParamsCallback]);
 
-    // Update category when defaultCategory prop changes
+    // Update category when defaultCategory prop changes. Only an actual change counts —
+    // on mount the stored category has already won in the initialiser above, and this
+    // effect would otherwise clobber it every time the panel is remounted.
+    const previousDefaultCategoryRef = useRef(defaultCategory);
     useEffect(() => {
-        if (defaultCategory) setSelectedCategory(defaultCategory);
+        if (defaultCategory && defaultCategory !== previousDefaultCategoryRef.current) {
+            setSelectedCategory(defaultCategory);
+        }
+        previousDefaultCategoryRef.current = defaultCategory;
     }, [defaultCategory]);
 
     // Update lastUpdated when hook data changes (fetchConfig mode)
@@ -413,6 +425,14 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     useEffect(() => {
         localStorage.setItem(getStorageKey('columnWidths'), JSON.stringify(columnWidths));
     }, [columnWidths, getStorageKey]);
+
+    useEffect(() => {
+        localStorage.setItem(getStorageKey('columnOrder'), JSON.stringify(columnOrder));
+    }, [columnOrder, getStorageKey]);
+
+    useEffect(() => {
+        localStorage.setItem(getStorageKey('hiddenColumns'), JSON.stringify(hiddenColumns));
+    }, [hiddenColumns, getStorageKey]);
 
     useEffect(() => {
         localStorage.setItem(getStorageKey('loggedInCouriersOnly'), String(loggedInCouriersOnly));
@@ -543,12 +563,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const handleCategoryChange = useCallback(
         (category: JobCategory) => {
             setSelectedCategory(category);
+            persistJobListCategory(storagePrefix, category);
             if (fetchConfig) {
-                hookDataRef.current.updateParams({statusFilter: category === 'all' ? undefined : category});
+                hookDataRef.current.updateParams({statusFilter: toStatusFilter(category)});
             }
             if (onCategoryChange) onCategoryChange(category);
         },
-        [onCategoryChange, fetchConfig],
+        [onCategoryChange, fetchConfig, storagePrefix],
     );
 
     const handleSearchChange = useCallback(
@@ -604,7 +625,20 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const handleResetColumns = useCallback(() => {
         setColumnWidths({...DEFAULT_COLUMN_WIDTHS});
+        setColumnOrder([]);
+        setHiddenColumns([]);
     }, []);
+
+    // Every configurable column for this tenant/page, in the user's order —
+    // what the editor lists. The table then drops the hidden ones.
+    const editorColumns = useMemo(
+        () => orderColumns(availableColumns(isUsCustomer, isJobSearchPage), columnOrder),
+        [isUsCustomer, isJobSearchPage, columnOrder],
+    );
+    const tableColumns = useMemo(
+        () => editorColumns.filter(col => col.locked || !hiddenColumns.includes(col.key)),
+        [editorColumns, hiddenColumns],
+    );
 
     const handleRefresh = useCallback(() => {
         if (fetchConfig) {
@@ -835,6 +869,18 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 hideLoggedInSwitch={hideLoggedInSwitch}
                 renderViewOptions={!headerSlot}
             />
+            {columnEditMode && (
+                <JobListColumnEditor
+                    columns={editorColumns}
+                    hiddenColumns={hiddenColumns}
+                    columnWidths={columnWidths}
+                    onOrderChange={setColumnOrder}
+                    onHiddenChange={setHiddenColumns}
+                    onColumnWidthsChange={setColumnWidths}
+                    onReset={handleResetColumns}
+                    onDone={onExitColumnEditMode ?? (() => undefined)}
+                />
+            )}
             <JobListTable
                 jobs={visibleJobs}
                 selectedJobId={selectedJobId}
@@ -848,6 +894,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 densityMode={densityMode}
                 columnWidths={columnWidths}
                 onColumnWidthsChange={handleColumnWidthsChange}
+                columns={tableColumns}
                 isUsCustomer={isUsCustomer}
                 appPage={appPage}
                 isJobSearchPage={isJobSearchPage}

@@ -115,12 +115,12 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                     <Toolbar
                         variant="dense"
                         sx={(theme) => ({
-                            ...headerSurfaceSx(theme),
+                            ...headerSurfaceSx(theme, 'surface'),
                             minHeight: 48,
                             gap: 2,
                         })}
                     >
-                        <BadgeIcon sx={(theme) => ({fontSize: 20, color: headerAccentColor(theme)})}/>
+                        <BadgeIcon sx={(theme) => ({fontSize: 20, color: headerAccentColor(theme, 'surface')})}/>
                         <Typography variant="subtitle2" sx={{fontWeight: 600}}>
                             {driver.basicInformation.code}
                         </Typography>
@@ -133,7 +133,10 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                                 label={driver.basicInformation.email}
                                 size="small"
                                 sx={(theme) => ({
-                                    ...headerBadgeSx(theme),
+                                    ...headerBadgeSx(theme, 'surface'),
+                                    // Label text needs more contrast on the wash
+                                    // than the accent gives.
+                                    color: theme.palette.text.primary,
                                     '& .MuiChip-icon': {color: 'inherit'},
                                 })}
                             />

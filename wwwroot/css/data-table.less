@@ -599,28 +599,3 @@
     }
   }
 }
-
-// NZ tenant theme overrides
-.nz-tenant .data-table {
-  &__sort-icon.active {
-    color: @nz-primary-dark;
-  }
-
-  &__row.selected {
-    background: fade(@nz-primary, 12%);
-  }
-
-  &--hover &__row:hover {
-    &.selected {
-      background: fade(@nz-primary, 18%);
-    }
-  }
-
-  &__checkbox {
-    .md-icon {
-      &.md-checked {
-        background-color: @nz-primary;
-      }
-    }
-  }
-}

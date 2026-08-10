@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
 import {
+    clearBoxVisibility,
     ImportLayoutsResult,
     importLayoutsFrom,
     LayoutStorageKeys,
@@ -11,10 +12,16 @@ import {
     saveBoxVisibility,
     saveLastActiveLayoutName,
     saveLayouts,
+    setDefaultCustomised,
 } from '../lib/layoutPersistence';
 import {loadRemoteIntoLocal, queueRemotePush, readLocalRows} from '../lib/layoutSync';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from '../lib/boxDefinitions';
-import {addColumnToPayload, MAX_COLUMNS, removeLastColumnFromPayload} from '../lib/columnLayout';
+import {
+    addColumnToPayload,
+    layoutPayloadEquals,
+    MAX_COLUMNS,
+    removeLastColumnFromPayload,
+} from '../lib/columnLayout';
 
 const DEFAULT_LAYOUT_NAME = 'Default';
 
@@ -58,7 +65,6 @@ export interface UseBoxLayoutResult {
     reloadFromStorage: () => void;
     addLayout: (name: string) => void;
     deleteLayoutByIndex: (index: number) => void;
-    toggleBoxCollapse: (boxName: string) => void;
     setBoxVisibility: (boxName: string, visible: boolean) => void;
     replaceBoxes: (next: Record<string, IBox>) => void;
     /** Persist column widths from a horizontal PanelGroup onLayout callback. */
@@ -67,10 +73,12 @@ export interface UseBoxLayoutResult {
     setBoxHeights: (columnId: string, heights: number[], visibleBoxNames: string[]) => void;
     /** Move a box within or between columns. Source/target are array indices into the layout's columns[].boxes. */
     moveBox: (sourceColumnId: string, sourceIndex: number, targetColumnId: string, targetIndex: number) => void;
-    /** Append an empty column to the current layout (no-op at MAX_COLUMNS or on Default). */
+    /** Append an empty column to the current layout (no-op at MAX_COLUMNS). */
     addColumn: () => void;
-    /** Remove the rightmost column, moving its boxes into the neighbour (no-op at 1 column or on Default). */
+    /** Remove the rightmost column, moving its boxes into the neighbour (no-op at 1 column). */
     removeColumn: () => void;
+    /** Restore the current layout to the shipped arrangement and clear its panel visibility. */
+    resetCurrentLayout: () => void;
     /** Copy custom layouts from the legacy (V1) store into this page's store. */
     importLegacyLayouts: () => ImportLayoutsResult;
 }
@@ -226,16 +234,6 @@ export function useBoxLayout({
         bumpVersion();
     }, [storageKeys, bumpVersion]);
 
-    const toggleBoxCollapse = useCallback((boxName: string) => {
-        if (currentLayoutName === DEFAULT_LAYOUT_NAME) return;
-        setBoxes(prev => {
-            const target = prev[boxName];
-            if (!target) return prev;
-            const next = {...prev, [boxName]: {...target, collapsed: !target.collapsed}};
-            saveBoxVisibility(storageKeys, currentLayoutName, next);
-            return next;
-        });
-    }, [storageKeys, currentLayoutName]);
 
     const setBoxVisibility = useCallback((boxName: string, visible: boolean) => {
         setBoxes(prev => {
@@ -252,23 +250,24 @@ export function useBoxLayout({
         saveBoxVisibility(storageKeys, currentLayoutName, next);
     }, [storageKeys, currentLayoutName]);
 
-    // ── Resize + reorder (custom layouts only) ────────────────────────
+    // ── Resize + reorder ──────────────────────────────────────────────
     //
-    // All three of these write into the current layout's payload and
-    // re-persist via `saveLayouts`. They no-op on the Default layout
-    // because `loadLayouts` always resets index 0 to a canonical default
-    // on next read — see `lib/layoutPersistence.ts`.
+    // These write into the current layout's payload and re-persist via
+    // `saveLayouts`. Every layout is editable, including Default; the first
+    // write that actually changes Default flips the "customised" marker so
+    // `loadLayouts` stops regenerating it from code (see lib/layoutPersistence).
 
     const writeCurrentLayout = useCallback((
         producer: (current: ILayout['layout']) => ILayout['layout'],
     ): void => {
-        if (currentLayoutName === DEFAULT_LAYOUT_NAME) return;
         setLayouts(prev => {
             const index = prev.findIndex(l => l.name === currentLayoutName);
             if (index === -1) return prev;
             const nextLayout = producer(prev[index].layout);
+            if (layoutPayloadEquals(nextLayout, prev[index].layout)) return prev;
             const updated = prev.map((l, i) => i === index ? {...l, layout: nextLayout} : l);
             saveLayouts(storageKeys, updated);
+            if (currentLayoutName === DEFAULT_LAYOUT_NAME) setDefaultCustomised(storageKeys, true);
             return updated;
         });
     }, [currentLayoutName, storageKeys]);
@@ -358,6 +357,22 @@ export function useBoxLayout({
         bumpVersion();
     }, [writeCurrentLayout, bumpVersion]);
 
+
+    const resetCurrentLayout = useCallback(() => {
+        const factory = createDefaultLayout();
+        setLayouts(prev => {
+            const index = prev.findIndex(l => l.name === currentLayoutName);
+            if (index === -1) return prev;
+            const updated = prev.map((l, i) => i === index ? {...l, layout: factory.layout} : l);
+            saveLayouts(storageKeys, updated);
+            return updated;
+        });
+        clearBoxVisibility(storageKeys, currentLayoutName);
+        setBoxes(createBoxes());
+        if (currentLayoutName === DEFAULT_LAYOUT_NAME) setDefaultCustomised(storageKeys, false);
+        bumpVersion();
+    }, [storageKeys, currentLayoutName, createDefaultLayout, createBoxes, bumpVersion]);
+
     const importLegacyLayouts = useCallback((): ImportLayoutsResult => {
         if (!legacyStorageKeys) return {imported: [], skipped: []};
         const result = importLayoutsFrom(legacyStorageKeys, storageKeys, defaultLayout);
@@ -377,7 +392,6 @@ export function useBoxLayout({
         reloadFromStorage,
         addLayout,
         deleteLayoutByIndex,
-        toggleBoxCollapse,
         setBoxVisibility,
         replaceBoxes,
         setColumnSizes,
@@ -385,6 +399,7 @@ export function useBoxLayout({
         moveBox,
         addColumn,
         removeColumn,
+        resetCurrentLayout,
         importLegacyLayouts,
     };
 }

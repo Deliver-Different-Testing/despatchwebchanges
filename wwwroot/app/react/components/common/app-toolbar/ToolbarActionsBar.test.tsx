@@ -1,16 +1,10 @@
 import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {fireEvent, screen} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {ToolbarActionsBar, ToolbarActionItem} from './ToolbarActionsBar';
 
-const theme = createTheme();
-
 const renderBar = (props: {actions: ToolbarActionItem[]; compact?: boolean}) =>
-    render(
-        <ThemeProvider theme={theme}>
-            <ToolbarActionsBar {...props} />
-        </ThemeProvider>,
-    );
+    renderWithMantine(<ToolbarActionsBar {...props} />);
 
 const makeActions = (onRefresh = jest.fn()): ToolbarActionItem[] => [
     {key: 'views', node: <button>Views</button>},

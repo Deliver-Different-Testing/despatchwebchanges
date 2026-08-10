@@ -6,7 +6,7 @@
 import React from 'react';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
 import {AutoCompleteDialog, AutoCompleteDialogProps, Suggestion} from './AutoCompleteDialog';
-import { createProps, renderWithTheme } from '../../../__testUtils__';
+import { createProps, renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 
 const mockSuggestions: Suggestion[] = [
@@ -31,7 +31,7 @@ describe('AutoCompleteDialog', () => {
     describe('Rendering', () => {
         it('renders dialog with expected elements and initial state', () => {
             const props = createMockProps();
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             // renders dialog when open is true
             expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe('AutoCompleteDialog', () => {
 
         it('does not render dialog when open is false', () => {
             const props = createMockProps({open: false});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
@@ -61,7 +61,7 @@ describe('AutoCompleteDialog', () => {
         it('displays existing item in input and enables Save button', () => {
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({existingItem});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             // displays existing item value in input
             expect(screen.getByDisplayValue('John Smith')).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('AutoCompleteDialog', () => {
     describe('Re-rate Option', () => {
         it('shows re-rate checkbox unchecked by default when showRerateOption is true', () => {
             const props = createMockProps({showRerateOption: true});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             // shows re-rate checkbox
             expect(screen.getByLabelText(/re-rate job/i)).toBeInTheDocument();
@@ -83,7 +83,7 @@ describe('AutoCompleteDialog', () => {
 
         it('does not show re-rate checkbox when showRerateOption is false', () => {
             const props = createMockProps({showRerateOption: false});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             expect(screen.queryByLabelText(/re-rate job/i)).not.toBeInTheDocument();
         });
@@ -94,7 +94,7 @@ describe('AutoCompleteDialog', () => {
             const user = setupUser();
             const onSearch = jest.fn().mockResolvedValue([]);
             const props = createMockProps({onSearch, minInputLength: 3});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
             await user.click(input);
@@ -109,7 +109,7 @@ describe('AutoCompleteDialog', () => {
             const user = setupUser();
             const onSearch = jest.fn().mockResolvedValue(mockSuggestions);
             const props = createMockProps({onSearch, minInputLength: 2});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
             await user.click(input);
@@ -129,7 +129,7 @@ describe('AutoCompleteDialog', () => {
                 })
             );
             const props = createMockProps({onSearch, minInputLength: 1});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
             await user.click(input);
@@ -144,7 +144,7 @@ describe('AutoCompleteDialog', () => {
             const user = setupUser();
             const onSearch = jest.fn().mockResolvedValue([]);
             const props = createMockProps({onSearch, minInputLength: 2});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
             await user.click(input);
@@ -161,12 +161,10 @@ describe('AutoCompleteDialog', () => {
         it('calls onClose when close icon or Cancel button is clicked', () => {
             const onClose = jest.fn();
             const props = createMockProps({onClose});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             // calls onClose when close button is clicked
-            const closeIcon = screen.getByTestId('CloseIcon');
-            const closeButton = closeIcon.closest('button')!;
-            fireEvent.click(closeButton);
+            fireEvent.click(screen.getByRole('button', {name: 'Close dialog'}));
             expect(onClose).toHaveBeenCalledTimes(1);
 
             // calls onClose when Cancel button is clicked
@@ -181,7 +179,7 @@ describe('AutoCompleteDialog', () => {
             const onSubmit = jest.fn();
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({onSubmit, existingItem});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             await user.click(screen.getByRole('button', {name: /save/i}));
 
@@ -196,7 +194,7 @@ describe('AutoCompleteDialog', () => {
             const onSubmit = jest.fn();
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({onSubmit, existingItem, showRerateOption: true});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             await user.click(screen.getByLabelText(/re-rate job/i));
             await user.click(screen.getByRole('button', {name: /save/i}));
@@ -207,7 +205,7 @@ describe('AutoCompleteDialog', () => {
         it('does not call onSubmit when no item is selected', () => {
             const onSubmit = jest.fn();
             const props = createMockProps({onSubmit});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             // Try to click save (should be disabled)
             const saveButton = screen.getByRole('button', {name: /save/i});
@@ -219,7 +217,7 @@ describe('AutoCompleteDialog', () => {
         it('resets state when dialog is reopened', () => {
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({existingItem, showRerateOption: true});
-            const {rerender} = renderWithTheme(<AutoCompleteDialog {...props} />);
+            const {rerender} = renderWithMantine(<AutoCompleteDialog {...props} />);
 
             // Dialog is open with existing item
             expect(screen.getByDisplayValue('John Smith')).toBeInTheDocument();
@@ -239,7 +237,7 @@ describe('AutoCompleteDialog', () => {
         it('displays minimum characters message for single character', async () => {
             const user = setupUser();
             const props = createMockProps({minInputLength: 1});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             // Click the input to open dropdown
             const input = screen.getByPlaceholderText('Search for a courier...');
@@ -251,7 +249,7 @@ describe('AutoCompleteDialog', () => {
         it('displays minimum characters message for multiple characters', async () => {
             const user = setupUser();
             const props = createMockProps({minInputLength: 3});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
+            renderWithMantine(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
             await user.click(input);

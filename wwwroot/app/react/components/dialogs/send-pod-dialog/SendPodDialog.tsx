@@ -1,23 +1,27 @@
 import React, {useEffect, useState} from 'react';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import DialogContent from '@mui/material/DialogContent';
-import InputBase from '@mui/material/InputBase';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import CheckIcon from '@mui/icons-material/Check';
-import SendIcon from '@mui/icons-material/Send';
-import DescriptionIcon from '@mui/icons-material/Description';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
-import {DialogShell, DialogHeader, DialogFooter, sectionPaperSx, sectionLabelSx, dialogFieldSx} from '../shared';
-import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
+import {
+    Alert, Badge, Box, Button, Checkbox, CloseButton, Divider, Group, Paper, Text, TextInput, Textarea,
+} from '@mantine/core';
+import {Check, FileText, Paperclip, Send} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps, sectionLabelProps,
+} from '../shared/mantine';
+
+import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
 import {useAiDraft} from '../../../hooks/useAiDraft';
 import {draftPodEmail} from '../../../services/aiAssistantApi';
+
+/** The small uppercase field labels down the left of the email preview. */
+const previewLabelProps = {
+    fz: 'xs',
+    fw: 700,
+    tt: 'uppercase',
+    lts: '0.07em',
+    c: 'dimmed',
+    miw: 72,
+    style: {flexShrink: 0},
+} as const;
 
 export interface SendPodJobData {
     jobId: number;
@@ -200,162 +204,154 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
     };
 
     return (
-        <DialogShell open={open} onClose={handleClose}>
+        <DialogShell opened={open} onClose={handleClose}>
             <DialogHeader
-                icon={<DescriptionIcon/>}
+                icon={<Icon lucide={FileText}/>}
                 title="Send Proof of Delivery"
                 subtitle={<>Booking {jobData.jobNo} &middot; {jobData.clientName}</>}
                 onClose={handleClose}
             />
 
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
-                    {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-lg)'}}>
+                {errorMessage && <Alert color="red" variant="light">{errorMessage}</Alert>}
 
-                    {/* Recipients */}
-                    <Box>
-                        <Typography variant="body2" sx={sectionLabelSx}>
-                            Recipients
-                        </Typography>
-                        <Paper elevation={0} sx={sectionPaperSx}>
-                            {showBookingCheckbox && (
-                                <Box
-                                    onClick={toggleBooking}
-                                    sx={{display: 'flex', alignItems: 'center', gap: 1.5, py: 1, cursor: 'pointer', userSelect: 'none'}}
-                                >
-                                    <Checkbox checked={useBooking} size="small" sx={{p: 0}}/>
+                {/* Recipients */}
+                <Box>
+                    <Text {...sectionLabelProps}>Recipients</Text>
+                    <Paper {...sectionPaperProps}>
+                        {showBookingCheckbox && (
+                            <Checkbox
+                                checked={useBooking}
+                                onChange={toggleBooking}
+                                py="xs"
+                                label={
                                     <Box>
-                                        <Typography sx={{fontWeight: 500}}>
-                                            Booking {bookingEmails.length > 1 ? 'emails' : 'email'}
-                                        </Typography>
+                                        <Text fw={500}>Booking {bookingEmails.length > 1 ? 'emails' : 'email'}</Text>
                                         {bookingEmails.map((email) => (
-                                            <Typography key={email} variant="caption" sx={{display: 'block', color: 'text.secondary', fontFamily: 'monospace'}}>
-                                                {email}
-                                            </Typography>
+                                            <Text key={email} fz="xs" c="dimmed" ff="monospace">{email}</Text>
                                         ))}
                                     </Box>
-                                </Box>
-                            )}
-
-                            {showTrackingCheckbox && (
-                                <Box
-                                    onClick={toggleTracking}
-                                    sx={{display: 'flex', alignItems: 'center', gap: 1.5, py: 1, cursor: 'pointer', userSelect: 'none'}}
-                                >
-                                    <Checkbox checked={useTracking} size="small" sx={{p: 0}}/>
-                                    <Box>
-                                        <Typography sx={{fontWeight: 500}}>
-                                            Tracking {uniqueTrackingEmails.length > 1 ? 'emails' : 'email'}
-                                        </Typography>
-                                        {uniqueTrackingEmails.map((email) => (
-                                            <Typography key={email} variant="caption" sx={{display: 'block', color: 'text.secondary', fontFamily: 'monospace'}}>
-                                                {email}
-                                            </Typography>
-                                        ))}
-                                    </Box>
-                                </Box>
-                            )}
-
-                            {(showBookingCheckbox || showTrackingCheckbox) && <Divider sx={{my: 1.5}}/>}
-
-                            <Box sx={{display: 'flex', gap: 1}}>
-                                <TextField
-                                    size="small"
-                                    fullWidth
-                                    type="email"
-                                    placeholder="Add another email address\u2026"
-                                    value={freeInput}
-                                    onChange={(e) => {
-                                        setFreeInput(e.target.value);
-                                        setFreeError('');
-                                    }}
-                                    onKeyDown={handleFreeKeyDown}
-                                    error={!!freeError}
-                                    sx={dialogFieldSx}
-                                />
-                                <Button variant="outlined" onClick={addFreeEmail} sx={{whiteSpace: 'nowrap'}}>
-                                    Add
-                                </Button>
-                            </Box>
-                            <Typography variant="caption" sx={{display: 'block', mt: 0.75, color: freeError ? 'error.main' : 'text.disabled'}}>
-                                {freeError || 'Press Enter or comma to add multiple'}
-                            </Typography>
-                        </Paper>
-                    </Box>
-
-                    {/* Recipient chips */}
-                    {recipients.length > 0 && (
-                        <Box>
-                            <Typography variant="body2" sx={sectionLabelSx}>
-                                Sending to ({recipients.length})
-                            </Typography>
-                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
-                                {recipients.map((r) => (
-                                    <Chip
-                                        key={r}
-                                        label={r}
-                                        size="small"
-                                        color="primary"
-                                        variant="outlined"
-                                        onDelete={() => removeRecipient(r)}
-                                    />
-                                ))}
-                            </Box>
-                        </Box>
-                    )}
-
-                    {/* Email preview */}
-                    <Box>
-                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1}}>
-                            <Typography variant="body2" sx={{...sectionLabelSx, mb: 0}}>
-                                Email preview
-                            </Typography>
-                            <AiDraftButton onClick={handleDraft} isDrafting={isDrafting}/>
-                        </Box>
-                        <Paper elevation={0} sx={{...sectionPaperSx, p: 0, overflow: 'hidden'}}>
-                            {/* Subject */}
-                            <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5, py: 1.25, px: 1.75}}>
-                                <Typography variant="caption" sx={{fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'text.disabled', minWidth: 72, pt: '2px', flexShrink: 0}}>
-                                    Subject
-                                </Typography>
-                                <InputBase
-                                    value={subject}
-                                    onChange={(e) => setSubject(e.target.value)}
-                                    inputProps={{'aria-label': 'Email subject'}}
-                                    multiline
-                                    sx={{fontSize: 13, fontWeight: 600, color: 'text.primary', lineHeight: 1.45, flex: 1, p: 0}}
-                                />
-                            </Box>
-                            <Divider/>
-
-                            {/* Attachment */}
-                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, px: 1.75}}>
-                                <Typography variant="caption" sx={{fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'text.disabled', minWidth: 72, flexShrink: 0}}>
-                                    Attachment
-                                </Typography>
-                                <Chip size="small" variant="outlined" icon={<AttachFileIcon/>} label={`POD_${jobData.jobNo}.pdf`}/>
-                            </Box>
-                            <Divider/>
-
-                            {/* Body */}
-                            <InputBase
-                                value={body}
-                                onChange={(e) => setBody(e.target.value)}
-                                inputProps={{'aria-label': 'Email body'}}
-                                multiline
-                                fullWidth
-                                sx={{py: 1.5, px: 1.75, fontSize: 13, color: 'text.primary', lineHeight: 1.7}}
+                                }
                             />
-                        </Paper>
-                    </Box>
+                        )}
+
+                        {showTrackingCheckbox && (
+                            <Checkbox
+                                checked={useTracking}
+                                onChange={toggleTracking}
+                                py="xs"
+                                label={
+                                    <Box>
+                                        <Text fw={500}>Tracking {uniqueTrackingEmails.length > 1 ? 'emails' : 'email'}</Text>
+                                        {uniqueTrackingEmails.map((email) => (
+                                            <Text key={email} fz="xs" c="dimmed" ff="monospace">{email}</Text>
+                                        ))}
+                                    </Box>
+                                }
+                            />
+                        )}
+
+                        {(showBookingCheckbox || showTrackingCheckbox) && <Divider my="sm"/>}
+
+                        <Group gap="xs" align="flex-start" wrap="nowrap">
+                            <TextInput
+                                style={{flex: 1}}
+                                type="email"
+                                placeholder="Add another email address&hellip;"
+                                value={freeInput}
+                                onChange={(e) => {
+                                    setFreeInput(e.currentTarget.value);
+                                    setFreeError('');
+                                }}
+                                onKeyDown={handleFreeKeyDown}
+                                error={!!freeError}
+                            />
+                            <Button variant="default" onClick={addFreeEmail} style={{whiteSpace: 'nowrap'}}>
+                                Add
+                            </Button>
+                        </Group>
+                        <Text fz="xs" mt={6} c={freeError ? 'red.6' : 'dimmed'}>
+                            {freeError || 'Press Enter or comma to add multiple'}
+                        </Text>
+                    </Paper>
                 </Box>
-            </DialogContent>
+
+                {/* Recipient chips */}
+                {recipients.length > 0 && (
+                    <Box>
+                        <Text {...sectionLabelProps}>Sending to ({recipients.length})</Text>
+                        <Group gap="xs">
+                            {recipients.map((r) => (
+                                <Badge
+                                    key={r}
+                                    size="sm"
+                                    variant="outline"
+                                    color="brand"
+                                    rightSection={
+                                        <CloseButton
+                                            size={14}
+                                            aria-label={`Remove ${r}`}
+                                            onClick={() => removeRecipient(r)}
+                                        />
+                                    }
+                                >
+                                    {r}
+                                </Badge>
+                            ))}
+                        </Group>
+                    </Box>
+                )}
+
+                {/* Email preview */}
+                <Box>
+                    <Group justify="space-between" align="center" mb="xs">
+                        <Text {...sectionLabelProps} mb={0}>Email preview</Text>
+                        <AiDraftButton onClick={handleDraft} isDrafting={isDrafting}/>
+                    </Group>
+                    <Paper {...sectionPaperProps} p={0} style={{overflow: 'hidden'}}>
+                        {/* Subject */}
+                        <Group gap="sm" align="flex-start" wrap="nowrap" py={10} px={14}>
+                            <Text {...previewLabelProps}>Subject</Text>
+                            <Textarea
+                                variant="unstyled"
+                                autosize
+                                style={{flex: 1}}
+                                aria-label="Email subject"
+                                value={subject}
+                                onChange={(e) => setSubject(e.currentTarget.value)}
+                                styles={{input: {fontSize: 13, fontWeight: 600, lineHeight: 1.45, padding: 0, minHeight: 0}}}
+                            />
+                        </Group>
+                        <Divider/>
+
+                        {/* Attachment */}
+                        <Group gap="sm" align="center" wrap="nowrap" py={10} px={14}>
+                            <Text {...previewLabelProps}>Attachment</Text>
+                            <Badge size="sm" variant="outline" color="gray" leftSection={<Icon lucide={Paperclip} size={12}/>}>
+                                {`POD_${jobData.jobNo}.pdf`}
+                            </Badge>
+                        </Group>
+                        <Divider/>
+
+                        {/* Body */}
+                        <Textarea
+                            variant="unstyled"
+                            autosize
+                            minRows={4}
+                            aria-label="Email body"
+                            value={body}
+                            onChange={(e) => setBody(e.currentTarget.value)}
+                            styles={{input: {fontSize: 13, lineHeight: 1.7, paddingBlock: 12, paddingInline: 14}}}
+                        />
+                    </Paper>
+                </Box>
+            </Box>
 
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSend}
                 confirmLabel={sent ? 'Queued' : 'Send POD PDF'}
-                confirmIcon={sent ? <CheckIcon/> : <SendIcon/>}
+                confirmIcon={sent ? <Icon lucide={Check}/> : <Icon lucide={Send}/>}
                 confirmDisabled={recipients.length === 0}
                 submitting={sending}
             />

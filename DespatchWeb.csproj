@@ -319,4 +319,14 @@
   <ItemGroup>
     <Folder Include="wwwroot\dist\" />
   </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="wwwroot\app\components\common\react-app-shell\react-app-shell.scope.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\interfaces\ai.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\interfaces\dispatchLayout.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\interfaces\jobChangeRequest.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\interfaces\nationwideJobs.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\interfaces\priceBreakdown.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\interfaces\splitJobs.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\services\requestOptions.ts" />
+  </ItemGroup>
 </Project>

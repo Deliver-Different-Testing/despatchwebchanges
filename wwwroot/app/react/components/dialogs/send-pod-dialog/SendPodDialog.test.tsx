@@ -1,7 +1,7 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
 import {SendPodDialog, SendPodJobData} from './SendPodDialog';
-import { renderWithTheme } from '../../../__testUtils__';
+import { renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {draftPodEmail} from '../../../services/aiAssistantApi';
 import {isAiEnabled} from '../../../../functions/aiSettings';
@@ -34,7 +34,7 @@ const defaultProps = {
 };
 
 const renderDialog = (props: Partial<typeof defaultProps> = {}) =>
-    renderWithTheme(<SendPodDialog {...defaultProps} {...props} />);
+    renderWithMantine(<SendPodDialog {...defaultProps} {...props} />);
 
 describe('SendPodDialog — AI draft', () => {
     beforeEach(() => jest.clearAllMocks());

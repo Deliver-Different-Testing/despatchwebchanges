@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import type { AddressViewModel } from '../interfaces/address';
 import type { AgentInfo } from '../interfaces/agent';
 import type { EventType, AddEventJob } from '../interfaces/event';
-import type { Task, TaskAssignee } from '../interfaces/tasks';
+import Task, {TaskAssignee} from '../interfaces/tasks';
 import type { PrebookListModel } from '../interfaces/recurringJobs';
 import type {
     FlightSegment,

@@ -28,6 +28,7 @@ import {
 import {getDispatchJobDetail} from '../../services/dispatchExecutorApi';
 import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 import {JobListPanel} from '../../components/job-list/JobListPanel';
+import {loadJobListCategory, toStatusFilter} from '../../components/job-list/jobListPreferences';
 import {DispatchDialog} from '../../components/dialogs/dispatch-dialog';
 import {openInterCourierChargeDialog} from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
 import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
@@ -85,8 +86,10 @@ export interface DispatchLayoutBridge {
     setViewSelection: (viewIds: number[]) => void;
     /** Push new auto-refresh intervals (from the settings dialog) into the page. */
     updateRefreshIntervals: (intervals: Partial<DispatchRefreshIntervals>) => void;
-    /** Set layout edit mode (driven by the toolbar's Layouts → Edit layout toggle). */
-    setEditMode: (enabled: boolean) => void;
+    /** Restore the current layout to the shipped arrangement (toolbar → Layouts → Reset layout). */
+    resetCurrentLayout: () => void;
+    /** Show or hide the "Edit columns" bar (toolbar → Layouts → Edit columns). */
+    setColumnEditMode: (enabled: boolean) => void;
     /** Open the Inter-Courier Charge dialog, wired to the page's toast. */
     openInterCourierCharge: () => void;
     /** A job was just created — refresh the list and select it. */
@@ -102,9 +105,9 @@ export interface DispatchPageProps {
     timeZoneShort?: string;
     deepLinkJobId?: number;
     /** Called once with imperative handles for the AppShell toolbar to drive layout selection. */
+    /** Leave "Edit columns" mode; routes back through the toolbar so its menu stays in sync. */
+    onExitColumnEditMode?: () => void;
     onLayoutBridgeReady?: (bridge: DispatchLayoutBridge) => void;
-    /** Leave edit mode (in-shell "Done editing" button). Routes back through the toolbar. */
-    onExitEditMode?: () => void;
 }
 
 // Adapter for the existing React job-details mount API. Keeps the existing
@@ -159,8 +162,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     isUsCustomer,
     timeZone,
     deepLinkJobId,
+    onExitColumnEditMode,
     onLayoutBridgeReady,
-    onExitEditMode,
 }) => {
     void timeZone;
 
@@ -192,9 +195,13 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     // Truck-mode filter for Driver Locations; the control lives in that box's
     // panel header (see boxRightSlotFor), so the state is lifted here.
     const [truckMode, setTruckMode] = useState<TruckMode>('On');
-    // Layout edit mode: reveals drag handles / collapse / resize on the boxes.
-    // Off by default for a clean, locked view (best-practice Edit/Done toggle).
-    const [editMode, setEditMode] = useState(false);
+    // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
+    // layout column stepper in the shell and each list's column editor.
+    const [columnEditMode, setColumnEditMode] = useState(false);
+    const handleExitColumnEditMode = useCallback(() => {
+        setColumnEditMode(false);
+        onExitColumnEditMode?.();
+    }, [onExitColumnEditMode]);
     const betaBanner = useDismissibleBanner(`dispatchBetaBannerDismissed-${ContactID}`);
 
     // Toolbar filters (selected views + date range). Seeded from localStorage so
@@ -428,12 +435,13 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             registerViewsListener,
             setViewSelection: applyViewSelection,
             updateRefreshIntervals: applyRefreshIntervals,
-            setEditMode,
+            resetCurrentLayout: boxLayout.resetCurrentLayout,
+            setColumnEditMode,
             openInterCourierCharge,
             jobCreated,
             importLegacyLayouts: boxLayout.importLegacyLayouts,
         });
-    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, promptSaveLayout, promptDeleteLayout, promptRenameLayout, applyFilters, registerViewsListener, applyViewSelection, applyRefreshIntervals, openInterCourierCharge, jobCreated]);
+    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, boxLayout.resetCurrentLayout, promptSaveLayout, promptDeleteLayout, promptRenameLayout, applyFilters, registerViewsListener, applyViewSelection, applyRefreshIntervals, openInterCourierCharge, jobCreated]);
 
     const fetchConfigMain = useMemo(() => {
         const baseParams = {
@@ -444,6 +452,9 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             isInternal: window.ClientInternal ?? false,
             page: 0,
             pageSize: 50,
+            // The list is remounted on every filter change, so re-seed the dispatcher's
+            // Unassigned/Active choice — useJobListData only reads initialParams once.
+            statusFilter: toStatusFilter(loadJobListCategory('dispatchJobList')),
         };
         // When a driver-location area is active, scope the list to that clear
         // list (V1 getJobList → selectedClearListId via the clear-list endpoint).
@@ -622,6 +633,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             case DispatchBoxes.JobsList:
                 return (
                     <JobListPanel
+                        columnEditMode={columnEditMode}
+                        onExitColumnEditMode={handleExitColumnEditMode}
                         // Remount when filters or the clear-list scope change so fetchConfig re-seeds.
                         key={`${filtersKey(filters)}|${clearListId ?? ''}`}
                         showToast={showToast}
@@ -809,19 +822,17 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     layout={boxLayout.layout}
                     layoutVersion={boxLayout.layoutVersion}
                     boxes={boxLayout.boxes}
-                    isDefaultLayout={boxLayout.isDefaultLayout}
                     renderBoxContent={renderBoxContent}
                     onRefreshBox={handleRefreshBox}
-                    onToggleCollapse={boxLayout.toggleBoxCollapse}
                     boxSubtitle={subtitleFor}
                     boxRightSlot={boxRightSlotFor}
                     onColumnSizes={boxLayout.setColumnSizes}
                     onBoxHeights={boxLayout.setBoxHeights}
                     onMoveBox={boxLayout.moveBox}
+                    columnEditMode={columnEditMode}
+                    onExitColumnEditMode={handleExitColumnEditMode}
                     onAddColumn={boxLayout.addColumn}
                     onRemoveColumn={boxLayout.removeColumn}
-                    editMode={editMode}
-                    onExitEditMode={onExitEditMode}
                 />
             </Box>
             <SaveLayoutDialog

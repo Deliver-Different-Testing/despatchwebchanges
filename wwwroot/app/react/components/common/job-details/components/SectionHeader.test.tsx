@@ -8,6 +8,7 @@ import {ThemeProvider, createTheme} from '@mui/material/styles';
 import IconButton from '@mui/material/IconButton';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import {SectionHeader} from './SectionHeader';
+import {createAppTheme} from '../../../../theme/muiTheme';
 
 const theme = createTheme();
 
@@ -57,4 +58,38 @@ describe('SectionHeader', () => {
             expect(screen.getByText('Section')).toBeInTheDocument();
         },
     );
+
+    /**
+     * Pickup and delivery keep their map-convention fills; everything else is a
+     * plain paper bar so the section title reads as part of the card.
+     */
+    describe('surfaces', () => {
+        const appTheme = createAppTheme();
+
+        const renderVariant = (variant: 'primary' | 'pickup' | 'delivery') => {
+            render(
+                <ThemeProvider theme={appTheme}>
+                    <SectionHeader icon={RepeatIcon} title="Section" variant={variant} />
+                </ThemeProvider>,
+            );
+            return screen.getByTestId('section-header');
+        };
+
+        it('renders the default section as a paper bar with a keyline', () => {
+            const bar = renderVariant('primary');
+            expect(bar).toHaveStyle({backgroundColor: appTheme.palette.background.paper});
+            expect(bar).toHaveStyle({borderBottom: `1px solid ${appTheme.palette.divider}`});
+            expect(bar).not.toHaveStyle({backgroundColor: appTheme.palette.primary.main});
+        });
+
+        it('keeps pickup map-blue', () => {
+            expect(renderVariant('pickup'))
+                .toHaveStyle({backgroundColor: appTheme.palette.info.main});
+        });
+
+        it('keeps delivery green', () => {
+            expect(renderVariant('delivery'))
+                .toHaveStyle({backgroundColor: appTheme.palette.success.main});
+        });
+    });
 });

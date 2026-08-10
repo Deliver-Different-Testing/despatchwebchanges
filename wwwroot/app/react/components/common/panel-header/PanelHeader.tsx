@@ -1,18 +1,15 @@
 /**
- * PanelHeader — the gradient hero header used at the top of every card panel
- * on a workspace page (Filters, Recurring Jobs, Job Details, Recurring Log…).
+ * PanelHeader — the header used at the top of every card panel on a workspace
+ * page (Filters, Recurring Jobs, Job Details, Recurring Log…).
  *
- * A coloured 135° gradient bar with a white icon badge, title, an optional
- * trailing count, an optional uppercase badge chip, and an optional
- * right-aligned action slot (e.g. a refresh button). The gradient itself
- * separates the header from card content, so there is no trailing Divider.
- *
- * Text colour defers to `theme.palette.primary.contrastText` (not a hard-coded
- * white) so the US amber theme picks up dark text and the NZ blue theme picks
- * up white — keeping the header legible on either palette. This mirrors the
- * approach in `SectionHeader.tsx`, which is the in-card-section equivalent;
- * PanelHeader is the page/card-level header and additionally carries an icon
- * badge, count, and badge chip.
+ * A plain paper bar with a brand-tinted icon badge, title, an optional trailing
+ * count, an optional uppercase badge chip, and an optional right-aligned action
+ * slot (e.g. a refresh button). It uses the `'surface'` header variant, so a
+ * divider keyline — not a change of colour — separates it from the card body,
+ * and the title reads as part of its card. This mirrors the approach in
+ * `SectionHeader.tsx`, which is the in-card-section equivalent; PanelHeader is
+ * the page/card-level header and additionally carries an icon badge, count, and
+ * badge chip.
  */
 
 import React from 'react';
@@ -41,7 +38,7 @@ interface PanelHeaderProps {
 
 const rootSx = ((theme: Theme) => ({
     // Shared header chrome, overridden for the panel's compact fixed-height bar.
-    ...headerChromeSx(theme),
+    ...headerChromeSx(theme, 'surface'),
     px: 2,
     py: 1,
     gap: 1.5,
@@ -55,7 +52,7 @@ const rootSx = ((theme: Theme) => ({
 })) satisfies SxProps<Theme>;
 
 // 32px chip (vs the 40px dialog default) to suit the compact panel bar.
-const iconBadgeSx = ((theme: Theme) => headerChipSx(theme, 'primary', 32)) satisfies SxProps<Theme>;
+const iconBadgeSx = ((theme: Theme) => headerChipSx(theme, 'surface', 32)) satisfies SxProps<Theme>;
 
 const titleRowSx = {
     flex: 1,
@@ -66,7 +63,10 @@ const titleRowSx = {
 } satisfies SxProps<Theme>;
 
 const badgeChipSx = ((theme: Theme) => ({
-    ...headerBadgeSx(theme),
+    ...headerBadgeSx(theme, 'surface'),
+    // The badge carries text, not a glyph: the accent's contrast on the wash is
+    // fine for an icon but too low for a 10px label, so it reverts to body text.
+    color: theme.palette.text.primary,
     fontWeight: 700,
     fontSize: 10,
     letterSpacing: '0.6px',
@@ -90,7 +90,7 @@ export const PanelHeader = React.memo(function PanelHeader({
     action,
 }: PanelHeaderProps) {
     return (
-        <Box sx={rootSx}>
+        <Box sx={rootSx} data-testid="panel-header">
             <Box sx={iconBadgeSx}>{icon}</Box>
             <Box sx={titleRowSx}>
                 <Typography

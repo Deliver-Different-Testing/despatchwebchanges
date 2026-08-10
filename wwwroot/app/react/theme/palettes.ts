@@ -8,8 +8,9 @@
  * along with it.
  */
 
-// DFRNT primary palette — Cyan (#3bc7f4). Used by US tenants. Cyan is a light
-// hue, so anything filled with it needs DARK (Ink) text, not white.
+// DFRNT primary palette — Cyan (#3bc7f4). The single brand primary for every
+// tenant. Cyan is a light hue, so anything filled with it needs DARK (Ink) text,
+// not white.
 export const dfrntPrimaryPalette = {
     50: '#e7f8fe',
     100: '#d8f4fd',
@@ -25,26 +26,6 @@ export const dfrntPrimaryPalette = {
     A200: '#5bd1f5',
     A400: '#3bc7f4',
     A700: '#1eb2e6',
-};
-
-// Non-US "urgent" primary — warm amber/gold (#f4c430). US tenants use the cyan
-// dfrntPrimaryPalette above; non-US (NZ) tenants use this. Gold is a light hue, so
-// anything filled with it needs DARK (Ink) text, not white.
-export const urgentPrimaryPalette = {
-    50: '#fef9e7',
-    100: '#fcefc4',
-    200: '#fae49d',
-    300: '#f8d976',
-    400: '#f6d058',
-    500: '#f4c430',  // Main color - warm amber gold
-    600: '#e5b52a',
-    700: '#d4a324',
-    800: '#c3911e',
-    900: '#a87614',
-    A100: '#fff8e1',
-    A200: '#ffecb3',
-    A400: '#ffd54f',
-    A700: '#ffc107',
 };
 
 // Ink Blue (#0d0c2c) — the DFRNT shell / neutral-dark family. Backs the app bar,

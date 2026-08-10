@@ -6,11 +6,12 @@
  * jobApi.ts, jobDetailApi.ts, etc.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import type {ActiveCourierViewModel} from '../../interfaces/courier.interface';
 import type {IDispatchJobDto} from '../../interfaces/job.interface';
 import {transformDispatchJobDTO} from '../../functions/dtoMappings';
 import type {DispatchJob} from '../interfaces/dispatchJob';
+import {RequestOptions} from "./requestOptions";
 
 // ── Courier Lookup ──────────────────────────────────────────────────
 

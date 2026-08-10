@@ -5,6 +5,28 @@
  * so that React module bundles can use global shims instead of bundling React again.
  */
 
+// Mantine global stylesheets — imported here so they land in a single
+// `vendor-react.css` bundle (linked once in _Layout), rather than duplicated
+// into every React island. The `.layer.css` variants scope Mantine's rules to
+// an `@layer mantine`, keeping its internal cascade clean alongside the
+// (unlayered) Angular Material + app CSS in the shared document.
+import '@mantine/core/styles.layer.css';
+import '@mantine/dates/styles.layer.css';
+import '@mantine/notifications/styles.layer.css';
+
+// Unlayered, and imported last so it outranks the legacy stylesheets that override
+// Mantine's own reset. See the file header for what it repairs and why.
+import './react/theme/mantineReset.css';
+
+// Mantine JS — bundled once here and exposed as window globals for the same
+// reason MUI is (see below). Without this every migrated island embeds its own
+// copy of Mantine core (~190 KB each). The global-shim plugin in build.ts
+// rewrites `@mantine/*` barrel imports onto these.
+import * as MantineCore from '@mantine/core';
+import * as MantineHooks from '@mantine/hooks';
+import * as MantineDates from '@mantine/dates';
+import * as MantineNotifications from '@mantine/notifications';
+
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
@@ -35,6 +57,12 @@ window.ReactJsxRuntime = jsxRuntime;
 // AdapterDayjs lives on its own subpath (not in the main x-date-pickers barrel),
 // so merge it in explicitly. dayjs itself is redirected to the configured
 // window.dayjs by the global-shim plugin applied to this bundle.
+// Expose Mantine globally for module bundles to use via shims.
+window.MantineCore = MantineCore;
+window.MantineHooks = MantineHooks;
+window.MantineDates = MantineDates;
+window.MantineNotifications = MantineNotifications;
+
 window.MUI = MUIMaterial;
 window.MUIStyles = MUIStyles;
 window.MUIXDatePickers = {...MUIXDatePickers, AdapterDayjs};

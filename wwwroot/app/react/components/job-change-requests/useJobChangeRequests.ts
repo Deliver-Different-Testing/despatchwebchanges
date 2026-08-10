@@ -13,7 +13,8 @@
 
 import {useMemo} from 'react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {jobChangeRequestApi, type JobChangeRequestDto} from '../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
+import type {JobChangeRequestDto} from '../../interfaces/jobChangeRequest';
 
 export function useJobChangeRequests(jobId: number | undefined): UseQueryResult<JobChangeRequestDto[]> {
     return useQuery({

@@ -10,14 +10,14 @@ const sampleJob = {id: 55, jobNo: 'JOB-55', assignedCourier: undefined};
 // the HERE Maps SDK); stub them so the smoke test exercises the shell wiring.
 // The job-list stub exposes a button that fires onJobSelect so tests can drive
 // the page's selection (and the Dispatch affordance that depends on it).
-const jobListFetchConfig: {initialParams?: {despatchViewIds?: number[]}} = {};
+const jobListFetchConfig: {initialParams?: {despatchViewIds?: number[]; statusFilter?: string}} = {};
 jest.mock('../../components/job-list/JobListPanel', () => ({
     JobListPanel: ({storagePrefix, onJobSelect, onJobsLoaded, topSlot, fetchConfig}: {
         storagePrefix: string;
         onJobSelect?: (j: unknown) => void;
         onJobsLoaded?: (jobs: unknown[]) => void;
         topSlot?: React.ReactNode;
-        fetchConfig?: {initialParams?: {despatchViewIds?: number[]}};
+        fetchConfig?: {initialParams?: {despatchViewIds?: number[]; statusFilter?: string}};
     }) => {
         if (storagePrefix === 'dispatchJobList') jobListFetchConfig.initialParams = fetchConfig?.initialParams;
         return (
@@ -132,6 +132,25 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof DispatchPage>
 describe('DispatchPage', () => {
     beforeEach(() => {
         localStorage.clear();
+    });
+
+    describe('persisted category filter', () => {
+        // The job list is re-keyed (and so remounted) on every view/date change, so the
+        // dispatcher's Unassigned/Active choice has to be seeded back into the fetch
+        // params — otherwise the restored tab would filter an unfiltered page of results.
+        const categoryKey = 'dispatchJobList_selectedCategory_0';
+
+        it('seeds the job list status filter from the persisted category', () => {
+            localStorage.setItem(categoryKey, 'needs-dispatch');
+            renderPage();
+            expect(jobListFetchConfig.initialParams?.statusFilter).toBe('needs-dispatch');
+        });
+
+        it('sends no status filter when the persisted category is All or absent', () => {
+            localStorage.setItem(categoryKey, 'all');
+            renderPage();
+            expect(jobListFetchConfig.initialParams?.statusFilter).toBeUndefined();
+        });
     });
 
     it('renders the BETA banner and the dispatch job list box', () => {

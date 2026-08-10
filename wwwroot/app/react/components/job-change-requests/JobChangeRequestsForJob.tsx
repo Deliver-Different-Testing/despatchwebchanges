@@ -18,7 +18,7 @@
  *     value after cancelling the existing row.
  */
 
-import React, {useState, useCallback, useMemo} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -39,7 +39,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
-import {jobChangeRequestApi, type JobChangeRequestDto} from '../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
 import {useJobChangeRequests} from './useJobChangeRequests';
 import {
     ageLevel,
@@ -48,10 +48,11 @@ import {
     formatChangeRequestValueWithTz,
     formatRequestedAtTooltip,
     getFieldMeta,
-    relativeAgeShort,
     type JobChangeRequestCategory,
+    relativeAgeShort,
 } from './jobChangeRequestFormatting';
 import {ChangeRequestTriage} from './ChangeRequestTriage';
+import type {JobChangeRequestDto} from '../../interfaces/jobChangeRequest';
 
 export interface JobChangeRequestsForJobProps {
     jobId: number;
@@ -199,9 +200,8 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
 
     // Surface the query's own error (network / 5xx) alongside any action error.
     const effectiveError = error || (queryError as {message?: string} | null)?.message || '';
-    const loading = isLoading;
-
-    if (loading) {
+    
+    if (isLoading) {
         return (
             <Card variant="outlined">
                 <CardContent sx={{display: 'flex', alignItems: 'center', gap: 1, py: 2}}>
@@ -331,11 +331,11 @@ function ChangeRequestCard({
         : undefined;
     const fromDisplay = useMemo(
         () => formatChangeRequestValueWithTz(row.fieldName, row.currentValue, fieldTimezoneText),
-        [row.fieldName, row.currentValue, fieldTimezoneText],
+        [row.fieldName, row.currentValue],
     );
     const toDisplay = useMemo(
         () => formatChangeRequestValueWithTz(row.fieldName, row.requestedValue, fieldTimezoneText),
-        [row.fieldName, row.requestedValue, fieldTimezoneText],
+        [row.fieldName, row.requestedValue],
     );
     const fromLines = useMemo(
         () => meta.category === 'address' ? formatAddressLines(row.currentValue) : [],

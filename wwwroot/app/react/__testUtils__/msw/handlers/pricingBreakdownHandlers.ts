@@ -5,7 +5,8 @@
  */
 
 import { http, HttpResponse } from 'msw';
-import type { PriceBreakdown } from '../../../services/pricingBreakdownApi';
+import {PriceBreakdown} from "../../../interfaces/priceBreakdown";
+
 
 // Mock data
 export const mockPriceBreakdowns: PriceBreakdown[] = [

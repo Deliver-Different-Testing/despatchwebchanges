@@ -10,7 +10,8 @@ import type React from 'react';
 import type {Dayjs} from 'dayjs';
 import type {AddressViewModel} from './address';
 import type {ShowToastFn} from '../services/toastService';
-import type {RequestOptions} from '../services/apiClient';
+
+import {RequestOptions} from "../services/requestOptions";
 
 // Re-export shared types that the AngularJS layer already defines
 export interface DispatchJobSuggestion {
@@ -314,6 +315,10 @@ export interface JobListPanelProps {
     fetchConfig?: FetchConfig;
     /** Hide the "Logged-in only" toggle in the toolbar */
     hideLoggedInSwitch?: boolean;
+    /** Show this list's column editor ("Edit columns" mode, driven from the toolbar). */
+    columnEditMode?: boolean;
+    /** Leave "Edit columns" mode from the editor's Done button. */
+    onExitColumnEditMode?: () => void;
     /**
      * Card header DOM node (from JobSearchShell). When provided, the view options
      * (density / reset columns / logged-in toggle) are portaled into the header

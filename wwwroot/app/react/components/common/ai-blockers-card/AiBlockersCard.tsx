@@ -22,8 +22,9 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import type {Theme} from '@mui/material/styles';
-import {ExtractBlockersResponse, SummarySeverity} from '../../../services/aiAssistantApi';
+import {SummarySeverity} from '../../../services/aiAssistantApi';
 import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
+import type {ExtractBlockersResponse} from '../../../interfaces/ai';
 
 interface AiBlockersCardProps {
     title: string;

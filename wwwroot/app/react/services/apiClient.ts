@@ -5,21 +5,12 @@
  * This replaces the AngularJS $http service for React dialogs.
  */
 
-import axios, {AxiosInstance, AxiosError, AxiosRequestConfig} from 'axios';
+import axios, {AxiosError, AxiosInstance, AxiosRequestConfig} from 'axios';
 import {ApiError} from '../interfaces';
+import {RequestOptions} from "./requestOptions";
 
 // Re-export for backward compatibility
 export type {ApiError};
-
-/** Request options that can be passed to API methods */
-export interface RequestOptions {
-    /** AbortSignal for request cancellation (integrates with React Query) */
-    signal?: AbortSignal;
-    /** Query parameters */
-    params?: Record<string, unknown>;
-    /** Override default timeout (ms) */
-    timeout?: number;
-}
 
 /** Options for file upload requests */
 export interface UploadOptions extends RequestOptions {

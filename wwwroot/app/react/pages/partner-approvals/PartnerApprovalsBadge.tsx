@@ -9,14 +9,11 @@
  */
 
 import React, {useState, useMemo} from 'react';
-import {alpha} from '@mui/material/styles';
-import IconButton from '@mui/material/IconButton';
-import Badge from '@mui/material/Badge';
-import Drawer from '@mui/material/Drawer';
-import Box from '@mui/material/Box';
-import Tooltip from '@mui/material/Tooltip';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import type {SxProps, Theme} from '@mui/material/styles';
+import {ActionIcon, Drawer, Indicator, Tooltip} from '@mantine/core';
+import {Handshake} from 'lucide-react';
+import {Icon} from '../../components/common/icon/Icon';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
+import {badgeOverflowStyle, toolbarIconButtonStyle} from '../../components/common/app-toolbar/ToolbarActions';
 import {useApproverInbox} from './useApproverInbox';
 import {useHasActivePartners} from './useHasActivePartners';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
@@ -36,16 +33,6 @@ export interface PartnerApprovalsBadgeProps {
      */
     toolbarVariant?: boolean;
 }
-
-// Toolbar-styled icon button — mirrors the hover treatment used by the
-// other AppToolbar actions (Messages, Refresh, etc.) so the badge looks
-// native to the bar rather than bolted on.
-const toolbarIconButtonSx: SxProps<Theme> = {
-    p: 1,
-    '&:hover': {
-        bgcolor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
-    },
-};
 
 export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
     onOpenJob,
@@ -80,55 +67,53 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
 
     return (
         <>
-            <Tooltip title={tooltip}>
-                <IconButton
+            <Tooltip label={tooltip}>
+                <ActionIcon
                     onClick={() => setOpen(true)}
                     aria-label="Open partner approvals"
-                    color={toolbarVariant ? 'inherit' : undefined}
-                    size={toolbarVariant ? undefined : 'small'}
-                    sx={toolbarVariant ? toolbarIconButtonSx : {position: 'relative'}}
+                    size={toolbarVariant ? 'lg' : 30}
+                    variant="subtle"
+                    color={toolbarVariant ? undefined : 'gray'}
+                    style={toolbarVariant ? {...toolbarIconButtonStyle, ...badgeOverflowStyle} : badgeOverflowStyle}
                 >
-                    <Badge
-                        badgeContent={count}
-                        color={hasOverdue ? 'error' : 'warning'}
-                        max={99}
-                        invisible={count === 0}
-                        sx={toolbarVariant ? {
-                            '& .MuiBadge-badge': {
-                                fontSize: '0.65rem',
-                                minWidth: 18,
-                                height: 18,
-                            },
-                        } : undefined}
+                    <Indicator
+                        label={count > 99 ? '99+' : count}
+                        disabled={count === 0}
+                        color={hasOverdue ? 'red' : 'orange'}
+                        size={18}
+                        offset={2}
                     >
-                        <HandshakeIcon sx={toolbarVariant ? {fontSize: 22} : undefined}/>
-                    </Badge>
-                </IconButton>
+                        <Icon lucide={Handshake} size={toolbarVariant ? 22 : 18} />
+                    </Indicator>
+                </ActionIcon>
             </Tooltip>
 
             <Drawer
-                anchor="right"
-                open={open}
+                opened={open}
                 onClose={() => setOpen(false)}
-                slotProps={{
-                    paper: {
-                        elevation: 24,
-                        sx: {
-                            width: {xs: '100%', sm: 460},
-                            bgcolor: 'background.default',
-                            overflow: 'hidden',
-                        },
+                position="right"
+                size={460}
+                padding={0}
+                withCloseButton={false}
+                styles={{
+                    content: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        backgroundColor: 'var(--mantine-color-body)',
                     },
+                    body: {flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'},
                 }}
             >
-                <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+                {/* The inbox itself is still MUI — migration Phase 8. */}
+                <MuiThemeIsland>
                     <PartnerApprovalsInbox
                         onOpenJob={(jobId, jobNo) => {
                             onOpenJob?.(jobId, jobNo);
                             setOpen(false);
                         }}
                     />
-                </Box>
+                </MuiThemeIsland>
             </Drawer>
         </>
     );

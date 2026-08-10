@@ -13,8 +13,9 @@ import {CourierSuggestion, TimeZoneOption} from '../interfaces';
 /**
  * Hook to search for active couriers
  *
- * @param searchText - Search text (minimum 2 characters to trigger search)
- * @param options - Additional options
+ * @param searchText - Search text (minimum 2 characters to trigger search by default)
+ * @param options - Additional options. `minLength` lowers the search floor for
+ *   callers that must match short courier codes.
  * @returns Query result with couriers array, loading state, and error
  *
  * @example
@@ -26,9 +27,10 @@ export function useCourierSearch(
     searchText: string,
     options?: {
         enabled?: boolean;
+        minLength?: number;
     }
 ) {
-    const shouldSearch = searchText.length >= 2;
+    const shouldSearch = searchText.length >= (options?.minLength ?? 2);
 
     return useQuery<CourierSuggestion[], Error>({
         queryKey: queryKeys.couriers.search(searchText),

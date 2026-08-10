@@ -23,7 +23,9 @@ import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dial
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import BulkPriceUploadDialogService from "../dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
-import {openInterCourierChargeDialog} from "../../react/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module";
+import {
+    openInterCourierChargeDialog
+} from "../../react/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module";
 import JobSearchDateRange from "./enums/JobSearchDateRange";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
@@ -221,7 +223,7 @@ class JobSearchController extends BaseController {
         // Deep link support: open job detail directly from URL query param
         const deepLinkJobId = this.$stateParams.jobId ? parseInt(this.$stateParams.jobId as string, 10) : null;
         if (deepLinkJobId) {
-            this.selectJobDetail(deepLinkJobId);
+            void this.selectJobDetail(deepLinkJobId);
         }
     }
 
@@ -266,10 +268,18 @@ class JobSearchController extends BaseController {
 
         const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
             switch (type) {
-                case 'success': this.toastrService.showSuccessToast(message); break;
-                case 'warning': this.toastrService.showWarningToast(message); break;
-                case 'error': this.toastrService.showErrorToast(message); break;
-                case 'info': this.toastrService.showInfoToast(message); break;
+                case 'success':
+                    void this.toastrService.showSuccessToast(message);
+                    break;
+                case 'warning':
+                    void this.toastrService.showWarningToast(message);
+                    break;
+                case 'error':
+                    void this.toastrService.showErrorToast(message);
+                    break;
+                case 'info':
+                    void this.toastrService.showInfoToast(message);
+                    break;
             }
         };
 
@@ -344,10 +354,18 @@ class JobSearchController extends BaseController {
 
         const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
             switch (type) {
-                case 'success': this.toastrService.showSuccessToast(message); break;
-                case 'warning': this.toastrService.showWarningToast(message); break;
-                case 'error': this.toastrService.showErrorToast(message); break;
-                case 'info': this.toastrService.showInfoToast(message); break;
+                case 'success':
+                    void this.toastrService.showSuccessToast(message);
+                    break;
+                case 'warning':
+                    void this.toastrService.showWarningToast(message);
+                    break;
+                case 'error':
+                    void this.toastrService.showErrorToast(message);
+                    break;
+                case 'info':
+                    void this.toastrService.showInfoToast(message);
+                    break;
             }
         };
 
@@ -473,7 +491,7 @@ class JobSearchController extends BaseController {
         this.applyScope();
     }
 
-    saveLayout(): void {
+    async saveLayout(): Promise<void> {
         this.$mdDialog
             .show(this.$mdDialog
                 .prompt()
@@ -482,7 +500,7 @@ class JobSearchController extends BaseController {
                 .required(true)
                 .ok("Add")
                 .cancel("Cancel"))
-            .then((name) => {
+            .then(async (name) => {
                 if (!name) return;
 
                 const currentLayout: ILayout = {
@@ -506,7 +524,7 @@ class JobSearchController extends BaseController {
                 saveLayouts(this.layoutStorageKeys, this.layouts);
                 saveLastActiveLayoutName(this.layoutStorageKeys, name);
 
-                this.toastrService.showSuccessToast("Layout saved successfully");
+                await this.toastrService.showSuccessToast("Layout saved successfully");
             });
     }
 
@@ -520,11 +538,11 @@ class JobSearchController extends BaseController {
                 .textContent("Are you sure you want to delete this layout?")
                 .ok("Delete")
                 .cancel("Cancel"))
-            .then(() => {
+            .then(async () => {
                 this.layouts.splice(index, 1);
                 saveLayouts(this.layoutStorageKeys, this.layouts);
                 this.loadLayout(0);
-                this.toastrService.showSuccessToast("Layout deleted successfully");
+                await this.toastrService.showSuccessToast("Layout deleted successfully");
             });
     }
 
@@ -621,7 +639,7 @@ class JobSearchController extends BaseController {
         return this.currentLayoutName === 'Default';
     }
 
-    toggleSidenav() {
+    async toggleSidenav(): Promise<void> {
         const sidenavElement = angular.element('material-sidenav');
         const sidenavCtrl = sidenavElement.controller('materialSidenav');
 
@@ -629,7 +647,7 @@ class JobSearchController extends BaseController {
             sidenavCtrl.toggleSidenav();
         } else {
             try {
-                this.$mdSidenav("right").toggle();
+                await this.$mdSidenav("right").toggle();
             } catch (error) {
                 console.log('Sidenav not available:', error);
             }
@@ -653,7 +671,7 @@ class JobSearchController extends BaseController {
             if (courierNumber) {
                 await this.dispatchJobService.assignSingleJobToCourier(courierNumber, job);
                 await this.selectJob(job);
-                this.toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
+                await this.toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
             }
         } catch (error) {
             if (!error) return;
@@ -703,10 +721,18 @@ class JobSearchController extends BaseController {
             await openInterCourierChargeDialog({
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
-                        case 'success': this.toastrService.showSuccessToast(message); break;
-                        case 'warning': this.toastrService.showWarningToast(message); break;
-                        case 'error': this.toastrService.showErrorToast(message); break;
-                        case 'info': this.toastrService.showInfoToast(message); break;
+                        case 'success':
+                            this.toastrService.showSuccessToast(message);
+                            break;
+                        case 'warning':
+                            this.toastrService.showWarningToast(message);
+                            break;
+                        case 'error':
+                            this.toastrService.showErrorToast(message);
+                            break;
+                        case 'info':
+                            this.toastrService.showInfoToast(message);
+                            break;
                     }
                 },
             });
@@ -724,7 +750,7 @@ class JobSearchController extends BaseController {
         await this.DispatchData.updateJobDetail(currentJob.id, JobProperty.Locked, true, currentJob.preBook ?? false)
     }
 
-    async unSplitJob() {
+    async unSplitJob(): Promise<void> {
         try {
             const confirm = this.$mdDialog.confirm()
                 .title('Un-Split Job?')
@@ -735,7 +761,7 @@ class JobSearchController extends BaseController {
             await this.$mdDialog.show(confirm);
 
             if (!this.currentJob) {
-                this.toastrService.showErrorToast('Please select a job to un-split.');
+                await this.toastrService.showErrorToast('Please select a job to un-split.');
                 return;
             }
             const msg = await this.jobSearchService.unSplitJob(this.currentJob.id);
@@ -758,7 +784,7 @@ class JobSearchController extends BaseController {
         // Restore operates on live (tucJob) rows only; an archived job isn't found and the
         // request silently no-ops (200, unchanged status, courier still attached). Block it.
         if (job.isArchived) {
-            this.toastrService.showErrorToast('Archived jobs can’t be restored');
+            await this.toastrService.showErrorToast('Archived jobs can’t be restored');
             return;
         }
 
@@ -784,7 +810,7 @@ class JobSearchController extends BaseController {
             await Promise.all(promises);
             await this.selectJobDetail(job.id);
         } catch (error) {
-            this.toastrService.showErrorToast('Error in restoring job');
+            await this.toastrService.showErrorToast('Error in restoring job');
             console.error('Error in restoreJob:', error);
         }
     }
@@ -1081,7 +1107,7 @@ class JobSearchController extends BaseController {
 
         try {
             return await this.DispatchData.searchSpeedOptions(searchText);
-        } catch(error) {
+        } catch (error) {
             console.error('Error in speedQuerySearch:', error);
             return [];
         }

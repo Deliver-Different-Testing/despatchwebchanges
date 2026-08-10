@@ -5,11 +5,12 @@
  * Used by the React Edit Address Dialog.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {
     HereMapsLocationResult,
     HereMapsLookupResponse,
 } from '../interfaces';
+import {RequestOptions} from "./requestOptions";
 
 export const addressApi = {
     /**

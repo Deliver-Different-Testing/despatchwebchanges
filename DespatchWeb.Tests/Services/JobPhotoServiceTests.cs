@@ -628,7 +628,7 @@ public class JobPhotoServiceTests
 
     // Returns a single object for each ListObjectsV2 whose prefix matches a map key (exact match),
     // so a captured-media object can be placed in a specific folder/month for the archive search.
-    private void StubListByPrefixMap(IReadOnlyDictionary<string, string> keysByPrefix)
+    private void StubListByPrefixMap(Dictionary<string, string> keysByPrefix)
     {
         _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
             .Returns(call =>

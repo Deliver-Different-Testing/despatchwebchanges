@@ -36,7 +36,7 @@ import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import {alpha} from '@mui/material/styles';
 import {useApproverInbox} from './useApproverInbox';
-import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
 import {
     ageLevel,
     formatChangeRequestValue,
@@ -44,6 +44,7 @@ import {
     relativeAgeShort,
 } from '../../components/job-change-requests/jobChangeRequestFormatting';
 import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../../components/dialogs/shared/styles';
+import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
 
 export interface PartnerApprovalsInboxProps {
     /** Optional callback fired when the user clicks "View job" on a row. */

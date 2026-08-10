@@ -14,7 +14,7 @@ import {RecoveryAgentManagementDialog} from './RecoveryAgentManagementDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {nationwideApi} from '../../../services/nationwideApi';
 import {toastService} from '../../../services/toastService';
-import type {RecoveryAgentJobViewModel} from '../../../services/nationwideApi';
+import type {RecoveryAgentJobViewModel} from '../../../interfaces/nationwideJobs';
 
 interface DialogState {
     open: boolean;

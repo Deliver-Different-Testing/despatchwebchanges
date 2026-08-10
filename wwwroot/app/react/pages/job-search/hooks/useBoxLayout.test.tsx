@@ -9,6 +9,14 @@ jest.mock('../lib/layoutSync', () => ({
 
 import * as layoutSync from '../lib/layoutSync';
 import {useBoxLayout} from './useBoxLayout';
+import {ILayout} from '../../../../interfaces/layout.interfaces';
+import {IBox} from '../../../../interfaces/layout.interfaces';
+import {
+    isDefaultCustomised,
+    loadBoxVisibility,
+    loadLayouts,
+    saveBoxVisibility,
+} from '../lib/layoutPersistence';
 
 const mockLoadRemoteIntoLocal = layoutSync.loadRemoteIntoLocal as jest.Mock;
 const mockReadLocalRows = layoutSync.readLocalRows as jest.Mock;
@@ -107,5 +115,98 @@ describe('useBoxLayout remote sync', () => {
             ),
         );
         errorSpy.mockRestore();
+    });
+});
+
+describe('useBoxLayout layout editing', () => {
+    const createDefaultLayout = (): ILayout => ({
+        name: 'Default',
+        layout: {
+            columns: [
+                {id: 'col1', width: '60%', boxes: [{name: 'a', height: '50%'}, {name: 'b', height: '50%'}]},
+                {id: 'col2', width: '40%', boxes: [{name: 'c', height: '100%'}]},
+            ],
+        },
+    });
+    const createBoxes = (): Record<string, IBox> => ({
+        a: {name: 'a', title: 'A', visible: true, collapsed: false},
+        b: {name: 'b', title: 'B', visible: true, collapsed: false},
+        c: {name: 'c', title: 'C', visible: true, collapsed: false},
+    });
+
+    const render = () => renderHook(() => useBoxLayout({storageKeys, createBoxes, createDefaultLayout}));
+    const storedDefault = () =>
+        loadLayouts(storageKeys, createDefaultLayout()).find(l => l.name === 'Default')!;
+
+    beforeEach(() => {
+        localStorage.clear();
+        mockLoadRemoteIntoLocal.mockReset();
+        mockReadLocalRows.mockReset().mockReturnValue([]);
+    });
+
+    it('persists a resize of the Default layout and marks it customised', () => {
+        const {result} = render();
+        expect(result.current.isDefaultLayout).toBe(true);
+
+        act(() => result.current.setColumnSizes([70, 30]));
+
+        expect(storedDefault().layout.columns.map(c => c.width)).toEqual(['70.00%', '30.00%']);
+        expect(isDefaultCustomised(storageKeys)).toBe(true);
+    });
+
+    it('persists box heights on the Default layout', () => {
+        const {result} = render();
+
+        act(() => result.current.setBoxHeights('col1', [30, 70], ['a', 'b']));
+
+        expect(storedDefault().layout.columns[0].boxes.map(b => b.height)).toEqual(['30.00%', '70.00%']);
+    });
+
+
+    it('ignores a write that changes nothing, leaving the default untouched', () => {
+        const {result} = render();
+
+        act(() => result.current.setColumnSizes([60, 40]));
+
+        expect(localStorage.getItem(storageKeys.layoutsKey)).toBeNull();
+        expect(isDefaultCustomised(storageKeys)).toBe(false);
+    });
+
+
+    it('removeColumn keeps every box when merging columns', () => {
+        const {result} = render();
+
+        act(() => result.current.removeColumn());
+
+        const names = result.current.layout.layout.columns.flatMap(c => c.boxes.map(b => b.name));
+        expect(names.sort()).toEqual(['a', 'b', 'c']);
+    });
+
+    it('resetCurrentLayout restores the shipped arrangement and clears panel state', () => {
+        const {result} = render();
+        act(() => result.current.setColumnSizes([70, 30]));
+        act(() => result.current.setBoxVisibility('b', false));
+        expect(isDefaultCustomised(storageKeys)).toBe(true);
+
+        act(() => result.current.resetCurrentLayout());
+
+        expect(result.current.layout.layout).toEqual(createDefaultLayout().layout);
+        expect(result.current.boxes.b.visible).toBe(true);
+        expect(loadBoxVisibility(storageKeys, 'Default')).toBeNull();
+        expect(isDefaultCustomised(storageKeys)).toBe(false);
+    });
+
+    it('resetCurrentLayout restores a custom layout without touching the default marker', () => {
+        const {result} = render();
+        act(() => result.current.addLayout('Wide'));
+        act(() => result.current.setColumnSizes([80, 20]));
+        saveBoxVisibility(storageKeys, 'Wide', {a: {name: 'a', visible: false}});
+
+        act(() => result.current.resetCurrentLayout());
+
+        expect(result.current.currentLayoutName).toBe('Wide');
+        expect(result.current.layout.layout).toEqual(createDefaultLayout().layout);
+        expect(loadBoxVisibility(storageKeys, 'Wide')).toBeNull();
+        expect(isDefaultCustomised(storageKeys)).toBe(false);
     });
 });

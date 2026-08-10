@@ -43,6 +43,20 @@ describe('DateFilterMenu', () => {
     });
 
     describe('Rendering', () => {
+        it('should size and wash its trigger like the Mantine shell icons beside it', () => {
+            // This trigger is the last MUI button on the Ink bar. It has to read as one
+            // of the row rather than a wider button with its own hover, so it matches
+            // Mantine's `ActionIcon size="lg"` box and the shared cyan wash. The fill
+            // rides a custom property because emotion's `:hover` rule is unreachable
+            // from `toHaveStyle`.
+            renderWithProviders(<DateFilterMenu {...defaultProps} />);
+
+            const trigger = screen.getByRole('button');
+            expect(trigger.style.getPropertyValue('--shell-icon-hover'))
+                .toBe('color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent)');
+            expect(trigger).toHaveStyle({width: '34px', height: '34px'});
+        });
+
         it('should render calendar icon button that opens menu with all options and action buttons', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
             expect(screen.getByRole('button')).toBeInTheDocument();

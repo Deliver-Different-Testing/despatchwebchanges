@@ -19,15 +19,37 @@ export type HeaderVariant =
     | 'success';
 
 /**
- * The header surface — a solid brand/semantic fill (the variant's `main`) with
- * its own on-colour (`contrastText`): white-on-blue for the US tenant,
- * dark-on-gold for the amber tenant, white-on-red for error, etc. A bold, flat
- * bar — the master look without the gradient. Spread into an `sx` block.
+ * The variants a header surface can take. Dialogs use the solid
+ * {@link HeaderVariant} fills; page card/panel headers use `'surface'`.
  */
-export function headerSurfaceSx(theme: Theme, variant: HeaderVariant = 'primary') {
+export type PanelHeaderVariant = HeaderVariant | 'surface';
+
+/**
+ * The header surface.
+ *
+ * The palette variants are a solid brand/semantic fill (the variant's `main`)
+ * with its own on-colour (`contrastText`) — dark Ink on the DFRNT cyan,
+ * white on red for error. A bold, flat bar. This is the dialog header.
+ *
+ * `'surface'` is the page card/panel header: a plain paper bar with primary
+ * text, separated from the card body by a divider keyline rather than by a
+ * change of colour. The card title then reads as part of its card instead of as
+ * a coloured banner competing with the app bar.
+ *
+ * Spread into an `sx` block.
+ */
+export function headerSurfaceSx(theme: Theme, variant: PanelHeaderVariant = 'primary') {
+    if (variant === 'surface') {
+        return {
+            backgroundColor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            borderBottom: `1px solid ${theme.palette.divider}`,
+        };
+    }
     return {
         backgroundColor: theme.palette[variant].main,
         color: theme.palette[variant].contrastText,
+        borderBottom: 'none',
     };
 }
 
@@ -38,7 +60,7 @@ export function headerSurfaceSx(theme: Theme, variant: HeaderVariant = 'primary'
  * and icon gap live here. Spread into an `sx` block; append per-header extras
  * (e.g. `flexShrink: 0`) or override `px`/`py` for a bespoke compact header.
  */
-export function headerChromeSx(theme: Theme, variant: HeaderVariant = 'primary') {
+export function headerChromeSx(theme: Theme, variant: PanelHeaderVariant = 'primary') {
     return {
         ...headerSurfaceSx(theme, variant),
         px: 3,
@@ -50,17 +72,30 @@ export function headerChromeSx(theme: Theme, variant: HeaderVariant = 'primary')
 }
 
 /** The colour for a *bare* header icon (one not wrapped in a chip): the
- * palette's on-colour (`contrastText`), matching the header text on the fill. */
-export function headerAccentColor(theme: Theme, variant: HeaderVariant = 'primary'): string {
-    return theme.palette[variant].contrastText;
+ * palette's on-colour (`contrastText`), matching the header text on the fill.
+ * On the `'surface'` bar there is no fill to match, so the glyph carries the
+ * brand accent instead — `primary.dark`, since `primary.main` (cyan) is too
+ * light to be legible on paper. */
+export function headerAccentColor(theme: Theme, variant: PanelHeaderVariant = 'primary'): string {
+    return variant === 'surface'
+        ? theme.palette.primary.dark
+        : theme.palette[variant].contrastText;
 }
 
 /**
- * The icon badge on the solid header: a translucent scrim of the on-colour with
- * the on-colour glyph — a white 18%-opacity chip with a white icon on the blue
- * tenant, the dark-on-colour equivalent on amber.
+ * The icon badge: a translucent scrim with a matching glyph. On the solid
+ * headers that is the on-colour at 18% (a white chip with a white icon on a
+ * dark fill, the dark-on-colour equivalent on cyan). On the `'surface'` bar it
+ * is a light brand wash under {@link headerAccentColor} — the only brand colour
+ * left on an otherwise neutral card header.
  */
-export function headerBadgeSx(theme: Theme, variant: HeaderVariant = 'primary') {
+export function headerBadgeSx(theme: Theme, variant: PanelHeaderVariant = 'primary') {
+    if (variant === 'surface') {
+        return {
+            bgcolor: alpha(theme.palette.primary.main, 0.16),
+            color: headerAccentColor(theme, variant),
+        };
+    }
     return {
         bgcolor: alpha(theme.palette[variant].contrastText, 0.18),
         color: theme.palette[variant].contrastText,
@@ -73,7 +108,7 @@ export function headerBadgeSx(theme: Theme, variant: HeaderVariant = 'primary') 
  * pass `size` for a bespoke compact header (e.g. 32 on the panel bar, 36 on the
  * messaging header); the glyph scales with it. Spread into an `sx` block.
  */
-export function headerChipSx(theme: Theme, variant: HeaderVariant = 'primary', size = 40) {
+export function headerChipSx(theme: Theme, variant: PanelHeaderVariant = 'primary', size = 40) {
     return {
         width: size,
         height: size,
@@ -87,20 +122,23 @@ export function headerChipSx(theme: Theme, variant: HeaderVariant = 'primary', s
     };
 }
 
-/** Colour for the close/secondary action buttons on the solid header: the
- * palette's on-colour. */
-export function headerOnColor(theme: Theme, variant: HeaderVariant = 'primary'): string {
-    return theme.palette[variant].contrastText;
+/** Colour for the close/secondary action buttons on the header: the palette's
+ * on-colour, or the body text colour on the `'surface'` bar — the buttons stay
+ * neutral so the brand accent belongs to the icon chip alone. */
+export function headerOnColor(theme: Theme, variant: PanelHeaderVariant = 'primary'): string {
+    return variant === 'surface'
+        ? theme.palette.text.primary
+        : theme.palette[variant].contrastText;
 }
 
-/** Translucent scrim (derived from the on-colour) for hover states on the
- * solid header. */
+/** Translucent scrim (derived from {@link headerOnColor}) for hover states on
+ * the header — a light wash on the solid fills, a dark one on the paper bar. */
 export function headerOverlayColor(
     theme: Theme,
     opacity: number,
-    variant: HeaderVariant = 'primary',
+    variant: PanelHeaderVariant = 'primary',
 ): string {
-    return alpha(theme.palette[variant].contrastText, opacity);
+    return alpha(headerOnColor(theme, variant), opacity);
 }
 
 /**

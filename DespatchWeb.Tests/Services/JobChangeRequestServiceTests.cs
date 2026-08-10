@@ -75,7 +75,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         return mock;
     }
 
-    private DespatchContext CreateContext() => new TestDespatchContext(_options);
+    private TestDespatchContext CreateContext() => new(_options);
 
     [Fact]
     public async Task CreateLocalAsync_returns_error_when_job_not_found()

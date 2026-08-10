@@ -7,42 +7,18 @@
  * shape that the AiSummaryCard component renders directly.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {
+    AiDraftResponse,  AiEmailDraftResponse, AiSummaryResponse,
+    ChangeRequestTriageResponse,
+    DraftEmailRequest, DraftMessageRequest, DraftNoteRequest, ExtractBlockersResponse,
+    PricingAnalysisResponse, StructuredSummaryResponse
+} from "../interfaces/ai";
+import {apiClient} from './apiClient';
+import {RequestOptions} from "./requestOptions";
 
-export interface AiUsageInfo {
-    inputTokens: number;
-    outputTokens: number;
-}
-
-export interface AiSummaryResponse {
-    summary: string;
-    usage: AiUsageInfo;
-}
 
 export type SummarySeverity = 'Ok' | 'Info' | 'Caution' | 'Urgent' | 'Critical';
 export type TimelineStatus = 'Ok' | 'Pending' | 'Warning' | 'Late';
-
-export interface AttentionItem {
-    headline: string;
-    action: string;
-    severity: SummarySeverity;
-}
-
-export interface TimelineItem {
-    label: string;
-    detail: string;
-    status: TimelineStatus;
-}
-
-export interface StructuredSummaryResponse {
-    verdict: string;
-    severity: SummarySeverity;
-    keyFacts: string[];
-    attention: AttentionItem[];
-    timeline: TimelineItem[];
-    highlights: string[];
-    usage: AiUsageInfo;
-}
 
 /** Summarize notes for a job (markdown) */
 export function summarizeJobNotes(jobId: number): Promise<AiSummaryResponse> {
@@ -79,47 +55,6 @@ export function summarizeCompliance(options?: RequestOptions): Promise<Structure
 //  Body-only drafts fill a single text field; email drafts fill subject + body.
 // ---------------------------------------------------------------------------
 
-/** Body-only AI draft (courier/staff message, job note). */
-export interface AiDraftResponse {
-    draft: string;
-    usage: AiUsageInfo;
-}
-
-/** Subject + body AI draft (POD delivery email, compose email). */
-export interface AiEmailDraftResponse {
-    subject: string;
-    body: string;
-    usage: AiUsageInfo;
-}
-
-export interface DraftMessageRequest {
-    recipientName: string;
-    /** 0 = Courier, 1 = Staff (OtherMessagePartyType). */
-    recipientType: number;
-    /** 1 = App, 2 = SMS, 3 = Smart. */
-    messageType: number;
-    /** Rough text the user typed; may be empty. */
-    seed: string;
-    /** Optional recent thread lines (oldest first). */
-    recentMessages?: string[];
-    jobId?: number;
-}
-
-export interface DraftEmailRequest {
-    recipientNames: string[];
-    seedSubject: string;
-    seedBody: string;
-}
-
-export interface DraftNoteRequest {
-    jobId?: number;
-    jobBookingId?: number;
-    bulkJobId?: number;
-    /** NoteType enum value — drives audience/tone. */
-    noteTypeId: number;
-    seed: string;
-}
-
 /** Draft a courier/staff message body. */
 export function draftCourierMessage(
     request: DraftMessageRequest,
@@ -146,52 +81,6 @@ export function draftNote(request: DraftNoteRequest, options?: RequestOptions): 
     return apiClient.post<AiDraftResponse>('/Ai/DraftNote', request, options);
 }
 
-// ---------------------------------------------------------------------------
-//  Insights — read existing data and surface structured analysis.
-// ---------------------------------------------------------------------------
-
-export interface BlockerItem {
-    tag: string;
-    severity: SummarySeverity;
-    evidence: string;
-    actionRequired: boolean;
-}
-
-export interface ExtractBlockersResponse {
-    blockers: BlockerItem[];
-    summary: string;
-    severity: SummarySeverity;
-    usage: AiUsageInfo;
-}
-
-export interface AccessorialSuggestion {
-    accessorialChargeId: number;
-    name: string;
-    reason: string;
-    suggestedInputValue?: number | null;
-}
-
-export interface PricingAnomaly {
-    storedCharge: number;
-    recomputedRate: number;
-    deltaPercent: number;
-    isOutlier: boolean;
-}
-
-export interface PricingAnalysisResponse {
-    anomaly: PricingAnomaly | null;
-    suggestions: AccessorialSuggestion[];
-    usage: AiUsageInfo;
-}
-
-export interface ChangeRequestTriageResponse {
-    /** "approve" | "reject" | "clarify" — advisory only. */
-    recommendedAction: string;
-    confidence: number;
-    rationale: string;
-    riskFactors: string[];
-    usage: AiUsageInfo;
-}
 
 /** Extract structured blockers/tags from a job's notes. */
 export function extractBlockers(jobId: number, options?: RequestOptions): Promise<ExtractBlockersResponse> {

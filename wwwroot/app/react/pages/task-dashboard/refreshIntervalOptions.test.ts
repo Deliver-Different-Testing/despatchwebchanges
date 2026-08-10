@@ -1,4 +1,10 @@
-import {formatRefreshButtonLabel, formatUpdatedAgo, getRefreshIntervalOptions} from './refreshIntervalOptions';
+import {
+    DEFAULT_TASK_REFRESH_SECONDS,
+    formatRefreshButtonLabel,
+    formatUpdatedAgo,
+    getRefreshIntervalOptions,
+    loadRefreshIntervalMs,
+} from './refreshIntervalOptions';
 
 describe('refreshIntervalOptions', () => {
     describe('getRefreshIntervalOptions', () => {
@@ -54,6 +60,35 @@ describe('refreshIntervalOptions', () => {
             expect(formatUpdatedAgo(now - 12_000, now)).toBe('Updated 12s ago');
             expect(formatUpdatedAgo(now - 3 * 60_000, now)).toBe('Updated 3m ago');
             expect(formatUpdatedAgo(now - 2 * 3_600_000, now)).toBe('Updated 2h ago');
+        });
+    });
+
+    describe('loadRefreshIntervalMs', () => {
+        const key = 'taskDashboardRefreshInterval-1';
+
+        beforeEach(() => localStorage.clear());
+
+        it('defaults to the 60s cadence when the user has never chosen one', () => {
+            // Nothing pushes task updates, so an unset key must not mean "never refresh" —
+            // a dispatcher who never opens the menu would otherwise sit on a stale list
+            // indefinitely.
+            expect(loadRefreshIntervalMs(key)).toBe(DEFAULT_TASK_REFRESH_SECONDS * 1000);
+            expect(DEFAULT_TASK_REFRESH_SECONDS).toBe(60);
+        });
+
+        it('keeps an explicit Off (stored 0)', () => {
+            localStorage.setItem(key, '0');
+            expect(loadRefreshIntervalMs(key)).toBe(false);
+        });
+
+        it('honours a stored cadence', () => {
+            localStorage.setItem(key, '120');
+            expect(loadRefreshIntervalMs(key)).toBe(120_000);
+        });
+
+        it('falls back to the default for an unparseable value', () => {
+            localStorage.setItem(key, 'not a number');
+            expect(loadRefreshIntervalMs(key)).toBe(DEFAULT_TASK_REFRESH_SECONDS * 1000);
         });
     });
 });

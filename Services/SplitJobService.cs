@@ -50,7 +50,7 @@ public class SplitJobService(
         await using var context = await contextFactory.CreateDbContextAsync(ct);
 
         var strategy = context.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async () =>
+        var (pickupJobId, deliveryJobId, originalCourierId) = await strategy.ExecuteAsync(async () =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
@@ -86,13 +86,21 @@ public class SplitJobService(
                     await ResolveMeetingPointSuburbIdsAsync(context, job, ct);
 
                 // Capture original courier ID before modifying parent
-                var originalCourierId = job.UcjbCourierId;
+                var originalCourier = job.UcjbCourierId;
 
                 // Determine root parent ID - preserve existing if job is already a child
                 var rootParentId = job.RootParentId ?? job.UcjbId;
 
                 // Current tenant time
                 var currentTenantTime = tenantClock.TenantNow;
+
+                // Take the parent off the original courier's handset before its courier is swapped
+                // for the placeholder below — the proc reads the still-assigned courier. Run on this
+                // context so it joins the split transaction and a rollback un-notifies with it.
+                if (originalCourier.HasValue)
+                {
+                    await context.Procedures.UTL_stpJob_RestoreDeviceAsync(jobId, cancellationToken: ct);
+                }
 
                 // Update parent job
                 job.JobRelationshipTypeId = parentRelTypeId;
@@ -109,10 +117,21 @@ public class SplitJobService(
                 // Build pickup child job via direct entity insert
                 var pickupJob = BuildChildJob(job, pickupJobNumber, childRelTypeId, rootParentId, 1);
                 pickupJob.CreatedTimeUtc = tenantClock.UtcNow;
-                pickupJob.UcjbCourierId = originalCourierId;
-                pickupJob.UcjbDispTime = currentTenantTime;
-                pickupJob.UcjbDispDate = currentTenantTime;
-                pickupJob.UcjbDispId = job.UcjbDispId;
+                pickupJob.UcjbCourierId = originalCourier;
+                pickupJob.PickUpTime = job.PickUpTime;
+
+                // Only a leg genuinely handed to a courier carries dispatch metadata, and it carries
+                // the job's real dispatch history rather than the moment of the split. TenantNow is
+                // the fallback for a job that had a courier but no stamp of its own —
+                // tucJob_Insert_ClearListAreaOrder rejects a null OrderTime, and a courier receiving
+                // the leg now is a genuine dispatch.
+                if (originalCourier.HasValue)
+                {
+                    pickupJob.UcjbDispTime = job.UcjbDispTime ?? currentTenantTime;
+                    pickupJob.UcjbDispDate = job.UcjbDispDate ?? currentTenantTime;
+                    pickupJob.UcjbDispId = job.UcjbDispId;
+                }
+
                 pickupJob.UcjbFrom = job.UcjbFrom;
                 pickupJob.UcjbFromAddr = job.UcjbFromAddr;
                 pickupJob.UcjbTo = pickupMeetingPointSuburbId;
@@ -219,7 +238,7 @@ public class SplitJobService(
                 Log.Information("Successfully split job {JobId} into pickup {PickupId} and delivery {DeliveryId}",
                     jobId, pickupJob.UcjbId, deliveryJob.UcjbId);
 
-                return (pickupJob.UcjbId, deliveryJob.UcjbId);
+                return (pickupJob.UcjbId, deliveryJob.UcjbId, originalCourier);
             }
             catch (Exception ex)
             {
@@ -228,6 +247,27 @@ public class SplitJobService(
                 throw;
             }
         });
+
+        // Refresh what is left on the original courier's handset now the parent has been taken off
+        // it. Outside the execution strategy (which can retry the whole lambda) and best-effort: the
+        // split is already committed, so a device failure must not surface as a failed split.
+        if (originalCourierId is not { } courierId)
+        {
+            return (pickupJobId, deliveryJobId);
+        }
+
+        try
+        {
+            await jobCommandRepository.ReSendAllJobsAsync(courierId);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex,
+                "Split {JobId} committed but resending courier {CourierId}'s jobs to their device failed",
+                jobId, courierId);
+        }
+
+        return (pickupJobId, deliveryJobId);
     }
 
     /// <inheritdoc />

@@ -1,14 +1,10 @@
 import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import DialogContent from '@mui/material/DialogContent';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import EmailIcon from '@mui/icons-material/Email';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {Badge, Box, Button, Group, Text, TextInput, Textarea} from '@mantine/core';
+import {Mail} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg} from '../shared/mantine';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
-import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
+import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
 import {useAiDraft} from '../../../hooks/useAiDraft';
 import {draftEmail} from '../../../services/aiAssistantApi';
 
@@ -163,78 +159,61 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
     };
 
     return (
-        <DialogShell open={open} onClose={handleClose}>
+        <DialogShell opened={open} onClose={handleClose}>
             <DialogHeader
-                icon={<EmailIcon/>}
+                icon={<Icon lucide={Mail}/>}
                 title="Compose Email"
                 subtitle="Send an email to selected couriers"
                 onClose={handleClose}
             />
-            <DialogContent>
+            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
                 {/* Recipients */}
-                <Box sx={{mb: 2}}>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: "text.secondary",
-                            mb: 0.5,
-                            display: 'block'
-                        }}>
+                <Box>
+                    <Text fz="xs" c="dimmed" mb={4}>
                         Recipients ({selectedCouriers.length})
-                    </Typography>
-                    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
+                    </Text>
+                    <Group gap={4}>
                         {selectedCouriers.map(c => (
-                            <Chip key={c.courierId} label={c.name} size="small" />
+                            <Badge key={c.courierId} size="sm" variant="light" color="gray">{c.name}</Badge>
                         ))}
-                    </Box>
+                    </Group>
                 </Box>
 
                 {/* Quick Templates */}
-                <Box sx={{mb: 2}}>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: "text.secondary",
-                            mb: 0.5,
-                            display: 'block'
-                        }}>
+                <Box>
+                    <Text fz="xs" c="dimmed" mb={4}>
                         Quick Templates
-                    </Typography>
-                    <Box sx={{display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center'}}>
+                    </Text>
+                    <Group gap="xs">
                         {EMAIL_TEMPLATES.map(t => (
-                            <Button key={t.key} variant="outlined" size="small" onClick={() => applyTemplate(t)}>
+                            <Button key={t.key} variant="outline" size="xs" onClick={() => applyTemplate(t)}>
                                 {t.label}
                             </Button>
                         ))}
                         <AiDraftButton onClick={handleDraft} isDrafting={isDrafting} />
-                    </Box>
+                    </Group>
                 </Box>
 
                 {/* Subject */}
-                <TextField
+                <TextInput
                     label="Subject"
-                    fullWidth
-                    size="small"
                     value={subject}
-                    onChange={(e) => { setSubject(e.target.value); setSubjectError(false); }}
-                    error={subjectError}
-                    helperText={subjectError ? 'Please enter an email subject' : ''}
-                    sx={{mb: 2}}
-                    autoFocus
+                    onChange={(e) => { setSubject(e.currentTarget.value); setSubjectError(false); }}
+                    error={subjectError ? 'Please enter an email subject' : undefined}
+                    data-autofocus
                 />
 
                 {/* Body */}
-                <TextField
+                <Textarea
                     label="Message"
-                    fullWidth
-                    multiline
-                    rows={8}
+                    autosize
+                    minRows={8}
+                    maxRows={8}
                     value={body}
-                    onChange={(e) => { setBody(e.target.value); setBodyError(false); }}
-                    error={bodyError}
-                    helperText={bodyError ? 'Please enter an email message' : ''}
+                    onChange={(e) => { setBody(e.currentTarget.value); setBodyError(false); }}
+                    error={bodyError ? 'Please enter an email message' : undefined}
                 />
-            </DialogContent>
+            </Box>
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSend}

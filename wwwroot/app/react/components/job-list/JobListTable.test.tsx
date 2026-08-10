@@ -8,6 +8,7 @@ import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import { renderWithTheme } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
+import {availableColumns, orderColumns} from './jobListColumns';
 import {JobListTable} from './JobListTable';
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -80,7 +81,9 @@ function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
 }
 
 function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobListTable>>) {
+    const resolved = {isUsCustomer: false, isJobSearchPage: false, ...overrides};
     return {
+        columns: orderColumns(availableColumns(resolved.isUsCustomer, resolved.isJobSearchPage)),
         jobs: [createMockDispatchJob()],
         selectedJobId: null,
         relatedJobIds: new Set<number>(),

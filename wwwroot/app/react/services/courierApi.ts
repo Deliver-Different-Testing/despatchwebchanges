@@ -4,7 +4,7 @@
  * React-native API service for courier-related operations.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {CourierSuggestion, TimeZoneOption} from '../interfaces';
 import type {IAvailableCourierPosition, ITruckCourierStatus} from '../../interfaces/courier.interface';
 import type {IClearListViewModel} from '../../interfaces/job.interface';
@@ -13,6 +13,7 @@ import type {FleetOption} from '../interfaces/driverManagement';
 import type {IDriverWorkOverview} from '../components/common/current-work-all-drivers';
 import {formatDateForApiWithTzs} from '../utils/dateUtils';
 import type {Dayjs} from 'dayjs';
+import {RequestOptions} from "./requestOptions";
 
 /**
  * Search for active couriers
@@ -34,6 +35,22 @@ export async function searchActiveCouriersExtended(
     if (options?.dgOnly) params.dgOnly = true;
     if (options?.loggedInOnly) params.loggedInOnly = true;
     return apiClient.get<CourierSuggestion[]>('courier/AllActiveSearch', params, options);
+}
+
+/**
+ * Look a courier up by their exact code. Mirrors the V1
+ * DispatchCoreService.getExactCourierMatch (`GET courier/GetExactCourierByCode`),
+ * which backs typing a code and pressing Enter. Resolves to null when no active
+ * courier has that code.
+ */
+export async function getExactCourierByCode(
+    courierCode: string,
+    options?: RequestOptions,
+): Promise<CourierSuggestion | null> {
+    const courier = await apiClient.get<CourierSuggestion | null>('courier/GetExactCourierByCode', {
+        courierCode,
+    }, options);
+    return courier?.id ? courier : null;
 }
 
 /**
@@ -114,6 +131,7 @@ export async function getClearListEnvelope(clearListId: number, options?: Reques
 export const courierApi = {
     searchActiveCouriers,
     searchActiveCouriersExtended,
+    getExactCourierByCode,
     getTimeZoneOptions,
     getAvailableCourierLocations,
     getClearListEnvelope,

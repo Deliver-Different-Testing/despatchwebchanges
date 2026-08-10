@@ -7,11 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {SwapPodsDialog} from './SwapPodsDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {jobApi} from '../../../services/jobApi';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
@@ -60,12 +57,8 @@ function renderDialog(): void {
         dialogState.toastService.showToast(message, type);
     };
 
-    const currentTheme = getTheme();
-
     dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
+        <DfrntMantineProvider>
                 <SwapPodsDialog
                     open={dialogState.open}
                     jobNo={dialogState.jobNo}
@@ -74,8 +67,7 @@ function renderDialog(): void {
                     onSwap={handleSwap}
                     showToast={handleShowToast}
                 />
-            </ThemeProvider>
-        </ReactQueryProvider>
+            </DfrntMantineProvider>
     );
 }
 

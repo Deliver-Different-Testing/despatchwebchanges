@@ -27,11 +27,12 @@ import Divider from '@mui/material/Divider';
 import SendIcon from '@mui/icons-material/Send';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import {DialogShell, DialogHeader, DialogFooter} from '../shared';
-import {jobChangeRequestApi, type JobChangeRequestResult} from '../../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
 import {toastService} from '../../../services/toastService';
 import {FIELD_META, formatChangeRequestValue, getFieldMeta, type JobChangeRequestFieldMeta} from '../../job-change-requests/jobChangeRequestFormatting';
 import type {ISuggestion} from '../../../../interfaces/job.interface';
+import type {JobChangeRequestResult} from '../../../interfaces/jobChangeRequest';
 
 /**
  * The dialog supports a subset of FIELD_META — the fields a dispatcher

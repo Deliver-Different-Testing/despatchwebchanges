@@ -17,8 +17,8 @@ import Box from '@mui/material/Box';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
-import type {JobChangeRequestDto} from '../../services/jobChangeRequestApi';
 import {formatChangeRequestValue, relativeAgeShort, ageLevel} from './jobChangeRequestFormatting';
+import type {JobChangeRequestDto} from '../../interfaces/jobChangeRequest';
 
 export interface PendingChangeBadgeProps {
     request: JobChangeRequestDto;

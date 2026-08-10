@@ -7,12 +7,9 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import { SelectDialog } from './SelectDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
+import { DfrntMantineProvider } from '../../../theme/DfrntMantineProvider';
 import { SelectDialogResult, SelectDialogOptions, SelectDialogItem } from './types';
 import type { ToastService } from '../../../services/toastService';
 
@@ -89,27 +86,22 @@ class SelectDialogManager {
             this.renderDialog();
         };
 
-        const currentTheme = getTheme();
-
         this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <SelectDialog
-                        open={this.dialogState.open}
-                        title={this.dialogState.title}
-                        fieldName={this.dialogState.fieldName}
-                        items={this.dialogState.items}
-                        initialValue={this.dialogState.initialValue}
-                        warningMessage={this.dialogState.warningMessage}
-                        showCheckbox={this.dialogState.showCheckbox}
-                        checkboxLabel={this.dialogState.checkboxLabel}
-                        onClose={handleClose}
-                        onSubmit={handleSubmit}
-                        showToast={this.toastService.showToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
+            <DfrntMantineProvider>
+                <SelectDialog
+                    open={this.dialogState.open}
+                    title={this.dialogState.title}
+                    fieldName={this.dialogState.fieldName}
+                    items={this.dialogState.items}
+                    initialValue={this.dialogState.initialValue}
+                    warningMessage={this.dialogState.warningMessage}
+                    showCheckbox={this.dialogState.showCheckbox}
+                    checkboxLabel={this.dialogState.checkboxLabel}
+                    onClose={handleClose}
+                    onSubmit={handleSubmit}
+                    showToast={this.toastService.showToast}
+                />
+            </DfrntMantineProvider>
         );
     }
 

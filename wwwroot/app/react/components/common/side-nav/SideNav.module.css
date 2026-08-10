@@ -1,0 +1,48 @@
+/*
+ * Side-nav rows — soft floating pills, mirroring Integration Manager's sidebar.
+ *
+ * Hover and active are pseudo-state work, so they belong in a stylesheet rather than
+ * inline `--nl-*` overrides: an inline custom property outranks any rule here. Mantine
+ * ships inside `@layer mantine` and this file is unlayered, so these win without
+ * needing extra specificity.
+ */
+.navLink {
+    /* Full pill, inset from the panel edge so rows float instead of fusing. */
+    border-radius: 9999px;
+    margin: 2px 8px;
+    /* `width: auto` (not Mantine's 100%) keeps the side margins from overflowing. */
+    width: auto;
+    min-height: 40px;
+    color: var(--mantine-color-dimmed);
+    font-weight: 500;
+    transition:
+        background-color 150ms ease,
+        color 150ms ease;
+}
+
+.navLink:hover:not([data-active]) {
+    background-color: var(--mantine-color-default-hover);
+    color: var(--mantine-color-text);
+}
+
+/* Active: a faint cyan wash rather than a solid fill, so the label stays readable. */
+.navLink[data-active] {
+    background-color: color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent);
+    color: var(--mantine-color-brand-7);
+    font-weight: 600;
+}
+
+.navLink[data-active]:hover {
+    background-color: color-mix(in srgb, var(--mantine-color-brand-5) 16%, transparent);
+}
+
+/* Charcoal panel: brighten the active cyan to hold contrast. */
+[data-mantine-color-scheme='dark'] .navLink[data-active] {
+    color: var(--mantine-color-brand-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .navLink {
+        transition: none;
+    }
+}

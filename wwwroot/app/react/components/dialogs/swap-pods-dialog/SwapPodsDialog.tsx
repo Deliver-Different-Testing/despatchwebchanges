@@ -10,20 +10,28 @@
  */
 
 import React, {useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import InfoIcon from '@mui/icons-material/Info';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import {Alert, Box, Group, Paper, Stack, Text, TextInput} from '@mantine/core';
+import {ArrowLeftRight, CircleCheck, Info} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
 import type {ShowToastFn} from '../../../services/toastService';
-import {DialogShell, DialogHeader} from '../shared';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
+
+/** The two job numbers being swapped, shown side by side in the confirm step. */
+const JobChip: React.FC<{label: string; value: string}> = ({label, value}) => (
+    <Box
+        p="sm"
+        ta="center"
+        style={{
+            flex: 1,
+            borderRadius: 'var(--mantine-radius-sm)',
+            backgroundColor: 'var(--mantine-color-brand-0)',
+            border: '1px solid var(--mantine-color-brand-3)',
+        }}
+    >
+        <Text fz="xs" c="dimmed">{label}</Text>
+        <Text fz="lg" fw={700} c="brand.7">{value}</Text>
+    </Box>
+);
 
 export interface SwapPodsDialogProps {
     open: boolean;
@@ -112,209 +120,76 @@ export function SwapPodsDialog({
     };
 
     return (
-        <DialogShell
-            open={open}
-            onClose={loading ? undefined : onClose}
-            slotProps={{paper: {sx: {minWidth: 440, maxWidth: 520}}}}
-        >
+        <DialogShell opened={open} onClose={loading ? () => {} : onClose} size={520}>
             <DialogHeader
-                icon={<SwapHorizIcon/>}
+                icon={<Icon lucide={ArrowLeftRight}/>}
                 title="Swap PODs"
                 subtitle="Move a POD signature between two jobs"
                 onClose={onClose}
                 closeDisabled={loading}
             />
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
+            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
                 {/* Info banner */}
-                <Paper
-                    elevation={0}
-                    sx={(theme) => ({
-                        p: 2,
-                        mb: 3,
-                        borderRadius: 1,
-                        bgcolor: alpha(theme.palette.info.main, 0.08),
-                        borderLeft: `4px solid ${theme.palette.info.main}`,
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 1.5,
-                    })}
-                >
-                    <InfoIcon sx={(theme) => ({color: theme.palette.info.dark, fontSize: 20, mt: 0.1})} />
-                    <Typography variant="body2" sx={{
-                        color: "text.primary"
-                    }}>
-                        This will move the POD signature from <strong>{jobNo}</strong> to the job you specify, and vice versa.
-                    </Typography>
-                </Paper>
+                <Alert color="cyan" variant="light" icon={<Icon lucide={Info}/>}>
+                    This will move the POD signature from <strong>{jobNo}</strong> to the job you specify, and vice versa.
+                </Alert>
 
                 {phase === 'input' ? (
                     /* Phase 1 — Input */
-                    (<Box>
+                    <Stack gap="md">
                         {/* Current job (read-only) */}
-                        <TextField
-                            fullWidth
-                            label="Current job"
-                            value={jobNo}
-                            disabled
-                            size="small"
-                            sx={{
-                                mb: 2,
-                                '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'},
-                            }}
-                        />
+                        <TextInput label="Current job" value={jobNo} disabled/>
                         {/* Second job input */}
-                        <TextField
-                            fullWidth
+                        <TextInput
                             label="Second job number"
                             placeholder="Enter job number"
                             value={secondJobNo}
                             onChange={(e) => {
-                                setSecondJobNo(e.target.value);
+                                setSecondJobNo(e.currentTarget.value);
                                 if (error) setError(null);
                             }}
                             onKeyDown={handleKeyDown}
                             disabled={loading}
-                            error={!!error}
-                            helperText={error ?? ' '}
-                            autoFocus
-                            size="small"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'},
-                            }}
+                            error={error ?? undefined}
+                            data-autofocus
                         />
-                    </Box>)
+                    </Stack>
                 ) : (
                     /* Phase 2 — Confirm */
-                    (<Paper
-                        elevation={0}
-                        sx={(theme) => ({
-                            p: 2.5,
-                            borderRadius: 1,
-                            border: `1px solid ${theme.palette.divider}`,
-                            bgcolor: 'background.paper',
-                        })}
-                    >
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
-                            <CheckCircleIcon color="success" sx={{fontSize: 20}} />
-                            <Typography variant="subtitle2" sx={{
-                                fontWeight: 600
-                            }}>
-                                Ready to swap
-                            </Typography>
-                        </Box>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-                            <Box
-                                sx={(theme) => ({
-                                    flex: 1,
-                                    p: 1.5,
-                                    borderRadius: 1,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                                    textAlign: 'center',
-                                })}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: "text.secondary",
-                                        display: "block"
-                                    }}>
-                                    Job 1
-                                </Typography>
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        fontWeight: 700,
-                                        color: "primary.main"
-                                    }}>
-                                    {jobNo}
-                                </Typography>
-                            </Box>
-                            <SwapHorizIcon sx={{color: 'text.secondary', fontSize: 28}} />
-                            <Box
-                                sx={(theme) => ({
-                                    flex: 1,
-                                    p: 1.5,
-                                    borderRadius: 1,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                                    textAlign: 'center',
-                                })}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: "text.secondary",
-                                        display: "block"
-                                    }}>
-                                    Job 2
-                                </Typography>
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        fontWeight: 700,
-                                        color: "primary.main"
-                                    }}>
-                                    {secondJobNo.trim()}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </Paper>)
+                    <Paper {...sectionPaperProps}>
+                        <Group gap="xs" mb="md">
+                            <Icon lucide={CircleCheck} size={20} color="var(--mantine-color-green-6)"/>
+                            <Text fz="sm" fw={600}>Ready to swap</Text>
+                        </Group>
+                        <Group gap="md" align="center" wrap="nowrap">
+                            <JobChip label="Job 1" value={jobNo}/>
+                            <Icon lucide={ArrowLeftRight} size={28} color="var(--mantine-color-dimmed)"/>
+                            <JobChip label="Job 2" value={secondJobNo.trim()}/>
+                        </Group>
+                    </Paper>
                 )}
-            </DialogContent>
+            </Box>
             {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'background.paper',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                {phase === 'input' ? (
-                    <>
-                        <Button
-                            onClick={onClose}
-                            variant="outlined"
-                            disabled={loading}
-                            sx={{minWidth: 90}}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleValidate}
-                            variant="contained"
-                            disabled={loading || !secondJobNo.trim()}
-                            startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SwapHorizIcon />}
-                            sx={{minWidth: 110}}
-                        >
-                            {loading ? 'Validating...' : 'Validate'}
-                        </Button>
-                    </>
-                ) : (
-                    <>
-                        <Button
-                            onClick={handleBackToInput}
-                            variant="outlined"
-                            disabled={loading}
-                            sx={{minWidth: 90}}
-                        >
-                            Back
-                        </Button>
-                        <Button
-                            onClick={handleConfirmSwap}
-                            variant="contained"
-                            disabled={loading}
-                            startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SwapHorizIcon />}
-                            sx={{minWidth: 140}}
-                        >
-                            {loading ? 'Swapping...' : 'Confirm Swap'}
-                        </Button>
-                    </>
-                )}
-            </DialogActions>
+            {phase === 'input' ? (
+                <DialogFooter
+                    onCancel={onClose}
+                    onConfirm={handleValidate}
+                    confirmLabel={loading ? 'Validating...' : 'Validate'}
+                    confirmIcon={<Icon lucide={ArrowLeftRight}/>}
+                    confirmDisabled={loading || !secondJobNo.trim()}
+                    submitting={loading}
+                />
+            ) : (
+                <DialogFooter
+                    onCancel={handleBackToInput}
+                    cancelLabel="Back"
+                    onConfirm={handleConfirmSwap}
+                    confirmLabel={loading ? 'Swapping...' : 'Confirm Swap'}
+                    confirmIcon={<Icon lucide={ArrowLeftRight}/>}
+                    submitting={loading}
+                />
+            )}
         </DialogShell>
     );
 }

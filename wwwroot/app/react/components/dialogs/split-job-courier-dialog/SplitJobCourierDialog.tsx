@@ -11,22 +11,12 @@
  */
 
 import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import CircularProgress from '@mui/material/CircularProgress';
-import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import type {SxProps, Theme} from '@mui/material';
+import {Box, Button, Combobox, Loader, Text, TextInput, useCombobox} from '@mantine/core';
+import {IconTruck} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
 import {useCourierSearch} from '../../../hooks/useCourierApi';
 import type {CourierSuggestion} from '../../../interfaces';
-import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg} from '../shared/mantine';
 
 export type SplitJobCourierResult =
     | {action: 'assign'; courierId: number}
@@ -38,17 +28,11 @@ export interface SplitJobCourierDialogProps {
     onClose: (result: SplitJobCourierResult) => void;
 }
 
-const styles: Record<string, SxProps<Theme>> = {
-    content: {
-        pt: 1,
-        minWidth: 360,
-    },
-};
-
 export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({open, onClose}) => {
     const [searchText, setSearchText] = useState('');
     const [selected, setSelected] = useState<CourierSuggestion | null>(null);
     const {data: courierOptions = [], isFetching} = useCourierSearch(searchText, {enabled: open});
+    const combobox = useCombobox({onDropdownClose: () => combobox.resetSelectedOption()});
 
     const handleAssign = () => {
         if (selected) {
@@ -56,73 +40,72 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
         }
     };
 
+    const cancel = () => onClose({action: 'cancel'});
+
     return (
-        <Dialog open={open} onClose={() => onClose({action: 'cancel'})} maxWidth="xs" fullWidth>
-            <Box sx={(theme) => headerChromeSx(theme)}>
-                <Box sx={(theme) => headerChipSx(theme)}>
-                    <LocalShippingIcon/>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" sx={{
-                        fontWeight: 600
-                    }}>Assign Courier to Delivery Leg</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>Optionally assign a courier for delivery</Typography>
-                </Box>
-                <IconButton onClick={() => onClose({action: 'cancel'})} sx={(theme) => ({
-                    color: headerOnColor(theme),
-                    '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
-                })}>
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-            <DialogContent sx={styles.content}>
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: "text.secondary",
-                        mb: 2
-                    }}>
+        <DialogShell opened={open} onClose={cancel} size={420}>
+            <DialogHeader
+                icon={<Icon tabler={IconTruck}/>}
+                title="Assign Courier to Delivery Leg"
+                subtitle="Optionally assign a courier for delivery"
+                onClose={cancel}
+            />
+            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
+                <Text fz="sm" c="dimmed">
                     Optionally assign a courier to the delivery leg (Leg B). You can skip this step.
-                </Typography>
-                <Autocomplete
-                    options={courierOptions}
-                    getOptionLabel={(option) => option.text}
-                    loading={isFetching}
-                    inputValue={searchText}
-                    onInputChange={(_, value) => setSearchText(value)}
-                    value={selected}
-                    onChange={(_, value) => setSelected(value)}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                    renderInput={({slotProps: autoSlotProps, ...params}) => (
-                        <TextField
-                            {...params}
+                </Text>
+                <Combobox
+                    store={combobox}
+                    onOptionSubmit={(value) => {
+                        const option = courierOptions.find(o => String(o.id) === value) ?? null;
+                        setSelected(option);
+                        setSearchText(option?.text ?? '');
+                        combobox.closeDropdown();
+                    }}
+                >
+                    <Combobox.Target>
+                        <TextInput
                             label="Search courier..."
                             placeholder="Type at least 2 characters"
-                            autoFocus
-                            slotProps={{
-                                ...autoSlotProps,
-                                input: {
-                                    ...autoSlotProps.input,
-                                    endAdornment: (
-                                        <>
-                                            {isFetching ? <CircularProgress size={20}/> : null}
-                                            {autoSlotProps.input.endAdornment}
-                                        </>
-                                    ),
-                                },
+                            data-autofocus
+                            value={searchText}
+                            rightSection={isFetching ? <Loader size={18} role="progressbar" aria-label="Searching"/> : null}
+                            onFocus={() => combobox.openDropdown()}
+                            onBlur={() => combobox.closeDropdown()}
+                            onClick={() => combobox.openDropdown()}
+                            onChange={(event) => {
+                                setSearchText(event.currentTarget.value);
+                                setSelected(null);
+                                combobox.openDropdown();
                             }}
                         />
-                    )}
-                    noOptionsText={searchText.length < 2 ? 'Type to search...' : 'No couriers found'}
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => onClose({action: 'cancel'})}>Cancel</Button>
-                <Button onClick={() => onClose({action: 'skip'})}>Skip</Button>
-                <Button onClick={handleAssign} variant="contained" disabled={!selected}>
-                    Assign
-                </Button>
-            </DialogActions>
-        </Dialog>
+                    </Combobox.Target>
+                    <Combobox.Dropdown>
+                        <Combobox.Options>
+                            {courierOptions.length > 0 ? (
+                                courierOptions.map(option => (
+                                    <Combobox.Option value={String(option.id)} key={option.id}>
+                                        {option.text}
+                                    </Combobox.Option>
+                                ))
+                            ) : (
+                                <Combobox.Empty>
+                                    {searchText.length < 2 ? 'Type to search...' : 'No couriers found'}
+                                </Combobox.Empty>
+                            )}
+                        </Combobox.Options>
+                    </Combobox.Dropdown>
+                </Combobox>
+            </Box>
+            <DialogFooter
+                onCancel={cancel}
+                onConfirm={handleAssign}
+                confirmLabel="Assign"
+                confirmDisabled={!selected}
+                secondaryAction={
+                    <Button variant="subtle" onClick={() => onClose({action: 'skip'})}>Skip</Button>
+                }
+            />
+        </DialogShell>
     );
 };

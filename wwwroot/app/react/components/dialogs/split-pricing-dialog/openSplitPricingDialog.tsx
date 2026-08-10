@@ -7,12 +7,9 @@
 
 import React from 'react';
 import {createRoot} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {SplitPricingDialog, type SplitPricingResult} from './SplitPricingDialog';
-import type {SplitPricingPreview} from '../../../services/splitJobApi';
+import {SplitPricingPreview} from "../../../interfaces/splitJobs";
 
 export function openSplitPricingDialog(
     jobNo: string,
@@ -30,12 +27,9 @@ export function openSplitPricingDialog(
         }
 
         root.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={getTheme()}>
-                    <CssBaseline/>
-                    <SplitPricingDialog open jobNo={jobNo} preview={preview} onClose={handleClose}/>
-                </ThemeProvider>
-            </ReactQueryProvider>,
+            <DfrntMantineProvider>
+                <SplitPricingDialog open jobNo={jobNo} preview={preview} onClose={handleClose}/>
+            </DfrntMantineProvider>,
         );
     });
 }

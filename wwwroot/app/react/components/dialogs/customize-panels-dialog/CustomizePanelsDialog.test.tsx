@@ -16,7 +16,6 @@ const mockBoxes: Record<string, DashboardBox> = {
 const defaultProps: CustomizePanelsDialogProps = {
     open: true,
     boxes: mockBoxes,
-    layoutEditable: true,
     onClose: jest.fn(),
     onSave: jest.fn(),
 };
@@ -56,12 +55,11 @@ describe('CustomizePanelsDialog', () => {
         expect(saved.jobList.visible).toBe(true);
     });
 
-    it('shows the info note and disables Save when the layout is not editable', () => {
-        renderWithTheme(<CustomizePanelsDialog {...createMockProps({layoutEditable: false})} />);
+    it('lets every layout be customised, including Default', () => {
+        renderWithTheme(<CustomizePanelsDialog {...createMockProps({title: 'Default'})} />);
 
-        expect(screen.getByText(/only available with a custom layout/i)).toBeInTheDocument();
-        expect(screen.queryByLabelText('Live Job Data')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
+        expect(screen.getByLabelText('Live Job Data')).toBeEnabled();
+        expect(screen.getByRole('button', {name: /save/i})).toBeEnabled();
     });
 
     it('calls onClose from Cancel', async () => {
@@ -72,3 +70,4 @@ describe('CustomizePanelsDialog', () => {
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 });
+

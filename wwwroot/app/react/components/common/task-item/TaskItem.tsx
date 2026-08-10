@@ -191,7 +191,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         }
 
         onTaskClick?.(task);
-    }, [config.onTaskClick, config.autoAssignOnClick, onTaskClick, task, currentUserId, assignToCurrentUser]);
+    }, [config.onTaskClick, config.autoAssignOnClick, onTaskClick, task, currentUserId, assignToCurrentUser, task.closed]);
 
     const handleUnassign = useCallback(async (event: React.MouseEvent) => {
         event.stopPropagation();

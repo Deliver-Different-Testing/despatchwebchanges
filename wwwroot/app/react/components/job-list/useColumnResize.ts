@@ -8,7 +8,7 @@
 
 import React, {useCallback, useEffect, useRef} from 'react';
 
-const MIN_COLUMN_WIDTH = 50;
+export const MIN_COLUMN_WIDTH = 50;
 
 interface UseColumnResizeOptions {
     columnWidths: Record<string, number>;

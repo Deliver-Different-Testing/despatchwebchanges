@@ -448,12 +448,13 @@ describe('TaskDashboardPage', () => {
     });
 
     // ── Auto-refresh: default off ───────────────────────────────────
-    it('renders the auto-refresh control defaulting to off', async () => {
+    it('renders the auto-refresh control defaulting to the 60s cadence', async () => {
+        // No stored preference must not mean "never refresh" — nothing pushes task updates.
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         await screen.findByText('Overdue follow up call');
-        expect(screen.getByRole('button', {name: /Auto-refresh/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /Auto: 1m/i})).toBeInTheDocument();
     });
 
     // ── Auto-refresh: seed from localStorage ────────────────────────
@@ -474,16 +475,16 @@ describe('TaskDashboardPage', () => {
 
         await screen.findByText('Overdue follow up call');
 
-        // Open the menu and pick "1 min"
-        await user.click(screen.getByRole('button', {name: /Auto-refresh/i}));
-        await user.click(await screen.findByRole('menuitem', {name: '1 min'}));
+        // Open the menu (showing the 60s default) and pick "2 mins"
+        await user.click(screen.getByRole('button', {name: /Auto: 1m/i}));
+        await user.click(await screen.findByRole('menuitem', {name: '2 mins'}));
 
         // Persisted as seconds and reflected on the button
-        expect(localStorageMock.setItem).toHaveBeenCalledWith('taskDashboardRefreshInterval-1', '60');
-        expect(await screen.findByRole('button', {name: /Auto: 1m/i})).toBeInTheDocument();
+        expect(localStorageMock.setItem).toHaveBeenCalledWith('taskDashboardRefreshInterval-1', '120');
+        expect(await screen.findByRole('button', {name: /Auto: 2m/i})).toBeInTheDocument();
 
-        // Turn it back off
-        await user.click(screen.getByRole('button', {name: /Auto: 1m/i}));
+        // Turn it off — an explicit choice that must survive the new default
+        await user.click(screen.getByRole('button', {name: /Auto: 2m/i}));
         await user.click(await screen.findByRole('menuitem', {name: 'Off'}));
 
         expect(localStorageMock.setItem).toHaveBeenCalledWith('taskDashboardRefreshInterval-1', '0');

@@ -6,18 +6,10 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import DialogContent from '@mui/material/DialogContent';
-import Box from '@mui/material/Box';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Alert from '@mui/material/Alert';
-import Divider from '@mui/material/Divider';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import ChecklistIcon from '@mui/icons-material/Checklist';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import { Alert, Box, Checkbox, Divider, Select } from '@mantine/core';
+import { ListChecks, TriangleAlert } from 'lucide-react';
+import { Icon } from '../../common/icon/Icon';
+import { DialogShell, DialogHeader, DialogFooter, dialogContentBg } from '../shared/mantine';
 
 import { SelectDialogProps, SelectDialogResult, SelectDialogItem } from './types';
 
@@ -55,9 +47,9 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
         }
     }, [open, initialValue, items]);
 
-    const handleSelectChange = useCallback((event: { target: { value: unknown } }) => {
-        const id = event.target.value as number;
-        const item = items.find(i => i.id === id) ?? null;
+    // Mantine's Select is string-valued, so ids round-trip through String()/Number().
+    const handleSelectChange = useCallback((value: string | null) => {
+        const item = value == null ? null : items.find(i => String(i.id) === value) ?? null;
         setSelectedItem(item);
     }, [items]);
 
@@ -87,61 +79,46 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
     }, [selectedItem, fieldName, showCheckbox, checkboxValue, onSubmit, showToast]);
 
     return (
-        <DialogShell open={open} onClose={onClose} disableEnforceFocus>
+        <DialogShell opened={open} onClose={onClose}>
             <DialogHeader
-                icon={<ChecklistIcon/>}
+                icon={<Icon lucide={ListChecks}/>}
                 title={`Edit ${title}`}
                 subtitle="Select an option from the list"
                 onClose={onClose}
                 closeDisabled={isLoading}
             />
             {/* Content */}
-            <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
-                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {/* Select Dropdown */}
-                    <FormControl fullWidth>
-                        <InputLabel id="select-dialog-label">{title}</InputLabel>
-                        <Select
-                            labelId="select-dialog-label"
-                            value={selectedItem?.id ?? ''}
-                            onChange={handleSelectChange}
-                            label={title}
+            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
+                {/* Select Dropdown */}
+                <Select
+                    label={title}
+                    data={items.map(item => ({value: String(item.id), label: item.text}))}
+                    value={selectedItem ? String(selectedItem.id) : null}
+                    onChange={handleSelectChange}
+                    disabled={isLoading}
+                    allowDeselect={false}
+                />
+
+                {/* Warning Message */}
+                {warningMessage && (
+                    <Alert color="orange" variant="light" icon={<Icon lucide={TriangleAlert}/>}>
+                        {warningMessage}
+                    </Alert>
+                )}
+
+                {/* Checkbox */}
+                {showCheckbox && (
+                    <>
+                        <Divider />
+                        <Checkbox
+                            label={checkboxLabel}
+                            checked={checkboxValue}
+                            onChange={(e) => setCheckboxValue(e.currentTarget.checked)}
                             disabled={isLoading}
-                            sx={{ bgcolor: 'background.paper' }}
-                        >
-                            {items.map(item => (
-                                <MenuItem key={item.id} value={item.id}>
-                                    {item.text}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    {/* Warning Message */}
-                    {warningMessage && (
-                        <Alert severity="warning" sx={{ mt: 1 }}>
-                            {warningMessage}
-                        </Alert>
-                    )}
-
-                    {/* Checkbox */}
-                    {showCheckbox && (
-                        <>
-                            <Divider />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={checkboxValue}
-                                        onChange={(e) => setCheckboxValue(e.target.checked)}
-                                        disabled={isLoading}
-                                    />
-                                }
-                                label={checkboxLabel}
-                            />
-                        </>
-                    )}
-                </Box>
-            </DialogContent>
+                        />
+                    </>
+                )}
+            </Box>
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSubmit}

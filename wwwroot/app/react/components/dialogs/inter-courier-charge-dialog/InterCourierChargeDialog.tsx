@@ -6,17 +6,10 @@
  */
 
 import React, {useState, useCallback, useEffect, useRef} from 'react';
-import DialogContent from '@mui/material/DialogContent';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import PaymentsIcon from '@mui/icons-material/Payments';
-import SearchOffIcon from '@mui/icons-material/SearchOff';
-import CheckIcon from '@mui/icons-material/Check';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {Box, Combobox, Group, Loader, Paper, Stack, Text, TextInput, useCombobox} from '@mantine/core';
+import {Banknote, Check, SearchX} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
 import {searchActiveCouriers} from '../../../services/courierApi';
 import {searchActiveClients} from '../../../services/jobApi';
 import {createInterCourierCharge} from '../../../services/dispatchExecutorApi';
@@ -80,6 +73,79 @@ function useDebouncedSearch(
         return () => clearTimeout(timer);
     }, [inputValue, searchFn, setField, abortRef]);
 }
+
+/**
+ * Async-search field over `Suggestion` objects.
+ *
+ * Mantine's `Autocomplete` is a free-text string input with no object value, so
+ * the object-valued MUI `Autocomplete` this replaces is rebuilt on the
+ * `Combobox` primitive: the input holds the display text while the caller keeps
+ * the selected object.
+ */
+const SearchField: React.FC<{
+    label: string;
+    placeholder: string;
+    field: AutocompleteFieldState;
+    setField: React.Dispatch<React.SetStateAction<AutocompleteFieldState>>;
+    error?: string;
+    autoFocus?: boolean;
+}> = ({label, placeholder, field, setField, error, autoFocus}) => {
+    const combobox = useCombobox({onDropdownClose: () => combobox.resetSelectedOption()});
+
+    return (
+        <Combobox
+            store={combobox}
+            onOptionSubmit={(value) => {
+                const selected = field.options.find(o => String(o.id) === value) ?? null;
+                setField(prev => ({...prev, selected, inputValue: selected?.text ?? ''}));
+                combobox.closeDropdown();
+            }}
+        >
+            <Combobox.Target>
+                <TextInput
+                    label={label}
+                    placeholder={placeholder}
+                    withAsterisk
+                    data-autofocus={autoFocus || undefined}
+                    value={field.inputValue}
+                    error={error}
+                    rightSection={field.loading ? <Loader size={18}/> : null}
+                    onFocus={() => combobox.openDropdown()}
+                    onBlur={() => combobox.closeDropdown()}
+                    onClick={() => combobox.openDropdown()}
+                    onChange={(event) => {
+                        // Typing invalidates the previous pick — the caller must
+                        // re-select before the form counts as complete.
+                        setField(prev => ({...prev, inputValue: event.currentTarget.value, selected: null}));
+                        combobox.openDropdown();
+                    }}
+                />
+            </Combobox.Target>
+            <Combobox.Dropdown>
+                <Combobox.Options>
+                    {field.options.length > 0 ? (
+                        field.options.map(option => (
+                            <Combobox.Option value={String(option.id)} key={option.id}>
+                                {option.text}
+                            </Combobox.Option>
+                        ))
+                    ) : (
+                        <Combobox.Empty>
+                            {field.inputValue.length >= MIN_SEARCH_LENGTH ? (
+                                <Group gap="xs" justify="center">
+                                    <Icon lucide={SearchX} size={18}/>
+                                    <Text fz="sm" c="dimmed">No matches for &ldquo;{field.inputValue}&rdquo;</Text>
+                                </Group>
+                            ) : (
+                                <Text fz="sm" c="dimmed">Type at least {MIN_SEARCH_LENGTH} characters to search</Text>
+                            )}
+                        </Combobox.Empty>
+                    )}
+                </Combobox.Options>
+            </Combobox.Dropdown>
+        </Combobox>
+    );
+};
 
 export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> = ({
     open,
@@ -165,172 +231,90 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
         if (!isSubmitting) onClose();
     }, [isSubmitting, onClose]);
 
-    const renderAutocomplete = (
-        label: string,
-        placeholder: string,
-        field: AutocompleteFieldState,
-        setField: React.Dispatch<React.SetStateAction<AutocompleteFieldState>>,
-        autoFocus?: boolean,
-    ) => {
-        const hasError = submitted && !field.selected;
-
-        return (
-            <Autocomplete
-                fullWidth
-                size="small"
-                autoHighlight
-                options={field.options}
-                loading={field.loading}
-                value={field.selected}
-                inputValue={field.inputValue}
-                getOptionLabel={(option) => option.text}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                onInputChange={(_, newValue) => {
-                    setField(prev => ({...prev, inputValue: newValue}));
-                }}
-                onChange={(_, newValue) => {
-                    setField(prev => ({...prev, selected: newValue}));
-                }}
-                noOptionsText={
-                    field.inputValue.length >= MIN_SEARCH_LENGTH ? (
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, py: 1}}>
-                            <SearchOffIcon color="action" />
-                            <Typography sx={{
-                                color: "text.secondary"
-                            }}>
-                                No matches for &ldquo;{field.inputValue}&rdquo;
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <Typography sx={{
-                            color: "text.secondary"
-                        }}>
-                            Type at least {MIN_SEARCH_LENGTH} characters to search
-                        </Typography>
-                    )
-                }
-                renderInput={({slotProps: autoSlotProps, ...params}) => (
-                    <TextField
-                        {...params}
-                        autoFocus={autoFocus}
-                        label={label}
-                        placeholder={placeholder}
-                        variant="outlined"
-                        size="small"
-                        required
-                        error={hasError}
-                        helperText={hasError ? 'This field is required.' : undefined}
-                        slotProps={{
-                            ...autoSlotProps,
-                            input: {
-                                ...autoSlotProps.input,
-                                endAdornment: (
-                                    <>
-                                        {field.loading ? <CircularProgress color="inherit" size={20} /> : null}
-                                        {autoSlotProps.input.endAdornment}
-                                    </>
-                                ),
-                            },
-                        }}
-                    />
-                )}
-                renderOption={(props, option) => (
-                    <Box
-                        component="li"
-                        {...props}
-                        key={option.id}
-                        sx={{display: 'flex', alignItems: 'center', gap: 1}}
-                    >
-                        <Typography>{option.text}</Typography>
-                    </Box>
-                )}
-            />
-        );
-    };
+    const searchFieldError = (selected: unknown) => (submitted && !selected ? 'This field is required.' : undefined);
 
     return (
-        <DialogShell open={open} onClose={handleClose}>
+        <DialogShell opened={open} onClose={handleClose}>
             <DialogHeader
-                icon={<PaymentsIcon />}
+                icon={<Icon lucide={Banknote} />}
                 title="Inter-Courier Charge"
                 subtitle="Create a charge transfer between couriers"
                 onClose={handleClose}
                 closeDisabled={isSubmitting}
             />
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
-                <Paper
-                    elevation={0}
-                    sx={(theme) => ({
-                        p: 3,
-                        borderRadius: 2,
-                        border: `1px solid ${theme.palette.divider}`,
-                        bgcolor: 'background.paper',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 2.5,
-                    })}
-                >
-                    {renderAutocomplete('From Courier', 'Search Courier...', fromCourier, setFromCourier, true)}
-                    {renderAutocomplete('To Courier', 'Search Courier...', toCourier, setToCourier)}
-                    {renderAutocomplete('Client', 'Search Client...', client, setClient)}
-
-                    <TextField
-                        label="Reference"
-                        placeholder="Enter reference"
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                        required
-                        value={reference}
-                        onChange={(e) => setReference(e.target.value)}
-                        error={submitted && reference.trim() === ''}
-                        helperText={submitted && reference.trim() === '' ? 'This field is required.' : undefined}
-                    />
-
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <TextField
-                            label="Zones"
-                            variant="outlined"
-                            size="small"
-                            type="number"
-                            required
-                            value={zones}
-                            onChange={(e) => handleZonesChange(e.target.value)}
-                            error={submitted && (zones === '' || isNaN(parseFloat(zones)) || parseFloat(zones) < 0)}
-                            helperText={
-                                submitted && zones === '' ? 'This field is required.'
-                                    : submitted && parseFloat(zones) < 0 ? 'Value must be zero or greater.'
-                                        : undefined
-                            }
-                            slotProps={{htmlInput: {min: 0}}}
-                            sx={{flex: '0 0 40%'}}
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                <Paper {...sectionPaperProps} p="lg">
+                    <Stack gap="lg">
+                        <SearchField
+                            label="From Courier"
+                            placeholder="Search Courier..."
+                            field={fromCourier}
+                            setField={setFromCourier}
+                            error={searchFieldError(fromCourier.selected)}
+                            autoFocus
                         />
-                        <TextField
-                            label="Amount"
-                            variant="outlined"
-                            size="small"
-                            type="number"
-                            required
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            error={submitted && (amount === '' || isNaN(parseFloat(amount)) || parseFloat(amount) < 0)}
-                            helperText={
-                                submitted && amount === '' ? 'This field is required.'
-                                    : submitted && parseFloat(amount) < 0 ? 'Value must be zero or greater.'
-                                        : undefined
-                            }
-                            slotProps={{htmlInput: {min: 0, step: 0.01}}}
-                            sx={{flex: 1}}
+                        <SearchField
+                            label="To Courier"
+                            placeholder="Search Courier..."
+                            field={toCourier}
+                            setField={setToCourier}
+                            error={searchFieldError(toCourier.selected)}
                         />
-                    </Box>
+                        <SearchField
+                            label="Client"
+                            placeholder="Search Client..."
+                            field={client}
+                            setField={setClient}
+                            error={searchFieldError(client.selected)}
+                        />
+
+                        <TextInput
+                            label="Reference"
+                            placeholder="Enter reference"
+                            withAsterisk
+                            value={reference}
+                            onChange={(e) => setReference(e.currentTarget.value)}
+                            error={submitted && reference.trim() === '' ? 'This field is required.' : undefined}
+                        />
+
+                        <Group gap="md" align="flex-start" grow>
+                            <TextInput
+                                label="Zones"
+                                type="number"
+                                withAsterisk
+                                min={0}
+                                value={zones}
+                                onChange={(e) => handleZonesChange(e.currentTarget.value)}
+                                error={
+                                    submitted && zones === '' ? 'This field is required.'
+                                        : submitted && parseFloat(zones) < 0 ? 'Value must be zero or greater.'
+                                            : undefined
+                                }
+                            />
+                            <TextInput
+                                label="Amount"
+                                type="number"
+                                withAsterisk
+                                min={0}
+                                step={0.01}
+                                value={amount}
+                                onChange={(e) => setAmount(e.currentTarget.value)}
+                                error={
+                                    submitted && amount === '' ? 'This field is required.'
+                                        : submitted && parseFloat(amount) < 0 ? 'Value must be zero or greater.'
+                                            : undefined
+                                }
+                            />
+                        </Group>
+                    </Stack>
                 </Paper>
-            </DialogContent>
+            </Box>
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSubmit}
                 confirmLabel="Add Charge"
-                confirmIcon={<CheckIcon />}
+                confirmIcon={<Icon lucide={Check} />}
                 submitting={isSubmitting}
             />
         </DialogShell>

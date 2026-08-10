@@ -68,7 +68,7 @@ public sealed class PodReportService(
     // Queued to tucManualMessage rather than sent over SMTP from here: the external message
     // processor owns delivery (and the from-address) for every other email in the stack, and it
     // is the only mail path that is actually configured in the deployed environments.
-    public async Task SendPodEmailAsync(int jobId, List<string> recipients, string subject, string body)
+    public async Task SendPodEmailAsync(int jobId, List<string> recipients, string subject, string? body)
     {
         var (pdfBytes, fileName) = await GeneratePodReportAsync(jobId);
 
@@ -147,10 +147,12 @@ public sealed class PodReportService(
         // Signatures carry the pad's opaque canvas colour (see SignatureBackgroundRemover); key it
         // out so the appended page matches the keyed signature stamped on the overlay itself. A
         // delivery photo's background is real content and is left alone.
-        return deliveryPhotos.Select(p => Convert.FromBase64String(p.Data))
-            .Concat(signatures.Select(p =>
-                SignatureBackgroundRemover.RemoveFlatBackground(Convert.FromBase64String(p.Data))))
-            .ToList();
+        return
+        [
+            .. deliveryPhotos.Select(p => Convert.FromBase64String(p.Data)),
+            .. signatures.Select(p =>
+                SignatureBackgroundRemover.RemoveFlatBackground(Convert.FromBase64String(p.Data)))
+        ];
     }
 
     private static void EnsureQuestPdfInitialized()
@@ -208,7 +210,7 @@ public sealed class PodReportService(
     private async Task<string?> GetPodNotesAsync(int jobId)
     {
         var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
-        return notes?.FirstOrDefault()?.NoteText;
+        return notes.Count > 0 ? notes[0].NoteText : null;
     }
 
     internal static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos,
@@ -269,12 +271,15 @@ public sealed class PodReportService(
             return [];
         }
 
-        return parcels.Select(p => new PodItem
-        {
-            ItemCode = p.ItemId?.ToString(),
-            Barcode = p.Barcode,
-            Description = p.ItemName
-        }).ToList();
+        return
+        [
+            .. parcels.Select(p => new PodItem
+            {
+                ItemCode = p.ItemId?.ToString(),
+                Barcode = p.Barcode,
+                Description = p.ItemName
+            })
+        ];
     }
 
     internal static List<PhotoCategory> MapPhotoCategories(List<S3PhotoInfo> photos)

@@ -1,0 +1,15 @@
+/*
+ * Row actions (rename/delete) stay hidden until the row is hovered or something
+ * inside it takes focus. Mantine has no `sx`, and this needs both a descendant
+ * selector and `:focus-within`, so it lives in a CSS module rather than inline
+ * styles. Keyboard users get the same reveal as mouse users.
+ */
+.row .action {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.row:hover .action,
+.row:focus-within .action {
+    opacity: 1;
+}

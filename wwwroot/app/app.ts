@@ -71,29 +71,26 @@ app.config(["$urlRouterProvider", "$stateProvider",
 ]);
 
 // Theme
-app.config(["$mdThemingProvider", "APP_CONFIG",
+app.config(["$mdThemingProvider",
     (
-        $mdThemingProvider: angular.material.IThemingProvider,
-        appConfig: IAppConfig
+        $mdThemingProvider: angular.material.IThemingProvider
     ): void => {
-        const themeConfig = new ThemeConfig($mdThemingProvider, appConfig);
+        const themeConfig = new ThemeConfig($mdThemingProvider);
         themeConfig.configure();
     }
 ]);
 
-// Set theme CSS custom properties based on the customer region
+// Publish the single DFRNT brand primary as CSS custom properties for the legacy
+// stylesheets (udispatch.less drag/drop chrome).
 app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     const root = document.documentElement;
-    // US tenants → DFRNT Cyan #3bc7f4 = rgb(59, 199, 244); non-US (NZ) tenants →
-    // the warm amber-gold "urgent" brand #f4c430 = rgb(244, 196, 48).
-    const primary = appConfig.US_Customer
-        ? {hex: '#3bc7f4', rgb: '59, 199, 244'}
-        : {hex: '#f4c430', rgb: '244, 196, 48'};
-    root.style.setProperty('--theme-primary', primary.hex);
-    root.style.setProperty('--theme-primary-light', `rgba(${primary.rgb}, 0.15)`);
-    root.style.setProperty('--theme-primary-medium', `rgba(${primary.rgb}, 0.3)`);
-    root.style.setProperty('--theme-primary-strong', `rgba(${primary.rgb}, 0.5)`);
-    // Body class also drives non-colour tenant differences (labels, locale, features).
+    // DFRNT Cyan #3bc7f4 = rgb(59, 199, 244).
+    root.style.setProperty('--theme-primary', '#3bc7f4');
+    root.style.setProperty('--theme-primary-light', 'rgba(59, 199, 244, 0.15)');
+    root.style.setProperty('--theme-primary-medium', 'rgba(59, 199, 244, 0.3)');
+    root.style.setProperty('--theme-primary-strong', 'rgba(59, 199, 244, 0.5)');
+    // No longer a theme switch — nothing reads this class since the brand collapsed.
+    // Retained only as a tenant marker; safe to drop with the rest of the MUI removal.
     document.body.classList.add(appConfig.US_Customer ? 'theme-us' : 'theme-nz');
 }]);
 

@@ -10,9 +10,9 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import type {Theme} from '@mui/material/styles';
+import {headerOverlayColor} from '../../../components/dialogs/shared/styles';
 import {PanelHeader} from '../../../components/common/panel-header';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 
@@ -22,15 +22,12 @@ export interface BoxHeaderProps {
     title: string;
     subtitle?: string;
     locked?: boolean;
-    collapsed?: boolean;
     showRefresh?: boolean;
-    showCollapse?: boolean;
     /** Show a drag-handle affordance on the right (custom layouts only). */
     showDragHandle?: boolean;
     /** Wired as the parent <div draggable=…> attribute. Leave undefined to disable drag. */
     onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
     onRefresh?: () => void;
-    onToggleCollapse?: () => void;
     /** Keyboard reorder: move this panel up among its visible siblings. Undefined at the top. */
     onMoveUp?: () => void;
     /** Keyboard reorder: move this panel down among its visible siblings. Undefined at the bottom. */
@@ -54,25 +51,22 @@ export interface BoxHeaderProps {
     headerSlotRef?: (el: HTMLElement | null) => void;
 }
 
-const actionButtonSx = {
+const actionButtonSx = (theme: Theme) => ({
     color: 'inherit',
-    // Subtle white-on-gradient hover — matches the icon-badge tone in
-    // PanelHeader so the buttons feel native to the header.
-    '&:hover': {bgcolor: 'rgba(255,255,255,0.12)'},
-};
+    // Subtle hover derived from the header's own on-colour, so it darkens the
+    // paper bar rather than washing out against it.
+    '&:hover': {bgcolor: headerOverlayColor(theme, 0.08, 'surface')},
+});
 
 export const BoxHeader: React.FC<BoxHeaderProps> = ({
     icon,
     title,
     subtitle,
     locked,
-    collapsed,
     showRefresh,
-    showCollapse,
     showDragHandle,
     onDragStart,
     onRefresh,
-    onToggleCollapse,
     onMoveUp,
     onMoveDown,
     focusHandleOnMount,
@@ -119,18 +113,6 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
                     </IconButton>
                 </Tooltip>
             ) : null}
-            {showCollapse && onToggleCollapse ? (
-                <Tooltip title={collapsed ? 'Expand' : 'Collapse'}>
-                    <IconButton
-                        size="small"
-                        onClick={onToggleCollapse}
-                        aria-label={collapsed ? 'Expand' : 'Collapse'}
-                        sx={actionButtonSx}
-                    >
-                        {collapsed ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
-                    </IconButton>
-                </Tooltip>
-            ) : null}
             {showDragHandle ? (
                 <Tooltip title="Drag, or use the arrow keys, to reorder">
                     <IconButton
@@ -139,7 +121,7 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
                         aria-label={`Reorder ${title} — use the up and down arrow keys`}
                         aria-roledescription="sortable"
                         onKeyDown={handleReorderKeyDown}
-                        sx={{...actionButtonSx, cursor: 'grab', opacity: 0.85, '&:active': {cursor: 'grabbing'}}}
+                        sx={[actionButtonSx, {cursor: 'grab', opacity: 0.85, '&:active': {cursor: 'grabbing'}}]}
                     >
                         <DragIndicatorIcon fontSize="small" />
                     </IconButton>

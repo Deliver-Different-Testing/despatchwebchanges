@@ -148,7 +148,7 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
         var congestionId = preview.ParentLines.Single(l => l.Name == "Congestion").PricingBreakdownId;
         Assert.Equal(
             congestionId,
-            preview.Legs.First().Lines.Single(l => l.Name == "Congestion Part A").PricingBreakdownId);
+            preview.Legs[0].Lines.Single(l => l.Name == "Congestion Part A").PricingBreakdownId);
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
         Assert.Equal("EvenSplit", preview.Basis);
         Assert.All(preview.Legs, l => Assert.Equal(0m, l.Distance));
         Assert.All(preview.Legs, l => Assert.Equal(50m, l.SharePercent));
-        Assert.Equal(44.50m, preview.Legs.First().TotalRevenue);
+        Assert.Equal(44.50m, preview.Legs[0].TotalRevenue);
     }
 
     [Fact]
@@ -206,7 +206,7 @@ public class SplitPricingPreviewServiceTests : IAsyncDisposable
         // Divides the header amount and driver pay instead of leaving the dialog empty.
         Assert.Equal(89.00m, preview.ParentTotalRevenue);
         Assert.Equal(50.00m, preview.ParentTotalCost);
-        Assert.Equal("Manually Rated Part A", preview.Legs.First().Lines.Single().Name);
+        Assert.Equal("Manually Rated Part A", preview.Legs[0].Lines.Single().Name);
         // The synthesised line has no row behind it, so it can't be singled out in the dialog.
         Assert.Equal(0, preview.ParentLines.Single().PricingBreakdownId);
     }

@@ -7,12 +7,10 @@
 
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../query';
-import {
-    pricingBreakdownApi,
-    PriceBreakdown,
-    CreatePriceBreakdownRequest,
-    DeletePriceBreakdownRequest,
-} from '../services/pricingBreakdownApi';
+import {pricingBreakdownApi} from '../services/pricingBreakdownApi';
+import {PriceBreakdown} from "../interfaces/priceBreakdown";
+import type {CreatePriceBreakdownRequest} from '../interfaces/priceBreakdown';
+import type {DeletePriceBreakdownRequest} from '../interfaces/priceBreakdown';
 
 // Re-export types for convenience
 export type {PriceBreakdown, CreatePriceBreakdownRequest, DeletePriceBreakdownRequest};

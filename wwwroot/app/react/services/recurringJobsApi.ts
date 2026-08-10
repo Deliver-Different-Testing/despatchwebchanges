@@ -5,7 +5,7 @@
  * Used by the React Recurring Jobs page.
  */
 
-import {apiClient, RequestOptions, downloadBlob} from './apiClient';
+import {apiClient, downloadBlob} from './apiClient';
 import {parseDateFromApi, getTenantTimezone} from '../utils/dateUtils';
 import {
     CreateCreateAheadBackfillRequest,
@@ -28,6 +28,7 @@ import type {
     RecurringJourneyRunDto,
     RecurringJourneyRun,
 } from '../components/common/recurring-delivery-journey/RecurringDeliveryJourney.types';
+import {RequestOptions} from "./requestOptions";
 
 function transformRecurringJourneyRun(dto: RecurringJourneyRunDto): RecurringJourneyRun {
     return {

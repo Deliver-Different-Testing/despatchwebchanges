@@ -1,8 +1,9 @@
 /**
  * Job List view options — density selector, reset-columns, and the (dispatch-only)
  * "logged-in couriers only" toggle. Rendered either inline in the toolbar
- * (default) or, on the dispatch page, portaled into the gradient panel header
- * (`headerVariant`), where controls inherit the header's contrast colour.
+ * (default) or, on the dispatch page, portaled into the panel header
+ * (`headerVariant`) — a plain `'surface'` paper bar, so controls inherit
+ * `text.primary` and tint with the shared header overlay colour.
  */
 
 import React, {useCallback} from 'react';
@@ -19,6 +20,7 @@ import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
 import type {SxProps, Theme} from '@mui/material';
 import type {DensityMode} from '../../interfaces/dispatchJob';
+import {headerOverlayColor} from '../dialogs/shared/styles';
 
 interface JobListViewOptionsProps {
     densityMode: DensityMode;
@@ -32,37 +34,23 @@ interface JobListViewOptionsProps {
     headerVariant?: boolean;
 }
 
-const headerToggleSx = {
+const headerToggleSx = ((theme: Theme) => ({
     '& .MuiToggleButton-root': {
         color: 'inherit',
-        borderColor: 'rgba(255,255,255,0.5)',
+        borderColor: 'divider',
         px: 0.75,
         py: 0.5,
     },
-    '& .MuiToggleButton-root:hover': {bgcolor: 'rgba(255,255,255,0.12)'},
+    '& .MuiToggleButton-root:hover': {bgcolor: headerOverlayColor(theme, 0.08, 'surface')},
     '& .MuiToggleButton-root.Mui-selected': {
         color: 'inherit',
-        bgcolor: 'rgba(255,255,255,0.25)',
-        '&:hover': {bgcolor: 'rgba(255,255,255,0.32)'},
+        bgcolor: headerOverlayColor(theme, 0.12, 'surface'),
+        '&:hover': {bgcolor: headerOverlayColor(theme, 0.16, 'surface')},
     },
-} satisfies SxProps<Theme>;
+})) satisfies SxProps<Theme>;
 
 const toolbarToggleSx = {
     '& .MuiToggleButton-root': {px: 0.75, py: 0.5},
-} satisfies SxProps<Theme>;
-
-// In the gradient panel header the switch would otherwise inherit the header
-// colour and disappear against it — force a white thumb/track instead.
-const headerSwitchSx = {
-    '& .MuiSwitch-switchBase': {color: '#fff !important'},
-    '& .MuiSwitch-switchBase + .MuiSwitch-track': {
-        bgcolor: '#fff',
-        opacity: 0.3,
-    },
-    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-        bgcolor: '#fff',
-        opacity: 0.6,
-    },
 } satisfies SxProps<Theme>;
 
 export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
@@ -90,7 +78,6 @@ export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
                             size="small"
                             checked={loggedInCouriersOnly}
                             onChange={(_, checked) => onLoggedInCouriersOnlyChange(checked)}
-                            sx={headerVariant ? headerSwitchSx : undefined}
                         />
                     }
                     label="Logged-in only"
@@ -118,13 +105,13 @@ export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
                 </ToggleButton>
             </ToggleButtonGroup>
 
-            <Tooltip title="Reset column widths">
+            <Tooltip title="Reset columns">
                 <IconButton
                     size="small"
                     onClick={onResetColumns}
-                    aria-label="Reset column widths"
+                    aria-label="Reset columns"
                     sx={headerVariant
-                        ? {color: 'inherit', '&:hover': {bgcolor: 'rgba(255,255,255,0.12)'}}
+                        ? (theme) => ({color: 'inherit', '&:hover': {bgcolor: headerOverlayColor(theme, 0.08, 'surface')}})
                         : {color: 'text.secondary'}}
                 >
                     <ViewWeekIcon fontSize="small"/>

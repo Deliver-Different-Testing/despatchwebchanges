@@ -3,9 +3,10 @@
  * Pricing Breakdown API Service Tests
  */
 
-import {pricingBreakdownApi, PriceBreakdown, CreatePriceBreakdownRequest, DeletePriceBreakdownRequest} from './pricingBreakdownApi';
+import {pricingBreakdownApi,} from './pricingBreakdownApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
+import {CreatePriceBreakdownRequest, DeletePriceBreakdownRequest, PriceBreakdown} from "../interfaces/priceBreakdown";
 
 // Mock the apiClient
 jest.mock('./apiClient', () => ({
@@ -80,7 +81,15 @@ describe('pricingBreakdownApi', () => {
 
         it('should handle breakdowns with optional fields', async () => {
             const breakdownsWithOptionalFields: PriceBreakdown[] = [
-                {chargeId: 1, name: 'Full Breakdown', amount: 50.00, jobId: 100, costAmount: 30.00, childJobId: 101, isArchived: false},
+                {
+                    chargeId: 1,
+                    name: 'Full Breakdown',
+                    amount: 50.00,
+                    jobId: 100,
+                    costAmount: 30.00,
+                    childJobId: 101,
+                    isArchived: false
+                },
                 {chargeId: 2, name: 'Prebook Breakdown', amount: 75.00, prebookJobId: 200},
             ];
             mockApiClient.get.mockResolvedValueOnce(breakdownsWithOptionalFields);
@@ -94,7 +103,11 @@ describe('pricingBreakdownApi', () => {
 
         it.each([
             ['404 Not Found', createMockApiError({status: 404, statusText: 'Not Found', message: 'Job not found'})],
-            ['500 Server Error', createMockApiError({status: 500, statusText: 'Internal Server Error', message: 'Database error'})],
+            ['500 Server Error', createMockApiError({
+                status: 500,
+                statusText: 'Internal Server Error',
+                message: 'Database error'
+            })],
         ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.get.mockRejectedValueOnce(error);
             await expect(pricingBreakdownApi.getPriceBreakdowns(100, false, false)).rejects.toEqual(error);
@@ -134,8 +147,16 @@ describe('pricingBreakdownApi', () => {
         });
 
         it.each([
-            ['400 Bad Request', createMockApiError({status: 400, statusText: 'Bad Request', message: 'Invalid breakdown data'})],
-            ['500 Server Error', createMockApiError({status: 500, statusText: 'Internal Server Error', message: 'Database error'})],
+            ['400 Bad Request', createMockApiError({
+                status: 400,
+                statusText: 'Bad Request',
+                message: 'Invalid breakdown data'
+            })],
+            ['500 Server Error', createMockApiError({
+                status: 500,
+                statusText: 'Internal Server Error',
+                message: 'Database error'
+            })],
         ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.post.mockRejectedValueOnce(error);
             const newBreakdown: CreatePriceBreakdownRequest = {name: 'Test', amount: 10.00};
@@ -174,8 +195,16 @@ describe('pricingBreakdownApi', () => {
         });
 
         it.each([
-            ['404 Not Found', createMockApiError({status: 404, statusText: 'Not Found', message: 'Breakdown not found'})],
-            ['500 Server Error', createMockApiError({status: 500, statusText: 'Internal Server Error', message: 'Database error'})],
+            ['404 Not Found', createMockApiError({
+                status: 404,
+                statusText: 'Not Found',
+                message: 'Breakdown not found'
+            })],
+            ['500 Server Error', createMockApiError({
+                status: 500,
+                statusText: 'Internal Server Error',
+                message: 'Database error'
+            })],
         ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.post.mockRejectedValueOnce(error);
             const breakdown: PriceBreakdown = {chargeId: 1, name: 'Test', amount: 10.00};
@@ -210,8 +239,16 @@ describe('pricingBreakdownApi', () => {
         });
 
         it.each([
-            ['404 Not Found', createMockApiError({status: 404, statusText: 'Not Found', message: 'Breakdown not found'})],
-            ['500 Server Error', createMockApiError({status: 500, statusText: 'Internal Server Error', message: 'Database error'})],
+            ['404 Not Found', createMockApiError({
+                status: 404,
+                statusText: 'Not Found',
+                message: 'Breakdown not found'
+            })],
+            ['500 Server Error', createMockApiError({
+                status: 500,
+                statusText: 'Internal Server Error',
+                message: 'Database error'
+            })],
         ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.post.mockRejectedValueOnce(error);
             const deleteRequest: DeletePriceBreakdownRequest = {chargeId: 1, jobId: 100};

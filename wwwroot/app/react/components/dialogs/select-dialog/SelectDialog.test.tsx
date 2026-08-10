@@ -5,12 +5,10 @@
 
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import { render, screen, fireEvent } from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithMantine } from '../../../__testUtils__';
 import { SelectDialog } from './SelectDialog';
 import { SelectDialogProps, SelectDialogItem } from './types';
-
-const theme = createTheme();
 
 const sampleItems: SelectDialogItem[] = [
     { id: 1, text: 'Option A' },
@@ -19,11 +17,7 @@ const sampleItems: SelectDialogItem[] = [
 ];
 
 function renderWithProviders(props: SelectDialogProps) {
-    return render(
-        <ThemeProvider theme={theme}>
-            <SelectDialog {...props} />
-        </ThemeProvider>
-    );
+    return renderWithMantine(<SelectDialog {...props} />);
 }
 
 function createDefaultProps(overrides?: Partial<SelectDialogProps>): SelectDialogProps {
@@ -48,7 +42,8 @@ describe('SelectDialog', () => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
-        it('renders dialog with title, buttons, and all dropdown items', () => {
+        it('renders dialog with title, buttons, and all dropdown items', async () => {
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(props);
 
@@ -63,13 +58,11 @@ describe('SelectDialog', () => {
             expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
 
             // Open the select dropdown to verify all items
-            const selectButton = screen.getByRole('combobox');
-            fireEvent.mouseDown(selectButton);
+            await user.click(screen.getByRole('combobox'));
 
-            // All options should be visible
-            expect(screen.getByText('Option A')).toBeInTheDocument();
-            expect(screen.getByText('Option B')).toBeInTheDocument();
-            expect(screen.getByText('Option C')).toBeInTheDocument();
+            expect(await screen.findByRole('option', { name: 'Option A' })).toBeInTheDocument();
+            expect(screen.getByRole('option', { name: 'Option B' })).toBeInTheDocument();
+            expect(screen.getByRole('option', { name: 'Option C' })).toBeInTheDocument();
         });
     });
 
@@ -78,26 +71,21 @@ describe('SelectDialog', () => {
             const props = createDefaultProps({ initialValue: 2 });
             renderWithProviders(props);
 
-            const select = screen.getByRole('combobox');
-            expect(select).toHaveTextContent('Option B');
+            expect(screen.getByRole('combobox')).toHaveValue('Option B');
         });
 
         it('pre-selects item matching initialValue by text', () => {
             const props = createDefaultProps({ initialValue: 'Option C' });
             renderWithProviders(props);
 
-            const select = screen.getByRole('combobox');
-            expect(select).toHaveTextContent('Option C');
+            expect(screen.getByRole('combobox')).toHaveValue('Option C');
         });
 
         it('has no selection when initialValue is null', () => {
             const props = createDefaultProps({ initialValue: null });
             renderWithProviders(props);
 
-            const select = screen.getByRole('combobox');
-            expect(select).not.toHaveTextContent('Option A');
-            expect(select).not.toHaveTextContent('Option B');
-            expect(select).not.toHaveTextContent('Option C');
+            expect(screen.getByRole('combobox')).toHaveValue('');
         });
     });
 
@@ -190,25 +178,16 @@ describe('SelectDialog', () => {
     });
 
     describe('Cancel', () => {
-        it('calls onClose when Cancel button or close icon is clicked', () => {
+        it('calls onClose from the Cancel button and the header close button', () => {
             const onClose = jest.fn();
             const props = createDefaultProps({ onClose });
             renderWithProviders(props);
 
-            // Cancel button
             fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
             expect(onClose).toHaveBeenCalledTimes(1);
 
-            // Close icon button
-            const closeButtons = screen.getAllByRole('button');
-            const closeIconButton = closeButtons.find(
-                btn => btn.querySelector('[data-testid="CloseIcon"]')
-            );
-
-            if (closeIconButton) {
-                fireEvent.click(closeIconButton);
-                expect(onClose).toHaveBeenCalledTimes(2);
-            }
+            fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }));
+            expect(onClose).toHaveBeenCalledTimes(2);
         });
     });
 

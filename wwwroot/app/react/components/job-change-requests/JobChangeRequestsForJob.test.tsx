@@ -7,7 +7,8 @@ import {screen, waitFor, within} from '@testing-library/react';
 import {JobChangeRequestsForJob} from './JobChangeRequestsForJob';
 import { renderWithProviders } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
-import {jobChangeRequestApi, type JobChangeRequestDto} from '../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
+import type {JobChangeRequestDto} from '../../interfaces/jobChangeRequest';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();

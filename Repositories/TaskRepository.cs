@@ -504,10 +504,10 @@ public class TaskRepository(
         );
     }
 
-    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
+    internal static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
         DateTime today)
     {
-        query = query
+        var overdueFirst = query
             .OrderByDescending(e =>
                 e.UcevDueTime.Date < today.Date ||
                 (e.UcevDueTime.Date == today.Date &&
@@ -517,8 +517,16 @@ public class TaskRepository(
 
         if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy))
         {
-            return query;
+            // GetAllTasksAsync applies Take() straight after ordering. Sorting only by the
+            // overdue flag leaves every row within a group tied, so the database is free to
+            // return a different arbitrary page each call and a task can disappear between
+            // refreshes. UcevId makes the order total.
+            return overdueFirst
+                .ThenBy(e => e.UcevDueTime)
+                .ThenBy(e => e.UcevId);
         }
+
+        query = overdueFirst;
 
         var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
@@ -534,8 +542,10 @@ public class TaskRepository(
         isDescending
             ? query.OrderByDescending(e => e.UcevDueTime.Date < today.Date)
                 .ThenByDescending(e => e.UcevDueTime)
+                .ThenBy(e => e.UcevId)
             : query.OrderByDescending(e => e.UcevDueTime.Date < today)
-                .ThenBy(e => e.UcevDueTime);
+                .ThenBy(e => e.UcevDueTime)
+                .ThenBy(e => e.UcevId);
 
     /// <summary>
     /// Restricts an event query to the groups that surface as actionable tasks in the task

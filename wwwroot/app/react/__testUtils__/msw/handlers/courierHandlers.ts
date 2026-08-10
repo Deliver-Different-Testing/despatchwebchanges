@@ -108,6 +108,13 @@ export const courierHandlers = [
         return HttpResponse.json(filtered);
     }),
 
+    // Exact courier code lookup (returns null when no active courier has that code)
+    http.get('*/courier/GetExactCourierByCode', ({ request }) => {
+        const courierCode = new URL(request.url).searchParams.get('courierCode');
+        const match = mockCourierSuggestions.find(c => c.text.split(/[\s(]/)[0] === courierCode);
+        return HttpResponse.json(match ?? null);
+    }),
+
     // Get available courier locations
     http.get('*/courier/AvailableCourierLocation', ({ request }) => {
         const url = new URL(request.url);

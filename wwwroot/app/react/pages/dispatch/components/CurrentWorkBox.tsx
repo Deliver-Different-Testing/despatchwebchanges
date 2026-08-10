@@ -17,7 +17,7 @@ import IconButton from '@mui/material/IconButton';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {CourierSearchField} from './CourierSearchField';
-import {headerScopeToggleSx} from './headerScopeToggleSx';
+import {headerIconButtonSx, headerScopeToggleSx} from './headerScopeToggleSx';
 import {TruckLoadingStatusDialog} from './TruckLoadingStatusDialog';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
 import type {CourierSuggestion} from '../../../interfaces';
@@ -68,8 +68,6 @@ const detailToggleSx = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
 } satisfies SxProps<Theme>;
-
-const headerIconButtonSx = {color: 'inherit', '&:hover': {bgcolor: 'rgba(255,255,255,0.12)'}} satisfies SxProps<Theme>;
 
 export interface CurrentWorkBoxProps {
     isUsCustomer: boolean;
@@ -206,6 +204,9 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             isUsCustomer={isUsCustomer}
             appPage={AppPage.Dispatch}
             storagePrefix="dispatchCurrentWork"
+            // GetCurrentWorkList deliberately returns done jobs too, so the panel has to
+            // default to the courier's outstanding work (V1 mounted it the same way).
+            defaultCategory="in-progress"
             fetchConfig={fetchConfig}
             hideLoggedInSwitch
             onJobSelect={onJobSelect}
@@ -263,11 +264,11 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                 isUsCustomer={isUsCustomer}
                 onClose={() => setTruckStatusOpen(false)}
             />
-            {!isUsCustomer && (
-                <Box sx={{px: 1, pt: 0.5, flexShrink: 0}}>
-                    <CourierSearchField onSelect={handleCourierSearchSelect} />
-                </Box>
-            )}
+            {/* Every tenant gets the courier lookup — V1 rendered the code box for all
+                of them, and US dispatchers otherwise have only the drivers overview. */}
+            <Box sx={{px: 1, pt: 0.5, flexShrink: 0}}>
+                <CourierSearchField onSelect={handleCourierSearchSelect} showToast={showToast} />
+            </Box>
             <Box sx={{flex: 1, minHeight: 0, overflow: 'auto'}}>
                 {showDriverList ? (
                     <CurrentWorkAllDrivers

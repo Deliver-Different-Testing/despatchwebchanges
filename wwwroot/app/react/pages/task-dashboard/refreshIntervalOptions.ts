@@ -14,6 +14,37 @@ export interface RefreshIntervalOption {
     label: string;
 }
 
+/**
+ * Cadence applied when the dispatcher has never picked one. Nothing pushes task
+ * updates — no SignalR, no websocket — so defaulting to Off left the list stale
+ * indefinitely. Matches the app's other always-on pollers (unread messages,
+ * partner approvals).
+ */
+export const DEFAULT_TASK_REFRESH_SECONDS = 60;
+
+/**
+ * Read a persisted task auto-refresh interval as a React Query `refetchInterval`
+ * (ms; `false` = off). Storage holds seconds.
+ *
+ * An explicitly stored `0` means the user chose Off and is honoured. An absent or
+ * unparseable value means they never chose, so the default cadence applies.
+ */
+export function loadRefreshIntervalMs(storageKey: string): number | false {
+    let raw: string | null;
+    try {
+        raw = localStorage.getItem(storageKey);
+    } catch {
+        return DEFAULT_TASK_REFRESH_SECONDS * 1000;
+    }
+
+    if (raw == null) return DEFAULT_TASK_REFRESH_SECONDS * 1000;
+
+    const seconds = parseInt(raw, 10);
+    if (!Number.isFinite(seconds)) return DEFAULT_TASK_REFRESH_SECONDS * 1000;
+
+    return seconds > 0 ? seconds * 1000 : false;
+}
+
 function formatDuration(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;

@@ -1,6 +1,8 @@
 import angular from 'angular';
-import { openHubUrl, openJobInSearch } from '../../../react/services/navigationService';
+import {openHubUrl, openJobInSearch} from '../../../react/services/navigationService';
 import type MessagingDialogService from '../../dialogs/messaging-dialog/messaging-dialog.service';
+import {ReactAppShellScope} from "./react-app-shell.scope";
+
 /**
  * React App Shell Directive
  *
@@ -22,38 +24,6 @@ function buildBreadcrumbs(section: string | undefined, title: string | undefined
         crumbs.push({label: title});
     }
     return crumbs;
-}
-
-interface ReactAppShellScope extends angular.IScope {
-    title: string;
-    section?: string;
-    beta?: boolean;
-    messagesCount?: number;
-    onMessagesClick?: (event: { $event: MouseEvent }) => void;
-    views?: any[];
-    viewsLoading?: boolean;
-    onToggleView?: (args: { view: any }) => void;
-    onClearAllViews?: () => void;
-    layouts?: any[];
-    currentLayoutName?: string;
-    onSaveLayout?: () => void;
-    onLoadLayout?: (args: { index: number }) => void;
-    onDeleteLayout?: (args: { index: number }) => void;
-    onRenameLayout?: (args: { index: number }) => void;
-    onImportLayouts?: () => void;
-    onCustomizePanels?: () => void;
-    editMode?: boolean;
-    onToggleEditMode?: () => void;
-    onSettingsClick?: (event: { $event: MouseEvent }) => void;
-    onRefreshClick?: () => void;
-    refreshLoading?: boolean;
-    // Date filter
-    dateFilterData?: any;
-    appPage?: string;
-    onDateFilterRefresh?: (args: { dateFilterData: any }) => void;
-    // Actions menu
-    onCreateNewJob?: (event: { $event: MouseEvent }) => void;
-    onInterCourierCharge?: (event: { $event: MouseEvent }) => void;
 }
 
 function reactAppShellDirective(
@@ -85,8 +55,9 @@ function reactAppShellDirective(
             onRenameLayout: '&?',
             onImportLayouts: '&?',
             onCustomizePanels: '&?',
-            editMode: '<?',
-            onToggleEditMode: '&?',
+            onResetLayout: '&?',
+            columnEditMode: '<?',
+            onToggleColumnEditMode: '&?',
             onSettingsClick: '&?',
             onRefreshClick: '&?',
             refreshLoading: '<?',
@@ -276,13 +247,22 @@ function reactAppShellDirective(
                                 });
                             },
                         } : {}),
-                        // Layout edit-mode toggle ("Edit layout" / "Done editing").
-                        // Only wired when the host page provides `on-toggle-edit-mode`.
-                        ...(scope.onToggleEditMode ? {
-                            editMode: !!scope.editMode,
-                            onToggleEditMode: () => {
+                        // "Edit columns" mode toggle. Only wired when the host
+                        // page provides `on-toggle-column-edit-mode`.
+                        ...(scope.onToggleColumnEditMode ? {
+                            columnEditMode: !!scope.columnEditMode,
+                            onToggleColumnEditMode: () => {
                                 scope.$apply(() => {
-                                    scope.onToggleEditMode!();
+                                    scope.onToggleColumnEditMode!();
+                                });
+                            },
+                        } : {}),
+                        // "Reset layout" restores the shipped arrangement. Only
+                        // wired when the host page provides `on-reset-layout`.
+                        ...(scope.onResetLayout ? {
+                            onResetLayout: () => {
+                                scope.$apply(() => {
+                                    scope.onResetLayout!();
                                 });
                             },
                         } : {}),
@@ -356,10 +336,15 @@ function reactAppShellDirective(
                         await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
                     }
 
-                    // Load the React App Shell module
+                    // Load the React App Shell module, plus its stylesheet when the
+                    // bundle emits one (CSS modules in the shell's components).
+                    const shellFiles = [getAssetPath('appShellReact.js')];
+                    if (manifest['appShellReact.css']) {
+                        shellFiles.push(getAssetPath('appShellReact.css'));
+                    }
                     await $ocLazyLoad.load({
                         name: 'uDispatch.appShellReact',
-                        files: [getAssetPath('appShellReact.js')]
+                        files: shellFiles
                     });
 
                     console.log('[ReactAppShellDirective] Module loaded, checking for ReactAppShell...');

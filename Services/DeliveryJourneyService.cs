@@ -681,7 +681,7 @@ public sealed partial class DeliveryJourneyService(
     private static string FormatActor(string firstName, string lastName) =>
         string.IsNullOrWhiteSpace(firstName) ? null : $"{firstName} {lastName}".Trim();
 
-    private static string ResolveDispatcherValue(string rawId, IReadOnlyDictionary<int, string> names) =>
+    private static string ResolveDispatcherValue(string rawId, Dictionary<int, string> names) =>
         !string.IsNullOrEmpty(rawId)
         && int.TryParse(rawId, out var id)
         && names.TryGetValue(id, out var name)

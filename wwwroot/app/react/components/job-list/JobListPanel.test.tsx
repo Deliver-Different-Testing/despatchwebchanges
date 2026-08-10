@@ -434,6 +434,38 @@ describe('JobListPanel', () => {
             expect(saved).toEqual({column: 'jobNo', direction: 'asc'});
         });
 
+        it('restores the category filter from localStorage, preferring it over defaultCategory', () => {
+            localStorage.setItem(key('selectedCategory'), 'delivered');
+            renderAndPushJobs(
+                [
+                    createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
+                    createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
+                ],
+                {storagePrefix, defaultCategory: 'in-progress'},
+            );
+
+            expect(screen.getByText('DONE-1')).toBeInTheDocument();
+            expect(screen.queryByText('NEW-1')).not.toBeInTheDocument();
+        });
+
+        it('persists the category filter and ignores an unrecognised stored value', () => {
+            localStorage.setItem(key('selectedCategory'), 'not-a-category');
+            renderAndPushJobs(
+                [
+                    createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
+                    createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
+                ],
+                {storagePrefix, defaultCategory: 'in-progress'},
+            );
+
+            // Garbage in storage falls back to the defaultCategory prop.
+            expect(screen.getByText('NEW-1')).toBeInTheDocument();
+            expect(screen.queryByText('DONE-1')).not.toBeInTheDocument();
+
+            fireEvent.click(screen.getByRole('button', {name: 'Unassigned'}));
+            expect(localStorage.getItem(key('selectedCategory'))).toBe('needs-dispatch');
+        });
+
         it('uses different keys per storagePrefix (multi-instance isolation)', () => {
             localStorage.setItem(`panelA_loggedInCouriersOnly_${contactId}`, 'true');
             localStorage.setItem(`panelB_loggedInCouriersOnly_${contactId}`, 'false');

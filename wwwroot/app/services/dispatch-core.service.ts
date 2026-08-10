@@ -991,7 +991,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             link.click();
 
             // Cleanup
-            this.$timeout(() => {
+            await this.$timeout(() => {
                 angular.element(link).remove();
                 this.$window.URL.revokeObjectURL(url);
             }, 100);

@@ -4,10 +4,11 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 // Stub the heavy children so the test exercises CurrentWorkBox's own wiring.
-const jobListPanelProps: {fetchConfig?: any} = {};
+const jobListPanelProps: {fetchConfig?: any; defaultCategory?: string} = {};
 jest.mock('../../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, fetchConfig}: {storagePrefix: string; fetchConfig: any}) => {
+    JobListPanel: ({storagePrefix, fetchConfig, defaultCategory}: {storagePrefix: string; fetchConfig: any; defaultCategory?: string}) => {
         jobListPanelProps.fetchConfig = fetchConfig;
+        jobListPanelProps.defaultCategory = defaultCategory;
         return <div data-testid={`mock-job-list-${storagePrefix}`} />;
     },
 }));
@@ -73,6 +74,7 @@ describe('CurrentWorkBox', () => {
         mockOverview.onDriverSelect = undefined;
         mockOverview.drivers = undefined;
         jobListPanelProps.fetchConfig = undefined;
+        jobListPanelProps.defaultCategory = undefined;
         sessionStorage.clear();
         jest.clearAllMocks();
     });
@@ -87,6 +89,11 @@ describe('CurrentWorkBox', () => {
         it('renders the current-work job list for the selected courier', () => {
             renderBox({selectedJobCourierId: 42});
             expect(screen.getByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
+        });
+
+        it('defaults the courier job list to their active work, not all of it', () => {
+            renderBox({selectedJobCourierId: 42});
+            expect(jobListPanelProps.defaultCategory).toBe('in-progress');
         });
 
         it('drives the current-work fetch off the page date filter (matching the other lists)', () => {
@@ -171,9 +178,17 @@ describe('CurrentWorkBox', () => {
             expect(screen.getByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
         });
 
-        it('does not render the duplicate courier search field for US tenants', () => {
+        it('offers the courier search field too, and drills into the picked courier', async () => {
+            // V1 showed the courier code box on every tenant, not just non-US ones.
             renderBox({isUsCustomer: true});
-            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'pick-courier'})).toBeInTheDocument();
+            expect(screen.getByTestId('mock-all-drivers')).toBeInTheDocument();
+
+            await act(async () => {
+                courierSearchSelectRef.fn?.({id: 99, text: 'Courier 99'});
+            });
+
+            expect(await screen.findByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
         });
     });
 

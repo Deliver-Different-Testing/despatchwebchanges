@@ -83,7 +83,7 @@ class JobDetailBridgeController implements angular.IController {
     private async loadAndMount(): Promise<void> {
         try {
             await this.ensureReactLoaded();
-            this.mountReactComponent();
+            await this.mountReactComponent();
         } catch (error) {
             console.error('[JobDetailBridge] Failed to load React job details:', error);
             // Show error in the container so it's visible
@@ -143,25 +143,25 @@ class JobDetailBridgeController implements angular.IController {
         }
     }
 
-    private mountReactComponent(): void {
+    private async mountReactComponent() {
         if (!window.ReactJobDetails) {
             console.error('[JobDetailBridge] Cannot mount: ReactJobDetails not available');
             return;
         }
 
-        const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+        const showToast = async (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
             switch (type) {
                 case 'success':
-                    this.toastrService.showSuccessToast(message);
+                    await this.toastrService.showSuccessToast(message);
                     break;
                 case 'warning':
-                    this.toastrService.showWarningToast(message);
+                    await this.toastrService.showWarningToast(message);
                     break;
                 case 'error':
-                    this.toastrService.showErrorToast(message);
+                    await this.toastrService.showErrorToast(message);
                     break;
                 case 'info':
-                    this.toastrService.showInfoToast(message);
+                    await this.toastrService.showInfoToast(message);
                     break;
             }
         };

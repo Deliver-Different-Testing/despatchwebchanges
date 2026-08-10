@@ -1,10 +1,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {ComposeEmailDialog} from './ComposeEmailDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
 
 interface DialogState {
@@ -37,20 +34,15 @@ function renderDialog(): void {
         renderDialog();
     };
 
-    const currentTheme = getTheme();
-
     dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <ComposeEmailDialog
-                    open={dialogState.open}
-                    selectedCouriers={dialogState.selectedCouriers}
-                    onClose={handleClose}
-                    onSend={handleSend}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
+        <DfrntMantineProvider>
+            <ComposeEmailDialog
+                open={dialogState.open}
+                selectedCouriers={dialogState.selectedCouriers}
+                onClose={handleClose}
+                onSend={handleSend}
+            />
+        </DfrntMantineProvider>
     );
 }
 

@@ -33,8 +33,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import dayjs from 'dayjs';
 
 import { EditSavedFlightDialogProps, FlightOption, AirportOption } from './types';
-import { nationwideApi, FlightViewModel } from '../../../services/nationwideApi';
+import {nationwideApi} from '../../../services/nationwideApi';
 import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
+import type {FlightViewModel} from '../../../interfaces/nationwideJobs';
 
 function normalizeFlightNumber(value: string): string {
     return (value ?? '').replace(/[\s-]/g, '').trim().toUpperCase();

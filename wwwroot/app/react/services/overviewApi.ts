@@ -4,7 +4,7 @@
  * Axios-based API service replacing the AngularJS OverviewService.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {formatDateForApiWithTzs, formatLongDateTime, parseDateFromApi} from '../utils/dateUtils';
 import type {
     OverviewQueryParams,
@@ -16,6 +16,7 @@ import type {
     IOpenJobResponseDto,
     IOpenJobResponse,
 } from '../pages/overview/OverviewPage.interfaces';
+import {RequestOptions} from "./requestOptions";
 
 async function getAllJobs(
     params: OverviewQueryParams,

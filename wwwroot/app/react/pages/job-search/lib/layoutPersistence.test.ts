@@ -2,7 +2,9 @@ import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
 import {
     LayoutStorageKeys,
     boxVisibilityKey,
+    clearBoxVisibility,
     importLayoutsFrom,
+    isDefaultCustomised,
     loadBoxVisibility,
     loadLastActiveLayoutName,
     loadLayouts,
@@ -10,6 +12,7 @@ import {
     saveBoxVisibility,
     saveLastActiveLayoutName,
     saveLayouts,
+    setDefaultCustomised,
 } from './layoutPersistence';
 
 const keys: LayoutStorageKeys = {
@@ -38,7 +41,7 @@ describe('loadLayouts', () => {
         expect(loadLayouts(keys, defaultLayout)).toEqual([defaultLayout]);
     });
 
-    it('returns stored layouts with the default forced into slot 0', () => {
+    it('regenerates the stored default from code until it has been customised', () => {
         const stale = {...defaultLayout, layout: {columns: []}};
         const custom: ILayout = {name: 'Custom', layout: {columns: []}};
         localStorage.setItem(keys.layoutsKey, JSON.stringify([stale, custom]));
@@ -49,9 +52,51 @@ describe('loadLayouts', () => {
         expect(result[1].name).toBe('Custom');
     });
 
+    it('preserves the stored default once it has been customised', () => {
+        const customised = {...defaultLayout, layout: {columns: [{id: 'col1', width: '42%', boxes: []}]}};
+        localStorage.setItem(keys.layoutsKey, JSON.stringify([customised]));
+        setDefaultCustomised(keys, true);
+
+        expect(loadLayouts(keys, defaultLayout)).toEqual([customised]);
+    });
+
+    it('pins the default to slot 0 and seeds it when the stored array lacks one', () => {
+        const custom: ILayout = {name: 'Custom', layout: {columns: []}};
+        const customised = {...defaultLayout, layout: {columns: [{id: 'col1', width: '42%', boxes: []}]}};
+        setDefaultCustomised(keys, true);
+
+        localStorage.setItem(keys.layoutsKey, JSON.stringify([custom]));
+        expect(loadLayouts(keys, defaultLayout).map(l => l.name)).toEqual(['Default', 'Custom']);
+
+        localStorage.setItem(keys.layoutsKey, JSON.stringify([custom, customised]));
+        expect(loadLayouts(keys, defaultLayout)).toEqual([customised, custom]);
+    });
+
     it('returns [defaultLayout] if stored JSON is malformed', () => {
         localStorage.setItem(keys.layoutsKey, '{not json');
         expect(loadLayouts(keys, defaultLayout)).toEqual([defaultLayout]);
+    });
+});
+
+describe('default-customised marker', () => {
+    it('is false until set, and clears again', () => {
+        expect(isDefaultCustomised(keys)).toBe(false);
+        setDefaultCustomised(keys, true);
+        expect(isDefaultCustomised(keys)).toBe(true);
+        setDefaultCustomised(keys, false);
+        expect(isDefaultCustomised(keys)).toBe(false);
+    });
+});
+
+describe('clearBoxVisibility', () => {
+    it('removes the stored record for that layout only', () => {
+        saveBoxVisibility(keys, 'Default', {a: {name: 'a', visible: false}});
+        saveBoxVisibility(keys, 'Wide', {a: {name: 'a', visible: false}});
+
+        clearBoxVisibility(keys, 'Default');
+
+        expect(loadBoxVisibility(keys, 'Default')).toBeNull();
+        expect(loadBoxVisibility(keys, 'Wide')).not.toBeNull();
     });
 });
 

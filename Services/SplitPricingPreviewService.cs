@@ -128,9 +128,9 @@ public class SplitPricingPreviewService(
     }
 
     private async Task<(List<decimal> Miles, SplitPricingAllocator.AllocationBasis Basis)> ResolveMilesAsync(
-        IReadOnlyList<((decimal? Lat, decimal? Lng) From, (decimal? Lat, decimal? Lng) To)> legCoords)
+        ((decimal? Lat, decimal? Lng) From, (decimal? Lat, decimal? Lng) To)[] legCoords)
     {
-        var roadMiles = new List<decimal>(legCoords.Count);
+        var roadMiles = new List<decimal>(legCoords.Length);
         foreach (var (from, to) in legCoords)
         {
             roadMiles.Add((decimal)await rateJobService.GetRoadDistanceMilesAsync(

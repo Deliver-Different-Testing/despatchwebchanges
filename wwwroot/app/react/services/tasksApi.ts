@@ -5,7 +5,7 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {
     Task,
     TaskApiResponse,
@@ -22,6 +22,7 @@ import {
 import {formatDateForApi, parseDateFromApi, formatRelativeDateTime, getTenantTimezone} from '../utils/dateUtils';
 import {Dayjs} from 'dayjs';
 import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-history/TaskHistory.interfaces';
+import {RequestOptions} from "./requestOptions";
 
 /**
  * Transform API response to Task with Dayjs date
@@ -51,6 +52,7 @@ export async function getAllTasks(filters?: TaskFiltersRequest, options?: Reques
         if (filters.showCompleted !== undefined) params.showCompleted = filters.showCompleted;
         if (filters.courierId !== undefined) params.courierId = filters.courierId;
         if (filters.jobId !== undefined) params.jobId = filters.jobId;
+        if (filters.limit !== undefined) params.limit = filters.limit;
     }
 
     const response = await apiClient.get<TaskApiResponse[]>('task/GetAllTasks', params, options);

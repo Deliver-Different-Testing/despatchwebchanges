@@ -14,7 +14,8 @@ import { EventGroupDialog } from './EventGroupDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { getIanaTimezone, getTenantTimezone } from '../../../utils/dateUtils';
-import { getEventTypeGroups, addTasks, getActiveStaff } from '../../../services/tasksApi';
+import { getEventTypeGroups, getActiveStaff } from '../../../services/tasksApi';
+import { saveTasks } from './saveTasks';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
 import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
@@ -70,7 +71,7 @@ class EventGroupDialogManager {
         const handleSave = async (events: EventGroupViewModel[]): Promise<void> => {
             const { jobId} = this.dialogState;
 
-            await addTasks(jobId, events);
+            await saveTasks(jobId, events);
 
             const taskCount = events.length;
             handleShowToast(

@@ -5,7 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
-import type { FlightViewModelDto } from '../../../services/nationwideApi';
+import type {FlightViewModelDto} from '../../../interfaces/nationwideJobs';
 
 // Mock data
 export const mockFlightCargoProcessingDto = {

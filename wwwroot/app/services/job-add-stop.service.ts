@@ -46,7 +46,7 @@ class JobAddStopService implements angular.IServiceProvider {
             case JobSuffix.Delivery:
                 return await this.addDeliveryStop(job, $event);
             default:
-                this.toastrService.showWarningToast("Cannot add stop to this job");
+                await this.toastrService.showWarningToast("Cannot add stop to this job");
                 return;
         }
     }
