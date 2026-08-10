@@ -41,6 +41,12 @@ export interface JobSearchShellProps {
         targetIndex: number,
     ) => void;
     /**
+     * The Default layout is read-only: no resize gutters, no reorder, no column
+     * stepper, and every panel shown regardless of stored visibility (that record
+     * belongs to a user layout). Users customise by saving a layout of their own.
+     */
+    isDefaultLayout?: boolean;
+    /**
      * "Edit columns" mode, toggled from the toolbar's Layouts menu. Reveals the
      * columns bar (layout column stepper) above the panels; each job-list panel
      * separately reveals its own column editor.
@@ -156,6 +162,7 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
     onColumnSizes,
     onBoxHeights,
     onMoveBox,
+    isDefaultLayout = false,
     columnEditMode = false,
     onExitColumnEditMode,
     onAddColumn,
@@ -231,7 +238,7 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
             flexDirection: 'column',
             gap: 0.5,
         }}>
-            {columnEditMode && (
+            {columnEditMode && !isDefaultLayout && (
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1, px: 0.5, flexShrink: 0}}>
                     <Chip
                         size="small"
@@ -304,13 +311,13 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                             originalIndex,
                             meta: boxes[boxRef.name ?? ''],
                         }))
-                        .filter(item => item.meta && item.meta.visible);
+                        .filter(item => item.meta && (isDefaultLayout || item.meta.visible));
 
                     const visibleBoxNames = visibleBoxes.map(item => item.boxRef.name ?? '');
 
                     return (
                         <Fragment key={column.id}>
-                            {columnIdx > 0 && (
+                            {columnIdx > 0 && !isDefaultLayout && (
                                 <PanelResizeHandle>
                                     <Box sx={horizontalHandleSx} />
                                 </PanelResizeHandle>
@@ -339,7 +346,7 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                                                 m: 0.25,
                                             })}
                                         >
-                                            Drop a panel here
+                                            {isDefaultLayout ? 'Empty column' : 'Drop a panel here'}
                                         </Box>
                                     ) : (
                                         <PanelGroup
@@ -359,7 +366,7 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                                                 // Keyboard reorder targets the neighbouring visible panel's
                                                 // original index — mirroring the drag drop-on-box semantics so
                                                 // useBoxLayout.moveBox applies the same index adjustment.
-                                                const canReorder = !!onMoveBox;
+                                                const canReorder = !!onMoveBox && !isDefaultLayout;
                                                 const prevVisible = vIdx > 0 ? visibleBoxes[vIdx - 1] : undefined;
                                                 const nextVisible = vIdx < visibleBoxes.length - 1
                                                     ? visibleBoxes[vIdx + 1]
@@ -373,7 +380,7 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
 
                                                 return (
                                                     <Fragment key={boxRef.name}>
-                                                        {vIdx > 0 && (
+                                                        {vIdx > 0 && !isDefaultLayout && (
                                                             <PanelResizeHandle>
                                                                 <Box sx={verticalHandleSx} />
                                                             </PanelResizeHandle>

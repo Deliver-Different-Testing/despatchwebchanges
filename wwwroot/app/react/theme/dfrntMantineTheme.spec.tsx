@@ -2,9 +2,15 @@ import React from 'react';
 import {screen} from '@testing-library/react';
 import {Button} from '@mantine/core';
 import {renderWithMantine} from '../__testUtils__';
-import {dfrntTheme, dfrntBrand, dfrntCssVariablesResolver} from './dfrntMantineTheme';
+import {
+    dfrntTheme,
+    dfrntBrand,
+    dfrntCssVariablesResolver,
+    createDfrntTheme,
+    getShellIconHoverFill,
+} from './dfrntMantineTheme';
 import {contrastRatio, getMd3Scheme} from './md3';
-import {dfrntPrimaryPalette, inkBluePalette} from './palettes';
+import {dfrntPrimaryPalette, urgentPrimaryPalette, inkBluePalette} from './palettes';
 
 describe('dfrntTheme', () => {
     it('uses the DFRNT brand ramp as primary with the Cyan seed at the primary shade', () => {
@@ -14,9 +20,11 @@ describe('dfrntTheme', () => {
     });
 
     it('shares the brand hexes with the MUI/Angular palette source of truth', () => {
-        // Mantine needs a 10-tuple, so the ramp is declared separately from
+        // Mantine needs a 10-tuple, so the ramps are declared separately from
         // palettes.ts — but the anchor hexes must never drift apart.
         expect(dfrntBrand.cyan).toBe(dfrntPrimaryPalette[500]);
+        expect(dfrntBrand.gold).toBe(urgentPrimaryPalette[500]);
+        expect(dfrntBrand.goldDeep).toBe(urgentPrimaryPalette[900]);
         expect(dfrntBrand.inkBlue).toBe(inkBluePalette[900]);
     });
 
@@ -48,7 +56,50 @@ describe('dfrntTheme', () => {
     });
 });
 
+describe('createDfrntTheme — per-tenant brand', () => {
+    it('gives US tenants the Cyan ramp on the Ink Blue shell', () => {
+        const theme = createDfrntTheme(true);
+        expect(theme.colors?.brand?.[5]).toBe(dfrntBrand.cyan);
+        expect(theme.other?.shell?.appBar).toBe(dfrntBrand.inkBlue);
+        expect(theme.other?.scrim?.text).toBe('#fff');
+        expect(theme.other?.shell?.logoSrc).toBe('images/dfrnt_logo_reversed.png');
+    });
+
+    it('gives non-US tenants the gold ramp with Ink content and the dark wordmark', () => {
+        const theme = createDfrntTheme(false);
+        expect(theme.colors?.brand?.[5]).toBe(dfrntBrand.gold);
+        expect(theme.other?.shell?.appBar).toBe(dfrntBrand.gold);
+        expect(theme.other?.scrim?.text).toBe(dfrntBrand.inkBlue);
+        expect(theme.other?.shell?.logoSrc).toBe('images/dfrnt_logo.png');
+    });
+
+    it('keeps both tenants on the same Ink and semantic ramps', () => {
+        for (const theme of [createDfrntTheme(true), createDfrntTheme(false)]) {
+            expect(theme.colors?.ink?.[9]).toBe(dfrntBrand.inkBlue);
+            expect(theme.colors?.red?.[5]).toBe(dfrntBrand.red);
+            expect(theme.black).toBe(dfrntBrand.inkBlue);
+        }
+    });
+
+    it('washes the shell icon hover with a colour that reads on each bar', () => {
+        // A brand wash on the gold bar would be gold-on-gold, so it washes with Ink.
+        expect(getShellIconHoverFill(true)).toContain('--mantine-color-brand-5');
+        expect(getShellIconHoverFill(false)).toContain('--mantine-color-ink-9');
+    });
+});
+
 describe('dfrntCssVariablesResolver', () => {
+    it('publishes the tenant shell chrome as CSS variables', () => {
+        const us = dfrntCssVariablesResolver(createDfrntTheme(true) as never);
+        const nonUs = dfrntCssVariablesResolver(createDfrntTheme(false) as never);
+
+        expect(us.variables['--dd-shell-bar']).toBe(dfrntBrand.inkBlue);
+        expect(us.variables['--dd-on-shell']).toBe('#fff');
+        expect(nonUs.variables['--dd-shell-bar']).toBe(dfrntBrand.gold);
+        expect(nonUs.variables['--dd-on-shell']).toBe(dfrntBrand.inkBlue);
+        expect(nonUs.variables['--dd-shell-icon-hover']).toBe(getShellIconHoverFill(false));
+    });
+
     it('paints page and card surfaces a tone apart in each colour scheme', () => {
         const vars = dfrntCssVariablesResolver(dfrntTheme as never);
         const light = getMd3Scheme('light');
@@ -66,10 +117,17 @@ describe('dfrntCssVariablesResolver', () => {
 });
 
 describe('DFRNT brand contrast', () => {
-    it('puts dark ink on the light Cyan fill, meeting WCAG AA for body text', () => {
-        // Cyan is a light hue — filled Cyan must carry Ink text, not white.
-        expect(contrastRatio(dfrntBrand.inkBlue, dfrntBrand.cyan)).toBeGreaterThanOrEqual(4.5);
-        expect(contrastRatio('#ffffff', dfrntBrand.cyan)).toBeLessThan(4.5);
+    it.each([
+        ['Cyan', dfrntBrand.cyan],
+        ['gold', dfrntBrand.gold],
+    ])('puts dark ink on the light %s fill, meeting WCAG AA for body text', (_name, fill) => {
+        // Both brand hues are light — a filled brand surface must carry Ink text.
+        expect(contrastRatio(dfrntBrand.inkBlue, fill)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio('#ffffff', fill)).toBeLessThan(4.5);
+    });
+
+    it('reads the gold glyph accent against paper at the 3:1 non-text threshold', () => {
+        expect(contrastRatio(dfrntBrand.goldDeep, '#ffffff')).toBeGreaterThanOrEqual(3);
     });
 
     it('reads body text against the light page background at AA', () => {

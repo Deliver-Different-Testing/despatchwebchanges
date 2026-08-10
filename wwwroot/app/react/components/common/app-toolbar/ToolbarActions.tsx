@@ -247,14 +247,19 @@ export interface LayoutsMenuProps {
 
 const DEFAULT_LAYOUT_NAME = 'Default';
 
-/** A full-width row in the layouts popover, styled like a menu item. */
-const PopoverRow: React.FC<{
+/**
+ * A full-width row in the layouts popover, styled like a menu item. Forwards its
+ * ref so a `<Tooltip>` can explain a disabled row (Mantine positions against the
+ * child's DOM node).
+ */
+const PopoverRow = React.forwardRef<HTMLButtonElement, {
     onClick: () => void;
     disabled?: boolean;
     icon?: React.ReactNode;
     children: React.ReactNode;
-}> = ({onClick, disabled = false, icon, children}) => (
+}>(({onClick, disabled = false, icon, children}, ref) => (
     <UnstyledButton
+        ref={ref}
         onClick={onClick}
         disabled={disabled}
         w="100%"
@@ -271,7 +276,8 @@ const PopoverRow: React.FC<{
             <Text fz="sm">{children}</Text>
         </Group>
     </UnstyledButton>
-);
+));
+PopoverRow.displayName = 'PopoverRow';
 
 export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
     layouts,
@@ -334,6 +340,10 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
         handleClose();
     };
 
+    // The Default layout is read-only, so the editing entries are shown disabled with
+    // the reason rather than silently doing nothing. An absent name means Default too.
+    const isDefaultLayout = !currentLayoutName || currentLayoutName === DEFAULT_LAYOUT_NAME;
+    const editDisabledReason = 'The Default layout is read-only — save a layout of your own first';
     const tooltip = currentLayoutName ? `Layouts · ${currentLayoutName}` : 'Layouts';
 
     return (
@@ -431,25 +441,34 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                 {onToggleColumnEditMode && (
                     <>
                         <Divider my={4} />
-                        <PopoverRow
-                            onClick={handleToggleColumnEditMode}
-                            icon={<Icon lucide={columnEditMode ? Check : Columns3} size={16} />}
-                        >
-                            {columnEditMode ? 'Done editing columns' : 'Edit columns'}
-                        </PopoverRow>
+                        <Tooltip label={editDisabledReason} disabled={!isDefaultLayout} position="left">
+                            <PopoverRow
+                                onClick={handleToggleColumnEditMode}
+                                disabled={isDefaultLayout}
+                                icon={<Icon lucide={columnEditMode ? Check : Columns3} size={16} />}
+                            >
+                                {columnEditMode ? 'Done editing columns' : 'Edit columns'}
+                            </PopoverRow>
+                        </Tooltip>
                     </>
                 )}
 
                 {onCustomizePanels && (
                     <>
                         <Divider my={4} />
-                        <PopoverRow onClick={handleCustomize} icon={<Icon lucide={Settings} size={16} />}>
-                            Customize panels…
-                        </PopoverRow>
+                        <Tooltip label={editDisabledReason} disabled={!isDefaultLayout} position="left">
+                            <PopoverRow
+                                onClick={handleCustomize}
+                                disabled={isDefaultLayout}
+                                icon={<Icon lucide={Settings} size={16} />}
+                            >
+                                Customize panels…
+                            </PopoverRow>
+                        </Tooltip>
                     </>
                 )}
 
-                {onResetLayout && (
+                {onResetLayout && !isDefaultLayout && (
                     <PopoverRow onClick={handleResetLayout} icon={<Icon lucide={RotateCcw} size={16} />}>
                         Reset layout
                     </PopoverRow>

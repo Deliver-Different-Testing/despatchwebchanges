@@ -19,15 +19,15 @@ import {
 
 
 describe('Shell icon buttons', () => {
-    it('pins the cyan hover wash to the strength Integration Manager renders', () => {
-        // Asserted as a literal, not against the exported constant: the point is the
-        // value matching IM's stock `subtle` hover (brand-5 at 12%), and comparing to
-        // the constant would pass at any strength.
+    it('takes its hover wash and glyph colour from the shell variables', () => {
+        // The wash and on-colour differ per tenant (the gold bar cannot use a brand
+        // wash), so the button defers to the vars the theme resolver publishes rather
+        // than baking either value in. `dfrntMantineTheme.spec` asserts the values.
         renderWithMantine(<SettingsButton onClick={jest.fn()} />);
 
         const button = screen.getByRole('button', {name: 'Settings'});
-        expect(button.style.getPropertyValue('--ai-hover'))
-            .toBe('color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent)');
+        expect(button.style.getPropertyValue('--ai-hover')).toBe('var(--dd-shell-icon-hover)');
+        expect(button).toHaveStyle({color: 'var(--dd-on-shell)'});
     });
 
     it.each([
@@ -366,12 +366,12 @@ describe('LayoutsMenu', () => {
         expect(onCustomizePanels).toHaveBeenCalledTimes(1);
     });
 
-    it('should offer Customize panels on the Default layout too', async () => {
+    it('should offer Customize panels on a user-created layout', async () => {
         const onCustomizePanels = jest.fn();
         renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
-                currentLayoutName="Default"
+                currentLayoutName="Custom Layout 1"
                 onCustomizePanels={onCustomizePanels}
             />
         );
@@ -380,6 +380,31 @@ describe('LayoutsMenu', () => {
         fireEvent.click(await screen.findByText('Customize panels…'));
 
         expect(onCustomizePanels).toHaveBeenCalledTimes(1);
+    });
+
+    it('should disable the editing entries on the read-only Default layout', async () => {
+        const onCustomizePanels = jest.fn();
+        const onToggleColumnEditMode = jest.fn();
+        renderWithMantine(
+            <LayoutsMenu
+                {...defaultProps}
+                currentLayoutName="Default"
+                onCustomizePanels={onCustomizePanels}
+                onToggleColumnEditMode={onToggleColumnEditMode}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button'));
+        const customize = (await screen.findByText('Customize panels…')).closest('button')!;
+        const editColumns = screen.getByText('Edit columns').closest('button')!;
+
+        expect(customize).toBeDisabled();
+        expect(editColumns).toBeDisabled();
+
+        fireEvent.click(customize);
+        fireEvent.click(editColumns);
+        expect(onCustomizePanels).not.toHaveBeenCalled();
+        expect(onToggleColumnEditMode).not.toHaveBeenCalled();
     });
 
     it('should not render an Edit columns entry without onToggleColumnEditMode', async () => {
@@ -394,7 +419,7 @@ describe('LayoutsMenu', () => {
         const {unmount} = renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
-                currentLayoutName="Default"
+                currentLayoutName="Custom Layout 1"
                 onToggleColumnEditMode={onToggleColumnEditMode}
             />,
         );
@@ -406,7 +431,7 @@ describe('LayoutsMenu', () => {
         renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
-                currentLayoutName="Default"
+                currentLayoutName="Custom Layout 1"
                 columnEditMode
                 onToggleColumnEditMode={jest.fn()}
             />,
@@ -422,22 +447,29 @@ describe('LayoutsMenu', () => {
         expect(screen.queryByText('Reset layout')).not.toBeInTheDocument();
     });
 
-    it.each(['Default', 'Custom Layout 1'])(
-        'should call onResetLayout from the %s layout',
-        async (currentLayoutName) => {
-            const onResetLayout = jest.fn();
-            renderWithMantine(
-                <LayoutsMenu
-                    {...defaultProps}
-                    currentLayoutName={currentLayoutName}
-                    onResetLayout={onResetLayout}
-                />,
-            );
-            fireEvent.click(screen.getByRole('button'));
-            fireEvent.click(await screen.findByText('Reset layout'));
-            expect(onResetLayout).toHaveBeenCalledTimes(1);
-        },
-    );
+    it('should call onResetLayout from a user-created layout', async () => {
+        const onResetLayout = jest.fn();
+        renderWithMantine(
+            <LayoutsMenu
+                {...defaultProps}
+                currentLayoutName="Custom Layout 1"
+                onResetLayout={onResetLayout}
+            />,
+        );
+        fireEvent.click(screen.getByRole('button'));
+        fireEvent.click(await screen.findByText('Reset layout'));
+        expect(onResetLayout).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not offer Reset layout on the Default layout', async () => {
+        // The Default is regenerated from code, so there is nothing to reset it from.
+        renderWithMantine(
+            <LayoutsMenu {...defaultProps} currentLayoutName="Default" onResetLayout={jest.fn()} />,
+        );
+        fireEvent.click(screen.getByRole('button'));
+        expect(await screen.findByText('Switch layout')).toBeInTheDocument();
+        expect(screen.queryByText('Reset layout')).not.toBeInTheDocument();
+    });
 });
 
 describe('ToolbarIconButton', () => {

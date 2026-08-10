@@ -4,7 +4,6 @@ import {
     boxVisibilityKey,
     clearBoxVisibility,
     importLayoutsFrom,
-    isDefaultCustomised,
     loadBoxVisibility,
     loadLastActiveLayoutName,
     loadLayouts,
@@ -12,7 +11,6 @@ import {
     saveBoxVisibility,
     saveLastActiveLayoutName,
     saveLayouts,
-    setDefaultCustomised,
 } from './layoutPersistence';
 
 const keys: LayoutStorageKeys = {
@@ -41,7 +39,7 @@ describe('loadLayouts', () => {
         expect(loadLayouts(keys, defaultLayout)).toEqual([defaultLayout]);
     });
 
-    it('regenerates the stored default from code until it has been customised', () => {
+    it('always regenerates the default from code, discarding any stored copy', () => {
         const stale = {...defaultLayout, layout: {columns: []}};
         const custom: ILayout = {name: 'Custom', layout: {columns: []}};
         localStorage.setItem(keys.layoutsKey, JSON.stringify([stale, custom]));
@@ -52,39 +50,29 @@ describe('loadLayouts', () => {
         expect(result[1].name).toBe('Custom');
     });
 
-    it('preserves the stored default once it has been customised', () => {
-        const customised = {...defaultLayout, layout: {columns: [{id: 'col1', width: '42%', boxes: []}]}};
-        localStorage.setItem(keys.layoutsKey, JSON.stringify([customised]));
-        setDefaultCustomised(keys, true);
+    it('discards a stored default even when it carries an adjusted arrangement', () => {
+        // The Default layout is read-only, so a stored copy is only ever stale — a
+        // previous build could persist one, and it must not win over the code.
+        const adjusted = {...defaultLayout, layout: {columns: [{id: 'col1', width: '42%', boxes: []}]}};
+        localStorage.setItem(keys.layoutsKey, JSON.stringify([adjusted]));
 
-        expect(loadLayouts(keys, defaultLayout)).toEqual([customised]);
+        expect(loadLayouts(keys, defaultLayout)).toEqual([defaultLayout]);
     });
 
     it('pins the default to slot 0 and seeds it when the stored array lacks one', () => {
         const custom: ILayout = {name: 'Custom', layout: {columns: []}};
-        const customised = {...defaultLayout, layout: {columns: [{id: 'col1', width: '42%', boxes: []}]}};
-        setDefaultCustomised(keys, true);
+        const adjusted = {...defaultLayout, layout: {columns: [{id: 'col1', width: '42%', boxes: []}]}};
 
         localStorage.setItem(keys.layoutsKey, JSON.stringify([custom]));
         expect(loadLayouts(keys, defaultLayout).map(l => l.name)).toEqual(['Default', 'Custom']);
 
-        localStorage.setItem(keys.layoutsKey, JSON.stringify([custom, customised]));
-        expect(loadLayouts(keys, defaultLayout)).toEqual([customised, custom]);
+        localStorage.setItem(keys.layoutsKey, JSON.stringify([custom, adjusted]));
+        expect(loadLayouts(keys, defaultLayout)).toEqual([defaultLayout, custom]);
     });
 
     it('returns [defaultLayout] if stored JSON is malformed', () => {
         localStorage.setItem(keys.layoutsKey, '{not json');
         expect(loadLayouts(keys, defaultLayout)).toEqual([defaultLayout]);
-    });
-});
-
-describe('default-customised marker', () => {
-    it('is false until set, and clears again', () => {
-        expect(isDefaultCustomised(keys)).toBe(false);
-        setDefaultCustomised(keys, true);
-        expect(isDefaultCustomised(keys)).toBe(true);
-        setDefaultCustomised(keys, false);
-        expect(isDefaultCustomised(keys)).toBe(false);
     });
 });
 

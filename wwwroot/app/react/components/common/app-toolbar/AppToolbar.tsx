@@ -1,17 +1,16 @@
 /**
  * React App Toolbar Component
  *
- * The Ink-Blue app bar.
+ * The shell app bar — Ink Blue on US tenants, the brand gold elsewhere.
  * Layout: Logo | Keyline | Breadcrumbs | Spacer | Actions | Menu
  * Chrome mirrors Integration Manager's AppShell.Header.
  */
 
 import React from 'react';
-import {ActionIcon, Badge, Box, Group, Text, Tooltip} from '@mantine/core';
+import {ActionIcon, Badge, Box, Group, Text, Tooltip, useMantineTheme} from '@mantine/core';
 import {Menu as MenuIcon, ChevronRight} from 'lucide-react';
 import dayjs from 'dayjs';
 import {Icon} from '../icon/Icon';
-import {onBrandScrim, sidebarColors} from '../../../theme/dfrntMantineTheme';
 import {toolbarIconButtonStyle} from './ToolbarActions';
 import {APP_BAR_HEIGHT_PX} from './appBarMetrics';
 
@@ -76,23 +75,27 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     onMenuClick,
     beta,
 }) => {
+    // The shell fill, its on-colour and the wordmark that reads on it all come from
+    // the theme, so the tenant's bar (Ink navy on US, gold elsewhere) is a provider
+    // concern rather than a prop.
+    const {shell, scrim} = useMantineTheme().other;
     const greeting = greetUser(firstName);
     const resolvedCrumbs = resolveCrumbs(breadcrumbs, title);
     const hasMultipleCrumbs = resolvedCrumbs.length > 1;
 
-    const resolvedLogo = logoUrl ?? 'images/dfrnt_logo_reversed.png';
+    const resolvedLogo = logoUrl ?? shell.logoSrc;
 
     return (
         <Box
             component="header"
-            // Mantine has no AppBar, so the Ink navy the MUI theme used to inject
+            // Mantine has no AppBar, so the shell fill the MUI theme used to inject
             // via its MuiAppBar override is set here explicitly. The height is a
             // literal rather than the `h` prop so it stays in the px the route
             // templates subtract, instead of Mantine's rem/scale calc.
             style={{
                 height: APP_BAR_HEIGHT_PX,
-                backgroundColor: sidebarColors.appBar,
-                color: onBrandScrim.text,
+                backgroundColor: shell.appBar,
+                color: scrim.text,
             }}
         >
             <Group h="100%" px="md" gap="md" wrap="nowrap">
@@ -119,7 +122,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                         style={{
                             width: 1,
                             height: 22,
-                            backgroundColor: sidebarColors.border,
+                            backgroundColor: shell.border,
                             flexShrink: 0,
                         }}
                     />
@@ -141,7 +144,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                                 <React.Fragment key={`${crumb.label}-${index}`}>
                                     {index > 0 && (
                                         <Box
-                                            style={{color: sidebarColors.textMuted, display: 'flex'}}
+                                            style={{color: shell.textMuted, display: 'flex'}}
                                             visibleFrom={hideOnMobile ? 'sm' : undefined}
                                         >
                                             <Icon lucide={ChevronRight} size={14} />
@@ -157,7 +160,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                                             fontSize: '0.875rem',
                                             fontWeight: isLast ? 600 : 400,
                                             lineHeight: 1.2,
-                                            color: isLast ? sidebarColors.textPrimary : sidebarColors.textSecondary,
+                                            color: isLast ? shell.textPrimary : shell.textSecondary,
                                             margin: 0,
                                         }}
                                     >

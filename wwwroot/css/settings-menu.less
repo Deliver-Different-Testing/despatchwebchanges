@@ -196,3 +196,22 @@ md-backdrop.md-select-backdrop {
     padding: @spacing (@spacing + 2px) (@spacing - 4px);
   }
 }
+
+// Non-US tenant overrides (see autocomplete.less for the scope rationale).
+.theme-nz {
+  .settings-select {
+    &.md-focused .md-select-value {
+      border-bottom-color: @nz-primary;
+    }
+  }
+
+  .md-select-menu-container md-option.md-selected {
+    background-color: fade(@nz-primary, 10%);
+    color: @nz-primary-dark;
+  }
+
+  .settings-select:focus-within,
+  .md-select.md-focused {
+    outline-color: fade(@nz-primary, 25%);
+  }
+}

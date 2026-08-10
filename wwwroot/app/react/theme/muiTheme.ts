@@ -1,7 +1,15 @@
 import type {CSSProperties} from 'react';
 import {alpha, createTheme, Theme} from '@mui/material/styles';
 import {DialogTransition} from './DialogTransition';
-import {dfrntPrimaryPalette, accentPalette, aiColors, shellColors} from './palettes';
+import {
+    dfrntPrimaryPalette,
+    urgentPrimaryPalette,
+    accentPalette,
+    aiColors,
+    shellColors,
+    getShellColors,
+} from './palettes';
+import {isUsTenant} from './tenant';
 
 /**
  * Material Design 3 typography role variants.
@@ -52,7 +60,7 @@ declare module '@mui/material/styles' {
 // Re-export the shared palette constants so existing imports from this module
 // keep working. The values themselves live in the framework-free palettes.ts,
 // which the AngularJS Material theme imports too — one source of truth.
-export {dfrntPrimaryPalette, accentPalette, shellColors};
+export {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette, shellColors};
 
 /**
  * MUI Theme - Matching AngularJS Material Theme
@@ -185,12 +193,13 @@ export const sharedColors = {
     divider: 'rgba(0, 0, 0, 0.12)',
 };
 
-/** Creates the single-brand DFRNT theme. */
-export function createAppTheme(): Theme {
-    const primaryPalette = dfrntPrimaryPalette;
+/** Creates the theme for a tenant — DFRNT cyan on US, the "urgent" gold elsewhere. */
+export function createAppTheme(isUsCustomer: boolean = isUsTenant()): Theme {
+    const primaryPalette = isUsCustomer ? dfrntPrimaryPalette : urgentPrimaryPalette;
+    const shell = getShellColors(isUsCustomer);
 
-    // Cyan is a light hue — contained primary surfaces take dark Ink text (high
-    // contrast), not white (which fails WCAG on it).
+    // Both brand hues are light — contained primary surfaces take dark Ink text
+    // (high contrast), not white (which fails WCAG on either).
     const primaryContrastText = '#0d0c2c';
 
     const colors = {
@@ -404,15 +413,16 @@ export function createAppTheme(): Theme {
             tokens.shadow.xl,
         ],
         components: {
-            // App shell bar — the fixed Ink-Blue brand navy with white content.
+            // App shell bar — Ink-Blue navy with white content on US, the brand gold
+            // with Ink content elsewhere.
             MuiAppBar: {
                 defaultProps: {
                     elevation: 0,
                 },
                 styleOverrides: {
                     root: {
-                        backgroundColor: shellColors.appBar,
-                        color: shellColors.textPrimary,
+                        backgroundColor: shell.appBar,
+                        color: shell.textPrimary,
                     },
                 },
             },
@@ -803,7 +813,7 @@ export function createAppTheme(): Theme {
 
 /** Kept so the ~13 island entry modules that call it don't all have to change. */
 export function getTheme(): Theme {
-    return createAppTheme();
+    return createAppTheme(isUsTenant());
 }
 
 export const theme = createAppTheme();

@@ -12,7 +12,6 @@ import {
     saveBoxVisibility,
     saveLastActiveLayoutName,
     saveLayouts,
-    setDefaultCustomised,
 } from '../lib/layoutPersistence';
 import {loadRemoteIntoLocal, queueRemotePush, readLocalRows} from '../lib/layoutSync';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from '../lib/boxDefinitions';
@@ -236,6 +235,7 @@ export function useBoxLayout({
 
 
     const setBoxVisibility = useCallback((boxName: string, visible: boolean) => {
+        if (currentLayoutName === DEFAULT_LAYOUT_NAME) return;
         setBoxes(prev => {
             const target = prev[boxName];
             if (!target) return prev;
@@ -246,6 +246,7 @@ export function useBoxLayout({
     }, [storageKeys, currentLayoutName]);
 
     const replaceBoxes = useCallback((next: Record<string, IBox>) => {
+        if (currentLayoutName === DEFAULT_LAYOUT_NAME) return;
         setBoxes(next);
         saveBoxVisibility(storageKeys, currentLayoutName, next);
     }, [storageKeys, currentLayoutName]);
@@ -253,13 +254,14 @@ export function useBoxLayout({
     // ── Resize + reorder ──────────────────────────────────────────────
     //
     // These write into the current layout's payload and re-persist via
-    // `saveLayouts`. Every layout is editable, including Default; the first
-    // write that actually changes Default flips the "customised" marker so
-    // `loadLayouts` stops regenerating it from code (see lib/layoutPersistence).
+    // `saveLayouts`. The Default layout is read-only, so this is the single choke
+    // point that keeps resize, reorder and the column stepper off it — the UI hides
+    // those affordances too, but a stale bundle or a stray emit must not slip past.
 
     const writeCurrentLayout = useCallback((
         producer: (current: ILayout['layout']) => ILayout['layout'],
     ): void => {
+        if (currentLayoutName === DEFAULT_LAYOUT_NAME) return;
         setLayouts(prev => {
             const index = prev.findIndex(l => l.name === currentLayoutName);
             if (index === -1) return prev;
@@ -267,7 +269,6 @@ export function useBoxLayout({
             if (layoutPayloadEquals(nextLayout, prev[index].layout)) return prev;
             const updated = prev.map((l, i) => i === index ? {...l, layout: nextLayout} : l);
             saveLayouts(storageKeys, updated);
-            if (currentLayoutName === DEFAULT_LAYOUT_NAME) setDefaultCustomised(storageKeys, true);
             return updated;
         });
     }, [currentLayoutName, storageKeys]);
@@ -358,7 +359,10 @@ export function useBoxLayout({
     }, [writeCurrentLayout, bumpVersion]);
 
 
+    /** Puts a user layout back to the shipped arrangement. Not offered on Default,
+     *  which is regenerated from code and so has nothing to reset. */
     const resetCurrentLayout = useCallback(() => {
+        if (currentLayoutName === DEFAULT_LAYOUT_NAME) return;
         const factory = createDefaultLayout();
         setLayouts(prev => {
             const index = prev.findIndex(l => l.name === currentLayoutName);
@@ -369,7 +373,6 @@ export function useBoxLayout({
         });
         clearBoxVisibility(storageKeys, currentLayoutName);
         setBoxes(createBoxes());
-        if (currentLayoutName === DEFAULT_LAYOUT_NAME) setDefaultCustomised(storageKeys, false);
         bumpVersion();
     }, [storageKeys, currentLayoutName, createDefaultLayout, createBoxes, bumpVersion]);
 

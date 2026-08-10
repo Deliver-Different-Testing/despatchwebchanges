@@ -9,6 +9,8 @@ namespace DespatchWeb.Controllers;
 [Authorize]
 public class DispatchLayoutController(IDispatchLayoutRepository dispatchLayoutRepository) : Controller
 {
+    private const string DefaultLayoutName = "Default";
+
     private static readonly HashSet<string> AllowedPages = new(StringComparer.Ordinal)
     {
         "JobSearch",
@@ -49,7 +51,23 @@ public class DispatchLayoutController(IDispatchLayoutRepository dispatchLayoutRe
                 return BadRequest("Each layout must have a name and layout JSON");
             }
 
-            await dispatchLayoutRepository.ReplaceLayoutsAsync(request.Page, request.Layouts);
+            // The Default layout is read-only and rebuilt on the client from code, so a
+            // row of that name is only ever a stale copy waiting to overwrite the shipped
+            // arrangement. Strip it rather than rejecting the request, so a client left on
+            // an older bundle still syncs its own layouts — and because the replace is
+            // delete-missing-by-name, stripping is also what clears rows already written.
+            var layouts = request.Layouts
+                .Where(l => !string.Equals(l.Name, DefaultLayoutName, StringComparison.Ordinal))
+                .ToList();
+
+            if (layouts.Count != request.Layouts.Count)
+            {
+                Log.Information(
+                    "Dropped the read-only {DefaultLayout} layout from a save for page {Page}",
+                    DefaultLayoutName, request.Page);
+            }
+
+            await dispatchLayoutRepository.ReplaceLayoutsAsync(request.Page, layouts);
             return Ok();
         }
         catch (Exception e)

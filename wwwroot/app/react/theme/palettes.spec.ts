@@ -1,9 +1,11 @@
 import {
     dfrntPrimaryPalette,
+    urgentPrimaryPalette,
     accentPalette,
 } from './palettes';
 import {
     professionalPrimaryMdPalette,
+    urgentPrimaryMdPalette,
     accentMdPalette,
 } from '../../materialTheme';
 
@@ -18,6 +20,12 @@ describe('AngularJS Material palettes share the palette source of truth', () => 
         expect(professionalPrimaryMdPalette['A700']).toBe(dfrntPrimaryPalette.A700);
     });
 
+    it('urgentPrimary matches the shared gold palette', () => {
+        expect(urgentPrimaryMdPalette['500']).toBe(urgentPrimaryPalette[500]);
+        expect(urgentPrimaryMdPalette['700']).toBe(urgentPrimaryPalette[700]);
+        expect(urgentPrimaryMdPalette['A700']).toBe(urgentPrimaryPalette.A700);
+    });
+
     it('accent matches the shared warm-gray ramp and keeps its A-keys', () => {
         expect(accentMdPalette['500']).toBe(accentPalette[500]);
         expect(accentMdPalette['600']).toBe(accentPalette[600]);
@@ -25,7 +33,7 @@ describe('AngularJS Material palettes share the palette source of truth', () => 
     });
 
     it('each Material palette carries contrast metadata', () => {
-        for (const palette of [professionalPrimaryMdPalette, accentMdPalette]) {
+        for (const palette of [professionalPrimaryMdPalette, urgentPrimaryMdPalette, accentMdPalette]) {
             expect(['light', 'dark']).toContain(palette.contrastDefaultColor);
             expect(Array.isArray(palette.contrastDarkColors)).toBe(true);
             expect(Array.isArray(palette.contrastLightColors)).toBe(true);
@@ -36,5 +44,10 @@ describe('AngularJS Material palettes share the palette source of truth', () => 
         expect(professionalPrimaryMdPalette.contrastDefaultColor).toBe('dark');
         // Only the darkest cyan steps are deep enough to carry white text.
         expect(professionalPrimaryMdPalette.contrastLightColors).toEqual(['700', '800', '900']);
+    });
+
+    it('the gold palette takes dark text on every step — it never darkens enough for white', () => {
+        expect(urgentPrimaryMdPalette.contrastDefaultColor).toBe('dark');
+        expect(urgentPrimaryMdPalette.contrastLightColors).toEqual([]);
     });
 });

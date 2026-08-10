@@ -17,13 +17,24 @@
  */
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
 import {getMd3Scheme} from './md3';
+import {isUsTenant} from './tenant';
 
 // --- Brand ramps (0 lightest → 9 darkest) ---
 
-const brand: MantineColorsTuple = [
+const cyan: MantineColorsTuple = [
     '#e7f8fe', '#d8f4fd', '#b1e9fb', '#82dcf8', '#5bd1f5',
     '#3bc7f4', '#1eb2e6', '#1590c0', '#0f6f96', '#0a4d69',
-]; // Cyan — primary
+]; // Cyan — the US tenant primary
+
+const gold: MantineColorsTuple = [
+    '#fef9e7', '#fcefc4', '#fae49d', '#f8d976', '#f6d058',
+    '#f4c430', '#e5b52a', '#d4a324', '#c3911e', '#a87614',
+]; // Warm amber gold — the non-US ("urgent") tenant primary
+
+/** The tenant's primary ramp. Mirrors `dfrntPrimaryPalette`/`urgentPrimaryPalette` in palettes.ts. */
+function brandRamp(isUsCustomer: boolean): MantineColorsTuple {
+    return isUsCustomer ? cyan : gold;
+}
 
 const ink: MantineColorsTuple = [
     '#ecebf1', '#cfced5', '#a8a7b6', '#83829a', '#6e6d80',
@@ -84,7 +95,9 @@ const dark: MantineColorsTuple = [
 /** Semantic brand hexes, for the rare consumer that needs a plain colour string. */
 export const dfrntBrand = {
     inkBlue: ink[9],
-    cyan: brand[5],
+    cyan: cyan[5],
+    gold: gold[5],
+    goldDeep: gold[9], // the only gold step dark enough to read as a glyph on paper
     lightGrey: gray[2],
     white: '#ffffff',
     reflexBlue: reflex[5],
@@ -94,30 +107,78 @@ export const dfrntBrand = {
     red: red[5],
 } as const;
 
-/** Fixed Ink-Blue shell (app bar + side nav) — brand navy in both colour modes. */
-export const sidebarColors = {
-    appBar: ink[9],
-    bg: ink[8], // drawer panel, one tier lighter than the bar
-    border: 'rgba(255, 255, 255, 0.10)',
-    textPrimary: 'rgba(255, 255, 255, 0.95)',
-    textSecondary: 'rgba(255, 255, 255, 0.60)',
-    textMuted: 'rgba(255, 255, 255, 0.38)',
-    hoverBg: 'rgba(255, 255, 255, 0.08)',
-};
+/**
+ * The shell surface (app bar + side-nav account header) and the logo that reads on
+ * it. US tenants get the Ink-Blue navy in both colour modes; non-US tenants get the
+ * gold brand fill, which is a light hue and so carries Ink content and the standard
+ * (dark) wordmark rather than the reversed one.
+ */
+export function getSidebarColors(isUsCustomer: boolean) {
+    return isUsCustomer
+        ? {
+            appBar: ink[9],
+            bg: ink[8], // drawer panel, one tier lighter than the bar
+            logoSrc: 'images/dfrnt_logo_reversed.png',
+            border: 'rgba(255, 255, 255, 0.10)',
+            textPrimary: 'rgba(255, 255, 255, 0.95)',
+            textSecondary: 'rgba(255, 255, 255, 0.60)',
+            textMuted: 'rgba(255, 255, 255, 0.38)',
+            hoverBg: 'rgba(255, 255, 255, 0.08)',
+        }
+        : {
+            appBar: gold[5],
+            bg: ink[8],
+            logoSrc: 'images/dfrnt_logo.png',
+            // Ink at the same alphas as the white set would fade out on a bright
+            // fill, so the secondary/muted steps sit a little stronger.
+            border: 'rgba(13, 12, 44, 0.14)',
+            textPrimary: 'rgba(13, 12, 44, 0.95)',
+            textSecondary: 'rgba(13, 12, 44, 0.65)',
+            textMuted: 'rgba(13, 12, 44, 0.45)',
+            hoverBg: 'rgba(13, 12, 44, 0.08)',
+        };
+}
 
-/** White-based overlays for content on the fixed Ink-Blue scrim (shell, dialog headers). */
-export const onBrandScrim = {
-    text: '#fff',
-    bodyText: 'rgba(255,255,255,0.85)',
-    subtleText: 'rgba(255,255,255,0.8)',
-    mutedText: 'rgba(255,255,255,0.7)',
-    fill: 'rgba(255,255,255,0.15)',
-    fillStrong: 'rgba(255,255,255,0.2)',
-    hoverFill: 'rgba(255,255,255,0.1)',
-    faintHoverFill: 'rgba(255,255,255,0.08)',
-    solidHoverFill: 'rgba(255,255,255,0.9)',
-    border: 'rgba(255,255,255,0.4)',
-};
+/**
+ * Overlays for content sitting on the shell scrim (shell chrome, dialog headers) —
+ * white-based on the Ink bar, Ink-based on the gold one.
+ */
+export function getOnBrandScrim(isUsCustomer: boolean) {
+    const on = isUsCustomer ? '255,255,255' : '13,12,44';
+    return {
+        text: isUsCustomer ? '#fff' : '#0d0c2c',
+        bodyText: `rgba(${on},0.85)`,
+        subtleText: `rgba(${on},0.8)`,
+        mutedText: `rgba(${on},0.7)`,
+        fill: `rgba(${on},0.15)`,
+        fillStrong: `rgba(${on},0.2)`,
+        hoverFill: `rgba(${on},0.1)`,
+        faintHoverFill: `rgba(${on},0.08)`,
+        solidHoverFill: `rgba(${on},0.9)`,
+        border: `rgba(${on},0.4)`,
+    };
+}
+
+/**
+ * The wash a shell icon button shows on hover.
+ *
+ * Pinned rather than left to `variant="subtle"` because that variable resolves
+ * against the *page's* colour scheme while the bar's fill never changes, so a
+ * scheme flip would swap in a tint meant for a different background. On gold the
+ * brand wash would be gold-on-gold, so the non-US bar washes with its Ink
+ * on-colour instead.
+ */
+export function getShellIconHoverFill(isUsCustomer: boolean): string {
+    return isUsCustomer
+        ? 'color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent)'
+        : 'color-mix(in srgb, var(--mantine-color-ink-9) 10%, transparent)';
+}
+
+/** The current tenant's shell tokens, for the few consumers outside a provider. */
+export const sidebarColors = getSidebarColors(isUsTenant());
+
+/** The current tenant's scrim overlays, for the few consumers outside a provider. */
+export const onBrandScrim = getOnBrandScrim(isUsTenant());
 
 /** Theme-aware palette for code / terminal blocks (on Ink Blue). */
 export const codeBlockPalette = {
@@ -144,6 +205,7 @@ declare module '@mantine/core' {
     export interface MantineThemeOther {
         shell: typeof sidebarColors;
         scrim: typeof onBrandScrim;
+        shellIconHoverFill: string;
         code: typeof codeBlockPalette;
         tokens: typeof tokens;
     }
@@ -151,59 +213,68 @@ declare module '@mantine/core' {
 
 // --- The theme ---
 
-export const dfrntTheme = createTheme({
-    primaryColor: 'brand',
-    primaryShade: {light: 5, dark: 4},
-    autoContrast: true,
-    luminanceThreshold: 0.4,
-    colors: {brand, ink, reflex, grape, green, orange, red, gray, dark},
-    white: '#ffffff',
-    black: ink[9],
-    fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontFamilyMonospace: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    headings: {
-        fontFamily: '"Plus Jakarta Sans", sans-serif',
-        fontWeight: '600',
-    },
-    defaultRadius: 'md',
-    radius: {xs: '4px', sm: '8px', md: '12px', lg: '16px', xl: '28px'},
-    components: {
-        Button: {defaultProps: {radius: 9999}}, // lozenge
-        ActionIcon: {defaultProps: {radius: 9999}},
-        // Cards/paper sit one tonal tier above the page in both schemes (elevation by
-        // tone, not shadow). Applied as a class-based `styles.root`, NOT a `bg`
-        // defaultProp, so a component's own inline `style={{background}}` still wins.
-        Card: {
-            defaultProps: {radius: 'md'},
-            styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
+/**
+ * Builds the theme for a tenant. `brand` is the tenant's primary ramp, so every
+ * `color="brand"` / `--mantine-color-brand-*` consumer follows without edits.
+ */
+export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
+    return createTheme({
+        primaryColor: 'brand',
+        primaryShade: {light: 5, dark: 4},
+        autoContrast: true,
+        luminanceThreshold: 0.4,
+        colors: {brand: brandRamp(isUsCustomer), cyan, gold, ink, reflex, grape, green, orange, red, gray, dark},
+        white: '#ffffff',
+        black: ink[9],
+        fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamilyMonospace: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        headings: {
+            fontFamily: '"Plus Jakarta Sans", sans-serif',
+            fontWeight: '600',
         },
-        Paper: {
-            defaultProps: {radius: 'md'},
-            styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
+        defaultRadius: 'md',
+        radius: {xs: '4px', sm: '8px', md: '12px', lg: '16px', xl: '28px'},
+        components: {
+            Button: {defaultProps: {radius: 9999}}, // lozenge
+            ActionIcon: {defaultProps: {radius: 9999}},
+            // Cards/paper sit one tonal tier above the page in both schemes (elevation by
+            // tone, not shadow). Applied as a class-based `styles.root`, NOT a `bg`
+            // defaultProp, so a component's own inline `style={{background}}` still wins.
+            Card: {
+                defaultProps: {radius: 'md'},
+                styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
+            },
+            Paper: {
+                defaultProps: {radius: 'md'},
+                styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
+            },
+            Modal: {
+                defaultProps: {radius: 'lg', centered: true},
+                styles: {content: {backgroundColor: 'var(--dd-surface-container-high)'}},
+            },
+            TextInput: {defaultProps: {radius: 'sm'}},
+            Textarea: {defaultProps: {radius: 'sm'}},
+            Select: {defaultProps: {radius: 'sm'}},
+            Autocomplete: {defaultProps: {radius: 'sm'}},
+            Menu: {
+                defaultProps: {radius: 'sm', shadow: 'md'},
+                styles: {dropdown: {backgroundColor: 'var(--dd-surface-container-high)'}},
+            },
+            Tooltip: {defaultProps: {radius: 'sm', color: 'ink'}},
+            Badge: {defaultProps: {radius: 'sm'}},
+            Tabs: {styles: {tab: {paddingBlock: 14, fontWeight: 500}}},
         },
-        Modal: {
-            defaultProps: {radius: 'lg', centered: true},
-            styles: {content: {backgroundColor: 'var(--dd-surface-container-high)'}},
+        other: {
+            shell: getSidebarColors(isUsCustomer),
+            scrim: getOnBrandScrim(isUsCustomer),
+            shellIconHoverFill: getShellIconHoverFill(isUsCustomer),
+            code: codeBlockPalette,
+            tokens,
         },
-        TextInput: {defaultProps: {radius: 'sm'}},
-        Textarea: {defaultProps: {radius: 'sm'}},
-        Select: {defaultProps: {radius: 'sm'}},
-        Autocomplete: {defaultProps: {radius: 'sm'}},
-        Menu: {
-            defaultProps: {radius: 'sm', shadow: 'md'},
-            styles: {dropdown: {backgroundColor: 'var(--dd-surface-container-high)'}},
-        },
-        Tooltip: {defaultProps: {radius: 'sm', color: 'ink'}},
-        Badge: {defaultProps: {radius: 'sm'}},
-        Tabs: {styles: {tab: {paddingBlock: 14, fontWeight: 500}}},
-    },
-    other: {
-        shell: sidebarColors,
-        scrim: onBrandScrim,
-        code: codeBlockPalette,
-        tokens,
-    },
-});
+    });
+}
+
+export const dfrntTheme = createDfrntTheme();
 
 /**
  * Bridges the DFRNT surface ladder (md3.ts) into Mantine's CSS variables per
@@ -213,11 +284,17 @@ export const dfrntTheme = createTheme({
  * back the Card/Paper/Menu/Modal defaults above, so one scheme flip repaints
  * page → cards → menus with the intended tones.
  */
-export const dfrntCssVariablesResolver: CSSVariablesResolver = () => {
+export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
     const light = getMd3Scheme('light');
     const dk = getMd3Scheme('dark');
     return {
-        variables: {},
+        variables: {
+            // Shell chrome, published as vars so the static style objects in
+            // `toolbarIconStyles` don't each need the theme threaded to them.
+            '--dd-shell-bar': theme.other.shell.appBar,
+            '--dd-on-shell': theme.other.scrim.text,
+            '--dd-shell-icon-hover': theme.other.shellIconHoverFill,
+        },
         light: {
             '--mantine-color-body': light.surface, // #f4f2f1 page
             '--dd-surface': light.surface,

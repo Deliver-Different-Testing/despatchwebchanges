@@ -300,7 +300,8 @@ declare global {
         ReactCustomizePanelsDialog?: {
             open: (
                 boxes: Record<string, DashboardBox>,
-                title?: string
+                title?: string,
+                layoutEditable?: boolean
             ) => Promise<Record<string, DashboardBox> | null>;
         };
         ReactDateRangeDialog?: {

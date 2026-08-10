@@ -42,3 +42,13 @@ md-toast {
     }
   }
 }
+
+// Non-US tenant overrides (see autocomplete.less for the scope rationale).
+.theme-nz md-toast {
+  &.md-warning-toast-theme {
+    .md-toast-content {
+      background-color: @nz-primary !important;
+      color: black !important;
+    }
+  }
+}

@@ -12,7 +12,6 @@ import {useBoxLayout} from './useBoxLayout';
 import {ILayout} from '../../../../interfaces/layout.interfaces';
 import {IBox} from '../../../../interfaces/layout.interfaces';
 import {
-    isDefaultCustomised,
     loadBoxVisibility,
     loadLayouts,
     saveBoxVisibility,
@@ -135,8 +134,8 @@ describe('useBoxLayout layout editing', () => {
     });
 
     const render = () => renderHook(() => useBoxLayout({storageKeys, createBoxes, createDefaultLayout}));
-    const storedDefault = () =>
-        loadLayouts(storageKeys, createDefaultLayout()).find(l => l.name === 'Default')!;
+    const storedLayout = (name: string) =>
+        loadLayouts(storageKeys, createDefaultLayout()).find(l => l.name === name)!;
 
     beforeEach(() => {
         localStorage.clear();
@@ -144,24 +143,27 @@ describe('useBoxLayout layout editing', () => {
         mockReadLocalRows.mockReset().mockReturnValue([]);
     });
 
-    it('persists a resize of the Default layout and marks it customised', () => {
+    it('refuses to resize the read-only Default layout', () => {
         const {result} = render();
         expect(result.current.isDefaultLayout).toBe(true);
 
         act(() => result.current.setColumnSizes([70, 30]));
 
-        expect(storedDefault().layout.columns.map(c => c.width)).toEqual(['70.00%', '30.00%']);
-        expect(isDefaultCustomised(storageKeys)).toBe(true);
+        // Nothing persisted, and the in-memory layout still matches the code default.
+        expect(localStorage.getItem(storageKeys.layoutsKey)).toBeNull();
+        expect(result.current.layout.layout).toEqual(createDefaultLayout().layout);
     });
 
-    it('persists box heights on the Default layout', () => {
+    it('refuses to write box heights or panel visibility on the Default layout', () => {
         const {result} = render();
 
         act(() => result.current.setBoxHeights('col1', [30, 70], ['a', 'b']));
+        act(() => result.current.setBoxVisibility('b', false));
 
-        expect(storedDefault().layout.columns[0].boxes.map(b => b.height)).toEqual(['30.00%', '70.00%']);
+        expect(localStorage.getItem(storageKeys.layoutsKey)).toBeNull();
+        expect(loadBoxVisibility(storageKeys, 'Default')).toBeNull();
+        expect(result.current.boxes.b.visible).not.toBe(false);
     });
-
 
     it('ignores a write that changes nothing, leaving the default untouched', () => {
         const {result} = render();
@@ -169,12 +171,20 @@ describe('useBoxLayout layout editing', () => {
         act(() => result.current.setColumnSizes([60, 40]));
 
         expect(localStorage.getItem(storageKeys.layoutsKey)).toBeNull();
-        expect(isDefaultCustomised(storageKeys)).toBe(false);
     });
 
-
-    it('removeColumn keeps every box when merging columns', () => {
+    it('resizes and persists a layout of the user\'s own', () => {
         const {result} = render();
+        act(() => result.current.addLayout('Wide'));
+
+        act(() => result.current.setColumnSizes([70, 30]));
+
+        expect(storedLayout('Wide').layout.columns.map(c => c.width)).toEqual(['70.00%', '30.00%']);
+    });
+
+    it('removeColumn keeps every box when merging columns on a user layout', () => {
+        const {result} = render();
+        act(() => result.current.addLayout('Wide'));
 
         act(() => result.current.removeColumn());
 
@@ -182,21 +192,7 @@ describe('useBoxLayout layout editing', () => {
         expect(names.sort()).toEqual(['a', 'b', 'c']);
     });
 
-    it('resetCurrentLayout restores the shipped arrangement and clears panel state', () => {
-        const {result} = render();
-        act(() => result.current.setColumnSizes([70, 30]));
-        act(() => result.current.setBoxVisibility('b', false));
-        expect(isDefaultCustomised(storageKeys)).toBe(true);
-
-        act(() => result.current.resetCurrentLayout());
-
-        expect(result.current.layout.layout).toEqual(createDefaultLayout().layout);
-        expect(result.current.boxes.b.visible).toBe(true);
-        expect(loadBoxVisibility(storageKeys, 'Default')).toBeNull();
-        expect(isDefaultCustomised(storageKeys)).toBe(false);
-    });
-
-    it('resetCurrentLayout restores a custom layout without touching the default marker', () => {
+    it('resetCurrentLayout restores a user layout and clears its panel state', () => {
         const {result} = render();
         act(() => result.current.addLayout('Wide'));
         act(() => result.current.setColumnSizes([80, 20]));
@@ -207,6 +203,13 @@ describe('useBoxLayout layout editing', () => {
         expect(result.current.currentLayoutName).toBe('Wide');
         expect(result.current.layout.layout).toEqual(createDefaultLayout().layout);
         expect(loadBoxVisibility(storageKeys, 'Wide')).toBeNull();
-        expect(isDefaultCustomised(storageKeys)).toBe(false);
+    });
+
+    it('resetCurrentLayout is a no-op on the Default layout', () => {
+        const {result} = render();
+
+        act(() => result.current.resetCurrentLayout());
+
+        expect(localStorage.getItem(storageKeys.layoutsKey)).toBeNull();
     });
 });

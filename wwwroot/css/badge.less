@@ -144,3 +144,15 @@
     }
   }
 }
+
+// Non-US tenant overrides (see autocomplete.less for the scope rationale).
+.theme-nz .custom-badge {
+  &.badge-warning {
+    background-color: @nz-primary;
+    color: black;
+
+    &:hover {
+      background-color: @nz-primary-dark;
+    }
+  }
+}

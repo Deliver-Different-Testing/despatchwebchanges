@@ -5,7 +5,6 @@ import {
     LayoutSnapshot,
     LayoutStorageKeys,
     readLocalSnapshot,
-    setDefaultCustomised,
     writeLocalSnapshot,
 } from './layoutPersistence';
 import {DispatchLayoutDto} from "../../../interfaces/dispatchLayout";
@@ -21,12 +20,13 @@ interface PerLayoutPayload {
 }
 
 /**
- * Convert the whole-page snapshot into per-layout rows for the server. The
- * Default layout is included so an adjusted default follows the user between
- * devices; an untouched one is filtered out later by `shouldSeedServer`.
+ * Convert the whole-page snapshot into per-layout rows for the server. The Default
+ * layout is read-only and regenerated from code, so it is never sent: a `Default`
+ * row on the server would only be a stale copy waiting to overwrite the shipped
+ * arrangement.
  */
-export function snapshotToRows(snapshot: LayoutSnapshot, _defaultLayout: ILayout): DispatchLayoutDto[] {
-    return snapshot.layouts.map(l => ({
+export function snapshotToRows(snapshot: LayoutSnapshot, defaultLayout: ILayout): DispatchLayoutDto[] {
+    return snapshot.layouts.filter(l => l.name !== defaultLayout.name).map(l => ({
         name: l.name,
         layoutJson: JSON.stringify({
             layout: l.layout,
@@ -37,12 +37,12 @@ export function snapshotToRows(snapshot: LayoutSnapshot, _defaultLayout: ILayout
 }
 
 /**
- * Rebuild a whole-page snapshot from server rows. The Default layout is pinned
- * to slot 0 — taken from the rows if the user has adjusted theirs, otherwise
- * regenerated from code; the active row (if any) becomes the last-active layout.
+ * Rebuild a whole-page snapshot from server rows. The code-generated Default is
+ * pinned to slot 0 and any `Default` row a previous version wrote is discarded;
+ * the active row (if any) becomes the last-active layout.
  */
 export function rowsToSnapshot(rows: DispatchLayoutDto[], defaultLayout: ILayout): LayoutSnapshot {
-    const layouts: ILayout[] = [];
+    const layouts: ILayout[] = [defaultLayout];
     const boxVisibility: Record<string, Record<string, BoxVisibilityRecord>> = {};
     let lastActiveLayout = defaultLayout.name;
 
@@ -54,48 +54,13 @@ export function rowsToSnapshot(rows: DispatchLayoutDto[], defaultLayout: ILayout
             console.error(`Skipping layout "${row.name}" with invalid JSON:`, error);
             continue;
         }
+        if (row.name === defaultLayout.name) continue;
         layouts.push({name: row.name, layout: payload.layout});
         if (payload.boxVisibility) boxVisibility[row.name] = payload.boxVisibility;
         if (row.isActive) lastActiveLayout = row.name;
     }
 
-    const storedDefault = layouts.find(l => l.name === defaultLayout.name);
-    const ordered = [
-        storedDefault ?? defaultLayout,
-        ...layouts.filter(l => l.name !== defaultLayout.name),
-    ];
-
-    return {layouts: ordered, lastActiveLayout, boxVisibility};
-}
-
-function parsePayload(row: DispatchLayoutDto): PerLayoutPayload | null {
-    try {
-        return JSON.parse(row.layoutJson) as PerLayoutPayload;
-    } catch {
-        return null;
-    }
-}
-
-/** True when the user has moved or resized something on their Default layout. */
-function defaultRowDiverges(row: DispatchLayoutDto, defaultLayout: ILayout): boolean {
-    const payload = parsePayload(row);
-    if (!payload) return false;
-    return JSON.stringify(payload.layout) !== JSON.stringify(defaultLayout.layout);
-}
-
-/**
- * Whether the local state is worth pushing to an empty server. A Default that
- * still matches the shipped arrangement and hides nothing carries no user
- * intent, so seeding it would pin every new user to today's default forever.
- */
-function shouldSeedServer(rows: DispatchLayoutDto[], defaultLayout: ILayout): boolean {
-    if (rows.length === 0) return false;
-    if (rows.some(r => r.name !== defaultLayout.name)) return true;
-    return rows.some(r => {
-        if (defaultRowDiverges(r, defaultLayout)) return true;
-        const payload = parsePayload(r);
-        return Object.keys(payload?.boxVisibility ?? {}).length > 0;
-    });
+    return {layouts, lastActiveLayout, boxVisibility};
 }
 
 /** The locally-stored layouts serialized as the rows we would send to the server. */
@@ -117,15 +82,14 @@ export async function loadRemoteIntoLocal(
     defaultLayout: ILayout,
 ): Promise<boolean> {
     const rows = await getLayouts(page);
-    if (rows.length > 0) {
-        writeLocalSnapshot(keys, rowsToSnapshot(rows, defaultLayout));
-        const defaultRow = rows.find(r => r.name === defaultLayout.name);
-        setDefaultCustomised(keys, !!defaultRow && defaultRowDiverges(defaultRow, defaultLayout));
+    const userRows = rows.filter(r => r.name !== defaultLayout.name);
+    if (userRows.length > 0) {
+        writeLocalSnapshot(keys, rowsToSnapshot(userRows, defaultLayout));
         return true;
     }
 
     const localRows = readLocalRows(keys, defaultLayout);
-    if (shouldSeedServer(localRows, defaultLayout)) {
+    if (localRows.length > 0) {
         await saveLayouts(page, localRows);
     }
     return false;

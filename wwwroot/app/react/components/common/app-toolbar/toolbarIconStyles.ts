@@ -6,31 +6,29 @@
  */
 
 import React from 'react';
-import {onBrandScrim} from '../../../theme/dfrntMantineTheme';
 
 /**
- * The cyan wash a shell icon button shows on hover, at the strength Integration
- * Manager renders: `--mantine-color-brand-light-hover` in a light scheme, i.e.
- * brand-5 at 12%.
+ * The wash a shell icon button shows on hover.
  *
- * IM lets `variant="subtle"` supply this. We pin it because that variable is resolved
- * against the *page's* colour scheme, and the Ink bar stays navy in both — so when
- * `DARK_MODE_ENABLED` flips, Mantine would swap in the brighter dark-scheme tint
- * (brand-2 at 20%) over a background that never changed. Pinning keeps one constant
- * wash on the bar.
+ * Both this and the glyph colour come from the theme via CSS variables published by
+ * `dfrntCssVariablesResolver`, so the two shell fills (Ink navy on US, gold
+ * elsewhere) each get a wash that reads on them without the ~11 call sites having
+ * to thread the theme. See `getShellIconHoverFill` for why the wash is pinned
+ * rather than left to `variant="subtle"`.
  */
-export const SHELL_ICON_HOVER_FILL = 'color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent)';
+export const SHELL_ICON_HOVER_FILL = 'var(--dd-shell-icon-hover)';
 
 /** Mantine's `ActionIcon size="lg"` box — the size every shell icon button matches. */
 export const SHELL_ICON_BUTTON_PX = 34;
 
 /**
  * Applied to every toolbar icon button: `variant="subtle" size="lg"`, round via the
- * theme's `ActionIcon` radius, white glyph on the Ink bar. The variant supplies the
- * transparent rest state; this overrides the glyph colour and the hover wash.
+ * theme's `ActionIcon` radius, and the shell's on-colour for the glyph. The variant
+ * supplies the transparent rest state; this overrides the glyph colour and the hover
+ * wash.
  */
 export const toolbarIconButtonStyle = {
-    color: onBrandScrim.text,
+    color: 'var(--dd-on-shell)',
     '--ai-hover': SHELL_ICON_HOVER_FILL,
 } as React.CSSProperties;
 
