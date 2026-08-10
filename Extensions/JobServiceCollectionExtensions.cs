@@ -21,6 +21,7 @@ public static class JobServiceCollectionExtensions
         services.AddScoped<IJobChangeRequestService, JobChangeRequestService>();
         services.AddScoped<IJobChangeRequestPartnerClient, JobChangeRequestPartnerClient>();
         services.AddScoped<IPartnerJobGate, PartnerJobGate>();
+        services.AddScoped<IArrivalWaitRerateService, ArrivalWaitRerateService>();
 
         return services;
     }

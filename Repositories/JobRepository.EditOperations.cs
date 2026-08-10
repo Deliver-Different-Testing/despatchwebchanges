@@ -1,6 +1,7 @@
 using System.Globalization;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -314,6 +315,55 @@ public partial class JobRepository
         }
 
         return true;
+    }
+
+    /// <inheritdoc cref="IJobCommandRepository.UpdateWaitedMinutesFromArrivalAsync" />
+    public async Task<int?> UpdateWaitedMinutesFromArrivalAsync(int jobId, JobProperty property)
+    {
+        var baseQuery = Context.TucJobs.Where(j => j.UcjbId == jobId);
+
+        // DATEDIFF runs on the server so the stored minutes match SQL Server's
+        // DATEDIFF(MINUTE, start, end) exactly. The null guards give "no basis, no write",
+        // and the conditional clamps a negative gap to zero.
+        // ReSharper disable EntityFramework.ClientSideDbFunctionCall — a SetProperty value
+        // selector is translated to SQL, which the inspection does not recognise.
+        var rowsAffected = property switch
+        {
+            JobProperty.PickupArrivalTime => await baseQuery
+                .Where(j => j.PickupArrivalTime != null && j.PickUpTime != null)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.WaitedPickUp,
+                    j => EF.Functions.DateDiffMinute(j.PickupArrivalTime, j.PickUpTime) < 0
+                        ? 0
+                        : EF.Functions.DateDiffMinute(j.PickupArrivalTime, j.PickUpTime))),
+
+            JobProperty.DeliveryArrivalTime => await baseQuery
+                .Where(j => j.DeliveryArrivalTime != null && j.UcjbComplTime != null)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.WaitedDelivery,
+                    j => EF.Functions.DateDiffMinute(j.DeliveryArrivalTime, j.UcjbComplTime) < 0
+                        ? 0
+                        : EF.Functions.DateDiffMinute(j.DeliveryArrivalTime, j.UcjbComplTime))),
+
+            _ => 0
+        };
+        // ReSharper restore EntityFramework.ClientSideDbFunctionCall
+
+        if (rowsAffected == 0)
+        {
+            Log.Information(
+                "No waiting-time basis for job {JobId} on {Property}; waited minutes left unchanged",
+                jobId, property);
+            return null;
+        }
+
+        var waitedMinutes = await baseQuery
+            .Select(j => property == JobProperty.PickupArrivalTime ? j.WaitedPickUp : j.WaitedDelivery)
+            .FirstOrDefaultAsync();
+
+        Log.Information(
+            "Derived waiting minutes from {Property} edit: job {JobId}, minutes {WaitedMinutes}",
+            property, jobId, waitedMinutes);
+
+        return waitedMinutes;
     }
 
     /// <summary>

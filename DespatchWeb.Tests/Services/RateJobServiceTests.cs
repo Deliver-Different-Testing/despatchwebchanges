@@ -73,6 +73,26 @@ public class RateJobServiceTests : IDisposable
             });
     }
 
+    [Theory]
+    // waited pickup, waited delivery, booked truck hours, expected TruckHours sent to rating
+    [InlineData(30, 0, null, 30)]
+    [InlineData(0, 45, null, 45)] // delivery-only waiting must reach rating, not just pickup
+    [InlineData(30, 45, null, 75)]
+    [InlineData(0, 0, null, null)]
+    [InlineData(30, 45, 4, 4)] // an explicitly booked duration always wins
+    public void ResolveTruckHours_FallsBackToBothWaitingLegs(
+        int pickupWaitTime, int deliveryWaitTime, int? truckHours, int? expected)
+    {
+        var dto = new JobRatingDetailsDtoNz
+        {
+            PickupWaitTime = pickupWaitTime,
+            DeliveryWaitTime = deliveryWaitTime,
+            TruckHours = truckHours
+        };
+
+        Assert.Equal(expected, RateJobService.ResolveTruckHours(dto));
+    }
+
     [Fact]
     public async Task RateJobNzAsync_NullJobDetails_ThrowsArgumentNullException()
     {
@@ -1005,10 +1025,7 @@ public class RateJobServiceTests : IDisposable
         fileMock.Length.Returns(stream.Length);
         fileMock.OpenReadStream().Returns(stream);
         fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
-            .Returns(callInfo =>
-            {
-                return stream.CopyToAsync(callInfo.Arg<Stream>()!);
-            });
+            .Returns(callInfo => stream.CopyToAsync(callInfo.Arg<Stream>()!));
 
         return fileMock;
     }
