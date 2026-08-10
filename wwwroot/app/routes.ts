@@ -35,6 +35,7 @@ import type IDateFilterData from './interfaces/date-filter-data.interface';
 import type {IBox, ILayout} from './interfaces/layout.interfaces';
 import {AppPage} from './enums/app-pages.enum';
 import {isAiEnabled, setAiEnabled} from './functions/aiSettings';
+import isDefaultLayout from './functions/isDefaultLayout';
 
 class RouterConfig {
     constructor(
@@ -459,6 +460,7 @@ class RouterConfig {
                                     open: (
                                         boxes: Record<string, IBox>,
                                         title?: string,
+                                        layoutEditable?: boolean,
                                     ) => Promise<Record<string, IBox> | null>;
                                 };
                             };
@@ -472,8 +474,11 @@ class RouterConfig {
                                     createDispatchBoxes(),
                                     loadBoxVisibility(layoutStorageKeys, layoutName),
                                 );
-                                const result = await w.ReactCustomizePanelsDialog.open(boxes, layoutName);
-                                if (!result) return;
+                                const editable = !isDefaultLayout(layoutName);
+                                const result = await w.ReactCustomizePanelsDialog.open(boxes, layoutName, editable);
+                                // The Default layout is read-only, so its panel visibility
+                                // is never written even if a stale bundle returns a result.
+                                if (!result || !editable) return;
 
                                 saveBoxVisibility(layoutStorageKeys, layoutName, result);
                                 window.ReactDispatch?.reloadLayoutsFromStorage();
@@ -971,6 +976,7 @@ class RouterConfig {
                                     open: (
                                         boxes: Record<string, IBox>,
                                         title?: string,
+                                        layoutEditable?: boolean,
                                     ) => Promise<Record<string, IBox> | null>;
                                 };
                             };
@@ -986,8 +992,11 @@ class RouterConfig {
                                     createJobSearchBoxes(),
                                     loadBoxVisibility(layoutStorageKeys, layoutName),
                                 );
-                                const result = await w.ReactCustomizePanelsDialog.open(boxes, layoutName);
-                                if (!result) return;
+                                const editable = !isDefaultLayout(layoutName);
+                                const result = await w.ReactCustomizePanelsDialog.open(boxes, layoutName, editable);
+                                // The Default layout is read-only, so its panel visibility
+                                // is never written even if a stale bundle returns a result.
+                                if (!result || !editable) return;
 
                                 // Persist box visibility and push it into the live React
                                 // page (reloadLayoutsFromStorage re-reads visibility and

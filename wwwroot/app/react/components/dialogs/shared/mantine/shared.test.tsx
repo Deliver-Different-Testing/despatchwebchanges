@@ -14,6 +14,8 @@ import {
     headerOverlayColor,
     PriceDelta,
 } from './index';
+import {getHeaderColors, getHeaderSurfaceAccent} from './styles';
+import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
 import {renderWithMantine} from '../../../../__testUtils__';
 
 interface Handlers {
@@ -118,6 +120,22 @@ describe('header style helpers', () => {
         expect(headerChipStyle('warning', 32)).toMatchObject({width: 32, height: 32});
         expect(headerChipStyle('warning').backgroundColor).toBe(headerOverlayColor(0.18, 'warning'));
         expect(headerChipStyle('warning').color).toBe(headerColors.warning.fg);
+    });
+
+    it('fills the primary header with the tenant brand — Ink on US, gold elsewhere', () => {
+        // Asserted through the factories rather than the module-level `headerColors`,
+        // which is bound to whichever tenant the bundle booted in.
+        expect(getHeaderColors(true).primary).toEqual({bg: dfrntBrand.inkBlue, fg: '#ffffff'});
+        expect(getHeaderColors(false).primary).toEqual({bg: dfrntBrand.gold, fg: dfrntBrand.inkBlue});
+    });
+
+    it('keeps the semantic fills and the neutral bar off the tenant switch', () => {
+        for (const variant of ['secondary', 'info', 'success', 'warning', 'error', 'surface'] as const) {
+            expect(getHeaderColors(false)[variant]).toEqual(getHeaderColors(true)[variant]);
+        }
+        // Only the glyph on the neutral bar follows the brand.
+        expect(getHeaderSurfaceAccent(false)).toBe(dfrntBrand.goldDeep);
+        expect(getHeaderSurfaceAccent(true)).not.toBe(getHeaderSurfaceAccent(false));
     });
 
     it('gives the page-card surface variant a keyline instead of a fill', () => {

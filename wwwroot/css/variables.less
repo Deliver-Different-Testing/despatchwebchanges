@@ -1,11 +1,17 @@
 @standard-grey: #999;
 
-// Primary colors - aligned with MUI theme (muiTheme.ts). Single DFRNT brand: Cyan.
+// Primary colors - aligned with MUI theme (muiTheme.ts). US tenants: DFRNT Cyan.
 @primary-blue: #3bc7f4;
 @primary-green: #13b964;
 @primary-color: #3bc7f4;
 @primary-warning: #fe811a;
 @error-red: #dc3246;
+
+// Non-US ("urgent") primary. LESS is compiled once, so the cyan above is baked in
+// as the default and these drive the `.theme-nz` overrides applied at runtime by
+// the body class in app.ts. Matches urgentPrimaryPalette in palettes.ts.
+@nz-primary: #f4c430;
+@nz-primary-dark: #d4a324;
 
 // Page and container backgrounds - matches MUI surface.default (DFRNT Light Grey)
 @main-background-color: #f4f2f1;

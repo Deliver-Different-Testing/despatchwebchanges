@@ -27,30 +27,12 @@ export function boxVisibilityKey(keys: LayoutStorageKeys, layoutName: string): s
     return `${keys.boxVisibilityKeyBase}-${layoutName}`;
 }
 
-function defaultCustomisedKey(keys: LayoutStorageKeys): string {
-    return `${keys.layoutsKey}-defaultCustomised`;
-}
-
 /**
- * Whether the user has adjusted the Default layout. Until they have, the Default
- * is regenerated from code on every read so improvements to the shipped
- * arrangement (a new panel, a better split) still reach everyone. Once they
- * adjust it, their version wins and "Reset layout" is the way back.
+ * The Default layout is read-only: slot 0 is always regenerated from code, so a
+ * stored copy can never win and improvements to the shipped arrangement (a new
+ * panel, a better split) keep reaching everyone. Users who want their own
+ * arrangement save a layout of their own.
  */
-export function isDefaultCustomised(keys: LayoutStorageKeys): boolean {
-    if (!isLocalStorageAvailable()) return false;
-    return localStorage.getItem(defaultCustomisedKey(keys)) === '1';
-}
-
-export function setDefaultCustomised(keys: LayoutStorageKeys, customised: boolean): void {
-    if (!isLocalStorageAvailable()) return;
-    if (customised) {
-        localStorage.setItem(defaultCustomisedKey(keys), '1');
-    } else {
-        localStorage.removeItem(defaultCustomisedKey(keys));
-    }
-}
-
 export function loadLayouts(keys: LayoutStorageKeys, defaultLayout: ILayout): ILayout[] {
     if (!isLocalStorageAvailable()) return [defaultLayout];
     try {
@@ -58,9 +40,7 @@ export function loadLayouts(keys: LayoutStorageKeys, defaultLayout: ILayout): IL
         const stored = raw ? JSON.parse(raw) as ILayout[] : [];
         if (!Array.isArray(stored) || stored.length === 0) return [defaultLayout];
 
-        const storedDefault = stored.find(l => l?.name === defaultLayout.name);
-        const head = storedDefault && isDefaultCustomised(keys) ? storedDefault : defaultLayout;
-        return [head, ...stored.filter(l => l?.name !== defaultLayout.name)];
+        return [defaultLayout, ...stored.filter(l => l?.name !== defaultLayout.name)];
     } catch (error) {
         console.error('Error loading stored layouts:', error);
         return [defaultLayout];

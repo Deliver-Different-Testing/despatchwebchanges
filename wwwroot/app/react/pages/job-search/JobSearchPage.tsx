@@ -787,6 +787,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     onColumnSizes={boxLayout.setColumnSizes}
                     onBoxHeights={boxLayout.setBoxHeights}
                     onMoveBox={boxLayout.moveBox}
+                    isDefaultLayout={boxLayout.isDefaultLayout}
                     columnEditMode={columnEditMode}
                     onExitColumnEditMode={handleExitColumnEditMode}
                     onAddColumn={boxLayout.addColumn}

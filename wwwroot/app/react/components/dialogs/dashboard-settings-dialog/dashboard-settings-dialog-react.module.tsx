@@ -193,6 +193,7 @@ interface CustomizePanelsState {
     open: boolean;
     title?: string;
     boxes: Record<string, DashboardBox>;
+    layoutEditable?: boolean;
     resolve?: (value: Record<string, DashboardBox> | null) => void;
 }
 
@@ -227,6 +228,7 @@ function renderPanelsDialog(): void {
                     open={panelsState.open}
                     title={panelsState.title}
                     boxes={panelsState.boxes}
+                    layoutEditable={panelsState.layoutEditable ?? true}
                     onClose={handleClose}
                     onSave={handleSave}
                 />
@@ -246,10 +248,11 @@ function initializePanelsRoot(): void {
 export function openCustomizePanelsDialog(
     boxes: Record<string, DashboardBox>,
     title?: string,
+    layoutEditable = true,
 ): Promise<Record<string, DashboardBox> | null> {
     initializePanelsRoot();
     return new Promise((resolve) => {
-        panelsState = {open: true, title, boxes: {...boxes}, resolve};
+        panelsState = {open: true, title, boxes: {...boxes}, layoutEditable, resolve};
         renderPanelsDialog();
     });
 }

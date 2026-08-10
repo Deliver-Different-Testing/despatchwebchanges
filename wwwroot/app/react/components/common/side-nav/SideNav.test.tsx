@@ -6,6 +6,7 @@ import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
 import {renderWithMantine} from '../../../__testUtils__';
 import {SideNav} from './SideNav';
+import {createDfrntTheme} from '../../../theme/dfrntMantineTheme';
 
 describe('SideNav', () => {
     const defaultProps = {
@@ -37,10 +38,8 @@ describe('SideNav', () => {
             expect(screen.getByText('Test Company')).toBeInTheDocument();
         });
 
-        it('carries the app bar\'s Ink Blue on the account header, for every tenant', () => {
-            const {rerender} = renderWithMantine(
-                <SideNav {...defaultProps} isUsCustomer={false} companyName="Acme" />
-            );
+        it('carries the US app bar\'s Ink Blue on the account header', () => {
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={true} companyName="Acme" />);
 
             // The header picks up the bar's colour so the two shell surfaces read as
             // one; that colour change is the separator, so there is no keyline under it.
@@ -49,9 +48,19 @@ describe('SideNav', () => {
                 backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 color: 'rgba(255, 255, 255, 0.95)',
             });
+        });
 
-            rerender(<SideNav {...defaultProps} isUsCustomer={true} companyName="Acme" />);
-            expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#0d0c2c'});
+        it('follows a non-US gold bar, flipping the header content to Ink', () => {
+            renderWithMantine(
+                <SideNav {...defaultProps} isUsCustomer={false} companyName="Acme" />,
+                {theme: createDfrntTheme(false)}
+            );
+
+            expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#f4c430'});
+            expect(screen.getByTestId('sidenav-avatar')).toHaveStyle({
+                backgroundColor: 'rgba(13, 12, 44, 0.15)',
+                color: 'rgba(13, 12, 44, 0.95)',
+            });
         });
 
         it('keeps the panel styling on the drawer content and off the full-screen inner wrapper', () => {

@@ -10,7 +10,7 @@ import {ThemeProvider, createTheme} from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { MantineProvider } from '@mantine/core';
+import { MantineProvider, type MantineThemeOverride } from '@mantine/core';
 import { dfrntTheme, dfrntCssVariablesResolver } from '../theme/dfrntMantineTheme';
 
 /**
@@ -167,13 +167,17 @@ export function renderWithAllProviders(
  * `renderWithTheme` — use it for components migrated off MUI. `forceColorScheme`
  * is unnecessary in tests (light is the default), so this stays minimal.
  */
-export function renderWithMantine(ui: React.ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
+export function renderWithMantine(
+    ui: React.ReactElement,
+    options?: Omit<RenderOptions, 'wrapper'> & {theme?: MantineThemeOverride}
+) {
+    const {theme = dfrntTheme, ...renderOptions} = options ?? {};
     const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-        <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+        <MantineProvider theme={theme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
             {children}
         </MantineProvider>
     );
-    return render(ui, {wrapper: Wrapper, ...options});
+    return render(ui, {wrapper: Wrapper, ...renderOptions});
 }
 
 /**
@@ -182,12 +186,12 @@ export function renderWithMantine(ui: React.ReactElement, options?: Omit<RenderO
  */
 export function renderWithMantineProviders(
     ui: React.ReactElement,
-    options?: Omit<RenderOptions, 'wrapper'> & { queryClient?: QueryClient }
+    options?: Omit<RenderOptions, 'wrapper'> & { queryClient?: QueryClient; theme?: MantineThemeOverride }
 ) {
-    const { queryClient, ...renderOptions } = options ?? {};
+    const { queryClient, theme = dfrntTheme, ...renderOptions } = options ?? {};
     const client = queryClient ?? createTestQueryClient();
     const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-        <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+        <MantineProvider theme={theme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
             <QueryClientProvider client={client}>{children}</QueryClientProvider>
         </MantineProvider>
     );

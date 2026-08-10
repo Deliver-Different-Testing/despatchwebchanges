@@ -303,3 +303,32 @@ tr {
     }
   }
 }
+
+// Non-US tenant overrides. Scoped to `.theme-nz`, the body class app.ts applies —
+// the pre-2ec197d4 rules used `.nz-tenant`, which is set nowhere, so the gold never
+// actually reached these surfaces.
+.theme-nz {
+  .dropdown-menu.uib-typeahead-match {
+    > li {
+      &.active > a,
+      &.active > a:hover,
+      &.active > a:focus {
+        background-color: fade(@nz-primary, 15%);
+        color: @nz-primary-dark;
+      }
+    }
+
+    .uib-typeahead-match {
+      color: @nz-primary-dark;
+      background-color: fade(@nz-primary, 15%);
+    }
+  }
+
+  .material-typeahead-input:focus {
+    border-bottom-color: @nz-primary;
+  }
+
+  .material-typeahead-input:focus-visible {
+    outline-color: @nz-primary;
+  }
+}

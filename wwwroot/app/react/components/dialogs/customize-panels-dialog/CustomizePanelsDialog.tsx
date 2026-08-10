@@ -18,6 +18,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Switch from '@mui/material/Switch';
+import Alert from '@mui/material/Alert';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SaveIcon from '@mui/icons-material/Save';
 import {alpha} from '@mui/material/styles';
@@ -31,6 +32,11 @@ export interface CustomizePanelsDialogProps {
     /** Layout name shown as the header subtitle. */
     title?: string;
     boxes: Record<string, DashboardBox>;
+    /**
+     * False for the read-only Default layout: the toggles are shown disabled with a
+     * note, and Save is unavailable. Panel visibility belongs to a user layout.
+     */
+    layoutEditable?: boolean;
     onClose: () => void;
     onSave: (boxes: Record<string, DashboardBox>) => void;
 }
@@ -53,6 +59,7 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
     open,
     title,
     boxes: initialBoxes,
+    layoutEditable = true,
     onClose,
     onSave,
 }) => {
@@ -70,6 +77,7 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
     );
 
     const handleToggle = (key: string) => {
+        if (!layoutEditable) return;
         setBoxes((prev) => ({
             ...prev,
             [key]: {...prev[key], visible: !(prev[key]?.visible ?? true)},
@@ -90,6 +98,12 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
+                    {!layoutEditable && (
+                        <Alert severity="info">
+                            The Default layout is read-only. Save a layout of your own to choose
+                            which panels appear.
+                        </Alert>
+                    )}
                     <Box>
                         <Typography variant="body2" sx={sectionLabelSx}>
                             Choose which panels appear on your dashboard
@@ -104,6 +118,7 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
                                                     edge="end"
                                                     color="primary"
                                                     checked={box.visible ?? true}
+                                                    disabled={!layoutEditable}
                                                     onChange={() => handleToggle(box.key)}
                                                     slotProps={{input: {'aria-label': box.title || box.name || box.key}}}
                                                 />
@@ -149,6 +164,7 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
                 onConfirm={handleSave}
                 confirmLabel="Save"
                 confirmIcon={<SaveIcon />}
+                confirmDisabled={!layoutEditable}
             />
         </DialogShell>
     );

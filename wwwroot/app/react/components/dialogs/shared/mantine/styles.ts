@@ -1,17 +1,18 @@
 /**
  * Shared style tokens for the Mantine dialog design language (DFRNT).
  *
- * The Mantine counterpart to the MUI `shared/styles.ts`. Two big simplifications
- * vs the MUI version, both from the rebrand:
- *   - **One brand, no tenant.** The MUI header logic branched on the tenant
- *     palette (white-on-blue vs dark-on-gold). DFRNT is a single identity, so a
- *     header variant maps to one fixed fill + on-colour.
- *   - **CSS variables, not `sx`.** Section chrome is expressed as plain style
- *     objects / Mantine props, using `var(--mantine-*)` tokens.
+ * The Mantine counterpart to the MUI `shared/styles.ts`. One notable difference:
+ * chrome is expressed with **CSS variables, not `sx`** — plain style objects and
+ * Mantine props over `var(--mantine-*)` tokens.
+ *
+ * Only the `primary` variant is tenant-dependent (Ink-Blue on US, gold elsewhere).
+ * The semantic fills and the neutral `surface` bar are the same on both; on
+ * `surface` it is just the glyph that follows the brand.
  */
 import type React from 'react';
 import {alpha} from '@mantine/core';
 import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
+import {isUsTenant} from '../../../../theme/tenant';
 
 /** Header variants that map onto a brand fill. */
 export type HeaderVariant =
@@ -34,24 +35,37 @@ export type PanelHeaderVariant = HeaderVariant | 'surface';
  * legibility on each fill (dark ink on the light Cyan/Orange fills, white on the
  * dark/saturated ones).
  */
-export const headerColors: Record<PanelHeaderVariant, {bg: string; fg: string}> = {
-    primary: {bg: dfrntBrand.inkBlue, fg: '#ffffff'},   // Ink-Blue chrome, white on it
-    secondary: {bg: dfrntBrand.purple, fg: '#ffffff'},
-    info: {bg: dfrntBrand.cyan, fg: dfrntBrand.inkBlue}, // light Cyan → dark ink text
-    success: {bg: dfrntBrand.green, fg: '#ffffff'},
-    warning: {bg: dfrntBrand.orange, fg: dfrntBrand.inkBlue},
-    error: {bg: dfrntBrand.red, fg: '#ffffff'},
-    // Page card/panel headers: the card's own surface, so a keyline rather than
-    // a colour change separates the bar from the body. Both tokens are
-    // colour-scheme aware, so this follows dark mode for free.
-    surface: {bg: 'var(--dd-surface-container)', fg: 'var(--mantine-color-text)'},
-};
+export function getHeaderColors(isUsCustomer: boolean): Record<PanelHeaderVariant, {bg: string; fg: string}> {
+    return {
+        // The tenant's primary chrome: Ink-Blue with white on it for US, the brand
+        // gold with dark Ink on it for everyone else (gold is a light hue).
+        primary: isUsCustomer
+            ? {bg: dfrntBrand.inkBlue, fg: '#ffffff'}
+            : {bg: dfrntBrand.gold, fg: dfrntBrand.inkBlue},
+        secondary: {bg: dfrntBrand.purple, fg: '#ffffff'},
+        info: {bg: dfrntBrand.cyan, fg: dfrntBrand.inkBlue}, // light Cyan → dark ink text
+        success: {bg: dfrntBrand.green, fg: '#ffffff'},
+        warning: {bg: dfrntBrand.orange, fg: dfrntBrand.inkBlue},
+        error: {bg: dfrntBrand.red, fg: '#ffffff'},
+        // Page card/panel headers: the card's own surface, so a keyline rather than
+        // a colour change separates the bar from the body. Neutral on both tenants —
+        // only the glyph follows the brand. Both tokens are colour-scheme aware, so
+        // this follows dark mode for free.
+        surface: {bg: 'var(--dd-surface-container)', fg: 'var(--mantine-color-text)'},
+    };
+}
 
 /**
- * The brand accent for glyphs on the neutral `'surface'` bar — a darker step of
- * the Cyan ramp, since `dfrntBrand.cyan` itself is too light to read on paper.
+ * The brand accent for glyphs on the neutral `'surface'` bar — a darker step of the
+ * tenant's ramp, since neither the Cyan nor the gold 500 reads on paper.
  */
-export const headerSurfaceAccent = '#1590c0';
+export function getHeaderSurfaceAccent(isUsCustomer: boolean): string {
+    return isUsCustomer ? '#1590c0' : dfrntBrand.goldDeep;
+}
+
+export const headerColors = getHeaderColors(isUsTenant());
+
+export const headerSurfaceAccent = getHeaderSurfaceAccent(isUsTenant());
 
 /** The header's on-colour — text, glyphs and the close button sit in this. */
 export function headerOnColor(variant: PanelHeaderVariant = 'primary'): string {

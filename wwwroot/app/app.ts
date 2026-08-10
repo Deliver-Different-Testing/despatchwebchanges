@@ -71,26 +71,31 @@ app.config(["$urlRouterProvider", "$stateProvider",
 ]);
 
 // Theme
-app.config(["$mdThemingProvider",
+app.config(["$mdThemingProvider", "APP_CONFIG",
     (
-        $mdThemingProvider: angular.material.IThemingProvider
+        $mdThemingProvider: angular.material.IThemingProvider,
+        appConfig: IAppConfig
     ): void => {
-        const themeConfig = new ThemeConfig($mdThemingProvider);
+        const themeConfig = new ThemeConfig($mdThemingProvider, appConfig);
         themeConfig.configure();
     }
 ]);
 
-// Publish the single DFRNT brand primary as CSS custom properties for the legacy
+// Publish the tenant's brand primary as CSS custom properties for the legacy
 // stylesheets (udispatch.less drag/drop chrome).
 app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     const root = document.documentElement;
-    // DFRNT Cyan #3bc7f4 = rgb(59, 199, 244).
-    root.style.setProperty('--theme-primary', '#3bc7f4');
-    root.style.setProperty('--theme-primary-light', 'rgba(59, 199, 244, 0.15)');
-    root.style.setProperty('--theme-primary-medium', 'rgba(59, 199, 244, 0.3)');
-    root.style.setProperty('--theme-primary-strong', 'rgba(59, 199, 244, 0.5)');
-    // No longer a theme switch — nothing reads this class since the brand collapsed.
-    // Retained only as a tenant marker; safe to drop with the rest of the MUI removal.
+    // US tenants → DFRNT Cyan #3bc7f4 = rgb(59, 199, 244); non-US (NZ) tenants →
+    // the warm amber-gold "urgent" brand #f4c430 = rgb(244, 196, 48).
+    const primary = appConfig.US_Customer
+        ? {hex: '#3bc7f4', rgb: '59, 199, 244'}
+        : {hex: '#f4c430', rgb: '244, 196, 48'};
+    root.style.setProperty('--theme-primary', primary.hex);
+    root.style.setProperty('--theme-primary-light', `rgba(${primary.rgb}, 0.15)`);
+    root.style.setProperty('--theme-primary-medium', `rgba(${primary.rgb}, 0.3)`);
+    root.style.setProperty('--theme-primary-strong', `rgba(${primary.rgb}, 0.5)`);
+    // Body class also drives the non-US colour overrides in the legacy stylesheets
+    // (.theme-nz blocks) alongside the non-colour tenant differences.
     document.body.classList.add(appConfig.US_Customer ? 'theme-us' : 'theme-nz');
 }]);
 

@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import {goldShellColors} from './palettes';
 import {
     createAppTheme,
     dfrntPrimaryPalette,
+    urgentPrimaryPalette,
     shellColors,
     accentPalette,
     tokens,
@@ -25,18 +27,34 @@ function getLessVar(name: string): string {
 }
 
 describe('MUI theme palettes', () => {
-    it('every tenant gets the single DFRNT cyan primary with dark Ink contrast text', () => {
-        const theme = createAppTheme();
+    it('gives US tenants the DFRNT cyan primary', () => {
+        const theme = createAppTheme(true);
         expect(theme.palette.primary.main).toBe(dfrntPrimaryPalette[500]);
         expect(theme.palette.primary.main).toBe('#3bc7f4');
-        // Cyan is a light hue, so filled primary surfaces take dark Ink text.
-        expect(theme.palette.primary.contrastText).toBe('#0d0c2c');
     });
 
-    it('the app bar is Ink Blue with white content for every tenant', () => {
-        const bar = (createAppTheme().components?.MuiAppBar?.styleOverrides?.root ?? {}) as Record<string, string>;
+    it('gives non-US tenants the urgent gold primary', () => {
+        const theme = createAppTheme(false);
+        expect(theme.palette.primary.main).toBe(urgentPrimaryPalette[500]);
+        expect(theme.palette.primary.main).toBe('#f4c430');
+    });
+
+    it('takes dark Ink contrast text on both brands — cyan and gold are light hues', () => {
+        expect(createAppTheme(true).palette.primary.contrastText).toBe('#0d0c2c');
+        expect(createAppTheme(false).palette.primary.contrastText).toBe('#0d0c2c');
+    });
+
+    it('gives US tenants an Ink Blue app bar with white content', () => {
+        const bar = (createAppTheme(true).components?.MuiAppBar?.styleOverrides?.root ?? {}) as Record<string, string>;
         expect(bar.backgroundColor).toBe(shellColors.appBar);
         expect(bar.color).toBe(shellColors.textPrimary);
+    });
+
+    it('gives non-US tenants a gold app bar with Ink content', () => {
+        const bar = (createAppTheme(false).components?.MuiAppBar?.styleOverrides?.root ?? {}) as Record<string, string>;
+        expect(bar.backgroundColor).toBe(goldShellColors.appBar);
+        expect(bar.backgroundColor).toBe(urgentPrimaryPalette[500]);
+        expect(bar.color).toBe(goldShellColors.textPrimary);
     });
 
     it('uses the warm-gray accent as the secondary palette', () => {
@@ -184,6 +202,13 @@ describe('MUI ↔ LESS variable sync', () => {
             expect(getLessVar('@primary-color')).toBe(dfrntPrimaryPalette[500]);
         });
 
+        it('@nz-primary matches the non-US gold primary', () => {
+            expect(getLessVar('@nz-primary')).toBe(urgentPrimaryPalette[500]);
+        });
+
+        it('@nz-primary-dark matches the gold 700 step', () => {
+            expect(getLessVar('@nz-primary-dark')).toBe(urgentPrimaryPalette[700]);
+        });
     });
 
     describe('semantic colors', () => {

@@ -52,8 +52,10 @@ describe('DateFilterMenu', () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
             const trigger = screen.getByRole('button');
+            // The wash itself is per-tenant, so the MUI holdout defers to the same
+            // shell variable the Mantine buttons use.
             expect(trigger.style.getPropertyValue('--shell-icon-hover'))
-                .toBe('color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent)');
+                .toBe('var(--dd-shell-icon-hover)');
             expect(trigger).toHaveStyle({width: '34px', height: '34px'});
         });
 

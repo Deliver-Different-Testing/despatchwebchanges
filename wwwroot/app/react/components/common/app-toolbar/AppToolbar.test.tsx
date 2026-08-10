@@ -7,6 +7,7 @@ import {screen, fireEvent} from '@testing-library/react';
 import {renderWithMantine} from '../../../__testUtils__';
 import {AppToolbar} from './AppToolbar';
 import {APP_BAR_HEIGHT_PX} from './appBarMetrics';
+import {createDfrntTheme} from '../../../theme/dfrntMantineTheme';
 
 describe('AppToolbar', () => {
     const defaultProps = {
@@ -87,11 +88,17 @@ describe('AppToolbar', () => {
             expect(screen.getByText('New Title')).toBeInTheDocument();
         });
 
-        it('should render the reversed (white) logo by default, for every tenant', () => {
+        it('should render the reversed (white) logo on the US navy bar', () => {
             renderWithMantine(<AppToolbar {...defaultProps} />);
             const logo = screen.getByAltText('DFRNT');
             expect(logo).toBeInTheDocument();
             expect(logo).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
+        });
+
+        it('should render the standard (dark) logo on a non-US gold bar', () => {
+            // White on gold is illegible, so the wordmark follows the bar's fill.
+            renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme(false)});
+            expect(screen.getByAltText('DFRNT')).toHaveAttribute('src', 'images/dfrnt_logo.png');
         });
 
         it('should render the logo with custom URL', () => {
@@ -196,7 +203,15 @@ describe('AppToolbar', () => {
     });
 
     describe('App bar chrome', () => {
-        it('renders the bar as a 56px Ink-Blue banner, matching Integration Manager', () => {
+        it('renders a non-US bar in the brand gold with Ink content', () => {
+            renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme(false)});
+            expect(screen.getByRole('banner')).toHaveStyle({
+                backgroundColor: '#f4c430',
+                color: '#0d0c2c',
+            });
+        });
+
+        it('renders the bar as a 56px Ink-Blue banner on US tenants, matching Integration Manager', () => {
             renderWithMantine(<AppToolbar {...defaultProps} />);
             // Mantine has no AppBar, so the navy is set on the header itself —
             // guard it, or the bar silently reverts to white. The 56px height is
