@@ -88,6 +88,13 @@ public class SplitJobService(
                 // Capture original courier ID before modifying parent
                 var originalCourier = job.UcjbCourierId;
 
+                // Snapshot the booking window from memory, not from a later re-read: if a legacy
+                // proc rebases the parent too, a re-read baseline would agree with the drift and
+                // the check below would pass while both legs showed a restarted clock.
+                var bookedDate = job.UcjbDate;
+                var bookedTime = job.UcjbTime;
+                var bookedSpeed = job.UcjbSpeed;
+
                 // Determine root parent ID - preserve existing if job is already a child
                 var rootParentId = job.RootParentId ?? job.UcjbId;
 
@@ -232,6 +239,14 @@ public class SplitJobService(
                     pricingAllocation,
                     lineAllocation,
                     ct);
+
+                // The dispatch grid's Remain is (ucjbDate + ucjbTime) + speed minutes - now, so a
+                // leg whose booked window was rebased by one of the legacy objects on the tucJob
+                // insert path shows the whole speed window again — the operator reads that as
+                // splitting having reset the job clock. Both legs run to the parent's deadline, so
+                // check it survived and put it back before commit.
+                await ReassertLegBookingAsync(context, jobId, bookedDate, bookedTime, bookedSpeed,
+                    [pickupJob.UcjbId, deliveryJob.UcjbId], ct);
 
                 await transaction.CommitAsync(ct);
 
@@ -1269,6 +1284,91 @@ public class SplitJobService(
         catch (Exception ex)
         {
             Log.Warning(ex, "Failed to consolidate MARS information for job {JobId}.", jobId);
+        }
+    }
+
+    /// <summary>
+    /// Verifies the new legs still carry the parent's booked window once every post-insert database
+    /// object has run, and restores it if they do not. Returns the number of legs corrected.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Reads on <paramref name="context"/> — the split transaction's own connection. Reading these
+    /// just-inserted rows on any other connection blocks on the uncommitted transaction until the
+    /// command times out (SQL error 258).
+    /// </para>
+    /// <para>
+    /// <c>ucjbSpeed</c> is reported but never rewritten: <c>tucJob_InsertJob</c> legitimately
+    /// promotes speed 37 to 64 for one client, and undoing that would misprice the leg.
+    /// </para>
+    /// <para>
+    /// Only leg rows are written. Writing <c>ucjbTime</c> to the SplitParent row would trip
+    /// <c>tucJob_Update_UpdateBaggageJobFromPickupJob</c>, which mirrors the column onto related
+    /// jobs for relationship types 8 and 11.
+    /// </para>
+    /// </remarks>
+    internal static async Task<int> ReassertLegBookingAsync(
+        DespatchContext context,
+        int parentJobId,
+        DateTime bookedDate,
+        DateTime? bookedTime,
+        int? bookedSpeed,
+        IReadOnlyList<int> legJobIds,
+        CancellationToken ct)
+    {
+        try
+        {
+            // AsNoTracking is load-bearing rather than hygiene: a tracked read would be served from
+            // the identity map and could never observe a write made behind EF's back.
+            var legs = await context.TucJobs
+                .AsNoTracking()
+                .Where(j => legJobIds.Contains(j.UcjbId))
+                .Select(j => new { j.UcjbId, j.UcjbNumber, j.UcjbDate, j.UcjbTime, j.UcjbSpeed })
+                .ToListAsync(ct);
+
+            var drifted = new List<int>(legs.Count);
+
+            foreach (var leg in legs)
+            {
+                if (leg.UcjbSpeed != bookedSpeed)
+                {
+                    Log.Warning(
+                        "Split {ParentJobId}: leg {LegJobId} ({LegJobNumber}) ucjbSpeed drifted after insert "
+                        + "— observed {ObservedSpeed}, parent booked {ExpectedSpeed}. Left as-is.",
+                        parentJobId, leg.UcjbId, leg.UcjbNumber, leg.UcjbSpeed, bookedSpeed);
+                }
+
+                if (leg.UcjbDate == bookedDate && leg.UcjbTime == bookedTime)
+                {
+                    continue;
+                }
+
+                Log.Warning(
+                    "Split {ParentJobId}: leg {LegJobId} ({LegJobNumber}) booked window drifted after insert "
+                    + "— observed {ObservedDate} {ObservedTime}, parent booked {ExpectedDate} {ExpectedTime}. "
+                    + "Restoring.",
+                    parentJobId, leg.UcjbId, leg.UcjbNumber, leg.UcjbDate, leg.UcjbTime, bookedDate, bookedTime);
+                drifted.Add(leg.UcjbId);
+            }
+
+            if (drifted.Count == 0)
+            {
+                return 0;
+            }
+
+            return await context.TucJobs
+                .Where(j => drifted.Contains(j.UcjbId))
+                .ExecuteUpdateAsync(j => j
+                    .SetProperty(x => x.UcjbDate, bookedDate)
+                    .SetProperty(x => x.UcjbTime, bookedTime), ct);
+        }
+        catch (Exception ex)
+        {
+            // A failing guard must not turn a completed split into a failed one — the worst case is
+            // the behaviour we already had. Same posture as ConsolidateMarsInformationAsync.
+            Log.Warning(ex, "Failed to verify the booked window on the new legs of split {ParentJobId}.",
+                parentJobId);
+            return 0;
         }
     }
 }
