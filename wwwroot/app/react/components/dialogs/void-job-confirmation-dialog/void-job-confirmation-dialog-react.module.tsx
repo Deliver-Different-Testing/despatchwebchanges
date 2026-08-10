@@ -7,11 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {VoidJobConfirmationDialog, VoidJobDialogJob, VoidJobResult, RelatedJob} from './VoidJobConfirmationDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {jobApi} from '../../../services/jobApi';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
@@ -84,24 +81,19 @@ function renderDialog(): void {
         dialogState.toastService.showToast(message, type);
     };
 
-    const currentTheme = getTheme();
-
     dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <VoidJobConfirmationDialog
-                    open={dialogState.open}
-                    job={dialogState.job}
-                    onClose={handleClose}
-                    onConfirm={handleConfirm}
-                    onLoadRelatedJobs={handleLoadRelatedJobs}
-                    onVoidJob={handleVoidJob}
-                    onVoidBulkJob={handleVoidBulkJob}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
+        <DfrntMantineProvider>
+            <VoidJobConfirmationDialog
+                open={dialogState.open}
+                job={dialogState.job}
+                onClose={handleClose}
+                onConfirm={handleConfirm}
+                onLoadRelatedJobs={handleLoadRelatedJobs}
+                onVoidJob={handleVoidJob}
+                onVoidBulkJob={handleVoidBulkJob}
+                showToast={handleShowToast}
+            />
+        </DfrntMantineProvider>
     );
 }
 

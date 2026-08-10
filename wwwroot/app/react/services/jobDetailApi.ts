@@ -6,7 +6,6 @@
  */
 
 import {apiClient, downloadBlob} from './apiClient';
-import type {RequestOptions} from './apiClient';
 import type {
     IJobGroupDto,
     ISuggestion,
@@ -21,6 +20,7 @@ import {formatDateForApi} from '../utils/dateUtils';
 import {assertValidS3Key, assertValidDownloadFileName} from '../utils/fileValidation';
 import type {Dayjs} from 'dayjs';
 import dayjs from 'dayjs';
+import {RequestOptions} from "./requestOptions";
 
 // ── Job Detail Fetching ─────────────────────────────────────────────
 

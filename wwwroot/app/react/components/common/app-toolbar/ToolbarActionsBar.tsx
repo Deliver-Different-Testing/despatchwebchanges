@@ -13,18 +13,12 @@
  * breakpoint approach matches MD3's "collapse at smaller window sizes" guidance.
  */
 
-import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Tooltip from '@mui/material/Tooltip';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
-import {toolbarIconButtonSx} from './ToolbarActions';
+import React from 'react';
+import {ActionIcon, Group, Menu, Tooltip, em} from '@mantine/core';
+import {useMediaQuery} from '@mantine/hooks';
+import {EllipsisVertical} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import {toolbarIconButtonStyle} from './ToolbarActions';
 
 export interface ToolbarOverflowEntry {
     label: string;
@@ -49,16 +43,12 @@ export interface ToolbarActionsBarProps {
     compact?: boolean;
 }
 
+/** Collapse below Mantine's `sm` (48em/768px) — the tablet-portrait threshold. */
+const COMPACT_QUERY = `(max-width: ${em(768)})`;
+
 export const ToolbarActionsBar: React.FC<ToolbarActionsBarProps> = ({actions, compact}) => {
-    const theme = useTheme();
-    const isNarrow = useMediaQuery(theme.breakpoints.down('md'));
-    const compactMode = compact ?? isNarrow;
-
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-
-    const handleOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
-    const handleClose = () => setAnchorEl(null);
+    const isNarrow = useMediaQuery(COMPACT_QUERY);
+    const compactMode = compact ?? isNarrow ?? false;
 
     const inlineItems = compactMode ? actions.filter(a => !a.overflow) : actions;
     const overflowItems = compactMode
@@ -66,51 +56,39 @@ export const ToolbarActionsBar: React.FC<ToolbarActionsBarProps> = ({actions, co
         : [];
 
     return (
-        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+        <Group gap={4} wrap="nowrap">
             {inlineItems.map(item => (
                 <React.Fragment key={item.key}>{item.node}</React.Fragment>
             ))}
 
             {overflowItems.length > 0 && (
-                <>
-                    <Tooltip title="More actions">
-                        <IconButton
-                            color="inherit"
-                            aria-label="More actions"
-                            aria-haspopup="true"
-                            aria-expanded={open ? 'true' : undefined}
-                            onClick={handleOpen}
-                            sx={toolbarIconButtonSx}
-                        >
-                            <MoreVertIcon sx={{fontSize: 22}}/>
-                        </IconButton>
-                    </Tooltip>
-                    <Menu
-                        anchorEl={anchorEl}
-                        open={open}
-                        onClose={handleClose}
-                        anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                        transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                        slotProps={{paper: {elevation: 3, sx: {minWidth: 200, mt: 0.5}}}}
-                    >
-                        {overflowItems.map(item => (
-                            <MenuItem
-                                key={item.key}
-                                onClick={(event) => {
-                                    item.overflow.onSelect(event);
-                                    handleClose();
-                                }}
+                <Menu position="bottom-end" offset={4} width={200} shadow="md">
+                    <Menu.Target>
+                        <Tooltip label="More actions">
+                            <ActionIcon
+                                variant="subtle"
+                                size="lg"
+                                aria-label="More actions"
+                                style={toolbarIconButtonStyle}
                             >
-                                {item.overflow.icon && (
-                                    <ListItemIcon>{item.overflow.icon}</ListItemIcon>
-                                )}
-                                <ListItemText>{item.overflow.label}</ListItemText>
-                            </MenuItem>
+                                <Icon lucide={EllipsisVertical} size={18} />
+                            </ActionIcon>
+                        </Tooltip>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                        {overflowItems.map(item => (
+                            <Menu.Item
+                                key={item.key}
+                                leftSection={item.overflow.icon}
+                                onClick={(event) => item.overflow.onSelect(event)}
+                            >
+                                {item.overflow.label}
+                            </Menu.Item>
                         ))}
-                    </Menu>
-                </>
+                    </Menu.Dropdown>
+                </Menu>
             )}
-        </Box>
+        </Group>
     );
 };
 

@@ -253,8 +253,22 @@ describe('RouterConfig', () => {
             const state = registeredStates.get('recurringJobs');
             // The flex wrapper was removed in the layout-modernization pass;
             // the mount point now fills the viewport-height container directly.
-            expect(state.template).toContain('height: calc(100vh - 64px)');
+            expect(state.template).toContain('height: calc(100vh - 56px)');
             expect(state.template).toContain('height: 100%; overflow: hidden');
+        });
+
+        it('should size every app-shell page against the current 56px app bar', () => {
+            // The bar height is duplicated into these templates as viewport math; a
+            // stale value leaves a gap or clips the page.
+            const shellTemplates = [...registeredStates.values()]
+                .map(state => state.template)
+                .filter((template): template is string =>
+                    typeof template === 'string' && template.includes('react-app-shell'));
+
+            expect(shellTemplates.length).toBeGreaterThan(0);
+            shellTemplates.forEach(template => {
+                expect(template).not.toContain('100vh - 64px');
+            });
         });
 
         it('should configure overview state', () => {

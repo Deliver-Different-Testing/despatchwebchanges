@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import {act, fireEvent, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {InterCourierChargeDialog, InterCourierChargeDialogProps} from './InterCourierChargeDialog';
-import { createProps, renderWithTheme, suppressConsoleError } from '../../../__testUtils__';
+import { createProps, renderWithMantine, suppressConsoleError } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 
 // ── Mocks ──────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ const createMockProps = (overrides?: Partial<InterCourierChargeDialogProps>) =>
 async function fillAutocomplete(label: string, searchText: string, optionText: string) {
     const input = screen.getByLabelText(new RegExp(label, 'i'));
     // fireEvent.focus + fireEvent.change skips the slow user-event pointer pipeline
-    // (~3s per user.click in CI). MUI Autocomplete responds to focus + input value
+    // (~3s per user.click in CI). The Combobox responds to focus + input value
     // changes the same way as user.click + user.paste, but synchronously.
     fireEvent.focus(input);
     fireEvent.change(input, {target: {value: searchText}});
@@ -62,8 +62,15 @@ async function fillAutocomplete(label: string, searchText: string, optionText: s
         jest.advanceTimersByTime(350);
     });
 
-    const option = await screen.findByText(optionText);
+    // Several fields search the same list, so scope the option lookup to this
+    // field's own dropdown rather than matching by text across the dialog.
+    const dropdownId = input.getAttribute('aria-controls');
+    const dropdown = dropdownId ? document.getElementById(dropdownId) : null;
+    const option = dropdown
+        ? await within(dropdown).findByText(optionText)
+        : await screen.findByText(optionText);
     fireEvent.click(option);
+    fireEvent.blur(input);
 }
 
 async function fillForm() {
@@ -95,7 +102,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Rendering', () => {
         it('renders dialog with header, form fields, and action buttons when open', () => {
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Inter-Courier Charge')).toBeInTheDocument();
@@ -111,7 +118,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('does not render dialog when open is false', () => {
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps({open: false})} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps({open: false})} />);
 
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
@@ -120,7 +127,7 @@ describe('InterCourierChargeDialog', () => {
     describe('Close Functionality', () => {
         it('calls onClose when Cancel button is clicked', async () => {
             const onClose = jest.fn();
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose})} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps({onClose})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /cancel/i}));
 
@@ -129,7 +136,7 @@ describe('InterCourierChargeDialog', () => {
 
         it('calls onClose when close icon button is clicked', () => {
             const onClose = jest.fn();
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose})} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps({onClose})} />);
 
             fireEvent.click(screen.getByLabelText('Close dialog'));
 
@@ -140,7 +147,7 @@ describe('InterCourierChargeDialog', () => {
     describe('Courier Search', () => {
         it('searches couriers after typing at least 2 characters with debounce', async () => {
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             const input = screen.getByLabelText(/from courier/i);
             fireEvent.focus(input);
@@ -156,7 +163,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('does not search couriers with fewer than 2 characters', async () => {
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             const input = screen.getByLabelText(/from courier/i);
             fireEvent.focus(input);
@@ -173,7 +180,7 @@ describe('InterCourierChargeDialog', () => {
     describe('Client Search', () => {
         it('searches clients after typing at least 2 characters', async () => {
             mockSearchActiveClients.mockResolvedValue(clientSuggestions);
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             const input = screen.getByLabelText(/client/i);
             fireEvent.focus(input);
@@ -190,7 +197,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Zones and Amount Calculation', () => {
         it('auto-calculates amount as zones * 7 when zones is changed', () => {
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             const zonesInput = screen.getByLabelText(/zones/i);
             fireEvent.change(zonesInput, {target: {value: '3'}});
@@ -200,7 +207,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('sets amount to 0 when zones is cleared', () => {
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             const zonesInput = screen.getByLabelText(/zones/i);
             fireEvent.change(zonesInput, {target: {value: '5'}});
@@ -213,7 +220,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('allows manual editing of the amount field', () => {
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
             fireEvent.change(amountInput, {target: {value: '99.5'}});
@@ -225,7 +232,7 @@ describe('InterCourierChargeDialog', () => {
     describe('Validation', () => {
         it('shows warning toast and does not submit when form is incomplete', () => {
             const showToast = jest.fn();
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps({showToast})} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps({showToast})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
 
@@ -234,7 +241,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('shows required error messages on fields after submit attempt', () => {
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
 
@@ -248,7 +255,7 @@ describe('InterCourierChargeDialog', () => {
         it('submits form data and shows success toast', async () => {
             const onClose = jest.fn();
             const showToast = jest.fn();
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
 
             await fillForm();
 
@@ -275,7 +282,7 @@ describe('InterCourierChargeDialog', () => {
             const onClose = jest.fn();
             const showToast = jest.fn();
             mockCreateInterCourierCharge.mockRejectedValueOnce(new Error('Server error'));
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
 
             await fillForm();
 
@@ -297,7 +304,7 @@ describe('InterCourierChargeDialog', () => {
         it('resets all fields when dialog is reopened', () => {
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
             const props = createMockProps();
-            const {rerender} = renderWithTheme(<InterCourierChargeDialog {...props} />);
+            const {rerender} = renderWithMantine(<InterCourierChargeDialog {...props} />);
 
             // Type into reference field
             const referenceInput = screen.getByLabelText(/reference/i);
@@ -322,7 +329,7 @@ describe('InterCourierChargeDialog', () => {
             mockCreateInterCourierCharge.mockImplementation(() =>
                 new Promise<void>(resolve => { resolveSubmit = resolve; })
             );
-            renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             await fillForm();
 

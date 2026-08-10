@@ -25,10 +25,10 @@ import Chip from '@mui/material/Chip';
 import type {IJob} from '../JobDetails.types';
 import {usePendingChangeForField} from '../../../job-change-requests/useJobChangeRequests';
 import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
-import type {JobChangeRequestDto} from '../../../../services/jobChangeRequestApi';
 import {AddressType} from '../../../../../enums/address-type.enum';
 import {SectionHeader} from './SectionHeader';
 import {cardContainerSx} from '../JobDetails.styles';
+import type {JobChangeRequestDto} from '../../../../interfaces/jobChangeRequest';
 
 interface AddressSectionProps {
     job: IJob;

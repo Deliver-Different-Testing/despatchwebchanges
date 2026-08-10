@@ -4,8 +4,9 @@
  * Axios-based API service for job-related operations.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest, CreateJobRequest, Suggestion} from '../interfaces';
+import {RequestOptions} from "./requestOptions";
 
 /**
  * Get related jobs for multi-select void operation

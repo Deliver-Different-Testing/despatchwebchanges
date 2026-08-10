@@ -25,6 +25,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
+    private readonly IDespatchContextProcedures _proceduresMock = Substitute.For<IDespatchContextProcedures>();
     private readonly DespatchContext _seedContext;
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly ITenantClock _fakeTenantClock = new FakeTenantClock(TestDates.Now);
@@ -33,7 +34,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     public SplitJobServiceTests()
     {
         _seedContext = _db.CreateContext();
-        _contextFactoryMock = _db.CreateFactoryMock();
+        _contextFactoryMock = _db.CreateFactoryMock(_proceduresMock);
 
         // Default tenant info
         _tenantInfoServiceMock.GetStaffId().Returns(1);
@@ -761,10 +762,10 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SplitJobAsync_DispatchFieldsCopiedToChildJobs_WhenCourierAssigned()
+    public async Task SplitJobAsync_PickupLegPreservesOriginalDispatchStamps()
     {
-        // Fix: dispatch fields must be copied so tucJob_Insert_ClearListAreaOrder trigger
-        // doesn't fail with NULL OrderTime on tblClearListAreaOrder insert.
+        // The pickup leg carries the job's real dispatch history, not the moment of the split.
+        // The delivery leg is being dispatched now, so it is stamped with the current time.
         var dispTime = new DateTime(2024, 1, 15, 10, 30, 0);
         var dispDate = new DateTime(2024, 1, 15);
         SeedJob(configure: j =>
@@ -785,15 +786,193 @@ public class SplitJobServiceTests : IAsyncDisposable
         var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        // Pickup leg always gets dispatch fields (courier is always assigned)
-        Assert.Equal(TestDates.Now, pickup.UcjbDispTime);
-        Assert.Equal(TestDates.Now, pickup.UcjbDispDate);
+        Assert.Equal(dispTime, pickup.UcjbDispTime);
+        Assert.Equal(dispDate, pickup.UcjbDispDate);
         Assert.Equal(7, pickup.UcjbDispId);
 
         // Delivery leg gets dispatch fields when courierIdForLegB is provided
         Assert.Equal(TestDates.Now, delivery.UcjbDispTime);
         Assert.Equal(TestDates.Now, delivery.UcjbDispDate);
         Assert.Equal(7, delivery.UcjbDispId);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_NotDispatched_PickupLegDispatchFieldsStayNull()
+    {
+        SeedJob(configure: j => j.UcjbCourierId = null);
+        var service = CreateService();
+
+        var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(pickup.UcjbCourierId);
+        Assert.Null(pickup.UcjbDispTime);
+        Assert.Null(pickup.UcjbDispDate);
+        Assert.Null(pickup.UcjbDispId);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_NotDispatched_DeliveryLegDispatchFieldsStayNull()
+    {
+        SeedJob(configure: j => j.UcjbCourierId = null);
+        var service = CreateService();
+
+        var (_, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(delivery.UcjbCourierId);
+        Assert.Null(delivery.UcjbDispTime);
+        Assert.Null(delivery.UcjbDispDate);
+        Assert.Null(delivery.UcjbDispId);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_CourierWithNoDispatchStamp_StampsPickupLegWithTenantNow()
+    {
+        // A leg handed to a courier must carry a dispatch stamp — tucJob_Insert_ClearListAreaOrder
+        // rejects a null OrderTime — so a courier with no stamp of its own falls back to now.
+        SeedJob(configure: j =>
+        {
+            j.UcjbCourierId = 42;
+            j.UcjbDispTime = null;
+            j.UcjbDispDate = null;
+        });
+        var service = CreateService();
+
+        var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(TestDates.Now, pickup.UcjbDispTime);
+        Assert.Equal(TestDates.Now, pickup.UcjbDispDate);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_AlreadyPickedUp_PickupLegInheritsPickUpTime()
+    {
+        var pickedUpAt = new DateTime(2024, 1, 15, 11, 45, 0);
+        SeedJob(configure: j =>
+        {
+            j.UcjbCourierId = 42;
+            j.UcjbDispTime = new DateTime(2024, 1, 15, 10, 30, 0);
+            j.UcjbDispDate = new DateTime(2024, 1, 15);
+            j.PickUpTime = pickedUpAt;
+        });
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(pickedUpAt, pickup.PickUpTime);
+        Assert.Null(delivery.PickUpTime);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_NotYetPickedUp_PickupLegPickUpTimeStaysNull()
+    {
+        SeedJob(configure: j =>
+        {
+            j.UcjbCourierId = 42;
+            j.UcjbDispTime = new DateTime(2024, 1, 15, 10, 30, 0);
+            j.PickUpTime = null;
+        });
+        var service = CreateService();
+
+        var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(pickup.PickUpTime);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_AlreadyDispatched_RemovesParentFromCourierDevice()
+    {
+        SeedJob(configure: j => j.UcjbCourierId = 42);
+        var service = CreateService();
+
+        await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await _proceduresMock.Received(1)
+            .UTL_stpJob_RestoreDeviceAsync(100, cancellationToken: Arg.Any<CancellationToken>());
+        await _jobCommandRepositoryMock.Received(1).ReSendAllJobsAsync(42);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_NotDispatched_DoesNotTouchCourierDevice()
+    {
+        SeedJob(configure: j => j.UcjbCourierId = null);
+        var service = CreateService();
+
+        await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await _proceduresMock.DidNotReceiveWithAnyArgs()
+            .UTL_stpJob_RestoreDeviceAsync(null, cancellationToken: TestContext.Current.CancellationToken);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().ReSendAllJobsAsync(0);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ResendFails_SplitStillSucceeds()
+    {
+        // The split is already committed by the time the resend runs, so a device failure must
+        // not surface as a failed split.
+        SeedJob(configure: j => j.UcjbCourierId = 42);
+        _jobCommandRepositoryMock.ReSendAllJobsAsync(Arg.Any<int>())
+            .ThrowsAsync(new InvalidOperationException("Device sync unavailable"));
+
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var childCount = await verifyCtx.TucJobs
+            .CountAsync(j => j.UcjbId == pickupId || j.UcjbId == deliveryId,
+                TestContext.Current.CancellationToken);
+        Assert.Equal(2, childCount);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_RateServiceThrows_DoesNotResendToCourierDevice()
+    {
+        SeedJob(configure: j =>
+        {
+            j.UcjbCourierId = 42;
+            j.UcjbAmount = 100.00m;
+        });
+        _rateJobServiceMock
+            .GetJobRateNzAsync(Arg.Any<JobRatingDetailsDtoNz>())
+            .ThrowsAsync(new InvalidOperationException("DFRNT API unavailable"));
+
+        var service = CreateService();
+
+        await Assert.ThrowsAsync<SplitJobException>(async () =>
+            await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+                ct: TestContext.Current.CancellationToken));
+
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().ReSendAllJobsAsync(0);
     }
 
     [Fact]

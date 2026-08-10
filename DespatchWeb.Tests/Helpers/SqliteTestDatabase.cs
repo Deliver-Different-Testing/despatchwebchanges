@@ -43,14 +43,29 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
     /// <summary>
     /// Creates an NSubstitute factory mock that returns a new context per call (for parallel queries).
     /// </summary>
-    public IDbContextFactory<DespatchContext> CreateFactoryMock()
+    /// <param name="procedures">
+    /// Stamped onto every context the factory hands out, so a service that calls a stored procedure
+    /// through <c>context.Procedures</c> can be verified rather than failing against SQLite.
+    /// </param>
+    public IDbContextFactory<DespatchContext> CreateFactoryMock(IDespatchContextProcedures? procedures = null)
     {
         var mock = Substitute.For<IDbContextFactory<DespatchContext>>();
         mock.CreateDbContext()
-            .Returns(_ => new DespatchContext(Options));
+            .Returns(_ => Create());
         mock.CreateDbContextAsync(Arg.Any<CancellationToken>())
-            .Returns(_ => new DespatchContext(Options));
+            .Returns(_ => Create());
         return mock;
+
+        DespatchContext Create()
+        {
+            var context = new DespatchContext(Options);
+            if (procedures is not null)
+            {
+                context.Procedures = procedures;
+            }
+
+            return context;
+        }
     }
 
     /// <summary>

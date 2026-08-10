@@ -107,8 +107,10 @@ describe('dispatchFilters', () => {
     });
 
     describe('loadRefreshIntervals', () => {
-        it('returns false for all when nothing is stored', () => {
-            expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: false});
+        it('defaults Tasks to 60s when nothing is stored', () => {
+            // Tasks have no push channel, so an unset key must not leave the panel silent.
+            // The job list and driver locations stay opt-in as before.
+            expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: 60000});
         });
 
         it('converts stored seconds to ms', () => {
@@ -122,6 +124,12 @@ describe('dispatchFilters', () => {
             localStorage.setItem(REFRESH_INTERVAL_KEY, '0');
             localStorage.setItem(TASK_REFRESH_KEY, '120');
             expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: 120000});
+        });
+
+        it('falls back to the 60s default when the Tasks key is unset and the job list is off', () => {
+            localStorage.setItem(REFRESH_INTERVAL_KEY, '0');
+            // No TASK_REFRESH_KEY written yet.
+            expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: 60000});
         });
 
         it('seeds the Tasks interval from the job list on first run (Tasks key unset)', () => {
@@ -141,6 +149,11 @@ describe('dispatchFilters', () => {
             localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY, 'not a number');
             localStorage.setItem(TASK_REFRESH_KEY, '0');
             expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: false});
+        });
+
+        it('keeps the Tasks default out of the job-list and driver-location cadences', () => {
+            expect(loadRefreshIntervals().jobsMs).toBe(false);
+            expect(loadRefreshIntervals().driverLocationsMs).toBe(false);
         });
     });
 

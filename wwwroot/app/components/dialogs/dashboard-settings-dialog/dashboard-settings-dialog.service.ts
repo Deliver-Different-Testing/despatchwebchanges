@@ -163,11 +163,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
         }
 
         try {
-            const result = await window.ReactCustomizePanelsDialog.open(
-                boxes,
-                !isDefaultLayout(currentLayoutName),
-                currentLayoutName,
-            );
+            const result = await window.ReactCustomizePanelsDialog.open(boxes, currentLayoutName);
             return result ?? undefined;
         } catch (error) {
             if (!error) {

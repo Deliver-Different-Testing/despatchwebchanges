@@ -3,7 +3,6 @@ import * as path from 'path';
 import {
     createAppTheme,
     dfrntPrimaryPalette,
-    urgentPrimaryPalette,
     shellColors,
     accentPalette,
     tokens,
@@ -26,36 +25,26 @@ function getLessVar(name: string): string {
 }
 
 describe('MUI theme palettes', () => {
-    it('US tenants use the DFRNT cyan primary, non-US tenants the amber-gold urgent primary', () => {
-        expect(createAppTheme(true).palette.primary.main).toBe(dfrntPrimaryPalette[500]);
-        expect(createAppTheme(true).palette.primary.main).toBe('#3bc7f4');
-        expect(createAppTheme(false).palette.primary.main).toBe(urgentPrimaryPalette[500]);
-        expect(createAppTheme(false).palette.primary.main).toBe('#f4c430');
+    it('every tenant gets the single DFRNT cyan primary with dark Ink contrast text', () => {
+        const theme = createAppTheme();
+        expect(theme.palette.primary.main).toBe(dfrntPrimaryPalette[500]);
+        expect(theme.palette.primary.main).toBe('#3bc7f4');
+        // Cyan is a light hue, so filled primary surfaces take dark Ink text.
+        expect(theme.palette.primary.contrastText).toBe('#0d0c2c');
     });
 
-    it('primary carries dark Ink contrast text for both tenants (cyan and gold are light hues)', () => {
-        expect(createAppTheme(true).palette.primary.contrastText).toBe('#0d0c2c');
-        expect(createAppTheme(false).palette.primary.contrastText).toBe('#0d0c2c');
+    it('the app bar is Ink Blue with white content for every tenant', () => {
+        const bar = (createAppTheme().components?.MuiAppBar?.styleOverrides?.root ?? {}) as Record<string, string>;
+        expect(bar.backgroundColor).toBe(shellColors.appBar);
+        expect(bar.color).toBe(shellColors.textPrimary);
     });
 
-    it('US keeps the Ink-Blue app bar; NZ takes the gold primary bar with dark Ink content', () => {
-        const usBar = (createAppTheme(true).components?.MuiAppBar?.styleOverrides?.root ?? {}) as Record<string, string>;
-        const nzBar = (createAppTheme(false).components?.MuiAppBar?.styleOverrides?.root ?? {}) as Record<string, string>;
-        expect(usBar.backgroundColor).toBe(shellColors.appBar);
-        expect(usBar.color).toBe(shellColors.textPrimary);
-        expect(nzBar.backgroundColor).toBe(urgentPrimaryPalette[500]);
-        expect(nzBar.color).toBe('#0d0c2c');
+    it('uses the warm-gray accent as the secondary palette', () => {
+        expect(createAppTheme().palette.secondary.main).toBe(accentPalette[500]);
     });
 
-    it('both themes share the same secondary (accent) palette', () => {
-        const us = createAppTheme(true);
-        const nz = createAppTheme(false);
-        expect(us.palette.secondary.main).toBe(accentPalette[500]);
-        expect(nz.palette.secondary.main).toBe(accentPalette[500]);
-    });
-
-    it('both themes share the same DFRNT semantic colors', () => {
-        const theme = createAppTheme(true);
+    it('carries the DFRNT semantic colors', () => {
+        const theme = createAppTheme();
         expect(theme.palette.success.main).toBe('#13b964');
         expect(theme.palette.warning.main).toBe('#fe811a');
         expect(theme.palette.error.main).toBe('#dc3246');
@@ -63,13 +52,13 @@ describe('MUI theme palettes', () => {
     });
 
     it('background colors match expected values', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         expect(theme.palette.background.default).toBe('#f4f2f1');
         expect(theme.palette.background.paper).toBe('#FFFFFF');
     });
 
     it('table cells use tabular figures so numeric columns align', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         const root = theme.components?.MuiTableCell?.styleOverrides?.root as
             | {fontVariantNumeric?: string}
             | undefined;
@@ -77,7 +66,7 @@ describe('MUI theme palettes', () => {
     });
 
     it('caps the Select options menu height so long lists scroll instead of filling the screen', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         const menuProps = theme.components?.MuiSelect?.defaultProps?.MenuProps as
             | {slotProps?: {paper?: {sx?: {maxHeight?: number}}}}
             | undefined;
@@ -85,13 +74,13 @@ describe('MUI theme palettes', () => {
     });
 
     it('body text uses Plus Jakarta Sans', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         expect(theme.typography.fontFamily).toBe(bodyFontFamily);
         expect(theme.typography.body1.fontFamily ?? theme.typography.fontFamily).toContain('Plus Jakarta Sans');
     });
 
     it('headings use the Plus Jakarta Sans face', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         expect(displayFontFamily).toBe(bodyFontFamily);
         expect(theme.typography.h1.fontFamily).toBe(displayFontFamily);
         expect(theme.typography.h2.fontFamily).toBe(displayFontFamily);
@@ -101,7 +90,7 @@ describe('MUI theme palettes', () => {
 
     it('secondary text is dark enough to clear WCAG AA on the surface', () => {
         // rgba(0,0,0,0.54) (#767676) came in at 4.35:1 on #FAFAFA; 0.6 clears 4.5:1.
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         expect(theme.palette.text.secondary).toBe('rgba(0, 0, 0, 0.6)');
     });
 });
@@ -116,7 +105,7 @@ describe('MD3 typography role variants', () => {
     ] as const;
 
     it('exposes all 15 MD3 role variants with a size and family', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         for (const role of roles) {
             const variant = theme.typography[role] as {fontSize?: string; fontFamily?: string};
             expect(variant?.fontSize).toBeTruthy();
@@ -125,7 +114,7 @@ describe('MD3 typography role variants', () => {
     });
 
     it('carries display and body roles on the Plus Jakarta Sans face', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         expect(theme.typography.displayLarge.fontFamily).toBe(displayFontFamily);
         expect(theme.typography.headlineMedium.fontFamily).toBe(displayFontFamily);
         expect(theme.typography.titleLarge.fontFamily).toBe(displayFontFamily);
@@ -134,13 +123,13 @@ describe('MD3 typography role variants', () => {
     });
 
     it('keeps the classic h1–h6 variants for back-compat', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         expect(theme.typography.h1.fontSize).toBeTruthy();
         expect(theme.typography.h6.fontSize).toBeTruthy();
     });
 
     it('maps role variants onto semantic elements', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         const mapping = theme.components?.MuiTypography?.defaultProps?.variantMapping as
             | Record<string, string>
             | undefined;
@@ -153,7 +142,7 @@ describe('MD3 typography role variants', () => {
 
 describe('MUI theme accessibility', () => {
     it('default icon buttons clear a ~44px hit target, with a compact small size', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         const overrides = theme.components?.MuiIconButton?.styleOverrides;
         const root = overrides?.root as { minWidth?: number; minHeight?: number } | undefined;
         const small = overrides?.sizeSmall as { minWidth?: number; minHeight?: number } | undefined;
@@ -164,7 +153,7 @@ describe('MUI theme accessibility', () => {
     });
 
     it('honours prefers-reduced-motion by disabling smooth scroll', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         const overrides = theme.components?.MuiCssBaseline?.styleOverrides as
             | Record<string, unknown>
             | undefined;
@@ -175,7 +164,7 @@ describe('MUI theme accessibility', () => {
     });
 
     it('uses the motion-accessible DialogTransition for dialogs', () => {
-        const theme = createAppTheme(true);
+        const theme = createAppTheme();
         const slots = theme.components?.MuiDialog?.defaultProps?.slots as
             | { transition?: unknown }
             | undefined;
@@ -195,23 +184,6 @@ describe('MUI ↔ LESS variable sync', () => {
             expect(getLessVar('@primary-color')).toBe(dfrntPrimaryPalette[500]);
         });
 
-        it('@theme-us-primary matches MUI US primary', () => {
-            expect(getLessVar('@theme-us-primary')).toBe(dfrntPrimaryPalette[500]);
-        });
-    });
-
-    describe('NZ/non-US colors', () => {
-        it('@theme-nz-primary matches MUI urgent palette 500', () => {
-            expect(getLessVar('@theme-nz-primary')).toBe(urgentPrimaryPalette[500]);
-        });
-
-        it('@nz-primary matches MUI urgent palette 500', () => {
-            expect(getLessVar('@nz-primary')).toBe(urgentPrimaryPalette[500]);
-        });
-
-        it('@nz-primary-dark matches MUI urgent palette 700', () => {
-            expect(getLessVar('@nz-primary-dark')).toBe(urgentPrimaryPalette[700]);
-        });
     });
 
     describe('semantic colors', () => {

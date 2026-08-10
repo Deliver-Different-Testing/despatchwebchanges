@@ -14,6 +14,13 @@ public interface ISplitJobService
     /// Splits a job by creating two child jobs (pickup and delivery) via raw SQL
     /// inserts. The meeting point address becomes the pickup leg's destination
     /// and the delivery leg's pickup location.
+    /// <para>
+    /// A leg only carries dispatch metadata when it is genuinely going to a courier: the pickup leg
+    /// inherits the job's real courier, dispatch stamps and pickup time, and the delivery leg is
+    /// stamped only when <paramref name="courierIdForLegB"/> is supplied. When the job was already
+    /// dispatched, the now-parent is taken off the original courier's device and that courier's
+    /// remaining jobs are re-sent to it after the split commits.
+    /// </para>
     /// </summary>
     /// <param name="jobId">The ID of the job to split.</param>
     /// <param name="userName">The username performing the split.</param>

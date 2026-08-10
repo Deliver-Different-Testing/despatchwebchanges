@@ -39,6 +39,10 @@ export function useTasks(
         queryFn: ({signal}) => tasksApi.getAllTasks(filters, {signal}),
         enabled: options?.enabled ?? true,
         refetchInterval: options?.refetchInterval ?? false,
+        // Overrides the app-wide `refetchOnWindowFocus: false`. Tasks arrive from other
+        // dispatchers with no push channel, and polling pauses while the tab is hidden,
+        // so returning to the tab must re-sync the list.
+        refetchOnWindowFocus: true,
     });
 }
 

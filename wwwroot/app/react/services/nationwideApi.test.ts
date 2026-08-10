@@ -3,10 +3,11 @@
  * Nationwide API Service Tests
  */
 
-import { nationwideApi, NationwideApiService, FlightViewModelDto } from './nationwideApi';
+import {NationwideApiService, nationwideApi} from './nationwideApi';
 import { apiClient } from './apiClient';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import type {FlightViewModelDto} from '../interfaces/nationwideJobs';
 
 dayjs.extend(utc);
 

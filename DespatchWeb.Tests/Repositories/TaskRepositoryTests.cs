@@ -15,6 +15,7 @@ namespace DespatchWeb.Tests.Repositories;
 public class TaskRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
+    private static readonly int[] Expected = [4, 7, 9];
 
     public async ValueTask DisposeAsync()
     {
@@ -43,7 +44,7 @@ public class TaskRepositoryTests : IAsyncDisposable
     {
         var query = events.AsQueryable();
         var filtered = TaskRepository.ApplyFilters(query, filters);
-        return filtered.ToList();
+        return [.. filtered];
     }
 
     private static TucEvent CreateEvent(int id, Action<TucEvent>? configure = null)
@@ -376,5 +377,70 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         Assert.Single(results);
         Assert.Equal(1, results[0].UcevId);
+    }
+
+    private static List<int> ApplyOrderingInMemory(
+        IEnumerable<TucEvent> events,
+        TaskTableFiltersRequest filters,
+        DateTime today) =>
+    [
+        .. TaskRepository.ApplyOrdering(events.AsQueryable(), filters, today)
+            .Select(e => e.UcevId)
+    ];
+
+    [Fact]
+    public void ApplyOrdering_WithoutOrderBy_SortsTiesByDueTimeThenId()
+    {
+        // GetAllTasksAsync applies Take(500) straight after ordering, and the task dashboard
+        // sends no OrderBy. Ordering only by the overdue boolean leaves every row in a group
+        // tied, so SQL Server may return a different arbitrary 500 on each call and a task can
+        // vanish between refreshes. The sort must be total.
+        var today = new DateTime(2025, 6, 1, 8, 0, 0);
+        var events = new[]
+        {
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2025, 6, 15, 12, 0, 0)),
+            CreateEvent(1, e => e.UcevDueTime = new DateTime(2025, 6, 15, 12, 0, 0)),
+            CreateEvent(2, e => e.UcevDueTime = new DateTime(2025, 6, 15, 9, 0, 0))
+        };
+
+        var results = ApplyOrderingInMemory(events, new TaskTableFiltersRequest(), today);
+
+        Assert.Equal(new[] { 2, 1, 3 }, results);
+    }
+
+    [Fact]
+    public void ApplyOrdering_WithoutOrderBy_KeepsOverdueFirstThenSortsDeterministically()
+    {
+        var today = new DateTime(2025, 6, 15, 12, 0, 0);
+        var events = new[]
+        {
+            CreateEvent(10, e => e.UcevDueTime = new DateTime(2025, 6, 20, 9, 0, 0)),
+            CreateEvent(20, e => e.UcevDueTime = new DateTime(2025, 6, 10, 9, 0, 0)),
+            CreateEvent(30, e => e.UcevDueTime = new DateTime(2025, 6, 20, 9, 0, 0)),
+            CreateEvent(40, e => e.UcevDueTime = new DateTime(2025, 6, 9, 9, 0, 0))
+        };
+
+        var results = ApplyOrderingInMemory(events, new TaskTableFiltersRequest(), today);
+
+        Assert.Equal(new[] { 40, 20, 10, 30 }, results);
+    }
+
+    [Fact]
+    public void ApplyOrdering_WithDateTimeOrder_BreaksDueTimeTiesById()
+    {
+        var today = new DateTime(2025, 6, 1, 8, 0, 0);
+        var dueTime = new DateTime(2025, 6, 15, 12, 0, 0);
+        var events = new[]
+        {
+            CreateEvent(7, e => e.UcevDueTime = dueTime),
+            CreateEvent(4, e => e.UcevDueTime = dueTime),
+            CreateEvent(9, e => e.UcevDueTime = dueTime)
+        };
+
+        var filters = new TaskTableFiltersRequest { OrderBy = "datetime", OrderDirection = "asc" };
+
+        var results = ApplyOrderingInMemory(events, filters, today);
+
+        Assert.Equal(Expected, results);
     }
 }

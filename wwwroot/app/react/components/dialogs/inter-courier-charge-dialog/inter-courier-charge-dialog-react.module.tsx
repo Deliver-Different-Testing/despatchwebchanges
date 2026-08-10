@@ -7,10 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {InterCourierChargeDialog} from './InterCourierChargeDialog';
-import {getTheme} from '../../../theme/muiTheme';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
 interface DialogState {
@@ -44,17 +42,14 @@ function renderDialog(): void {
         dialogState.toastService.showToast(message, type);
     };
 
-    const currentTheme = getTheme();
-
     dialogRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
+        <DfrntMantineProvider>
             <InterCourierChargeDialog
                 open={dialogState.open}
                 onClose={handleClose}
                 showToast={handleShowToast}
             />
-        </ThemeProvider>
+        </DfrntMantineProvider>
     );
 }
 

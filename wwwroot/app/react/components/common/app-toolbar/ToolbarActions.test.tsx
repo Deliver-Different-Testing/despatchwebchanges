@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, screen} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {
     Layout,
     LayoutsMenu,
@@ -17,15 +17,31 @@ import {
     ViewsMenu,
 } from './ToolbarActions';
 
-const theme = createTheme();
 
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+describe('Shell icon buttons', () => {
+    it('pins the cyan hover wash to the strength Integration Manager renders', () => {
+        // Asserted as a literal, not against the exported constant: the point is the
+        // value matching IM's stock `subtle` hover (brand-5 at 12%), and comparing to
+        // the constant would pass at any strength.
+        renderWithMantine(<SettingsButton onClick={jest.fn()} />);
+
+        const button = screen.getByRole('button', {name: 'Settings'});
+        expect(button.style.getPropertyValue('--ai-hover'))
+            .toBe('color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent)');
+    });
+
+    it.each([
+        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={jest.fn()} />],
+        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={jest.fn()} onClearAll={jest.fn()} />],
+    ])('lets the %s count badge escape the round button instead of clipping it', (name, element) => {
+        // ActionIcon's root clips its children. That was invisible while the buttons
+        // were square, but the circular border now cuts through an Indicator sitting
+        // in the top-right corner.
+        renderWithMantine(element);
+
+        expect(screen.getByRole('button', {name})).toHaveStyle({overflow: 'visible'});
+    });
+});
 
 describe('MessagesButton', () => {
     const defaultProps = {
@@ -35,7 +51,7 @@ describe('MessagesButton', () => {
 
     it('should render without badge and call onClick when clicked', () => {
         const onClick = jest.fn();
-        renderWithTheme(<MessagesButton {...defaultProps} onClick={onClick} />);
+        renderWithMantine(<MessagesButton {...defaultProps} onClick={onClick} />);
 
         const button = screen.getByRole('button');
         expect(button).toBeInTheDocument();
@@ -46,12 +62,12 @@ describe('MessagesButton', () => {
     });
 
     it('should render badge with count when unreadCount > 0', () => {
-        renderWithTheme(<MessagesButton {...defaultProps} unreadCount={5} />);
+        renderWithMantine(<MessagesButton {...defaultProps} unreadCount={5} />);
         expect(screen.getByText('5')).toBeInTheDocument();
     });
 
     it('should show 99+ when unreadCount > 99', () => {
-        renderWithTheme(<MessagesButton {...defaultProps} unreadCount={150} />);
+        renderWithMantine(<MessagesButton {...defaultProps} unreadCount={150} />);
         expect(screen.getByText('99+')).toBeInTheDocument();
     });
 });
@@ -63,7 +79,7 @@ describe('RefreshButton', () => {
 
     it('should render enabled refresh button and call onClick when clicked', () => {
         const onClick = jest.fn();
-        renderWithTheme(<RefreshButton {...defaultProps} onClick={onClick} />);
+        renderWithMantine(<RefreshButton {...defaultProps} onClick={onClick} />);
 
         const button = screen.getByRole('button');
         expect(button).not.toBeDisabled();
@@ -74,7 +90,7 @@ describe('RefreshButton', () => {
 
     it('should show loading spinner and not call onClick when loading', () => {
         const onClick = jest.fn();
-        renderWithTheme(<RefreshButton {...defaultProps} onClick={onClick} loading={true} />);
+        renderWithMantine(<RefreshButton {...defaultProps} onClick={onClick} loading={true} />);
 
         const button = screen.getByRole('button');
         expect(button).toBeDisabled();
@@ -88,7 +104,7 @@ describe('RefreshButton', () => {
 describe('SettingsButton', () => {
     it('should render settings button and call onClick when clicked', () => {
         const onClick = jest.fn();
-        renderWithTheme(<SettingsButton onClick={onClick} />);
+        renderWithMantine(<SettingsButton onClick={onClick} />);
 
         expect(screen.getByRole('button')).toBeInTheDocument();
 
@@ -111,7 +127,7 @@ describe('ViewsMenu', () => {
     };
 
     it('should render menu button with selected count badge', () => {
-        renderWithTheme(<ViewsMenu {...defaultProps} />);
+        renderWithMantine(<ViewsMenu {...defaultProps} />);
 
         expect(screen.getByRole('button')).toBeInTheDocument();
         // 2 views are selected
@@ -121,7 +137,7 @@ describe('ViewsMenu', () => {
     it('should open menu with views, Clear Selection, and support onClearAll and onToggleView', async () => {
         const onClearAll = jest.fn();
         const onToggleView = jest.fn();
-        renderWithTheme(
+        renderWithMantine(
             <ViewsMenu {...defaultProps} onClearAll={onClearAll} onToggleView={onToggleView} />
         );
 
@@ -141,7 +157,7 @@ describe('ViewsMenu', () => {
 
     it('should call onToggleView when a view is clicked', async () => {
         const onToggleView = jest.fn();
-        renderWithTheme(<ViewsMenu {...defaultProps} onToggleView={onToggleView} />);
+        renderWithMantine(<ViewsMenu {...defaultProps} onToggleView={onToggleView} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -151,7 +167,7 @@ describe('ViewsMenu', () => {
     });
 
     it('should show "No views available" when views is empty', async () => {
-        renderWithTheme(<ViewsMenu {...defaultProps} views={[]} />);
+        renderWithMantine(<ViewsMenu {...defaultProps} views={[]} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -159,7 +175,7 @@ describe('ViewsMenu', () => {
     });
 
     it('should show "No views available" when views is null', async () => {
-        renderWithTheme(<ViewsMenu {...defaultProps} views={null} />);
+        renderWithMantine(<ViewsMenu {...defaultProps} views={null} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -167,13 +183,13 @@ describe('ViewsMenu', () => {
     });
 
     it('should show loading spinner when loading', () => {
-        renderWithTheme(<ViewsMenu {...defaultProps} loading={true} />);
+        renderWithMantine(<ViewsMenu {...defaultProps} loading={true} />);
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('should not produce Fragment children warning when menu is open with views', async () => {
         const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        renderWithTheme(<ViewsMenu {...defaultProps} />);
+        renderWithMantine(<ViewsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -202,7 +218,7 @@ describe('LayoutsMenu', () => {
     };
 
     it('should render menu button and open menu when clicked', async () => {
-        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} />);
 
         expect(screen.getByRole('button')).toBeInTheDocument();
 
@@ -216,7 +232,7 @@ describe('LayoutsMenu', () => {
 
     it('should call onSaveLayout when Add layout is clicked', async () => {
         const onSaveLayout = jest.fn();
-        renderWithTheme(<LayoutsMenu {...defaultProps} onSaveLayout={onSaveLayout} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} onSaveLayout={onSaveLayout} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -227,7 +243,7 @@ describe('LayoutsMenu', () => {
 
     it('should call onLoadLayout with index when layout is clicked', async () => {
         const onLoadLayout = jest.fn();
-        renderWithTheme(<LayoutsMenu {...defaultProps} onLoadLayout={onLoadLayout} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} onLoadLayout={onLoadLayout} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -237,7 +253,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should highlight current layout', async () => {
-        renderWithTheme(
+        renderWithMantine(
             <LayoutsMenu {...defaultProps} currentLayoutName="Custom Layout 1" />
         );
 
@@ -248,7 +264,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should expose a delete control for custom layouts but not Default', async () => {
-        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -260,7 +276,7 @@ describe('LayoutsMenu', () => {
     it('should call onDeleteLayout with index when the trailing delete is clicked', async () => {
         const onDeleteLayout = jest.fn();
         const onLoadLayout = jest.fn();
-        renderWithTheme(
+        renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
                 onDeleteLayout={onDeleteLayout}
@@ -278,7 +294,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should expose a rename control for custom layouts but not Default', async () => {
-        renderWithTheme(<LayoutsMenu {...defaultProps} onRenameLayout={jest.fn()} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} onRenameLayout={jest.fn()} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -289,7 +305,7 @@ describe('LayoutsMenu', () => {
     it('should call onRenameLayout with index without loading the row', async () => {
         const onRenameLayout = jest.fn();
         const onLoadLayout = jest.fn();
-        renderWithTheme(
+        renderWithMantine(
             <LayoutsMenu {...defaultProps} onRenameLayout={onRenameLayout} onLoadLayout={onLoadLayout} />
         );
 
@@ -301,7 +317,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should not render a rename control without onRenameLayout', async () => {
-        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Custom Layout 1')).toBeInTheDocument();
@@ -309,7 +325,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should not render an Import V1 layouts entry without onImportLayouts', async () => {
-        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Add layout')).toBeInTheDocument();
@@ -318,7 +334,7 @@ describe('LayoutsMenu', () => {
 
     it('should call onImportLayouts when Import V1 layouts is clicked', async () => {
         const onImportLayouts = jest.fn();
-        renderWithTheme(<LayoutsMenu {...defaultProps} onImportLayouts={onImportLayouts} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} onImportLayouts={onImportLayouts} />);
 
         fireEvent.click(screen.getByRole('button'));
         fireEvent.click(await screen.findByText('Import V1 layouts'));
@@ -327,7 +343,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should not render a Customize panels entry without onCustomizePanels', async () => {
-        renderWithTheme(<LayoutsMenu {...defaultProps} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Add layout')).toBeInTheDocument();
@@ -336,7 +352,7 @@ describe('LayoutsMenu', () => {
 
     it('should call onCustomizePanels when clicked on a custom layout', async () => {
         const onCustomizePanels = jest.fn();
-        renderWithTheme(
+        renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
                 currentLayoutName="Custom Layout 1"
@@ -350,9 +366,9 @@ describe('LayoutsMenu', () => {
         expect(onCustomizePanels).toHaveBeenCalledTimes(1);
     });
 
-    it('should disable Customize panels on the Default layout', async () => {
+    it('should offer Customize panels on the Default layout too', async () => {
         const onCustomizePanels = jest.fn();
-        renderWithTheme(
+        renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
                 currentLayoutName="Default"
@@ -361,63 +377,67 @@ describe('LayoutsMenu', () => {
         );
 
         fireEvent.click(screen.getByRole('button'));
-        expect(await screen.findByText('Customize panels…')).toBeInTheDocument();
+        fireEvent.click(await screen.findByText('Customize panels…'));
 
-        // The entry is disabled, so clicking it must not open the dialog.
-        fireEvent.click(screen.getByText('Customize panels…'));
-        expect(onCustomizePanels).not.toHaveBeenCalled();
-        expect(screen.getByRole('button', {name: /customize panels/i}))
-            .toHaveAttribute('aria-disabled', 'true');
+        expect(onCustomizePanels).toHaveBeenCalledTimes(1);
     });
 
-    it('should not render an Edit layout entry without onToggleEditMode', async () => {
-        renderWithTheme(<LayoutsMenu {...defaultProps} currentLayoutName="Custom Layout 1" />);
+    it('should not render an Edit columns entry without onToggleColumnEditMode', async () => {
+        renderWithMantine(<LayoutsMenu {...defaultProps} currentLayoutName="Custom Layout 1" />);
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Switch layout')).toBeInTheDocument();
-        expect(screen.queryByText('Edit layout')).not.toBeInTheDocument();
+        expect(screen.queryByText('Edit columns')).not.toBeInTheDocument();
     });
 
-    it('should call onToggleEditMode when Edit layout is clicked on a custom layout', async () => {
-        const onToggleEditMode = jest.fn();
-        renderWithTheme(
-            <LayoutsMenu
-                {...defaultProps}
-                currentLayoutName="Custom Layout 1"
-                onToggleEditMode={onToggleEditMode}
-            />,
-        );
-        fireEvent.click(screen.getByRole('button'));
-        fireEvent.click(await screen.findByText('Edit layout'));
-        expect(onToggleEditMode).toHaveBeenCalledTimes(1);
-    });
-
-    it('should show "Done editing" when editMode is on', async () => {
-        renderWithTheme(
-            <LayoutsMenu
-                {...defaultProps}
-                currentLayoutName="Custom Layout 1"
-                editMode
-                onToggleEditMode={jest.fn()}
-            />,
-        );
-        fireEvent.click(screen.getByRole('button'));
-        expect(await screen.findByText('Done editing')).toBeInTheDocument();
-        expect(screen.queryByText('Edit layout')).not.toBeInTheDocument();
-    });
-
-    it('should disable Edit layout on the Default layout', async () => {
-        const onToggleEditMode = jest.fn();
-        renderWithTheme(
+    it('should toggle the Edit columns bar and reflect the current mode', async () => {
+        const onToggleColumnEditMode = jest.fn();
+        const {unmount} = renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
                 currentLayoutName="Default"
-                onToggleEditMode={onToggleEditMode}
+                onToggleColumnEditMode={onToggleColumnEditMode}
             />,
         );
         fireEvent.click(screen.getByRole('button'));
-        fireEvent.click(await screen.findByText('Edit layout'));
-        expect(onToggleEditMode).not.toHaveBeenCalled();
+        fireEvent.click(await screen.findByText('Edit columns'));
+        expect(onToggleColumnEditMode).toHaveBeenCalledTimes(1);
+        unmount();
+
+        renderWithMantine(
+            <LayoutsMenu
+                {...defaultProps}
+                currentLayoutName="Default"
+                columnEditMode
+                onToggleColumnEditMode={jest.fn()}
+            />,
+        );
+        fireEvent.click(screen.getByRole('button'));
+        expect(await screen.findByText('Done editing columns')).toBeInTheDocument();
     });
+
+    it('should not render a Reset layout entry without onResetLayout', async () => {
+        renderWithMantine(<LayoutsMenu {...defaultProps} currentLayoutName="Custom Layout 1" />);
+        fireEvent.click(screen.getByRole('button'));
+        expect(await screen.findByText('Switch layout')).toBeInTheDocument();
+        expect(screen.queryByText('Reset layout')).not.toBeInTheDocument();
+    });
+
+    it.each(['Default', 'Custom Layout 1'])(
+        'should call onResetLayout from the %s layout',
+        async (currentLayoutName) => {
+            const onResetLayout = jest.fn();
+            renderWithMantine(
+                <LayoutsMenu
+                    {...defaultProps}
+                    currentLayoutName={currentLayoutName}
+                    onResetLayout={onResetLayout}
+                />,
+            );
+            fireEvent.click(screen.getByRole('button'));
+            fireEvent.click(await screen.findByText('Reset layout'));
+            expect(onResetLayout).toHaveBeenCalledTimes(1);
+        },
+    );
 });
 
 describe('ToolbarIconButton', () => {
@@ -429,7 +449,7 @@ describe('ToolbarIconButton', () => {
 
     it('should render with icon and call onClick when clicked', () => {
         const onClick = jest.fn();
-        renderWithTheme(<ToolbarIconButton {...defaultProps} onClick={onClick} />);
+        renderWithMantine(<ToolbarIconButton {...defaultProps} onClick={onClick} />);
 
         expect(screen.getByTestId('test-icon')).toBeInTheDocument();
 
@@ -439,7 +459,7 @@ describe('ToolbarIconButton', () => {
 
     it('should be disabled and not call onClick when disabled', () => {
         const onClick = jest.fn();
-        renderWithTheme(
+        renderWithMantine(
             <ToolbarIconButton {...defaultProps} onClick={onClick} disabled={true} />
         );
 

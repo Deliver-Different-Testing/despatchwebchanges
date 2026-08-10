@@ -15,6 +15,11 @@ export function toSelectedIds(items: ISuggestion[] | undefined): number[] | unde
     return ids.length > 0 ? ids : undefined;
 }
 
+/** Courier suggestions read "{Code} ({Name} {Surname})" — the code is the first token. */
+function hasCourierCode(suggestion: {text?: string}, code: string): boolean {
+    return !!suggestion.text && suggestion.text.split(/[\s(]/)[0] === code;
+}
+
 export function filterCouriersForNumericSearch<T extends {text?: string}>(
     results: T[],
     searchText: string,
@@ -22,11 +27,7 @@ export function filterCouriersForNumericSearch<T extends {text?: string}>(
     const trimmed = searchText.trim();
     if (!/^\d+$/.test(trimmed)) return results;
 
-    const exactMatches = results.filter(r => {
-        if (!r.text) return false;
-        const courierCode = r.text.split(/[\s(]/)[0];
-        return courierCode === trimmed;
-    });
+    const exactMatches = results.filter(r => hasCourierCode(r, trimmed));
     return exactMatches.length > 0 ? exactMatches : results;
 }
 

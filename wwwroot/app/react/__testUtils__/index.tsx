@@ -10,6 +10,8 @@ import {ThemeProvider, createTheme} from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { MantineProvider } from '@mantine/core';
+import { dfrntTheme, dfrntCssVariablesResolver } from '../theme/dfrntMantineTheme';
 
 /**
  * MUI theme for tests with all enter/exit animations disabled.
@@ -161,6 +163,38 @@ export function renderWithAllProviders(
 }
 
 /**
+ * Render inside the DFRNT Mantine theme provider. The Mantine counterpart to
+ * `renderWithTheme` — use it for components migrated off MUI. `forceColorScheme`
+ * is unnecessary in tests (light is the default), so this stays minimal.
+ */
+export function renderWithMantine(ui: React.ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
+    const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
+        <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+            {children}
+        </MantineProvider>
+    );
+    return render(ui, {wrapper: Wrapper, ...options});
+}
+
+/**
+ * Render inside the Mantine theme + a fresh test QueryClient — the Mantine
+ * counterpart to `renderWithProviders`.
+ */
+export function renderWithMantineProviders(
+    ui: React.ReactElement,
+    options?: Omit<RenderOptions, 'wrapper'> & { queryClient?: QueryClient }
+) {
+    const { queryClient, ...renderOptions } = options ?? {};
+    const client = queryClient ?? createTestQueryClient();
+    const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
+        <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+            <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        </MantineProvider>
+    );
+    return render(ui, {wrapper: Wrapper, ...renderOptions});
+}
+
+/**
  * Standard API error for testing error propagation
  */
 export const mockApiError = {
@@ -193,25 +227,6 @@ export async function expectErrorPropagation<T>(
  */
 export function createProps<T extends object>(defaults: T, overrides?: Partial<T>): T {
     return { ...defaults, ...overrides };
-}
-
-/**
- * Common test for dialog open/close state
- */
-export function describeDialogOpenClose(
-    renderDialog: (open: boolean) => ReturnType<typeof render>,
-) {
-    describe('Dialog Open/Close', () => {
-        it('renders nothing when not open', () => {
-            renderDialog(false);
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        });
-
-        it('renders when open', () => {
-            renderDialog(true);
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
-        });
-    });
 }
 
 /**

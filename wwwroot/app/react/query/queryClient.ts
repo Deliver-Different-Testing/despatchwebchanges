@@ -148,6 +148,7 @@ export const queryKeys = {
             endDate?: string;
             showCompleted?: boolean;
             jobId?: number;
+            limit?: number;
         }) => ['tasks', 'list', filters] as const,
         staff: ['tasks', 'staff'] as const,
         eventTypes: ['tasks', 'eventTypes'] as const,

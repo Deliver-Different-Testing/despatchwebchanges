@@ -6,7 +6,6 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
@@ -28,6 +27,8 @@ import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, {Dayjs} from 'dayjs';
 import {getIanaTimezone, getInputDateFormat, getTimezoneName} from '../../../utils/dateUtils';
+import {onBrandScrim} from '../../../theme/dfrntMantineTheme';
+import {SHELL_ICON_BUTTON_PX, SHELL_ICON_HOVER_FILL} from '../app-toolbar/toolbarIconStyles';
 
 // Types
 export interface DateFilterData {
@@ -351,14 +352,24 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                 <IconButton
                     color="inherit"
                     onClick={handleClick}
+                    // The wash rides a custom property rather than sitting inline in the
+                    // `sx` so it reads the same way as the Mantine buttons' `--ai-hover`,
+                    // and so a test can assert it without reaching into emotion's sheet.
+                    style={{'--shell-icon-hover': SHELL_ICON_HOVER_FILL} as React.CSSProperties}
                     sx={{
-                        p: 1,
-                        '&:hover': {
-                            bgcolor: (theme) => alpha(theme.palette.common.white, 0.12),
-                        },
+                        // Match the Mantine `ActionIcon size="lg"` neighbours exactly —
+                        // the MUI theme's 44px hit target would leave this one button
+                        // wider than the rest of the bar.
+                        width: SHELL_ICON_BUTTON_PX,
+                        height: SHELL_ICON_BUTTON_PX,
+                        minWidth: SHELL_ICON_BUTTON_PX,
+                        minHeight: SHELL_ICON_BUTTON_PX,
+                        p: 0,
+                        color: onBrandScrim.text,
+                        '&:hover': {bgcolor: 'var(--shell-icon-hover)'},
                     }}
                 >
-                    <CalendarIcon sx={{fontSize: 22}}/>
+                    <CalendarIcon sx={{fontSize: 18}}/>
                 </IconButton>
             </Tooltip>
             <Menu

@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {act, renderHook, waitFor} from '@testing-library/react';
+import {QueryClient, QueryClientProvider, focusManager} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {
     useTasks,
@@ -39,12 +39,13 @@ jest.mock('../services/tasksApi', () => ({
 const mockTasksApi = tasksApi as jest.Mocked<typeof tasksApi>;
 
 // Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
+const createTestQueryClient = (queryOverrides?: {refetchOnWindowFocus?: boolean}) =>
     new QueryClient({
         defaultOptions: {
             queries: {
                 retry: false,
                 gcTime: 0,
+                ...queryOverrides,
             },
             mutations: {
                 retry: false,
@@ -53,8 +54,8 @@ const createTestQueryClient = () =>
     });
 
 // Wrapper component for providing QueryClient
-const createWrapper = () => {
-    const queryClient = createTestQueryClient();
+const createWrapper = (queryOverrides?: {refetchOnWindowFocus?: boolean}) => {
+    const queryClient = createTestQueryClient(queryOverrides);
     return ({children}: {children: React.ReactNode}) => (
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
@@ -140,6 +141,31 @@ describe('useTasksApi Hooks', () => {
 
             expect(result.current.data).toEqual(mockTasks);
             expect(mockTasksApi.getAllTasks).toHaveBeenCalledWith(undefined, expect.anything());
+        });
+
+        it('refetches when the window regains focus', async () => {
+            // The app sets refetchOnWindowFocus: false globally (query/queryClient.ts) and
+            // nothing pushes task updates, so a dispatcher returning to a backgrounded tab
+            // would otherwise keep staring at a stale list. useTasks must opt back in.
+            mockTasksApi.getAllTasks.mockResolvedValue(mockTasks);
+
+            const {result} = renderHook(() => useTasks(), {
+                wrapper: createWrapper({refetchOnWindowFocus: false}),
+            });
+
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+            expect(mockTasksApi.getAllTasks).toHaveBeenCalledTimes(1);
+
+            act(() => {
+                focusManager.setFocused(false);
+                focusManager.setFocused(true);
+            });
+
+            await waitFor(() => {
+                expect(mockTasksApi.getAllTasks).toHaveBeenCalledTimes(2);
+            });
         });
 
         it('should pass filters to the API', async () => {

@@ -14,31 +14,18 @@
  */
 
 import React, {useMemo, useState} from 'react';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Alert from '@mui/material/Alert';
-import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import DialogContent from '@mui/material/DialogContent';
-import CallSplitIcon from '@mui/icons-material/CallSplit';
-import CheckIcon from '@mui/icons-material/Check';
-import UndoIcon from '@mui/icons-material/Undo';
-import {DialogShell, DialogHeader, DialogFooter, sectionPaperSx, sectionLabelSx, dialogFieldSx} from '../shared';
+import {
+    ActionIcon, Alert, Badge, Box, Group, Paper, Stack, Table, Text, TextInput, Tooltip,
+} from '@mantine/core';
+import {Check, Split, Undo2} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogShell, DialogHeader, DialogFooter, dialogSize, dialogContentBg, sectionPaperProps, sectionLabelProps,
+} from '../shared/mantine';
 import {formatCurrency} from '../../../utils/currencyUtils';
-import type {
-    SplitPricingAllocationItem,
-    SplitPricingBasis,
-    SplitPricingLineAllocationItem,
-    SplitPricingPreview,
-} from '../../../services/splitJobApi';
+import type {SplitPricingBasis} from '../../../services/splitJobApi';
+import {SplitPricingAllocationItem} from "../../../interfaces/splitJobs";
+import type {SplitPricingLineAllocationItem, SplitPricingPreview} from '../../../interfaces/splitJobs';
 
 export type SplitPricingResult =
     | {
@@ -201,211 +188,165 @@ export const SplitPricingDialog: React.FC<SplitPricingDialogProps> = ({
     const handleCancel = () => onClose({action: 'cancel'});
 
     return (
-        <DialogShell open={open} onClose={handleCancel}>
+        <DialogShell opened={open} onClose={handleCancel} size={dialogSize.md}>
             <DialogHeader
-                icon={<CallSplitIcon/>}
+                icon={<Icon lucide={Split}/>}
                 title="Confirm Split Pricing"
                 subtitle={`${jobNo} · ${formatCurrency(preview.parentTotalRevenue)} to divide`}
                 onClose={handleCancel}
             />
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
-                    <Alert severity={preview.basis === 'EvenSplit' ? 'warning' : 'info'}>
-                        {BASIS_LABELS[preview.basis]}. The job total stays{' '}
-                        {formatCurrency(preview.parentTotalRevenue)} — splitting does not change what
-                        the client is invoiced.
+            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-lg)'}}>
+                <Alert color={preview.basis === 'EvenSplit' ? 'orange' : 'cyan'} variant="light">
+                    {BASIS_LABELS[preview.basis]}. The job total stays{' '}
+                    {formatCurrency(preview.parentTotalRevenue)} — splitting does not change what
+                    the client is invoiced.
+                </Alert>
+
+                {preview.isSynthesised && (
+                    <Alert color="cyan" variant="light">
+                        This job has no itemised price lines, so a single line is divided across
+                        the legs.
                     </Alert>
+                )}
 
-                    {preview.isSynthesised && (
-                        <Alert severity="info">
-                            This job has no itemised price lines, so a single line is divided across
-                            the legs.
-                        </Alert>
-                    )}
-
-                    <Box>
-                        <Typography variant="body2" sx={sectionLabelSx}>Overall split</Typography>
-                        <Paper elevation={0} sx={sectionPaperSx}>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: 2,
-                                }}
-                            >
-                                <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
-                                    {legs.map((leg) => (
-                                        <Box
-                                            key={leg.sequence}
-                                            sx={{display: 'flex', alignItems: 'center', gap: 1}}
-                                        >
-                                            <Typography variant="body2" sx={{fontWeight: 600}}>
-                                                {leg.jobNumber}
-                                            </Typography>
-                                            <Chip
-                                                size="small"
-                                                color="primary"
-                                                variant="outlined"
-                                                label={`${leg.effectivePercent}%`}
-                                            />
-                                            {leg.distance > 0 && (
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{color: 'text.secondary'}}
-                                                >
-                                                    {`${leg.distance} ${preview.distanceUnit}`}
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    ))}
-                                </Box>
-                                {legs.length === 2 && (
-                                    <TextField
-                                        label="Share %"
-                                        type="number"
-                                        size="small"
-                                        value={firstShare}
-                                        onChange={(event) => {
-                                            setEdited(true);
-                                            setFirstShare(toShare(event.target.value, firstShare));
-                                        }}
-                                        slotProps={{htmlInput: {min: 0, max: 100, step: 0.5}}}
-                                        sx={{...dialogFieldSx, width: 120}}
-                                    />
-                                )}
-                            </Box>
-                        </Paper>
-                    </Box>
-
-                    <Box>
-                        <Typography variant="body2" sx={sectionLabelSx}>Line items</Typography>
-                        <Paper elevation={0} sx={sectionPaperSx}>
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Item</TableCell>
-                                        {perLineEditable && (
-                                            <TableCell align="right">Share %</TableCell>
+                <Box>
+                    <Text {...sectionLabelProps}>Overall split</Text>
+                    <Paper {...sectionPaperProps}>
+                        <Group justify="space-between" align="center" gap="md">
+                            <Stack gap="xs">
+                                {legs.map((leg) => (
+                                    <Group key={leg.sequence} gap="xs">
+                                        <Text fz="sm" fw={600}>{leg.jobNumber}</Text>
+                                        <Badge size="sm" variant="outline" color="brand">
+                                            {`${leg.effectivePercent}%`}
+                                        </Badge>
+                                        {leg.distance > 0 && (
+                                            <Text fz="xs" c="dimmed">
+                                                {`${leg.distance} ${preview.distanceUnit}`}
+                                            </Text>
                                         )}
-                                        {legs.map((leg) => (
-                                            <TableCell key={leg.sequence} align="right">
-                                                {`Leg ${leg.letterSuffix}`}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {rows.map((row) => (
-                                        <TableRow key={row.pricingBreakdownId}>
-                                            <TableCell>{row.name}</TableCell>
-                                            {perLineEditable && (
-                                                <TableCell align="right">
-                                                    <Box
-                                                        sx={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'flex-end',
-                                                            gap: 0.5,
-                                                        }}
-                                                    >
-                                                        <TextField
-                                                            type="number"
-                                                            size="small"
-                                                            value={row.firstPercent}
-                                                            onChange={(event) =>
-                                                                setLineShare(
-                                                                    row.pricingBreakdownId,
-                                                                    toShare(
-                                                                        event.target.value,
-                                                                        row.firstPercent,
-                                                                    ),
-                                                                )
-                                                            }
-                                                            slotProps={{
-                                                                htmlInput: {
-                                                                    min: 0,
-                                                                    max: 100,
-                                                                    step: 0.5,
-                                                                    'aria-label': `${row.name} share %`,
-                                                                },
-                                                            }}
-                                                            sx={{...dialogFieldSx, width: 84}}
-                                                        />
-                                                        {row.isOverridden && (
-                                                            <Tooltip title="Follow the overall split">
-                                                                <IconButton
-                                                                    size="small"
-                                                                    aria-label={`Reset ${row.name} share`}
-                                                                    onClick={() =>
-                                                                        resetLineShare(
-                                                                            row.pricingBreakdownId,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <UndoIcon fontSize="small"/>
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                        )}
-                                                    </Box>
-                                                </TableCell>
-                                            )}
-                                            {row.amounts.map((amount, index) => (
-                                                <TableCell key={legs[index]?.sequence} align="right">
-                                                    {formatCurrency(amount.revenue)}
-                                                    {hasCosts && (
-                                                        <Typography
-                                                            variant="caption"
-                                                            component="div"
-                                                            sx={{color: 'text.secondary'}}
-                                                        >
-                                                            cost {formatCurrency(amount.cost)}
-                                                        </Typography>
-                                                    )}
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    ))}
-                                    <TableRow>
-                                        <TableCell sx={{fontWeight: 600}}>Leg total</TableCell>
-                                        {perLineEditable && <TableCell/>}
-                                        {legs.map((leg) => (
-                                            <TableCell
-                                                key={leg.sequence}
-                                                align="right"
-                                                sx={{fontWeight: 600}}
-                                            >
-                                                {formatCurrency(leg.totalRevenue)}
-                                                {hasCosts && (
-                                                    <Typography
-                                                        variant="caption"
-                                                        component="div"
-                                                        sx={{
-                                                            color: 'text.secondary',
-                                                            fontWeight: 400,
-                                                        }}
-                                                    >
-                                                        cost {formatCurrency(leg.totalCost)}
-                                                    </Typography>
-                                                )}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-                        </Paper>
-                    </Box>
-
-                    <Typography variant="caption" sx={{color: 'text.secondary'}}>
-                        {footerHint({overriddenCount, edited, perLineEditable})}
-                    </Typography>
+                                    </Group>
+                                ))}
+                            </Stack>
+                            {legs.length === 2 && (
+                                <TextInput
+                                    label="Share %"
+                                    type="number"
+                                    w={120}
+                                    min={0}
+                                    max={100}
+                                    step={0.5}
+                                    value={firstShare}
+                                    onChange={(event) => {
+                                        setEdited(true);
+                                        setFirstShare(toShare(event.currentTarget.value, firstShare));
+                                    }}
+                                />
+                            )}
+                        </Group>
+                    </Paper>
                 </Box>
-            </DialogContent>
+
+                <Box>
+                    <Text {...sectionLabelProps}>Line items</Text>
+                    <Paper {...sectionPaperProps}>
+                        <Table verticalSpacing="xs" horizontalSpacing="xs">
+                            <Table.Thead>
+                                <Table.Tr>
+                                    <Table.Th scope="col">Item</Table.Th>
+                                    {perLineEditable && (
+                                        <Table.Th scope="col" ta="right">Share %</Table.Th>
+                                    )}
+                                    {legs.map((leg) => (
+                                        <Table.Th key={leg.sequence} scope="col" ta="right">
+                                            {`Leg ${leg.letterSuffix}`}
+                                        </Table.Th>
+                                    ))}
+                                </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                                {rows.map((row) => (
+                                    <Table.Tr key={row.pricingBreakdownId}>
+                                        <Table.Td>{row.name}</Table.Td>
+                                        {perLineEditable && (
+                                            <Table.Td ta="right">
+                                                <Group gap={4} justify="flex-end" wrap="nowrap">
+                                                    <TextInput
+                                                        type="number"
+                                                        w={84}
+                                                        min={0}
+                                                        max={100}
+                                                        step={0.5}
+                                                        aria-label={`${row.name} share %`}
+                                                        value={row.firstPercent}
+                                                        onChange={(event) =>
+                                                            setLineShare(
+                                                                row.pricingBreakdownId,
+                                                                toShare(
+                                                                    event.currentTarget.value,
+                                                                    row.firstPercent,
+                                                                ),
+                                                            )
+                                                        }
+                                                    />
+                                                    {row.isOverridden && (
+                                                        <Tooltip label="Follow the overall split">
+                                                            <ActionIcon
+                                                                variant="subtle"
+                                                                color="gray"
+                                                                size="sm"
+                                                                aria-label={`Reset ${row.name} share`}
+                                                                onClick={() =>
+                                                                    resetLineShare(row.pricingBreakdownId)
+                                                                }
+                                                            >
+                                                                <Icon lucide={Undo2} size={16}/>
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                    )}
+                                                </Group>
+                                            </Table.Td>
+                                        )}
+                                        {row.amounts.map((amount, index) => (
+                                            <Table.Td key={legs[index]?.sequence} ta="right">
+                                                {formatCurrency(amount.revenue)}
+                                                {hasCosts && (
+                                                    <Text component="div" fz="xs" c="dimmed">
+                                                        cost {formatCurrency(amount.cost)}
+                                                    </Text>
+                                                )}
+                                            </Table.Td>
+                                        ))}
+                                    </Table.Tr>
+                                ))}
+                                <Table.Tr>
+                                    <Table.Td fw={600}>Leg total</Table.Td>
+                                    {perLineEditable && <Table.Td/>}
+                                    {legs.map((leg) => (
+                                        <Table.Td key={leg.sequence} ta="right" fw={600}>
+                                            {formatCurrency(leg.totalRevenue)}
+                                            {hasCosts && (
+                                                <Text component="div" fz="xs" fw={400} c="dimmed">
+                                                    cost {formatCurrency(leg.totalCost)}
+                                                </Text>
+                                            )}
+                                        </Table.Td>
+                                    ))}
+                                </Table.Tr>
+                            </Table.Tbody>
+                        </Table>
+                    </Paper>
+                </Box>
+
+                <Text fz="xs" c="dimmed">
+                    {footerHint({overriddenCount, edited, perLineEditable})}
+                </Text>
+            </Box>
             <DialogFooter
                 onCancel={handleCancel}
                 onConfirm={handleConfirm}
                 confirmLabel="Confirm & Split"
-                confirmIcon={<CheckIcon/>}
+                confirmIcon={<Icon lucide={Check}/>}
             />
         </DialogShell>
     );

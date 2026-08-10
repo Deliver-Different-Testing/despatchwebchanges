@@ -1,9 +1,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {SendPodDialog, SendPodJobData, SendPodRequest} from './SendPodDialog';
-import {getTheme} from '../../../theme/muiTheme';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {sendPodReport} from '../../../services/jobDetailApi';
 import type {ApiError} from '../../../interfaces';
 
@@ -78,11 +76,8 @@ function renderDialog(): void {
         }
     };
 
-    const currentTheme = getTheme();
-
     dialogRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline/>
+        <DfrntMantineProvider>
             <SendPodDialog
                 open={dialogState.open}
                 jobData={dialogState.jobData}
@@ -92,7 +87,7 @@ function renderDialog(): void {
                 sent={dialogState.sent}
                 errorMessage={dialogState.error}
             />
-        </ThemeProvider>
+        </DfrntMantineProvider>
     );
 }
 

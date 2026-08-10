@@ -1,14 +1,15 @@
 /**
- * Tests for PanelHeader — the shared gradient card-panel header.
+ * Tests for PanelHeader — the shared card-panel header.
  *
- * Assertions query by visible text / role (not class names) so styling
- * refactors don't break them.
+ * Assertions query by visible text / role / test id (not class names) so
+ * styling refactors don't break them.
  */
 
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {createAppTheme} from '../../../theme/muiTheme';
 import IconButton from '@mui/material/IconButton';
 import TuneIcon from '@mui/icons-material/Tune';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -67,5 +68,32 @@ describe('PanelHeader', () => {
         const button = screen.getByRole('button', {name: 'Refresh'});
         await user.click(button);
         expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a plain paper bar with a keyline, not a brand-coloured fill', () => {
+        const appTheme = createAppTheme();
+        render(
+            <ThemeProvider theme={appTheme}>
+                <PanelHeader icon={<TuneIcon />} title="Filters" />
+            </ThemeProvider>,
+        );
+
+        const bar = screen.getByTestId('panel-header');
+        expect(bar).toHaveStyle({backgroundColor: appTheme.palette.background.paper});
+        expect(bar).toHaveStyle({borderBottom: `1px solid ${appTheme.palette.divider}`});
+        expect(bar).not.toHaveStyle({backgroundColor: appTheme.palette.primary.main});
+    });
+
+    it('labels the badge chip in body text, not the low-contrast brand accent', () => {
+        const appTheme = createAppTheme();
+        render(
+            <ThemeProvider theme={appTheme}>
+                <PanelHeader icon={<TuneIcon />} title="Recurring Log" badge="RECURRING" />
+            </ThemeProvider>,
+        );
+
+        // 10px bold on the brand wash needs the darker body colour to clear AA.
+        expect(screen.getByText('RECURRING').closest('.MuiChip-root'))
+            .toHaveStyle({color: appTheme.palette.text.primary});
     });
 });

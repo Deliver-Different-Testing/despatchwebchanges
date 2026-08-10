@@ -1,0 +1,149 @@
+import React from 'react';
+import {screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {
+    DialogShell,
+    DialogHeader,
+    DialogFooter,
+    dialogSize,
+    headerChipStyle,
+    headerSurfaceAccent,
+    headerChromeStyle,
+    headerColors,
+    headerOnColor,
+    headerOverlayColor,
+    PriceDelta,
+} from './index';
+import {renderWithMantine} from '../../../../__testUtils__';
+
+interface Handlers {
+    onClose?: () => void;
+    onCancel?: () => void;
+    onConfirm?: () => void;
+    submitting?: boolean;
+}
+
+function renderDialog(h: Handlers = {}) {
+    const onClose = h.onClose ?? jest.fn();
+    return renderWithMantine(
+        <DialogShell opened onClose={onClose}>
+            <DialogHeader
+                icon={<span data-testid="header-icon"/>}
+                title="Edit price"
+                subtitle="Job 1234"
+                onClose={onClose}
+            />
+            <DialogFooter
+                onCancel={h.onCancel ?? jest.fn()}
+                onConfirm={h.onConfirm ?? jest.fn()}
+                confirmLabel="Save"
+                submitting={h.submitting}
+            />
+        </DialogShell>,
+    );
+}
+
+describe('Mantine dialog primitives', () => {
+    it('renders the shell, title, subtitle and both actions', () => {
+        renderDialog();
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Edit price')).toBeInTheDocument();
+        expect(screen.getByText('Job 1234')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Save'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+    });
+
+    it('fires onClose from the header close button', async () => {
+        const onClose = jest.fn();
+        renderDialog({onClose});
+        await userEvent.click(screen.getByRole('button', {name: 'Close dialog'}));
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires the footer callbacks', async () => {
+        const onCancel = jest.fn();
+        const onConfirm = jest.fn();
+        renderDialog({onCancel, onConfirm});
+        await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+        await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+        expect(onConfirm).toHaveBeenCalledTimes(1);
+        expect(onCancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables Cancel and shows the confirm loader while submitting', () => {
+        renderDialog({submitting: true});
+        expect(screen.getByRole('button', {name: 'Cancel'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Save'})).toHaveAttribute('data-loading', 'true');
+    });
+});
+
+describe('DialogFooter options', () => {
+    it('drops the confirm button for view-only dialogs', () => {
+        renderWithMantine(
+            <DialogFooter onCancel={jest.fn()} onConfirm={jest.fn()} confirmLabel="Save" hideConfirm/>,
+        );
+        expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Save'})).not.toBeInTheDocument();
+    });
+
+    it('renders a secondary action between Cancel and Confirm', () => {
+        renderWithMantine(
+            <DialogFooter
+                onCancel={jest.fn()}
+                onConfirm={jest.fn()}
+                confirmLabel="Save"
+                secondaryAction={<button>Reset</button>}
+            />,
+        );
+        const buttons = screen.getAllByRole('button').map((b) => b.textContent);
+        expect(buttons).toEqual(['Cancel', 'Reset', 'Save']);
+    });
+});
+
+describe('header style helpers', () => {
+    it('paints the chrome with the variant fill and its on-colour', () => {
+        const chrome = headerChromeStyle('error');
+        expect(chrome.backgroundColor).toBe(headerColors.error.bg);
+        expect(chrome.color).toBe(headerColors.error.fg);
+        expect(chrome.display).toBe('flex');
+    });
+
+    it('defaults to the primary variant', () => {
+        expect(headerChromeStyle().backgroundColor).toBe(headerColors.primary.bg);
+        expect(headerOnColor()).toBe(headerColors.primary.fg);
+    });
+
+    it('sizes the icon chip and scrims it in the on-colour', () => {
+        expect(headerChipStyle('warning')).toMatchObject({width: 40, height: 40});
+        expect(headerChipStyle('warning', 32)).toMatchObject({width: 32, height: 32});
+        expect(headerChipStyle('warning').backgroundColor).toBe(headerOverlayColor(0.18, 'warning'));
+        expect(headerChipStyle('warning').color).toBe(headerColors.warning.fg);
+    });
+
+    it('gives the page-card surface variant a keyline instead of a fill', () => {
+        const chrome = headerChromeStyle('surface');
+        expect(chrome.backgroundColor).toBe(headerColors.surface.bg);
+        expect(chrome.borderBottom).toBe('1px solid var(--mantine-color-default-border)');
+        expect(headerChromeStyle('error').borderBottom).toBe('none');
+        // The chip is the only brand colour left on the neutral bar.
+        expect(headerChipStyle('surface', 32).color).toBe(headerSurfaceAccent);
+    });
+
+    it('maps the MUI breakpoint widths so converted dialogs keep their size', () => {
+        expect(dialogSize.sm).toBeLessThan(dialogSize.md);
+        expect(dialogSize.md).toBeLessThan(dialogSize.lg);
+    });
+});
+
+describe('PriceDelta', () => {
+    it('signals an increase, a decrease and no change', () => {
+        const {rerender} = renderWithMantine(<PriceDelta oldPrice={10} newPrice={20}/>);
+        expect(screen.getByLabelText('Price increase')).toBeInTheDocument();
+
+        rerender(<PriceDelta oldPrice={20} newPrice={10}/>);
+        expect(screen.getByLabelText('Price decrease')).toBeInTheDocument();
+
+        rerender(<PriceDelta oldPrice={10} newPrice={10}/>);
+        expect(screen.getByLabelText('No price change')).toBeInTheDocument();
+    });
+});

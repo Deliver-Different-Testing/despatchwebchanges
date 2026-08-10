@@ -6,10 +6,9 @@
  */
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {AppShell} from './AppShell';
-import {getTheme} from '../../../theme/muiTheme';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../mui-interop/MuiThemeIsland';
 import type {BreadcrumbItem} from '../app-toolbar/AppToolbar';
 import {
     MessagesButton,
@@ -24,12 +23,10 @@ import {
     DateFilterData,
 } from '../app-toolbar/ToolbarActions';
 import {ToolbarActionsBar, ToolbarActionItem} from '../app-toolbar/ToolbarActionsBar';
-import SmsIcon from '@mui/icons-material/Sms';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SettingsIcon from '@mui/icons-material/Settings';
+import {MessageSquare, RefreshCw, Settings as SettingsGlyph} from 'lucide-react';
+import {Icon} from '../icon/Icon';
 import angular from 'angular';
 import {openHubUrl} from '../../../services/navigationService';
-import {ReactQueryProvider} from '../../../query';
 import {PartnerApprovalsBadge} from '../../../pages/partner-approvals/PartnerApprovalsBadge';
 
 // Toolbar Actions Configuration
@@ -65,8 +62,9 @@ export interface ToolbarActionsConfig {
         onRenameLayout?: (index: number) => void;
         onImportLayouts?: () => void;
         onCustomizePanels?: () => void;
-        editMode?: boolean;
-        onToggleEditMode?: () => void;
+        onResetLayout?: () => void;
+        columnEditMode?: boolean;
+        onToggleColumnEditMode?: () => void;
     };
     // Date Filter - React component
     dateFilter?: {
@@ -143,27 +141,24 @@ function buildToolbarChildren(): React.ReactNode {
             node: <MessagesButton unreadCount={unreadCount} onClick={onClick}/>,
             overflow: {
                 label: unreadCount > 0 ? `Messages (${unreadCount > 99 ? '99+' : unreadCount})` : 'Messages',
-                icon: <SmsIcon fontSize="small"/>,
+                icon: <Icon lucide={MessageSquare} size={16}/>,
                 onSelect: (event) => onClick(event),
             },
         });
     }
 
     // Partner approvals badge — drawer-based inbox of pending change
-    // requests this user must approve. Wraps in ReactQueryProvider so it
-    // owns its own cache without depending on the host page also having
-    // a provider mounted (the App Shell renders before any page state).
+    // requests this user must approve. The query cache comes from the
+    // shell's own provider stack.
     if (toolbarActions.partnerApprovals?.enabled) {
         const onOpenJob = toolbarActions.partnerApprovals.onOpenJob;
         items.push({
             key: 'partnerApprovals',
             node: (
-                <ReactQueryProvider>
-                    <PartnerApprovalsBadge
-                        toolbarVariant
-                        onOpenJob={onOpenJob}
-                    />
-                </ReactQueryProvider>
+                <PartnerApprovalsBadge
+                    toolbarVariant
+                    onOpenJob={onOpenJob}
+                />
             ),
         });
     }
@@ -173,13 +168,16 @@ function buildToolbarChildren(): React.ReactNode {
         items.push({
             key: 'dateFilter',
             node: (
-                <DateFilterMenu
-                    dateFilterData={toolbarActions.dateFilter.data}
-                    appPage={toolbarActions.dateFilter.appPage}
-                    timeZone={toolbarActions.dateFilter.timeZone}
-                    onRefreshData={toolbarActions.dateFilter.onRefreshData}
-                    onShowToast={toolbarActions.dateFilter.onShowToast}
-                />
+                // Still MUI — migration Phase 5.
+                <MuiThemeIsland>
+                    <DateFilterMenu
+                        dateFilterData={toolbarActions.dateFilter.data}
+                        appPage={toolbarActions.dateFilter.appPage}
+                        timeZone={toolbarActions.dateFilter.timeZone}
+                        onRefreshData={toolbarActions.dateFilter.onRefreshData}
+                        onShowToast={toolbarActions.dateFilter.onShowToast}
+                    />
+                </MuiThemeIsland>
             ),
         });
     }
@@ -213,8 +211,9 @@ function buildToolbarChildren(): React.ReactNode {
                     onRenameLayout={toolbarActions.layouts.onRenameLayout}
                     onImportLayouts={toolbarActions.layouts.onImportLayouts}
                     onCustomizePanels={toolbarActions.layouts.onCustomizePanels}
-                    editMode={toolbarActions.layouts.editMode}
-                    onToggleEditMode={toolbarActions.layouts.onToggleEditMode}
+                    onResetLayout={toolbarActions.layouts.onResetLayout}
+                    columnEditMode={toolbarActions.layouts.columnEditMode}
+                    onToggleColumnEditMode={toolbarActions.layouts.onToggleColumnEditMode}
                 />
             ),
         });
@@ -228,7 +227,7 @@ function buildToolbarChildren(): React.ReactNode {
             node: <RefreshButton onClick={onClick} loading={loading}/>,
             overflow: {
                 label: loading ? 'Refreshing…' : 'Refresh',
-                icon: <RefreshIcon fontSize="small"/>,
+                icon: <Icon lucide={RefreshCw} size={16}/>,
                 onSelect: () => onClick(),
             },
         });
@@ -242,7 +241,7 @@ function buildToolbarChildren(): React.ReactNode {
             node: <SettingsButton onClick={onClick}/>,
             overflow: {
                 label: 'Settings',
-                icon: <SettingsIcon fontSize="small"/>,
+                icon: <Icon lucide={SettingsGlyph} size={16}/>,
                 onSelect: (event) => onClick(event),
             },
         });
@@ -265,12 +264,10 @@ function buildToolbarChildren(): React.ReactNode {
 function renderShell(): void {
     if (!shellRoot || !shellState) return;
 
-    const currentTheme = getTheme();
     const children = buildToolbarChildren();
 
     shellRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
+        <DfrntMantineProvider>
             <AppShell
                 title={shellState.title}
                 breadcrumbs={shellState.breadcrumbs}
@@ -286,7 +283,7 @@ function renderShell(): void {
             >
                 {children}
             </AppShell>
-        </ThemeProvider>
+        </DfrntMantineProvider>
     );
 }
 
@@ -452,110 +449,6 @@ const appShellReactModule = window.angular!.module(
     'uDispatch.appShellReact',
     []
 );
-
-// Provide a service that wraps the React component
-appShellReactModule.service('reactAppShellService', [
-    '$state',
-    '$rootScope',
-    'APP_CONFIG',
-    (
-        $state: angular.ui.IStateService,
-        $rootScope: angular.IRootScopeService,
-        appConfig: any
-    ) => {
-        let stateChangeListener: (() => void) | null = null;
-
-        return {
-            /**
-             * Mount the React App Shell
-             */
-            mount: (containerId: string, title: string) => {
-                const firstName = window.FirstName || 'User';
-                const fullName = window.FullName || 'User';
-
-                mountAppShell(containerId, {
-                    title,
-                    firstName,
-                    fullName,
-                    isUsCustomer: appConfig.US_Customer,
-                    currentState: $state.current.name || '',
-                    onLogoClick: () => openHubUrl(),
-                    onNavigate: (state: string) => {
-                        $state.go(state).catch((error: any) => {
-                            if (error?.type === 2 /* RejectType.SUPERSEDED */) return;
-                            console.error(`[AppShellReact] Navigation to '${state}' failed:`, error);
-                        });
-                    },
-                });
-
-                // Listen for state changes to update navigation highlighting
-                stateChangeListener = $rootScope.$on('$stateChangeSuccess', (
-                    _event: any,
-                    toState: angular.ui.IState
-                ) => {
-                    updateCurrentState(toState.name || '');
-                }) as unknown as () => void;
-            },
-
-            /**
-             * Set toolbar actions from AngularJS controller
-             */
-            setToolbarActions: (actions: ToolbarActionsConfig) => {
-                setToolbarActions(actions);
-            },
-
-            /**
-             * Update a specific toolbar action
-             */
-            updateToolbarAction: updateToolbarAction,
-
-            /**
-             * Update messages badge count
-             */
-            updateMessageCount: (count: number) => {
-                if (toolbarActions?.messages) {
-                    updateToolbarAction('messages', {unreadCount: count});
-                }
-            },
-
-            /**
-             * Update views list
-             */
-            updateViews: (views: View[]) => {
-                if (toolbarActions?.views) {
-                    updateToolbarAction('views', {items: views});
-                }
-            },
-
-            /**
-             * Update layouts list
-             */
-            updateLayouts: (layouts: Layout[], currentName?: string) => {
-                if (toolbarActions?.layouts) {
-                    updateToolbarAction('layouts', {
-                        items: layouts,
-                        currentLayoutName: currentName,
-                    });
-                }
-            },
-
-            updateState: updateCurrentState,
-            updateTitle: updateTitle,
-            updateBreadcrumbs: updateBreadcrumbs,
-
-            /**
-             * Unmount and clean-up
-             */
-            unmount: () => {
-                if (stateChangeListener) {
-                    stateChangeListener();
-                    stateChangeListener = null;
-                }
-                unmountAppShell();
-            },
-        };
-    }
-]);
 
 console.log('[AppShellReact] Module registered');
 

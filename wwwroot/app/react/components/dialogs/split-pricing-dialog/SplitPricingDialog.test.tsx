@@ -1,11 +1,9 @@
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {setupUser} from '../../../__testUtils__/setupUser';
 import {SplitPricingDialog} from './SplitPricingDialog';
-import type {SplitPricingPreview} from '../../../services/splitJobApi';
-
-const theme = createTheme();
+import { SplitPricingPreview } from "../../../interfaces/splitJobs";
 
 // Mirrors the KT1314V repro: a US$89.00 / US$50.00 parent divided 70/30 by road miles.
 function createPreview(overrides?: Partial<SplitPricingPreview>): SplitPricingPreview {
@@ -55,11 +53,7 @@ function createPreview(overrides?: Partial<SplitPricingPreview>): SplitPricingPr
 }
 
 const renderDialog = (preview: SplitPricingPreview, onClose = jest.fn()) => {
-    render(
-        <ThemeProvider theme={theme}>
-            <SplitPricingDialog open jobNo="KT1314V" preview={preview} onClose={onClose}/>
-        </ThemeProvider>,
-    );
+    renderWithMantine(<SplitPricingDialog open jobNo="KT1314V" preview={preview} onClose={onClose}/>);
     return onClose;
 };
 

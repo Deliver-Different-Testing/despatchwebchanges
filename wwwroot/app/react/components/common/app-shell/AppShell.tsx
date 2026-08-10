@@ -6,7 +6,7 @@
  */
 
 import React, {useState, useRef, useCallback, useEffect} from 'react';
-import Box from '@mui/material/Box';
+import {Box} from '@mantine/core';
 import {AppToolbar} from '../app-toolbar/AppToolbar';
 import {SideNav} from '../side-nav/SideNav';
 import {AppShellProps} from './app-shell.types';
@@ -62,12 +62,11 @@ export const AppShell: React.FC<AppShellProps> = ({
     }, []);
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column'}}>
+        <Box style={{display: 'flex', flexDirection: 'column'}}>
             <AppToolbar
                 title={title}
                 breadcrumbs={breadcrumbs}
                 firstName={firstName}
-                isUsCustomer={isUsCustomer}
                 logoUrl={logoUrl}
                 onLogoClick={onLogoClick}
                 onMenuHover={handleMenuHover}

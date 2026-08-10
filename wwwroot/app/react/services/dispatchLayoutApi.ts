@@ -8,14 +8,7 @@
  */
 
 import {apiClient} from './apiClient';
-
-export interface DispatchLayoutDto {
-    name: string;
-    /** Opaque per-layout payload: the layout's columns/boxes + box visibility. */
-    layoutJson: string;
-    /** True for the layout that was last active on this page. */
-    isActive: boolean;
-}
+import {DispatchLayoutDto} from "../interfaces/dispatchLayout";
 
 /** Returns the staff member's saved layouts for the page (excludes the client Default). */
 export async function getLayouts(page: string): Promise<DispatchLayoutDto[]> {

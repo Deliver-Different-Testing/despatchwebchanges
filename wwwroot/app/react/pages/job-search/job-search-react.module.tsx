@@ -135,9 +135,14 @@ export function openInterCourierCharge(): Promise<void> {
     return layoutBridge?.openInterCourierCharge() ?? Promise.resolve();
 }
 
-/** Set layout edit mode from the AngularJS toolbar's Layouts → Edit layout toggle. */
-export function setEditMode(enabled: boolean): void {
-    layoutBridge?.setEditMode(enabled);
+/** Restore the current layout to the shipped arrangement (toolbar → Layouts → Reset layout). */
+export function resetCurrentLayout(): void {
+    layoutBridge?.resetCurrentLayout();
+}
+
+/** Show or hide the "Edit columns" bar (toolbar → Layouts → Edit columns). */
+export function setColumnEditMode(enabled: boolean): void {
+    layoutBridge?.setColumnEditMode(enabled);
 }
 
 /** Copy the user's V1 layouts into the V2 store from the AngularJS toolbar. */
@@ -157,7 +162,8 @@ declare global {
             promptDeleteLayout: typeof promptDeleteLayout;
             promptRenameLayout: typeof promptRenameLayout;
             openInterCourierCharge: typeof openInterCourierCharge;
-            setEditMode: typeof setEditMode;
+            resetCurrentLayout: typeof resetCurrentLayout;
+            setColumnEditMode: typeof setColumnEditMode;
             importLegacyLayouts: typeof importLegacyLayouts;
         };
     }
@@ -172,7 +178,8 @@ window.ReactJobSearch = {
     promptDeleteLayout,
     promptRenameLayout,
     openInterCourierCharge,
-    setEditMode,
+    resetCurrentLayout,
+    setColumnEditMode,
     importLegacyLayouts,
 };
 

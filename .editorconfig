@@ -13,7 +13,8 @@ dotnet_diagnostic.CA1854.severity = warning   # prefer TryGetValue over Contains
 dotnet_diagnostic.CA1863.severity = warning   # use CompositeFormat / cache formatting state
 
 # --- Tier 2: modernization / cleanliness ---
-dotnet_diagnostic.IDE0005.severity = suggestion   # remove unnecessary usings
-dotnet_diagnostic.CA1860.severity = suggestion    # prefer Length/Count > 0 over Any()
-dotnet_diagnostic.CA1859.severity = suggestion    # use concrete types for improved performance
-dotnet_diagnostic.IDE0090.severity = suggestion   # simplify 'new' expression (target-typed new)
+dotnet_diagnostic.IDE0005.severity = warning   # remove unnecessary usings
+dotnet_diagnostic.CA1860.severity = warning    # prefer Length/Count > 0 over Any()
+dotnet_diagnostic.CA1859.severity = warning    # use concrete types for improved performance
+dotnet_diagnostic.CA1826.severity = warning       # use the indexer instead of Enumerable methods on indexable collections
+dotnet_diagnostic.IDE0090.severity = warning   # simplify 'new' expression (target-typed new)

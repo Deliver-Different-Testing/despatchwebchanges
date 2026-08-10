@@ -7,7 +7,8 @@ import {act, screen, waitFor} from '@testing-library/react';
 import {RecoveryAgentManagementDialog, RecoveryAgentManagementDialogProps} from './RecoveryAgentManagementDialog';
 import { renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import type {RecoveryAgentJobViewModel, Suggestion} from '../../../services/nationwideApi';
+import type {Suggestion} from '../../../interfaces/job';
+import type {RecoveryAgentJobViewModel} from '../../../interfaces/nationwideJobs';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();

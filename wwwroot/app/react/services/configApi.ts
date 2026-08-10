@@ -4,11 +4,8 @@
  * React-native API service for configuration-related operations.
  */
 
-import { apiClient } from './apiClient';
-
-interface ApiKeyResponse {
-    apiKey: string;
-}
+import {apiClient} from './apiClient';
+import {ApiKeyResponse} from "../interfaces";
 
 /**
  * Get HERE Maps API key

@@ -383,23 +383,16 @@ describe('StickyNotes', () => {
     });
 
     describe('Theme Support', () => {
-        it('renders with both US and NZ themes via ThemeProvider', async () => {
-            // US theme
-            const usProps = createDefaultProps();
-            const {unmount} = renderWithProviders(<StickyNotes {...usProps} />);
-
+        it('renders via ThemeProvider whatever primary the theme carries', async () => {
+            const {unmount} = renderWithProviders(<StickyNotes {...createDefaultProps()} />);
             expect(await screen.findByText('Notes')).toBeInTheDocument();
-
             unmount();
 
-            // NZ theme
-            const nzTheme = createTheme({palette: {primary: {main: '#f4c430'}}});
-            const nzProps = createDefaultProps();
-            const nzQueryClient = createTestQueryClient();
+            const recoloured = createTheme({palette: {primary: {main: '#2a4eff'}}});
             render(
-                <QueryClientProvider client={nzQueryClient}>
-                    <ThemeProvider theme={nzTheme}>
-                        <StickyNotes {...nzProps} />
+                <QueryClientProvider client={createTestQueryClient()}>
+                    <ThemeProvider theme={recoloured}>
+                        <StickyNotes {...createDefaultProps()} />
                     </ThemeProvider>
                 </QueryClientProvider>
             );

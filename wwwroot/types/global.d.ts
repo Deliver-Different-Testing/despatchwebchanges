@@ -90,6 +90,12 @@ declare global {
         useQueryClient?: typeof import('@tanstack/react-query').useQueryClient;
         ReactQueryClient?: QueryClient;
 
+        // ── Mantine globals (set by vendor-react bundle) ─────────────────
+        MantineCore?: typeof import('@mantine/core');
+        MantineHooks?: typeof import('@mantine/hooks');
+        MantineDates?: typeof import('@mantine/dates');
+        MantineNotifications?: typeof import('@mantine/notifications');
+
         // ── MUI globals (set by vendor-react bundle) ─────────────────────
         MUI?: typeof import('@mui/material');
         MUIStyles?: typeof import('@mui/material/styles');
@@ -294,7 +300,6 @@ declare global {
         ReactCustomizePanelsDialog?: {
             open: (
                 boxes: Record<string, DashboardBox>,
-                layoutEditable?: boolean,
                 title?: string
             ) => Promise<Record<string, DashboardBox> | null>;
         };

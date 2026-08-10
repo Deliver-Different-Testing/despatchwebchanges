@@ -1,7 +1,7 @@
 import type {CSSProperties} from 'react';
 import {alpha, createTheme, Theme} from '@mui/material/styles';
 import {DialogTransition} from './DialogTransition';
-import {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette, aiColors, shellColors} from './palettes';
+import {dfrntPrimaryPalette, accentPalette, aiColors, shellColors} from './palettes';
 
 /**
  * Material Design 3 typography role variants.
@@ -52,17 +52,14 @@ declare module '@mui/material/styles' {
 // Re-export the shared palette constants so existing imports from this module
 // keep working. The values themselves live in the framework-free palettes.ts,
 // which the AngularJS Material theme imports too — one source of truth.
-export {dfrntPrimaryPalette, urgentPrimaryPalette, accentPalette, shellColors};
+export {dfrntPrimaryPalette, accentPalette, shellColors};
 
 /**
  * MUI Theme - Matching AngularJS Material Theme
  *
  * This theme is designed to match the existing AngularJS Material theme
  * defined in materialTheme.ts for visual consistency across the application.
- *
- * Supports two themes:
- * - US customers: Blue (professionalPrimary)
- * - Non-US customers: Yellow (urgentPrimary)
+ * One DFRNT brand for every tenant — Cyan primary on an Ink-Blue shell.
  */
 
 /**
@@ -188,16 +185,12 @@ export const sharedColors = {
     divider: 'rgba(0, 0, 0, 0.12)',
 };
 
-/**
- * Creates a theme based on the customer region
- * @param isUsCustomer - true for US customers (blue theme), false for non-US (yellow theme)
- */
-export function createAppTheme(isUsCustomer: boolean): Theme {
-    // US tenants → DFRNT Cyan; non-US (NZ) tenants → the warm amber-gold "urgent" ramp.
-    const primaryPalette = isUsCustomer ? dfrntPrimaryPalette : urgentPrimaryPalette;
+/** Creates the single-brand DFRNT theme. */
+export function createAppTheme(): Theme {
+    const primaryPalette = dfrntPrimaryPalette;
 
-    // Both Cyan and gold are light hues — contained primary surfaces take dark Ink
-    // text (high contrast), not white (which fails WCAG on either).
+    // Cyan is a light hue — contained primary surfaces take dark Ink text (high
+    // contrast), not white (which fails WCAG on it).
     const primaryContrastText = '#0d0c2c';
 
     const colors = {
@@ -411,17 +404,15 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             tokens.shadow.xl,
         ],
         components: {
-            // App shell bar. US keeps the fixed Ink-Blue brand navy with white
-            // content; NZ takes its warm gold primary with dark Ink content (white
-            // is illegible on gold), matching the tenant's amber brand.
+            // App shell bar — the fixed Ink-Blue brand navy with white content.
             MuiAppBar: {
                 defaultProps: {
                     elevation: 0,
                 },
                 styleOverrides: {
                     root: {
-                        backgroundColor: isUsCustomer ? shellColors.appBar : primaryPalette[500],
-                        color: isUsCustomer ? shellColors.textPrimary : primaryContrastText,
+                        backgroundColor: shellColors.appBar,
+                        color: shellColors.textPrimary,
                     },
                 },
             },
@@ -810,23 +801,11 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
     });
 }
 
-/**
- * Detects if the current user is a US customer
- * Checks the body class 'theme-us' which is set by the AngularJS app
- */
-export function isUsCustomer(): boolean {
-    return document.body.classList.contains('theme-us');
-}
-
-/**
- * Gets the appropriate theme based on customer region
- */
+/** Kept so the ~13 island entry modules that call it don't all have to change. */
 export function getTheme(): Theme {
-    return createAppTheme(isUsCustomer());
+    return createAppTheme();
 }
 
-// Default theme (will be determined at runtime)
-// For backwards compatibility, default to US theme
-export const theme = createAppTheme(true);
+export const theme = createAppTheme();
 
 export default theme;

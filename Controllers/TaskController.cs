@@ -8,6 +8,7 @@ using Serilog;
 namespace DespatchWeb.Controllers;
 
 [Authorize]
+[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 public class TaskController(ITaskRepository taskRepository) : Controller
 {
     public async Task<IActionResult> GetAllTasks(TaskTableFiltersRequest filters)

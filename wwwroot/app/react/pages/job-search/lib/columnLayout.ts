@@ -17,6 +17,28 @@ function formatPercent(value: number): string {
     return `${value.toFixed(2)}%`;
 }
 
+/**
+ * Restate every width/height at a fixed 2dp so payloads that only differ in how
+ * a size was spelled ("60%" vs "60.00%") compare equal. `react-resizable-panels`
+ * re-emits the sizes it computed from the stored ones, so without this a plain
+ * JSON comparison sees a change on every mount.
+ */
+function normalisePayload(payload: LayoutPayload): LayoutPayload {
+    return {
+        ...payload,
+        columns: payload.columns.map(col => ({
+            ...col,
+            width: formatPercent(parsePercent(col.width, 0)),
+            boxes: col.boxes.map(box => ({...box, height: formatPercent(parsePercent(box.height, 0))})),
+        })),
+    };
+}
+
+/** Structural equality that ignores size formatting. */
+export function layoutPayloadEquals(a: LayoutPayload, b: LayoutPayload): boolean {
+    return JSON.stringify(normalisePayload(a)) === JSON.stringify(normalisePayload(b));
+}
+
 /** Pick the lowest unused `col{n}` id so removes don't leave colliding gaps. */
 function nextColumnId(payload: LayoutPayload): string {
     const used = new Set(payload.columns.map(c => c.id));

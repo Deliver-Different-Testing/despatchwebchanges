@@ -7,7 +7,8 @@ import {screen, waitFor} from '@testing-library/react';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
 import { renderWithProviders } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
-import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
+import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
 
 jest.mock('../../services/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {

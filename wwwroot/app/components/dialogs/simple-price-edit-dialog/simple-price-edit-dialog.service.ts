@@ -88,14 +88,14 @@ class SimplePriceEditDialogService implements angular.IServiceProvider {
             });
 
             if (!result) {
-                // User canceled — throw to match $mdDialog.cancel() behavior
+                // User cancelled — throw to match $mdDialog.cancel() behaviour
                 throw undefined;
             }
 
             return result;
         } catch (error) {
             if (error === undefined) {
-                // Canceled — re-throw for price-breakdown-dialog.service.ts catch handler
+                // Cancelled — re-throw for price-breakdown-dialog.service.ts catch handler
                 throw error;
             }
             console.error('SimplePriceEditDialogService: Error in openSimplePriceEditDialog', error);

@@ -3,6 +3,7 @@ import {ContactID} from '../../../../contants';
 import {AppPage as LegacyAppPage} from '../../../../enums/app-pages.enum';
 import setDateFilterDefaults from '../../../../functions/setDateFilterDefaults';
 import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
+import {DEFAULT_TASK_REFRESH_SECONDS} from '../../task-dashboard/refreshIntervalOptions';
 
 /**
  * Dispatch toolbar filters that scope the job list and driver locations:
@@ -55,8 +56,9 @@ function hasStoredKey(key: string): boolean {
  * independent interval so it can refresh on a different cadence to the job list.
  *
  * On first run (the Tasks key has never been written) the Tasks panel inherits
- * the job-list cadence, so existing users keep an active refresh instead of
- * silently defaulting to Off. Once the user picks a Tasks cadence — even "Off"
+ * the job-list cadence, falling back to DEFAULT_TASK_REFRESH_SECONDS when that is
+ * also off — nothing pushes task updates, so "no stored preference" must never
+ * mean "never refresh". Once the user picks a Tasks cadence — even "Off"
  * (a stored 0) — that choice sticks.
  */
 export function loadRefreshIntervals(): DispatchRefreshIntervals {
@@ -64,7 +66,7 @@ export function loadRefreshIntervals(): DispatchRefreshIntervals {
     const driver = readIntervalSeconds(DRIVER_LOCATION_REFRESH_KEY);
     const tasks = hasStoredKey(TASK_REFRESH_KEY)
         ? readIntervalSeconds(TASK_REFRESH_KEY)
-        : jobs;
+        : (jobs > 0 ? jobs : DEFAULT_TASK_REFRESH_SECONDS);
     return {
         jobsMs: jobs > 0 ? jobs * 1000 : false,
         driverLocationsMs: driver > 0 ? driver * 1000 : false,

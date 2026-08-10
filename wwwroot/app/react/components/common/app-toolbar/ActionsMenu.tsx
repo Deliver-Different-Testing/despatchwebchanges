@@ -5,16 +5,11 @@
  * and inter-courier charges. Follows existing ToolbarActions patterns.
  */
 
-import React, {useState} from 'react';
-import IconButton from '@mui/material/IconButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Tooltip from '@mui/material/Tooltip';
-import AddIcon from '@mui/icons-material/Add';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import {toolbarIconButtonSx} from './ToolbarActions';
+import React from 'react';
+import {ActionIcon, Menu, Tooltip} from '@mantine/core';
+import {DollarSign, Plus} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import {toolbarIconButtonStyle} from './ToolbarActions';
 
 export interface ActionsMenuProps {
     onCreateNewJob: (event: React.MouseEvent) => void;
@@ -25,70 +20,29 @@ export const ActionsMenu: React.FC<ActionsMenuProps> = ({
     onCreateNewJob,
     onInterCourierCharge,
 }) => {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
-    const handleCreateNewJob = (event: React.MouseEvent) => {
-        handleClose();
-        onCreateNewJob(event);
-    };
-
-    const handleInterCourierCharge = (event: React.MouseEvent) => {
-        handleClose();
-        onInterCourierCharge(event);
-    };
-
     return (
-        <>
-            <Tooltip title="Actions">
-                <IconButton
-                    color="inherit"
-                    onClick={handleClick}
-                    sx={toolbarIconButtonSx}
-                    aria-label="Actions menu"
-                    aria-controls={open ? 'actions-menu' : undefined}
-                    aria-haspopup="true"
-                    aria-expanded={open ? 'true' : undefined}
-                >
-                    <AddIcon sx={{fontSize: 22}} />
-                </IconButton>
-            </Tooltip>
-            <Menu
-                id="actions-menu"
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                slotProps={{
-                    paper: {
-                        elevation: 3,
-                        sx: {minWidth: 200, mt: 0.5},
-                    }
-                }}
-            >
-                <MenuItem onClick={handleCreateNewJob}>
-                    <ListItemIcon>
-                        <AddIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Add New Job</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleInterCourierCharge}>
-                    <ListItemIcon>
-                        <AttachMoneyIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Inter-Courier Charge</ListItemText>
-                </MenuItem>
-            </Menu>
-        </>
+        <Menu position="bottom-end" offset={4} width={200} shadow="md">
+            <Menu.Target>
+                <Tooltip label="Actions">
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        style={toolbarIconButtonStyle}
+                        aria-label="Actions menu"
+                    >
+                        <Icon lucide={Plus} size={18} />
+                    </ActionIcon>
+                </Tooltip>
+            </Menu.Target>
+            <Menu.Dropdown>
+                <Menu.Item leftSection={<Icon lucide={Plus} size={16} />} onClick={onCreateNewJob}>
+                    Add New Job
+                </Menu.Item>
+                <Menu.Item leftSection={<Icon lucide={DollarSign} size={16} />} onClick={onInterCourierCharge}>
+                    Inter-Courier Charge
+                </Menu.Item>
+            </Menu.Dropdown>
+        </Menu>
     );
 };
 

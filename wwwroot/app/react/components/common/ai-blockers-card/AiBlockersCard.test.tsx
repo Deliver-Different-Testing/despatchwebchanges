@@ -1,7 +1,7 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {AiBlockersCard} from './AiBlockersCard';
-import type {ExtractBlockersResponse} from '../../../services/aiAssistantApi';
+import type {ExtractBlockersResponse} from '../../../interfaces/ai';
 
 const withBlockers: ExtractBlockersResponse = {
     blockers: [

@@ -9,7 +9,8 @@
  */
 
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
+import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
 
 export interface UseApproverInboxOptions {
     /**

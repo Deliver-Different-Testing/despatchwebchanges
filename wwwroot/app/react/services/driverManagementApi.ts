@@ -1,4 +1,4 @@
-import {apiClient, RequestOptions, downloadBlob} from './apiClient';
+import {apiClient, downloadBlob} from './apiClient';
 import {
     PaginatedRequest,
     PaginatedResponse,
@@ -16,6 +16,7 @@ import {
     GroupEmailData,
     CourierDailyEarningsPaginated,
 } from '../interfaces';
+import {RequestOptions} from "./requestOptions";
 
 export const driverManagementApi = {
     searchAllCouriers(searchTerm: string, options?: RequestOptions): Promise<FleetOption[]> {

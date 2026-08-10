@@ -48,13 +48,13 @@ import WarningIcon from '@mui/icons-material/Warning';
 import {DialogShell} from '../shared';
 import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor, headerSurfaceSx} from '../shared/styles';
 import type {ShowToastFn} from '../../../services/toastService';
+import type {Suggestion} from '../../../interfaces/job';
 import type {
     AddAgentRecoveryRequest,
     RecoveryAgentJobViewModel,
     RecoveryAgentViewModel,
-    Suggestion,
     UpdateAgentRecoveryRequest,
-} from '../../../services/nationwideApi';
+} from '../../../interfaces/nationwideJobs';
 
 export interface RecoveryAgentManagementDialogProps {
     open: boolean;

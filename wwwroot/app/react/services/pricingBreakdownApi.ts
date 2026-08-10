@@ -5,39 +5,15 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
+import {RequestOptions} from "./requestOptions";
+import {
+    CreatePriceBreakdownRequest,
+    DeletePriceBreakdownRequest,
+    PriceBreakdown,
+    SuggestedFuelCharge
+} from "../interfaces/priceBreakdown";
 
-export interface PriceBreakdown {
-    chargeId: number;
-    name: string;
-    amount: number;
-    jobId?: number;
-    prebookJobId?: number;
-    costAmount?: number;
-    childJobId?: number;
-    isArchived?: boolean;
-}
-
-export interface CreatePriceBreakdownRequest {
-    name: string;
-    amount: number;
-    costAmount?: number;
-    jobId?: number;
-    prebookJobId?: number;
-    childJobId?: number;
-    isArchived?: boolean;
-}
-
-export interface DeletePriceBreakdownRequest {
-    chargeId: number;
-    jobId: number;
-    isArchived?: boolean;
-}
-
-export interface SuggestedFuelCharge {
-    fuelChargeAmount: number;
-    fuelCostAmount: number;
-}
 
 /**
  * Get price breakdowns for a job

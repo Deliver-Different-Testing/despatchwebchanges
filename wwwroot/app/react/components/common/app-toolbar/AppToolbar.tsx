@@ -1,25 +1,22 @@
 /**
  * React App Toolbar Component
  *
- * A modern Material Design 3 compliant app bar.
- * Layout: Logo | Divider | Breadcrumbs | Spacer | Actions | User Menu
+ * The Ink-Blue app bar.
+ * Layout: Logo | Keyline | Breadcrumbs | Spacer | Actions | Menu
+ * Chrome mirrors Integration Manager's AppShell.Header.
  */
 
 import React from 'react';
-import {alpha} from '@mui/material/styles';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Box from '@mui/material/Box';
-import Breadcrumbs from '@mui/material/Breadcrumbs';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import Tooltip from '@mui/material/Tooltip';
-import MenuIcon from '@mui/icons-material/Menu';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import {ActionIcon, Badge, Box, Group, Text, Tooltip} from '@mantine/core';
+import {Menu as MenuIcon, ChevronRight} from 'lucide-react';
 import dayjs from 'dayjs';
-import {displayFontFamily} from '../../../theme/muiTheme';
+import {Icon} from '../icon/Icon';
+import {onBrandScrim, sidebarColors} from '../../../theme/dfrntMantineTheme';
+import {toolbarIconButtonStyle} from './ToolbarActions';
+import {APP_BAR_HEIGHT_PX} from './appBarMetrics';
+
+/** Height of the DFRNT wordmark inside the bar. */
+const LOGO_HEIGHT_PX = 26;
 
 export interface BreadcrumbItem {
     label: string;
@@ -38,8 +35,6 @@ export interface AppToolbarProps {
     onMenuClick?: () => void;
     /** Show a BETA chip next to the page title (V2 pages). */
     beta?: boolean;
-    /** true → US Ink-Blue bar (white content); false → NZ gold bar (dark Ink content). */
-    isUsCustomer?: boolean;
 }
 
 function greetUser(userName: string): string {
@@ -80,169 +75,131 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     onMenuHover,
     onMenuClick,
     beta,
-    isUsCustomer = true,
 }) => {
     const greeting = greetUser(firstName);
     const resolvedCrumbs = resolveCrumbs(breadcrumbs, title);
     const hasMultipleCrumbs = resolvedCrumbs.length > 1;
 
-    // The bar fill is dark for US (Ink navy) and light for NZ (gold), so its
-    // "on-colour" — used for the reversed logo, dividers and hover scrims —
-    // flips with the tenant to stay legible.
-    const onBar = isUsCustomer ? '#ffffff' : '#0d0c2c';
-    const resolvedLogo = logoUrl
-        ?? (isUsCustomer ? 'images/dfrnt_logo_reversed.png' : 'images/dfrnt_logo.png');
+    const resolvedLogo = logoUrl ?? 'images/dfrnt_logo_reversed.png';
 
     return (
-    <AppBar
-        position="static"
-        elevation={1}
-    >
-        <Toolbar
-            sx={{
-                minHeight: {xs: 56, sm: 64},
-                px: {xs: 1.5, sm: 2},
-                gap: 1,
+        <Box
+            component="header"
+            // Mantine has no AppBar, so the Ink navy the MUI theme used to inject
+            // via its MuiAppBar override is set here explicitly. The height is a
+            // literal rather than the `h` prop so it stays in the px the route
+            // templates subtract, instead of Mantine's rem/scale calc.
+            style={{
+                height: APP_BAR_HEIGHT_PX,
+                backgroundColor: sidebarColors.appBar,
+                color: onBrandScrim.text,
             }}
         >
-            {/* Logo - Brand Identity */}
-            <Box
-                component="img"
-                src={resolvedLogo}
-                alt="DFRNT"
-                onClick={onLogoClick}
-                sx={{
-                    height: {xs: 32, sm: 36},
-                    cursor: onLogoClick ? 'pointer' : 'default',
-                    transition: 'opacity 0.2s',
-                    '&:hover': onLogoClick ? {
-                        opacity: 0.85,
-                    } : {},
-                }}
-            />
-
-            {/* Vertical divider between brand and page context */}
-            {resolvedCrumbs.length > 0 && (
-                <Divider
-                    orientation="vertical"
-                    flexItem
-                    sx={{
-                        mx: {xs: 1, sm: 2},
-                        my: 1.5,
-                        borderColor: alpha(onBar, 0.24),
-                        display: hasMultipleCrumbs
-                            ? {xs: 'none', sm: 'block'}
-                            : 'block',
-                    }}
-                />
-            )}
-
-            {/* Breadcrumbs - Page Context */}
-            {resolvedCrumbs.length > 0 && (
-                <Breadcrumbs
-                    aria-label="page navigation"
-                    separator={
-                        <NavigateNextIcon
-                            fontSize="small"
-                            sx={{opacity: 0.6}}
-                        />
-                    }
-                    sx={{
-                        color: 'inherit',
-                        '& .MuiBreadcrumbs-ol': {flexWrap: 'nowrap'},
-                        '& .MuiBreadcrumbs-li': {
-                            whiteSpace: 'nowrap',
-                            minWidth: 0,
-                        },
-                        '& .MuiBreadcrumbs-separator': {
-                            mx: 0.75,
-                        },
-                    }}
-                >
-                    {resolvedCrumbs.map((crumb, index) => {
-                        const isLast = index === resolvedCrumbs.length - 1;
-                        const hideOnMobile = hasMultipleCrumbs && !isLast;
-                        return (
-                            <Typography
-                                key={`${crumb.label}-${index}`}
-                                component={isLast ? 'h1' : 'span'}
-                                noWrap
-                                sx={{
-                                    // The active page title gets the display face
-                                    // at a larger size/weight so it reads as a real
-                                    // title, not a generic breadcrumb; ancestor
-                                    // crumbs stay in the quiet body face.
-                                    fontFamily: isLast ? displayFontFamily : undefined,
-                                    fontSize: isLast ? '1.0625rem' : '0.9375rem',
-                                    fontWeight: isLast ? 600 : 400,
-                                    letterSpacing: isLast ? '-0.01em' : 0,
-                                    lineHeight: 1.25,
-                                    color: 'inherit',
-                                    opacity: isLast ? 1 : 0.75,
-                                    margin: 0,
-                                    display: hideOnMobile
-                                        ? {xs: 'none', sm: 'inline'}
-                                        : 'inline',
-                                }}
-                            >
-                                {crumb.label}
-                            </Typography>
-                        );
-                    })}
-                </Breadcrumbs>
-            )}
-
-            {beta && (
-                <Chip
-                    label="BETA"
-                    size="small"
-                    sx={{
-                        ml: 1,
-                        height: 18,
-                        fontSize: '0.625rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.04em',
-                        bgcolor: 'ai.main',
-                        color: 'ai.contrastText',
-                    }}
-                />
-            )}
-
-            {/* Spacer */}
-            <Box sx={{flexGrow: 1}} />
-
-            {/* Actions Container - Consistent spacing */}
-            {children && (
+            <Group h="100%" px="md" gap="md" wrap="nowrap">
+                {/* Logo - Brand Identity */}
                 <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
+                    component="img"
+                    src={resolvedLogo}
+                    alt="DFRNT"
+                    onClick={onLogoClick}
+                    style={{
+                        height: LOGO_HEIGHT_PX,
+                        display: 'block',
+                        flexShrink: 0,
+                        cursor: onLogoClick ? 'pointer' : 'default',
+                        transition: 'opacity 0.2s',
                     }}
-                >
-                    {children}
-                </Box>
-            )}
+                />
 
-            {/* Menu Button */}
-            <Tooltip title={greeting}>
-                <IconButton
-                    color="inherit"
-                    aria-label="Open navigation menu"
-                    onMouseEnter={onMenuHover}
-                    onClick={onMenuClick}
-                    sx={{
-                        ml: 0.5,
-                        '&:hover': {
-                            bgcolor: alpha(onBar, 0.12),
-                        },
-                    }}
-                >
-                    <MenuIcon />
-                </IconButton>
-            </Tooltip>
-        </Toolbar>
-    </AppBar>
+                {/* Keyline separating the brand mark from the location path */}
+                {resolvedCrumbs.length > 0 && (
+                    <Box
+                        data-testid="toolbar-keyline"
+                        visibleFrom={hasMultipleCrumbs ? 'sm' : undefined}
+                        style={{
+                            width: 1,
+                            height: 22,
+                            backgroundColor: sidebarColors.border,
+                            flexShrink: 0,
+                        }}
+                    />
+                )}
+
+                {/* Breadcrumbs - Page Context */}
+                {resolvedCrumbs.length > 0 && (
+                    <Group
+                        component="nav"
+                        aria-label="page navigation"
+                        gap={6}
+                        wrap="nowrap"
+                        miw={0}
+                    >
+                        {resolvedCrumbs.map((crumb, index) => {
+                            const isLast = index === resolvedCrumbs.length - 1;
+                            const hideOnMobile = hasMultipleCrumbs && !isLast;
+                            return (
+                                <React.Fragment key={`${crumb.label}-${index}`}>
+                                    {index > 0 && (
+                                        <Box
+                                            style={{color: sidebarColors.textMuted, display: 'flex'}}
+                                            visibleFrom={hideOnMobile ? 'sm' : undefined}
+                                        >
+                                            <Icon lucide={ChevronRight} size={14} />
+                                        </Box>
+                                    )}
+                                    <Text
+                                        component={isLast ? 'h1' : 'span'}
+                                        truncate
+                                        visibleFrom={hideOnMobile ? 'sm' : undefined}
+                                        style={{
+                                            // Weight and text colour carry the hierarchy —
+                                            // every crumb is set at the same size.
+                                            fontSize: '0.875rem',
+                                            fontWeight: isLast ? 600 : 400,
+                                            lineHeight: 1.2,
+                                            color: isLast ? sidebarColors.textPrimary : sidebarColors.textSecondary,
+                                            margin: 0,
+                                        }}
+                                    >
+                                        {crumb.label}
+                                    </Text>
+                                </React.Fragment>
+                            );
+                        })}
+                    </Group>
+                )}
+
+                {beta && (
+                    <Badge color="grape" size="xs" style={{letterSpacing: '0.04em'}}>
+                        BETA
+                    </Badge>
+                )}
+
+                {/* Spacer */}
+                <Box style={{flex: 1}} />
+
+                {/* Actions Container - a single cluster, so tighter than the bar's own gap */}
+                {children && (
+                    <Group gap={4} wrap="nowrap">
+                        {children}
+                    </Group>
+                )}
+
+                {/* Menu Button */}
+                <Tooltip label={greeting}>
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        aria-label="Open navigation menu"
+                        onMouseEnter={onMenuHover}
+                        onClick={onMenuClick}
+                        style={toolbarIconButtonStyle}
+                    >
+                        <Icon lucide={MenuIcon} size={18} />
+                    </ActionIcon>
+                </Tooltip>
+            </Group>
+        </Box>
     );
 };
 

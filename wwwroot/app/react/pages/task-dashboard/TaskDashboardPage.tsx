@@ -75,7 +75,12 @@ import {
 } from '../../hooks/useTasksApi';
 import {tasksApi} from '../../services/tasksApi';
 import {getCurrentUserId} from '../../services/tasksService';
-import {formatRefreshButtonLabel, formatUpdatedAgo, getRefreshIntervalOptions} from './refreshIntervalOptions';
+import {
+    formatRefreshButtonLabel,
+    formatUpdatedAgo,
+    getRefreshIntervalOptions,
+    loadRefreshIntervalMs,
+} from './refreshIntervalOptions';
 import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
 import {AiSummaryCard} from '../../components/common/ai-summary-card/AiSummaryCard';
 import {isAiEnabled, isAiAutoOpenEnabled} from '../../../functions/aiSettings';
@@ -96,17 +101,15 @@ const getRefreshIntervalKey = () => {
     return `taskDashboardRefreshInterval-${contactId}`;
 };
 
+// Row cap for the dashboard's date window. Sent explicitly so the ceiling is a
+// deliberate, visible choice rather than the server's silent default.
+const TASK_LIST_LIMIT = 2000;
+
 // Read the persisted auto-refresh interval as a React Query refetchInterval
-// (ms; `false` = off). localStorage stores seconds (0 = off).
-const loadRefreshIntervalMs = (): number | false => {
-    try {
-        const raw = localStorage.getItem(getRefreshIntervalKey());
-        const seconds = raw == null ? 0 : parseInt(raw, 10);
-        return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : false;
-    } catch {
-        return false;
-    }
-};
+// (ms; `false` = off). localStorage stores seconds (0 = off); an unset key falls
+// back to DEFAULT_TASK_REFRESH_SECONDS.
+const loadRefreshIntervalMsForUser = (): number | false =>
+    loadRefreshIntervalMs(getRefreshIntervalKey());
 
 // Helper to set default date filter
 const setDateFilterDefaults = (): DateFilterData => ({
@@ -224,7 +227,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     // Auto-refresh interval (ms; false = off), seeded from localStorage. Applied
     // as the React Query refetchInterval on the tasks list and configured via the
     // toolbar menu. Independent of the dispatch page's refresh setting.
-    const [refreshIntervalMs, setRefreshIntervalMs] = useState<number | false>(loadRefreshIntervalMs);
+    const [refreshIntervalMs, setRefreshIntervalMs] = useState<number | false>(loadRefreshIntervalMsForUser);
     const [refreshAnchor, setRefreshAnchor] = useState<HTMLElement | null>(null);
     const refreshOptions = useMemo(() => getRefreshIntervalOptions(), []);
 
@@ -273,6 +276,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
         filters.startDate = formatDateForApi(dateFilterData.startDate);
         filters.endDate = formatDateForApi(dateFilterData.endDate);
+        filters.limit = TASK_LIST_LIMIT;
 
         return filters;
     }, [staffFilter, eventTypeFilter, searchQuery, dateFilterData]);

@@ -13,11 +13,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {AutoCompleteDialog, AssignTypeOption, Suggestion} from './AutoCompleteDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 
 // Result interface for the dialog
 export interface AutoCompleteResult {
@@ -80,12 +77,8 @@ function renderDialog(): void {
     };
 
     // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
-
     dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
+        <DfrntMantineProvider>
                 <AutoCompleteDialog
                     open={dialogState.open}
                     title={dialogState.title}
@@ -100,8 +93,7 @@ function renderDialog(): void {
                     onSubmit={handleSubmit}
                     onSearch={handleSearch}
                 />
-            </ThemeProvider>
-        </ReactQueryProvider>
+            </DfrntMantineProvider>
     );
 }
 

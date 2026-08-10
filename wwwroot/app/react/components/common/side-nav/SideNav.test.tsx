@@ -3,19 +3,9 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, screen} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {SideNav} from './SideNav';
-
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
 
 describe('SideNav', () => {
     const defaultProps = {
@@ -29,42 +19,87 @@ describe('SideNav', () => {
 
     describe('Rendering', () => {
         it('renders the user name, default company name, and copyright', () => {
-            renderWithTheme(<SideNav {...defaultProps} />);
+            renderWithMantine(<SideNav {...defaultProps} />);
             expect(screen.getByText('John Doe')).toBeInTheDocument();
             expect(screen.getByText('DFRNT')).toBeInTheDocument();
             expect(screen.getByText(/Deliver DFRNT/)).toBeInTheDocument();
         });
 
         it('should render a custom user name', () => {
-            renderWithTheme(<SideNav {...defaultProps} userName="Jane Smith" />);
+            renderWithMantine(<SideNav {...defaultProps} userName="Jane Smith" />);
             expect(screen.getByText('Jane Smith')).toBeInTheDocument();
         });
 
         it('should render a custom company name', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <SideNav {...defaultProps} companyName="Test Company" />
             );
             expect(screen.getByText('Test Company')).toBeInTheDocument();
         });
 
-        it('uses the gold header for NZ tenants and the Ink-Blue header for US tenants', () => {
-            const {rerender} = renderWithTheme(
+        it('carries the app bar\'s Ink Blue on the account header, for every tenant', () => {
+            const {rerender} = renderWithMantine(
                 <SideNav {...defaultProps} isUsCustomer={false} companyName="Acme" />
             );
-            expect(screen.getByText('Acme').parentElement).toHaveStyle({backgroundColor: '#f4c430'});
 
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <SideNav {...defaultProps} isUsCustomer={true} companyName="Acme" />
-                </ThemeProvider>
-            );
-            expect(screen.getByText('Acme').parentElement).toHaveStyle({backgroundColor: '#0d0c2c'});
+            // The header picks up the bar's colour so the two shell surfaces read as
+            // one; that colour change is the separator, so there is no keyline under it.
+            expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#0d0c2c'});
+            expect(screen.getByTestId('sidenav-avatar')).toHaveStyle({
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                color: 'rgba(255, 255, 255, 0.95)',
+            });
+
+            rerender(<SideNav {...defaultProps} isUsCustomer={true} companyName="Acme" />);
+            expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#0d0c2c'});
+        });
+
+        it('keeps the panel styling on the drawer content and off the full-screen inner wrapper', () => {
+            renderWithMantine(<SideNav {...defaultProps} />);
+
+            const content = screen.getByRole('dialog');
+            expect(content).toHaveStyle({display: 'flex', flexDirection: 'column'});
+            expect(content.getAttribute('style')).toMatch(/background-color:\s*var\(--dd-surface-container-high\)/);
+
+            const inner = content.parentElement as HTMLElement;
+            expect(inner).not.toHaveStyle({flexDirection: 'column'});
+            expect(inner.getAttribute('style') ?? '').not.toMatch(/background-color/);
+        });
+
+        it('sits every nav glyph on one axis and leaves the row chrome to the stylesheet', () => {
+            renderWithMantine(<SideNav {...defaultProps} currentState="home" />);
+
+            // Job Search is Lucide, Courier Map is Tabler — the two families have to
+            // render at the same box or the labels stop lining up.
+            const lucideRow = screen.getByRole('button', {name: 'Job Search'});
+            const tablerRow = screen.getByRole('button', {name: 'Courier Map'});
+            for (const row of [lucideRow, tablerRow]) {
+                const glyph = row.querySelector('svg');
+                expect(glyph).toHaveAttribute('width', '20');
+                expect(glyph).toHaveAttribute('height', '20');
+            }
+
+            // The faint cyan wash and pill are a hover/active concern, so they live in
+            // the stylesheet — the row keeps the `subtle` variant's transparent fill
+            // rather than the solid cyan an inline `--nl-bg` used to paint, which would
+            // outrank any rule there.
+            const active = screen.getByRole('button', {name: 'Dashboard'});
+            expect(active).toHaveAttribute('data-active', 'true');
+            expect(active.style.getPropertyValue('--nl-bg')).toBe('transparent');
+        });
+
+        it('exposes the nav as a labelled landmark, with no close button in the header', () => {
+            renderWithMantine(<SideNav {...defaultProps} />);
+
+            expect(screen.getByRole('navigation', {name: 'Main navigation'})).toBeInTheDocument();
+            // Dismissal is the overlay and Escape, both handled by Drawer.Root.
+            expect(screen.queryByRole('button', {name: 'Close navigation menu'})).not.toBeInTheDocument();
         });
     });
 
     describe('Navigation Items', () => {
         it('renders the standard navigation items for non-US customers', () => {
-            renderWithTheme(<SideNav {...defaultProps} isUsCustomer={false} />);
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={false} />);
             expect(screen.getByText('Dashboard')).toBeInTheDocument();
             expect(screen.getByText('Nationwide')).toBeInTheDocument();
             expect(screen.getByText('Overview')).toBeInTheDocument();
@@ -76,7 +111,7 @@ describe('SideNav', () => {
         });
 
         it('renders Domestic and hides Driver Management for US customers', () => {
-            renderWithTheme(<SideNav {...defaultProps} isUsCustomer={true} />);
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={true} />);
             expect(screen.getByText('Domestic')).toBeInTheDocument();
             expect(screen.queryByText('Driver Management')).not.toBeInTheDocument();
         });
@@ -84,34 +119,30 @@ describe('SideNav', () => {
 
     describe('Active State', () => {
         it('should highlight the current navigation item', () => {
-            renderWithTheme(<SideNav {...defaultProps} currentState="home" />);
-            const dashboardButton = screen.getByText('Dashboard').closest('div[role="button"]');
-            expect(dashboardButton).toHaveClass('Mui-selected');
+            renderWithMantine(<SideNav {...defaultProps} currentState="home" />);
+            expect(screen.getByRole('button', {name: 'Dashboard'})).toHaveAttribute('data-active', 'true');
         });
 
         it('should highlight Dashboard on the v2 dispatch state', () => {
-            renderWithTheme(<SideNav {...defaultProps} currentState="dispatchV2" />);
-            const dashboardButton = screen.getByText('Dashboard').closest('div[role="button"]');
-            expect(dashboardButton).toHaveClass('Mui-selected');
+            renderWithMantine(<SideNav {...defaultProps} currentState="dispatchV2" />);
+            expect(screen.getByRole('button', {name: 'Dashboard'})).toHaveAttribute('data-active', 'true');
         });
 
         it('should highlight Job Search on the v2 job search state', () => {
-            renderWithTheme(<SideNav {...defaultProps} currentState="jobSearchV2" />);
-            const jobSearchButton = screen.getByText('Job Search').closest('div[role="button"]');
-            expect(jobSearchButton).toHaveClass('Mui-selected');
+            renderWithMantine(<SideNav {...defaultProps} currentState="jobSearchV2" />);
+            expect(screen.getByRole('button', {name: 'Job Search'})).toHaveAttribute('data-active', 'true');
         });
 
         it('should not highlight unrelated items on the v2 job search state', () => {
-            renderWithTheme(<SideNav {...defaultProps} currentState="jobSearchV2" />);
-            const dashboardButton = screen.getByText('Dashboard').closest('div[role="button"]');
-            expect(dashboardButton).not.toHaveClass('Mui-selected');
+            renderWithMantine(<SideNav {...defaultProps} currentState="jobSearchV2" />);
+            expect(screen.getByRole('button', {name: 'Dashboard'})).not.toHaveAttribute('data-active');
         });
     });
 
     describe('Interactions', () => {
         it('should call onNavigate with correct state when item is clicked', () => {
             const onNavigate = jest.fn();
-            renderWithTheme(<SideNav {...defaultProps} onNavigate={onNavigate} />);
+            renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} />);
 
             fireEvent.click(screen.getByText('Tasks'));
 
@@ -120,7 +151,7 @@ describe('SideNav', () => {
 
         it('navigates straight to the V2 dispatch and job search pages', () => {
             const onNavigate = jest.fn();
-            renderWithTheme(<SideNav {...defaultProps} onNavigate={onNavigate} />);
+            renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} />);
 
             fireEvent.click(screen.getByText('Dashboard'));
             expect(onNavigate).toHaveBeenLastCalledWith('dispatchV2');
@@ -133,7 +164,7 @@ describe('SideNav', () => {
             localStorage.setItem('dispatchBetaEnabled-0', 'false');
             localStorage.setItem('jobSearchBetaEnabled-0', 'false');
             const onNavigate = jest.fn();
-            renderWithTheme(<SideNav {...defaultProps} onNavigate={onNavigate} />);
+            renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} />);
 
             fireEvent.click(screen.getByText('Dashboard'));
             expect(onNavigate).toHaveBeenLastCalledWith('home');
@@ -145,49 +176,37 @@ describe('SideNav', () => {
 
         it('should call onClose when item is clicked', () => {
             const onClose = jest.fn();
-            renderWithTheme(<SideNav {...defaultProps} onClose={onClose} />);
+            renderWithMantine(<SideNav {...defaultProps} onClose={onClose} />);
 
             fireEvent.click(screen.getByText('Dashboard'));
 
             expect(onClose).toHaveBeenCalledTimes(1);
         });
 
-        it('should call onMouseEnter when provided', () => {
+        it('calls onMouseEnter and onMouseLeave on the drawer panel', () => {
             const onMouseEnter = jest.fn();
-            renderWithTheme(
-                <SideNav {...defaultProps} onMouseEnter={onMouseEnter} />
-            );
-
-            // Get the drawer paper element
-            const drawer = document.querySelector('.MuiDrawer-paper');
-            if (drawer) {
-                fireEvent.mouseEnter(drawer);
-                expect(onMouseEnter).toHaveBeenCalledTimes(1);
-            }
-        });
-
-        it('should call onMouseLeave when provided', () => {
             const onMouseLeave = jest.fn();
-            renderWithTheme(
-                <SideNav {...defaultProps} onMouseLeave={onMouseLeave} />
+            renderWithMantine(
+                <SideNav {...defaultProps} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} />
             );
 
-            const drawer = document.querySelector('.MuiDrawer-paper');
-            if (drawer) {
-                fireEvent.mouseLeave(drawer);
-                expect(onMouseLeave).toHaveBeenCalledTimes(1);
-            }
+            const panel = screen.getByRole('dialog');
+            fireEvent.mouseEnter(panel);
+            expect(onMouseEnter).toHaveBeenCalledTimes(1);
+
+            fireEvent.mouseLeave(panel);
+            expect(onMouseLeave).toHaveBeenCalledTimes(1);
         });
     });
 
     describe('US Customer Footer', () => {
         it('should show "Made with aroha" for US customers', () => {
-            renderWithTheme(<SideNav {...defaultProps} isUsCustomer={true} />);
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={true} />);
             expect(screen.getByText(/Made with aroha/)).toBeInTheDocument();
         });
 
         it('should not show "Made with aroha" for non-US customers', () => {
-            renderWithTheme(<SideNav {...defaultProps} isUsCustomer={false} />);
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={false} />);
             expect(screen.queryByText(/Made with aroha/)).not.toBeInTheDocument();
         });
     });

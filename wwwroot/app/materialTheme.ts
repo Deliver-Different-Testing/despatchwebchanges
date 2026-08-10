@@ -1,8 +1,6 @@
-import { IAppConfig } from "./interfaces/app-config.interface";
 import angular from 'angular';
 import {
     dfrntPrimaryPalette,
-    urgentPrimaryPalette,
     accentPalette,
 } from './react/theme/palettes';
 
@@ -37,26 +35,13 @@ export const accentMdPalette = toMdPalette(
     },
 );
 
-// US (professional) primary = Cyan. Cyan is a light hue, so only its darkest shades
+// Brand primary = DFRNT Cyan. Cyan is a light hue, so only its darkest shades
 // (700–900) carry white text; everything else (incl. the 500 main) takes dark Ink text.
 const cyanContrast = {
     contrastDefaultColor: 'dark' as const,
     contrastDarkColors: ['50', '100', '200', '300', '400', '500', '600', 'A100', 'A200', 'A400', 'A700'],
     contrastLightColors: ['700', '800', '900'],
 };
-
-// Non-US (urgent) primary = warm amber-gold. Gold stays light across the whole ramp,
-// so every shade takes dark text — white would be illegible even on 700–900.
-const goldContrast = {
-    contrastDefaultColor: 'dark' as const,
-    contrastDarkColors: ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', 'A100', 'A200', 'A400', 'A700'],
-    contrastLightColors: [] as string[],
-};
-
-export const urgentPrimaryMdPalette = toMdPalette(
-    accentValues(urgentPrimaryPalette),
-    goldContrast,
-);
 
 export const professionalPrimaryMdPalette = toMdPalette(
     accentValues(dfrntPrimaryPalette),
@@ -69,21 +54,9 @@ function accentValues(palette: Record<string | number, string>): Record<string, 
 }
 
 class ThemeConfig {
-    private readonly isUsCustomer: boolean;
-
     constructor(
-        private readonly $mdThemingProvider: angular.material.IThemingProvider,
-        appConfig: IAppConfig
+        private readonly $mdThemingProvider: angular.material.IThemingProvider
     ) {
-        this.isUsCustomer = appConfig.US_Customer;
-    }
-
-    /**
-     * Defines a warm amber gold primary palette
-     * Matches MUI urgentPrimaryPalette for consistency
-     */
-    private defineUrgentPrimaryPalette(): void {
-        this.$mdThemingProvider.definePalette("urgentPrimary", urgentPrimaryMdPalette);
     }
 
     /**
@@ -95,29 +68,17 @@ class ThemeConfig {
     }
 
     /**
-     * Defines a professional blue primary palette for standard branding
-     * Inspired by modern corporate design systems
+     * Defines the DFRNT cyan primary palette — the single brand primary.
      */
     private defineProfessionalPrimaryPalette(): void {
         this.$mdThemingProvider.definePalette("professionalPrimary", professionalPrimaryMdPalette);
     }
 
-    /**
-     * Configures the default theme based on customer region
-     * US customers receive a professional blue theme, others receive an urgent yellow theme
-     */
+    /** Every tenant gets the one DFRNT brand. */
     private configureDefaultTheme(): void {
-        const themeBuilder = this.$mdThemingProvider.theme("default");
-
-        if (this.isUsCustomer) {
-            themeBuilder
-                .primaryPalette("professionalPrimary")
-                .accentPalette("accent");
-        } else {
-            themeBuilder
-                .primaryPalette("urgentPrimary")
-                .accentPalette("accent");
-        }
+        this.$mdThemingProvider.theme("default")
+            .primaryPalette("professionalPrimary")
+            .accentPalette("accent");
     }
 
     /**
@@ -151,7 +112,6 @@ class ThemeConfig {
      * Call this method during application bootstrap
      */
     public configure(): void {
-        this.defineUrgentPrimaryPalette();
         this.defineAccentPalette();
         this.defineProfessionalPrimaryPalette();
         this.configureDefaultTheme();

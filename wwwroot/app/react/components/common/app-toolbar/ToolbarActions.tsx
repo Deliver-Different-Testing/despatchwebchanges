@@ -1,44 +1,48 @@
 /**
  * React Toolbar Action Components
  *
- * Material Design 3 compliant toolbar action buttons and menus.
- * Consistent 40px touch targets with proper hover states.
+ * Toolbar action buttons and menus for the Ink-Blue app bar. Every button is a
+ * 34px circle with the shared cyan hover wash — see `toolbarIconStyles`.
  */
 
 import React, {useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import Badge from '@mui/material/Badge';
-import Box from '@mui/material/Box';
-import Checkbox from '@mui/material/Checkbox';
-import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import ListSubheader from '@mui/material/ListSubheader';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Popover from '@mui/material/Popover';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import AddIcon from '@mui/icons-material/Add';
-import CheckIcon from '@mui/icons-material/Check';
-import ClearAllIcon from '@mui/icons-material/ClearAll';
-import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SettingsIcon from '@mui/icons-material/Settings';
-import EditIcon from '@mui/icons-material/Edit';
-import DoneIcon from '@mui/icons-material/Done';
-import SmsIcon from '@mui/icons-material/Sms';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import type {SxProps, Theme} from '@mui/material/styles';
+import {
+    ActionIcon,
+    Box,
+    Divider,
+    Group,
+    Indicator,
+    Loader,
+    Menu,
+    Popover,
+    Text,
+    Tooltip,
+    UnstyledButton,
+} from '@mantine/core';
+import {
+    Check,
+    Columns3,
+    Download,
+    Eye,
+    EyeOff,
+    FilePen,
+    LayoutGrid,
+    ListX,
+    MessageSquare,
+    Plus,
+    RefreshCw,
+    RotateCcw,
+    Settings,
+    Trash2,
+} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import {
+    badgeOverflowStyle,
+    SHELL_ICON_BUTTON_PX,
+    SHELL_ICON_HOVER_FILL,
+    toolbarIconButtonStyle,
+} from './toolbarIconStyles';
+import classes from './LayoutsMenu.module.css';
 
 // Re-export DateFilterMenu
 export {DateFilterMenu} from '../date-filter-menu/DateFilterMenu';
@@ -48,13 +52,14 @@ export type {DateFilterData, DateFilterMenuProps, DateRangeOption} from '../date
 export {ActionsMenu} from './ActionsMenu';
 export type {ActionsMenuProps} from './ActionsMenu';
 
-// Shared icon button styles for consistent appearance across toolbar actions
-export const toolbarIconButtonSx: SxProps<Theme> = {
-    p: 1,
-    '&:hover': {
-        bgcolor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
-    },
-};
+// Re-exported so the existing import sites keep working now the tokens live in a leaf module.
+export {badgeOverflowStyle, SHELL_ICON_BUTTON_PX, SHELL_ICON_HOVER_FILL, toolbarIconButtonStyle};
+
+/** Glyph size shared by the toolbar's icon buttons. */
+const TOOLBAR_ICON_SIZE = 18;
+
+/** Menu/popover row height and dropdown offset, matching the old MUI chrome. */
+const DROPDOWN_OFFSET = 4;
 
 // Messages Button
 export interface MessagesButtonProps {
@@ -66,23 +71,24 @@ export const MessagesButton: React.FC<MessagesButtonProps> = ({unreadCount, onCl
     const displayCount = unreadCount > 99 ? '99+' : unreadCount;
 
     return (
-        <Tooltip title="Messages">
-            <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
-                <Badge
-                    badgeContent={unreadCount > 0 ? displayCount : null}
-                    color="error"
-                    max={99}
-                    sx={{
-                        '& .MuiBadge-badge': {
-                            fontSize: '0.65rem',
-                            minWidth: 18,
-                            height: 18,
-                        },
-                    }}
+        <Tooltip label="Messages">
+            <ActionIcon
+                variant="subtle"
+                size="lg"
+                onClick={onClick}
+                style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
+                aria-label="Messages"
+            >
+                <Indicator
+                    label={unreadCount > 0 ? displayCount : undefined}
+                    disabled={unreadCount === 0}
+                    color="red"
+                    size={18}
+                    offset={2}
                 >
-                    <SmsIcon sx={{fontSize: 22}}/>
-                </Badge>
-            </IconButton>
+                    <Icon lucide={MessageSquare} size={TOOLBAR_ICON_SIZE} />
+                </Indicator>
+            </ActionIcon>
         </Tooltip>
     );
 };
@@ -95,20 +101,23 @@ export interface RefreshButtonProps {
 
 export const RefreshButton: React.FC<RefreshButtonProps> = ({onClick, loading = false}) => {
     return (
-        <Tooltip title={loading ? 'Refreshing...' : 'Refresh'}>
+        <Tooltip label={loading ? 'Refreshing...' : 'Refresh'}>
+            {/* span wrapper so the tooltip still works while the button is disabled */}
             <span>
-                <IconButton
-                    color="inherit"
+                <ActionIcon
+                    variant="subtle"
+                    size="lg"
                     onClick={onClick}
                     disabled={loading}
-                    sx={toolbarIconButtonSx}
+                    style={toolbarIconButtonStyle}
+                    aria-label="Refresh"
                 >
                     {loading ? (
-                        <CircularProgress size={22} color="inherit" thickness={3}/>
+                        <Loader size={TOOLBAR_ICON_SIZE} color="currentColor" role="progressbar" aria-label="Refreshing" />
                     ) : (
-                        <RefreshIcon sx={{fontSize: 22}}/>
+                        <Icon lucide={RefreshCw} size={TOOLBAR_ICON_SIZE} />
                     )}
-                </IconButton>
+                </ActionIcon>
             </span>
         </Tooltip>
     );
@@ -121,10 +130,10 @@ export interface SettingsButtonProps {
 
 export const SettingsButton: React.FC<SettingsButtonProps> = ({onClick}) => {
     return (
-        <Tooltip title="Settings">
-            <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
-                <SettingsIcon sx={{fontSize: 22}}/>
-            </IconButton>
+        <Tooltip label="Settings">
+            <ActionIcon variant="subtle" size="lg" onClick={onClick} style={toolbarIconButtonStyle} aria-label="Settings">
+                <Icon lucide={Settings} size={TOOLBAR_ICON_SIZE} />
+            </ActionIcon>
         </Tooltip>
     );
 };
@@ -144,107 +153,70 @@ export interface ViewsMenuProps {
 }
 
 export const ViewsMenu: React.FC<ViewsMenuProps> = ({
-                                                        views,
-                                                        loading = false,
-                                                        onToggleView,
-                                                        onClearAll,
-                                                    }) => {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
+    views,
+    loading = false,
+    onToggleView,
+    onClearAll,
+}) => {
     const selectedCount = views?.filter(v => v.selected).length || 0;
 
     return (
-        <>
-            <Tooltip title="Views">
-                <span>
-                    <IconButton color="inherit" onClick={handleClick} sx={toolbarIconButtonSx}>
+        <Menu position="bottom-end" offset={DROPDOWN_OFFSET} width={220} shadow="md">
+            <Menu.Target>
+                <Tooltip label="Views">
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
+                        aria-label="Views"
+                    >
                         {loading ? (
-                            <CircularProgress size={22} color="inherit" thickness={3}/>
+                            <Loader size={TOOLBAR_ICON_SIZE} color="currentColor" role="progressbar" aria-label="Loading views" />
                         ) : (
-                            <Badge
-                                badgeContent={selectedCount > 0 ? selectedCount : null}
-                                color="default"
-                                sx={{
-                                    '& .MuiBadge-badge': {
-                                        bgcolor: 'rgba(255,255,255,0.9)',
-                                        color: 'primary.main',
-                                        fontSize: '0.65rem',
-                                        minWidth: 16,
-                                        height: 16,
-                                    },
-                                }}
+                            <Indicator
+                                label={selectedCount > 0 ? selectedCount : undefined}
+                                disabled={selectedCount === 0}
+                                color="gray.0"
+                                c="brand.7"
+                                size={16}
+                                offset={2}
                             >
-                                <VisibilityIcon sx={{fontSize: 22}}/>
-                            </Badge>
+                                <Icon lucide={Eye} size={TOOLBAR_ICON_SIZE} />
+                            </Indicator>
                         )}
-                    </IconButton>
-                </span>
-            </Tooltip>
-            <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                slotProps={{
-                    paper: {
-                        elevation: 3,
-                        sx: {minWidth: 220, maxHeight: 400, mt: 0.5},
-                    }
-                }}
-            >
+                    </ActionIcon>
+                </Tooltip>
+            </Menu.Target>
+            <Menu.Dropdown mah={400} style={{overflowY: 'auto'}}>
                 {(!views || views.length === 0) ? (
-                    <Box sx={{p: 3, textAlign: 'center'}}>
-                        <VisibilityOffIcon sx={{fontSize: 40, color: 'text.disabled', mb: 1}}/>
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            No views available
-                        </Typography>
+                    <Box p="lg" ta="center">
+                        <Icon lucide={EyeOff} size={40} color="var(--mantine-color-gray-5)" />
+                        <Text fz="sm" c="dimmed" mt="xs">No views available</Text>
                     </Box>
-                ) : ([
-                    <MenuItem key="clear-all" onClick={() => {
-                        onClearAll();
-                    }}>
-                        <ListItemIcon>
-                            <ClearAllIcon fontSize="small"/>
-                        </ListItemIcon>
-                        <ListItemText>Clear Selection</ListItemText>
-                    </MenuItem>,
-                    <Divider key="divider" sx={{my: 0.5}}/>,
-                    ...views.map((view) => (
-                        <MenuItem
-                            key={view.id}
-                            onClick={() => onToggleView(view)}
-                            sx={{py: 0.75}}
+                ) : (
+                    <>
+                        <Menu.Item
+                            leftSection={<Icon lucide={ListX} size={16} />}
+                            closeMenuOnClick={false}
+                            onClick={onClearAll}
                         >
-                            <Checkbox
+                            Clear Selection
+                        </Menu.Item>
+                        <Menu.Divider />
+                        {views.map((view) => (
+                            <Menu.CheckboxItem
+                                key={view.id}
                                 checked={view.selected}
-                                size="small"
-                                sx={{p: 0, mr: 1.5}}
-                            />
-                            <ListItemText
-                                slotProps={{primary: {
-                                    variant: 'body2',
-                                    sx: {fontWeight: view.selected ? 500 : 400},
-                                }}}
+                                closeMenuOnClick={false}
+                                onChange={() => onToggleView(view)}
                             >
-                                {view.name}
-                            </ListItemText>
-                        </MenuItem>
-                    )),
-                ])}
-            </Menu>
-        </>
+                                <Text fz="sm" style={{fontWeight: view.selected ? 500 : 400}}>{view.name}</Text>
+                            </Menu.CheckboxItem>
+                        ))}
+                    </>
+                )}
+            </Menu.Dropdown>
+        </Menu>
     );
 };
 
@@ -263,38 +235,60 @@ export interface LayoutsMenuProps {
     onRenameLayout?: (index: number) => void;
     /** Optional: copy the user's legacy (V1) layouts into this page's store. */
     onImportLayouts?: () => void;
-    /** Optional: opens the panel-visibility settings (cross-link to the organiser). */
+    /** Optional: opens the panel-visibility and column-count settings. */
     onCustomizePanels?: () => void;
-    /** Optional: current layout edit-mode state (drag/collapse/resize enabled). */
-    editMode?: boolean;
-    /** Optional: toggle layout edit mode. When provided, an Edit/Done item is shown. */
-    onToggleEditMode?: () => void;
+    /** Optional: restore the current layout to the shipped arrangement. */
+    onResetLayout?: () => void;
+    /** Optional: whether the "Edit columns" bar is currently shown. */
+    columnEditMode?: boolean;
+    /** Optional: toggle the "Edit columns" bar. When provided, an Edit/Done item is shown. */
+    onToggleColumnEditMode?: () => void;
 }
 
 const DEFAULT_LAYOUT_NAME = 'Default';
 
+/** A full-width row in the layouts popover, styled like a menu item. */
+const PopoverRow: React.FC<{
+    onClick: () => void;
+    disabled?: boolean;
+    icon?: React.ReactNode;
+    children: React.ReactNode;
+}> = ({onClick, disabled = false, icon, children}) => (
+    <UnstyledButton
+        onClick={onClick}
+        disabled={disabled}
+        w="100%"
+        px="sm"
+        py={6}
+        style={{
+            borderRadius: 'var(--mantine-radius-sm)',
+            opacity: disabled ? 0.5 : 1,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+        }}
+    >
+        <Group gap={10} wrap="nowrap">
+            <Box w={20} style={{display: 'flex'}}>{icon}</Box>
+            <Text fz="sm">{children}</Text>
+        </Group>
+    </UnstyledButton>
+);
+
 export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
-                                                            layouts,
-                                                            currentLayoutName,
-                                                            onSaveLayout,
-                                                            onLoadLayout,
-                                                            onDeleteLayout,
-                                                            onRenameLayout,
-                                                            onImportLayouts,
-                                                            onCustomizePanels,
-                                                            editMode,
-                                                            onToggleEditMode,
-                                                        }) => {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
+    layouts,
+    currentLayoutName,
+    onSaveLayout,
+    onLoadLayout,
+    onDeleteLayout,
+    onRenameLayout,
+    onImportLayouts,
+    onCustomizePanels,
+    onResetLayout,
+    columnEditMode,
+    onToggleColumnEditMode,
+}) => {
+    const [opened, setOpened] = useState(false);
 
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
+    const handleClose = () => setOpened(false);
 
     const handleSave = () => {
         onSaveLayout();
@@ -325,8 +319,13 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
         handleClose();
     };
 
-    const handleToggleEditMode = () => {
-        onToggleEditMode?.();
+    const handleToggleColumnEditMode = () => {
+        onToggleColumnEditMode?.();
+        handleClose();
+    };
+
+    const handleResetLayout = () => {
+        onResetLayout?.();
         handleClose();
     };
 
@@ -337,180 +336,135 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
 
     const tooltip = currentLayoutName ? `Layouts · ${currentLayoutName}` : 'Layouts';
 
-    // Panel visibility only applies to a custom layout — the Default layout is
-    // read-only, so the entry is disabled with an explanatory tooltip.
-    const isDefaultLayout = !currentLayoutName || currentLayoutName === DEFAULT_LAYOUT_NAME;
-    const customizeDisabledReason =
-        'Panel visibility is only available with a custom layout. Add or select a custom layout to choose which panels appear.';
-
     return (
-        <>
-            <Tooltip title={tooltip}>
-                <IconButton color="inherit" onClick={handleClick} sx={toolbarIconButtonSx}>
-                    <DashboardCustomizeIcon sx={{fontSize: 22}}/>
-                </IconButton>
-            </Tooltip>
-            <Popover
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                slotProps={{
-                    paper: {
-                        elevation: 3,
-                        sx: {minWidth: 240, mt: 0.5},
-                    }
-                }}
-            >
-                <List dense disablePadding sx={{py: 0.5}}>
-                    <ListItemButton onClick={handleSave}>
-                        <ListItemIcon sx={{minWidth: 36}}>
-                            <AddIcon fontSize="small"/>
-                        </ListItemIcon>
-                        <ListItemText
-                            slotProps={{primary: {variant: 'body2'}}}
-                        >
-                            Add layout
-                        </ListItemText>
-                    </ListItemButton>
+        <Popover
+            opened={opened}
+            onDismiss={handleClose}
+            position="bottom-end"
+            offset={DROPDOWN_OFFSET}
+            width={240}
+            shadow="md"
+            radius="sm"
+        >
+            <Popover.Target>
+                <Tooltip label={tooltip}>
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        onClick={() => setOpened(o => !o)}
+                        style={toolbarIconButtonStyle}
+                        aria-label="Layouts"
+                    >
+                        <Icon lucide={LayoutGrid} size={TOOLBAR_ICON_SIZE} />
+                    </ActionIcon>
+                </Tooltip>
+            </Popover.Target>
+            <Popover.Dropdown p={4}>
+                <PopoverRow onClick={handleSave} icon={<Icon lucide={Plus} size={16} />}>
+                    Add layout
+                </PopoverRow>
 
-                    {layouts.length > 0 && (
-                        <ListSubheader
-                            disableSticky
-                            sx={{
-                                lineHeight: '32px',
-                                bgcolor: 'transparent',
-                                color: 'text.secondary',
-                                fontWeight: 600,
-                            }}
-                        >
-                            Switch layout
-                        </ListSubheader>
-                    )}
+                {layouts.length > 0 && (
+                    <Text px="sm" pt={6} pb={2} fz="xs" fw={600} c="dimmed">
+                        Switch layout
+                    </Text>
+                )}
 
-                    {layouts.map((layout, index) => {
-                        const isActive = layout.name === currentLayoutName;
-                        const isDefault = layout.name === DEFAULT_LAYOUT_NAME;
-                        return (
-                            <ListItem
-                                key={index}
-                                disablePadding
-                                secondaryAction={isDefault ? undefined : (
-                                    <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                        {onRenameLayout && (
-                                            <Tooltip title="Rename layout">
-                                                <IconButton
-                                                    className="layout-action"
-                                                    edge="end"
-                                                    size="small"
-                                                    aria-label={`Rename ${layout.name}`}
-                                                    onClick={(e) => handleRename(e, index)}
-                                                    sx={{'&:hover': {color: 'primary.main'}}}
-                                                >
-                                                    <DriveFileRenameOutlineIcon fontSize="small"/>
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
-                                        <Tooltip title="Delete layout">
-                                            <IconButton
-                                                className="layout-action"
-                                                edge="end"
-                                                size="small"
-                                                aria-label={`Delete ${layout.name}`}
-                                                onClick={(e) => handleDelete(e, index)}
-                                                sx={{'&:hover': {color: 'error.main'}}}
-                                            >
-                                                <DeleteIcon fontSize="small"/>
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Box>
-                                )}
-                                sx={{
-                                    '& .layout-action': {opacity: 0, transition: 'opacity 0.15s'},
-                                    '&:hover .layout-action, &:focus-within .layout-action': {opacity: 1},
-                                }}
+                {layouts.map((layout, index) => {
+                    const isActive = layout.name === currentLayoutName;
+                    const isDefault = layout.name === DEFAULT_LAYOUT_NAME;
+                    return (
+                        <Group key={index} className={classes.row} gap={0} wrap="nowrap">
+                            <UnstyledButton
+                                onClick={() => handleLoad(index)}
+                                px="sm"
+                                py={6}
+                                style={{flex: 1, borderRadius: 'var(--mantine-radius-sm)'}}
                             >
-                                <ListItemButton selected={isActive} onClick={() => handleLoad(index)}>
-                                    <ListItemIcon sx={{minWidth: 36}}>
-                                        {isActive ? <CheckIcon fontSize="small" color="primary"/> : null}
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        slotProps={{primary: {
-                                            variant: 'body2',
-                                            color: isActive ? 'primary.main' : 'text.primary',
-                                            sx: {fontWeight: isActive ? 600 : 400},
-                                        }}}
+                                <Group gap={10} wrap="nowrap">
+                                    <Box w={20} style={{display: 'flex'}}>
+                                        {isActive ? <Icon lucide={Check} size={16} color="var(--mantine-color-brand-7)" /> : null}
+                                    </Box>
+                                    <Text
+                                        fz="sm"
+                                        c={isActive ? 'brand.7' : undefined}
+                                        style={{fontWeight: isActive ? 600 : 400}}
                                     >
                                         {layout.name}
-                                    </ListItemText>
-                                </ListItemButton>
-                            </ListItem>
-                        );
-                    })}
+                                    </Text>
+                                </Group>
+                            </UnstyledButton>
+                            {!isDefault && (
+                                <Group gap={0} pr={4} wrap="nowrap">
+                                    {onRenameLayout && (
+                                        <Tooltip label="Rename layout">
+                                            <ActionIcon
+                                                className={classes.action}
+                                                variant="subtle"
+                                                color="gray"
+                                                size="sm"
+                                                aria-label={`Rename ${layout.name}`}
+                                                onClick={(e) => handleRename(e, index)}
+                                            >
+                                                <Icon lucide={FilePen} size={16} />
+                                            </ActionIcon>
+                                        </Tooltip>
+                                    )}
+                                    <Tooltip label="Delete layout">
+                                        <ActionIcon
+                                            className={classes.action}
+                                            variant="subtle"
+                                            color="red"
+                                            size="sm"
+                                            aria-label={`Delete ${layout.name}`}
+                                            onClick={(e) => handleDelete(e, index)}
+                                        >
+                                            <Icon lucide={Trash2} size={16} />
+                                        </ActionIcon>
+                                    </Tooltip>
+                                </Group>
+                            )}
+                        </Group>
+                    );
+                })}
 
-                    {onToggleEditMode && [
-                        <Divider key="edit-divider" sx={{my: 0.5}}/>,
-                        <Tooltip
-                            key="edit-mode"
-                            title={isDefaultLayout ? 'Save a layout to rearrange panels' : ''}
-                            placement="left"
+                {onToggleColumnEditMode && (
+                    <>
+                        <Divider my={4} />
+                        <PopoverRow
+                            onClick={handleToggleColumnEditMode}
+                            icon={<Icon lucide={columnEditMode ? Check : Columns3} size={16} />}
                         >
-                            <Box component="span" sx={{display: 'block'}}>
-                                <ListItemButton
-                                    onClick={handleToggleEditMode}
-                                    disabled={isDefaultLayout}
-                                    selected={editMode}
-                                >
-                                    <ListItemIcon sx={{minWidth: 36}}>
-                                        {editMode ? <DoneIcon fontSize="small"/> : <EditIcon fontSize="small"/>}
-                                    </ListItemIcon>
-                                    <ListItemText slotProps={{primary: {variant: 'body2'}}}>
-                                        {editMode ? 'Done editing' : 'Edit layout'}
-                                    </ListItemText>
-                                </ListItemButton>
-                            </Box>
-                        </Tooltip>,
-                    ]}
+                            {columnEditMode ? 'Done editing columns' : 'Edit columns'}
+                        </PopoverRow>
+                    </>
+                )}
 
-                    {onCustomizePanels && [
-                        <Divider key="customize-divider" sx={{my: 0.5}}/>,
-                        <Tooltip
-                            key="customize"
-                            title={isDefaultLayout ? customizeDisabledReason : ''}
-                            placement="left"
-                        >
-                            {/* span wrapper so the tooltip still works while the button is disabled */}
-                            <Box component="span" sx={{display: 'block'}}>
-                                <ListItemButton
-                                    onClick={handleCustomize}
-                                    disabled={isDefaultLayout}
-                                >
-                                    <ListItemIcon sx={{minWidth: 36}}>
-                                        <SettingsIcon fontSize="small"/>
-                                    </ListItemIcon>
-                                    <ListItemText slotProps={{primary: {variant: 'body2'}}}>
-                                        Customize panels…
-                                    </ListItemText>
-                                </ListItemButton>
-                            </Box>
-                        </Tooltip>,
-                    ]}
+                {onCustomizePanels && (
+                    <>
+                        <Divider my={4} />
+                        <PopoverRow onClick={handleCustomize} icon={<Icon lucide={Settings} size={16} />}>
+                            Customize panels…
+                        </PopoverRow>
+                    </>
+                )}
 
-                    {onImportLayouts && [
-                        <Divider key="import-divider" sx={{my: 0.5}}/>,
-                        <ListItemButton key="import" onClick={handleImportLayouts}>
-                            <ListItemIcon sx={{minWidth: 36}}>
-                                <FileDownloadIcon fontSize="small"/>
-                            </ListItemIcon>
-                            <ListItemText slotProps={{primary: {variant: 'body2'}}}>
-                                Import V1 layouts
-                            </ListItemText>
-                        </ListItemButton>,
-                    ]}
-                </List>
-            </Popover>
-        </>
+                {onResetLayout && (
+                    <PopoverRow onClick={handleResetLayout} icon={<Icon lucide={RotateCcw} size={16} />}>
+                        Reset layout
+                    </PopoverRow>
+                )}
+
+                {onImportLayouts && (
+                    <>
+                        <Divider my={4} />
+                        <PopoverRow onClick={handleImportLayouts} icon={<Icon lucide={Download} size={16} />}>
+                            Import V1 layouts
+                        </PopoverRow>
+                    </>
+                )}
+            </Popover.Dropdown>
+        </Popover>
     );
 };
 
@@ -523,22 +477,25 @@ export interface ToolbarIconButtonProps {
 }
 
 export const ToolbarIconButton: React.FC<ToolbarIconButtonProps> = ({
-                                                                        icon,
-                                                                        tooltip,
-                                                                        onClick,
-                                                                        disabled = false,
-                                                                    }) => {
+    icon,
+    tooltip,
+    onClick,
+    disabled = false,
+}) => {
     return (
-        <Tooltip title={tooltip}>
+        <Tooltip label={tooltip}>
+            {/* span wrapper so the tooltip still works while the button is disabled */}
             <span>
-                <IconButton
-                    color="inherit"
+                <ActionIcon
+                    variant="subtle"
+                    size="lg"
                     onClick={onClick}
                     disabled={disabled}
-                    sx={toolbarIconButtonSx}
+                    style={toolbarIconButtonStyle}
+                    aria-label={tooltip}
                 >
                     {icon}
-                </IconButton>
+                </ActionIcon>
             </span>
         </Tooltip>
     );

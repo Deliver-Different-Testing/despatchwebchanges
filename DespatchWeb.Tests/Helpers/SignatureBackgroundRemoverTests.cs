@@ -41,7 +41,7 @@ public class SignatureBackgroundRemoverTests
         return img.ToByteArray();
     }
 
-    private static int AlphaAt(IMagickImage<byte> image, int x, int y)
+    private static int AlphaAt(MagickImage image, int x, int y)
     {
         using var pixels = image.GetPixels();
         return pixels.GetPixel(x, y).ToColor()!.A;

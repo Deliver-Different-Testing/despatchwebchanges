@@ -159,8 +159,14 @@ export function updateRefreshIntervals(intervals: Partial<DispatchRefreshInterva
     layoutBridge?.updateRefreshIntervals(intervals);
 }
 
-export function setEditMode(enabled: boolean): void {
-    layoutBridge?.setEditMode(enabled);
+/** Restore the current layout to the shipped arrangement (toolbar → Layouts → Reset layout). */
+export function resetCurrentLayout(): void {
+    layoutBridge?.resetCurrentLayout();
+}
+
+/** Show or hide the "Edit columns" bar (toolbar → Layouts → Edit columns). */
+export function setColumnEditMode(enabled: boolean): void {
+    layoutBridge?.setColumnEditMode(enabled);
 }
 
 export function openInterCourierCharge(): void {
@@ -190,7 +196,8 @@ declare global {
             registerViewsListener: typeof registerViewsListener;
             setViewSelection: typeof setViewSelection;
             updateRefreshIntervals: typeof updateRefreshIntervals;
-            setEditMode: typeof setEditMode;
+            resetCurrentLayout: typeof resetCurrentLayout;
+            setColumnEditMode: typeof setColumnEditMode;
             openInterCourierCharge: typeof openInterCourierCharge;
             jobCreated: typeof jobCreated;
             importLegacyLayouts: typeof importLegacyLayouts;
@@ -210,7 +217,8 @@ window.ReactDispatch = {
     registerViewsListener,
     setViewSelection,
     updateRefreshIntervals,
-    setEditMode,
+    resetCurrentLayout,
+    setColumnEditMode,
     openInterCourierCharge,
     jobCreated,
     importLegacyLayouts,

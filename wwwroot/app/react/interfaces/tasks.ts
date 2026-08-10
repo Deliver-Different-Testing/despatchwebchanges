@@ -11,7 +11,7 @@ export interface TaskAssignee {
     text: string;
 }
 
-export interface Task {
+interface Task {
     id: number;
     title: string;
     description: string;
@@ -29,6 +29,8 @@ export interface Task {
     _dueTimeString?: string;
 }
 
+export default Task
+
 export interface TaskFiltersRequest {
     searchText?: string;
     staffId?: number;
@@ -41,6 +43,8 @@ export interface TaskFiltersRequest {
     showCompleted?: boolean;
     courierId?: number;
     jobId?: number;
+    /** Row cap. Omitted, the server falls back to its own default (500). */
+    limit?: number;
 }
 
 export interface StaffSuggestion {

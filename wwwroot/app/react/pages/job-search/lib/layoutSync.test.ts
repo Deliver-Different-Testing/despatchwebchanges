@@ -1,5 +1,11 @@
 import {ILayout} from '../../../../interfaces/layout.interfaces';
-import {LayoutSnapshot, LayoutStorageKeys, boxVisibilityKey} from './layoutPersistence';
+import {
+    LayoutSnapshot,
+    LayoutStorageKeys,
+    boxVisibilityKey,
+    isDefaultCustomised,
+    setDefaultCustomised,
+} from './layoutPersistence';
 import {
     loadRemoteIntoLocal,
     queueRemotePush,
@@ -7,7 +13,8 @@ import {
     rowsToSnapshot,
     snapshotToRows,
 } from './layoutSync';
-import {DispatchLayoutDto, getLayouts, saveLayouts} from '../../../services/dispatchLayoutApi';
+import {getLayouts, saveLayouts} from '../../../services/dispatchLayoutApi';
+import {DispatchLayoutDto} from "../../../interfaces/dispatchLayout";
 
 jest.mock('../../../services/dispatchLayoutApi');
 
@@ -38,7 +45,7 @@ beforeEach(() => {
 });
 
 describe('snapshotToRows / rowsToSnapshot', () => {
-    it('excludes the client Default layout from rows', () => {
+    it('includes the Default layout so an adjusted default follows the user', () => {
         const snapshot: LayoutSnapshot = {
             layouts: [defaultLayout, customLayout],
             lastActiveLayout: 'Wide',
@@ -46,10 +53,9 @@ describe('snapshotToRows / rowsToSnapshot', () => {
         };
 
         const rows = snapshotToRows(snapshot, defaultLayout);
-        expect(rows).toHaveLength(1);
-        expect(rows[0].name).toBe('Wide');
-        expect(rows[0].isActive).toBe(true);
-        expect(JSON.parse(rows[0].layoutJson)).toEqual({
+        expect(rows.map(r => r.name)).toEqual(['Default', 'Wide']);
+        expect(rows[1].isActive).toBe(true);
+        expect(JSON.parse(rows[1].layoutJson)).toEqual({
             layout: customLayout.layout,
             boxVisibility: {a: {visible: true, collapsed: false}},
         });
@@ -57,6 +63,11 @@ describe('snapshotToRows / rowsToSnapshot', () => {
 
     it('round-trips rows -> snapshot -> rows losslessly', () => {
         const rows: DispatchLayoutDto[] = [
+            {
+                name: 'Default',
+                layoutJson: JSON.stringify({layout: defaultLayout.layout, boxVisibility: {}}),
+                isActive: false,
+            },
             {
                 name: 'Wide',
                 layoutJson: JSON.stringify({
@@ -68,11 +79,21 @@ describe('snapshotToRows / rowsToSnapshot', () => {
         ];
 
         const snapshot = rowsToSnapshot(rows, defaultLayout);
-        expect(snapshot.layouts[0]).toBe(defaultLayout);
         expect(snapshot.layouts.map(l => l.name)).toEqual(['Default', 'Wide']);
         expect(snapshot.lastActiveLayout).toBe('Wide');
 
         expect(snapshotToRows(snapshot, defaultLayout)).toEqual(rows);
+    });
+
+    it('pins a Default row to slot 0 wherever the server returned it', () => {
+        const rows: DispatchLayoutDto[] = [
+            {name: 'Wide', layoutJson: JSON.stringify({layout: customLayout.layout, boxVisibility: {}}), isActive: false},
+            {name: 'Default', layoutJson: JSON.stringify({layout: {columns: []}, boxVisibility: {}}), isActive: true},
+        ];
+
+        const snapshot = rowsToSnapshot(rows, defaultLayout);
+        expect(snapshot.layouts.map(l => l.name)).toEqual(['Default', 'Wide']);
+        expect(snapshot.layouts[0].layout).toEqual({columns: []});
     });
 
     it('defaults lastActiveLayout to Default when no row is active', () => {
@@ -115,6 +136,20 @@ describe('loadRemoteIntoLocal', () => {
         expect(mockSaveLayouts).not.toHaveBeenCalled();
     });
 
+    it('marks the default as customised only when the server sent a Default row', async () => {
+        mockGetLayouts.mockResolvedValue([
+            {name: 'Wide', layoutJson: JSON.stringify({layout: customLayout.layout, boxVisibility: {}}), isActive: true},
+        ]);
+        await loadRemoteIntoLocal(keys, 'JobSearch', defaultLayout);
+        expect(isDefaultCustomised(keys)).toBe(false);
+
+        mockGetLayouts.mockResolvedValue([
+            {name: 'Default', layoutJson: JSON.stringify({layout: {columns: []}, boxVisibility: {}}), isActive: true},
+        ]);
+        await loadRemoteIntoLocal(keys, 'JobSearch', defaultLayout);
+        expect(isDefaultCustomised(keys)).toBe(true);
+    });
+
     it('seeds the server from localStorage when the server is empty', async () => {
         mockGetLayouts.mockResolvedValue([]);
         localStorage.setItem(keys.layoutsKey, JSON.stringify([defaultLayout, customLayout]));
@@ -125,10 +160,10 @@ describe('loadRemoteIntoLocal', () => {
         expect(mockSaveLayouts).toHaveBeenCalledTimes(1);
         const [page, rows] = mockSaveLayouts.mock.calls[0];
         expect(page).toBe('JobSearch');
-        expect(rows.map(r => r.name)).toEqual(['Wide']);
+        expect(rows.map(r => r.name)).toEqual(['Default', 'Wide']);
     });
 
-    it('does not seed when only the Default layout exists locally', async () => {
+    it('does not seed when only an untouched Default layout exists locally', async () => {
         mockGetLayouts.mockResolvedValue([]);
 
         const applied = await loadRemoteIntoLocal(keys, 'JobSearch', defaultLayout);
@@ -136,16 +171,28 @@ describe('loadRemoteIntoLocal', () => {
         expect(applied).toBe(false);
         expect(mockSaveLayouts).not.toHaveBeenCalled();
     });
+
+    it('seeds when the only local layout is a Default the user has adjusted', async () => {
+        mockGetLayouts.mockResolvedValue([]);
+        const adjusted: ILayout = {name: 'Default', layout: {columns: []}};
+        localStorage.setItem(keys.layoutsKey, JSON.stringify([adjusted]));
+        setDefaultCustomised(keys, true);
+
+        await loadRemoteIntoLocal(keys, 'JobSearch', defaultLayout);
+
+        expect(mockSaveLayouts).toHaveBeenCalledTimes(1);
+        expect(mockSaveLayouts.mock.calls[0][1].map(r => r.name)).toEqual(['Default']);
+    });
 });
 
 describe('readLocalRows', () => {
-    it('serializes the locally stored custom layouts as rows', () => {
+    it('serializes the locally stored layouts as rows', () => {
         localStorage.setItem(keys.layoutsKey, JSON.stringify([defaultLayout, customLayout]));
         localStorage.setItem(keys.lastActiveLayoutKey, 'Wide');
 
         const rows = readLocalRows(keys, defaultLayout);
-        expect(rows.map(r => r.name)).toEqual(['Wide']);
-        expect(rows[0].isActive).toBe(true);
+        expect(rows.map(r => r.name)).toEqual(['Default', 'Wide']);
+        expect(rows[1].isActive).toBe(true);
     });
 });
 

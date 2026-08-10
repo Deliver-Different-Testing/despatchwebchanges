@@ -5,9 +5,10 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {CreateNoteRequest, JobNote, JobNoteDto, NoteHistoryDto, NoteHistoryEntry, NoteType, UpdateNoteRequest} from '../interfaces';
 import {parseDateFromApi} from '../utils/dateUtils';
+import {RequestOptions} from "./requestOptions";
 
 /**
  * Transform a JobNoteDto from API to JobNote with Dayjs dates

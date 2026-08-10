@@ -1,13 +1,13 @@
-import React, {Fragment, useRef, useState} from 'react';
+import React, {Fragment, useCallback, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import EditIcon from '@mui/icons-material/Edit';
-import DoneIcon from '@mui/icons-material/Done';
 import AddIcon from '@mui/icons-material/Add';
+import DoneIcon from '@mui/icons-material/Done';
 import RemoveIcon from '@mui/icons-material/Remove';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {alpha} from '@mui/material/styles';
 import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
@@ -20,7 +20,6 @@ export interface JobSearchShellProps {
     /** Bumped on layout switch or box reorder to force a clean PanelGroup remount. */
     layoutVersion: number;
     boxes: Record<string, IBox>;
-    isDefaultLayout: boolean;
     /**
      * Render a box's body. `headerSlot` is that card's header DOM node — pass it
      * to a box that wants to render its own controls into the gradient header via
@@ -29,10 +28,9 @@ export interface JobSearchShellProps {
      */
     renderBoxContent: (boxName: string, headerSlot?: HTMLElement | null) => React.ReactNode;
     onRefreshBox: (boxName: string) => void;
-    onToggleCollapse: (boxName: string) => void;
     boxSubtitle?: (boxName: string) => string | undefined;
     boxLocked?: (boxName: string) => boolean;
-    /** Optional per-box content rendered in the header's right action slot (before refresh/collapse/drag). */
+    /** Optional per-box content rendered in the header's right action slot (before refresh/drag). */
     boxRightSlot?: (boxName: string) => React.ReactNode;
     onColumnSizes?: (sizes: number[]) => void;
     onBoxHeights?: (columnId: string, sizes: number[], visibleBoxNames: string[]) => void;
@@ -43,28 +41,24 @@ export interface JobSearchShellProps {
         targetIndex: number,
     ) => void;
     /**
-     * Layout edit mode. When true, the per-box drag handle, collapse toggle,
-     * resize gutters and the "Editing" chip are shown and reordering is enabled;
-     * when false the layout is locked (clean read-only view). Default true so
-     * existing callers (Job Search) behave as before — editability is then gated
-     * only by whether the active layout is the read-only Default.
+     * "Edit columns" mode, toggled from the toolbar's Layouts menu. Reveals the
+     * columns bar (layout column stepper) above the panels; each job-list panel
+     * separately reveals its own column editor.
      */
-    editMode?: boolean;
-    /** Called by the in-bar "Done editing" button to leave edit mode. */
-    onExitEditMode?: () => void;
-    /** Append a column to the current layout. When both column handlers are supplied the edit bar shows a column-count stepper. */
+    columnEditMode?: boolean;
+    /** Leave "Edit columns" mode from the bar's Done button. */
+    onExitColumnEditMode?: () => void;
+    /** Append a column to the current layout. Supply both to show the stepper. */
     onAddColumn?: () => void;
     /** Remove the rightmost column from the current layout. */
     onRemoveColumn?: () => void;
-    /** Upper bound for the column stepper. Defaults to MAX_COLUMNS. */
-    maxColumns?: number;
 }
 
 // The gutter affordance is the same shape used by recurring-jobs:
 // transparent by default, glows on hover, intensifies on drag.
 const horizontalHandleSx = ((theme: Theme) => ({
     width: 8,
-    mx: 0.25,
+    mx: 0,
     bgcolor: 'transparent',
     cursor: 'col-resize',
     borderRadius: 1,
@@ -81,7 +75,7 @@ const horizontalHandleSx = ((theme: Theme) => ({
 
 const verticalHandleSx = ((theme: Theme) => ({
     height: 8,
-    my: 0.25,
+    my: 0,
     bgcolor: 'transparent',
     cursor: 'row-resize',
     borderRadius: 1,
@@ -119,7 +113,7 @@ const boxContentSx: SxProps<Theme> = {
 // the padding, so it never overflows / triggers a scrollbar.
 const boxPanelPadSx: SxProps<Theme> = {
     height: '100%',
-    p: 0.5,
+    p: 0.25,
     boxSizing: 'border-box',
 };
 
@@ -127,19 +121,18 @@ const boxPanelPadSx: SxProps<Theme> = {
 // header controls (via createPortal) without lifting state. Header + content are
 // rendered via callbacks so the shell keeps the drag/drop/reorder logic inline.
 interface BoxCardBodyProps {
-    collapsed: boolean;
     onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
     onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
     renderHeader: (headerSlotRef: (el: HTMLElement | null) => void) => React.ReactNode;
     renderContent: (headerSlot: HTMLElement | null) => React.ReactNode;
 }
 
-const BoxCardBody: React.FC<BoxCardBodyProps> = ({collapsed, onDragOver, onDrop, renderHeader, renderContent}) => {
+const BoxCardBody: React.FC<BoxCardBodyProps> = ({onDragOver, onDrop, renderHeader, renderContent}) => {
     const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
     return (
         <Box sx={boxCardSx} onDragOver={onDragOver} onDrop={onDrop}>
             {renderHeader(setHeaderSlot)}
-            {!collapsed ? <Box sx={boxContentSx}>{renderContent(headerSlot)}</Box> : null}
+            <Box sx={boxContentSx}>{renderContent(headerSlot)}</Box>
         </Box>
     );
 };
@@ -155,25 +148,39 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
     layout,
     layoutVersion,
     boxes,
-    isDefaultLayout,
     renderBoxContent,
     onRefreshBox,
-    onToggleCollapse,
     boxSubtitle,
     boxLocked,
     boxRightSlot,
     onColumnSizes,
     onBoxHeights,
     onMoveBox,
-    editMode = true,
-    onExitEditMode,
+    columnEditMode = false,
+    onExitColumnEditMode,
     onAddColumn,
     onRemoveColumn,
-    maxColumns = MAX_COLUMNS,
 }) => {
     const columnCount = layout.layout.columns.length;
     const showColumnStepper = !!onAddColumn && !!onRemoveColumn;
     const dragRef = useRef<DragRef | null>(null);
+    // Every PanelGroup emits its computed sizes once on mount. That emit carries
+    // no user intent, so swallowing the first one per group keeps merely opening
+    // the page from rewriting (and syncing) the layout.
+    const settledGroupsRef = useRef<{version: number; ids: Set<string>}>({version: layoutVersion, ids: new Set()});
+
+    const afterInitialLayout = useCallback((groupId: string, apply: () => void) => {
+        const settled = settledGroupsRef.current;
+        if (settled.version !== layoutVersion) {
+            settled.version = layoutVersion;
+            settled.ids = new Set();
+        }
+        if (!settled.ids.has(groupId)) {
+            settled.ids.add(groupId);
+            return;
+        }
+        apply();
+    }, [layoutVersion]);
     // Name of the panel whose drag handle should be re-focused after a reorder
     // remounts the panel tree (see BoxHeader.focusHandleOnMount).
     const pendingFocusRef = useRef<string | null>(null);
@@ -217,27 +224,24 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
         <Box sx={{
             height: '100%',
             width: '100%',
-            p: 1,
+            p: 0.5,
             boxSizing: 'border-box',
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
             gap: 0.5,
         }}>
-            {/* Edit-mode signal: only shown while editing a custom (editable)
-                layout. The read-only Default layout and the locked (non-edit)
-                view show nothing so they don't waste space. */}
-            {!isDefaultLayout && editMode && (
+            {columnEditMode && (
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1, px: 0.5, flexShrink: 0}}>
                     <Chip
                         size="small"
                         color="primary"
                         variant="outlined"
-                        icon={<EditIcon/>}
-                        label={`Editing: ${layout.name}`}
+                        icon={<ViewColumnIcon/>}
+                        label="Editing columns"
                     />
                     <Typography variant="caption" sx={{color: 'text.secondary', flex: 1}}>
-                        Drag a panel, or focus its handle and use the arrow keys, to reorder
+                        Set the layout&rsquo;s columns here, and each list&rsquo;s columns in its own panel
                     </Typography>
                     {showColumnStepper && (
                         <Box
@@ -266,23 +270,23 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                             <IconButton
                                 size="small"
                                 aria-label="Add column"
-                                disabled={columnCount >= maxColumns}
+                                disabled={columnCount >= MAX_COLUMNS}
                                 onClick={onAddColumn}
                             >
                                 <AddIcon fontSize="small"/>
                             </IconButton>
                         </Box>
                     )}
-                    {onExitEditMode && (
+                    {onExitColumnEditMode && (
                         <Button
                             size="small"
                             variant="contained"
                             color="primary"
                             startIcon={<DoneIcon/>}
-                            onClick={onExitEditMode}
+                            onClick={onExitColumnEditMode}
                             sx={{flexShrink: 0}}
                         >
-                            Done editing
+                            Done
                         </Button>
                     )}
                 </Box>
@@ -291,7 +295,7 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
             <PanelGroup
                 key={`columns-${layoutVersion}`}
                 direction="horizontal"
-                onLayout={sizes => onColumnSizes?.(sizes)}
+                onLayout={sizes => afterInitialLayout('columns', () => onColumnSizes?.(sizes))}
             >
                 {layout.layout.columns.map((column, columnIdx) => {
                     const visibleBoxes = column.boxes
@@ -300,15 +304,13 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                             originalIndex,
                             meta: boxes[boxRef.name ?? ''],
                         }))
-                        // The Default layout is read-only — panels can't be hidden there,
-                        // so always show every panel regardless of any stored visibility.
-                        .filter(item => item.meta && (isDefaultLayout || item.meta.visible));
+                        .filter(item => item.meta && item.meta.visible);
 
                     const visibleBoxNames = visibleBoxes.map(item => item.boxRef.name ?? '');
 
                     return (
                         <Fragment key={column.id}>
-                            {columnIdx > 0 && !isDefaultLayout && editMode && (
+                            {columnIdx > 0 && (
                                 <PanelResizeHandle>
                                     <Box sx={horizontalHandleSx} />
                                 </PanelResizeHandle>
@@ -334,29 +336,30 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                                                 border: '1px dashed',
                                                 borderColor: alpha(theme.palette.primary.main, 0.3),
                                                 borderRadius: 1,
-                                                m: 0.5,
+                                                m: 0.25,
                                             })}
                                         >
-                                            {isDefaultLayout ? 'Empty column' : 'Drop a panel here'}
+                                            Drop a panel here
                                         </Box>
                                     ) : (
                                         <PanelGroup
                                             key={`column-${column.id}-${layoutVersion}`}
                                             direction="vertical"
-                                            onLayout={sizes => onBoxHeights?.(column.id, sizes, visibleBoxNames)}
+                                            onLayout={sizes => afterInitialLayout(
+                                                column.id,
+                                                () => onBoxHeights?.(column.id, sizes, visibleBoxNames),
+                                            )}
                                         >
                                             {visibleBoxes.map((item, vIdx) => {
                                                 const {boxRef, originalIndex, meta} = item;
                                                 if (!meta) return null;
-                                                const collapsed = meta.collapsed ?? false;
-                                                const defaultSize = collapsed ? 8 : parsePercent(boxRef.height, 33);
-                                                const minSize = collapsed ? 6 : 12;
+                                                const defaultSize = parsePercent(boxRef.height, 33);
                                                 const boxName = meta.name ?? '';
 
                                                 // Keyboard reorder targets the neighbouring visible panel's
                                                 // original index — mirroring the drag drop-on-box semantics so
                                                 // useBoxLayout.moveBox applies the same index adjustment.
-                                                const canReorder = !isDefaultLayout && !!onMoveBox && editMode;
+                                                const canReorder = !!onMoveBox;
                                                 const prevVisible = vIdx > 0 ? visibleBoxes[vIdx - 1] : undefined;
                                                 const nextVisible = vIdx < visibleBoxes.length - 1
                                                     ? visibleBoxes[vIdx + 1]
@@ -370,15 +373,14 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
 
                                                 return (
                                                     <Fragment key={boxRef.name}>
-                                                        {vIdx > 0 && !isDefaultLayout && editMode && (
+                                                        {vIdx > 0 && (
                                                             <PanelResizeHandle>
                                                                 <Box sx={verticalHandleSx} />
                                                             </PanelResizeHandle>
                                                         )}
-                                                        <Panel defaultSize={defaultSize} minSize={minSize}>
+                                                        <Panel defaultSize={defaultSize} minSize={12}>
                                                             <Box sx={boxPanelPadSx}>
                                                                 <BoxCardBody
-                                                                    collapsed={collapsed}
                                                                     onDragOver={handleDragOver}
                                                                     onDrop={handleDropOnBox(column.id, originalIndex)}
                                                                     renderHeader={(headerSlotRef) => (
@@ -389,15 +391,12 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                                                                             locked={boxLocked?.(meta.name ?? '')}
                                                                             rightSlot={boxRightSlot?.(meta.name ?? '')}
                                                                             headerSlotRef={headerSlotRef}
-                                                                            collapsed={collapsed}
                                                                             showRefresh={!!meta.showRefresh}
-                                                                            showCollapse={!isDefaultLayout && editMode}
-                                                                            showDragHandle={!isDefaultLayout && editMode}
-                                                                            onDragStart={(isDefaultLayout || !editMode)
-                                                                                ? undefined
-                                                                                : handleDragStart(column.id, originalIndex)}
+                                                                            showDragHandle={canReorder}
+                                                                            onDragStart={canReorder
+                                                                                ? handleDragStart(column.id, originalIndex)
+                                                                                : undefined}
                                                                             onRefresh={() => onRefreshBox(meta.name ?? '')}
-                                                                            onToggleCollapse={() => onToggleCollapse(meta.name ?? '')}
                                                                             onMoveUp={canReorder && prevVisible
                                                                                 ? () => moveTo(prevVisible.originalIndex)
                                                                                 : undefined}

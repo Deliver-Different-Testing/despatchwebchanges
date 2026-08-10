@@ -12,7 +12,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import {useAiDraft} from '../../hooks/useAiDraft';
 import {AiDraftButton} from '../common/ai-draft-button/AiDraftButton';
-import {ChangeRequestTriageResponse, triageChangeRequest} from '../../services/aiAssistantApi';
+import {triageChangeRequest} from '../../services/aiAssistantApi';
+import type {ChangeRequestTriageResponse} from '../../interfaces/ai';
 
 interface ChangeRequestTriageProps {
     requestId: number;

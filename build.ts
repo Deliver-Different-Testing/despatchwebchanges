@@ -3,6 +3,34 @@ import fs from "fs";
 import path from "path";
 import {lessLoader} from "esbuild-plugin-less";
 
+// Every valid-identifier named export of the installed React, used to generate
+// the `react` → window.React shim (see createReactGlobalShimPlugin) so the shim
+// tracks whatever React version ships rather than a hand-maintained list.
+const reactNamedExports: string[] = Object.keys(require("react")).filter(
+    (k) => k !== "default" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k)
+);
+
+// Mantine barrels shimmed onto the vendor-react window globals. Export lists are
+// read off the installed packages so they never drift from the shipped version.
+const mantineBarrels: Record<string, {global: string; exports: string[]}> = Object.fromEntries(
+    (
+        [
+            ["@mantine/core", "MantineCore"],
+            ["@mantine/hooks", "MantineHooks"],
+            ["@mantine/dates", "MantineDates"],
+            ["@mantine/notifications", "MantineNotifications"],
+        ] as const
+    ).map(([specifier, global]) => [
+        specifier,
+        {
+            global,
+            exports: Object.keys(require(specifier)).filter(
+                (k) => k !== "default" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k)
+            ),
+        },
+    ])
+);
+
 // Type definitions
 type EntryPointName =
     'vendor-core'
@@ -216,7 +244,8 @@ function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
             }));
 
             build.onLoad({ filter: /.*/, namespace: "windows-iana-shim" }, () => ({
-                contents: `export const findIana = window.windowsIana.findIana; export const findWindows = window.windowsIana.findWindows;`,
+                contents: ["findIana", "findWindows"]
+                    .map(k => pureExport(k, `window.windowsIana.${k}`)).join("\n"),
                 loader: "js",
             }));
 
@@ -258,6 +287,21 @@ function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
     };
 }
 
+/**
+ * Emits a tree-shakable `export const <name> = <expr>`.
+ *
+ * A bare `export const Button = M.Button` is NOT droppable: esbuild has to
+ * assume the property read might invoke a getter, so it keeps every generated
+ * export even when the island imports two of them. Wrapping the read in a
+ * `/* @__PURE__ *\/` call makes it provably side-effect free, so unused exports
+ * vanish — and the minifier inlines the IIFE, leaving `var t = window.X, o =
+ * t.Button` for the ones that are used. Without this, each island importing the
+ * `@mantine/core` barrel carried all ~440 assignments (~6 KB).
+ */
+function pureExport(name: string, expr: string): string {
+    return `export const ${name} = /* @__PURE__ */ (() => ${expr})();`;
+}
+
 // Plugin to redirect React imports to window globals (for react-module bundles)
 function createReactGlobalShimPlugin(): esbuild.Plugin {
     return {
@@ -269,46 +313,13 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 namespace: "react-shim",
             }));
 
+            // Re-export EVERY named export of the installed React off window.React,
+            // generated from React's own export list. This avoids hand-maintaining
+            // the set (React 19 added `use`, `useEffectEvent`, `Activity`, … and
+            // Mantine imports them) — the shim now tracks whatever React ships.
             build.onLoad({filter: /.*/, namespace: "react-shim"}, () => ({
-                contents: `
-                    const React = window.React;
-                    export default React;
-                    // Core hooks
-                    export const useState = React.useState;
-                    export const useEffect = React.useEffect;
-                    export const useCallback = React.useCallback;
-                    export const useMemo = React.useMemo;
-                    export const useRef = React.useRef;
-                    export const useContext = React.useContext;
-                    export const useReducer = React.useReducer;
-                    export const useLayoutEffect = React.useLayoutEffect;
-                    export const useImperativeHandle = React.useImperativeHandle;
-                    export const useDebugValue = React.useDebugValue;
-                    // React 18 hooks
-                    export const useId = React.useId;
-                    export const useTransition = React.useTransition;
-                    export const useDeferredValue = React.useDeferredValue;
-                    export const useSyncExternalStore = React.useSyncExternalStore;
-                    export const useInsertionEffect = React.useInsertionEffect;
-                    // Core APIs
-                    export const createContext = React.createContext;
-                    export const createElement = React.createElement;
-                    export const Fragment = React.Fragment;
-                    export const Children = React.Children;
-                    export const cloneElement = React.cloneElement;
-                    export const isValidElement = React.isValidElement;
-                    export const memo = React.memo;
-                    export const forwardRef = React.forwardRef;
-                    export const lazy = React.lazy;
-                    export const Suspense = React.Suspense;
-                    export const StrictMode = React.StrictMode;
-                    // Additional APIs
-                    export const Component = React.Component;
-                    export const PureComponent = React.PureComponent;
-                    export const createRef = React.createRef;
-                    export const version = React.version;
-                    export const startTransition = React.startTransition;
-                `,
+                contents: `const React = window.React;\nexport default React;\n`
+                    + reactNamedExports.map(k => pureExport(k, `React.${k}`)).join('\n'),
                 loader: "js",
             }));
 
@@ -319,13 +330,9 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
             }));
 
             build.onLoad({filter: /.*/, namespace: "react-dom-shim"}, () => ({
-                contents: `
-                    const ReactDOM = window.ReactDOM;
-                    export default ReactDOM;
-                    export const createRoot = ReactDOM.createRoot;
-                    export const createPortal = ReactDOM.createPortal;
-                    export const flushSync = ReactDOM.flushSync;
-                `,
+                contents: `const ReactDOM = window.ReactDOM;\nexport default ReactDOM;\n`
+                    + ["createRoot", "createPortal", "flushSync"]
+                        .map(k => pureExport(k, `ReactDOM.${k}`)).join("\n"),
                 loader: "js",
             }));
 
@@ -336,11 +343,8 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
             }));
 
             build.onLoad({filter: /.*/, namespace: "react-dom-client-shim"}, () => ({
-                contents: `
-                    const ReactDOM = window.ReactDOM;
-                    export const createRoot = ReactDOM.createRoot;
-                    export const hydrateRoot = ReactDOM.hydrateRoot;
-                `,
+                contents: `const ReactDOM = window.ReactDOM;\n`
+                    + ["createRoot", "hydrateRoot"].map(k => pureExport(k, `ReactDOM.${k}`)).join("\n"),
                 loader: "js",
             }));
 
@@ -351,12 +355,8 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
             }));
 
             build.onLoad({filter: /.*/, namespace: "jsx-runtime-shim"}, () => ({
-                contents: `
-                    const jsxRuntime = window.ReactJsxRuntime;
-                    export const jsx = jsxRuntime.jsx;
-                    export const jsxs = jsxRuntime.jsxs;
-                    export const Fragment = jsxRuntime.Fragment;
-                `,
+                contents: `const jsxRuntime = window.ReactJsxRuntime;\n`
+                    + ["jsx", "jsxs", "Fragment"].map(k => pureExport(k, `jsxRuntime.${k}`)).join("\n"),
                 loader: "js",
             }));
 
@@ -367,17 +367,30 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
             }));
 
             build.onLoad({filter: /.*/, namespace: "react-query-shim"}, () => ({
-                contents: `
-                    export const QueryClient = window.QueryClient;
-                    export const QueryClientProvider = window.QueryClientProvider;
-                    export const keepPreviousData = window.keepPreviousData;
-                    export const useQuery = window.useQuery;
-                    export const useInfiniteQuery = window.useInfiniteQuery;
-                    export const useMutation = window.useMutation;
-                    export const useQueryClient = window.useQueryClient;
-                `,
+                contents: [
+                    "QueryClient", "QueryClientProvider", "keepPreviousData", "useQuery",
+                    "useInfiniteQuery", "useMutation", "useQueryClient",
+                ].map(k => pureExport(k, `window.${k}`)).join("\n"),
                 loader: "js",
             }));
+
+            // ── Mantine: redirect the barrels to the vendor-react globals for the
+            // same reason as MUI below — otherwise every migrated island embeds its
+            // own copy of Mantine core. Export lists are generated from the
+            // installed packages (see mantineBarrels), so they track whatever
+            // version ships rather than a hand-maintained list.
+            for (const [specifier, {global, exports}] of Object.entries(mantineBarrels)) {
+                const namespace = `mantine-shim:${specifier}`;
+                build.onResolve({filter: new RegExp(`^${specifier.replace("/", "\\/")}$`)}, () => ({
+                    path: specifier,
+                    namespace,
+                }));
+                build.onLoad({filter: /.*/, namespace}, () => ({
+                    contents: `const M = window.${global};\n`
+                        + exports.map(k => pureExport(k, `M.${k}`)).join("\n"),
+                    loader: "js",
+                }));
+            }
 
             // ── MUI: redirect to the vendor-react globals so module bundles don't
             // each embed their own copy of MUI + Emotion. vendor-react exposes
@@ -392,27 +405,12 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
             }));
 
             build.onLoad({filter: /.*/, namespace: "mui-styles-shim"}, () => ({
-                contents: `
-                    const S = window.MUIStyles;
-                    export const alpha = S.alpha;
-                    export const useTheme = S.useTheme;
-                    export const createTheme = S.createTheme;
-                    export const ThemeProvider = S.ThemeProvider;
-                    export const styled = S.styled;
-                    export const useThemeProps = S.useThemeProps;
-                    export const responsiveFontSizes = S.responsiveFontSizes;
-                    export const StyledEngineProvider = S.StyledEngineProvider;
-                    export const useColorScheme = S.useColorScheme;
-                    export const emphasize = S.emphasize;
-                    export const darken = S.darken;
-                    export const lighten = S.lighten;
-                    export const hexToRgb = S.hexToRgb;
-                    export const rgbToHex = S.rgbToHex;
-                    export const decomposeColor = S.decomposeColor;
-                    export const recomposeColor = S.recomposeColor;
-                    export const css = S.css;
-                    export const keyframes = S.keyframes;
-                `,
+                contents: `const S = window.MUIStyles;\n` + [
+                    "alpha", "useTheme", "createTheme", "ThemeProvider", "styled", "useThemeProps",
+                    "responsiveFontSizes", "StyledEngineProvider", "useColorScheme", "emphasize",
+                    "darken", "lighten", "hexToRgb", "rgbToHex", "decomposeColor", "recomposeColor",
+                    "css", "keyframes",
+                ].map(k => pureExport(k, `S.${k}`)).join("\n"),
                 loader: "js",
             }));
 
@@ -429,12 +427,9 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 // that @mui/icons-material depends on and the barrel doesn't carry.
                 if (name === "SvgIcon") {
                     return {
-                        contents: `
-                            const S = window.MUISvgIcon;
-                            export default S.default;
-                            export const createSvgIcon = S.createSvgIcon;
-                            export const svgIconClasses = S.svgIconClasses;
-                        `,
+                        contents: `const S = window.MUISvgIcon;\nexport default S.default;\n`
+                            + ["createSvgIcon", "svgIconClasses"]
+                                .map(k => pureExport(k, `S.${k}`)).join("\n"),
                         loader: "js",
                     };
                 }
@@ -451,7 +446,7 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
             build.onLoad({filter: /.*/, namespace: "muix-shim"}, (args) => {
                 const name = args.path.slice("@mui/x-date-pickers/".length);
                 return {
-                    contents: `export const ${name} = window.MUIXDatePickers.${name};`,
+                    contents: pureExport(name, `window.MUIXDatePickers.${name}`),
                     loader: "js",
                 };
             });

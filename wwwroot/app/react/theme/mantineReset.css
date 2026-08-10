@@ -1,0 +1,32 @@
+/**
+ * Repairs Mantine's reset where the legacy stack overrides it.
+ *
+ * Mantine ships inside `@layer mantine`, and unlayered CSS always beats layered CSS
+ * regardless of specificity or source order. Bootstrap in `vendor-plugins.css` is
+ * unlayered and sets `p { margin-top: 0; margin-bottom: 1rem }`, so every Mantine
+ * `<Text>` — which renders a `<p>` — inherits a stray 16px bottom margin. That shows up
+ * as loose line spacing in stacked text and as icons sitting low next to their label,
+ * because the text's flex box is 16px taller than the text it contains.
+ *
+ * This file is imported unlayered so it outranks Bootstrap in turn. Keep it to genuine
+ * repairs of Mantine's own reset — component styling belongs in the theme.
+ */
+.mantine-Text-root,
+.mantine-Title-root {
+    margin: 0;
+}
+
+/*
+ * Bootstrap's reboot also sets `button { border-radius: 0 }`. Mantine does set its own
+ * radius, but through a layered declaration (`border-radius: var(--ai-radius, …)`), so
+ * the unlayered reboot wins and every Mantine button renders square — the circular
+ * ActionIcons and lozenge Buttons the theme asks for come out with hard corners.
+ *
+ * `revert-layer` rolls the property back to the Mantine layer, so each component keeps
+ * its own radius variable instead of us restating them here. `button:where(…)` holds the
+ * specificity at (0,0,1): enough to tie the reboot and win on source order, low enough
+ * that a real class selector still wins — `SideNav.module.css`'s nav pill relies on that.
+ */
+button:where([class*='mantine-']) {
+    border-radius: revert-layer;
+}

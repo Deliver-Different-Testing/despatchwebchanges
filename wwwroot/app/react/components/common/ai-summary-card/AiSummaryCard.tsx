@@ -30,15 +30,10 @@ import StopIcon from '@mui/icons-material/Stop';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {
-    AttentionItem,
-    StructuredSummaryResponse,
-    SummarySeverity,
-    TimelineItem,
-    TimelineStatus,
-} from '../../../services/aiAssistantApi';
+import {SummarySeverity, TimelineStatus} from '../../../services/aiAssistantApi';
 import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
 import {formatRelativeTime} from '../../../utils/dateUtils';
+import type {AttentionItem, StructuredSummaryResponse, TimelineItem} from '../../../interfaces/ai';
 
 interface AiSummaryCardProps {
     title: string;

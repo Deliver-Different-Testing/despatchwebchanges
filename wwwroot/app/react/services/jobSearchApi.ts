@@ -6,11 +6,12 @@
  * existing apiClient and transformDispatchJobDTO for DTO mapping.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {transformDispatchJobDTO} from '../../functions/dtoMappings';
 import {formatDateForApiWithTzs} from '../utils/dateUtils';
 import type {IJobSearchResultDto, IDispatchJobDto} from '../../interfaces/job.interface';
 import type {DispatchJob, JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
+import {RequestOptions} from "./requestOptions";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 

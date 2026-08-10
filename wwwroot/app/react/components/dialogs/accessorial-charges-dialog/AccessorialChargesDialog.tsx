@@ -47,7 +47,8 @@ import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
 import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
 import {useAiDraft} from '../../../hooks/useAiDraft';
-import {analyzePricing, PricingAnalysisResponse} from '../../../services/aiAssistantApi';
+import {analyzePricing} from '../../../services/aiAssistantApi';
+import type {PricingAnalysisResponse} from '../../../interfaces/ai';
 
 interface AppliedRowState {
     inputValue: string;

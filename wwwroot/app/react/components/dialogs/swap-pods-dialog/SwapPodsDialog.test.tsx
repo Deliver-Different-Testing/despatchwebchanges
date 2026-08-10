@@ -6,23 +6,15 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import { renderWithMantine } from '../../../__testUtils__';
 import {SwapPodsDialog, SwapPodsDialogProps} from './SwapPodsDialog';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+const renderWithTheme = (ui: React.ReactElement) => renderWithMantine(ui);
 
 const createMockProps = (overrides: Partial<SwapPodsDialogProps> = {}): SwapPodsDialogProps => ({
     open: true,
@@ -242,10 +234,10 @@ describe('SwapPodsDialog', () => {
         await screen.findByRole('button', {name: /confirm swap/i});
 
         await act(async () => {
-            rerender(<ThemeProvider theme={theme}><SwapPodsDialog {...props} open={false} /></ThemeProvider>);
+            rerender(<SwapPodsDialog {...props} open={false} />);
         });
         await act(async () => {
-            rerender(<ThemeProvider theme={theme}><SwapPodsDialog {...props} open={true} /></ThemeProvider>);
+            rerender(<SwapPodsDialog {...props} open={true} />);
         });
 
         expect(screen.getByRole('button', {name: /validate/i})).toBeInTheDocument();

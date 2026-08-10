@@ -19,7 +19,7 @@ public sealed class StaffSessionContextInterceptorTests
 
     private StaffSessionContextInterceptor CreateInterceptor() => new(_contextAccessor);
 
-    private static HttpContext ContextWithClaims(params (string type, string value)[] claims)
+    private static DefaultHttpContext ContextWithClaims(params (string type, string value)[] claims)
     {
         var identity = new ClaimsIdentity(claims.Select(c => new Claim(c.type, c.value)), "TestAuth");
         return new DefaultHttpContext { User = new ClaimsPrincipal(identity) };

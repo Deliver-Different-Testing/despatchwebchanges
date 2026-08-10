@@ -93,7 +93,7 @@ describe('JobListToolbar', () => {
         const props = createDefaultProps();
         renderWithTheme(<JobListToolbar {...props}/>);
 
-        const resetButton = screen.getByRole('button', {name: /reset column widths/i});
+        const resetButton = screen.getByRole('button', {name: /reset columns/i});
         await user.click(resetButton);
 
         expect(props.onResetColumns).toHaveBeenCalledTimes(1);

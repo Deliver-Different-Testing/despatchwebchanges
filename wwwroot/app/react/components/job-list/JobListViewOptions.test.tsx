@@ -21,19 +21,20 @@ function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobL
 }
 
 /**
- * Collect the emotion CSS rules for the rendered switch's track. jsdom's
- * getComputedStyle can't resolve MUI's nested-slot cascade, so we assert on the
- * generated stylesheet text instead of the computed colour.
+ * Collect the emotion CSS rules generated for `selector` under the rendered
+ * `root` element's own style hash. jsdom's getComputedStyle can't resolve MUI's
+ * nested-slot cascade, so we assert on the generated stylesheet text instead of
+ * the computed colour.
  */
-function switchTrackRules(): string {
-    const root = document.querySelector('.MuiSwitch-root') as Element;
-    const hash = Array.from(root.classList).find((c) => c.startsWith('css-'))!.split('-')[1];
+function emotionRulesFor(root: string, selector: string): string {
+    const el = document.querySelector(root) as Element;
+    const hash = Array.from(el.classList).find((c) => c.startsWith('css-'))!.split('-')[1];
     let text = '';
     for (const styleEl of Array.from(document.querySelectorAll('style'))) {
         const sheet = (styleEl as HTMLStyleElement).sheet;
         if (!sheet) continue;
         for (const rule of Array.from(sheet.cssRules)) {
-            if (rule.cssText.includes(hash) && rule.cssText.includes('MuiSwitch-track')) {
+            if (rule.cssText.includes(hash) && rule.cssText.includes(selector)) {
                 text += rule.cssText;
             }
         }
@@ -41,20 +42,23 @@ function switchTrackRules(): string {
     return text;
 }
 
+const switchTrackRules = () => emotionRulesFor('.MuiSwitch-root', 'MuiSwitch-track');
+const densityToggleRules = () => emotionRulesFor('.MuiToggleButtonGroup-root', 'MuiToggleButton-root');
+
+const WHITE = /#fff|rgba\(\s*255,\s*255,\s*255/i;
+
 describe('JobListViewOptions', () => {
-    it('renders the logged-in only switch', () => {
-        renderWithTheme(<JobListViewOptions {...createDefaultProps()}/>);
-        expect(screen.getByRole('switch')).toBeInTheDocument();
-    });
-
-    it('forces a white switch track in the header variant so it stands out from the header', () => {
-        renderWithTheme(<JobListViewOptions {...createDefaultProps({headerVariant: true})}/>);
-        expect(switchTrackRules()).toMatch(/background-color:\s*#fff/i);
-    });
-
-    it('leaves the switch track at the theme default in the toolbar variant', () => {
+    it('renders the logged-in only switch and keeps its track at the theme default', () => {
         renderWithTheme(<JobListViewOptions {...createDefaultProps({headerVariant: false})}/>);
-        // No white override on the track — the default (dark) track applies.
-        expect(switchTrackRules()).not.toMatch(/background-color:\s*#fff/i);
+        expect(screen.getByRole('switch')).toBeInTheDocument();
+        expect(switchTrackRules()).not.toMatch(WHITE);
+    });
+
+    it('takes the switch and density toggle colours from the theme in the header variant', () => {
+        renderWithTheme(<JobListViewOptions {...createDefaultProps({headerVariant: true})}/>);
+        // The panel header is a plain `background.paper` bar, so hardcoded white
+        // would be invisible against it.
+        expect(switchTrackRules()).not.toMatch(WHITE);
+        expect(densityToggleRules()).not.toMatch(WHITE);
     });
 });

@@ -7,3 +7,7 @@ export interface ApiError {
     statusText: string;
     message: string;
 }
+
+export interface ApiKeyResponse {
+    apiKey: string;
+}

@@ -2,9 +2,10 @@
  * Customize Panels Dialog
  *
  * Dedicated home for dashboard panel visibility, split out of the gear
- * "Dashboard Settings" dialog. Reachable only via the Layouts menu's
- * "Customize panels…" entry. Follows the canonical job-detail dialog design
- * language (see CLAUDE.md → "Dialog design language").
+ * "Dashboard Settings" dialog and reachable via the Layouts menu's
+ * "Customize panels…" entry.
+ * Follows the canonical job-detail dialog design language (see CLAUDE.md →
+ * "Dialog design language").
  */
 
 import React, {useMemo, useState} from 'react';
@@ -17,7 +18,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Switch from '@mui/material/Switch';
-import Alert from '@mui/material/Alert';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SaveIcon from '@mui/icons-material/Save';
 import {alpha} from '@mui/material/styles';
@@ -31,8 +31,6 @@ export interface CustomizePanelsDialogProps {
     /** Layout name shown as the header subtitle. */
     title?: string;
     boxes: Record<string, DashboardBox>;
-    /** False on the read-only Default layout — shows an info note instead of toggles. */
-    layoutEditable?: boolean;
     onClose: () => void;
     onSave: (boxes: Record<string, DashboardBox>) => void;
 }
@@ -45,11 +43,16 @@ const sectionPaperSx = {
     borderColor: 'grey.200',
 } satisfies SxProps<Theme>;
 
+const sectionLabelSx = {
+    color: 'text.secondary',
+    fontWeight: 500,
+    mb: 1,
+} satisfies SxProps<Theme>;
+
 export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
     open,
     title,
     boxes: initialBoxes,
-    layoutEditable = true,
     onClose,
     onSave,
 }) => {
@@ -87,14 +90,13 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
-                    {layoutEditable ? (
-                        <Box>
-                            <Typography variant="body2" sx={{color: 'text.secondary', fontWeight: 500, mb: 1}}>
-                                Choose which panels appear on your dashboard
-                            </Typography>
-                            <Paper elevation={0} sx={sectionPaperSx}>
-                                <List disablePadding>
-                                    {boxList.map((box) => (
+                    <Box>
+                        <Typography variant="body2" sx={sectionLabelSx}>
+                            Choose which panels appear on your dashboard
+                        </Typography>
+                        <Paper elevation={0} sx={sectionPaperSx}>
+                            <List disablePadding>
+                                {boxList.map((box) => (
                                         <ListItem
                                             key={box.key}
                                             secondaryAction={
@@ -136,15 +138,9 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
                                             />
                                         </ListItem>
                                     ))}
-                                </List>
-                            </Paper>
-                        </Box>
-                    ) : (
-                        <Alert severity="info">
-                            Panel visibility is only available with a custom layout. Create or select a
-                            custom layout to choose which panels appear.
-                        </Alert>
-                    )}
+                            </List>
+                        </Paper>
+                    </Box>
                 </Box>
             </DialogContent>
 
@@ -153,7 +149,6 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
                 onConfirm={handleSave}
                 confirmLabel="Save"
                 confirmIcon={<SaveIcon />}
-                confirmDisabled={!layoutEditable}
             />
         </DialogShell>
     );

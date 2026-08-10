@@ -20,6 +20,7 @@ import { useCourierMap } from './useCourierMap';
 import { DriversPanel } from './components/DriversPanel';
 import { MapControls } from './components/MapControls';
 import { MapZoomViewControls } from '../../components/common/dispatch-map/MapZoomViewControls';
+import { BELOW_APP_BAR_HEIGHT } from '../../components/common/app-toolbar/appBarMetrics';
 import { queryKeys } from '../../query';
 import { getAvailableCourierLocations, getAllFleetOptions } from '../../services/courierApi';
 
@@ -140,7 +141,7 @@ export function CourierMapPage({
     }, []);
 
     return (
-        <Box sx={{ position: 'relative', width: '100%', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+        <Box sx={{ position: 'relative', width: '100%', height: BELOW_APP_BAR_HEIGHT, overflow: 'hidden' }}>
             <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
                 {/* Map Container — isolate the stacking context so HERE Maps' info
                     bubbles / tooltips (rendered inside at z-index ~1001) stay below the

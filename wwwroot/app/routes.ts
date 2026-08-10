@@ -2,6 +2,7 @@ import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
 import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
 import {openJobInSearch} from './react/services/navigationService';
+import {BELOW_APP_BAR_HEIGHT} from './react/components/common/app-toolbar/appBarMetrics';
 import {
     getJobSearchBetaEnabled,
     setJobSearchBetaEnabled,
@@ -34,7 +35,6 @@ import type IDateFilterData from './interfaces/date-filter-data.interface';
 import type {IBox, ILayout} from './interfaces/layout.interfaces';
 import {AppPage} from './enums/app-pages.enum';
 import {isAiEnabled, setAiEnabled} from './functions/aiSettings';
-import isDefaultLayout from './functions/isDefaultLayout';
 
 class RouterConfig {
     constructor(
@@ -165,15 +165,16 @@ class RouterConfig {
                             on-import-layouts="ctrl.importLayouts()"
                             on-settings-click="ctrl.openSettingsDialog($event)"
                             on-customize-panels="ctrl.openCustomizePanelsDialog()"
-                            edit-mode="ctrl.editMode"
-                            on-toggle-edit-mode="ctrl.toggleEditMode()"
+                            on-reset-layout="ctrl.resetLayout()"
+                            column-edit-mode="ctrl.columnEditMode"
+                            on-toggle-column-edit-mode="ctrl.toggleColumnEditMode()"
                             date-filter-data="ctrl.dateFilterData"
                             app-page="home"
                             on-date-filter-refresh="ctrl.refreshDataTimeSpan(dateFilterData)"
                             on-create-new-job="ctrl.createNewJob($event)"
                             on-inter-courier-charge="ctrl.interCourierCharge($event)">
                     </react-app-shell>
-                    <div style="height: calc(100vh - 64px); overflow: hidden;">
+                    <div style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: hidden;">
                         <div id="react-dispatch-v2" style="height: 100%; overflow: hidden;"></div>
                     </div>
                 </md-content>
@@ -279,11 +280,19 @@ class RouterConfig {
                         views: [] as DfrntPageViewModel[],
                         viewsInitialized: false,
                         unreadMessageCount: 0,
-                        editMode: false,
+                        columnEditMode: false,
 
-                        toggleEditMode: () => {
-                            ctrl.editMode = !ctrl.editMode;
-                            window.ReactDispatch?.setEditMode(ctrl.editMode);
+                        toggleColumnEditMode: () => {
+                            ctrl.columnEditMode = !ctrl.columnEditMode;
+                            window.ReactDispatch?.setColumnEditMode(ctrl.columnEditMode);
+                        },
+
+                        resetLayout: () => {
+                            const layoutName = ctrl.currentLayoutName ?? 'Default';
+                            if (!window.confirm(
+                                `Reset "${layoutName}" to the default arrangement? Panel sizes, order and visibility will be restored.`,
+                            )) return;
+                            window.ReactDispatch?.resetCurrentLayout();
                         },
 
                         interCourierCharge: ($event: MouseEvent) => {
@@ -449,7 +458,6 @@ class RouterConfig {
                                 ReactCustomizePanelsDialog?: {
                                     open: (
                                         boxes: Record<string, IBox>,
-                                        layoutEditable?: boolean,
                                         title?: string,
                                     ) => Promise<Record<string, IBox> | null>;
                                 };
@@ -464,11 +472,7 @@ class RouterConfig {
                                     createDispatchBoxes(),
                                     loadBoxVisibility(layoutStorageKeys, layoutName),
                                 );
-                                const result = await w.ReactCustomizePanelsDialog.open(
-                                    boxes,
-                                    !isDefaultLayout(layoutName),
-                                    layoutName,
-                                );
+                                const result = await w.ReactCustomizePanelsDialog.open(boxes, layoutName);
                                 if (!result) return;
 
                                 saveBoxVisibility(layoutStorageKeys, layoutName, result);
@@ -584,9 +588,9 @@ class RouterConfig {
                         timeZone: window.TimeZone || 'New Zealand Standard Time',
                         timeZoneShort: undefined,
                         deepLinkJobId,
-                        onExitEditMode: () => {
-                            ctrl.editMode = false;
-                            window.ReactDispatch?.setEditMode(false);
+                        onExitColumnEditMode: () => {
+                            ctrl.columnEditMode = false;
+                            window.ReactDispatch?.setColumnEditMode(false);
                             $scope.$applyAsync();
                         },
                     });
@@ -750,12 +754,13 @@ class RouterConfig {
                             on-import-layouts="ctrl.importLayouts()"
                             on-settings-click="ctrl.openSettingsDialog($event)"
                             on-customize-panels="ctrl.openCustomizePanelsDialog()"
-                            edit-mode="ctrl.editMode"
-                            on-toggle-edit-mode="ctrl.toggleEditMode()"
+                            on-reset-layout="ctrl.resetLayout()"
+                            column-edit-mode="ctrl.columnEditMode"
+                            on-toggle-column-edit-mode="ctrl.toggleColumnEditMode()"
                             on-create-new-job="ctrl.createNewJob($event)"
                             on-inter-courier-charge="ctrl.interCourierCharge($event)">
                     </react-app-shell>
-                    <div style="height: calc(100vh - 64px); overflow: hidden;">
+                    <div style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: hidden;">
                         <div id="react-job-search-v2" style="height: 100%; overflow: hidden;"></div>
                     </div>
                 </md-content>
@@ -853,11 +858,19 @@ class RouterConfig {
                     const ctrl = {
                         layouts: [] as ILayout[],
                         currentLayoutName: undefined as string | undefined,
-                        editMode: false,
+                        columnEditMode: false,
 
-                        toggleEditMode: () => {
-                            ctrl.editMode = !ctrl.editMode;
-                            window.ReactJobSearch?.setEditMode(ctrl.editMode);
+                        toggleColumnEditMode: () => {
+                            ctrl.columnEditMode = !ctrl.columnEditMode;
+                            window.ReactJobSearch?.setColumnEditMode(ctrl.columnEditMode);
+                        },
+
+                        resetLayout: () => {
+                            const layoutName = ctrl.currentLayoutName ?? 'Default';
+                            if (!window.confirm(
+                                `Reset "${layoutName}" to the default arrangement? Panel sizes, order and visibility will be restored.`,
+                            )) return;
+                            window.ReactJobSearch?.resetCurrentLayout();
                         },
 
                         openMessagingDialog: ($event: MouseEvent) => {
@@ -957,7 +970,6 @@ class RouterConfig {
                                 ReactCustomizePanelsDialog?: {
                                     open: (
                                         boxes: Record<string, IBox>,
-                                        layoutEditable?: boolean,
                                         title?: string,
                                     ) => Promise<Record<string, IBox> | null>;
                                 };
@@ -974,11 +986,7 @@ class RouterConfig {
                                     createJobSearchBoxes(),
                                     loadBoxVisibility(layoutStorageKeys, layoutName),
                                 );
-                                const result = await w.ReactCustomizePanelsDialog.open(
-                                    boxes,
-                                    !isDefaultLayout(layoutName),
-                                    layoutName,
-                                );
+                                const result = await w.ReactCustomizePanelsDialog.open(boxes, layoutName);
                                 if (!result) return;
 
                                 // Persist box visibility and push it into the live React
@@ -1116,9 +1124,9 @@ class RouterConfig {
                         timeZone: window.TimeZone || 'New Zealand Standard Time',
                         timeZoneShort: undefined,
                         deepLinkJobId,
-                        onExitEditMode: () => {
-                            ctrl.editMode = false;
-                            window.ReactJobSearch?.setEditMode(false);
+                        onExitColumnEditMode: () => {
+                            ctrl.columnEditMode = false;
+                            window.ReactJobSearch?.setColumnEditMode(false);
                             $scope.$applyAsync();
                         },
                     });
@@ -1139,7 +1147,7 @@ class RouterConfig {
                 <md-content class="md-dense prebook-view">
                     <style>.prebook-view md-card { margin: 0; }</style>
                     <react-app-shell section="Dashboards" title="Recurring Jobs"></react-app-shell>
-                    <div style="height: calc(100vh - 64px); overflow: hidden;">
+                    <div style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: hidden;">
                         <div id="react-recurring-jobs-list" style="height: 100%; overflow: hidden;"></div>
                     </div>
                 </md-content>
@@ -1219,7 +1227,7 @@ class RouterConfig {
             template: `
                 <md-content class="md-dense" style="height: 100%;">
                     <react-app-shell section="Dashboards" title="Overview"></react-app-shell>
-                    <div class="scrollable-container" style="height: calc(100vh - 64px); overflow: auto;">
+                    <div class="scrollable-container" style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: auto;">
                         <div id="react-overview"></div>
                     </div>
                 </md-content>
@@ -1287,7 +1295,7 @@ class RouterConfig {
                         section="Dashboards"
                         title="Task Dashboard">
                     </react-app-shell>
-                    <div style="height: calc(100vh - 64px); overflow: hidden;">
+                    <div style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: hidden;">
                         <div id="react-task-dashboard" style="height: 100%; overflow: hidden;"></div>
                     </div>
                 </md-content>
@@ -1361,7 +1369,7 @@ class RouterConfig {
             template: `
                 <md-content class="md-dense" style="height: 100%;">
                     <react-app-shell section="Operations" title="Drivers"></react-app-shell>
-                    <div id="react-driver-management" style="height: calc(100vh - 64px);"></div>
+                    <div id="react-driver-management" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
                 </md-content>
             `,
             resolve: {
@@ -1434,7 +1442,7 @@ class RouterConfig {
             url: "/courierMap",
             template: `
                 <react-app-shell section="Operations" title="Courier Map"></react-app-shell>
-                <div id="react-courier-map" style="height: calc(100vh - 64px);"></div>
+                <div id="react-courier-map" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
             `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {

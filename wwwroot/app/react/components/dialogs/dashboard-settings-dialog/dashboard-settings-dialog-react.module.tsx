@@ -193,13 +193,12 @@ interface CustomizePanelsState {
     open: boolean;
     title?: string;
     boxes: Record<string, DashboardBox>;
-    layoutEditable: boolean;
     resolve?: (value: Record<string, DashboardBox> | null) => void;
 }
 
 let panelsRoot: Root | null = null;
 let panelsContainer: HTMLDivElement | null = null;
-let panelsState: CustomizePanelsState = {open: false, boxes: {}, layoutEditable: true};
+let panelsState: CustomizePanelsState = {open: false, boxes: {}};
 
 function renderPanelsDialog(): void {
     if (!panelsRoot) return;
@@ -228,7 +227,6 @@ function renderPanelsDialog(): void {
                     open={panelsState.open}
                     title={panelsState.title}
                     boxes={panelsState.boxes}
-                    layoutEditable={panelsState.layoutEditable}
                     onClose={handleClose}
                     onSave={handleSave}
                 />
@@ -247,12 +245,11 @@ function initializePanelsRoot(): void {
 
 export function openCustomizePanelsDialog(
     boxes: Record<string, DashboardBox>,
-    layoutEditable: boolean = true,
     title?: string,
 ): Promise<Record<string, DashboardBox> | null> {
     initializePanelsRoot();
     return new Promise((resolve) => {
-        panelsState = {open: true, title, boxes: {...boxes}, layoutEditable, resolve};
+        panelsState = {open: true, title, boxes: {...boxes}, resolve};
         renderPanelsDialog();
     });
 }

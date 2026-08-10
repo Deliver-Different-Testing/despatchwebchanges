@@ -3,16 +3,11 @@
  * Split Job API Service Tests
  */
 
-import {
-    splitJobApi,
-    splitJob,
-    restoreSplitJobs,
-    unSplitJob,
-    SplitJobRequest,
-} from './splitJobApi';
+import {restoreSplitJobs, splitJob, splitJobApi, unSplitJob} from './splitJobApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
 import {AddressViewModel} from '../interfaces';
+import type {SplitJobRequest} from '../interfaces/splitJobs';
 
 jest.mock('./apiClient', () => ({
     apiClient: {
