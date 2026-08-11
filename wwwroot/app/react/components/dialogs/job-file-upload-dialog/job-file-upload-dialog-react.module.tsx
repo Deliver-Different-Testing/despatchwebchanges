@@ -7,12 +7,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import {JobFileUploadDialog} from './JobFileUploadDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import type {FileUploadType} from './types';
 import type {ToastService} from '../../../services/toastService';
 
@@ -62,21 +59,16 @@ class JobFileUploadDialogManager {
             this.renderDialog();
         };
 
-        const currentTheme = getTheme();
-
         this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <JobFileUploadDialog
-                        open={this.dialogState.open}
-                        jobId={this.dialogState.jobId}
-                        initialUploadType={this.dialogState.initialUploadType}
-                        onClose={handleClose}
-                        showToast={this.toastService.showToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
+            <DfrntMantineProvider>
+                <JobFileUploadDialog
+                    open={this.dialogState.open}
+                    jobId={this.dialogState.jobId}
+                    initialUploadType={this.dialogState.initialUploadType}
+                    onClose={handleClose}
+                    showToast={this.toastService.showToast}
+                />
+            </DfrntMantineProvider>
         );
     }
 

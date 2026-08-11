@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.3" />
-    <PackageVersion Include="Anthropic" Version="12.39.0" />
+      <PackageVersion Include="Anthropic" Version="12.40.0"/>
     <PackageVersion Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.102" />
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.100.7" />
@@ -27,7 +27,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.10" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
-    <PackageVersion Include="NSubstitute" Version="6.0.0" />
+      <PackageVersion Include="NSubstitute" Version="6.1.0"/>
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />

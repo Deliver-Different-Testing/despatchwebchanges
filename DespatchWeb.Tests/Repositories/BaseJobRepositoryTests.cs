@@ -767,6 +767,36 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         BulkJobId = id, JobNumber = jobNumber, BulkParentId = parentId
     };
 
+    [Fact]
+    public void CalculateRemainTime_OneHourSpeedFifteenMinutesElapsed_ReturnsTimeLeftNotTheWholeWindow()
+    {
+        var job = new DispatchJobViewModel
+        {
+            Booked = new DateTime(2024, 6, 15, 9, 45, 0), SpeedId = 1, JobTypeMins = 60
+        };
+
+        var remain = TestableBaseJobRepository.CalculateRemainTimeForTest(
+            job, new DateTime(2024, 6, 15, 10, 0, 0), economySpeedId: 99, ecoDeliveryTime: null);
+
+        Assert.Equal(45, remain);
+    }
+
+    [Fact]
+    public void CalculateRemainTime_BookedRebasedToNow_ReturnsTheWholeWindowAgain()
+    {
+        // The split-job symptom expressed as a unit: Booked, and nothing else, decides whether a
+        // leg shows the time actually left or the full speed window as if it had just been booked.
+        var job = new DispatchJobViewModel
+        {
+            Booked = new DateTime(2024, 6, 15, 10, 0, 0), SpeedId = 1, JobTypeMins = 60
+        };
+
+        var remain = TestableBaseJobRepository.CalculateRemainTimeForTest(
+            job, new DateTime(2024, 6, 15, 10, 0, 0), economySpeedId: 99, ecoDeliveryTime: null);
+
+        Assert.Equal(60, remain);
+    }
+
     /// <summary>
     /// Test wrapper that exposes protected methods from BaseJobRepository for unit testing.
     /// </summary>
@@ -798,5 +828,10 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         public new Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
             bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote, bool saveChanges = true)
             => base.SaveNoteAsync(jobId, noteText, isImportant, isRecurringJob, noteType, saveChanges);
+
+        // Statics can't be hidden with `new`, so the forwarder takes its own name.
+        public static double? CalculateRemainTimeForTest(DispatchJobViewModel job, DateTime currentTenantTime,
+            int? economySpeedId, DateTime? ecoDeliveryTime)
+            => CalculateRemainTime(job, currentTenantTime, economySpeedId, ecoDeliveryTime);
     }
 }

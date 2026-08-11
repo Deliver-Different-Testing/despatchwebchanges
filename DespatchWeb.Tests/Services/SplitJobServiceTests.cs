@@ -31,6 +31,9 @@ public class SplitJobServiceTests : IAsyncDisposable
     private readonly ITenantClock _fakeTenantClock = new FakeTenantClock(TestDates.Now);
     private static readonly string[] Expected = ["JOB-500A", "JOB-500B"];
 
+    /// <summary>The context the split transaction runs on, when a test needs to write inside it.</summary>
+    private DespatchContext? _splitContext;
+
     public SplitJobServiceTests()
     {
         _seedContext = _db.CreateContext();
@@ -2337,5 +2340,180 @@ public class SplitJobServiceTests : IAsyncDisposable
                 CostAmount = congestionAmount * 2m / 3m
             });
         _seedContext.SaveChanges();
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_BothLegsInheritParentBookedDateAndTime()
+    {
+        // The dispatch grid's Remain is (ucjbDate + ucjbTime) + speed minutes - now. A leg that
+        // loses either half shows the whole speed window again, which reads as "splitting the
+        // job reset its clock".
+        var bookedDate = new DateTime(2024, 1, 15);
+        var bookedTime = new DateTime(2024, 1, 15, 9, 45, 0);
+        SeedJob(configure: j =>
+        {
+            j.UcjbDate = bookedDate;
+            j.UcjbTime = bookedTime;
+        });
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = _db.CreateContext();
+        var legs = await verifyCtx.TucJobs
+            .Where(j => j.UcjbId == pickupId || j.UcjbId == deliveryId)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, legs.Count);
+        Assert.All(legs, leg =>
+        {
+            Assert.Equal(bookedDate, leg.UcjbDate);
+            Assert.Equal(bookedTime, leg.UcjbTime);
+            Assert.Equal(1, leg.UcjbSpeed);
+        });
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_MarsConsolidationRebasesLegs_BookedWindowIsRestoredBeforeCommit()
+    {
+        // DES_stpJob_ColsolidateMarsInformation runs after both legs are inserted and its body is
+        // not in source control. Stand in for a version that rebases the legs onto "now" and prove
+        // the parent's deadline is put back before the split commits.
+        var bookedDate = new DateTime(2024, 1, 15);
+        var bookedTime = new DateTime(2024, 1, 15, 9, 45, 0);
+        SeedJob(configure: j =>
+        {
+            j.UcjbDate = bookedDate;
+            j.UcjbTime = bookedTime;
+        });
+
+        var rebasedDate = new DateTime(2024, 1, 16);
+        var rebasedTime = new DateTime(2024, 1, 16, 13, 30, 0);
+        StubMarsConsolidationToRebaseLegs(rebasedDate, rebasedTime);
+        var service = CreateServiceCapturingSplitContext();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = _db.CreateContext();
+        var legs = await verifyCtx.TucJobs
+            .Where(j => j.UcjbId == pickupId || j.UcjbId == deliveryId)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, legs.Count);
+        Assert.All(legs, leg =>
+        {
+            Assert.Equal(bookedDate, leg.UcjbDate);
+            Assert.Equal(bookedTime, leg.UcjbTime);
+        });
+    }
+
+    [Fact]
+    public async Task ReassertLegBookingAsync_LegsRebased_RestoresParentBookedDateAndTime()
+    {
+        SeedSplitLegsWithPricingLines();
+        var bookedDate = new DateTime(2024, 1, 15);
+        var bookedTime = new DateTime(2024, 1, 15, 9, 45, 0);
+        await DriftLegsAsync(new DateTime(2024, 1, 16), new DateTime(2024, 1, 16, 13, 30, 0));
+
+        await using var ctx = _db.CreateContext();
+        var corrected = await SplitJobService.ReassertLegBookingAsync(ctx, 100, bookedDate, bookedTime,
+            bookedSpeed: 1, [101, 102], TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, corrected);
+        await using var verifyCtx = _db.CreateContext();
+        var legs = await verifyCtx.TucJobs.Where(j => j.UcjbId == 101 || j.UcjbId == 102)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        Assert.All(legs, leg =>
+        {
+            Assert.Equal(bookedDate, leg.UcjbDate);
+            Assert.Equal(bookedTime, leg.UcjbTime);
+        });
+    }
+
+    [Fact]
+    public async Task ReassertLegBookingAsync_LegsMatchParent_WritesNothing()
+    {
+        SeedSplitLegsWithPricingLines();
+
+        await using var ctx = _db.CreateContext();
+        var corrected = await SplitJobService.ReassertLegBookingAsync(ctx, 100, new DateTime(2024, 1, 15),
+            bookedTime: null, bookedSpeed: 1, [101, 102], TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, corrected);
+    }
+
+    [Fact]
+    public async Task ReassertLegBookingAsync_SpeedRewrittenByInsertTrigger_LeavesSpeedAlone()
+    {
+        // tucJob_InsertJob legitimately promotes speed 37 to 64 for ClientID 3191 (Stryker NZ).
+        // Undoing that would misprice the leg, so speed drift is only reported.
+        SeedSplitLegsWithPricingLines();
+        await _seedContext.TucJobs.Where(j => j.UcjbId == 101)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbSpeed, 64),
+                TestContext.Current.CancellationToken);
+
+        await using var ctx = _db.CreateContext();
+        var corrected = await SplitJobService.ReassertLegBookingAsync(ctx, 100, new DateTime(2024, 1, 15),
+            bookedTime: null, bookedSpeed: 37, [101], TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, corrected);
+        await using var verifyCtx = _db.CreateContext();
+        var leg = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 101,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(64, leg.UcjbSpeed);
+    }
+
+    private async Task DriftLegsAsync(DateTime date, DateTime time) =>
+        await _seedContext.TucJobs.Where(j => j.UcjbId == 101 || j.UcjbId == 102)
+            .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.UcjbDate, date)
+                    .SetProperty(x => x.UcjbTime, time),
+                TestContext.Current.CancellationToken);
+
+    /// <summary>
+    /// Makes the MARS consolidation proc rebase both legs' booked window, the way a legacy
+    /// insert-from-parent proc does. Writes through the split's own context: the test database is
+    /// a single shared connection, so a write from any other context is rejected for not carrying
+    /// the connection's active transaction.
+    /// </summary>
+    private void StubMarsConsolidationToRebaseLegs(DateTime date, DateTime time) =>
+        _proceduresMock
+            .DES_stpJob_ColsolidateMarsInformationAsync(Arg.Any<int?>(), Arg.Any<bool?>(), Arg.Any<string>(),
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(_ => RebaseAsync(date, time));
+
+    private async Task<List<DES_stpJob_ColsolidateMarsInformationResult>> RebaseAsync(DateTime date, DateTime time)
+    {
+        // ExecuteUpdate bypasses the change tracker, so this is drift the split cannot see
+        // without re-reading — exactly like a stored proc writing behind EF's back.
+        await _splitContext!.TucJobs
+            .Where(j => j.ParentId == 100 && j.UcjbId != 100)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.UcjbDate, date)
+                .SetProperty(x => x.UcjbTime, time));
+        return [];
+    }
+
+    /// <summary>
+    /// As <see cref="CreateService"/>, but keeps a handle on the context the split runs on so a
+    /// stubbed stored procedure can write inside the split's transaction.
+    /// </summary>
+    private SplitJobService CreateServiceCapturingSplitContext()
+    {
+        var factory = Substitute.For<IDbContextFactory<DespatchContext>>();
+        factory.CreateDbContext().Returns(_ => Create());
+        factory.CreateDbContextAsync(Arg.Any<CancellationToken>()).Returns(_ => Create());
+
+        return new SplitJobService(factory, _tenantInfoServiceMock, _fakeTenantClock, _rateJobServiceMock,
+            _jobRepositoryMock, _jobCommandRepositoryMock, new CreateJobService(factory));
+
+        DespatchContext Create()
+        {
+            var context = new DespatchContext(_db.Options) { Procedures = _proceduresMock };
+            _splitContext ??= context;
+            return context;
+        }
     }
 }

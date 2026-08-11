@@ -7,11 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {NoteManagementDialog} from './NoteManagementDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {notesApi} from '../../../services/notesApi';
 import {toastService} from '../../../services/toastService';
 import {JobNote, NoteType, CreateNoteRequest, UpdateNoteRequest} from '../../../interfaces';
@@ -76,25 +73,20 @@ function renderDialog(): void {
     };
 
     // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
-
     dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <NoteManagementDialog
-                    open={dialogState.open}
-                    note={dialogState.note}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                    onLoadNoteTypes={handleLoadNoteTypes}
-                    onCreateNote={handleCreateNote}
-                    onUpdateNote={handleUpdateNote}
-                    onCreateNoteType={handleCreateNoteType}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
+        <DfrntMantineProvider>
+            <NoteManagementDialog
+                open={dialogState.open}
+                note={dialogState.note}
+                onClose={handleClose}
+                onSave={handleSave}
+                onLoadNoteTypes={handleLoadNoteTypes}
+                onCreateNote={handleCreateNote}
+                onUpdateNote={handleUpdateNote}
+                onCreateNoteType={handleCreateNoteType}
+                showToast={handleShowToast}
+            />
+        </DfrntMantineProvider>
     );
 }
 

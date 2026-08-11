@@ -67,6 +67,20 @@ public interface IJobCommandRepository
         string value
     );
 
+    /// <summary>
+    /// Derives the waiting minutes implied by a dispatcher arrival-field edit and stores them
+    /// on the live job: <see cref="JobProperty.PickupArrivalTime" /> writes
+    /// <c>WaitedPickUp</c> from PickupArrivalTime to PickUpTime, and
+    /// <see cref="JobProperty.DeliveryArrivalTime" /> writes <c>WaitedDelivery</c> from
+    /// DeliveryArrivalTime to UcjbComplTime. Both are equivalent to
+    /// <c>DATEDIFF(MINUTE, start, end)</c>, clamped at zero.
+    /// </summary>
+    /// <returns>
+    /// The minutes written, or <c>null</c> when the property is not an arrival field or the
+    /// job has no waiting basis yet (missing leg-end timestamp), in which case nothing is written.
+    /// </returns>
+    Task<int?> UpdateWaitedMinutesFromArrivalAsync(int jobId, JobProperty property);
+
     Task UpdateBulkJobAsync(
         int bulkJobId,
         JobProperty property,

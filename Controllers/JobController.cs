@@ -42,7 +42,8 @@ public class JobController(
     ISplitPricingPreviewService splitPricingPreviewService,
     ISendToPartnerService sendToPartnerService,
     IPartnerJobGate partnerJobGate,
-    IFlightAssignmentService flightAssignmentService
+    IFlightAssignmentService flightAssignmentService,
+    IArrivalWaitRerateService arrivalWaitRerateService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -1998,6 +1999,11 @@ public class JobController(
             }
         }
 
+        // An arrival correction is a waiting-time correction: derive the waited minutes it
+        // implies and let the normal rerate path reprice the job, so ops no longer has to fix
+        // the timestamp and the wait charge as two separate actions.
+        await arrivalWaitRerateService.HandleArrivalEditAsync(jobId, field, ct);
+
         if (!ShouldRecalculateRate(field))
         {
             Log.Information(
@@ -2083,6 +2089,8 @@ public class JobController(
             JobProperty.TailLiftPu => true,
             JobProperty.TailLiftDo => true,
             JobProperty.DeliverToPrivateRes => true,
+            JobProperty.PickupArrivalTime => true,
+            JobProperty.DeliveryArrivalTime => true,
             _ => false
         };
 

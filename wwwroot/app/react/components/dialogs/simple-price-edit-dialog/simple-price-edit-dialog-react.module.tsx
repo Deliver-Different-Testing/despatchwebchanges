@@ -7,12 +7,9 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import { SimplePriceEditDialog } from './SimplePriceEditDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
+import { DfrntMantineProvider } from '../../../theme/DfrntMantineProvider';
 import { PriceEditResult, PricingMode, SimplePriceEditDialogOptions, ChildJobPrice, ChildPriceUpdate } from './types';
 import type { IJobGroupDto } from '../../../../interfaces/job.interface';
 import { apiClient } from '../../../services/apiClient';
@@ -128,27 +125,22 @@ class SimplePriceEditDialogManager {
             return savedAmount;
         };
 
-        const currentTheme = getTheme();
-
         this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <SimplePriceEditDialog
-                        open={this.dialogState.open}
-                        jobNumber={this.dialogState.jobNumber}
-                        currentCharge={this.dialogState.currentCharge}
-                        isPrebook={this.dialogState.isPrebook}
-                        isBulk={this.dialogState.isBulk}
-                        hideRecalculate={this.dialogState.hideRecalculate}
-                        childJobs={this.dialogState.childJobs}
-                        readOnly={this.dialogState.readOnly}
-                        onClose={handleClose}
-                        onSubmit={handleSubmit}
-                        showToast={this.toastService.showToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
+            <DfrntMantineProvider>
+                <SimplePriceEditDialog
+                    open={this.dialogState.open}
+                    jobNumber={this.dialogState.jobNumber}
+                    currentCharge={this.dialogState.currentCharge}
+                    isPrebook={this.dialogState.isPrebook}
+                    isBulk={this.dialogState.isBulk}
+                    hideRecalculate={this.dialogState.hideRecalculate}
+                    childJobs={this.dialogState.childJobs}
+                    readOnly={this.dialogState.readOnly}
+                    onClose={handleClose}
+                    onSubmit={handleSubmit}
+                    showToast={this.toastService.showToast}
+                />
+            </DfrntMantineProvider>
         );
     }
 
