@@ -44,6 +44,7 @@ export function SearchSelect<T>({
     autoFocus,
     minSearchLength = DEFAULT_MIN_SEARCH_LENGTH,
     debounceMs = DEFAULT_DEBOUNCE_MS,
+    autoHighlight,
 }: SearchSelectProps<T>) {
     const combobox = useCombobox({onDropdownClose: () => combobox.resetSelectedOption()});
 
@@ -109,6 +110,10 @@ export function SearchSelect<T>({
     }, [inputValue, minSearchLength, debounceMs]);
 
     useEffect(() => () => abortRef.current?.abort(), []);
+
+    useEffect(() => {
+        if (autoHighlight && options.length > 0) combobox.selectFirstOption();
+    }, [autoHighlight, options]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleSubmit = useCallback((optionKey: string) => {
         const selected = options.find(o => String(getOptionKey(o)) === optionKey) ?? null;

@@ -1,31 +1,30 @@
 import React, {useMemo, useState} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Popover from '@mui/material/Popover';
-import LinearProgress from '@mui/material/LinearProgress';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import RadioGroup from '@mui/material/RadioGroup';
-import Radio from '@mui/material/Radio';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Typography from '@mui/material/Typography';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArticleIcon from '@mui/icons-material/Article';
-import PersonIcon from '@mui/icons-material/Person';
-import PersonOffIcon from '@mui/icons-material/PersonOff';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined';
-import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
+import {
+    Box,
+    Button,
+    Popover,
+    Progress,
+    Radio,
+    SegmentedControl,
+    Select,
+    Stack,
+    Text,
+} from '@mantine/core';
+import {
+    ArrowDown,
+    ArrowUp,
+    ChevronDown,
+    FileText,
+    ListFilter,
+    User,
+    UserX,
+} from 'lucide-react';
 import type {Dayjs} from 'dayjs';
+import {Icon} from '../../../components/common/icon/Icon';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {NoData} from '../../../components/common/no-data/NoData';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
-import {headerScopeToggleSx, headerTextButtonSx} from './headerScopeToggleSx';
+import {headerScopeToggleStyles, headerTextButtonStyle} from './headerControls';
 import type {ShowToastFn} from '../../../services/toastService';
 import {TaskItem} from '../../../components/common/task-item/TaskItem';
 import {
@@ -72,11 +71,11 @@ interface FilterChip {
 }
 
 const FILTER_CHIPS: FilterChip[] = [
-    {type: 'all', label: 'Total', icon: <ArticleIcon fontSize="small" />, countType: 'all'},
-    {type: 'mine', label: 'Mine', icon: <PersonIcon fontSize="small" />, countType: 'mine'},
-    {type: 'unassigned', label: 'Unassigned', icon: <PersonOffIcon fontSize="small" />, countType: 'unassigned'},
-    {type: 'newest', label: 'Newest', icon: <ArrowDownwardIcon fontSize="small" />, countType: 'newest'},
-    {type: 'oldest', label: 'Oldest', icon: <ArrowUpwardIcon fontSize="small" />, countType: 'oldest'},
+    {type: 'all', label: 'Total', icon: <Icon lucide={FileText} size={16}/>, countType: 'all'},
+    {type: 'mine', label: 'Mine', icon: <Icon lucide={User} size={16}/>, countType: 'mine'},
+    {type: 'unassigned', label: 'Unassigned', icon: <Icon lucide={UserX} size={16}/>, countType: 'unassigned'},
+    {type: 'newest', label: 'Newest', icon: <Icon lucide={ArrowDown} size={16}/>, countType: 'newest'},
+    {type: 'oldest', label: 'Oldest', icon: <Icon lucide={ArrowUp} size={16}/>, countType: 'oldest'},
 ];
 
 /**
@@ -88,7 +87,7 @@ const FILTER_CHIPS: FilterChip[] = [
  */
 export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refetchIntervalMs = false, onSelectJob, headerSlot}) => {
     const [filterType, setFilterType] = useState<TaskFilterType>('all');
-    const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
+    const [filtersOpen, setFiltersOpen] = useState(false);
     // 'current' scopes tasks to the selected job; 'all' drops the jobId so the
     // shared getAllTasks endpoint returns tasks across every job.
     const [taskScope, setTaskScope] = useState<'current' | 'all'>('current');
@@ -163,106 +162,107 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
         + (filterType !== 'all' ? 1 : 0);
 
     return (
-        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
+        <Box style={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
             <HeaderSlotPortal slot={headerSlot}>
-                <ToggleButtonGroup
-                    size="small"
-                    exclusive
+                <SegmentedControl
+                    size="xs"
                     value={taskScope}
-                    onChange={(_, value) => { if (value) setTaskScope(value); }}
+                    onChange={(value) => setTaskScope(value as 'current' | 'all')}
                     aria-label="Task scope"
-                    sx={headerScopeToggleSx}
+                    styles={headerScopeToggleStyles}
+                    data={[
+                        {value: 'current', label: 'This job'},
+                        {value: 'all', label: 'All tasks'},
+                    ]}
+                />
+                <Popover
+                    opened={filtersOpen}
+                    onChange={setFiltersOpen}
+                    position="bottom-end"
+                    shadow="md"
+                    withinPortal
                 >
-                    <ToggleButton value="current">This job</ToggleButton>
-                    <ToggleButton value="all">All tasks</ToggleButton>
-                </ToggleButtonGroup>
-                <Button
-                    size="small"
-                    startIcon={<FilterListIcon />}
-                    endIcon={<ArrowDropDownIcon />}
-                    onClick={(e) => setFilterAnchor(e.currentTarget)}
-                    aria-haspopup="true"
-                    aria-expanded={filterAnchor ? 'true' : undefined}
-                    sx={headerTextButtonSx}
-                >
-                    {activeFilterCount ? `Filters (${activeFilterCount})` : 'Filters'}
-                </Button>
+                    <Popover.Target>
+                        <Button
+                            size="compact-sm"
+                            variant="subtle"
+                            leftSection={<Icon lucide={ListFilter} size={16}/>}
+                            rightSection={<Icon lucide={ChevronDown} size={16}/>}
+                            onClick={() => setFiltersOpen(o => !o)}
+                            aria-haspopup="true"
+                            aria-expanded={filtersOpen ? 'true' : undefined}
+                            style={headerTextButtonStyle}
+                        >
+                            {activeFilterCount ? `Filters (${activeFilterCount})` : 'Filters'}
+                        </Button>
+                    </Popover.Target>
+                    <Popover.Dropdown>
+                        <Stack gap="md" miw={260}>
+                            <Select
+                                size="xs"
+                                label="Staff"
+                                value={staffFilter}
+                                onChange={(value) => handleStaffChange(value ?? StatusFilterValue.All)}
+                                comboboxProps={{keepMounted: false}}
+                                data={[
+                                    {value: StatusFilterValue.All, label: 'All staff'},
+                                    ...staffList.map(s => ({value: String(s.id), label: s.text})),
+                                ]}
+                            />
+                            <Select
+                                size="xs"
+                                label="Type"
+                                value={eventTypeFilter}
+                                onChange={(value) => handleEventTypeChange(value ?? StatusFilterValue.All)}
+                                comboboxProps={{keepMounted: false}}
+                                data={[
+                                    {value: StatusFilterValue.All, label: 'All types'},
+                                    ...eventTypes.map(t => ({value: String(t.id), label: t.text})),
+                                ]}
+                            />
+                            <Radio.Group
+                                label="Show"
+                                value={filterType}
+                                onChange={(value) => setFilterType(value as TaskFilterType)}
+                            >
+                                <Stack gap="xs" mt="xs">
+                                    {FILTER_CHIPS.map(chip => (
+                                        <Radio
+                                            key={chip.type}
+                                            size="xs"
+                                            value={chip.type}
+                                            label={`${chip.label} (${getTasksStatusCount(tasks, chip.countType)})`}
+                                        />
+                                    ))}
+                                </Stack>
+                            </Radio.Group>
+                        </Stack>
+                    </Popover.Dropdown>
+                </Popover>
             </HeaderSlotPortal>
-            <Popover
-                open={Boolean(filterAnchor)}
-                anchorEl={filterAnchor}
-                onClose={() => setFilterAnchor(null)}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-            >
-                <Box sx={{p: 2, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 260}}>
-                    <FormControl size="small" fullWidth>
-                        <InputLabel id="supports-staff-filter-label">Staff</InputLabel>
-                        <Select
-                            labelId="supports-staff-filter-label"
-                            label="Staff"
-                            value={staffFilter}
-                            onChange={(e) => handleStaffChange(e.target.value)}
-                        >
-                            <MenuItem value={StatusFilterValue.All}>All staff</MenuItem>
-                            {staffList.map(s => (
-                                <MenuItem key={s.id} value={String(s.id)}>{s.text}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <FormControl size="small" fullWidth>
-                        <InputLabel id="supports-type-filter-label">Type</InputLabel>
-                        <Select
-                            labelId="supports-type-filter-label"
-                            label="Type"
-                            value={eventTypeFilter}
-                            onChange={(e) => handleEventTypeChange(e.target.value)}
-                        >
-                            <MenuItem value={StatusFilterValue.All}>All types</MenuItem>
-                            {eventTypes.map(t => (
-                                <MenuItem key={t.id} value={String(t.id)}>{t.text}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <FormControl>
-                        <Typography variant="caption" sx={{color: 'text.secondary', fontWeight: 500, mb: 0.5}}>
-                            Show
-                        </Typography>
-                        <RadioGroup
-                            value={filterType}
-                            onChange={(_, value) => setFilterType(value as TaskFilterType)}
-                        >
-                            {FILTER_CHIPS.map(chip => (
-                                <FormControlLabel
-                                    key={chip.type}
-                                    value={chip.type}
-                                    control={<Radio size="small" />}
-                                    label={`${chip.label} (${getTasksStatusCount(tasks, chip.countType)})`}
-                                />
-                            ))}
-                        </RadioGroup>
-                    </FormControl>
-                </Box>
-            </Popover>
-            {isLoading && <LinearProgress />}
-            <Box sx={{flex: 1, minHeight: 0, overflow: 'auto', p: 0.5}}>
+            {isLoading && <Progress value={100} animated size="xs" role="progressbar" aria-label="Loading tasks"/>}
+            <Box p={4} style={{flex: 1, minHeight: 0, overflow: 'auto'}}>
+                {/* NoData and TaskItem are shared MUI leaves that move with their other hosts. */}
                 {needsJobSelection ? (
-                    <NoData
-                        icon={<WorkOutlineOutlinedIcon />}
-                        title="No job selected"
-                        message="Select a job to see its tasks."
-                    />
+                    <MuiThemeIsland>
+                        <NoData
+                            title="No job selected"
+                            message="Select a job to see its tasks."
+                        />
+                    </MuiThemeIsland>
                 ) : tasks.length === 0 && !isLoading ? (
-                    <NoData
-                        icon={<AssignmentOutlinedIcon />}
-                        title="No tasks"
-                        message={taskScope === 'all'
-                            ? 'No tasks match your filter.'
-                            : 'This job has no tasks matching your filter.'}
-                    />
+                    <MuiThemeIsland>
+                        <NoData
+                            title="No tasks"
+                            message={taskScope === 'all'
+                                ? 'No tasks match your filter.'
+                                : 'This job has no tasks matching your filter.'}
+                        />
+                    </MuiThemeIsland>
                 ) : (
                     tasks.map(task => (
-                        <Box key={task.id} sx={{mb: 0.5}}>
+                        <Box key={task.id} mb={4}>
+                        <MuiThemeIsland>
                             <TaskItem
                                 task={task}
                                 config={{
@@ -284,6 +284,7 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
                                 showSuccessToast={showSuccessToast}
                                 showErrorToast={showErrorToast}
                             />
+                        </MuiThemeIsland>
                         </Box>
                     ))
                 )}

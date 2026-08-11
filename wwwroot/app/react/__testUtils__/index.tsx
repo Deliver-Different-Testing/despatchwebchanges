@@ -163,6 +163,18 @@ export function renderWithAllProviders(
 }
 
 /**
+ * The Mantine provider as a component, for tests that build their own wrapper
+ * element (rather than calling `renderWithMantine`) — typically because they
+ * also need `rerender` with the wrapper inline. The drop-in replacement for
+ * `<ThemeProvider theme={createTheme()}>`.
+ */
+export const MantineTestProvider: React.FC<{children: React.ReactNode}> = ({children}) => (
+    <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+        {children}
+    </MantineProvider>
+);
+
+/**
  * Render inside the DFRNT Mantine theme provider. The Mantine counterpart to
  * `renderWithTheme` — use it for components migrated off MUI. `forceColorScheme`
  * is unnecessary in tests (light is the default), so this stays minimal.

@@ -62,9 +62,8 @@ export function mountDispatchPage(
     }
 
     dispatchRoot.render(
-        // The page itself is still MUI; Mantine wraps it so the already-migrated
-        // JobListPanel it renders finds a provider.
         <DfrntMantineProvider>
+            {/* ErrorBoundary is a shared MUI leaf still used by unmigrated islands. */}
             <MuiThemeIsland>
                 <ErrorBoundary>
                     <DispatchPage

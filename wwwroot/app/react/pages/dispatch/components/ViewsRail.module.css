@@ -1,0 +1,22 @@
+/*
+ * The view pills scroll horizontally when the card is too narrow for them. The
+ * scrollbar is styled down to a hairline, which needs `::-webkit-scrollbar`
+ * pseudo-elements — no inline-style equivalent, hence a CSS module.
+ */
+.scroll {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-block: 2px;
+    scrollbar-width: thin;
+}
+
+.scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background-color: var(--mantine-color-gray-4);
+}

@@ -2,7 +2,6 @@ import React from 'react';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {act, render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 const sampleJob = {id: 55, jobNo: 'JOB-55', assignedCourier: undefined};
 
@@ -112,19 +111,20 @@ jest.mock('../../components/dialogs/dispatch-dialog', () => ({
 import {DispatchPage} from './DispatchPage';
 import {SELECTED_VIEWS_KEY} from './lib/dispatchFilters';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
+import {MantineTestProvider} from '../../__testUtils__';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof DispatchPage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={createTheme()}>
+            <MantineTestProvider>
                 <DispatchPage
                     showToast={jest.fn()}
                     isUsCustomer={false}
                     timeZone="New Zealand Standard Time"
                     {...overrides}
                 />
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }

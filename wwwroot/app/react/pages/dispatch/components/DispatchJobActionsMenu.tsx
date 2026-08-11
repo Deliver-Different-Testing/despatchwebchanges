@@ -1,12 +1,10 @@
-import React, {useState} from 'react';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import React from 'react';
+import {ActionIcon, Menu, Tooltip} from '@mantine/core';
+import {EllipsisVertical} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
+import {headerIconButtonStyle} from './headerControls';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
 
 /**
@@ -64,54 +62,43 @@ const ACTIONS: JobAction[] = [
         available: job => !!job.done && !job.bulkJob && !job.preBook},
 ];
 
-const MENU_ID = 'dispatch-job-actions-menu';
-
 export const DispatchJobActionsMenu: React.FC<DispatchJobActionsMenuProps> = ({currentJob, onAction}) => {
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const open = Boolean(anchorEl);
-
     if (!currentJob) return null;
 
     const visibleActions = ACTIONS.filter(a => a.available(currentJob));
 
     return (
-        <>
-            <Tooltip title="Job actions">
-                <IconButton
-                    size="small"
-                    aria-label="Job actions"
-                    aria-haspopup="true"
-                    aria-controls={open ? MENU_ID : undefined}
-                    aria-expanded={open ? 'true' : undefined}
-                    onClick={(e) => setAnchorEl(e.currentTarget)}
-                    sx={{color: 'inherit', '&:hover': {bgcolor: 'rgba(255,255,255,0.12)'}}}
-                >
-                    <MoreVertIcon fontSize="small" />
-                </IconButton>
-            </Tooltip>
-            <Menu
-                id={MENU_ID}
-                anchorEl={anchorEl}
-                open={open}
-                onClose={() => setAnchorEl(null)}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-            >
-                {visibleActions.map(action => (
-                    <MenuItem
-                        key={action.id}
-                        onClick={() => {
-                            setAnchorEl(null);
-                            onAction?.(action.id, currentJob);
-                        }}
+        <Menu position="bottom-end" shadow="md" withinPortal>
+            <Menu.Target>
+                <Tooltip label="Job actions" withArrow>
+                    <ActionIcon
+                        size="md"
+                        variant="subtle"
+                        aria-label="Job actions"
+                        style={headerIconButtonStyle}
                     >
-                        <ListItemIcon>
-                            <SymbolIcon name={action.icon} sx={{fontSize: 20}} aria-hidden />
-                        </ListItemIcon>
-                        <ListItemText>{action.label}</ListItemText>
-                    </MenuItem>
-                ))}
-            </Menu>
-        </>
+                        <Icon lucide={EllipsisVertical} size={18}/>
+                    </ActionIcon>
+                </Tooltip>
+            </Menu.Target>
+            <Menu.Dropdown>
+                {/*
+                  * `SymbolIcon` is a shared MUI leaf (11 importers) that moves with its
+                  * other hosts, not here. `MuiThemeIsland` renders no DOM of its own, so
+                  * the menu items stay direct children of the dropdown.
+                  */}
+                <MuiThemeIsland>
+                    {visibleActions.map(action => (
+                        <Menu.Item
+                            key={action.id}
+                            onClick={() => onAction?.(action.id, currentJob)}
+                            leftSection={<SymbolIcon name={action.icon} sx={{fontSize: 20}} aria-hidden/>}
+                        >
+                            {action.label}
+                        </Menu.Item>
+                    ))}
+                </MuiThemeIsland>
+            </Menu.Dropdown>
+        </Menu>
     );
 };

@@ -1,12 +1,14 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import WorkOutlineIcon from '@mui/icons-material/WorkOutlined';
+import {ActionIcon, Badge, Box, Group, Text} from '@mantine/core';
+import {Briefcase, X} from 'lucide-react';
+import {Icon} from '../../components/common/icon/Icon';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
+
+/** Translucent washes for content sitting on the beta banner's brand fill. */
+const BANNER_SCRIM = 'color-mix(in srgb, currentColor 18%, transparent)';
+const BANNER_HOVER_SCRIM = 'color-mix(in srgb, currentColor 12%, transparent)';
 import {NoData} from '../../components/common/no-data/NoData';
 import {useDismissibleBanner} from '../../hooks/useDismissibleBanner';
 import {ContactID} from '../../../contants';
@@ -662,11 +664,14 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             case DispatchBoxes.JobDetail:
                 if (!currentJobId) {
                     return (
-                        <NoData
-                            title="No Job Selected"
-                            message="Select a job from the list to see its details."
-                            icon={<WorkOutlineIcon/>}
-                        />
+                        // NoData is a shared MUI leaf that moves with its other hosts.
+                        <MuiThemeIsland>
+                            <NoData
+                                title="No Job Selected"
+                                message="Select a job from the list to see its details."
+                                icon={<Icon lucide={Briefcase} size={48}/>}
+                            />
+                        </MuiThemeIsland>
                     );
                 }
                 return (
@@ -694,7 +699,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     items.push(currentItem);
                 }
                 return (
-                    <Box sx={{height: '100%', minHeight: 0}}>
+                    <Box style={{height: '100%', minHeight: 0}}>
                         <DispatchMap
                             jobs={items}
                             currentJob={currentItem}
@@ -779,45 +784,48 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     }, [truckMode, currentJob, fabAction]);
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>
+        <Box style={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>
             {/* BETA banner — dismissible; the opt-out toggle lives in Settings. */}
             {!betaBanner.dismissed && (
-                <Box
-                    sx={(theme) => ({
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        px: 2,
-                        py: 0.75,
-                        bgcolor: theme.palette.primary.main,
-                        color: 'primary.contrastText',
-                    })}
+                <Group
+                    align="center"
+                    gap="sm"
+                    px="md"
+                    py={6}
+                    wrap="nowrap"
+                    style={{
+                        backgroundColor: 'var(--mantine-color-brand-filled)',
+                        color: 'var(--mantine-primary-color-contrast)',
+                    }}
                 >
-                    <Chip
-                        label="BETA"
-                        size="small"
-                        sx={{
-                            height: 18,
-                            fontSize: '0.625rem',
-                            fontWeight: 700,
-                            bgcolor: 'rgba(255,255,255,0.2)',
-                            color: '#fff',
-                        }}
-                    />
-                    <Typography variant="body2" sx={{flex: 1}}>
+                    {/*
+                      * The banner sits on the tenant primary fill, whose on-colour differs
+                      * per tenant, so the chip and the hover wash are mixed from
+                      * `currentColor` rather than pinned to white.
+                      */}
+                    <Badge
+                        size="xs"
+                        radius="sm"
+                        variant="transparent"
+                        styles={{root: {backgroundColor: BANNER_SCRIM, color: 'inherit'}}}
+                    >
+                        BETA
+                    </Badge>
+                    <Text size="sm" style={{flex: 1}}>
                         You&apos;re on the rebuilt Dispatch page. Spot something off? Open Settings and turn the toggle off to switch back.
-                    </Typography>
-                    <IconButton
-                        size="small"
+                    </Text>
+                    <ActionIcon
+                        size="md"
+                        variant="subtle"
                         aria-label="Dismiss beta notice"
                         onClick={betaBanner.dismiss}
-                        sx={{color: '#fff', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}
+                        style={{color: 'inherit', '--ai-hover': BANNER_HOVER_SCRIM} as React.CSSProperties}
                     >
-                        <CloseIcon fontSize="small" />
-                    </IconButton>
-                </Box>
+                        <Icon lucide={X} size={16}/>
+                    </ActionIcon>
+                </Group>
             )}
-            <Box sx={{flex: 1, minHeight: 0, position: 'relative'}}>
+            <Box style={{flex: 1, minHeight: 0, position: 'relative'}}>
                 <JobSearchShell
                     layout={boxLayout.layout}
                     layoutVersion={boxLayout.layoutVersion}

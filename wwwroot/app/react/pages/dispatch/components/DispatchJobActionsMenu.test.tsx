@@ -1,18 +1,18 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {DispatchJobActionsMenu} from './DispatchJobActionsMenu';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // Minimal job: no flags set, so the always-available + lockable actions show.
 const job = {jobId: 55, jobNo: 'J55'} as unknown as DispatchJob;
 
 function renderMenu(overrides: Partial<React.ComponentProps<typeof DispatchJobActionsMenu>> = {}) {
     return render(
-        <ThemeProvider theme={createTheme()}>
+        <MantineTestProvider>
             <DispatchJobActionsMenu currentJob={job} onAction={jest.fn()} {...overrides} />
-        </ThemeProvider>,
+        </MantineTestProvider>,
     );
 }
 

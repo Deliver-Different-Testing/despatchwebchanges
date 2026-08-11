@@ -1,7 +1,6 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 const fetchTruckCourierStatusMock = jest.fn();
 jest.mock('../../../services/courierApi', () => ({
@@ -9,12 +8,13 @@ jest.mock('../../../services/courierApi', () => ({
 }));
 
 import {TruckLoadingStatusDialog} from './TruckLoadingStatusDialog';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 function renderDialog(overrides: Partial<React.ComponentProps<typeof TruckLoadingStatusDialog>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={createTheme()}>
+            <MantineTestProvider>
                 <TruckLoadingStatusDialog
                     open
                     courierId={42}
@@ -23,7 +23,7 @@ function renderDialog(overrides: Partial<React.ComponentProps<typeof TruckLoadin
                     onClose={jest.fn()}
                     {...overrides}
                 />
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }

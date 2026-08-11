@@ -1,7 +1,6 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 // Capture the args useTasks is called with so we can assert filter wiring.
 const useTasksMock = jest.fn();
@@ -35,12 +34,13 @@ jest.mock('../../../components/common/task-item/TaskItem', () => ({
 }));
 
 import {SupportsBox} from './SupportsBox';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 function renderBox(overrides: Partial<React.ComponentProps<typeof SupportsBox>> = {}) {
     return render(
-        <ThemeProvider theme={createTheme()}>
+        <MantineTestProvider>
             <SupportsBox showToast={jest.fn()} {...overrides} />
-        </ThemeProvider>,
+        </MantineTestProvider>,
     );
 }
 
@@ -136,7 +136,7 @@ describe('SupportsBox', () => {
         useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
         renderBox({jobId: 42});
 
-        await user.click(screen.getByRole('button', {name: 'All tasks'}));
+        await user.click(screen.getByRole('radio', {name: 'All tasks'}));
 
         const lastCall = useTasksMock.mock.calls.at(-1)!;
         expect(lastCall[0].jobId).toBeUndefined();
@@ -151,7 +151,7 @@ describe('SupportsBox', () => {
         // With no job, current mode prompts to select one and keeps the query disabled.
         expect(screen.getByText(/select a job to see its tasks/i)).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', {name: 'All tasks'}));
+        await user.click(screen.getByRole('radio', {name: 'All tasks'}));
 
         expect(screen.queryByText(/select a job to see its tasks/i)).not.toBeInTheDocument();
         expect(screen.getByTestId('mock-task-1')).toBeInTheDocument();
@@ -165,7 +165,7 @@ describe('SupportsBox', () => {
         useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
         renderBox({jobId: 42});
 
-        await user.click(screen.getByRole('button', {name: 'This job'}));
+        await user.click(screen.getByRole('radio', {name: 'This job'}));
 
         const lastCall = useTasksMock.mock.calls.at(-1)!;
         expect(lastCall[0]).toMatchObject({jobId: 42});

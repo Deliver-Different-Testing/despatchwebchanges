@@ -38,4 +38,11 @@ export interface SearchSelectProps<T> {
     autoFocus?: boolean;
     minSearchLength?: number;
     debounceMs?: number;
+    /**
+     * Highlight the first option as soon as results arrive, so Enter picks it —
+     * MUI `Autocomplete`'s `autoHighlight`. Mantine's `Combobox` activates no
+     * option until the user arrows onto one, so without this Enter does nothing
+     * and a "type the code, press Enter" flow silently stops working.
+     */
+    autoHighlight?: boolean;
 }

@@ -1,8 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import Box from '@mui/material/Box';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import {ActionIcon, Box, Group, SegmentedControl, Text, Tooltip} from '@mantine/core';
 import type {Dayjs} from 'dayjs';
 import {AppPage} from '../../../interfaces/dispatchJob';
 import type {DispatchJob, FetchConfig, JobListSearchParams} from '../../../interfaces/dispatchJob';
@@ -12,12 +10,10 @@ import {fetchDriverWorkOverview} from '../../../services/courierApi';
 import {queryKeys} from '../../../query/queryClient';
 import {JobListPanel} from '../../../components/job-list/JobListPanel';
 import {CurrentWorkAllDrivers, IDriverWorkOverview} from '../../../components/common/current-work-all-drivers';
-import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import type {SxProps, Theme} from '@mui/material/styles';
+import {IconTruck} from '@tabler/icons-react';
+import {Icon} from '../../../components/common/icon/Icon';
 import {CourierSearchField} from './CourierSearchField';
-import {headerIconButtonSx, headerScopeToggleSx} from './headerScopeToggleSx';
+import {headerIconButtonStyle, headerScopeToggleStyles} from './headerControls';
 import {TruckLoadingStatusDialog} from './TruckLoadingStatusDialog';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
 import type {CourierSuggestion} from '../../../interfaces';
@@ -59,15 +55,15 @@ function writeFocus(focus: CurrentWorkFocus): void {
     }
 }
 
-// The focused-driver toggle button carries the courier name, so cap its width
-// and ellipsize rather than letting a long name stretch the header.
-const detailToggleSx = {
+// The focused-driver segment carries the courier name, so cap its width and
+// ellipsize rather than letting a long name stretch the header.
+const detailSegmentStyle: React.CSSProperties = {
     maxWidth: 180,
     display: 'block',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-} satisfies SxProps<Theme>;
+};
 
 export interface CurrentWorkBoxProps {
     isUsCustomer: boolean;
@@ -88,7 +84,7 @@ export interface CurrentWorkBoxProps {
 }
 
 const EmptyMessage: React.FC<{children: React.ReactNode}> = ({children}) => (
-    <Box sx={{p: 3, color: 'text.secondary', textAlign: 'center'}}>{children}</Box>
+    <Text p="lg" c="dimmed" ta="center">{children}</Text>
 );
 
 /**
@@ -216,46 +212,45 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     );
 
     return (
-        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
+        <Box style={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}>
             <HeaderSlotPortal slot={headerSlot}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0}}>
+                <Group align="center" gap={4} wrap="nowrap" style={{minWidth: 0}}>
                     {isUsCustomer && (
-                        <ToggleButtonGroup
-                            size="small"
-                            exclusive
+                        <SegmentedControl
+                            size="xs"
                             value={mode}
-                            onChange={(_, value: Mode | null) => {
-                                if (value) {
-                                    setMode(value);
-                                    persistFocus({mode: value});
-                                }
+                            onChange={(value) => {
+                                setMode(value as Mode);
+                                persistFocus({mode: value as Mode});
                             }}
                             aria-label="Current work scope"
-                            sx={headerScopeToggleSx}
-                        >
-                            <ToggleButton value="overview">All Drivers</ToggleButton>
-                            <ToggleButton value="active">Active Drivers</ToggleButton>
-                            <ToggleButton value="detail" disabled={!courierId} sx={detailToggleSx}>
-                                {courierLabel}
-                            </ToggleButton>
-                        </ToggleButtonGroup>
+                            styles={headerScopeToggleStyles}
+                            data={[
+                                {value: 'overview', label: 'All Drivers'},
+                                {value: 'active', label: 'Active Drivers'},
+                                {
+                                    value: 'detail',
+                                    disabled: !courierId,
+                                    label: <span style={detailSegmentStyle}>{courierLabel}</span>,
+                                },
+                            ]}
+                        />
                     )}
                     {showTruckButton && (
-                        <Tooltip title="Truck loading status">
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    aria-label="Truck loading status"
-                                    disabled={!courierId}
-                                    onClick={() => setTruckStatusOpen(true)}
-                                    sx={headerIconButtonSx}
-                                >
-                                    <LocalShippingIcon fontSize="small" />
-                                </IconButton>
-                            </span>
+                        <Tooltip label="Truck loading status" withArrow>
+                            <ActionIcon
+                                size="md"
+                                variant="subtle"
+                                aria-label="Truck loading status"
+                                disabled={!courierId}
+                                onClick={() => setTruckStatusOpen(true)}
+                                style={headerIconButtonStyle}
+                            >
+                                <Icon tabler={IconTruck} size={16}/>
+                            </ActionIcon>
                         </Tooltip>
                     )}
-                </Box>
+                </Group>
             </HeaderSlotPortal>
             <TruckLoadingStatusDialog
                 open={truckStatusOpen}
@@ -266,10 +261,10 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             />
             {/* Every tenant gets the courier lookup — V1 rendered the code box for all
                 of them, and US dispatchers otherwise have only the drivers overview. */}
-            <Box sx={{px: 1, pt: 0.5, flexShrink: 0}}>
+            <Box px="xs" pt={4} style={{flexShrink: 0}}>
                 <CourierSearchField onSelect={handleCourierSearchSelect} showToast={showToast} />
             </Box>
-            <Box sx={{flex: 1, minHeight: 0, overflow: 'auto'}}>
+            <Box style={{flex: 1, minHeight: 0, overflow: 'auto'}}>
                 {showDriverList ? (
                     <CurrentWorkAllDrivers
                         drivers={driversForList}
