@@ -14,11 +14,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {JobListPanel} from './JobListPanel';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {DfrntMantineProvider} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 import type {DispatchJob, MountJobListConfig, JobListSearchParams} from '../../interfaces';
 import {ErrorBoundary} from '../common/error-boundary';
 
@@ -38,12 +36,10 @@ const instances = new Map<string, JobListInstance>();
  * Renders a single instance's JobListPanel into its React root.
  */
 function renderInstance(instance: JobListInstance): void {
-    const currentTheme = getTheme();
-
     instance.root.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
+        <DfrntMantineProvider>
+            {/* ErrorBoundary is a shared MUI leaf still rendered by unmigrated islands. */}
+            <MuiThemeIsland>
                 <ErrorBoundary>
                     <JobListPanel
                         showToast={instance.config.showToast}
@@ -75,8 +71,8 @@ function renderInstance(instance: JobListInstance): void {
                         }}
                     />
                 </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
+            </MuiThemeIsland>
+        </DfrntMantineProvider>,
     );
 }
 

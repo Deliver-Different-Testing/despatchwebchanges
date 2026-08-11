@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {fireEvent, screen, waitFor, act} from '@testing-library/react';
-import { renderWithTheme } from '../../__testUtils__';
+import { renderWithMantine } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {JobListContextMenu} from './JobListContextMenu';
 import type {DispatchJob, AppPage} from '../../interfaces/dispatchJob';
@@ -179,18 +179,18 @@ describe('JobListContextMenu', () => {
         it('does not render when job or position is null', () => {
             // job is null
             const props1 = createDefaultProps({job: null});
-            const {container: c1, unmount: unmount1} = renderWithTheme(<JobListContextMenu {...props1} />);
-            expect(c1.innerHTML).toBe('');
+            const {unmount: unmount1} = renderWithMantine(<JobListContextMenu {...props1} />);
+            expect(screen.queryByRole('menu')).not.toBeInTheDocument();
             unmount1();
 
             // position is null
             const props2 = createDefaultProps({position: null});
-            const {container: c2} = renderWithTheme(<JobListContextMenu {...props2} />);
-            expect(c2.innerHTML).toBe('');
+            renderWithMantine(<JobListContextMenu {...props2} />);
+            expect(screen.queryByRole('menu')).not.toBeInTheDocument();
         });
 
         it('renders menu with expected items for default props (Dispatch page)', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+            renderWithMantine(<JobListContextMenu {...createDefaultProps()} />);
 
             // opens menu when both job and position provided
             expect(screen.getByRole('menu')).toBeInTheDocument();
@@ -216,27 +216,27 @@ describe('JobListContextMenu', () => {
         });
 
         it('shows "Mark as Read" when hasBeenRead is false', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({hasBeenRead: false}),
             })} />);
             expect(screen.getByText('Mark as Read')).toBeInTheDocument();
         });
 
         it('shows Late Pickup/Delivery on JobSearch page', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.JobSearch})} />);
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.JobSearch})} />);
             expect(screen.getByText('Late Pickup')).toBeInTheDocument();
             expect(screen.getByText('Late Delivery')).toBeInTheDocument();
         });
 
         it('does not show Late Pickup/Delivery on Domestic page', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.Domestic})} />);
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.Domestic})} />);
             expect(screen.queryByText('Late Pickup')).not.toBeInTheDocument();
             expect(screen.queryByText('Late Delivery')).not.toBeInTheDocument();
         });
 
         it('shows/hides Unassign Flight based on page and job props', () => {
             // shows on Domestic + assignedFlight + isFlightJob
-            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            const {unmount} = renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Domestic,
                 job: createMockJob({
                     isFlightJob: true,
@@ -252,7 +252,7 @@ describe('JobListContextMenu', () => {
             unmount();
 
             // does not show on Dispatch page
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Dispatch,
                 job: createMockJob({
                     isFlightJob: true,
@@ -269,7 +269,7 @@ describe('JobListContextMenu', () => {
 
         it('shows/hides Unassign Agent based on page and job props', () => {
             // shows on Domestic + assignedAgent
-            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            const {unmount} = renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Domestic,
                 job: createMockJob({
                     assignedAgent: {
@@ -282,7 +282,7 @@ describe('JobListContextMenu', () => {
             unmount();
 
             // does not show on Dispatch page
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Dispatch,
                 job: createMockJob({
                     assignedAgent: {
@@ -296,21 +296,21 @@ describe('JobListContextMenu', () => {
 
         it('shows Add Delivery Stop or Add Pickup Stop for agent jobs based on airport IDs', () => {
             // shows Add Delivery Stop for agent jobs without toAirportId
-            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            const {unmount} = renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({isAgentJob: true}),
             })} />);
             expect(screen.getByText('Add Delivery Stop')).toBeInTheDocument();
             unmount();
 
             // shows Add Pickup Stop for agent jobs with toAirportId and no fromAirportId
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({isAgentJob: true, toAirportId: 5, fromAirportId: undefined}),
             })} />);
             expect(screen.getByText('Add Pickup Stop')).toBeInTheDocument();
         });
 
         it('shows Reprice Job for nationwide speed + not reprice + not preBook', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({speedId: 415, internalStatusId: 1, preBook: false}),
             })} />);
             expect(screen.getByText('Reprice Job')).toBeInTheDocument();
@@ -318,7 +318,7 @@ describe('JobListContextMenu', () => {
         });
 
         it('does not show Reprice when internalStatusId is 4 (reprice)', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({speedId: 415, internalStatusId: 4, preBook: false}),
             })} />);
             expect(screen.queryByText('Reprice Job')).not.toBeInTheDocument();
@@ -326,14 +326,14 @@ describe('JobListContextMenu', () => {
 
         it('shows/hides Send to Live based on done status', () => {
             // shows when isBulkJob and not done
-            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            const {unmount} = renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: false}),
             })} />);
             expect(screen.getByText('Send to Live')).toBeInTheDocument();
             unmount();
 
             // does not show when done
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: true}),
             })} />);
             expect(screen.queryByText('Send to Live')).not.toBeInTheDocument();
@@ -341,14 +341,14 @@ describe('JobListContextMenu', () => {
 
         it('shows/hides Swap PODs based on done status', () => {
             // shows when done and not bulk and not preBook
-            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            const {unmount} = renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({done: true, isBulkJob: false, preBook: false}),
             })} />);
             expect(screen.getByText('Swap PODs')).toBeInTheDocument();
             unmount();
 
             // does not show when not done
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({done: false}),
             })} />);
             expect(screen.queryByText('Swap PODs')).not.toBeInTheDocument();
@@ -356,14 +356,14 @@ describe('JobListContextMenu', () => {
 
         it('shows/hides Split Job based on _groupChildren', () => {
             // shows when allowSplit and no group children
-            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            const {unmount} = renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({allowSplit: true, _groupChildren: []}),
             })} />);
             expect(screen.getByText('Split Job')).toBeInTheDocument();
             unmount();
 
             // does not show when _groupChildren has items
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({allowSplit: true, _groupChildren: [createMockJob({id: 2})]}),
             })} />);
             expect(screen.queryByText('Split Job')).not.toBeInTheDocument();
@@ -371,14 +371,14 @@ describe('JobListContextMenu', () => {
 
         it('shows/hides Re-Dispatch based on assignedCourier', () => {
             // shows when assignedCourier exists
-            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            const {unmount} = renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({assignedCourier: {id: 5, text: 'Courier A'}}),
             })} />);
             expect(screen.getByText('Re-Dispatch')).toBeInTheDocument();
             unmount();
 
             // does not show when no assignedCourier
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({assignedCourier: undefined}),
             })} />);
             expect(screen.queryByText('Re-Dispatch')).not.toBeInTheDocument();
@@ -390,7 +390,7 @@ describe('JobListContextMenu', () => {
     describe('Action Handlers — Direct API Calls', () => {
         it('Mark as Unread calls updateJobReadStatus and shows success toast', async () => {
             const props = createDefaultProps({job: createMockJob({hasBeenRead: true})});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Mark as Unread'));
 
@@ -403,7 +403,7 @@ describe('JobListContextMenu', () => {
 
         it('Mark as Read calls updateJobReadStatus with true', async () => {
             const props = createDefaultProps({job: createMockJob({hasBeenRead: false})});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Mark as Read'));
 
@@ -416,7 +416,7 @@ describe('JobListContextMenu', () => {
         it('Mark Read/Unread error shows error toast', async () => {
             mockedApi.updateJobReadStatus.mockRejectedValueOnce(new Error('Network error'));
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Mark as Unread'));
 
@@ -429,7 +429,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({speedId: 415, internalStatusId: 1, preBook: false}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Reprice Job'));
 
@@ -444,7 +444,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({assignedCourier: {id: 5, text: 'Courier A'}}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Re-Dispatch'));
 
@@ -460,7 +460,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({assignedCourier: {id: 5, text: 'Courier A'}}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Re-Dispatch'));
             fireEvent.click(await screen.findByText('Stub Dispatch Courier'));
@@ -475,7 +475,7 @@ describe('JobListContextMenu', () => {
             const {queryClient: qc} = await import('../../query/queryClient');
             const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Restore'));
 
@@ -491,7 +491,7 @@ describe('JobListContextMenu', () => {
 
         it('Restore (completed job) confirms first, then restores and logs the audit event', async () => {
             const props = createDefaultProps({job: createMockJob({done: true})});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Restore'));
 
@@ -509,7 +509,7 @@ describe('JobListContextMenu', () => {
 
         it('Restore (completed job) archives the captured images when the checkbox is ticked', async () => {
             const props = createDefaultProps({job: createMockJob({done: true})});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Restore'));
 
@@ -524,10 +524,11 @@ describe('JobListContextMenu', () => {
 
         it('Restore is disabled for archived jobs (restore only touches live jobs, so it would silently no-op)', () => {
             const props = createDefaultProps({job: createMockJob({isArchived: true, done: true})});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
+            // Mantine marks a disabled Menu.Item with `data-disabled`, not `aria-disabled`.
             const restoreItem = screen.getByText('Restore').closest('[role="menuitem"]');
-            expect(restoreItem).toHaveAttribute('aria-disabled', 'true');
+            expect(restoreItem).toHaveAttribute('data-disabled');
 
             // Clicking the disabled item must not open the confirm dialog or call the API.
             fireEvent.click(screen.getByText('Restore'));
@@ -538,7 +539,7 @@ describe('JobListContextMenu', () => {
 
         it('Restore stays enabled for a non-archived job', () => {
             const props = createDefaultProps({job: createMockJob({isArchived: false})});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             const restoreItem = screen.getByText('Restore').closest('[role="menuitem"]');
             expect(restoreItem).not.toHaveAttribute('aria-disabled', 'true');
@@ -546,7 +547,7 @@ describe('JobListContextMenu', () => {
 
         it('Mark Missing calls markJobMissing with toast and refresh', async () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Mark Missing'));
 
@@ -561,7 +562,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({id: 42, jobNo: 'J042', client: 'Acme', clientId: 200}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Add Task - Other'));
 
@@ -579,24 +580,24 @@ describe('JobListContextMenu', () => {
 
     describe('Late Call Dialog', () => {
         it('clicking Late Pickup opens dialog with "Late Pickup" title', async () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+            renderWithMantine(<JobListContextMenu {...createDefaultProps()} />);
 
             fireEvent.click(screen.getByText('Late Pickup'));
 
-            expect(screen.getByText('Late Pickup', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: 'Late Pickup'})).toBeInTheDocument();
         });
 
         it('clicking Late Delivery opens dialog with "Late Delivery" title', async () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+            renderWithMantine(<JobListContextMenu {...createDefaultProps()} />);
 
             fireEvent.click(screen.getByText('Late Delivery'));
 
-            expect(screen.getByText('Late Delivery', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: 'Late Delivery'})).toBeInTheDocument();
         });
 
         it('submitting with valid minutes calls lateCall with lateType=1 for pickup', async () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Late Pickup'));
 
@@ -618,7 +619,7 @@ describe('JobListContextMenu', () => {
 
         it('submitting with valid minutes calls lateCall with lateType=2 for delivery', async () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Late Delivery'));
 
@@ -640,7 +641,7 @@ describe('JobListContextMenu', () => {
             // Kept as userEvent: asserts keyboard submission behaviour
             const user = setupUser();
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Late Pickup'));
 
@@ -656,7 +657,7 @@ describe('JobListContextMenu', () => {
         });
 
         it('Cancel closes dialog without API call', async () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+            renderWithMantine(<JobListContextMenu {...createDefaultProps()} />);
 
             fireEvent.click(screen.getByText('Late Pickup'));
             expect(screen.getByLabelText('Minutes')).toBeInTheDocument();
@@ -670,7 +671,7 @@ describe('JobListContextMenu', () => {
         });
 
         it('empty minutes disables the Save button', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+            renderWithMantine(<JobListContextMenu {...createDefaultProps()} />);
 
             fireEvent.click(screen.getByText('Late Pickup'));
 
@@ -683,7 +684,7 @@ describe('JobListContextMenu', () => {
         it('API error shows error toast', async () => {
             mockedApi.lateCall.mockRejectedValueOnce(new Error('Server error'));
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Late Pickup'));
             const input = screen.getByLabelText('Minutes');
@@ -712,7 +713,7 @@ describe('JobListContextMenu', () => {
                     },
                 }),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Unassign Flight'));
 
@@ -729,7 +730,7 @@ describe('JobListContextMenu', () => {
         });
 
         it('Unassign Flight: cancel does not call API', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+            renderWithMantine(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Domestic,
                 job: createMockJob({
                     isFlightJob: true,
@@ -758,7 +759,7 @@ describe('JobListContextMenu', () => {
                     },
                 }),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Unassign Agent'));
             expect(screen.getByText('Unassign Agent?')).toBeInTheDocument();
@@ -775,7 +776,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: false}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Send to Live'));
             expect(screen.getByRole('heading', {name: /send to live/i})).toBeInTheDocument();
@@ -805,7 +806,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: false}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Send to Live'));
             fireEvent.click(screen.getByRole('button', {name: /^send to live$/i}));
@@ -822,7 +823,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({courierData: {courierId: 77, courierNumber: 'C77', courier: 'Test'} as any}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Set First Job'));
             expect(screen.getByText('Set First Job?')).toBeInTheDocument();
@@ -842,7 +843,7 @@ describe('JobListContextMenu', () => {
         it('Add Stop calls onAddStop prop with the job', () => {
             const job = createMockJob({isAgentJob: true});
             const props = createDefaultProps({job});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Add Delivery Stop'));
 
@@ -852,7 +853,7 @@ describe('JobListContextMenu', () => {
         it('Split Job shows confirmation dialog, OK calls executeSplitJobFlow', async () => {
             const job = createMockJob({allowSplit: true, _groupChildren: []});
             const props = createDefaultProps({job});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Split Job'));
 
@@ -875,7 +876,7 @@ describe('JobListContextMenu', () => {
         it('Split Job cancel does not call executeSplitJobFlow', () => {
             const job = createMockJob({allowSplit: true, _groupChildren: []});
             const props = createDefaultProps({job});
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Split Job'));
             fireEvent.click(screen.getByText('Cancel'));
@@ -889,7 +890,7 @@ describe('JobListContextMenu', () => {
     describe('Window Global Dialogs', () => {
         it('Void Job calls window.ReactVoidJobConfirmationDialog.open and refreshes on success', async () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Void Job'));
 
@@ -906,7 +907,7 @@ describe('JobListContextMenu', () => {
             const {queryClient: qc} = await import('../../query/queryClient');
             const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Void Job'));
 
@@ -921,7 +922,7 @@ describe('JobListContextMenu', () => {
             const {queryClient: qc} = await import('../../query/queryClient');
             const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Void Job'));
 
@@ -937,7 +938,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({done: true, isBulkJob: false, preBook: false}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Swap PODs'));
 
@@ -961,7 +962,7 @@ describe('JobListContextMenu', () => {
         // behavior: that groups appear in the submenu and clicking them works.
 
         it('clicking Task Groups opens submenu with group items', async () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+            renderWithMantine(<JobListContextMenu {...createDefaultProps()} />);
 
             // Allow useEffect to settle (may or may not call API depending on cache)
             await act(async () => {});
@@ -974,7 +975,7 @@ describe('JobListContextMenu', () => {
 
         it('clicking a group calls openEventGroupDialog with correct groupId/jobId', async () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             await act(async () => {});
 
@@ -997,7 +998,7 @@ describe('JobListContextMenu', () => {
     describe('Send to Partner (post-confirm)', () => {
         it('opens the dispatch dialog with DFRNT Partner pre-selected', async () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Send to Partner'));
 
@@ -1021,7 +1022,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({id: 42, jobNo: 'J042'}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Send to Partner'));
             fireEvent.click(await screen.findByText('Stub Send To Partner'));
@@ -1059,7 +1060,7 @@ describe('JobListContextMenu', () => {
                     assignedCourier: {id: 50, text: 'ABC Couriers'},
                 }),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Re-Dispatch'));
             const dialog = await screen.findByTestId('dispatch-dialog');
@@ -1077,7 +1078,7 @@ describe('JobListContextMenu', () => {
                 job: createMockJob({id: 22, jobNo: 'J022'}),
             });
             mockedApi.allocateJobs.mockResolvedValue(undefined);
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Send to Partner'));
 
@@ -1096,7 +1097,7 @@ describe('JobListContextMenu', () => {
     describe('Menu Closing', () => {
         it('action handlers call onClose before their action', () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Mark as Unread'));
 
@@ -1108,7 +1109,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({isAgentJob: true}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Add Delivery Stop'));
 
@@ -1119,7 +1120,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: false}),
             });
-            renderWithTheme(<JobListContextMenu {...props} />);
+            renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Send to Live'));
 

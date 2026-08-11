@@ -4,7 +4,8 @@
 
 import React from 'react';
 import {screen} from '@testing-library/react';
-import {renderWithTheme} from '../../__testUtils__';
+import {renderWithMantine} from '../../__testUtils__';
+import {setupUser} from '../../__testUtils__/setupUser';
 import {JobListViewOptions} from './JobListViewOptions';
 import type {DensityMode} from '../../interfaces/dispatchJob';
 
@@ -20,45 +21,34 @@ function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobL
     };
 }
 
-/**
- * Collect the emotion CSS rules generated for `selector` under the rendered
- * `root` element's own style hash. jsdom's getComputedStyle can't resolve MUI's
- * nested-slot cascade, so we assert on the generated stylesheet text instead of
- * the computed colour.
- */
-function emotionRulesFor(root: string, selector: string): string {
-    const el = document.querySelector(root) as Element;
-    const hash = Array.from(el.classList).find((c) => c.startsWith('css-'))!.split('-')[1];
-    let text = '';
-    for (const styleEl of Array.from(document.querySelectorAll('style'))) {
-        const sheet = (styleEl as HTMLStyleElement).sheet;
-        if (!sheet) continue;
-        for (const rule of Array.from(sheet.cssRules)) {
-            if (rule.cssText.includes(hash) && rule.cssText.includes(selector)) {
-                text += rule.cssText;
-            }
-        }
-    }
-    return text;
-}
-
-const switchTrackRules = () => emotionRulesFor('.MuiSwitch-root', 'MuiSwitch-track');
-const densityToggleRules = () => emotionRulesFor('.MuiToggleButtonGroup-root', 'MuiToggleButton-root');
-
-const WHITE = /#fff|rgba\(\s*255,\s*255,\s*255/i;
-
 describe('JobListViewOptions', () => {
-    it('renders the logged-in only switch and keeps its track at the theme default', () => {
-        renderWithTheme(<JobListViewOptions {...createDefaultProps({headerVariant: false})}/>);
-        expect(screen.getByRole('switch')).toBeInTheDocument();
-        expect(switchTrackRules()).not.toMatch(WHITE);
+    it('marks the active density, and reports density, reset and switch changes', async () => {
+        const props = createDefaultProps();
+        renderWithMantine(<JobListViewOptions {...props}/>);
+        const user = setupUser();
+
+        expect(screen.getByRole('button', {name: 'Dense'})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: 'Normal'})).toHaveAttribute('aria-pressed', 'false');
+
+        await user.click(screen.getByRole('button', {name: 'Ultra Dense'}));
+        expect(props.onDensityModeChange).toHaveBeenCalledWith('ultra-dense');
+
+        await user.click(screen.getByRole('button', {name: 'Reset columns'}));
+        expect(props.onResetColumns).toHaveBeenCalledTimes(1);
+
+        await user.click(screen.getByRole('switch', {name: 'Logged-in only'}));
+        expect(props.onLoggedInCouriersOnlyChange).toHaveBeenCalledWith(true);
     });
 
-    it('takes the switch and density toggle colours from the theme in the header variant', () => {
-        renderWithTheme(<JobListViewOptions {...createDefaultProps({headerVariant: true})}/>);
-        // The panel header is a plain `background.paper` bar, so hardcoded white
-        // would be invisible against it.
-        expect(switchTrackRules()).not.toMatch(WHITE);
-        expect(densityToggleRules()).not.toMatch(WHITE);
+    it('hides the logged-in switch outside dispatch contexts', () => {
+        renderWithMantine(<JobListViewOptions {...createDefaultProps({showLoggedInSwitch: false})}/>);
+        expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    });
+
+    it('inherits the bar colour in the header variant instead of pinning one', () => {
+        // The panel header is a plain `surface` bar, so a hardcoded colour would
+        // either be invisible on it or stop following the colour scheme.
+        renderWithMantine(<JobListViewOptions {...createDefaultProps({headerVariant: true})}/>);
+        expect(screen.getByRole('button', {name: 'Reset columns'})).toHaveStyle({color: 'inherit'});
     });
 });

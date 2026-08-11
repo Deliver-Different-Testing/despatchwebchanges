@@ -27,6 +27,7 @@ const DEFAULT_DEBOUNCE_MS = 300;
 
 export function SearchSelect<T>({
     label,
+    'aria-label': ariaLabel,
     placeholder,
     value,
     onChange,
@@ -131,6 +132,7 @@ export function SearchSelect<T>({
             <Combobox.Target>
                 <TextInput
                     label={label}
+                    aria-label={ariaLabel}
                     placeholder={placeholder}
                     withAsterisk={withAsterisk}
                     disabled={disabled}

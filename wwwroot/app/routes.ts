@@ -1,4 +1,19 @@
 import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
+
+/**
+ * The JS bundle for an island plus its stylesheet, when the build emitted one.
+ *
+ * Islands that use a `*.module.css` (the job-list table, for one) get a sibling
+ * CSS entry in the manifest; loading only the `.js` leaves them unstyled.
+ */
+function islandFiles(manifest: Record<string, string>, entry: string): string[] {
+    const asset = (filename: string) => `dist/${manifest[filename] || filename}`;
+    const files = [asset(`${entry}.js`)];
+    if (manifest[`${entry}.css`]) {
+        files.push(asset(`${entry}.css`));
+    }
+    return files;
+}
 import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
 import {openJobInSearch} from './react/services/navigationService';
@@ -116,11 +131,11 @@ class RouterConfig {
                         }
                         await $ocLazyLoad.load({
                             name: 'uDispatch.jobListReact',
-                            files: [getAssetPath('jobListReact.js')]
+                            files: islandFiles(manifest, 'jobListReact')
                         });
                         await $ocLazyLoad.load({
                             name: 'uDispatch.currentWorkJobListReact',
-                            files: [getAssetPath('currentWorkJobListReact.js')]
+                            files: islandFiles(manifest, 'currentWorkJobListReact')
                         });
                     } catch (error) {
                         console.error('[ROUTES] Failed to load home modules:', error);
@@ -671,7 +686,7 @@ class RouterConfig {
                     }
                     await $ocLazyLoad.load({
                         name: 'uDispatch.nationwideJobListReact',
-                        files: [getAssetPath('nationwideJobListReact.js')]
+                        files: islandFiles(manifest, 'nationwideJobListReact')
                     });
                 }]
             }
@@ -721,7 +736,7 @@ class RouterConfig {
                     }
                     await $ocLazyLoad.load({
                         name: 'uDispatch.jobSearchJobListReact',
-                        files: [getAssetPath('jobSearchJobListReact.js')]
+                        files: islandFiles(manifest, 'jobSearchJobListReact')
                     });
                 }]
             },

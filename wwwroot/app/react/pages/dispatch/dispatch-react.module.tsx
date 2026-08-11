@@ -11,10 +11,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {DfrntMantineProvider} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {DispatchPage, DispatchPageProps, DispatchLayoutBridge} from './DispatchPage';
 import type {DispatchFilters, DispatchRefreshIntervals} from './lib/dispatchFilters';
@@ -63,12 +61,11 @@ export function mountDispatchPage(
         dispatchRoot = createRoot(container);
     }
 
-    const currentTheme = getTheme();
-
     dispatchRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
+        // The page itself is still MUI; Mantine wraps it so the already-migrated
+        // JobListPanel it renders finds a provider.
+        <DfrntMantineProvider>
+            <MuiThemeIsland>
                 <ErrorBoundary>
                     <DispatchPage
                         {...config}
@@ -85,8 +82,8 @@ export function mountDispatchPage(
                         }}
                     />
                 </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
+            </MuiThemeIsland>
+        </DfrntMantineProvider>,
     );
 
     console.log('[DispatchReact] Page rendered');

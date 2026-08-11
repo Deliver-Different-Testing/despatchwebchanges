@@ -8,11 +8,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {JobListPanel} from './JobListPanel';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {DfrntMantineProvider} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 import type {DispatchJob, MountJobListConfig} from '../../interfaces';
 import {ErrorBoundary} from '../common/error-boundary';
 
@@ -64,12 +62,10 @@ export function mountCurrentWorkJobList(
 function renderCurrentWorkJobList(config: MountJobListConfig): void {
     if (!cwRoot) return;
 
-    const currentTheme = getTheme();
-
     cwRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
+        <DfrntMantineProvider>
+            {/* ErrorBoundary is a shared MUI leaf still rendered by unmigrated islands. */}
+            <MuiThemeIsland>
                 <ErrorBoundary>
                     <JobListPanel
                         showToast={config.showToast}
@@ -96,8 +92,8 @@ function renderCurrentWorkJobList(config: MountJobListConfig): void {
                         }}
                     />
                 </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
+            </MuiThemeIsland>
+        </DfrntMantineProvider>,
     );
 }
 

@@ -10,33 +10,44 @@
  * source the table renders from, so the legend can never drift from reality.
  */
 import React from 'react';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import Alert from '@mui/material/Alert';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {Alert, Box, Group, Paper, Stack, Text} from '@mantine/core';
+import {Info} from 'lucide-react';
 
-import {DialogShell, DialogHeader, sectionPaperSx, sectionLabelSx} from '../dialogs/shared';
+import {Icon} from '../common/icon/Icon';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    sectionLabelProps,
+    sectionPaperProps,
+} from '../dialogs/shared/mantine';
 import type {IndicatorDef} from './jobListIndicators';
 import {FLIGHT_INDICATORS, INDICATORS, renderLegendMarker} from './jobListIndicators';
 
 const MarkerGutter: React.FC<{children: React.ReactNode}> = ({children}) => (
-    <Box sx={{width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.25}}>
+    <Box
+        style={{
+            width: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            marginTop: 2,
+        }}
+    >
         {children}
     </Box>
 );
 
 const LegendRow: React.FC<{def: IndicatorDef}> = ({def}) => (
-    <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
+    <Group align="flex-start" gap="sm" wrap="nowrap">
         <MarkerGutter>{renderLegendMarker(def.marker)}</MarkerGutter>
         <Box>
-            <Typography variant="body2" sx={{fontWeight: 600}}>{def.label}</Typography>
-            <Typography variant="caption" sx={{color: 'text.secondary', display: 'block'}}>{def.description}</Typography>
+            <Text size="sm" fw={600}>{def.label}</Text>
+            <Text size="xs" c="dimmed">{def.description}</Text>
         </Box>
-    </Box>
+    </Group>
 );
 
 // Flight is the one indicator with several variants; collapse the legs into a
@@ -44,31 +55,31 @@ const LegendRow: React.FC<{def: IndicatorDef}> = ({def}) => (
 const FlightLegendRow: React.FC = () => {
     const legs = [FLIGHT_INDICATORS.pickup, FLIGHT_INDICATORS.job, FLIGHT_INDICATORS.delivery];
     return (
-        <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
+        <Group align="flex-start" gap="sm" wrap="nowrap">
             <MarkerGutter>{renderLegendMarker(FLIGHT_INDICATORS.job.marker)}</MarkerGutter>
             <Box>
-                <Typography variant="body2" sx={{fontWeight: 600}}>Flight</Typography>
-                <Typography variant="caption" sx={{color: 'text.secondary', display: 'block', mb: 0.75}}>
+                <Text size="sm" fw={600}>Flight</Text>
+                <Text size="xs" c="dimmed" mb={6}>
                     Air freight job — the icon shows which leg this is:
-                </Typography>
-                <Box sx={{display: 'flex', flexWrap: 'wrap', columnGap: 2, rowGap: 0.5}}>
+                </Text>
+                <Group gap="md" style={{rowGap: 4}}>
                     {legs.map((leg) => (
-                        <Box key={leg.label} sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                        <Group key={leg.label} gap={4} wrap="nowrap">
                             {renderLegendMarker(leg.marker)}
-                            <Typography variant="caption" sx={{color: 'text.secondary'}}>{leg.description}</Typography>
-                        </Box>
+                            <Text size="xs" c="dimmed">{leg.description}</Text>
+                        </Group>
                     ))}
-                </Box>
+                </Group>
             </Box>
-        </Box>
+        </Group>
     );
 };
 
 const LegendSection: React.FC<{title: string; children: React.ReactNode}> = ({title, children}) => (
     <Box>
-        <Typography variant="body2" sx={sectionLabelSx}>{title}</Typography>
-        <Paper elevation={0} sx={{...sectionPaperSx, display: 'flex', flexDirection: 'column', gap: 1.5}}>
-            {children}
+        <Text {...sectionLabelProps}>{title}</Text>
+        <Paper {...sectionPaperProps}>
+            <Stack gap="sm">{children}</Stack>
         </Paper>
     </Box>
 );
@@ -79,16 +90,16 @@ export interface JobListLegendDialogProps {
 }
 
 export const JobListLegendDialog: React.FC<JobListLegendDialogProps> = ({open, onClose}) => (
-    <DialogShell open={open} onClose={onClose}>
+    <DialogShell opened={open} onClose={onClose} label="Column legend">
         <DialogHeader
-            icon={<InfoOutlinedIcon/>}
+            icon={<Icon lucide={Info}/>}
             title="Column legend"
             subtitle="What the dots and icons mean"
             onClose={onClose}
         />
-        <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-            <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
-                <Alert severity="info">
+        <Box style={{backgroundColor: dialogContentBg}} p="lg">
+            <Stack gap="lg">
+                <Alert color="cyan" variant="light">
                     Each job shows a single marker here — the highest-priority one that applies.
                 </Alert>
                 <LegendSection title="Job type">
@@ -110,21 +121,9 @@ export const JobListLegendDialog: React.FC<JobListLegendDialogProps> = ({open, o
                 <LegendSection title="Context">
                     <LegendRow def={INDICATORS.related}/>
                 </LegendSection>
-            </Box>
-        </DialogContent>
-        <DialogActions
-            sx={(theme) => ({
-                px: 3,
-                py: 2,
-                bgcolor: 'background.paper',
-                borderTop: `1px solid ${theme.palette.divider}`,
-                gap: 1,
-            })}
-        >
-            <Button onClick={onClose} variant="contained" color="primary" sx={{minWidth: 100, minHeight: 44}}>
-                Close
-            </Button>
-        </DialogActions>
+            </Stack>
+        </Box>
+        <DialogFooter hideCancel onConfirm={onClose} confirmLabel="Close"/>
     </DialogShell>
 );
 

@@ -1,7 +1,13 @@
 import React from "react";
 
 export interface SearchSelectProps<T> {
-    label: string;
+    /**
+     * Visible field label. Optional because some call sites have no room for one
+     * (an inline table cell); those must pass `aria-label` instead so the input
+     * still has an accessible name.
+     */
+    label?: string;
+    'aria-label'?: string;
     placeholder?: string;
     /** The selected option, or null. Owned by the caller. */
     value: T | null;

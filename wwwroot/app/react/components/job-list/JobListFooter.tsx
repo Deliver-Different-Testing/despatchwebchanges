@@ -5,9 +5,7 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import type {SxProps, Theme} from '@mui/material';
+import {Group, Text} from '@mantine/core';
 
 interface JobListFooterProps {
     displayedCount: number;
@@ -17,18 +15,10 @@ interface JobListFooterProps {
     allJobsLoaded?: boolean;
 }
 
-const styles: Record<string, SxProps<Theme>> = {
-    container: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        px: 2,
-        py: 0.5,
-        borderTop: 1,
-        borderColor: 'divider',
-        bgcolor: 'grey.50',
-        minHeight: 32,
-    },
+const containerStyle: React.CSSProperties = {
+    borderTop: '1px solid var(--mantine-color-default-border)',
+    backgroundColor: 'var(--mantine-color-gray-1)',
+    minHeight: 32,
 };
 
 export const JobListFooter: React.FC<JobListFooterProps> = ({
@@ -52,20 +42,13 @@ export const JobListFooter: React.FC<JobListFooterProps> = ({
     }
 
     return (
-        <Box sx={styles.container}>
-            <Typography
-                variant="caption"
-                sx={{
-                    color: "text.secondary",
-                    fontWeight: 500
-                }}>
+        <Group justify="space-between" align="center" px="md" py={4} gap="xs" style={containerStyle}>
+            <Text size="xs" c="dimmed" fw={500}>
                 {displayText}
-            </Typography>
-            <Typography variant="caption" sx={{
-                color: "text.disabled"
-            }}>
+            </Text>
+            <Text size="xs" c="var(--mantine-color-gray-5)">
                 {lastUpdated}
-            </Typography>
-        </Box>
+            </Text>
+        </Group>
     );
 };

@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
-import { renderWithTheme } from '../../__testUtils__';
+import { renderWithMantine } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {availableColumns, orderColumns} from './jobListColumns';
 import {JobListTable} from './JobListTable';
@@ -109,14 +109,14 @@ describe('JobListTable', () => {
     });
 
     it('renders "No jobs to display" when jobs array is empty', () => {
-        renderWithTheme(<JobListTable {...createDefaultProps({jobs: []})}/>);
+        renderWithMantine(<JobListTable {...createDefaultProps({jobs: []})}/>);
         expect(screen.getByText('No jobs to display')).toBeInTheDocument();
     });
 
     // ── Table Rendering (single render) ─────────────────────────────
     describe('Table Rendering', () => {
         it('renders table headers, job data, resize handles and correct column visibility', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps()}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
 
             // Headers
             expect(screen.getByText('Date')).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe('JobListTable', () => {
         });
 
         it('hides Client column for US customers and shows Archived on search page', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps({isUsCustomer: true, isJobSearchPage: true})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({isUsCustomer: true, isJobSearchPage: true})}/>);
 
             expect(screen.queryByText('Client')).not.toBeInTheDocument();
             expect(screen.getByText('Archived')).toBeInTheDocument();
@@ -153,10 +153,10 @@ describe('JobListTable', () => {
 
         it('renders the partner-job icon in the priority column when isPartnerJob is true', async () => {
             const partnerJob = createMockDispatchJob({id: 2, jobNo: 'P001', isPartnerJob: true});
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [partnerJob]})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [partnerJob]})}/>);
 
             const row = screen.getByText('P001').closest('tr')!;
-            await setupUser().hover(row.querySelector('svg[data-testid="HandshakeIcon"]')!);
+            await setupUser().hover(row.querySelector('[data-testid="indicator-partner"]')!);
             expect(await screen.findByText('Partner Job')).toBeInTheDocument();
         });
     });
@@ -186,7 +186,7 @@ describe('JobListTable', () => {
 
         it.each(cases)('shows a tooltip on the $label dot', async ({overrides, tooltip}) => {
             const job = createMockDispatchJob({id: 1, ...overrides});
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
 
             await setupUser().hover(screen.getByTestId('priority-dot'));
             expect(await screen.findByText(tooltip)).toBeInTheDocument();
@@ -195,7 +195,7 @@ describe('JobListTable', () => {
         it('does not show an in-transit dot for Warning-status jobs', () => {
             // Warning (7) previously rendered an amber dot; amber now means In Transit only.
             const warningJob = createMockDispatchJob({id: 1, jobNo: 'D-WARN', statusId: 7, assignedCourier: {id: 5, text: '5 - R'}});
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [warningJob]})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [warningJob]})}/>);
 
             expect(screen.queryByTestId('priority-dot')).not.toBeInTheDocument();
         });
@@ -205,10 +205,10 @@ describe('JobListTable', () => {
     describe('Priority column header', () => {
         it('is not sortable and opens the legend dialog from its info button', async () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             // No sort label on the priority column
-            expect(screen.queryByTestId('resize-handle-priority')?.querySelector('.MuiTableSortLabel-root')).toBeFalsy();
+            expect(document.querySelector('th[data-column-key="priority"] button[data-sort-column]')).toBeNull();
 
             await setupUser().click(screen.getByRole('button', {name: 'Column legend'}));
 
@@ -224,7 +224,7 @@ describe('JobListTable', () => {
         it('fires onJobClick and onContextMenu', async () => {
             const user = setupUser();
             const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             await user.click(screen.getByText('J001'));
             expect(props.onJobClick).toHaveBeenCalledWith(expect.objectContaining({id: 1}), expect.any(Object));
@@ -237,7 +237,7 @@ describe('JobListTable', () => {
         it('fires onSortChange when column header is clicked', async () => {
             const user = setupUser();
             const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             await user.click(screen.getByText('Job No'));
             expect(props.onSortChange).toHaveBeenCalledWith('jobNo');
@@ -273,7 +273,7 @@ describe('JobListTable', () => {
                     },
                 }),
             ];
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs})}/>);
 
             expect(screen.getByText('JS01 - John Smith')).toBeInTheDocument();
             expect(screen.getByText('NZ123')).toBeInTheDocument();
@@ -285,7 +285,7 @@ describe('JobListTable', () => {
                 assignedCourier: {id: 10, text: 'John Smith'},
                 courierData: {courier: 'JS01', courierName: 'John Smith', courierNumber: '101'},
             });
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job], isUsCustomer: true})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job], isUsCustomer: true})}/>);
 
             expect(screen.getByText('John Smith')).toBeInTheDocument();
             expect(screen.getByText('JS01')).toBeInTheDocument();
@@ -296,7 +296,7 @@ describe('JobListTable', () => {
                 id: 4, jobNo: 'J004',
                 sentToPartnerName: 'Acme Couriers',
             });
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
 
             expect(screen.getByText('Acme Couriers')).toBeInTheDocument();
         });
@@ -308,7 +308,7 @@ describe('JobListTable', () => {
             const job = createMockDispatchJob();
 
             // Dispatch page
-            const {unmount: u1} = renderWithTheme(<JobListTable {...createDefaultProps({
+            const {unmount: u1} = renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: [job],
                 appPage: AppPage.Dispatch
             })}/>);
@@ -316,7 +316,7 @@ describe('JobListTable', () => {
             u1();
 
             // JobSearch page
-            const {unmount: u2} = renderWithTheme(<JobListTable {...createDefaultProps({
+            const {unmount: u2} = renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: [job],
                 appPage: AppPage.JobSearch
             })}/>);
@@ -324,7 +324,7 @@ describe('JobListTable', () => {
             u2();
 
             // Domestic page
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job], appPage: AppPage.Domestic})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job], appPage: AppPage.Domestic})}/>);
             expect(screen.queryByText('Assign')).not.toBeInTheDocument();
         });
 
@@ -350,7 +350,7 @@ describe('JobListTable', () => {
                     },
                 }),
             ];
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs})}/>);
             expect(screen.queryByText('Assign')).not.toBeInTheDocument();
         });
     });
@@ -361,7 +361,7 @@ describe('JobListTable', () => {
             const user = setupUser();
             mockedSearch.mockResolvedValue([{id: 1, text: '101 - John Smith'}]);
 
-            renderWithTheme(<JobListTable {...createDefaultProps()}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
 
             await user.click(screen.getByText('Assign'));
             expect(screen.getByPlaceholderText('Search courier...')).toBeInTheDocument();
@@ -378,7 +378,7 @@ describe('JobListTable', () => {
             const user = setupUser();
             mockedSearch.mockResolvedValue([]);
 
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob({dgClass: 3})]})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob({dgClass: 3})]})}/>);
 
             await user.click(screen.getByText('Assign'));
             await user.click(screen.getByPlaceholderText('Search courier...'));
@@ -394,7 +394,7 @@ describe('JobListTable', () => {
             mockedSearch.mockResolvedValue([{id: 42, text: '101 - John Smith'}]);
 
             const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             await user.click(screen.getByText('Assign'));
             await user.click(screen.getByPlaceholderText('Search courier...'));
@@ -415,7 +415,7 @@ describe('JobListTable', () => {
                 createMockDispatchJob({id: 2, jobNo: 'J002'}),
                 createMockDispatchJob({id: 3, jobNo: 'J003'}),
             ];
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs})}/>);
 
             expect(screen.getByText('J001')).toBeInTheDocument();
             expect(screen.getByText('J002')).toBeInTheDocument();
@@ -436,12 +436,12 @@ describe('JobListTable', () => {
                 alertLatePickup: 0, // alerts enabled
             });
 
-            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
 
             expect(screen.getByText('ASAP-001')).toBeInTheDocument();
             // No ScheduleIcon (late pickup) or LocalShippingIcon (late delivery)
-            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
-            expect(container.querySelector('[data-testid="LocalShippingIcon"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-pickup"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-delivery"]')).not.toBeInTheDocument();
         });
 
         it('does not show late delivery icon for ASAP jobs with null time in transit', () => {
@@ -455,12 +455,12 @@ describe('JobListTable', () => {
                 alertLateDelivery: 0, // alerts enabled
             });
 
-            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
 
             expect(screen.getByText('ASAP-002')).toBeInTheDocument();
             // No late delivery icon
-            expect(container.querySelector('[data-testid="LocalShippingIcon"]')).not.toBeInTheDocument();
-            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-delivery"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-pickup"]')).not.toBeInTheDocument();
         });
 
         it('does not show late pickup icon for ASAP jobs in Accepted status', () => {
@@ -474,10 +474,10 @@ describe('JobListTable', () => {
                 alertLatePickup: null as any, // null = default (alerts enabled)
             });
 
-            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
 
             expect(screen.getByText('ASAP-003')).toBeInTheDocument();
-            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-pickup"]')).not.toBeInTheDocument();
         });
 
     });
@@ -491,46 +491,46 @@ describe('JobListTable', () => {
         ];
 
         it('selected row does not show link icon even when in relatedJobIds', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps({
+            renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: selectionJobs,
                 selectedJobId: 1,
                 relatedJobIds: new Set([1, 2]),
             })}/>);
 
             const selectedRow = screen.getByText('SEL-001').closest('tr')!;
-            expect(selectedRow.querySelector('[data-testid="LinkIcon"]')).not.toBeInTheDocument();
+            expect(selectedRow.querySelector('[data-testid="indicator-related"]')).not.toBeInTheDocument();
         });
 
         it('related (non-selected) row shows link icon in first cell', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps({
+            renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: selectionJobs,
                 selectedJobId: 1,
                 relatedJobIds: new Set([1, 2]),
             })}/>);
 
             const relatedRow = screen.getByText('REL-002').closest('tr')!;
-            expect(relatedRow.querySelector('[data-testid="LinkIcon"]')).toBeInTheDocument();
+            expect(relatedRow.querySelector('[data-testid="indicator-related"]')).toBeInTheDocument();
         });
 
         it('non-selected, non-related rows do not show link icon', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps({
+            renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: selectionJobs,
                 selectedJobId: 1,
                 relatedJobIds: new Set([1, 2]),
             })}/>);
 
             const otherRow = screen.getByText('OTHER-003').closest('tr')!;
-            expect(otherRow.querySelector('[data-testid="LinkIcon"]')).not.toBeInTheDocument();
+            expect(otherRow.querySelector('[data-testid="indicator-related"]')).not.toBeInTheDocument();
         });
 
         it('no link icons appear when there are no related jobs', () => {
-            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: selectionJobs,
                 selectedJobId: 1,
                 relatedJobIds: new Set<number>(),
             })}/>);
 
-            expect(container.querySelectorAll('[data-testid="LinkIcon"]')).toHaveLength(0);
+            expect(container.querySelectorAll('[data-testid="indicator-related"]')).toHaveLength(0);
         });
     });
 
@@ -538,7 +538,7 @@ describe('JobListTable', () => {
     describe('Column Resize', () => {
         it('does not trigger sort on resize handle mousedown', () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             const handle = screen.getByTestId('resize-handle-jobNo');
             handle.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 100}));
@@ -547,7 +547,7 @@ describe('JobListTable', () => {
 
         it('calls onColumnWidthsChange with updated width after drag', () => {
             const props = createDefaultProps({columnWidths: {jobNo: 130}});
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             const handle = screen.getByTestId('resize-handle-jobNo');
             handle.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 200}));
@@ -559,7 +559,7 @@ describe('JobListTable', () => {
 
         it('enforces minimum column width of 50px', () => {
             const props = createDefaultProps({columnWidths: {jobNo: 80}});
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             const handle = screen.getByTestId('resize-handle-jobNo');
             handle.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 200}));
