@@ -16,6 +16,7 @@ import {
 } from './index';
 import {getHeaderColors, getHeaderSurfaceAccent} from './styles';
 import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
+import {dfrntPrimaryPalette, urgentPrimaryPalette} from '../../../../theme/palettes';
 import {renderWithMantine} from '../../../../__testUtils__';
 
 interface Handlers {
@@ -122,11 +123,16 @@ describe('header style helpers', () => {
         expect(headerChipStyle('warning').color).toBe(headerColors.warning.fg);
     });
 
-    it('fills the primary header with the tenant brand — Ink on US, gold elsewhere', () => {
+    it('fills the primary header with the tenant primary — matching the MUI dialogs', () => {
         // Asserted through the factories rather than the module-level `headerColors`,
         // which is bound to whichever tenant the bundle booted in.
-        expect(getHeaderColors(true).primary).toEqual({bg: dfrntBrand.inkBlue, fg: '#ffffff'});
-        expect(getHeaderColors(false).primary).toEqual({bg: dfrntBrand.gold, fg: dfrntBrand.inkBlue});
+        //
+        // These must equal the MUI `headerChromeSx` fill (`palette.primary.main` +
+        // `contrastText`) so a Mantine dialog and an unmigrated MUI one opened in
+        // the same session wear the same header. Both hues are light, so the
+        // on-colour is Ink on either tenant.
+        expect(getHeaderColors(true).primary).toEqual({bg: dfrntPrimaryPalette[500], fg: dfrntBrand.inkBlue});
+        expect(getHeaderColors(false).primary).toEqual({bg: urgentPrimaryPalette[500], fg: dfrntBrand.inkBlue});
     });
 
     it('keeps the semantic fills and the neutral bar off the tenant switch', () => {

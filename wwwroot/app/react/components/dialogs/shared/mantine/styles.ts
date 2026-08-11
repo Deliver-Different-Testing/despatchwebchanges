@@ -37,10 +37,13 @@ export type PanelHeaderVariant = HeaderVariant | 'surface';
  */
 export function getHeaderColors(isUsCustomer: boolean): Record<PanelHeaderVariant, {bg: string; fg: string}> {
     return {
-        // The tenant's primary chrome: Ink-Blue with white on it for US, the brand
-        // gold with dark Ink on it for everyone else (gold is a light hue).
+        // The tenant's primary: Cyan on US, the brand gold elsewhere — the same
+        // fill the MUI `headerChromeSx` uses (`palette.primary.main` +
+        // `contrastText`), so a Mantine dialog and an unmigrated MUI one opened
+        // in the same session wear the same header. Both hues are light, so the
+        // on-colour is dark Ink on either tenant.
         primary: isUsCustomer
-            ? {bg: dfrntBrand.inkBlue, fg: '#ffffff'}
+            ? {bg: dfrntBrand.cyan, fg: dfrntBrand.inkBlue}
             : {bg: dfrntBrand.gold, fg: dfrntBrand.inkBlue},
         secondary: {bg: dfrntBrand.purple, fg: '#ffffff'},
         info: {bg: dfrntBrand.cyan, fg: dfrntBrand.inkBlue}, // light Cyan → dark ink text
