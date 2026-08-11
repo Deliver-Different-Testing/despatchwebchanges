@@ -1,13 +1,8 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {screen, waitFor} from '@testing-library/react';
 import {SendToLiveConfirmationDialog} from './SendToLiveConfirmationDialog';
-
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+import {renderWithMantine} from '../../../__testUtils__';
 
 const createProps = (overrides: Partial<React.ComponentProps<typeof SendToLiveConfirmationDialog>> = {}) => ({
     open: true,
@@ -19,7 +14,7 @@ const createProps = (overrides: Partial<React.ComponentProps<typeof SendToLiveCo
 
 describe('SendToLiveConfirmationDialog', () => {
     it('renders header, info paper, and footer buttons when open', () => {
-        renderWithTheme(<SendToLiveConfirmationDialog {...createProps()} />);
+        renderWithMantine(<SendToLiveConfirmationDialog {...createProps()} />);
 
         expect(screen.getByRole('dialog')).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: /send to live/i})).toBeInTheDocument();
@@ -30,14 +25,14 @@ describe('SendToLiveConfirmationDialog', () => {
     });
 
     it('does not render when closed', () => {
-        renderWithTheme(<SendToLiveConfirmationDialog {...createProps({open: false})} />);
+        renderWithMantine(<SendToLiveConfirmationDialog {...createProps({open: false})} />);
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('calls onClose when Cancel is clicked', async () => {
         const user = setupUser();
         const props = createProps();
-        renderWithTheme(<SendToLiveConfirmationDialog {...props} />);
+        renderWithMantine(<SendToLiveConfirmationDialog {...props} />);
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
         expect(props.onClose).toHaveBeenCalledTimes(1);
@@ -47,7 +42,7 @@ describe('SendToLiveConfirmationDialog', () => {
     it('calls onClose when the close icon is clicked', async () => {
         const user = setupUser();
         const props = createProps();
-        renderWithTheme(<SendToLiveConfirmationDialog {...props} />);
+        renderWithMantine(<SendToLiveConfirmationDialog {...props} />);
 
         await user.click(screen.getByRole('button', {name: /close dialog/i}));
         expect(props.onClose).toHaveBeenCalledTimes(1);
@@ -56,7 +51,7 @@ describe('SendToLiveConfirmationDialog', () => {
     it('calls onConfirm then onClose when Send to Live is clicked', async () => {
         const user = setupUser();
         const props = createProps();
-        renderWithTheme(<SendToLiveConfirmationDialog {...props} />);
+        renderWithMantine(<SendToLiveConfirmationDialog {...props} />);
 
         await user.click(screen.getByRole('button', {name: /^send to live$/i}));
 
@@ -71,7 +66,7 @@ describe('SendToLiveConfirmationDialog', () => {
             resolveConfirm = resolve;
         }));
         const props = createProps({onConfirm});
-        renderWithTheme(<SendToLiveConfirmationDialog {...props} />);
+        renderWithMantine(<SendToLiveConfirmationDialog {...props} />);
 
         await user.click(screen.getByRole('button', {name: /^send to live$/i}));
 
@@ -86,7 +81,7 @@ describe('SendToLiveConfirmationDialog', () => {
         const user = setupUser();
         const onConfirm = jest.fn().mockRejectedValue(new Error('api failed'));
         const props = createProps({onConfirm});
-        renderWithTheme(<SendToLiveConfirmationDialog {...props} />);
+        renderWithMantine(<SendToLiveConfirmationDialog {...props} />);
 
         await user.click(screen.getByRole('button', {name: /^send to live$/i}));
 

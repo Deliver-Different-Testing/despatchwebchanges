@@ -1,7 +1,7 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
 import {RestoreCompletedConfirmationDialog} from './RestoreCompletedConfirmationDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 import {setupUser} from '../../../__testUtils__/setupUser';
 
 const defaultProps = {
@@ -14,13 +14,13 @@ describe('RestoreCompletedConfirmationDialog', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('shows singular copy for a single job', () => {
-        renderWithTheme(<RestoreCompletedConfirmationDialog {...defaultProps} count={1} />);
+        renderWithMantine(<RestoreCompletedConfirmationDialog {...defaultProps} count={1} />);
         expect(screen.getByText('Restore completed job')).toBeInTheDocument();
         expect(screen.getByText(/This job is completed\. Restoring it reopens it as a new job/i)).toBeInTheDocument();
     });
 
     it('shows plural copy with the completed count for a bulk restore', () => {
-        renderWithTheme(<RestoreCompletedConfirmationDialog {...defaultProps} count={3} />);
+        renderWithMantine(<RestoreCompletedConfirmationDialog {...defaultProps} count={3} />);
         expect(screen.getByText('Restore completed jobs')).toBeInTheDocument();
         expect(screen.getByText(/3 of the selected jobs are completed/i)).toBeInTheDocument();
     });
@@ -28,7 +28,7 @@ describe('RestoreCompletedConfirmationDialog', () => {
     it('leaves the remove-images checkbox off by default and confirms with false', async () => {
         const onConfirm = jest.fn();
         const user = setupUser();
-        renderWithTheme(<RestoreCompletedConfirmationDialog {...defaultProps} onConfirm={onConfirm} />);
+        renderWithMantine(<RestoreCompletedConfirmationDialog {...defaultProps} onConfirm={onConfirm} />);
 
         const checkbox = screen.getByRole('checkbox', {name: /Also remove the images captured/i});
         expect(checkbox).not.toBeChecked();
@@ -43,7 +43,7 @@ describe('RestoreCompletedConfirmationDialog', () => {
     it('confirms with true when the remove-images checkbox is ticked', async () => {
         const onConfirm = jest.fn();
         const user = setupUser();
-        renderWithTheme(<RestoreCompletedConfirmationDialog {...defaultProps} onConfirm={onConfirm} />);
+        renderWithMantine(<RestoreCompletedConfirmationDialog {...defaultProps} onConfirm={onConfirm} />);
 
         await user.click(screen.getByRole('checkbox', {name: /Also remove the images captured/i}));
         expect(screen.getByText(/photos and signatures will be archived and hidden/i)).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('RestoreCompletedConfirmationDialog', () => {
     it('calls onClose when Cancel is clicked', async () => {
         const onClose = jest.fn();
         const user = setupUser();
-        renderWithTheme(<RestoreCompletedConfirmationDialog {...defaultProps} onClose={onClose} />);
+        renderWithMantine(<RestoreCompletedConfirmationDialog {...defaultProps} onClose={onClose} />);
 
         await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
@@ -64,7 +64,7 @@ describe('RestoreCompletedConfirmationDialog', () => {
     });
 
     it('locks the dialog and shows progress while submitting', () => {
-        renderWithTheme(<RestoreCompletedConfirmationDialog {...defaultProps} submitting />);
+        renderWithMantine(<RestoreCompletedConfirmationDialog {...defaultProps} submitting />);
 
         expect(screen.getByRole('button', {name: /Restoring/})).toBeDisabled();
         expect(screen.getByRole('button', {name: 'Cancel'})).toBeDisabled();

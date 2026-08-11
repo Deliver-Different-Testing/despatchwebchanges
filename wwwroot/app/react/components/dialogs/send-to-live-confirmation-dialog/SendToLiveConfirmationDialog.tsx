@@ -1,12 +1,8 @@
 import React, {useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import DialogContent from '@mui/material/DialogContent';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import SendIcon from '@mui/icons-material/Send';
-import InfoIcon from '@mui/icons-material/Info';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {Alert, Box, Text} from '@mantine/core';
+import {Send} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {DialogFooter, DialogHeader, DialogShell, dialogContentBg} from '../shared/mantine';
 
 export interface SendToLiveConfirmationDialogProps {
     open: boolean;
@@ -41,9 +37,9 @@ export const SendToLiveConfirmationDialog: React.FC<SendToLiveConfirmationDialog
     };
 
     return (
-        <DialogShell open={open} onClose={handleClose}>
+        <DialogShell opened={open} onClose={handleClose} label="Send to Live">
             <DialogHeader
-                icon={<SendIcon/>}
+                icon={<Icon lucide={Send}/>}
                 title="Send to Live"
                 subtitle={`Release bulk job ${jobNo} to the live dispatch screen`}
                 onClose={handleClose}
@@ -51,33 +47,19 @@ export const SendToLiveConfirmationDialog: React.FC<SendToLiveConfirmationDialog
             />
 
             {/* Content */}
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
-                    <Paper
-                        elevation={0}
-                        sx={(theme) => ({
-                            p: 2,
-                            borderRadius: 1,
-                            bgcolor: alpha(theme.palette.info.main, 0.08),
-                            borderLeft: `4px solid ${theme.palette.info.main}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1.5,
-                        })}
-                    >
-                        <InfoIcon sx={(theme) => ({color: theme.palette.info.dark, fontSize: 20})} />
-                        <Typography variant="body2" sx={{color: 'text.primary'}}>
-                            Bulk job <strong>{jobNo}</strong> will be released and become visible on the live dispatch screen.
-                        </Typography>
-                    </Paper>
-                </Box>
-            </DialogContent>
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                <Alert color="reflex" variant="light">
+                    <Text size="sm">
+                        Bulk job <strong>{jobNo}</strong> will be released and become visible on the live dispatch screen.
+                    </Text>
+                </Alert>
+            </Box>
 
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleConfirm}
                 confirmLabel={isSubmitting ? 'Sending...' : 'Send to Live'}
-                confirmIcon={<SendIcon/>}
+                confirmIcon={<Icon lucide={Send} size={16}/>}
                 submitting={isSubmitting}
             />
         </DialogShell>

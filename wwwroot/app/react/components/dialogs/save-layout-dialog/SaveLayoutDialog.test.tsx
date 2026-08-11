@@ -1,13 +1,13 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
 import {SaveLayoutDialog} from './SaveLayoutDialog';
-import { renderWithTheme } from '../../../__testUtils__';
+import { renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 
 function setup(overrides: Partial<React.ComponentProps<typeof SaveLayoutDialog>> = {}) {
     const onClose = jest.fn();
     const onConfirm = jest.fn();
-    renderWithTheme(
+    renderWithMantine(
         <SaveLayoutDialog
             open
             existingNames={['Default']}

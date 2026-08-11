@@ -144,14 +144,9 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
             </Box>
             {/* Loading indicator */}
             {loading && (
-                <Progress
-                    value={100}
-                    animated
-                    size="xs"
-                    role="progressbar"
-                    aria-label="Loading drivers"
-                    style={{ flexShrink: 0 }}
-                />
+                <Progress.Root size="xs" style={{ flexShrink: 0 }}>
+                    <Progress.Section value={100} animated aria-label="Loading drivers"/>
+                </Progress.Root>
             )}
             {/* Driver List */}
             <Box style={{ flex: 1, overflow: 'auto' }}>

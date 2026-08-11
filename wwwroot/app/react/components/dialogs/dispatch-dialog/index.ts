@@ -6,4 +6,5 @@ export type {
     DispatchType,
     DispatchJobFlags,
 } from './types';
-export type {PartnerRatePanelProps} from './PartnerRatePanel';
+
+export {PartnerRatePanelProps} from "./PartnerRatePanelProps";

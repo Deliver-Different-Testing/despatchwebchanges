@@ -28,7 +28,6 @@ import {
 import {IconPinned, IconPlaneOff, IconTruck} from '@tabler/icons-react';
 
 import {Icon} from '../common/icon/Icon';
-import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 
 import type {AppPage, DispatchJob} from '../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../services/toastService';
@@ -820,13 +819,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 />
             </DialogShell>
 
-            {/*
-              * The four dialogs below are still MUI (migration wave 5c). MUI does not
-              * throw without a provider — it silently falls back to its stock blue —
-              * so they are re-parented under the app's MUI theme until they convert.
-              */}
-            <MuiThemeIsland>
-                {/* Restore Completed Job Confirmation */}
+            {/* Restore Completed Job Confirmation */}
                 <RestoreCompletedConfirmationDialog
                     open={restoreCompletedConfirmOpen}
                     onClose={() => setRestoreCompletedConfirmOpen(false)}
@@ -863,9 +856,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     onDispatchCourier={handleDispatchDialogConfirmCourier}
                     onSendToPartner={handleDispatchDialogConfirmPartner}
                     fetchRate={api.getPartnerRateForJob}
-                    getPartnerOptions={api.getActivePartnerOptions}
-                />
-            </MuiThemeIsland>
+                getPartnerOptions={api.getActivePartnerOptions}
+            />
 
             {/* Generic Confirmation Dialog */}
             <DialogShell

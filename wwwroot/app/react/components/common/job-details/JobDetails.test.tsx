@@ -16,6 +16,7 @@ import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createMockJob, createMockReadTracker} from './__testUtils__/mockJob';
 import type {MountJobDetailsConfig, IJob} from './JobDetails.types';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
@@ -142,9 +143,9 @@ function renderJobDetails(configOverrides?: Partial<MountJobDetailsConfig>) {
 
     return render(
         <QueryClientProvider client={createQueryClient()}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider><ThemeProvider theme={theme}>
                 <JobDetails config={config} />
-            </ThemeProvider>
+            </ThemeProvider></MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -497,7 +498,7 @@ describe('JobDetails', () => {
             const {JobDetails} = require('./JobDetails');
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
-                    <ThemeProvider theme={theme}>
+                    <MantineTestProvider><ThemeProvider theme={theme}>
                         <JobDetails config={{
                             jobId: 200,
                             isRecurringJob: false,
@@ -505,7 +506,7 @@ describe('JobDetails', () => {
                             isUsCustomer: false,
                             showToast: jest.fn(),
                         }} />
-                    </ThemeProvider>
+                    </ThemeProvider></MantineTestProvider>
                 </QueryClientProvider>,
             );
 
@@ -624,9 +625,9 @@ describe('JobDetails', () => {
             };
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
-                    <ThemeProvider theme={theme}>
+                    <MantineTestProvider><ThemeProvider theme={theme}>
                         <JobDetails config={freshConfig} />
-                    </ThemeProvider>
+                    </ThemeProvider></MantineTestProvider>
                 </QueryClientProvider>,
             );
 

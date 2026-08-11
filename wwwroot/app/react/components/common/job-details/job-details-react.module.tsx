@@ -7,11 +7,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {JobDetails} from './JobDetails';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../mui-interop/MuiThemeIsland';
 import {queryClient} from '../../../query/queryClient';
 import {ErrorBoundary} from '../error-boundary';
 import type {MountJobDetailsConfig} from './JobDetails.types';
@@ -66,17 +64,17 @@ export function mountJobDetails(
 function renderJobDetails(config: MountJobDetailsConfig): void {
     if (!jobDetailsRoot) return;
 
-    const currentTheme = getTheme();
-
     jobDetailsRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
+        // JobDetails itself is still MUI (Phase 6); Mantine wraps it so the
+        // already-migrated DispatchDialog it opens finds a provider. The stack
+        // supplies ReactQueryProvider, so the island no longer adds its own.
+        <DfrntMantineProvider>
+            <MuiThemeIsland>
                 <ErrorBoundary>
                     <JobDetails config={config} />
                 </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>
+            </MuiThemeIsland>
+        </DfrntMantineProvider>
     );
 }
 

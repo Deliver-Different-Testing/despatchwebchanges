@@ -10,7 +10,7 @@ import React from 'react';
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {DispatchDialog} from './DispatchDialog';
 import type {DispatchDialogProps, DispatchMode} from './types';
-import {renderWithTheme, renderWithProviders} from '../../../__testUtils__';
+import {renderWithMantine, renderWithMantineProviders} from '../../../__testUtils__';
 import {setupUser} from '../../../__testUtils__/setupUser';
 import type {PartnerRateForJobResponse, EventGroupItem} from '../../../services/jobListApi';
 import type {ISuggestion} from '../../../../interfaces/job.interface';
@@ -115,7 +115,7 @@ beforeEach(() => {
 describe('DispatchDialog', () => {
     describe('Layout & basic rendering', () => {
         it('renders the four Type radios', () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             expect(screen.getByRole('radio', {name: /Courier/})).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: /Agent/})).toBeInTheDocument();
@@ -124,12 +124,12 @@ describe('DispatchDialog', () => {
         });
 
         it('shows the single-job subtitle as "Job {jobNo}"', () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
             expect(screen.getByText(/Job J042/)).toBeInTheDocument();
         });
 
         it('shows the bulk subtitle as "{N} jobs selected"', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({
                         mode: {
@@ -147,7 +147,7 @@ describe('DispatchDialog', () => {
         });
 
         it('shows a singular subtitle when the bulk selection has one job', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({mode: {kind: 'bulk', jobs: [{id: 1, jobNo: 'J001'}]}})}
                 />,
@@ -156,12 +156,12 @@ describe('DispatchDialog', () => {
         });
 
         it('honours initialType when DFRNT Partner is enabled', () => {
-            renderWithTheme(<DispatchDialog {...makeProps({initialType: 'DfrntPartner'})} />);
+            renderWithMantine(<DispatchDialog {...makeProps({initialType: 'DfrntPartner'})} />);
             expect(screen.getByRole('radio', {name: /DFRNT Partner/})).toBeChecked();
         });
 
         it('falls back to Courier when initialType is DFRNT Partner but the radio is disabled', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({
                         initialType: 'DfrntPartner',
@@ -220,7 +220,7 @@ describe('DispatchDialog', () => {
         for (const {label, mode, tooltip} of cases) {
             it(`disables DFRNT Partner with the right tooltip for ${label}`, async () => {
                 const user = setupUser();
-                renderWithTheme(<DispatchDialog {...makeProps({mode})} />);
+                renderWithMantine(<DispatchDialog {...makeProps({mode})} />);
                 const dfrntRadio = screen.getByRole('radio', {name: /DFRNT Partner/});
                 expect(dfrntRadio).toBeDisabled();
 
@@ -237,14 +237,14 @@ describe('DispatchDialog', () => {
         }
 
         it('enables DFRNT Partner for a standard non-archived non-bulk non-prebook tucJob', () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
             expect(screen.getByRole('radio', {name: /DFRNT Partner/})).not.toBeDisabled();
         });
     });
 
     describe('Destination panels', () => {
         it('shows the Courier autocomplete by default and fires the courier search backend', async () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             const search = screen.getByPlaceholderText(/Search courier/);
             fireEvent.focus(search);
@@ -256,7 +256,7 @@ describe('DispatchDialog', () => {
         });
 
         it('switches to the Agent search backend when the Agent radio is selected', async () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /Agent/}));
             const search = screen.getByPlaceholderText(/Search agent/);
@@ -272,7 +272,7 @@ describe('DispatchDialog', () => {
         });
 
         it('switches to the NP search backend when the NP radio is selected', async () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /^NP$/}));
             const search = screen.getByPlaceholderText(/Search Network Partner/);
@@ -288,7 +288,7 @@ describe('DispatchDialog', () => {
         });
 
         it('switching radio clears the previous destination so we never submit the wrong column', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({existingDestination: {id: 50, text: 'ABC Couriers'}})}
                 />,
@@ -304,7 +304,7 @@ describe('DispatchDialog', () => {
 
         it('shows the partner select + lazy-loads partners when DFRNT Partner is selected', async () => {
             const getPartnerOptions = jest.fn().mockResolvedValue(mockPartners);
-            renderWithTheme(<DispatchDialog {...makeProps({getPartnerOptions})} />);
+            renderWithMantine(<DispatchDialog {...makeProps({getPartnerOptions})} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
 
@@ -319,7 +319,7 @@ describe('DispatchDialog', () => {
     describe('Confirm callbacks', () => {
         it('calls onDispatchCourier with the picked courier when Confirm is clicked', async () => {
             const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
-            renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+            renderWithMantine(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             await pickCourierAndConfirm();
 
@@ -329,14 +329,14 @@ describe('DispatchDialog', () => {
         });
 
         it('Confirm button stays disabled until a destination is picked', async () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
             const confirm = screen.getByRole('button', {name: /Dispatch/});
             expect(confirm).toBeDisabled();
         });
 
         it('surfaces an error from onDispatchCourier inline without closing the dialog', async () => {
             const onDispatchCourier = jest.fn().mockRejectedValue(new Error('server-side failure'));
-            renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+            renderWithMantine(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             await pickCourierAndConfirm();
 
@@ -347,15 +347,15 @@ describe('DispatchDialog', () => {
 
         it('calls onSendToPartner with partner + rate when DFRNT Partner Confirm is clicked', async () => {
             const onSendToPartner = jest.fn().mockResolvedValue(undefined);
-            renderWithTheme(<DispatchDialog {...makeProps({onSendToPartner})} />);
+            renderWithMantine(<DispatchDialog {...makeProps({onSendToPartner})} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
 
             // The Partner Select stays disabled until getPartnerOptions resolves;
-            // wait for it to enable before opening (MUI Select opens on mousedown).
+            // wait for it to enable before opening (Mantine's Select opens on click).
             const select = await screen.findByRole('combobox', {name: 'Partner'});
-            await waitFor(() => expect(select).not.toHaveAttribute('aria-disabled', 'true'));
-            fireEvent.mouseDown(select);
+            await waitFor(() => expect(select).toBeEnabled());
+            fireEvent.click(select);
             const partnerOption = await screen.findByRole('option', {name: 'PartnerCo'});
             fireEvent.click(partnerOption);
 
@@ -372,7 +372,7 @@ describe('DispatchDialog', () => {
 
         it('Cancel button calls onClose', () => {
             const onClose = jest.fn();
-            renderWithTheme(<DispatchDialog {...makeProps({onClose})} />);
+            renderWithMantine(<DispatchDialog {...makeProps({onClose})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /Cancel/}));
             expect(onClose).toHaveBeenCalled();
@@ -381,26 +381,26 @@ describe('DispatchDialog', () => {
 
     describe('Confirm button label', () => {
         it('reads "Dispatch" for the Courier radio', () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
             expect(screen.getByRole('button', {name: /^Dispatch$/})).toBeInTheDocument();
         });
 
         it('reads "Send to Agent" when the Agent radio is selected', () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /Agent/}));
             expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/})).toBeInTheDocument();
         });
 
         it('reads "Send to NP" when the NP radio is selected', () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /^NP$/}));
             expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to NP$/})).toBeInTheDocument();
         });
 
         it('reads "Send to Partner" when the DFRNT Partner radio is selected', () => {
-            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
             // The footer button label is the disabled state until a partner is picked.
@@ -413,7 +413,7 @@ describe('DispatchDialog', () => {
         const assignedCourier: ISuggestion = {id: 50, text: 'ABC Couriers'};
 
         it('shows "Unassign courier" for a recurring job that already has a courier', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({
                         mode: recurringMode,
@@ -426,7 +426,7 @@ describe('DispatchDialog', () => {
         });
 
         it('hides "Unassign courier" for a recurring job with no courier assigned', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({
                         mode: recurringMode,
@@ -438,7 +438,7 @@ describe('DispatchDialog', () => {
         });
 
         it('hides "Unassign courier" for a single (non-recurring) job even with a courier', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({
                         existingDestination: assignedCourier,
@@ -450,7 +450,7 @@ describe('DispatchDialog', () => {
         });
 
         it('hides "Unassign courier" once a non-Courier type is selected', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({
                         mode: recurringMode,
@@ -464,7 +464,7 @@ describe('DispatchDialog', () => {
         });
 
         it('explains that unassigning also clears upcoming created jobs while completed jobs keep their courier', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({
                         mode: recurringMode,
@@ -481,7 +481,7 @@ describe('DispatchDialog', () => {
 
         it('calls onUnassignCourier when the action is clicked', async () => {
             const onUnassignCourier = jest.fn().mockResolvedValue(undefined);
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({mode: recurringMode, existingDestination: assignedCourier, onUnassignCourier})}
                 />,
@@ -496,7 +496,7 @@ describe('DispatchDialog', () => {
 
         it('surfaces an error from onUnassignCourier inline without closing the dialog', async () => {
             const onUnassignCourier = jest.fn().mockRejectedValue(new Error('unassign blew up'));
-            renderWithTheme(
+            renderWithMantine(
                 <DispatchDialog
                     {...makeProps({mode: recurringMode, existingDestination: assignedCourier, onUnassignCourier})}
                 />,
@@ -534,7 +534,7 @@ describe('DispatchDialog', () => {
                 defaultBody: DEFAULT_BODY,
             });
 
-            renderWithProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+            renderWithMantineProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             await pickAgent();
 
@@ -562,7 +562,7 @@ describe('DispatchDialog', () => {
             const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
             mockPreview.mockResolvedValue({status: 'NoAgentEmail', agentEmail: null, willEmail: false});
 
-            renderWithProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+            renderWithMantineProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             await pickAgent();
 
@@ -589,12 +589,12 @@ describe('DispatchDialog', () => {
         };
 
         async function openPartnerTabWith(rate: unknown) {
-            renderWithTheme(<DispatchDialog {...makeProps({fetchRate: jest.fn().mockResolvedValue(rate)})} />);
+            renderWithMantine(<DispatchDialog {...makeProps({fetchRate: jest.fn().mockResolvedValue(rate)})} />);
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
             // The Partner Select stays disabled until getPartnerOptions resolves.
             const select = await screen.findByRole('combobox', {name: 'Partner'});
-            await waitFor(() => expect(select).not.toHaveAttribute('aria-disabled', 'true'));
-            fireEvent.mouseDown(select);
+            await waitFor(() => expect(select).toBeEnabled());
+            fireEvent.click(select);
             fireEvent.click(await screen.findByRole('option', {name: 'PartnerCo'}));
         }
 

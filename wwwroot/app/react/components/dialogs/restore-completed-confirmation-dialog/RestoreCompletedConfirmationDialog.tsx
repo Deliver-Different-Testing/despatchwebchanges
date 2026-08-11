@@ -8,15 +8,10 @@
  * drives the singular/plural copy.
  */
 import React from 'react';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Checkbox from '@mui/material/Checkbox';
-import DialogContent from '@mui/material/DialogContent';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import SettingsBackupRestoreIcon from '@mui/icons-material/SettingsBackupRestore';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {Alert, Box, Checkbox, Paper, Stack, Text} from '@mantine/core';
+import {History} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {DialogFooter, DialogHeader, DialogShell, dialogContentBg, sectionPaperProps} from '../shared/mantine';
 
 export interface RestoreCompletedConfirmationDialogProps {
     open: boolean;
@@ -50,64 +45,53 @@ export const RestoreCompletedConfirmationDialog: React.FC<RestoreCompletedConfir
     }, [open]);
 
     return (
-        <DialogShell open={open} onClose={onClose}>
+        <DialogShell
+            opened={open}
+            onClose={onClose}
+            label={plural ? 'Restore completed jobs' : 'Restore completed job'}
+        >
             <DialogHeader
                 variant="warning"
-                icon={<SettingsBackupRestoreIcon/>}
+                icon={<Icon lucide={History}/>}
                 title={plural ? 'Restore completed jobs' : 'Restore completed job'}
                 subtitle="Reopens the job on the dispatch board"
                 onClose={onClose}
                 closeDisabled={submitting}
             />
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 2}}>
-                    <Alert severity="warning">
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                <Stack gap="md">
+                    <Alert color="orange" variant="light">
                         {plural
                             ? `${count} of the selected jobs are completed. Restoring them reopens them as new jobs on the dispatch board.`
                             : 'This job is completed. Restoring it reopens it as a new job on the dispatch board.'}
                     </Alert>
-                    <Paper
-                        elevation={0}
-                        sx={(theme) => ({
-                            p: 2,
-                            borderRadius: 1,
-                            border: `1px solid ${theme.palette.divider}`,
-                            bgcolor: 'background.paper',
-                        })}
-                    >
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={removeCapturedImages}
-                                    onChange={(e) => setRemoveCapturedImages(e.target.checked)}
-                                    disabled={submitting}
-                                    color="warning"
-                                />
-                            }
+                    <Paper {...sectionPaperProps}>
+                        <Checkbox
+                            color="orange"
+                            checked={removeCapturedImages}
+                            onChange={(e) => setRemoveCapturedImages(e.currentTarget.checked)}
+                            disabled={submitting}
                             label={
-                                <Typography variant="body2" sx={{fontWeight: 500}}>
+                                <Text size="sm" fw={500}>
                                     {plural
                                         ? 'Also remove the images captured on these jobs'
                                         : 'Also remove the images captured on this job'}
-                                </Typography>
+                                </Text>
                             }
                         />
-                        <Typography
-                            variant="caption"
-                            sx={{color: 'text.secondary', display: 'block', mt: 0.5, ml: 4}}
-                        >
+                        <Text size="xs" c="dimmed" mt={4} ml={32}>
                             {removeCapturedImages
                                 ? 'Delivery and pickup photos and signatures will be archived and hidden from the job (recoverable).'
                                 : 'Captured photos and signatures will be kept on the job.'}
-                        </Typography>
+                        </Text>
                     </Paper>
-                </Box>
-            </DialogContent>
+                </Stack>
+            </Box>
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={() => onConfirm(removeCapturedImages)}
-                confirmColor="warning"
-                confirmIcon={<SettingsBackupRestoreIcon/>}
+                confirmColor="orange"
+                confirmIcon={<Icon lucide={History} size={16}/>}
                 confirmLabel={submitting ? 'Restoring…' : 'Restore'}
                 submitting={submitting}
             />

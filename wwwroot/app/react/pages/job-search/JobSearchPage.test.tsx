@@ -59,19 +59,20 @@ jest.mock('./hooks/useScanDetail', () => ({
 }));
 
 import {JobSearchPage} from './JobSearchPage';
+import {MantineTestProvider} from '../../__testUtils__';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof JobSearchPage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={createTheme()}>
+            <MantineTestProvider><ThemeProvider theme={createTheme()}>
                 <JobSearchPage
                     showToast={jest.fn()}
                     isUsCustomer={false}
                     timeZone="New Zealand Standard Time"
                     {...overrides}
                 />
-            </ThemeProvider>
+            </ThemeProvider></MantineTestProvider>
         </QueryClientProvider>,
     );
 }

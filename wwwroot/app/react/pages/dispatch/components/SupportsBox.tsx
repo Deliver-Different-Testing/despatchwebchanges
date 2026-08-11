@@ -240,7 +240,11 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
                     </Popover.Dropdown>
                 </Popover>
             </HeaderSlotPortal>
-            {isLoading && <Progress value={100} animated size="xs" role="progressbar" aria-label="Loading tasks"/>}
+            {isLoading && (
+                <Progress.Root size="xs">
+                    <Progress.Section value={100} animated aria-label="Loading tasks"/>
+                </Progress.Root>
+            )}
             <Box p={4} style={{flex: 1, minHeight: 0, overflow: 'auto'}}>
                 {/* NoData and TaskItem are shared MUI leaves that move with their other hosts. */}
                 {needsJobSelection ? (

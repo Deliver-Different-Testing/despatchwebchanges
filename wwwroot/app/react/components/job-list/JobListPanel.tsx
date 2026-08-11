@@ -8,7 +8,6 @@
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Progress} from '@mantine/core';
-import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 import dayjs from 'dayjs';
 import type {
     CourierData,
@@ -833,14 +832,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             }}
         >
             {fetchConfig && hookData.isFetching && (
-                <Progress
-                    value={100}
-                    animated
+                <Progress.Root
                     size="xs"
-                    role="progressbar"
-                    aria-label="Loading jobs"
+                   
                     style={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1}}
-                />
+                >
+                    <Progress.Section value={100} animated aria-label="Loading jobs"/>
+                </Progress.Root>
             )}
             {topSlot}
             <JobListStatsHeader stats={stats}/>
@@ -928,12 +926,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onAddStop={onAddStop}
                 isUsCustomer={isUsCustomer}
             />
-            {/*
-              * Both dialogs below are still MUI (migration wave 5c); MUI falls back to
-              * its stock blue without a provider, so they keep the app's MUI theme
-              * until they convert.
-              */}
-            <MuiThemeIsland>
             {/* Bulk dispatch dialog — opened by the toolbar's "Dispatch" button. */}
             <DispatchDialog
                 open={bulkDispatchOpen}
@@ -963,7 +955,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                     await performBulkRestore(removeCapturedImages);
                 }}
             />
-            </MuiThemeIsland>
         </Box>
     );
 };
