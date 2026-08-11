@@ -216,9 +216,11 @@ public sealed class AiInsightsService(
             var wrapper = JsonSerializer.Deserialize<SuggestionWrapper>(json, ToolJsonOptions);
             var allowedIds = catalog.Select(c => c.AccessorialChargeId).ToHashSet();
             // Guard: drop anything the model hallucinated outside the catalog.
-            suggestions = (wrapper?.Suggestions ?? [])
+            suggestions =
+            [
+                .. (wrapper?.Suggestions ?? [])
                 .Where(s => allowedIds.Contains(s.AccessorialChargeId))
-                .ToList();
+            ];
         }
         catch (JsonException e)
         {
