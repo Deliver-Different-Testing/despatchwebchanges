@@ -905,8 +905,24 @@ public sealed class RateJobService(
             PrivateRes = dto.PrivateRes,
             HasDgDocuments = dto.HasDgDocuments,
             TruckStartTime = dto.TruckStartTime,
-            TruckHours = dto.TruckHours ?? (dto.PickupWaitTime > 0 ? dto.PickupWaitTime : null)
+            TruckHours = ResolveTruckHours(dto)
         };
+
+    /// <summary>
+    /// Falls back to the job's recorded waiting minutes when no explicit truck duration was
+    /// booked. Both legs count — a delivery-only waiting correction must move the price just
+    /// as a pickup one does.
+    /// </summary>
+    internal static int? ResolveTruckHours(JobRatingDetailsDtoNz dto)
+    {
+        if (dto.TruckHours.HasValue)
+        {
+            return dto.TruckHours;
+        }
+
+        var waitMinutes = dto.PickupWaitTime + dto.DeliveryWaitTime;
+        return waitMinutes > 0 ? waitMinutes : null;
+    }
 
     /// <summary>
     /// Internal method to recalculate job rate based on tenant type.

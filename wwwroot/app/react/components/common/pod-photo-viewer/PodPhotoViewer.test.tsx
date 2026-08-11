@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {PodPhoto, PodPhotoViewerProps} from "./pod-photo-viewer.types";
 import PodPhotoViewer from "./PodPhotoViewer";
 
@@ -19,15 +19,7 @@ jest.mock('../../../utils/dateUtils', () => ({
     }),
 }));
 
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+const renderWithTheme = renderWithMantine;
 
 const mockPhotos: PodPhoto[] = [
     {
@@ -268,18 +260,10 @@ describe('PodPhotoViewer', () => {
             expect(screen.getByAltText('POD 2')).toBeInTheDocument();
 
             // Close dialog
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <PodPhotoViewer {...props} isOpen={false} />
-                </ThemeProvider>
-            );
+            rerender(<PodPhotoViewer {...props} isOpen={false} />);
 
             // Reopen dialog with different initial index
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <PodPhotoViewer {...props} isOpen={true} initialPhotoIndex={2} />
-                </ThemeProvider>
-            );
+            rerender(<PodPhotoViewer {...props} isOpen={true} initialPhotoIndex={2} />);
 
             expect(screen.getByAltText('POD 3')).toBeInTheDocument();
         });

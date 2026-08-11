@@ -7,11 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
 import type {ToastService} from '../../../services/toastService';
 
@@ -100,30 +97,26 @@ function renderDialog(): void {
     };
 
     // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
 
     dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <PriceBreakdownDialog
-                    open={dialogState.open}
-                    priceBreakdowns={dialogState.priceBreakdowns}
-                    jobId={dialogState.jobId}
-                    isPrebook={dialogState.isPrebook}
-                    isArchived={dialogState.isArchived}
-                    isUsCustomer={dialogState.isUsCustomer}
-                    readOnly={dialogState.readOnly}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                    onAddItem={handleAddItem}
-                    onUpdateItem={handleUpdateItem}
-                    onDeleteItem={handleDeleteItem}
-                    onGetSuggestedFuelCharge={handleGetSuggestedFuelCharge}
-                    showToast={toastService.showToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
+        <DfrntMantineProvider>
+            <PriceBreakdownDialog
+                open={dialogState.open}
+                priceBreakdowns={dialogState.priceBreakdowns}
+                jobId={dialogState.jobId}
+                isPrebook={dialogState.isPrebook}
+                isArchived={dialogState.isArchived}
+                isUsCustomer={dialogState.isUsCustomer}
+                readOnly={dialogState.readOnly}
+                onClose={handleClose}
+                onSave={handleSave}
+                onAddItem={handleAddItem}
+                onUpdateItem={handleUpdateItem}
+                onDeleteItem={handleDeleteItem}
+                onGetSuggestedFuelCharge={handleGetSuggestedFuelCharge}
+                showToast={toastService.showToast}
+            />
+        </DfrntMantineProvider>
     );
 }
 
@@ -158,16 +151,7 @@ function createDefaultApiService(): ApiService {
 }
 
 /**
- * Opens the price breakdown dialog
- *
- * @param priceBreakdowns - Initial price breakdown items
- * @param jobId - The job ID
- * @param isPrebook - Whether this is a prebook job
- * @param isArchived - Whether this is an archived job
- * @param isUsCustomer - Whether this tenant is US/non-NZ (gates the "Apply Fuel" option — NZ handles fuel automatically)
- * @param readOnly - When true the dialog opens view-only (locked job): breakdown visible, no add/edit/delete/save
- * @param apiService - Optional API service for CRUD operations (uses default React service if not provided)
- * @returns Promise that resolves with the total amount, or null if cancelled
+ * Opens the price breakdown dialogue
  */
 export function openPriceBreakdownDialog(
     priceBreakdowns: PriceBreakdown[],
@@ -213,12 +197,6 @@ priceBreakdownDialogReactModule.service('priceBreakdownDialogReactService', [
     () => ({
         /**
          * Opens the React price breakdown dialog
-         * @param priceBreakdowns - Initial price breakdown items
-         * @param jobId - The job ID
-         * @param isPrebook - Whether this is a prebook job
-         * @param isArchived - Whether this is an archived job
-         * @param isUsCustomer - Whether this tenant is US/non-NZ
-         * @returns Promise resolving to total amount or null if cancelled
          */
         openPriceBreakdownDialog: (
             priceBreakdowns: PriceBreakdown[],

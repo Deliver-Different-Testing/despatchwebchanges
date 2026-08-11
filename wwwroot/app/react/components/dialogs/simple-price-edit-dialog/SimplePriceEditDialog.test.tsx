@@ -3,23 +3,17 @@
  */
 
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import { renderWithMantine } from '../../../__testUtils__';
 import { SimplePriceEditDialog } from './SimplePriceEditDialog';
 import { SimplePriceEditDialogProps } from './types';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-const theme = createTheme();
-
 function renderWithProviders(props: SimplePriceEditDialogProps) {
-    return render(
-        <ThemeProvider theme={theme}>
-            <SimplePriceEditDialog {...props} />
-        </ThemeProvider>
-    );
+    return renderWithMantine(<SimplePriceEditDialog {...props} />);
 }
 
 function createDefaultProps(overrides?: Partial<SimplePriceEditDialogProps>): SimplePriceEditDialogProps {
@@ -491,18 +485,14 @@ describe('SimplePriceEditDialog', () => {
             // Close dialog
             await act(async () => {
                 rerender(
-                    <ThemeProvider theme={theme}>
-                        <SimplePriceEditDialog {...props} open={false} />
-                    </ThemeProvider>
+                    <SimplePriceEditDialog {...props} open={false} />
                 );
             });
 
             // Reopen dialog
             await act(async () => {
                 rerender(
-                    <ThemeProvider theme={theme}>
-                        <SimplePriceEditDialog {...props} open={true} />
-                    </ThemeProvider>
+                    <SimplePriceEditDialog {...props} open={true} />
                 );
             });
 
@@ -525,18 +515,14 @@ describe('SimplePriceEditDialog', () => {
             // Close dialog
             await act(async () => {
                 rerender(
-                    <ThemeProvider theme={theme}>
-                        <SimplePriceEditDialog {...props} open={false} />
-                    </ThemeProvider>
+                    <SimplePriceEditDialog {...props} open={false} />
                 );
             });
 
             // Reopen dialog
             await act(async () => {
                 rerender(
-                    <ThemeProvider theme={theme}>
-                        <SimplePriceEditDialog {...props} open={true} />
-                    </ThemeProvider>
+                    <SimplePriceEditDialog {...props} open={true} />
                 );
             });
 

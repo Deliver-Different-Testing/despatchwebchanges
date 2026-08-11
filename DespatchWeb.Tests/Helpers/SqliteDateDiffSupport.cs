@@ -16,6 +16,8 @@ public static class SqliteDateDiffSupport
 {
     /// <summary>
     /// Registers a SQLite user function 'datediff_minute' that computes minute difference.
+    /// Counts minute boundaries crossed rather than elapsed time, matching SQL Server:
+    /// DATEDIFF(MINUTE, '09:00:59', '09:01:00') is 1, not 0.
     /// </summary>
     public static void RegisterDateDiffMinute(this SqliteConnection connection) =>
         connection.CreateFunction("datediff_minute", (string? start, string? end) =>
@@ -25,8 +27,12 @@ public static class SqliteDateDiffSupport
                 return null;
             }
 
-            return (int?)(DateTime.Parse(end) - DateTime.Parse(start)).TotalMinutes;
+            return (int?)(TruncateToMinute(DateTime.Parse(end)) - TruncateToMinute(DateTime.Parse(start)))
+                .TotalMinutes;
         });
+
+    private static DateTime TruncateToMinute(DateTime value) =>
+        new(value.Year, value.Month, value.Day, value.Hour, value.Minute, 0, value.Kind);
 
     /// <summary>
     /// Adds a custom EF Core translator that maps EF.Functions.DateDiffMinute to the SQLite function.

@@ -17,10 +17,11 @@ import {
     Settings, Menu, Mail, MessageSquare, Clock, Bell,
     CircleUserRound, ChartColumn, DollarSign, Calendar, ListX, LayoutDashboard,
     LayoutGrid, FilePen, Heart, Download, UserCog, EllipsisVertical,
-    CircleCheckBig, Eye, EyeOff,
+    CircleCheckBig, Eye, EyeOff, Phone, HardHat, Crosshair, ChevronsRight,
+    CloudUpload, CloudDownload, Camera, FileUp,
 } from 'lucide-react';
 import {
-    IconTruck, IconPlane, IconMapPin, IconRoute, IconPackage, IconMap,
+    IconTruck, IconPlane, IconPlaneOff, IconMapPin, IconRoute, IconPackage, IconMap,
 } from '@tabler/icons-react';
 import type {LucideIcon, TablerIcon} from './Icon';
 
@@ -74,12 +75,22 @@ export const MUI_ICON_MAP: Record<string, IconMapEntry> = {
     TaskAlt: {lib: 'lucide', component: CircleCheckBig},
     Visibility: {lib: 'lucide', component: Eye},
     VisibilityOff: {lib: 'lucide', component: EyeOff},
+    Phone: {lib: 'lucide', component: Phone},
+    Engineering: {lib: 'lucide', component: HardHat},
+    MyLocation: {lib: 'lucide', component: Crosshair},
+    DoubleArrow: {lib: 'lucide', component: ChevronsRight},
+    CloudUpload: {lib: 'lucide', component: CloudUpload},
+    CloudDownload: {lib: 'lucide', component: CloudDownload},
+    CameraAlt: {lib: 'lucide', component: Camera},
+    UploadFile: {lib: 'lucide', component: FileUp},
 
     // ── Tabler: transport & logistics ────────────────────────────────────
     LocalShipping: {lib: 'tabler', component: IconTruck},
     Flight: {lib: 'tabler', component: IconPlane},
     AirplanemodeActive: {lib: 'tabler', component: IconPlane},
+    AirplanemodeInactive: {lib: 'tabler', component: IconPlaneOff},
     LocationOn: {lib: 'tabler', component: IconMapPin},
+    Place: {lib: 'tabler', component: IconMapPin},
     Route: {lib: 'tabler', component: IconRoute},
     Inventory2: {lib: 'tabler', component: IconPackage},
     Map: {lib: 'tabler', component: IconMap},

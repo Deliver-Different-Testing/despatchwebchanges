@@ -6,9 +6,8 @@
 
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
+import {renderWithMantineProviders} from '../../../__testUtils__';
 import {EditAfterhoursDialog, EditAfterhoursDialogProps} from './EditAfterhoursDialog';
 import {AfterHoursCourierSchedule, CourierSuggestion, TimeZoneOption} from '../../../interfaces';
 import {useCourierSearch, useTimeZoneOptions} from '../../../hooks/useCourierApi';
@@ -21,20 +20,8 @@ jest.mock('../../../hooks/useCourierApi', () => ({
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
 const mockUseTimeZoneOptions = useTimeZoneOptions as jest.MockedFunction<typeof useTimeZoneOptions>;
 
-const theme = createTheme();
-
-const createTestQueryClient = () =>
-    new QueryClient({defaultOptions: {queries: {retry: false}}});
-
 function renderWithProviders(props: EditAfterhoursDialogProps) {
-    const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                <EditAfterhoursDialog {...props} />
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
+    return renderWithMantineProviders(<EditAfterhoursDialog {...props} />);
 }
 
 function createDefaultProps(overrides?: Partial<EditAfterhoursDialogProps>): EditAfterhoursDialogProps {

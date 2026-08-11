@@ -27,6 +27,8 @@ public class JobControllerShouldRecalculateRateTests
     [InlineData(JobProperty.TailLiftPu)]
     [InlineData(JobProperty.TailLiftDo)]
     [InlineData(JobProperty.DeliverToPrivateRes)]
+    [InlineData(JobProperty.PickupArrivalTime)]
+    [InlineData(JobProperty.DeliveryArrivalTime)]
     public void ShouldRecalculateRate_RateAffectingProperty_ReturnsTrue(JobProperty property) => Assert.True(JobController.ShouldRecalculateRate(property));
 
     [Theory]

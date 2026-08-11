@@ -6,11 +6,8 @@
  * are retired once every dialog has moved over.
  */
 export {DialogShell, dialogSize} from './DialogShell';
-export type {DialogShellProps} from './DialogShell';
 export {DialogHeader} from './DialogHeader';
-export type {DialogHeaderProps} from './DialogHeader';
 export {DialogFooter} from './DialogFooter';
-export type {DialogFooterProps} from './DialogFooter';
 export {
     headerColors,
     headerSurfaceAccent,
@@ -28,3 +25,6 @@ export {PriceDelta} from './PriceDelta';
 export type {PriceDeltaProps} from './PriceDelta';
 export {AgentEmailFields} from './AgentEmailFields';
 export type {AgentEmailState} from './AgentEmailFields';
+export type {DialogFooterProps} from "./DialogFooterProps";
+export type {DialogShellProps} from "./DialogShellProps";
+export type {DialogHeaderProps} from "./DialogHeaderProps";

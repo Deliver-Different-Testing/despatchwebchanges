@@ -7,12 +7,9 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { AccessorialChargesDialog } from './AccessorialChargesDialog';
 import { AccessorialChargesJob, OpenAccessorialChargesDialogOptions } from './types';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
+import { DfrntMantineProvider } from '../../../theme/DfrntMantineProvider';
 import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 interface DialogState {
@@ -57,20 +54,16 @@ class AccessorialChargesDialogManager {
             this.dialogState.toastService.showToast(message, type);
         };
 
-        const currentTheme = getTheme();
 
         this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <AccessorialChargesDialog
-                        open={this.dialogState.open}
-                        job={this.dialogState.job}
-                        onClose={handleClose}
-                        showToast={handleShowToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
+            <DfrntMantineProvider>
+                <AccessorialChargesDialog
+                    open={this.dialogState.open}
+                    job={this.dialogState.job}
+                    onClose={handleClose}
+                    showToast={handleShowToast}
+                />
+            </DfrntMantineProvider>
         );
     }
 

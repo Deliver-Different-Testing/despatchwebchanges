@@ -1,54 +1,47 @@
 /**
- * React Price Breakdown Dialog
+ * Price Breakdown Dialog
  *
- * A dialog for viewing and editing price breakdown items for a job.
- * Displays revenue, cost, and profit calculations with CRUD operations.
+ * Lists the pricing components that make up a job's charge, with inline
+ * add/edit/delete and a live revenue/cost/margin summary.
  */
 
 import React, {useEffect, useMemo, useState} from 'react';
+import {
+    ActionIcon,
+    Badge,
+    Box,
+    Button,
+    Checkbox,
+    Group,
+    Loader,
+    Paper,
+    Stack,
+    Table,
+    Text,
+    TextInput,
+    Tooltip,
+    alpha,
+} from '@mantine/core';
+import {
+    Briefcase,
+    CircleCheck,
+    DollarSign,
+    Fuel,
+    Lock,
+    Pencil,
+    PiggyBank,
+    Plus,
+    ReceiptText,
+    RefreshCw,
+    TrendingUp,
+    Trash2,
+    Wallet,
+} from 'lucide-react';
+import {IconPackage} from '@tabler/icons-react';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import type {ShowToastFn} from '../../../services/toastService';
-import {alpha} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import WalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import AddIcon from '@mui/icons-material/Add';
-import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
-import MoneyIcon from '@mui/icons-material/AttachMoney';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import InventoryIcon from '@mui/icons-material/Inventory2';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SavingsIcon from '@mui/icons-material/Savings';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import WorkIcon from '@mui/icons-material/Work';
-import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
+import {Icon} from '../../common/icon/Icon';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, dialogSize} from '../shared/mantine';
 
 export interface PriceBreakdown {
     chargeId: number;
@@ -99,17 +92,22 @@ const extractErrorMessage = (error: unknown, fallback: string): string => {
     return fallback;
 };
 
-
 const calculateMargin = (revenue: number, cost: number): number => {
     if (revenue <= 0) return 0;
     return ((revenue - cost) / revenue) * 100;
 };
 
-const getMarginColor = (margin: number): 'success' | 'warning' | 'error' => {
-    if (margin >= 40) return 'success';
-    if (margin >= 20) return 'warning';
-    return 'error';
+/** Mantine palette key for a margin band — green ≥40%, orange ≥20%, red below. */
+const getMarginColor = (margin: number): string => {
+    if (margin >= 40) return 'green';
+    if (margin >= 20) return 'orange';
+    return 'red';
 };
+
+/** The delete-confirmation modal needs to paint above the dialog that opened it. */
+const CONFIRM_Z_INDEX = 300;
+
+const moneyIcon = <Icon lucide={DollarSign} size={16}/>;
 
 export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     open,
@@ -322,440 +320,197 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     };
 
     const isFormValid = formName.trim().length > 0;
+    const itemCountLabel = `${priceBreakdowns.length} ${priceBreakdowns.length === 1 ? 'item' : 'items'}`;
 
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="md"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: { overflow: 'hidden' },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box sx={(theme) => headerChromeSx(theme)}>
-                <Box sx={(theme) => headerChipSx(theme)}>
-                    {readOnly ? <LockOutlinedIcon/> : <ReceiptLongIcon/>}
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" sx={{
-                        fontWeight: 600
-                    }}>
-                        Price Breakdown
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                        {readOnly ? 'View only — this job is locked' : 'Manage pricing components for this job'}
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    sx={(theme) => ({
-                        color: headerOnColor(theme),
-                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
-                    })}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-            <DialogContent sx={{ p: 0 }}>
+        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label="Price Breakdown">
+            <DialogHeader
+                icon={<Icon lucide={readOnly ? Lock : ReceiptText}/>}
+                title="Price Breakdown"
+                subtitle={readOnly ? 'View only — this job is locked' : 'Manage pricing components for this job'}
+                onClose={onClose}
+            />
+            <Box>
                 {/* Summary Cards */}
                 {!isEditing && priceBreakdowns.length > 0 && (
-                    <Box sx={{ p: 3, bgcolor: 'background.default' }}>
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                            {/* Revenue Card */}
-                            <Paper
-                                elevation={0}
-                                sx={(theme) => ({
-                                    flex: 1,
-                                    p: 2.5,
-                                    borderRadius: 3,
-                                    border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-                                    bgcolor: alpha(theme.palette.success.main, 0.04),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 2,
-                                })}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        width: 52,
-                                        height: 52,
-                                        borderRadius: 2,
-                                        bgcolor: alpha(theme.palette.success.main, 0.12),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    })}
-                                >
-                                    <TrendingUpIcon sx={{ fontSize: 28, color: 'success.main' }} />
-                                </Box>
-                                <Box>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: "text.secondary",
-                                            fontWeight: 500
-                                        }}>
-                                        Total Revenue
-                                    </Typography>
-                                    <Typography
-                                        variant="h5"
-                                        sx={{
-                                            fontWeight: 700,
-                                            color: "success.dark"
-                                        }}>
-                                        {formatCurrency(totals.totalRevenue)}
-                                    </Typography>
-                                </Box>
-                            </Paper>
-
-                            {/* Cost Card */}
-                            <Paper
-                                elevation={0}
-                                sx={(theme) => ({
-                                    flex: 1,
-                                    p: 2.5,
-                                    borderRadius: 3,
-                                    border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-                                    bgcolor: alpha(theme.palette.warning.main, 0.04),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 2,
-                                })}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        width: 52,
-                                        height: 52,
-                                        borderRadius: 2,
-                                        bgcolor: alpha(theme.palette.warning.main, 0.12),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    })}
-                                >
-                                    <WalletIcon sx={{ fontSize: 28, color: 'warning.dark' }} />
-                                </Box>
-                                <Box>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: "text.secondary",
-                                            fontWeight: 500
-                                        }}>
-                                        Total Cost
-                                    </Typography>
-                                    <Typography
-                                        variant="h5"
-                                        sx={{
-                                            fontWeight: 700,
-                                            color: "warning.dark"
-                                        }}>
-                                        {formatCurrency(totals.totalCost)}
-                                    </Typography>
-                                </Box>
-                            </Paper>
-
-                            {/* Profit Card */}
-                            <Paper
-                                elevation={0}
-                                sx={(theme) => ({
-                                    flex: 1,
-                                    p: 2.5,
-                                    borderRadius: 3,
-                                    border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-                                    bgcolor: alpha(theme.palette.info.main, 0.04),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 2,
-                                })}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        width: 52,
-                                        height: 52,
-                                        borderRadius: 2,
-                                        bgcolor: alpha(theme.palette.info.main, 0.12),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    })}
-                                >
-                                    <SavingsIcon sx={{ fontSize: 28, color: 'info.main' }} />
-                                </Box>
-                                <Box>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: "text.secondary",
-                                            fontWeight: 500
-                                        }}>
-                                        Gross Profit
-                                    </Typography>
-                                    <Typography
-                                        variant="h5"
-                                        sx={{
-                                            fontWeight: 700,
-                                            color: "info.dark"
-                                        }}>
-                                        {formatCurrency(totals.profit)}
-                                    </Typography>
-                                    {totals.totalRevenue > 0 && (
-                                        <Chip
-                                            label={`${totals.margin.toFixed(1)}% margin`}
-                                            size="small"
-                                            color={getMarginColor(totals.margin)}
-                                            sx={{ mt: 0.5, height: 22, fontSize: '0.7rem' }}
-                                        />
-                                    )}
-                                </Box>
-                            </Paper>
-                        </Stack>
+                    <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                        <Group gap="md" grow align="stretch" wrap="wrap">
+                            <SummaryCard
+                                color="green"
+                                icon={<Icon lucide={TrendingUp} size={28}/>}
+                                label="Total Revenue"
+                                value={formatCurrency(totals.totalRevenue)}
+                            />
+                            <SummaryCard
+                                color="orange"
+                                icon={<Icon lucide={Wallet} size={28}/>}
+                                label="Total Cost"
+                                value={formatCurrency(totals.totalCost)}
+                            />
+                            <SummaryCard
+                                color="reflex"
+                                icon={<Icon lucide={PiggyBank} size={28}/>}
+                                label="Gross Profit"
+                                value={formatCurrency(totals.profit)}
+                                footer={totals.totalRevenue > 0 ? (
+                                    <Badge size="sm" mt={4} color={getMarginColor(totals.margin)}>
+                                        {totals.margin.toFixed(1)}% margin
+                                    </Badge>
+                                ) : undefined}
+                            />
+                        </Group>
                     </Box>
                 )}
 
                 {/* List View */}
                 {!isEditing && (
-                    <Box sx={{ p: 3, pt: priceBreakdowns.length > 0 ? 0 : 3 }}>
+                    <Box p="lg" pt={priceBreakdowns.length > 0 ? 0 : 'lg'}>
                         {/* Action Bar */}
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mb: 2,
-                            }}
-                        >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Typography variant="h6" sx={{
-                                    fontWeight: 600
-                                }}>
-                                    Price Items
-                                </Typography>
+                        <Group justify="space-between" mb="md" wrap="nowrap">
+                            <Group gap="sm" wrap="nowrap">
+                                <Text fw={600} fz="lg">Price Items</Text>
                                 {priceBreakdowns.length > 0 && (
-                                    <Chip
-                                        label={`${priceBreakdowns.length} ${priceBreakdowns.length === 1 ? 'item' : 'items'}`}
-                                        size="small"
-                                        sx={{ bgcolor: 'grey.100' }}
-                                    />
+                                    <Badge size="sm" color="gray" variant="light">{itemCountLabel}</Badge>
                                 )}
-                            </Box>
+                            </Group>
                             {!readOnly && (
-                                <Button
-                                    variant="contained"
-                                    startIcon={<AddIcon />}
-                                    onClick={handleAddNew}
-                                    sx={{ borderRadius: 2 }}
-                                >
+                                <Button leftSection={<Icon lucide={Plus}/>} onClick={handleAddNew}>
                                     Add Item
                                 </Button>
                             )}
-                        </Box>
+                        </Group>
 
                         {/* Table */}
                         {priceBreakdowns.length > 0 ? (
-                            <TableContainer
-                                component={Paper}
-                                elevation={0}
-                                sx={(theme) => ({
-                                    borderRadius: 3,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                })}
-                            >
-                                <Table>
-                                    <TableHead>
-                                        <TableRow sx={{ bgcolor: 'grey.50' }}>
-                                            <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                                                Item Name
-                                            </TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                                                Revenue
-                                            </TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                                                Cost
-                                            </TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                                                Profit
-                                            </TableCell>
-                                            <TableCell align="center" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                                                Margin
-                                            </TableCell>
-                                            <TableCell align="center" sx={{ fontWeight: 600, color: 'text.secondary', width: 100 }}>
-                                                Actions
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {priceBreakdowns.map((item, index) => {
+                            <Paper withBorder radius="lg" style={{overflow: 'hidden'}}>
+                                <Table highlightOnHover>
+                                    <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-0)'}}>
+                                        <Table.Tr>
+                                            <Table.Th c="dimmed">Item Name</Table.Th>
+                                            <Table.Th c="dimmed" ta="right">Revenue</Table.Th>
+                                            <Table.Th c="dimmed" ta="right">Cost</Table.Th>
+                                            <Table.Th c="dimmed" ta="right">Profit</Table.Th>
+                                            <Table.Th c="dimmed" ta="center">Margin</Table.Th>
+                                            <Table.Th c="dimmed" ta="center" w={100}>Actions</Table.Th>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
+                                        {priceBreakdowns.map((item) => {
                                             const profit = (item.amount || 0) - (item.costAmount || 0);
                                             const margin = calculateMargin(item.amount || 0, item.costAmount || 0);
                                             return (
-                                                <TableRow
-                                                    key={item.chargeId}
-                                                    hover
-                                                    sx={{
-                                                        '&:last-child td': { border: 0 },
-                                                        bgcolor: index % 2 === 0 ? 'white' : 'grey.25',
-                                                    }}
-                                                >
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <Table.Tr key={item.chargeId}>
+                                                    <Table.Td>
+                                                        <Group gap="sm" wrap="nowrap">
                                                             <Box
-                                                                sx={(theme) => ({
+                                                                c="brand.6"
+                                                                style={{
                                                                     width: 36,
                                                                     height: 36,
-                                                                    borderRadius: 1.5,
-                                                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                                                    borderRadius: 'var(--mantine-radius-md)',
+                                                                    backgroundColor: alpha('var(--mantine-color-brand-6)', 0.08),
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     justifyContent: 'center',
-                                                                })}
+                                                                    flexShrink: 0,
+                                                                }}
                                                             >
-                                                                <InventoryIcon fontSize="small" color="primary" />
+                                                                <Icon tabler={IconPackage} size={18}/>
                                                             </Box>
                                                             <Box>
-                                                                <Typography variant="body2" sx={{
-                                                                    fontWeight: 500
-                                                                }}>
-                                                                    {item.name}
-                                                                </Typography>
+                                                                <Text size="sm" fw={500}>{item.name}</Text>
                                                                 {item.childJobId === jobId && (
-                                                                    <Chip
-                                                                        icon={<WorkIcon sx={{ fontSize: 14 }} />}
-                                                                        label="This Job"
-                                                                        size="small"
-                                                                        color="primary"
-                                                                        sx={{ height: 20, mt: 0.5, '& .MuiChip-label': { px: 0.75 } }}
-                                                                    />
+                                                                    <Badge
+                                                                        size="xs"
+                                                                        mt={4}
+                                                                        leftSection={<Icon lucide={Briefcase} size={12}/>}
+                                                                    >
+                                                                        This Job
+                                                                    </Badge>
                                                                 )}
                                                             </Box>
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <Typography variant="body2" sx={{
-                                                            fontWeight: 500
-                                                        }}>
-                                                            {formatCurrency(item.amount || 0)}
-                                                        </Typography>
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <Typography variant="body2" sx={{
-                                                            color: "text.secondary"
-                                                        }}>
-                                                            {formatCurrency(item.costAmount || 0)}
-                                                        </Typography>
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <Typography
-                                                            variant="body2"
-                                                            color={profit >= 0 ? 'success.main' : 'error.main'}
-                                                            sx={{
-                                                                fontWeight: 600
-                                                            }}
-                                                        >
+                                                        </Group>
+                                                    </Table.Td>
+                                                    <Table.Td ta="right">
+                                                        <Text size="sm" fw={500}>{formatCurrency(item.amount || 0)}</Text>
+                                                    </Table.Td>
+                                                    <Table.Td ta="right">
+                                                        <Text size="sm" c="dimmed">{formatCurrency(item.costAmount || 0)}</Text>
+                                                    </Table.Td>
+                                                    <Table.Td ta="right">
+                                                        <Text size="sm" fw={600} c={profit >= 0 ? 'green.6' : 'red.6'}>
                                                             {formatCurrency(profit)}
-                                                        </Typography>
-                                                    </TableCell>
-                                                    <TableCell align="center">
+                                                        </Text>
+                                                    </Table.Td>
+                                                    <Table.Td ta="center">
                                                         {(item.amount || 0) > 0 && (
-                                                            <Chip
-                                                                label={`${margin.toFixed(0)}%`}
-                                                                size="small"
-                                                                color={getMarginColor(margin)}
-                                                                sx={{ fontWeight: 600, minWidth: 50 }}
-                                                            />
+                                                            <Badge size="sm" fw={600} miw={50} color={getMarginColor(margin)}>
+                                                                {margin.toFixed(0)}%
+                                                            </Badge>
                                                         )}
-                                                    </TableCell>
-                                                    <TableCell align="center">
-                                                        <Stack direction="row" spacing={0.5} sx={{
-                                                            justifyContent: "center"
-                                                        }}>
-                                                            <IconButton
-                                                                size="small"
+                                                    </Table.Td>
+                                                    <Table.Td ta="center">
+                                                        <Group gap={4} justify="center" wrap="nowrap">
+                                                            <ActionIcon
+                                                                variant="light"
                                                                 onClick={() => handleEdit(item)}
                                                                 disabled={isDeleting !== null || readOnly}
-                                                                sx={(theme) => ({
-                                                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                                                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) },
-                                                                })}
+                                                                aria-label={`Edit ${item.name}`}
                                                             >
-                                                                <EditIcon fontSize="small" color="primary" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
+                                                                <Icon lucide={Pencil} size={18}/>
+                                                            </ActionIcon>
+                                                            <ActionIcon
+                                                                variant="light"
+                                                                color="red"
                                                                 onClick={() => handleDeleteRequest(item)}
                                                                 disabled={isDeleting !== null || readOnly}
-                                                                sx={(theme) => ({
-                                                                    bgcolor: alpha(theme.palette.error.main, 0.08),
-                                                                    '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.16) },
-                                                                })}
+                                                                aria-label={`Delete ${item.name}`}
+                                                                loading={isDeleting === item.chargeId}
                                                             >
-                                                                {isDeleting === item.chargeId ? (
-                                                                    <CircularProgress size={18} color="error" />
-                                                                ) : (
-                                                                    <DeleteIcon fontSize="small" color="error" />
-                                                                )}
-                                                            </IconButton>
-                                                        </Stack>
-                                                    </TableCell>
-                                                </TableRow>
+                                                                <Icon lucide={Trash2} size={18}/>
+                                                            </ActionIcon>
+                                                        </Group>
+                                                    </Table.Td>
+                                                </Table.Tr>
                                             );
                                         })}
-                                    </TableBody>
+                                    </Table.Tbody>
                                 </Table>
-                            </TableContainer>
+                            </Paper>
                         ) : (
                             <Paper
-                                elevation={0}
-                                sx={(theme) => ({
-                                    p: 5,
-                                    textAlign: 'center',
-                                    borderRadius: 3,
-                                    border: `2px dashed ${theme.palette.divider}`,
-                                    bgcolor: 'grey.50',
-                                })}
+                                p={40}
+                                ta="center"
+                                radius="lg"
+                                style={{
+                                    border: '2px dashed var(--mantine-color-default-border)',
+                                    backgroundColor: 'var(--mantine-color-gray-0)',
+                                }}
                             >
                                 <Box
-                                    sx={(theme) => ({
+                                    mx="auto"
+                                    mb="md"
+                                    c="brand.6"
+                                    style={{
                                         width: 72,
                                         height: 72,
                                         borderRadius: '50%',
-                                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                        backgroundColor: alpha('var(--mantine-color-brand-6)', 0.08),
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        mx: 'auto',
-                                        mb: 2,
-                                    })}
+                                    }}
                                 >
-                                    <ReceiptLongIcon sx={{ fontSize: 36, color: 'primary.main' }} />
+                                    <Icon lucide={ReceiptText} size={36}/>
                                 </Box>
-                                <Typography variant="h6" gutterBottom sx={{
-                                    color: "text.secondary"
-                                }}>
-                                    No price items yet
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: "text.secondary",
-                                        mb: 2
-                                    }}>
+                                <Text fz="lg" c="dimmed" mb="xs">No price items yet</Text>
+                                <Text size="sm" c="dimmed" mb="md">
                                     {readOnly
                                         ? 'There are no price breakdown items to view'
                                         : 'Start by adding your first price breakdown item'}
-                                </Typography>
+                                </Text>
                                 {!readOnly && (
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<AddIcon />}
-                                        onClick={handleAddNew}
-                                        sx={{ borderRadius: 2 }}
-                                    >
+                                    <Button leftSection={<Icon lucide={Plus}/>} onClick={handleAddNew}>
                                         Add First Item
                                     </Button>
                                 )}
@@ -766,393 +521,321 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
 
                 {/* Edit Form */}
                 {isEditing && (
-                    <Box sx={{ p: 3 }}>
-                        <Paper
-                            elevation={0}
-                            sx={(theme) => ({
-                                borderRadius: 3,
-                                border: `1px solid ${theme.palette.divider}`,
-                                overflow: 'hidden',
-                            })}
-                        >
+                    <Box p="lg">
+                        <Paper withBorder radius="lg" style={{overflow: 'hidden'}}>
                             {/* Form Header */}
-                            <Box
-                                sx={(theme) => ({
-                                    px: 3,
-                                    py: 2,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.06),
-                                    borderBottom: `1px solid ${theme.palette.divider}`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1.5,
-                                })}
+                            <Group
+                                gap="sm"
+                                px="lg"
+                                py="md"
+                                wrap="nowrap"
+                                style={{
+                                    backgroundColor: alpha('var(--mantine-color-brand-6)', 0.06),
+                                    borderBottom: '1px solid var(--mantine-color-default-border)',
+                                }}
                             >
                                 <Box
-                                    sx={(theme) => ({
+                                    c="brand.6"
+                                    style={{
                                         width: 40,
                                         height: 40,
-                                        borderRadius: 2,
-                                        bgcolor: 'background.paper',
-                                        border: `1px solid ${theme.palette.divider}`,
+                                        borderRadius: 'var(--mantine-radius-md)',
+                                        backgroundColor: 'var(--mantine-color-white)',
+                                        border: '1px solid var(--mantine-color-default-border)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                    })}
+                                        flexShrink: 0,
+                                    }}
                                 >
-                                    {isNew ? (
-                                        <AddIcon color="primary" />
-                                    ) : (
-                                        <EditIcon color="primary" />
-                                    )}
+                                    <Icon lucide={isNew ? Plus : Pencil}/>
                                 </Box>
-                                <Typography variant="h6" sx={{
-                                    fontWeight: 600
-                                }}>
-                                    {isNew ? 'Add New Price Item' : 'Edit Price Item'}
-                                </Typography>
-                            </Box>
+                                <Text fw={600} fz="lg">{isNew ? 'Add New Price Item' : 'Edit Price Item'}</Text>
+                            </Group>
 
                             {/* Form Body */}
-                            <Box sx={{ p: 3 }}>
-                                <Stack spacing={3}>
-                                    <TextField
-                                        label="Item Name"
-                                        value={formName}
-                                        onChange={(e) => setFormName(e.target.value)}
-                                        fullWidth
-                                        required
-                                        placeholder="e.g., Installation Services"
-                                        slotProps={{
-                                            input: {
-                                                sx: { borderRadius: 2 },
-                                            },
-                                        }}
+                            <Stack gap="lg" p="lg">
+                                <TextInput
+                                    label="Item Name"
+                                    value={formName}
+                                    onChange={(e) => setFormName(e.currentTarget.value)}
+                                    required
+                                    placeholder="e.g., Installation Services"
+                                />
+
+                                <Group gap="md" grow align="flex-start">
+                                    <TextInput
+                                        label="Revenue Amount"
+                                        type="number"
+                                        value={formAmount}
+                                        onChange={(e) => setFormAmount(e.currentTarget.value ? parseFloat(e.currentTarget.value) : '')}
+                                        placeholder="0.00"
+                                        description="Optional"
+                                        min={0}
+                                        step={0.01}
+                                        leftSection={moneyIcon}
                                     />
+                                    <TextInput
+                                        label="Cost Amount"
+                                        type="number"
+                                        value={formCostAmount}
+                                        onChange={(e) => setFormCostAmount(e.currentTarget.value ? parseFloat(e.currentTarget.value) : '')}
+                                        placeholder="0.00"
+                                        description="Defaults to 0"
+                                        min={0}
+                                        step={0.01}
+                                        leftSection={moneyIcon}
+                                    />
+                                </Group>
 
-                                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                                        <TextField
-                                            label="Revenue Amount"
-                                            type="number"
-                                            value={formAmount}
-                                            onChange={(e) => setFormAmount(e.target.value ? parseFloat(e.target.value) : '')}
-                                            fullWidth
-                                            placeholder="0.00"
-                                            helperText="Optional"
-                                            slotProps={{
-                                                htmlInput: {min: 0, step: 0.01},
-                                                input: {
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <MoneyIcon color="action" fontSize="small" />
-                                                        </InputAdornment>
-                                                    ),
-                                                    sx: { borderRadius: 2 },
-                                                },
-                                            }}
-                                        />
-                                        <TextField
-                                            label="Cost Amount"
-                                            type="number"
-                                            value={formCostAmount}
-                                            onChange={(e) => setFormCostAmount(e.target.value ? parseFloat(e.target.value) : '')}
-                                            fullWidth
-                                            placeholder="0.00"
-                                            helperText="Defaults to 0"
-                                            slotProps={{
-                                                htmlInput: {min: 0, step: 0.01},
-                                                input: {
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <MoneyIcon color="action" fontSize="small" />
-                                                        </InputAdornment>
-                                                    ),
-                                                    sx: { borderRadius: 2 },
-                                                },
-                                            }}
-                                        />
-                                    </Stack>
-
-                                    {/* Apply Fuel — non-NZ tenants only; NZ handles fuel automatically elsewhere */}
-                                    {isUsCustomer && isNew && (
-                                        <Paper
-                                            elevation={0}
-                                            sx={(theme) => ({
-                                                p: 2.5,
-                                                borderRadius: 2,
-                                                bgcolor: alpha(theme.palette.info.main, 0.04),
-                                                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-                                            })}
-                                        >
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        checked={applyFuel}
-                                                        onChange={(e) => handleToggleApplyFuel(e.target.checked)}
-                                                        disabled={typeof formAmount !== 'number' || formAmount <= 0}
-                                                        icon={<LocalGasStationIcon />}
-                                                        checkedIcon={<LocalGasStationIcon color="info" />}
-                                                    />
-                                                }
-                                                label={
-                                                    <Box>
-                                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                            Apply Fuel
-                                                        </Typography>
-                                                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                                            Adds a companion &quot;{formName || 'Item'} Fuel&quot; line using this job&apos;s fuel rate
-                                                        </Typography>
-                                                    </Box>
-                                                }
-                                            />
-
-                                            {applyFuel && (
-                                                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2, alignItems: 'flex-start' }}>
-                                                    <TextField
-                                                        label="Fuel Charge Amount"
-                                                        type="number"
-                                                        value={formFuelChargeAmount}
-                                                        onChange={(e) => setFormFuelChargeAmount(e.target.value ? parseFloat(e.target.value) : '')}
-                                                        fullWidth
-                                                        placeholder="0.00"
-                                                        helperText="Suggested — editable before saving"
-                                                        disabled={isFuelLoading}
-                                                        slotProps={{
-                                                            htmlInput: {min: 0, step: 0.01},
-                                                            input: {
-                                                                startAdornment: (
-                                                                    <InputAdornment position="start">
-                                                                        <MoneyIcon color="action" fontSize="small" />
-                                                                    </InputAdornment>
-                                                                ),
-                                                                sx: { borderRadius: 2 },
-                                                            },
-                                                        }}
-                                                    />
-                                                    <TextField
-                                                        label="Fuel Cost Amount"
-                                                        type="number"
-                                                        value={formFuelCostAmount}
-                                                        onChange={(e) => setFormFuelCostAmount(e.target.value ? parseFloat(e.target.value) : '')}
-                                                        fullWidth
-                                                        placeholder="0.00"
-                                                        helperText="Driver's share of the fuel charge"
-                                                        disabled={isFuelLoading}
-                                                        slotProps={{
-                                                            htmlInput: {min: 0, step: 0.01},
-                                                            input: {
-                                                                startAdornment: (
-                                                                    <InputAdornment position="start">
-                                                                        <MoneyIcon color="action" fontSize="small" />
-                                                                    </InputAdornment>
-                                                                ),
-                                                                sx: { borderRadius: 2 },
-                                                            },
-                                                        }}
-                                                    />
-                                                    <Tooltip title="Recalculate from the current Revenue Amount">
-                                                        <span>
-                                                            <IconButton
-                                                                onClick={() => fetchSuggestedFuel(typeof formAmount === 'number' ? formAmount : 0)}
-                                                                disabled={isFuelLoading || typeof formAmount !== 'number' || formAmount <= 0}
-                                                                sx={{ mt: 1 }}
-                                                            >
-                                                                {isFuelLoading ? <CircularProgress size={20} /> : <RefreshIcon />}
-                                                            </IconButton>
-                                                        </span>
-                                                    </Tooltip>
-                                                </Stack>
-                                            )}
-                                        </Paper>
-                                    )}
-
-                                    {/* Live Preview */}
-                                    {(typeof formAmount === 'number' || typeof formCostAmount === 'number') && (
-                                        <Paper
-                                            elevation={0}
-                                            sx={(theme) => ({
-                                                p: 2.5,
-                                                borderRadius: 2,
-                                                bgcolor: 'grey.50',
-                                                border: `1px solid ${theme.palette.divider}`,
-                                            })}
-                                        >
-                                            <Typography
-                                                variant="overline"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    mb: 1.5,
-                                                    display: 'block'
-                                                }}>
-                                                Live Preview
-                                            </Typography>
-                                            <Stack direction="row" spacing={4} sx={{
-                                                justifyContent: "center"
-                                            }}>
-                                                <Box sx={{
-                                                    textAlign: "center"
-                                                }}>
-                                                    <Typography variant="body2" gutterBottom sx={{
-                                                        color: "text.secondary"
-                                                    }}>
-                                                        Profit
-                                                    </Typography>
-                                                    <Typography
-                                                        variant="h5"
-                                                        color={formProfit >= 0 ? 'success.main' : 'error.main'}
-                                                        sx={{
-                                                            fontWeight: 700
-                                                        }}
-                                                    >
-                                                        {formatCurrency(formProfit)}
-                                                    </Typography>
+                                {/* Apply Fuel — non-NZ tenants only; NZ handles fuel automatically elsewhere */}
+                                {isUsCustomer && isNew && (
+                                    <Paper
+                                        p="md"
+                                        radius="md"
+                                        style={{
+                                            backgroundColor: alpha('var(--mantine-color-reflex-6)', 0.04),
+                                            border: `1px solid ${alpha('var(--mantine-color-reflex-6)', 0.2)}`,
+                                        }}
+                                    >
+                                        <Checkbox
+                                            checked={applyFuel}
+                                            onChange={(e) => handleToggleApplyFuel(e.currentTarget.checked)}
+                                            disabled={typeof formAmount !== 'number' || formAmount <= 0}
+                                            label={
+                                                <Box>
+                                                    <Text size="sm" fw={500}>Apply Fuel</Text>
+                                                    <Text size="xs" c="dimmed">
+                                                        Adds a companion &quot;{formName || 'Item'} Fuel&quot; line using this job&apos;s fuel rate
+                                                    </Text>
                                                 </Box>
-                                                {typeof formAmount === 'number' && formAmount > 0 && (
-                                                    <Box sx={{
-                                                        textAlign: "center"
-                                                    }}>
-                                                        <Typography variant="body2" gutterBottom sx={{
-                                                            color: "text.secondary"
-                                                        }}>
-                                                            Margin
-                                                        </Typography>
-                                                        <Chip
-                                                            label={`${formMargin.toFixed(1)}%`}
-                                                            color={getMarginColor(formMargin)}
-                                                            sx={{ fontWeight: 700, fontSize: '1rem', height: 36 }}
-                                                        />
-                                                    </Box>
-                                                )}
-                                            </Stack>
-                                        </Paper>
-                                    )}
-                                </Stack>
-                            </Box>
+                                            }
+                                        />
+
+                                        {applyFuel && (
+                                            <Group gap="md" mt="md" align="flex-start" wrap="nowrap">
+                                                <TextInput
+                                                    label="Fuel Charge Amount"
+                                                    type="number"
+                                                    value={formFuelChargeAmount}
+                                                    onChange={(e) => setFormFuelChargeAmount(e.currentTarget.value ? parseFloat(e.currentTarget.value) : '')}
+                                                    placeholder="0.00"
+                                                    description="Suggested — editable before saving"
+                                                    disabled={isFuelLoading}
+                                                    min={0}
+                                                    step={0.01}
+                                                    leftSection={moneyIcon}
+                                                    style={{flex: 1}}
+                                                />
+                                                <TextInput
+                                                    label="Fuel Cost Amount"
+                                                    type="number"
+                                                    value={formFuelCostAmount}
+                                                    onChange={(e) => setFormFuelCostAmount(e.currentTarget.value ? parseFloat(e.currentTarget.value) : '')}
+                                                    placeholder="0.00"
+                                                    description="Driver's share of the fuel charge"
+                                                    disabled={isFuelLoading}
+                                                    min={0}
+                                                    step={0.01}
+                                                    leftSection={moneyIcon}
+                                                    style={{flex: 1}}
+                                                />
+                                                <Tooltip label="Recalculate from the current Revenue Amount">
+                                                    <ActionIcon
+                                                        variant="subtle"
+                                                        color="gray"
+                                                        mt={28}
+                                                        aria-label="Recalculate suggested fuel"
+                                                        onClick={() => fetchSuggestedFuel(typeof formAmount === 'number' ? formAmount : 0)}
+                                                        disabled={isFuelLoading || typeof formAmount !== 'number' || formAmount <= 0}
+                                                        loading={isFuelLoading}
+                                                    >
+                                                        <Icon lucide={RefreshCw}/>
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                            </Group>
+                                        )}
+                                    </Paper>
+                                )}
+
+                                {/* Live Preview */}
+                                {(typeof formAmount === 'number' || typeof formCostAmount === 'number') && (
+                                    <Paper
+                                        withBorder
+                                        p="md"
+                                        radius="md"
+                                        style={{backgroundColor: 'var(--mantine-color-gray-0)'}}
+                                    >
+                                        <Text size="xs" tt="uppercase" c="dimmed" mb="sm" display="block" style={{letterSpacing: 1}}>
+                                            Live Preview
+                                        </Text>
+                                        <Group gap={32} justify="center">
+                                            <Box ta="center">
+                                                <Text size="sm" c="dimmed" mb={4}>Profit</Text>
+                                                <Text fz="h3" fw={700} c={formProfit >= 0 ? 'green.6' : 'red.6'}>
+                                                    {formatCurrency(formProfit)}
+                                                </Text>
+                                            </Box>
+                                            {typeof formAmount === 'number' && formAmount > 0 && (
+                                                <Box ta="center">
+                                                    <Text size="sm" c="dimmed" mb={4}>Margin</Text>
+                                                    <Badge size="lg" fw={700} color={getMarginColor(formMargin)}>
+                                                        {formMargin.toFixed(1)}%
+                                                    </Badge>
+                                                </Box>
+                                            )}
+                                        </Group>
+                                    </Paper>
+                                )}
+                            </Stack>
 
                             {/* Form Actions */}
-                            <Box
-                                sx={(theme) => ({
-                                    px: 3,
-                                    py: 2,
-                                    bgcolor: 'grey.50',
-                                    borderTop: `1px solid ${theme.palette.divider}`,
-                                    display: 'flex',
-                                    justifyContent: 'flex-end',
-                                    gap: 1.5,
-                                })}
+                            <Group
+                                justify="flex-end"
+                                gap="sm"
+                                px="lg"
+                                py="md"
+                                style={{
+                                    backgroundColor: 'var(--mantine-color-gray-0)',
+                                    borderTop: '1px solid var(--mantine-color-default-border)',
+                                }}
                             >
-                                <Button
-                                    onClick={handleCancelEdit}
-                                    disabled={isSaving}
-                                    variant="outlined"
-                                    sx={{ borderRadius: 2, minWidth: 100 }}
-                                >
+                                <Button variant="default" onClick={handleCancelEdit} disabled={isSaving} miw={100}>
                                     Cancel
                                 </Button>
                                 <Button
-                                    variant="contained"
                                     onClick={handleSaveItem}
-                                    disabled={!isFormValid || isSaving}
-                                    startIcon={isSaving ? <CircularProgress size={18} color="inherit" /> : (isNew ? <AddIcon /> : <CheckCircleIcon />)}
-                                    sx={{ borderRadius: 2, minWidth: 140 }}
+                                    disabled={!isFormValid}
+                                    loading={isSaving}
+                                    leftSection={<Icon lucide={isNew ? Plus : CircleCheck}/>}
+                                    miw={140}
                                 >
                                     {isNew ? 'Add Item' : 'Save Changes'}
                                 </Button>
-                            </Box>
+                            </Group>
                         </Paper>
                     </Box>
                 )}
-            </DialogContent>
+            </Box>
+
             {/* Delete confirmation (in-dialog, not window.confirm) */}
-            <Dialog
-                open={confirmDelete !== null}
+            <DialogShell
+                opened={confirmDelete !== null}
                 onClose={handleCancelDelete}
-                maxWidth="xs"
-                fullWidth
+                size={dialogSize.sm}
+                label="Delete price item?"
+                zIndex={CONFIRM_Z_INDEX}
             >
-                <DialogTitle>Delete price item?</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
+                <DialogHeader
+                    icon={<Icon lucide={Trash2}/>}
+                    title="Delete price item?"
+                    onClose={handleCancelDelete}
+                    closeDisabled={isDeleting !== null}
+                    variant="error"
+                />
+                <Box p="lg">
+                    <Text size="sm">
                         {confirmDelete
                             ? `"${confirmDelete.name}" will be removed from the breakdown and the job total will be recalculated.`
                             : ''}
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button
-                        onClick={handleCancelDelete}
-                        disabled={isDeleting !== null}
-                        variant="outlined"
-                        sx={{ minWidth: 100 }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleConfirmDelete}
-                        disabled={isDeleting !== null}
-                        variant="contained"
-                        color="error"
-                        startIcon={isDeleting !== null
-                            ? <CircularProgress size={16} color="inherit" />
-                            : <DeleteIcon />}
-                        sx={{ minWidth: 100 }}
-                    >
-                        Delete
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                    </Text>
+                </Box>
+                <DialogFooter
+                    onCancel={handleCancelDelete}
+                    onConfirm={handleConfirmDelete}
+                    confirmLabel="Delete"
+                    confirmColor="red"
+                    confirmIcon={<Icon lucide={Trash2}/>}
+                    submitting={isDeleting !== null}
+                />
+            </DialogShell>
+
             {/* Footer Actions */}
             {!isEditing && (
-                <DialogActions
-                    sx={(theme) => ({
-                        px: 3,
-                        py: 2,
-                        bgcolor: 'background.paper',
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                    })}
+                <Group
+                    justify="space-between"
+                    px="lg"
+                    py="md"
+                    wrap="nowrap"
+                    style={{
+                        backgroundColor: 'var(--mantine-color-white)',
+                        borderTop: '1px solid var(--mantine-color-gray-3)',
+                    }}
                 >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            {priceBreakdowns.length > 0 && (
-                                <>
-                                    {priceBreakdowns.length} {priceBreakdowns.length === 1 ? 'item' : 'items'} •{' '}
-                                    <Typography
-                                        component="span"
-                                        sx={{
-                                            fontWeight: 600,
-                                            color: "text.primary"
-                                        }}>
-                                        {formatCurrency(totals.totalRevenue)}
-                                    </Typography>{' '}
-                                    total
-                                </>
-                            )}
-                        </Typography>
-                        <Stack direction="row" spacing={1.5}>
+                    <Text size="sm" c="dimmed">
+                        {priceBreakdowns.length > 0 && (
+                            <>
+                                {itemCountLabel} •{' '}
+                                <Text component="span" fw={600} c="var(--mantine-color-text)">
+                                    {formatCurrency(totals.totalRevenue)}
+                                </Text>{' '}
+                                total
+                            </>
+                        )}
+                    </Text>
+                    <Group gap="sm" wrap="nowrap">
+                        <Button variant="default" onClick={onClose} miw={100}>
+                            {readOnly ? 'Close' : 'Cancel'}
+                        </Button>
+                        {!readOnly && (
                             <Button
-                                onClick={onClose}
-                                variant="outlined"
-                                sx={{ borderRadius: 2, minWidth: 100 }}
+                                onClick={handleSaveAndClose}
+                                leftSection={<Icon lucide={CircleCheck}/>}
+                                miw={140}
                             >
-                                {readOnly ? 'Close' : 'Cancel'}
+                                Save &amp; Close
                             </Button>
-                            {!readOnly && (
-                                <Button
-                                    variant="contained"
-                                    onClick={handleSaveAndClose}
-                                    startIcon={<CheckCircleIcon />}
-                                    sx={{ borderRadius: 2, minWidth: 140 }}
-                                >
-                                    Save & Close
-                                </Button>
-                            )}
-                        </Stack>
-                    </Box>
-                </DialogActions>
+                        )}
+                    </Group>
+                </Group>
             )}
-        </Dialog>
+        </DialogShell>
     );
 };
+
+/** One of the three revenue/cost/profit tiles above the table. */
+function SummaryCard({color, icon, label, value, footer}: {
+    color: string;
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    footer?: React.ReactNode;
+}): React.ReactElement {
+    const accent = `var(--mantine-color-${color}-6)`;
+    return (
+        <Paper
+            p="md"
+            radius="lg"
+            style={{
+                border: `1px solid ${alpha(accent, 0.2)}`,
+                backgroundColor: alpha(accent, 0.04),
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--mantine-spacing-md)',
+            }}
+        >
+            <Box
+                c={`${color}.6`}
+                style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 'var(--mantine-radius-md)',
+                    backgroundColor: alpha(accent, 0.12),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                }}
+            >
+                {icon}
+            </Box>
+            <Box>
+                <Text size="sm" c="dimmed" fw={500}>{label}</Text>
+                <Text fz="h3" fw={700} c={`${color}.8`}>{value}</Text>
+                {footer}
+            </Box>
+        </Paper>
+    );
+}
 
 export default PriceBreakdownDialog;

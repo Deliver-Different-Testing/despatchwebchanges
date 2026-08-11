@@ -28,6 +28,7 @@ public class JobControllerTests : IDisposable
     private readonly IDeliveryJourneyService _deliveryJourneyServiceMock = Substitute.For<IDeliveryJourneyService>();
     private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
     private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
+    private readonly IArrivalWaitRerateService _arrivalWaitRerateServiceMock = Substitute.For<IArrivalWaitRerateService>();
     private readonly HttpClient _httpClient = new();
     private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
@@ -104,7 +105,8 @@ public class JobControllerTests : IDisposable
             _splitPricingPreviewServiceMock,
             _sendToPartnerServiceMock,
             _partnerJobGateMock,
-            _flightAssignmentServiceMock);
+            _flightAssignmentServiceMock,
+            _arrivalWaitRerateServiceMock);
     }
 
     /// <summary>
@@ -1754,6 +1756,23 @@ public class JobControllerTests : IDisposable
         Assert.IsType<OkResult>(result);
     }
 
+    [Theory]
+    [InlineData(JobProperty.PickupArrivalTime)]
+    [InlineData(JobProperty.DeliveryArrivalTime)]
+    public async Task UpdateJob_ArrivalField_HandsOffToTheWaitingRerate(JobProperty field)
+    {
+        const int jobId = 1;
+        const string value = "2024-06-10T09:15:00.0000000+12:00";
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, field, value, CancellationToken.None);
+
+        Assert.IsType<OkResult>(result);
+        await _arrivalWaitRerateServiceMock.Received(1)
+            .HandleArrivalEditAsync(jobId, field, Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task UpdateJob_Exception_Returns500()
     {
@@ -1787,9 +1806,9 @@ public class JobControllerTests : IDisposable
         var result = await controller.UpdateJob(jobId, JobProperty.BookedTime, value, CancellationToken.None);
 
         await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
-            .PropagateDateToChildrenAsync(default, default, default!);
+            .PropagateDateToChildrenAsync(0, default, null!, TestContext.Current.CancellationToken);
         await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
-            .PropagateUpdateToChildrenAsync(default, default, default!);
+            .PropagateUpdateToChildrenAsync(0, default, null!, TestContext.Current.CancellationToken);
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(new[] { jobId }, GetIntArray(ok.Value, "updatedJobIds"));
     }
@@ -1850,7 +1869,7 @@ public class JobControllerTests : IDisposable
         await _splitJobServiceMock.Received(1)
             .PropagateUpdateToChildrenAsync(jobId, JobProperty.Size, "3", Arg.Any<CancellationToken>());
         await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
-            .PropagateDateToChildrenAsync(default, default, default!);
+            .PropagateDateToChildrenAsync(0, default, null!, TestContext.Current.CancellationToken);
         Assert.IsType<OkResult>(result);
     }
 
