@@ -494,8 +494,14 @@ function getBuildConfig(
         // vendor-plugins uses Angular from vendor-core
         plugins.unshift(createGlobalShimPlugin(true));
     } else if (bundleType === "modules") {
-        // Modules use dayjs/windows-iana from the vendor, no Angular shim needed
+        // Modules use dayjs/windows-iana from the vendor, no Angular shim needed.
+        // They also reach React (app.ts and the route modules pull in island
+        // entries), so they take the same React/Mantine/MUI shim as the islands —
+        // otherwise each of app/home/jobSearch/nationwide embeds its own copy of
+        // all three. _Layout.cshtml loads vendor-react.js ahead of app.js so the
+        // globals exist by the time these bundles evaluate.
         plugins.unshift(createGlobalShimPlugin(false));
+        plugins.unshift(createReactGlobalShimPlugin());
     } else if (bundleType === "react-modules") {
         // React modules use React/ReactDOM from vendor-react + dayjs from vendor-core
         plugins.unshift(createGlobalShimPlugin(false));
