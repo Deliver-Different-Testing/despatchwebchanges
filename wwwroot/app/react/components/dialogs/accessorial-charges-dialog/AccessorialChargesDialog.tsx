@@ -21,8 +21,10 @@ import {
     Paper,
     Stack,
     Table,
+    Tabs,
     Text,
     TextInput,
+    NumberInput,
 } from '@mantine/core';
 import {Lock, ReceiptText, RefreshCw, Save, Trash2} from 'lucide-react';
 import {
@@ -819,28 +821,24 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             />
             {/* Portion job tabs */}
             {portionJobs.length > 0 && (
-                <Group
-                    gap={0}
-                    grow
-                    wrap="nowrap"
-                    style={{
-                        borderBottom: '2px solid var(--mantine-color-default-border)',
-                        backgroundColor: 'var(--mantine-color-white)',
-                    }}
+                <Tabs
+                    value={activePortionJobId === null ? null : String(activePortionJobId)}
+                    onChange={(value) => value && handlePortionTabClick(Number(value))}
+                    variant="default"
                 >
-                    {portionJobs.map((portion: PortionJobInfo) => (
-                        <Button
-                            key={portion.jobId}
-                            onClick={() => handlePortionTabClick(portion.jobId)}
-                            variant={activePortionJobId === portion.jobId ? 'filled' : 'subtle'}
-                            disabled={isLoadingAvailable || isLoadingApplied}
-                            radius={0}
-                            fw={600}
-                        >
-                            {portion.label}
-                        </Button>
-                    ))}
-                </Group>
+                    <Tabs.List grow>
+                        {portionJobs.map((portion: PortionJobInfo) => (
+                            <Tabs.Tab
+                                key={portion.jobId}
+                                value={String(portion.jobId)}
+                                disabled={isLoadingAvailable || isLoadingApplied}
+                                fw={600}
+                            >
+                                {portion.label}
+                            </Tabs.Tab>
+                        ))}
+                    </Tabs.List>
+                </Tabs>
             )}
             <Box p="lg" style={{backgroundColor: dialogContentBg}}>
                 {isLoading ? (
@@ -952,16 +950,15 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                             {needsInput ? (
                                                                 <Box>
                                                                     <Group gap="xs" wrap="nowrap">
-                                                                        <TextInput
+                                                                        <NumberInput
                                                                             size="xs"
-                                                                            type="number"
                                                                             aria-label={`${charge.name} input value`}
                                                                             value={row.inputValue}
-                                                                            onChange={e =>
+                                                                            onChange={value =>
                                                                                 setRowField(
                                                                                     charge.jobAccessorialChargeId,
                                                                                     'inputValue',
-                                                                                    e.currentTarget.value
+                                                                                    String(value ?? '')
                                                                                 )
                                                                             }
                                                                             onBlur={() => handleAppliedInputBlur(charge.jobAccessorialChargeId, charge.minimumQuantity)}
@@ -1006,12 +1003,11 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                         : (charge.overrideAmount ?? charge.calculatedAmount ?? undefined)
                                                                 )}
                                                             </Text>
-                                                            <TextInput
+                                                            <NumberInput
                                                                 size="xs"
                                                                 label="Override"
-                                                                type="number"
                                                                 value={row.overrideAmount}
-                                                                onChange={e => setRowField(charge.jobAccessorialChargeId, 'overrideAmount', e.currentTarget.value)}
+                                                                onChange={value => setRowField(charge.jobAccessorialChargeId, 'overrideAmount', String(value ?? ''))}
                                                                 w={110}
                                                                 disabled={row.isSaving || row.isDeleting}
                                                                 placeholder="Optional"
@@ -1162,12 +1158,11 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                             ) : (
                                                                 <Box>
                                                                     <Group gap="xs" wrap="nowrap">
-                                                                        <TextInput
+                                                                        <NumberInput
                                                                             size="xs"
-                                                                            type="number"
                                                                             aria-label={`${charge.name} input value`}
                                                                             value={availableInputMap[charge.accessorialChargeId] ?? ''}
-                                                                            onChange={e => handleAvailableInputChange(charge.accessorialChargeId, e.currentTarget.value)}
+                                                                            onChange={value => handleAvailableInputChange(charge.accessorialChargeId, String(value ?? ''))}
                                                                             onBlur={() => handleAvailableInputBlur(charge.accessorialChargeId)}
                                                                             w={90}
                                                                             disabled={!isSelected || isAddingCharges || isAutoPopulated(charge)}

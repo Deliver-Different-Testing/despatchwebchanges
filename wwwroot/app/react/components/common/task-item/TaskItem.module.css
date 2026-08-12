@@ -1,0 +1,43 @@
+/*
+ * TaskItem row chrome.
+ *
+ * This stylesheet exists for what props cannot express: a `:hover` that also
+ * repaints a *descendant* (the title), plus the reduced-motion opt-out. Everything
+ * static or per-task (padding, the status border colour) stays on the component as
+ * props/inline style.
+ */
+
+/* MD3 emphasized easing for the row's state-layer / border transition. */
+.row {
+    position: relative;
+    display: flex;
+    border: 1px solid var(--mantine-color-default-border);
+    border-radius: var(--mantine-radius-md);
+    transition:
+        background-color 200ms cubic-bezier(0.2, 0, 0, 1),
+        border-color 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.title {
+    transition: color 200ms ease;
+}
+
+/*
+ * MD3 list rows are flat on the surface: no per-row shadow or lift — hover is a
+ * primary state-layer overlay instead. Only clickable rows get it.
+ */
+.row[data-clickable]:hover {
+    background-color: var(--mantine-primary-color-light);
+    border-color: var(--mantine-primary-color-light-hover);
+}
+
+.row[data-clickable]:hover .title {
+    color: var(--mantine-primary-color-filled);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .row,
+    .title {
+        transition: none;
+    }
+}

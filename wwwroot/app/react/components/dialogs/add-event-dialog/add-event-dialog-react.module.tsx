@@ -8,11 +8,7 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { AddEventDialog, AddEventJob, EventType, JobEventData } from './AddEventDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import { getIanaTimezone, formatDateForApi, getTenantTimezone } from '../../../utils/dateUtils';
 import { EventType as EventTypeEnum } from '../../../../enums/event-type';
 import { JobNoteType } from '../../../../enums/job-note-type.enum';
@@ -20,6 +16,7 @@ import { eventApi } from '../../../services/eventApi';
 import { notesApi } from '../../../services/notesApi';
 import { openVoidJobConfirmationDialog } from '../void-job-confirmation-dialog/void-job-confirmation-dialog-react.module';
 import type { ShowToastFn, ToastService } from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 
 interface DialogState {
     open: boolean;
@@ -138,26 +135,21 @@ class AddEventDialogManager {
             }
             this.dialogState.toastService.showToast(message, type);
         };
-
-        const currentTheme = getTheme();
         const timezone = getIanaTimezone(getTenantTimezone());
 
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <AddEventDialog
-                        open={this.dialogState.open}
-                        job={this.dialogState.job}
-                        onClose={handleClose}
-                        onSubmit={handleSubmit}
-                        onLoadEventTypes={handleLoadEventTypes}
-                        showToast={handleShowToast}
-                        timezone={timezone}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
+        this.dialogRoot.render(islandTree(
+                <AddEventDialog
+                    open={this.dialogState.open}
+                    job={this.dialogState.job}
+                    onClose={handleClose}
+                    onSubmit={handleSubmit}
+                    onLoadEventTypes={handleLoadEventTypes}
+                    showToast={handleShowToast}
+                    timezone={timezone}
+                />
+
+
+        ));
     }
 
     open(options: OpenAddEventDialogOptions): Promise<boolean> {

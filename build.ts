@@ -64,6 +64,7 @@ type EntryPointName =
     | 'aiAssistantDialogReact'
     | 'createJobDialogReact'
     | 'swapPodsDialogReact'
+    | 'restoreConfirmDialogReact'
     | 'selectDialogReact'
     | 'editParcelDimensionsDialogReact'
     | 'simplePriceEditDialogReact'
@@ -117,6 +118,7 @@ const entryPoints: EntryPoints = {
     aiAssistantDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/ai-assistant-dialog/ai-assistant-dialog-react.module.tsx"),
     createJobDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/create-job-dialog/create-job-dialog-react.module.tsx"),
     swapPodsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module.tsx"),
+    restoreConfirmDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/restore-confirmation-dialog/restore-confirmation-dialog-react.module.tsx"),
     selectDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/select-dialog/select-dialog-react.module.tsx"),
     editParcelDimensionsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog-react.module.tsx"),
     simplePriceEditDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog-react.module.tsx"),
@@ -494,8 +496,14 @@ function getBuildConfig(
         // vendor-plugins uses Angular from vendor-core
         plugins.unshift(createGlobalShimPlugin(true));
     } else if (bundleType === "modules") {
-        // Modules use dayjs/windows-iana from the vendor, no Angular shim needed
+        // Modules use dayjs/windows-iana from the vendor, no Angular shim needed.
+        // They also reach React (app.ts and the route modules pull in island
+        // entries), so they take the same React/Mantine/MUI shim as the islands —
+        // otherwise each of app/home/jobSearch/nationwide embeds its own copy of
+        // all three. _Layout.cshtml loads vendor-react.js ahead of app.js so the
+        // globals exist by the time these bundles evaluate.
         plugins.unshift(createGlobalShimPlugin(false));
+        plugins.unshift(createReactGlobalShimPlugin());
     } else if (bundleType === "react-modules") {
         // React modules use React/ReactDOM from vendor-react + dayjs from vendor-core
         plugins.unshift(createGlobalShimPlugin(false));

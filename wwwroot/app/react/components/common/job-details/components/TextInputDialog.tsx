@@ -1,22 +1,15 @@
 /**
- * TextInputDialog - Small MUI dialog for editing text fields
+ * TextInputDialog - Small dialog for editing text fields
  *
  * Replaces $mdDialog.prompt() for editing text fields like
  * RefA, RefB, POD name, weight, tracking mobile/email, etc.
  */
 
 import React, {useState, useEffect} from 'react';
-import Box from '@mui/material/Box';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
-import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../../../dialogs/shared/styles';
+import {Box, Button, TextInput} from '@mantine/core';
+import {Pencil} from 'lucide-react';
+import {Icon} from '../../icon/Icon';
+import {DialogFooter, DialogHeader, DialogShell, dialogContentBg} from '../../../dialogs/shared/mantine';
 
 export interface TextInputDialogProps {
     open: boolean;
@@ -55,8 +48,7 @@ export function TextInputDialog({
         }
     }, [open, initialValue]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const submit = () => {
         if (isEmpty) return;
         onSubmit(value);
     };
@@ -68,61 +60,38 @@ export function TextInputDialog({
     };
 
     return (
-        <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-            <Box
-                sx={(theme) => headerChromeSx(theme)}
-            >
-                <Box sx={(theme) => headerChipSx(theme)}>
-                    <EditIcon/>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" sx={{
-                        fontWeight: 600
-                    }}>{title}</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>Update the field value</Typography>
-                </Box>
-                <IconButton onClick={onCancel} sx={(theme) => ({
-                    color: headerOnColor(theme),
-                    '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
-                })}>
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-            <form onSubmit={handleSubmit}>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        fullWidth
+        <DialogShell opened={open} onClose={onCancel} size={440} label={title}>
+            <DialogHeader
+                icon={<Icon lucide={Pencil}/>}
+                title={title}
+                subtitle="Update the field value"
+                onClose={onCancel}
+            />
+            {/* The form is what makes Enter submit; the footer's confirm button is a
+                plain button (Mantine's default type), so it can't double-submit. */}
+            <form onSubmit={(e) => { e.preventDefault(); submit(); }}>
+                <Box p="lg" bg={dialogContentBg}>
+                    <TextInput
+                        data-autofocus
                         label={label}
                         value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        margin="dense"
-                        error={isEmpty}
-                        helperText={isEmpty ? 'This field is required' : ' '}
+                        onChange={(e) => setValue(e.currentTarget.value)}
+                        error={isEmpty ? 'This field is required' : undefined}
                     />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={onCancel}>
-                        {cancelLabel}
-                    </Button>
-                    {canClear && (
-                        <Button
-                            onClick={handleClear}
-                            variant="outlined"
-                            color="error"
-                        >
+                </Box>
+                <DialogFooter
+                    onCancel={onCancel}
+                    cancelLabel={cancelLabel}
+                    onConfirm={submit}
+                    confirmLabel={okLabel}
+                    confirmDisabled={isEmpty}
+                    secondaryAction={canClear ? (
+                        <Button variant="outline" color="red" onClick={handleClear}>
                             Clear
                         </Button>
-                    )}
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={isEmpty}
-                    >
-                        {okLabel}
-                    </Button>
-                </DialogActions>
+                    ) : undefined}
+                />
             </form>
-        </Dialog>
+        </DialogShell>
     );
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {MantineTestProvider} from '../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {OverviewPage} from './OverviewPage';
@@ -99,9 +100,9 @@ function renderOverviewPage(overrides: Partial<React.ComponentProps<typeof Overv
 
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider><ThemeProvider theme={theme}>
                 <OverviewPage {...defaultProps} />
-            </ThemeProvider>
+            </ThemeProvider></MantineTestProvider>
         </QueryClientProvider>,
     );
 }

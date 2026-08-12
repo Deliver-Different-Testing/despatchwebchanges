@@ -10,13 +10,13 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
-import {JobSearchPage, JobSearchPageProps, JobSearchLayoutBridge} from './JobSearchPage';
+import {JobSearchPage} from './JobSearchPage';
 import type {ImportLayoutsResult} from './lib/layoutPersistence';
+import {JobSearchPageProps} from "./JobSearchPageProps";
+import {JobSearchLayoutBridge} from "./JobSearchLayoutBridge";
 
 export interface MountJobSearchPageConfig extends JobSearchPageProps {}
 
@@ -51,24 +51,21 @@ export function mountJobSearchPage(
         jobSearchRoot = createRoot(container);
     }
 
-    const currentTheme = getTheme();
-
-    jobSearchRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <ErrorBoundary>
-                    <JobSearchPage
-                        {...config}
-                        onLayoutBridgeReady={bridge => {
-                            layoutBridge = bridge;
-                            config.onLayoutBridgeReady?.(bridge);
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
-    );
+    // The page itself is still MUI; Mantine wraps it so the already-migrated
+    // JobListPanel it renders finds a provider.
+    jobSearchRoot.render(islandTree(
+        <MuiThemeIsland>
+            <ErrorBoundary>
+                <JobSearchPage
+                    {...config}
+                    onLayoutBridgeReady={bridge => {
+                        layoutBridge = bridge;
+                        config.onLayoutBridgeReady?.(bridge);
+                    }}
+                />
+            </ErrorBoundary>
+        </MuiThemeIsland>
+    ));
 
     console.log('[JobSearchReact] Page rendered');
 }

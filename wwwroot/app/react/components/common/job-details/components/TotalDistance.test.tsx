@@ -3,15 +3,9 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
 import {TotalDistance} from './TotalDistance';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('TotalDistance', () => {
     it('hides content when not visible', () => {

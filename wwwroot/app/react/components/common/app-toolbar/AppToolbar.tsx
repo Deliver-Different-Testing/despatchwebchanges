@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {ActionIcon, Badge, Box, Group, Text, Tooltip, useMantineTheme} from '@mantine/core';
+import {ActionIcon, Badge, Box, Divider, Group, Text, Tooltip, useMantineTheme} from '@mantine/core';
 import {Menu as MenuIcon, ChevronRight} from 'lucide-react';
 import dayjs from 'dayjs';
 import {Icon} from '../icon/Icon';
@@ -116,15 +116,14 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
 
                 {/* Keyline separating the brand mark from the location path */}
                 {resolvedCrumbs.length > 0 && (
-                    <Box
+                    <Divider
                         data-testid="toolbar-keyline"
+                        orientation="vertical"
                         visibleFrom={hasMultipleCrumbs ? 'sm' : undefined}
-                        style={{
-                            width: 1,
-                            height: 22,
-                            backgroundColor: shell.border,
-                            flexShrink: 0,
-                        }}
+                        // Raw px, not the `h` prop: like the bar's own height this
+                        // stays out of Mantine's rem/scale calc so it tracks the
+                        // fixed-px logo beside it.
+                        style={{height: 22, '--divider-color': shell.border, flexShrink: 0} as React.CSSProperties}
                     />
                 )}
 

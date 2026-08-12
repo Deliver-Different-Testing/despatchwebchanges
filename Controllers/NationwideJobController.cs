@@ -138,7 +138,8 @@ public class NationwideJobController(
                 return Json(new FlightSearchResponse
                 {
                     Flights = [],
-                    Message = "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter."
+                    Message =
+                        "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter."
                 });
             }
 
@@ -211,7 +212,8 @@ public class NationwideJobController(
                 return Json(new FlightSearchResponse
                 {
                     Flights = [],
-                    Message = "This recurring booking has no departure/arrival airports set, so flights can't be searched."
+                    Message =
+                        "This recurring booking has no departure/arrival airports set, so flights can't be searched."
                 });
             }
 
@@ -232,7 +234,8 @@ public class NationwideJobController(
                 return Json(new FlightSearchResponse
                 {
                     Flights = [],
-                    Message = "No flights found for the selected route and date. Try a different date, or enter the flight number manually."
+                    Message =
+                        "No flights found for the selected route and date. Try a different date, or enter the flight number manually."
                 });
             }
 
@@ -387,12 +390,7 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (!data.AgentId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
-            if (!data.JobId.HasValue)
+            if (!data.AgentId.HasValue || !data.JobId.HasValue)
             {
                 throw new ArgumentNullException(nameof(data));
             }

@@ -22,9 +22,7 @@ import VehicleIcon from '@mui/icons-material/DirectionsCar';
 import LocationIcon from '@mui/icons-material/LocationOn';
 import NotesIcon from '@mui/icons-material/Notes';
 import PersonIcon from '@mui/icons-material/Person';
-import {DatePicker} from '@mui/x-date-pickers/DatePicker';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import {DateInput} from '@mantine/dates';
 import type {CourierSuggestion} from '../../../interfaces';
 import {
     AddressViewModel,
@@ -39,11 +37,14 @@ import {useCourierSearch} from '../../../hooks/useCourierApi';
 import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
 import {addressApi} from '../../../services/addressApi';
 import {jobApi} from '../../../services/jobApi';
-import {dayjs, formatDateForApi, getIanaTimezone} from '../../../utils/dateUtils';
+import {dayjs, formatDateForApi, getIanaTimezone, getInputDateFormat} from '../../../utils/dateUtils';
 import {getStateByAbbreviation} from '../../../utils/usStates';
 import type {Dayjs} from 'dayjs';
 import type {ShowToastFn} from '../../../services/toastService';
 import {DialogShell, DialogHeader} from '../shared';
+
+/** The string form `DateInput` exchanges values in. */
+const ISO_DATE = 'YYYY-MM-DD';
 
 // Section wrapper component for consistent styling
 const FormSection: React.FC<{
@@ -531,23 +532,22 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                     : 'No couriers found'
                             }
                         />
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                                label="Job Date"
-                                value={jobDate}
-                                onChange={(newValue) => {
-                                    if (newValue) setJobDate(newValue);
-                                }}
-                                slotProps={{
-                                    textField: {
-                                        required: true,
-                                        error: touched && (!jobDate || !jobDate.isValid()),
-                                        helperText: touched && (!jobDate || !jobDate.isValid()) ? 'Job date is required.' : '',
-                                        sx: {flex: '0 0 200px'},
-                                    },
-                                }}
-                            />
-                        </LocalizationProvider>
+                        {/* Mantine's `DateInput` is string-valued (`YYYY-MM-DD`), so the job
+                            date stays a calendar date all the way to `formatDateForApi`. The
+                            surrounding form is still MUI — see the plan's Phase 7b note. */}
+                        <DateInput
+                            label="Job Date"
+                            required
+                            value={jobDate?.isValid() ? jobDate.format(ISO_DATE) : null}
+                            onChange={(value) => {
+                                if (value) setJobDate(dayjs(value));
+                            }}
+                            valueFormat={getInputDateFormat()}
+                            placeholder={getInputDateFormat()}
+                            error={touched && (!jobDate || !jobDate.isValid()) ? 'Job date is required.' : undefined}
+                            size="md"
+                            style={{flex: '0 0 200px'}}
+                        />
                     </Box>
                 </FormSection>
 

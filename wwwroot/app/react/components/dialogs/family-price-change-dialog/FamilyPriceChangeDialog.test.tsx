@@ -6,12 +6,11 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
+import {renderWithMantine as render} from '../../../__testUtils__';
 import {FamilyPriceChangeDialog, type FamilyPriceChangeRow} from './FamilyPriceChangeDialog';
 import {setupUser} from '../../../__testUtils__/setupUser';
 
-const theme = createTheme();
 
 const rows: FamilyPriceChangeRow[] = [
     {jobId: 1, jobNo: 'E8938MC', oldPrice: 120, newPrice: 135, ratedManually: false},
@@ -31,7 +30,6 @@ function renderDialog(overrides?: {
         onKeepAll: jest.fn(),
     };
     render(
-        <ThemeProvider theme={theme}>
             <FamilyPriceChangeDialog
                 open
                 rows={overrides?.rows ?? rows}
@@ -39,7 +37,6 @@ function renderDialog(overrides?: {
                 isApplying={overrides?.isApplying}
                 {...handlers}
             />
-        </ThemeProvider>,
     );
     return handlers;
 }

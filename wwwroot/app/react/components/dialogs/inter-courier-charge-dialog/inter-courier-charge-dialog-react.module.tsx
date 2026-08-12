@@ -8,7 +8,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {InterCourierChargeDialog} from './InterCourierChargeDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
 interface DialogState {
@@ -42,15 +42,13 @@ function renderDialog(): void {
         dialogState.toastService.showToast(message, type);
     };
 
-    dialogRoot.render(
-        <DfrntMantineProvider>
-            <InterCourierChargeDialog
-                open={dialogState.open}
-                onClose={handleClose}
-                showToast={handleShowToast}
-            />
-        </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <InterCourierChargeDialog
+            open={dialogState.open}
+            onClose={handleClose}
+            showToast={handleShowToast}
+        />
+    ));
 }
 
 function initializeDialogRoot(): void {

@@ -317,8 +317,8 @@ describe('InterCourierChargeDialog', () => {
 
             // Fields should be cleared
             expect(screen.getByLabelText(/reference/i)).toHaveValue('');
-            expect(screen.getByLabelText(/zones/i)).toHaveValue(null);
-            expect(screen.getByLabelText(/amount/i)).toHaveValue(null);
+            expect(screen.getByLabelText(/zones/i)).toHaveValue('');
+            expect(screen.getByLabelText(/amount/i)).toHaveValue('');
         });
     });
 

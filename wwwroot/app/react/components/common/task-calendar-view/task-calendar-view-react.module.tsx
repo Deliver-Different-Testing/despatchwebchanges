@@ -7,14 +7,13 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {TaskCalendarView} from './TaskCalendarView';
 import {Task} from '../task-item/TaskItem.interfaces';
 import {TasksServiceInterface} from './TaskCalendarView.interfaces';
-import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
 import angular from 'angular';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React TaskCalendarView
@@ -54,9 +53,6 @@ class TaskCalendarViewReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap AngularJS callbacks to match expected signatures
         const handleTaskClick = this.onTaskClick ? (task: Task) => this.onTaskClick!({task}) : undefined;
 
@@ -68,21 +64,21 @@ class TaskCalendarViewReactController implements angular.IController {
             ? (startDate: Date, endDate: Date) => this.onViewChange!({startDate, endDate})
             : undefined;
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <TaskCalendarView
-                    tasks={this.tasks || []}
-                    onTaskUpdate={this.onTaskUpdate}
-                    onTaskClick={handleTaskClick}
-                    onTaskStatusChange={handleTaskStatusChange}
-                    onViewChange={handleViewChange}
-                    tasksService={this.tasksService}
-                    showSuccessToast={msg => toastService.showSuccessToast(msg)}
-                    showErrorToast={msg => toastService.showErrorToast(msg)}
-                />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+            <MuiThemeIsland>
+            <TaskCalendarView
+                tasks={this.tasks || []}
+                onTaskUpdate={this.onTaskUpdate}
+                onTaskClick={handleTaskClick}
+                onTaskStatusChange={handleTaskStatusChange}
+                onViewChange={handleViewChange}
+                tasksService={this.tasksService}
+                showSuccessToast={msg => toastService.showSuccessToast(msg)}
+                showErrorToast={msg => toastService.showErrorToast(msg)}
+            />
+
+            </MuiThemeIsland>
+        ));
     }
 }
 

@@ -1,6 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
+import React, {useState} from 'react';
+import {SearchSelect} from '../../../components/common/search-select/SearchSelect';
 import {useCourierSearch} from '../../../hooks/useCourierApi';
 import {getExactCourierByCode} from '../../../services/courierApi';
 import {filterCouriersForNumericSearch} from '../../job-search/lib/searchCriteria';
@@ -32,32 +31,31 @@ export const CourierSearchField: React.FC<CourierSearchFieldProps> = ({
     placeholder = 'Search courier by name or code…',
     showToast,
 }) => {
-    const [input, setInput] = useState('');
-    const [debounced, setDebounced] = useState('');
+    const [term, setTerm] = useState('');
     const [lookingUp, setLookingUp] = useState(false);
+    // A search box, not a value picker: after a pick the field clears ready for
+    // the next code (V1 parity). Remounting is how an uncontrolled-text picker
+    // gets reset without inventing a "clear" prop on the shared component.
+    const [resetKey, setResetKey] = useState(0);
 
-    useEffect(() => {
-        const t = setTimeout(() => setDebounced(input.trim()), 250);
-        return () => clearTimeout(t);
-    }, [input]);
-
-    const {data: results = [], isFetching} = useCourierSearch(debounced, {minLength: 1});
-    // Filter on the live input, not the debounced term, so the exact match is
-    // offered as soon as the code is fully typed.
-    const options = filterCouriersForNumericSearch(results, input);
+    const {data: results = [], isFetching} = useCourierSearch(term, {minLength: 1});
+    const options = filterCouriersForNumericSearch(results, term);
 
     const select = (courier: CourierSuggestion) => {
         onSelect(courier);
-        setInput('');
-        setDebounced('');
+        setTerm('');
+        setResetKey(k => k + 1);
     };
 
-    // Enter is MUI's whenever the dropdown has something to offer — it selects the
-    // highlighted option from the Autocomplete root, which sits outside this field, so
-    // only take over when the search came back empty.
+    // Enter is the Combobox's whenever the dropdown has something to offer —
+    // `autoHighlight` means it selects the first option — so only take over when
+    // the search came back empty.
     const handleKeyDown = async (event: React.KeyboardEvent) => {
         if (event.key !== 'Enter' || options.length > 0 || lookingUp) return;
-        const code = input.trim();
+        // Read the live input rather than `term`: `term` is the debounced search
+        // term, and Enter routinely beats the debounce — which is exactly the case
+        // this fallback exists for.
+        const code = (event.target as HTMLInputElement).value?.trim() ?? '';
         if (!code) return;
         event.preventDefault();
 
@@ -75,31 +73,24 @@ export const CourierSearchField: React.FC<CourierSearchFieldProps> = ({
     };
 
     return (
-        <Autocomplete<CourierSuggestion, false, false, false>
-            size="small"
-            options={options}
-            loading={isFetching || lookingUp}
-            autoHighlight
-            // A search box, not a value picker: the picked courier shows up as the job
-            // list below, and the field clears ready for the next code (V1 parity).
-            value={null}
-            inputValue={input}
-            // Server-side search — don't re-filter locally.
-            filterOptions={(x) => x}
-            getOptionLabel={(o) => o.text}
-            isOptionEqualToValue={(a, b) => a.id === b.id}
-            onInputChange={(_, value) => setInput(value)}
-            onChange={(_, value) => {
-                if (value) select(value);
-            }}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    placeholder={placeholder}
-                    aria-label="Search courier"
-                    onKeyDown={handleKeyDown}
-                />
-            )}
-        />
+        <div onKeyDown={handleKeyDown}>
+            <SearchSelect<CourierSuggestion>
+                key={resetKey}
+                aria-label="Search courier"
+                placeholder={placeholder}
+                value={null}
+                onChange={(courier) => {
+                    if (courier) select(courier);
+                }}
+                options={options}
+                onSearchChange={setTerm}
+                loading={isFetching || lookingUp}
+                autoHighlight
+                getOptionKey={(courier) => courier.id}
+                getOptionLabel={(courier) => courier.text}
+                minSearchLength={1}
+                debounceMs={0}
+            />
+        </div>
     );
 };

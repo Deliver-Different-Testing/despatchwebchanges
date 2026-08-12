@@ -6,9 +6,7 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import type {SxProps, Theme} from '@mui/material';
+import {Group, Text} from '@mantine/core';
 
 interface JobStats {
     total: number;
@@ -21,52 +19,38 @@ interface JobListStatsHeaderProps {
     stats: JobStats;
 }
 
-const styles: Record<string, SxProps<Theme>> = {
-    container: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2.5,
-        px: 2,
-        py: 0.75,
-        borderBottom: 1,
-        borderColor: 'divider',
-        bgcolor: 'grey.50',
-        minHeight: 36,
-    },
+const containerStyle: React.CSSProperties = {
+    borderBottom: '1px solid var(--mantine-color-default-border)',
+    backgroundColor: 'var(--mantine-color-gray-1)',
+    minHeight: 36,
 };
 
-const statDot = (color: string): SxProps<Theme> => ({
+const statDotStyle = (color: string): React.CSSProperties => ({
     width: 8,
     height: 8,
     borderRadius: '50%',
-    bgcolor: color,
+    backgroundColor: color,
     display: 'inline-block',
     flexShrink: 0,
 });
 
 export const JobListStatsHeader: React.FC<JobListStatsHeaderProps> = ({stats}) => (
-    <Box sx={styles.container}>
-        <StatItem color="text.disabled" label="Total" value={stats.total}/>
-        <StatItem color="info.main" label="Active" value={stats.active}/>
-        <StatItem color="warning.main" label="Transit" value={stats.transit}/>
-        <StatItem color="success.main" label="Done" value={stats.done}/>
-    </Box>
+    <Group align="center" gap="lg" px="md" py={6} wrap="nowrap" style={containerStyle}>
+        <StatItem color="var(--mantine-color-gray-5)" label="Total" value={stats.total}/>
+        <StatItem color="var(--mantine-color-reflex-5)" label="Active" value={stats.active}/>
+        <StatItem color="var(--mantine-color-orange-5)" label="Transit" value={stats.transit}/>
+        <StatItem color="var(--mantine-color-green-5)" label="Done" value={stats.done}/>
+    </Group>
 );
 
 const StatItem: React.FC<{color: string; label: string; value: number}> = ({color, label, value}) => (
-    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.75}}>
-        <Box sx={statDot(color)}/>
-        <Typography
-            variant="caption"
-            sx={{
-                color: "text.secondary",
-                fontWeight: 500,
-                lineHeight: 1
-            }}>
+    <Group align="center" gap={6} wrap="nowrap">
+        <span style={statDotStyle(color)}/>
+        <Text size="xs" c="dimmed" fw={500} lh={1}>
             {label}
-        </Typography>
-        <Typography variant="caption" sx={{fontWeight: 700, lineHeight: 1, color: 'text.primary'}}>
+        </Text>
+        <Text size="xs" fw={700} lh={1}>
             {value}
-        </Typography>
-    </Box>
+        </Text>
+    </Group>
 );

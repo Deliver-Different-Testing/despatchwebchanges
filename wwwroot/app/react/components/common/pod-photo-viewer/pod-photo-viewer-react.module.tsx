@@ -7,17 +7,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {PodPhotoViewer, PodPhoto} from './PodPhotoViewer';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
-
-// State management for the viewer
-interface ViewerState {
-    isOpen: boolean;
-    photos: PodPhoto[];
-    initialPhotoIndex: number;
-    timeZone?: string;
-    onCloseCallback?: () => void;
-}
+import {PodPhoto, PodPhotoViewer} from './PodPhotoViewer';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {ViewerState} from "./viewer.state";
 
 let viewerRoot: Root | null = null;
 let viewerContainer: HTMLDivElement | null = null;
@@ -40,17 +32,15 @@ function renderViewer(): void {
         renderViewer();
     };
 
-    viewerRoot.render(
-        <DfrntMantineProvider>
-            <PodPhotoViewer
-                isOpen={viewerState.isOpen}
-                photos={viewerState.photos}
-                initialPhotoIndex={viewerState.initialPhotoIndex}
-                timeZone={viewerState.timeZone}
-                onClose={handleClose}
-            />
-        </DfrntMantineProvider>
-    );
+    viewerRoot.render(islandTree(
+        <PodPhotoViewer
+            isOpen={viewerState.isOpen}
+            photos={viewerState.photos}
+            initialPhotoIndex={viewerState.initialPhotoIndex}
+            timeZone={viewerState.timeZone}
+            onClose={handleClose}
+        />
+    ));
 }
 
 /**

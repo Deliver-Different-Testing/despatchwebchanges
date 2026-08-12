@@ -1,7 +1,13 @@
 import React from "react";
 
 export interface SearchSelectProps<T> {
-    label: string;
+    /**
+     * Visible field label. Optional because some call sites have no room for one
+     * (an inline table cell); those must pass `aria-label` instead so the input
+     * still has an accessible name.
+     */
+    label?: string;
+    'aria-label'?: string;
     placeholder?: string;
     /** The selected option, or null. Owned by the caller. */
     value: T | null;
@@ -32,4 +38,11 @@ export interface SearchSelectProps<T> {
     autoFocus?: boolean;
     minSearchLength?: number;
     debounceMs?: number;
+    /**
+     * Highlight the first option as soon as results arrive, so Enter picks it —
+     * MUI `Autocomplete`'s `autoHighlight`. Mantine's `Combobox` activates no
+     * option until the user arrows onto one, so without this Enter does nothing
+     * and a "type the code, press Enter" flow silently stops working.
+     */
+    autoHighlight?: boolean;
 }

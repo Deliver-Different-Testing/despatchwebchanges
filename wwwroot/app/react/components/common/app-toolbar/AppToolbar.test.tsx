@@ -235,11 +235,14 @@ describe('AppToolbar', () => {
                     breadcrumbs={[{label: 'Dashboards'}, {label: 'Recurring Jobs'}]}
                 />
             );
-            expect(screen.getByTestId('toolbar-keyline')).toHaveStyle({
-                width: '1px',
-                height: '22px',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            });
+            // A Mantine Divider draws the rule as a border, so the tint rides
+            // --divider-color rather than a background fill.
+            const keyline = screen.getByTestId('toolbar-keyline');
+            expect(keyline).toHaveStyle({height: '22px'});
+            // A custom property is stored verbatim, so this is the theme's
+            // authored value rather than a jsdom-normalised colour.
+            expect(keyline.style.getPropertyValue('--divider-color')).toBe('rgba(255, 255, 255, 0.10)');
+            expect(keyline).toHaveAttribute('data-orientation', 'vertical');
         });
     });
 });

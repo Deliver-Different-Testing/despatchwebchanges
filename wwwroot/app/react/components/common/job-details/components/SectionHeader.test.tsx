@@ -3,93 +3,86 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
-import IconButton from '@mui/material/IconButton';
-import RepeatIcon from '@mui/icons-material/Repeat';
-import {SectionHeader} from './SectionHeader';
-import {createAppTheme} from '../../../../theme/muiTheme';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {screen, fireEvent} from '@testing-library/react';
+import {ActionIcon} from '@mantine/core';
+import {Repeat} from 'lucide-react';
+import {SectionHeader, sectionHeaderColors} from './SectionHeader';
+import {renderWithMantine} from '../../../../__testUtils__';
 
 describe('SectionHeader', () => {
     it('renders title and the leading icon', () => {
-        renderWithTheme(<SectionHeader icon={RepeatIcon} title="Recurring Schedule" />);
+        renderWithMantine(<SectionHeader lucide={Repeat} title="Recurring Schedule" />);
         expect(screen.getByText('Recurring Schedule')).toBeInTheDocument();
-        const svg = document.querySelector('svg');
-        expect(svg).not.toBeNull();
+        expect(document.querySelector('svg')).not.toBeNull();
+    });
+
+    it('sizes the glyph itself rather than leaving it to the call site', () => {
+        const {unmount} = renderWithMantine(<SectionHeader lucide={Repeat} title="Section" />);
+        expect(document.querySelector('svg')).toHaveAttribute('width', '20');
+        unmount();
+
+        renderWithMantine(<SectionHeader lucide={Repeat} title="Section" dense />);
+        expect(document.querySelector('svg')).toHaveAttribute('width', '18');
     });
 
     it('omits the subtitle row when no subtitle is provided', () => {
-        renderWithTheme(<SectionHeader icon={RepeatIcon} title="Recurring Schedule" />);
+        renderWithMantine(<SectionHeader lucide={Repeat} title="Recurring Schedule" />);
         expect(screen.queryByText('When this job repeats')).not.toBeInTheDocument();
     });
 
     it('renders the subtitle when provided', () => {
-        renderWithTheme(
-            <SectionHeader icon={RepeatIcon} title="Recurring Schedule" subtitle="When this job repeats" />
+        renderWithMantine(
+            <SectionHeader lucide={Repeat} title="Recurring Schedule" subtitle="When this job repeats" />
         );
         expect(screen.getByText('When this job repeats')).toBeInTheDocument();
     });
 
     it('renders the endAction slot and forwards clicks', () => {
         const onClick = jest.fn();
-        renderWithTheme(
+        renderWithMantine(
             <SectionHeader
-                icon={RepeatIcon}
+                lucide={Repeat}
                 title="Schedule"
-                endAction={
-                    <IconButton aria-label="toggle visibility" size="small" onClick={onClick} />
-                }
+                endAction={<ActionIcon aria-label="toggle visibility" size="sm" onClick={onClick} />}
             />
         );
         fireEvent.click(screen.getByLabelText('toggle visibility'));
         expect(onClick).toHaveBeenCalled();
     });
 
-    it.each(['primary', 'pickup', 'delivery'] as const)(
-        'renders without error for variant=%s',
-        (variant) => {
-            renderWithTheme(<SectionHeader icon={RepeatIcon} title="Section" variant={variant} />);
-            expect(screen.getByText('Section')).toBeInTheDocument();
-        },
-    );
-
     /**
      * Pickup and delivery keep their map-convention fills; everything else is a
-     * plain paper bar so the section title reads as part of the card.
+     * plain card bar so the section title reads as part of the card.
      */
     describe('surfaces', () => {
-        const appTheme = createAppTheme();
-
         const renderVariant = (variant: 'primary' | 'pickup' | 'delivery') => {
-            render(
-                <ThemeProvider theme={appTheme}>
-                    <SectionHeader icon={RepeatIcon} title="Section" variant={variant} />
-                </ThemeProvider>,
+            const {unmount} = renderWithMantine(
+                <SectionHeader lucide={Repeat} title="Section" variant={variant} />,
             );
-            return screen.getByTestId('section-header');
+            expect(screen.getByText('Section')).toBeInTheDocument();
+            return {bar: screen.getByTestId('section-header'), unmount};
         };
 
-        it('renders the default section as a paper bar with a keyline', () => {
-            const bar = renderVariant('primary');
-            expect(bar).toHaveStyle({backgroundColor: appTheme.palette.background.paper});
-            expect(bar).toHaveStyle({borderBottom: `1px solid ${appTheme.palette.divider}`});
-            expect(bar).not.toHaveStyle({backgroundColor: appTheme.palette.primary.main});
+        it('renders the default section as a card bar with a keyline', () => {
+            const {bar} = renderVariant('primary');
+            expect(bar).toHaveStyle({backgroundColor: 'var(--dd-surface-container)'});
+            expect(bar).toHaveStyle({borderBottomWidth: '1px', borderBottomStyle: 'solid'});
+            expect(bar.style.borderBottomColor).toBe('var(--mantine-color-default-border)');
         });
 
-        it('keeps pickup map-blue', () => {
-            expect(renderVariant('pickup'))
-                .toHaveStyle({backgroundColor: appTheme.palette.info.main});
+        it('keeps pickup map-blue and delivery green, independent of the tenant brand', () => {
+            const {bar: pickup, unmount} = renderVariant('pickup');
+            expect(pickup).toHaveStyle({backgroundColor: '#2a4eff'});
+            // The coloured fills separate themselves — no keyline.
+            expect(pickup.style.borderBottomStyle).toBe('');
+            unmount();
+
+            expect(renderVariant('delivery').bar).toHaveStyle({backgroundColor: '#13b964'});
         });
 
-        it('keeps delivery green', () => {
-            expect(renderVariant('delivery'))
-                .toHaveStyle({backgroundColor: appTheme.palette.success.main});
+        it('exposes the fills so a caller can match a section to its header', () => {
+            expect(sectionHeaderColors.pickup).toEqual({bg: '#2a4eff', fg: '#ffffff'});
+            expect(sectionHeaderColors.delivery).toEqual({bg: '#13b964', fg: '#ffffff'});
         });
     });
 });

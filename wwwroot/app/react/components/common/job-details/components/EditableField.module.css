@@ -1,0 +1,28 @@
+/*
+ * The clickable field row's hover state: a left accent keyline, a tinted row and
+ * a brand-tinted glyph — pseudo-state and descendant rules with no inline-style
+ * equivalent. The resting border and glyph colour have to live here too: inline
+ * styles beat class rules, so an inline `border-left-color: transparent` would
+ * outrank the hover rule that repaints it. Everything else (flex layout,
+ * padding) stays inline so the row survives a missing stylesheet.
+ */
+.row {
+    border-left: 2px solid transparent;
+}
+
+.icon {
+    color: var(--mantine-color-dimmed);
+}
+
+.clickable {
+    transition: background-color 100ms ease, border-color 100ms ease;
+}
+
+.clickable:hover {
+    border-left-color: var(--mantine-primary-color-filled);
+    background-color: var(--mantine-color-gray-1);
+}
+
+.clickable:hover .icon {
+    color: var(--mantine-primary-color-filled);
+}

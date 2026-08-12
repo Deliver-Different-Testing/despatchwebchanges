@@ -1,8 +1,8 @@
 /**
  * Shared chrome for the app bar's icon buttons.
  *
- * A leaf module on purpose: `ToolbarActions` re-exports `DateFilterMenu`, so the MUI
- * holdout in that file cannot import these tokens from `ToolbarActions` without a cycle.
+ * A leaf module on purpose: `ToolbarActions` re-exports `DateFilterMenu`, so that file
+ * cannot import these tokens from `ToolbarActions` without a cycle.
  */
 
 import React from 'react';
@@ -17,9 +17,6 @@ import React from 'react';
  * rather than left to `variant="subtle"`.
  */
 export const SHELL_ICON_HOVER_FILL = 'var(--dd-shell-icon-hover)';
-
-/** Mantine's `ActionIcon size="lg"` box — the size every shell icon button matches. */
-export const SHELL_ICON_BUTTON_PX = 34;
 
 /**
  * Applied to every toolbar icon button: `variant="subtle" size="lg"`, round via the

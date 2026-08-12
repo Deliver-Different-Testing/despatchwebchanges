@@ -3,16 +3,10 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {ToggleProperties} from './ToggleProperties';
 import {createMockJob} from '../__testUtils__/mockJob';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 function createDefaultProps(overrides?: Record<string, any>) {
     return {

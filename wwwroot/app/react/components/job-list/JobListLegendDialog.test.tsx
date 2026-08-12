@@ -3,13 +3,13 @@
  */
 import React from 'react';
 import {screen} from '@testing-library/react';
-import {renderWithTheme} from '../../__testUtils__';
+import {renderWithMantine} from '../../__testUtils__';
 import {setupUser} from '../../__testUtils__/setupUser';
 import {JobListLegendDialog} from './JobListLegendDialog';
 
 describe('JobListLegendDialog', () => {
     it('explains that one marker shows per row and groups markers by precedence', () => {
-        renderWithTheme(<JobListLegendDialog open onClose={jest.fn()}/>);
+        renderWithMantine(<JobListLegendDialog open onClose={jest.fn()}/>);
 
         expect(screen.getByText('Column legend')).toBeInTheDocument();
         expect(screen.getByText(/single marker here — the highest-priority one/i)).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe('JobListLegendDialog', () => {
     });
 
     it('consolidates the flight legs into one row instead of four', () => {
-        renderWithTheme(<JobListLegendDialog open onClose={jest.fn()}/>);
+        renderWithMantine(<JobListLegendDialog open onClose={jest.fn()}/>);
 
         // The single "Flight" row lists the legs...
         expect(screen.getByText('Pickup leg')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('JobListLegendDialog', () => {
 
     it('calls onClose from the Close button and the header close button', async () => {
         const onClose = jest.fn();
-        renderWithTheme(<JobListLegendDialog open onClose={onClose}/>);
+        renderWithMantine(<JobListLegendDialog open onClose={onClose}/>);
         const user = setupUser();
 
         await user.click(screen.getByRole('button', {name: 'Close'}));
@@ -57,7 +57,7 @@ describe('JobListLegendDialog', () => {
     });
 
     it('renders nothing when closed', () => {
-        renderWithTheme(<JobListLegendDialog open={false} onClose={jest.fn()}/>);
+        renderWithMantine(<JobListLegendDialog open={false} onClose={jest.fn()}/>);
         expect(screen.queryByText('Column legend')).not.toBeInTheDocument();
     });
 });

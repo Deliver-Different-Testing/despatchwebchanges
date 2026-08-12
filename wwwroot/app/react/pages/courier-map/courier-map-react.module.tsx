@@ -7,12 +7,10 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {CourierMapPage} from './CourierMapPage';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
 import {ErrorBoundary} from '../../components/common/error-boundary';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 
 export interface MountCourierMapConfig {
     isUsCustomer: boolean;
@@ -57,23 +55,19 @@ export function mountCourierMapPage(
         console.log('[CourierMapReact] Creating new React root');
         courierMapRoot = createRoot(container);
     }
+    courierMapRoot.render(islandTree(
+        <MuiThemeIsland>
+        <ErrorBoundary>
+            <CourierMapPage
+                isUsCustomer={config.isUsCustomer}
+                mapCenter={config.mapCenter}
+                apiKey={config.apiKey}
+            />
+        </ErrorBoundary>
 
-    const currentTheme = getTheme();
+        </MuiThemeIsland>
 
-    courierMapRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <ErrorBoundary>
-                    <CourierMapPage
-                        isUsCustomer={config.isUsCustomer}
-                        mapCenter={config.mapCenter}
-                        apiKey={config.apiKey}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+    ));
 
     console.log('[CourierMapReact] Courier map page rendered');
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
+import {MantineTestProvider} from '../../../../__testUtils__';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {FilterToolbar} from './FilterToolbar';
 
@@ -7,11 +8,11 @@ const theme = createTheme();
 
 const renderFilterToolbar = (props: {actions?: React.ReactNode; children?: React.ReactNode} = {}) =>
     render(
-        <ThemeProvider theme={theme}>
+        <MantineTestProvider><ThemeProvider theme={theme}>
             <FilterToolbar actions={props.actions}>
                 {props.children ?? <div>Filter content</div>}
             </FilterToolbar>
-        </ThemeProvider>
+        </ThemeProvider></MantineTestProvider>
     );
 
 describe('FilterToolbar', () => {

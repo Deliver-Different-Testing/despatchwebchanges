@@ -6,13 +6,15 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor, within, fireEvent} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {MantineProvider} from '@mantine/core';
+import {createDfrntTheme} from '../../../theme/dfrntMantineTheme';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {StickyNotes} from './StickyNotes';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
 import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // Mock the notesApi module
 jest.mock('../../../services/notesApi');
@@ -21,8 +23,6 @@ jest.mock('../../dialogs/note-management-dialog/note-management-dialog-react.mod
 }));
 const mockedOpenNoteManagementDialog = openNoteManagementDialog as jest.MockedFunction<typeof openNoteManagementDialog>;
 const mockedNotesApi = notesApi as jest.Mocked<typeof notesApi>;
-
-const theme = createTheme();
 
 function createTestQueryClient() {
     return new QueryClient({
@@ -36,9 +36,9 @@ const renderWithProviders = (ui: React.ReactElement) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 {ui}
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>
     );
 };
@@ -383,17 +383,18 @@ describe('StickyNotes', () => {
     });
 
     describe('Theme Support', () => {
-        it('renders via ThemeProvider whatever primary the theme carries', async () => {
+        it('takes its brand accent from the provider rather than a hardcoded hue', async () => {
             const {unmount} = renderWithProviders(<StickyNotes {...createDefaultProps()} />);
             expect(await screen.findByText('Notes')).toBeInTheDocument();
             unmount();
 
-            const recoloured = createTheme({palette: {primary: {main: '#2a4eff'}}});
+            // Same tree under the other tenant's ramp: the panel still renders, and
+            // nothing in it is pinned to one tenant's primary.
             render(
                 <QueryClientProvider client={createTestQueryClient()}>
-                    <ThemeProvider theme={recoloured}>
+                    <MantineProvider theme={createDfrntTheme(false)} env="test">
                         <StickyNotes {...createDefaultProps()} />
-                    </ThemeProvider>
+                    </MantineProvider>
                 </QueryClientProvider>
             );
 

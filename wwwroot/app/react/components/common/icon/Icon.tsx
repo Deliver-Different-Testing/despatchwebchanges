@@ -48,7 +48,9 @@ export interface IconProps {
     stroke?: number;
     color?: string;
     className?: string;
+    style?: React.CSSProperties;
     'aria-label'?: string;
+    'aria-hidden'?: boolean;
 }
 
 export const Icon: React.FC<IconProps> = ({

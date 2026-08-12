@@ -7,8 +7,6 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {
     DashboardSettingsDialog,
     DashboardSettingsConfig,
@@ -17,9 +15,9 @@ import {
     RefreshOption,
 } from './DashboardSettingsDialog';
 import {CustomizePanelsDialog} from '../customize-panels-dialog/CustomizePanelsDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
 import {isAiAutoOpenEnabled, setAiAutoOpenEnabled} from '../../../../functions/aiSettings';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 // State management for the dialogue
 interface DialogState {
@@ -109,30 +107,27 @@ function renderDialog(): void {
     };
 
     // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
+    dialogRoot.render(islandTree(
+        <MuiThemeIsland>
+        <DashboardSettingsDialog
+            open={dialogState.open}
+            config={dialogState.config}
+            boxes={dialogState.boxes}
+            selectedRefreshInterval={dialogState.selectedRefreshInterval}
+            selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
+            selectedTaskRefreshInterval={dialogState.selectedTaskRefreshInterval}
+            refreshOptions={dialogState.refreshOptions}
+            aiEnabled={dialogState.aiEnabled}
+            aiAutoOpen={dialogState.aiAutoOpen}
+            jobSearchBetaEnabled={dialogState.jobSearchBetaEnabled}
+            dispatchBetaEnabled={dialogState.dispatchBetaEnabled}
+            onClose={handleClose}
+            onSave={handleSave}
+        />
 
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <DashboardSettingsDialog
-                    open={dialogState.open}
-                    config={dialogState.config}
-                    boxes={dialogState.boxes}
-                    selectedRefreshInterval={dialogState.selectedRefreshInterval}
-                    selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
-                    selectedTaskRefreshInterval={dialogState.selectedTaskRefreshInterval}
-                    refreshOptions={dialogState.refreshOptions}
-                    aiEnabled={dialogState.aiEnabled}
-                    aiAutoOpen={dialogState.aiAutoOpen}
-                    jobSearchBetaEnabled={dialogState.jobSearchBetaEnabled}
-                    dispatchBetaEnabled={dialogState.dispatchBetaEnabled}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+        </MuiThemeIsland>
+
+    ));
 }
 
 /**
@@ -217,24 +212,18 @@ function renderPanelsDialog(): void {
         panelsState.resolve = undefined;
         renderPanelsDialog();
     };
-
-    const currentTheme = getTheme();
-
-    panelsRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <CustomizePanelsDialog
-                    open={panelsState.open}
-                    title={panelsState.title}
-                    boxes={panelsState.boxes}
-                    layoutEditable={panelsState.layoutEditable ?? true}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+    panelsRoot.render(islandTree(
+        <MuiThemeIsland>
+            <CustomizePanelsDialog
+                open={panelsState.open}
+                title={panelsState.title}
+                boxes={panelsState.boxes}
+                layoutEditable={panelsState.layoutEditable ?? true}
+                onClose={handleClose}
+                onSave={handleSave}
+            />
+        </MuiThemeIsland>
+    ));
 }
 
 function initializePanelsRoot(): void {

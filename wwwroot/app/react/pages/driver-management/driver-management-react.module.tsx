@@ -1,12 +1,10 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {DriverManagementPage} from './DriverManagementPage';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
 import {MountDriverManagementConfig} from '../../interfaces';
 import {ErrorBoundary} from '../../components/common/error-boundary';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 
 let driverManagementRoot: Root | null = null;
 let driverManagementContainer: HTMLElement | null = null;
@@ -40,25 +38,21 @@ export function mountDriverManagementPage(
         console.log('[DriverManagementReact] Creating new React root');
         driverManagementRoot = createRoot(container);
     }
+    driverManagementRoot.render(islandTree(
+        <MuiThemeIsland>
+        <ErrorBoundary>
+            <DriverManagementPage
+                showToast={config.showToast}
+                isUsCustomer={config.isUsCustomer}
+                setRefreshCallback={(cb) => {
+                    refreshCallback = cb;
+                }}
+            />
+        </ErrorBoundary>
 
-    const currentTheme = getTheme();
+        </MuiThemeIsland>
 
-    driverManagementRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <ErrorBoundary>
-                    <DriverManagementPage
-                        showToast={config.showToast}
-                        isUsCustomer={config.isUsCustomer}
-                        setRefreshCallback={(cb) => {
-                            refreshCallback = cb;
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+    ));
 
     console.log('[DriverManagementReact] Driver management page rendered');
 }

@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Box, Button, Group, Loader, Radio, Stack, Text, TextInput, alpha } from '@mantine/core';
+import { Box, Button, Divider, Group, Loader, Radio, Stack, Text, TextInput, ThemeIcon, alpha, NumberInput} from '@mantine/core';
 import { ArrowRight, Check, CircleCheck, CirclePlus, Info, Lock, NotebookPen, RefreshCw, Tag } from 'lucide-react';
 import { IconTruck } from '@tabler/icons-react';
 import { DialogShell, DialogHeader, DialogFooter } from '../shared/mantine';
@@ -202,7 +202,13 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             </Box>
 
             {/* Pricing Options */}
-            <Stack gap={10}>
+            {/* One radiogroup, not three loose radios: Radio.Group owns the value and
+                gives the set arrow-key navigation and a single tab stop. */}
+            <Radio.Group
+                value={selectedMode}
+                onChange={(value) => { if (!readOnly) setSelectedMode(value as PricingMode); }}
+            >
+                <Stack gap={10}>
                 {availableModes.map((opt) => {
                     const isSelected = selectedMode === opt.mode;
                     const disabled = isModeDisabled(opt.mode);
@@ -227,28 +233,22 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                             }}
                         >
                             <Radio
-                                checked={isSelected}
+                                value={opt.mode}
                                 disabled={disabled || readOnly}
-                                onChange={() => { if (!disabled && !readOnly) setSelectedMode(opt.mode); }}
                                 color="gray.6"
                                 aria-label={opt.title}
                             />
-                            <Box
+                            <ThemeIcon
+                                size={40}
+                                radius="lg"
                                 style={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 'var(--mantine-radius-lg)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                    backgroundColor: isSelected ? SELECTED_ICON_BG[opt.mode] : scrim(0.06),
-                                    color: isSelected ? SELECTED_ICON_COLOR[opt.mode] : 'var(--mantine-color-dimmed)',
+                                    '--ti-bg': isSelected ? SELECTED_ICON_BG[opt.mode] : scrim(0.06),
+                                    '--ti-color': isSelected ? SELECTED_ICON_COLOR[opt.mode] : 'var(--mantine-color-dimmed)',
                                     transition: 'all 0.2s ease',
-                                }}
+                                } as React.CSSProperties}
                             >
                                 {opt.icon}
-                            </Box>
+                            </ThemeIcon>
                             <Stack gap={2} style={{minWidth: 0}}>
                                 <Text fw={500}>{opt.title}</Text>
                                 <Text size="xs" c="dimmed" style={{lineHeight: 1.4}}>
@@ -259,23 +259,25 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     );
                 })}
             </Stack>
+        </Radio.Group>
 
             {/* Amount Input (shown for base/gross modes) */}
             {(selectedMode === 'base' || selectedMode === 'gross') && (
-                <Box mt="md" pt="md" style={{borderTop: `1px solid ${scrim(0.08)}`}}>
+<>
+                    <Divider my="md" color={scrim(0.08)}/>
+                    <Box>
                     <Text size="sm" fw={500} c="dimmed" mb={10}>
                         {selectedMode === 'base' ? 'Enter Base Amount' : 'Enter Final Amount'}
                     </Text>
-                    <TextInput
-                        type="number"
+                    <NumberInput
                         value={amount || ''}
-                        onChange={(e) => setAmount(parseFloat(e.currentTarget.value) || 0)}
+                        onChange={(value) => setAmount(Number(value) || 0)}
                         placeholder="0.00"
                         disabled={readOnly}
                         data-autofocus={!readOnly || undefined}
-                        step="0.01"
-                        min="0"
-                        onWheel={(e) => e.currentTarget.blur()}
+                        step={0.01}
+                        decimalScale={2}
+                        min={0}
                         leftSection={<Text size="xl" fw={500} c="dimmed">$</Text>}
                         aria-label={selectedMode === 'base' ? 'Enter Base Amount' : 'Enter Final Amount'}
                         styles={{
@@ -291,6 +293,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         }}
                     />
                 </Box>
+                </>
             )}
 
             {/* Sum mismatch indicator — shown in gross/base modes when children are present */}
@@ -324,7 +327,9 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
 
             {/* Child jobs — hidden in recalculate mode since the system sets the price */}
             {childJobs && childJobs.length > 0 && selectedMode !== 'recalculate' && (
-                <Box mt="md" pt="md" style={{borderTop: `1px solid ${scrim(0.08)}`}}>
+<>
+                    <Divider my="md" color={scrim(0.08)}/>
+                    <Box>
                     <Group justify="space-between" mb="sm" wrap="nowrap">
                         <Text size="sm" fw={500} c="dimmed">Child Jobs</Text>
                         {(selectedMode === 'gross' || selectedMode === 'base') && amount > 0 && (
@@ -372,18 +377,17 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                     }}
                                 >
                                     <JobPill jobNumber={child.jobNumber} compact />
-                                    <TextInput
-                                        type="number"
+                                    <NumberInput
                                         value={currentAmount || ''}
-                                        onChange={(e) => {
-                                            const val = parseFloat(e.currentTarget.value) || 0;
+                                        onChange={(value) => {
+                                            const val = Number(value) || 0;
                                             setChildAmounts(prev => ({...prev, [child.jobId]: val}));
                                         }}
                                         disabled={readOnly}
                                         size="sm"
-                                        step="0.01"
-                                        min="0"
-                                        onWheel={(e) => e.currentTarget.blur()}
+                                        step={0.01}
+                                        decimalScale={2}
+                                        min={0}
                                         leftSection="$"
                                         aria-label={`Price for ${child.jobNumber}`}
                                         style={{flex: 1}}
@@ -401,6 +405,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         })}
                     </Stack>
                 </Box>
+                </>
             )}
 
             {/* Error message */}

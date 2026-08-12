@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
 import {JobDetailFab} from './JobDetailFab';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
 
@@ -24,9 +24,10 @@ const makeJob = (overrides: Partial<DispatchJob>): DispatchJob => ({
 } as unknown as DispatchJob);
 
 function renderAndOpen(job: DispatchJob) {
-    const {container} = renderWithTheme(<JobDetailFab currentJob={job} onAction={jest.fn()} />);
-    // Actions only render once the speed-dial is hovered open.
-    fireEvent.mouseEnter(container.firstChild as Element);
+    renderWithMantineOverMui(<JobDetailFab currentJob={job} onAction={jest.fn()} />);
+    // Actions only render once the speed-dial is hovered open. Anchored by test id:
+    // the provider injects a <style> node, so container.firstChild is not the group.
+    fireEvent.mouseEnter(screen.getByTestId('job-detail-actions'));
 }
 
 describe('JobDetailFab — Restore action', () => {

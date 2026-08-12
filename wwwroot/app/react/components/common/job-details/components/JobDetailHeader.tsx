@@ -2,35 +2,13 @@
  * JobDetailHeader - Toolbar with job identity, status, density toggle, edit mode, POD menu
  */
 
-import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
-import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import type {SxProps, Theme} from '@mui/material/styles';
-import {monoFontFamily} from '../../../../theme/muiTheme';
-import DensitySmallIcon from '@mui/icons-material/DensitySmall';
-import DensityMediumIcon from '@mui/icons-material/DensityMedium';
-import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
-import CheckIcon from '@mui/icons-material/Check';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import LockIcon from '@mui/icons-material/Lock';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import TableChartIcon from '@mui/icons-material/TableChart';
-import EmailIcon from '@mui/icons-material/Email';
-import ViewWeekIcon from '@mui/icons-material/ViewWeek';
-import DescriptionIcon from '@mui/icons-material/Description';
+import React from 'react';
+import {ActionIcon, Badge, Box, Group, Loader, Menu, Select, Text, Tooltip} from '@mantine/core';
+import {
+    Check, FileSpreadsheet, FileText, Handshake, LayoutGrid, Lock, LockOpen, Mail,
+    EllipsisVertical, Rows2, Rows4, Columns3,
+} from 'lucide-react';
+import {Icon} from '../../icon/Icon';
 import type {IJob} from '../JobDetails.types';
 import type {RouteOption} from '../../../../interfaces/recurringJobs';
 import type {OverlayDocument} from '../../../../services/jobDetailApi';
@@ -60,81 +38,78 @@ interface JobDetailHeaderProps {
     onDownloadOverlay?: (documentType: string) => void;
 }
 
-function getStatusColor(job: IJob): 'primary' | 'success' | 'error' | 'warning' | 'default' {
-    if (job.void) return 'error';
-    if (job.done) return 'success';
-    if (job.dispatchTime) return 'primary';
-    return 'warning';
+/**
+ * The status pill's meaning, exposed as `data-status-tone` so it can be asserted
+ * without reaching into the palette (the colour may be re-tuned; the tone won't).
+ */
+type StatusTone = 'void' | 'done' | 'dispatched' | 'pending';
+
+function getStatusTone(job: IJob): StatusTone {
+    if (job.void) return 'void';
+    if (job.done) return 'done';
+    if (job.dispatchTime) return 'dispatched';
+    return 'pending';
 }
 
-const styles: Record<string, SxProps<Theme>> = {
-    toolbar: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-        px: 2,
-        height: 52,
-        borderBottom: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        borderLeft: 3,
-        borderLeftColor: 'primary.main',
-    },
-    jobIdentity: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.5,
-        mr: 'auto',
-    },
-    jobNo: {
-        fontFamily: monoFontFamily,
-        fontSize: '1.125rem',
-        fontWeight: 700,
-        color: 'text.primary',
-        letterSpacing: '-0.02em',
-    },
-    actions: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.5,
-    },
+const statusColors: Record<StatusTone, string> = {
+    void: 'red',
+    done: 'green',
+    dispatched: 'brand',
+    pending: 'orange',
+};
+
+const toolbarStyle = (dense?: boolean): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    paddingInline: dense ? 12 : 16,
+    height: dense ? 40 : 52,
+    borderBottomWidth: 1,
+    borderBottomStyle: 'solid',
+    borderBottomColor: 'var(--mantine-color-default-border)',
+    backgroundColor: 'var(--dd-surface-container)',
+    borderLeftWidth: 3,
+    borderLeftStyle: 'solid',
+    borderLeftColor: 'var(--mantine-primary-color-filled)',
+});
+
+const jobNoStyle = (dense?: boolean): React.CSSProperties => ({
+    fontSize: dense ? '1rem' : '1.125rem',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+});
+
+const pillStyle: React.CSSProperties = {
+    fontWeight: 600,
+    fontSize: '0.75rem',
+    height: 26,
+    letterSpacing: '0.02em',
 };
 
 const ICON_SIZE = 18;
 
 export function JobDetailHeader({
-                                    job,
-                                    dense,
-                                    viewDensityLabel,
-                                    isEditMode,
-                                    routes,
-                                    onToggleDensity,
-                                    onToggleEditMode,
-                                    onResetFieldVisibility,
-                                    onStatusClick,
-                                    onPodReport,
-                                    onPodSpreadsheet,
-                                    onSendPodEmail,
-                                    onLockToggle,
-                                    onRouteChange,
-                                    overlayDocuments = [],
-                                    overlayDocumentsLoading = false,
-                                    onOverlayMenuOpen,
-                                    onDownloadOverlay,
-                                }: JobDetailHeaderProps) {
-    const [podMenuAnchor, setPodMenuAnchor] = useState<HTMLElement | null>(null);
+    job,
+    dense,
+    viewDensityLabel,
+    isEditMode,
+    routes,
+    onToggleDensity,
+    onToggleEditMode,
+    onResetFieldVisibility,
+    onStatusClick,
+    onPodReport,
+    onPodSpreadsheet,
+    onSendPodEmail,
+    onLockToggle,
+    onRouteChange,
+    overlayDocuments = [],
+    overlayDocumentsLoading = false,
+    onOverlayMenuOpen,
+    onDownloadOverlay,
+}: JobDetailHeaderProps) {
     const isDense = viewDensityLabel === 'Dense';
-
-    const toolbarSx = dense ? {
-        ...styles.toolbar as object,
-        height: 40,
-        px: 1.5,
-    } : styles.toolbar;
-
-    const jobNoSx = dense ? {
-        ...styles.jobNo as object,
-        fontSize: '1rem',
-    } : styles.jobNo;
+    const statusTone = getStatusTone(job);
 
     // POD report/email options require a completed, non-recurring job. The menu is
     // always shown so PDF-overlay documents are reachable at any stage; these three
@@ -144,66 +119,62 @@ export function JobDetailHeader({
 
     const renderPodItem = (icon: React.ReactNode, label: string, onClick: () => void) => (
         podEnabled ? (
-            <MenuItem onClick={() => {
-                setPodMenuAnchor(null);
-                onClick();
-            }}>
-                <ListItemIcon>{icon}</ListItemIcon>
-                <ListItemText>{label}</ListItemText>
-            </MenuItem>
+            <Menu.Item key={label} leftSection={icon} onClick={onClick}>
+                {label}
+            </Menu.Item>
         ) : (
-            // Disabled MenuItems don't fire pointer events, so wrap in a span for the tooltip.
-            <Tooltip title={podDisabledReason} placement="left">
+            // Disabled items don't fire pointer events, so the tooltip needs a
+            // wrapper that does.
+            <Tooltip key={label} label={podDisabledReason} position="left">
                 <span>
-                    <MenuItem disabled sx={{width: '100%'}}>
-                        <ListItemIcon>{icon}</ListItemIcon>
-                        <ListItemText>{label}</ListItemText>
-                    </MenuItem>
+                    <Menu.Item disabled leftSection={icon} style={{width: '100%'}}>
+                        {label}
+                    </Menu.Item>
                 </span>
             </Tooltip>
         )
     );
 
     return (
-        <Box sx={toolbarSx}>
+        <Box style={toolbarStyle(dense)}>
             {/* Job identity */}
-            <Box sx={styles.jobIdentity}>
+            <Group gap="sm" mr="auto">
                 {/* Recurring jobs never had a real UcbkJobNumber to show — the
                     AngularJS detail template kept the header empty for them and
                     used synthetic 'Job #N' labels in the tabs instead. The React
-                    port added this Typography unconditionally, which renders as
-                    a blank slot for prebook jobs. Gate it on !preBook to restore
-                    the AngularJS behaviour. */}
+                    port added this unconditionally, which renders as a blank slot
+                    for prebook jobs. Gate it on !preBook to restore the AngularJS
+                    behaviour. */}
                 {!job.preBook && (
-                    <Typography sx={jobNoSx}>
-                        {job.jobNo}
-                    </Typography>
+                    <Text style={jobNoStyle(dense)}>{job.jobNo}</Text>
                 )}
                 {job.isPartnerJob && (
-                    <Chip
-                        icon={<HandshakeIcon sx={{fontSize: 14}}/>}
-                        label="Partner Job"
-                        size="small"
-                        color="info"
-                        variant="filled"
-                        sx={{fontWeight: 600, fontSize: '0.75rem', height: 26, letterSpacing: '0.02em'}}
-                    />
+                    <Badge
+                        color="reflex"
+                        tt="none"
+                        leftSection={<Icon lucide={Handshake} size={14}/>}
+                        style={pillStyle}
+                    >
+                        Partner Job
+                    </Badge>
                 )}
-            </Box>
+            </Group>
 
             {/* Actions */}
-            <Box sx={styles.actions}>
-                {/* Status Chip + Lock */}
+            <Group gap={4}>
+                {/* Status pill + Lock */}
                 {!job.preBook && (
-                    <Chip
-                        label={job.statusName}
+                    <Badge
+                        component="button"
+                        type="button"
+                        color={statusColors[statusTone]}
+                        data-status-tone={statusTone}
+                        tt="none"
                         onClick={onStatusClick}
-                        size="small"
-                        color={getStatusColor(job)}
-                        variant="filled"
-                        clickable
-                        sx={{fontWeight: 600, fontSize: '0.75rem', height: 26, letterSpacing: '0.02em'}}
-                    />
+                        style={{...pillStyle, cursor: 'pointer'}}
+                    >
+                        {job.statusName}
+                    </Badge>
                 )}
                 {/* Recurring Route assignment (US medical-courier tenants).
                     Compact Select sits to the left of the Lock icon, gated on
@@ -213,144 +184,130 @@ export function JobDetailHeader({
                     side via JobProperty.RouteId. No Tooltip wrapper: it
                     overlaid the open dropdown menu and obscured options. */}
                 {job.preBook && routes.length > 0 && (
-                    <FormControl size="small" sx={{minWidth: 180}}>
-                        <Select
-                            value={job.routeId ?? ''}
-                            displayEmpty
-                            aria-label="Recurring Route — cascades to all associated legs"
-                            onChange={(e) => {
-                                const raw = e.target.value;
-                                const v = raw === null || raw === undefined ? '' : String(raw);
-                                onRouteChange(v === '' || v === '0' ? null : Number(v));
-                            }}
-                            sx={{
-                                fontSize: '0.8125rem',
-                                height: 30,
-                                '& .MuiSelect-select': {py: 0.5},
-                            }}
-                        >
-                            <MenuItem value=""><em>No route</em></MenuItem>
-                            {routes.map(r => (
-                                <MenuItem key={r.id} value={r.id}>
-                                    {r.text}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <Select
+                        aria-label="Recurring Route — cascades to all associated legs"
+                        placeholder="No route"
+                        w={180}
+                        size="xs"
+                        clearable
+                        data={routes.map(r => ({value: String(r.id), label: r.text}))}
+                        value={job.routeId != null ? String(job.routeId) : null}
+                        onChange={(value) => {
+                            onRouteChange(value == null || value === '' || value === '0' ? null : Number(value));
+                        }}
+                        comboboxProps={{keepMounted: false}}
+                    />
                 )}
 
                 {/* Lock is a LocalOnly field per PartnerJobGate — each tenant owns its
                     own copy independently. Don't disable on partner jobs: the field-level
                     edit guards handle cross-tenant protection, and showing "Locked —
                     managed by partner" here just conflates two distinct concepts. */}
-                <Tooltip title={job.locked ? 'Unlock Job' : 'Lock Job'}>
-                    <IconButton
-                        size="small"
-                        color={job.locked ? 'warning' : 'default'}
+                <Tooltip label={job.locked ? 'Unlock Job' : 'Lock Job'}>
+                    <ActionIcon
+                        variant="subtle"
+                        size="md"
+                        color={job.locked ? 'orange' : 'gray'}
+                        data-locked={job.locked || undefined}
+                        aria-label={job.locked ? 'Unlock Job' : 'Lock Job'}
                         onClick={onLockToggle}
                     >
-                        {job.locked
-                            ? <LockIcon sx={{fontSize: ICON_SIZE}}/>
-                            : <LockOpenIcon sx={{fontSize: ICON_SIZE}}/>
-                        }
-                    </IconButton>
+                        <Icon lucide={job.locked ? Lock : LockOpen} size={ICON_SIZE}/>
+                    </ActionIcon>
                 </Tooltip>
 
                 {/* View Density Toggle */}
-                <Tooltip title={`${isDense ? 'Normal' : 'Compact'} view`}>
-                    <IconButton size="small" onClick={onToggleDensity}>
-                        {isDense
-                            ? <DensityMediumIcon sx={{fontSize: ICON_SIZE}}/>
-                            : <DensitySmallIcon sx={{fontSize: ICON_SIZE}}/>
-                        }
-                    </IconButton>
+                <Tooltip label={`${isDense ? 'Normal' : 'Compact'} view`}>
+                    <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="md"
+                        aria-label={`${isDense ? 'Normal' : 'Compact'} view`}
+                        onClick={onToggleDensity}
+                    >
+                        <Icon lucide={isDense ? Rows2 : Rows4} size={ICON_SIZE}/>
+                    </ActionIcon>
                 </Tooltip>
 
                 {/* Edit Mode Toggle */}
-                <Tooltip title={isEditMode ? 'Done editing' : 'Show/Hide fields'}>
-                    <IconButton
-                        size="small"
-                        color={isEditMode ? 'primary' : 'default'}
+                <Tooltip label={isEditMode ? 'Done editing' : 'Show/Hide fields'}>
+                    <ActionIcon
+                        variant="subtle"
+                        size="md"
+                        color={isEditMode ? undefined : 'gray'}
+                        data-edit-mode={isEditMode || undefined}
+                        aria-label={isEditMode ? 'Done editing' : 'Show/Hide fields'}
                         onClick={onToggleEditMode}
                     >
-                        {isEditMode
-                            ? <CheckIcon sx={{fontSize: ICON_SIZE}}/>
-                            : <DashboardCustomizeIcon sx={{fontSize: ICON_SIZE}}/>
-                        }
-                    </IconButton>
+                        <Icon lucide={isEditMode ? Check : LayoutGrid} size={ICON_SIZE}/>
+                    </ActionIcon>
                 </Tooltip>
 
                 {/* Reset Button (edit mode only) */}
                 {isEditMode && (
-                    <Tooltip title="Reset to default layout">
-                        <IconButton size="small" onClick={onResetFieldVisibility}>
-                            <ViewWeekIcon sx={{fontSize: ICON_SIZE}}/>
-                        </IconButton>
+                    <Tooltip label="Reset to default layout">
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="md"
+                            aria-label="Reset to default layout"
+                            onClick={onResetFieldVisibility}
+                        >
+                            <Icon lucide={Columns3} size={ICON_SIZE}/>
+                        </ActionIcon>
                     </Tooltip>
                 )}
 
                 {/* Documents menu — always shown so PDF-overlay documents are reachable
                     at any stage; the POD report/email items disable themselves until the
                     job is completed (see renderPodItem / podEnabled above). */}
-                <Tooltip title="Documents">
-                    <IconButton
-                        size="small"
-                        aria-label="Documents"
-                        onClick={(e) => {
-                            setPodMenuAnchor(e.currentTarget);
-                            onOverlayMenuOpen?.();
-                        }}
-                    >
-                        <MoreVertIcon sx={{fontSize: ICON_SIZE}}/>
-                    </IconButton>
-                </Tooltip>
-                <Menu
-                    anchorEl={podMenuAnchor}
-                    open={Boolean(podMenuAnchor)}
-                    onClose={() => setPodMenuAnchor(null)}
-                >
-                    {renderPodItem(<PictureAsPdfIcon fontSize="small"/>, 'Download as PDF', onPodReport)}
-                    {renderPodItem(<TableChartIcon fontSize="small"/>, 'Download as Excel', onPodSpreadsheet)}
-                    <Divider/>
-                    {renderPodItem(<EmailIcon fontSize="small"/>, 'Email POD Report', onSendPodEmail)}
+                <Menu position="bottom-end" onOpen={onOverlayMenuOpen}>
+                    <Menu.Target>
+                        <Tooltip label="Documents">
+                            <ActionIcon variant="subtle" color="gray" size="md" aria-label="Documents">
+                                <Icon lucide={EllipsisVertical} size={ICON_SIZE}/>
+                            </ActionIcon>
+                        </Tooltip>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                        {renderPodItem(<Icon lucide={FileText} size={16}/>, 'Download as PDF', onPodReport)}
+                        {renderPodItem(<Icon lucide={FileSpreadsheet} size={16}/>, 'Download as Excel', onPodSpreadsheet)}
+                        <Menu.Divider/>
+                        {renderPodItem(<Icon lucide={Mail} size={16}/>, 'Email POD Report', onSendPodEmail)}
 
-                    {/* Extra overlay documents (invoices, manifests, etc.). Every configured
-                        document type is shown; those without a template for this job's client
-                        render disabled rather than hidden. */}
-                    {overlayDocumentsLoading && (
-                        <MenuItem disabled>
-                            <ListItemIcon><CircularProgress size={16}/></ListItemIcon>
-                            <ListItemText>Loading documents…</ListItemText>
-                        </MenuItem>
-                    )}
-                    {!overlayDocumentsLoading && overlayDocuments.length > 0 && <Divider/>}
-                    {!overlayDocumentsLoading && overlayDocuments.map((doc) => (
-                        doc.available ? (
-                            <MenuItem
-                                key={doc.documentType}
-                                onClick={() => {
-                                    setPodMenuAnchor(null);
-                                    onDownloadOverlay?.(doc.documentType);
-                                }}
-                            >
-                                <ListItemIcon><DescriptionIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>{doc.displayName}</ListItemText>
-                            </MenuItem>
-                        ) : (
-                            // Disabled MenuItems don't fire pointer events, so wrap in a span for the
-                            // tooltip explaining why the document is unavailable for this job.
-                            <Tooltip key={doc.documentType} title="No template configured for this job" placement="left">
-                                <span>
-                                    <MenuItem disabled sx={{width: '100%'}}>
-                                        <ListItemIcon><DescriptionIcon fontSize="small"/></ListItemIcon>
-                                        <ListItemText>{doc.displayName}</ListItemText>
-                                    </MenuItem>
-                                </span>
-                            </Tooltip>
-                        )
-                    ))}
+                        {/* Extra overlay documents (invoices, manifests, etc.). Every configured
+                            document type is shown; those without a template for this job's client
+                            render disabled rather than hidden. */}
+                        {overlayDocumentsLoading && (
+                            <Menu.Item disabled leftSection={<Loader size={16}/>}>
+                                Loading documents…
+                            </Menu.Item>
+                        )}
+                        {!overlayDocumentsLoading && overlayDocuments.length > 0 && <Menu.Divider/>}
+                        {!overlayDocumentsLoading && overlayDocuments.map((doc) => (
+                            doc.available ? (
+                                <Menu.Item
+                                    key={doc.documentType}
+                                    leftSection={<Icon lucide={FileText} size={16}/>}
+                                    onClick={() => onDownloadOverlay?.(doc.documentType)}
+                                >
+                                    {doc.displayName}
+                                </Menu.Item>
+                            ) : (
+                                // Disabled items don't fire pointer events, so the tooltip
+                                // explaining why needs a wrapper that does.
+                                <Tooltip key={doc.documentType} label="No template configured for this job" position="left">
+                                    <span>
+                                        <Menu.Item disabled leftSection={<Icon lucide={FileText} size={16}/>} style={{width: '100%'}}>
+                                            {doc.displayName}
+                                        </Menu.Item>
+                                    </span>
+                                </Tooltip>
+                            )
+                        ))}
+                    </Menu.Dropdown>
                 </Menu>
-            </Box>
+            </Group>
         </Box>
     );
 }

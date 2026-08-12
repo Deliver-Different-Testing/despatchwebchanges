@@ -12,8 +12,8 @@ namespace DespatchWeb.Tests.Repositories;
 /// implemented in C# (EF Core) rather than the uspRestoreJobs proc: it clears the lifecycle
 /// columns, resets status to New and internal status to New Jobs, notifies the courier device
 /// via UTL_stpJob_RestoreDevice, and recomputes the courier clear-list order. Completed jobs
-/// (done and not void) are restored too — the operator confirms that in the UI — and the POD
-/// is always preserved.
+/// (done and not void) are restored too — the operator confirms that in the UI. The POD name is
+/// always cleared; the captured images in S3 are only removed when the caller opts in.
 /// </summary>
 public class JobRepositoryRestoreJobsTests : IAsyncDisposable
 {
@@ -170,5 +170,32 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
 
         await _procedures.DidNotReceiveWithAnyArgs()
             .UTL_stpJob_RestoreDeviceAsync(null, cancellationToken: TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetRestorePodDetailsAsync_ProjectsPodNameAndCompletionTime()
+    {
+        await SeedJobAsync(1, done: true, @void: false, podName: "J. Smith");
+        await SeedJobAsync(2, done: false, @void: false);
+
+        var details = await CreateRepository().GetRestorePodDetailsAsync([1, 2]);
+
+        var first = Assert.Single(details, d => d.JobId == 1);
+        Assert.Equal("J. Smith", first.PodName);
+        Assert.Equal(TestDates.Now, first.CompletedTime);
+
+        var second = Assert.Single(details, d => d.JobId == 2);
+        Assert.Null(second.PodName);
+        Assert.Null(second.CompletedTime);
+    }
+
+    [Fact]
+    public async Task GetRestorePodDetailsAsync_UnknownAndEmptyIds_ReturnEmpty()
+    {
+        await SeedJobAsync(1, done: false, @void: false, podName: "J. Smith");
+        var repository = CreateRepository();
+
+        Assert.Empty(await repository.GetRestorePodDetailsAsync([]));
+        Assert.Empty(await repository.GetRestorePodDetailsAsync([999]));
     }
 }

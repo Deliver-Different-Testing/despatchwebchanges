@@ -16,6 +16,7 @@ import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createMockJob, createMockReadTracker} from './__testUtils__/mockJob';
 import type {MountJobDetailsConfig, IJob} from './JobDetails.types';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
@@ -142,9 +143,9 @@ function renderJobDetails(configOverrides?: Partial<MountJobDetailsConfig>) {
 
     return render(
         <QueryClientProvider client={createQueryClient()}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider><ThemeProvider theme={theme}>
                 <JobDetails config={config} />
-            </ThemeProvider>
+            </ThemeProvider></MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -287,9 +288,9 @@ describe('JobDetails', () => {
     describe('loading and empty states', () => {
         it('renders loading skeletons when loading with no job data', () => {
             setupDefaultMocks({isLoading: true, sortedRelatedJobs: []});
-            const {container} = renderJobDetails();
+            renderJobDetails();
 
-            expect(container.querySelectorAll('.MuiSkeleton-root').length).toBeGreaterThan(0);
+            expect(screen.getByTestId('job-detail-loading')).toBeInTheDocument();
             expect(screen.queryByTestId('job-detail-header')).not.toBeInTheDocument();
         });
 
@@ -497,7 +498,7 @@ describe('JobDetails', () => {
             const {JobDetails} = require('./JobDetails');
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
-                    <ThemeProvider theme={theme}>
+                    <MantineTestProvider><ThemeProvider theme={theme}>
                         <JobDetails config={{
                             jobId: 200,
                             isRecurringJob: false,
@@ -505,7 +506,7 @@ describe('JobDetails', () => {
                             isUsCustomer: false,
                             showToast: jest.fn(),
                         }} />
-                    </ThemeProvider>
+                    </ThemeProvider></MantineTestProvider>
                 </QueryClientProvider>,
             );
 
@@ -522,14 +523,14 @@ describe('JobDetails', () => {
             setupDefaultMocks({isLoading: true});
             renderJobDetails();
 
-            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+            expect(screen.getByLabelText('Loading job')).toBeInTheDocument();
         });
 
         it('shows linear progress when fetching (background refetch)', () => {
             setupDefaultMocks({isFetching: true});
             renderJobDetails();
 
-            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+            expect(screen.getByLabelText('Loading job')).toBeInTheDocument();
         });
 
         it('shows linear progress when updating', () => {
@@ -545,14 +546,14 @@ describe('JobDetails', () => {
             });
             renderJobDetails();
 
-            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+            expect(screen.getByLabelText('Loading job')).toBeInTheDocument();
         });
 
         it('hides linear progress when not loading, fetching, or updating', () => {
             setupDefaultMocks();
             renderJobDetails();
 
-            expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
+            expect(screen.queryByLabelText('Loading job')).not.toBeInTheDocument();
         });
     });
 
@@ -624,9 +625,9 @@ describe('JobDetails', () => {
             };
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
-                    <ThemeProvider theme={theme}>
+                    <MantineTestProvider><ThemeProvider theme={theme}>
                         <JobDetails config={freshConfig} />
-                    </ThemeProvider>
+                    </ThemeProvider></MantineTestProvider>
                 </QueryClientProvider>,
             );
 

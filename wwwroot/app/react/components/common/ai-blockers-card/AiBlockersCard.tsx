@@ -7,21 +7,9 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import Collapse from '@mui/material/Collapse';
-import IconButton from '@mui/material/IconButton';
-import Skeleton from '@mui/material/Skeleton';
-import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import type {Theme} from '@mui/material/styles';
+import {ActionIcon, Badge, Box, Card, Collapse, Group, Loader, Skeleton, Stack, Text, Tooltip} from '@mantine/core';
+import {ChevronDown, ChevronUp, RefreshCw} from 'lucide-react';
+import {Icon} from '../icon/Icon';
 import {SummarySeverity} from '../../../services/aiAssistantApi';
 import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
 import type {ExtractBlockersResponse} from '../../../interfaces/ai';
@@ -33,17 +21,22 @@ interface AiBlockersCardProps {
     autoOpen?: boolean;
 }
 
-function severityColor(severity: SummarySeverity, theme: Theme): string {
+/**
+ * A blocker's severity picks a Mantine colour, so the chips can be plain
+ * `Badge variant="light"` — the tonal fill, border and text tint all come from
+ * the variant rather than three hand-mixed alphas.
+ */
+function severityColor(severity: SummarySeverity): string {
     switch (severity) {
         case 'Critical':
         case 'Urgent':
-            return theme.palette.error.main;
+            return 'red';
         case 'Caution':
-            return theme.palette.warning.main;
+            return 'orange';
         case 'Info':
-            return theme.palette.info.main;
+            return 'reflex';
         default:
-            return theme.palette.success.main;
+            return 'green';
     }
 }
 
@@ -98,93 +91,89 @@ export const AiBlockersCard: React.FC<AiBlockersCardProps> = ({title, fetchBlock
     }, [load]);
 
     const hasBlockers = !!data && data.blockers.length > 0;
+    // Amber while something is blocking, green once the notes come back clean.
+    const stateColor = hasBlockers ? 'orange' : 'green';
+    const accent = `var(--mantine-color-${stateColor}-6)`;
 
     return (
-        <Card sx={(theme) => ({
-            borderRadius: 3,
-            boxShadow: 1,
-            overflow: 'hidden',
-            borderLeft: `4px solid ${hasBlockers ? theme.palette.warning.main : theme.palette.success.main}`,
-        })}>
-            <Box
+        <Card
+            radius="lg"
+            shadow="xs"
+            padding={0}
+            style={{overflow: 'hidden', borderLeft: `4px solid ${accent}`}}
+        >
+            <Group
+                justify="space-between"
+                px="md"
+                py={10}
                 onClick={collapsible ? toggle : undefined}
                 role={collapsible ? 'button' : undefined}
                 tabIndex={collapsible ? 0 : undefined}
                 aria-expanded={collapsible ? expanded : undefined}
-                sx={(theme) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    px: 2,
-                    py: 1.25,
-                    bgcolor: alpha(hasBlockers ? theme.palette.warning.main : theme.palette.success.main, 0.08),
+                style={{
+                    backgroundColor: `color-mix(in srgb, ${accent} 8%, transparent)`,
                     cursor: collapsible ? 'pointer' : undefined,
                     userSelect: collapsible ? 'none' : undefined,
-                })}
+                }}
             >
-                <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
-                    <AutoMateLogo size={24} />
-                    <Typography variant="subtitle2" sx={{fontWeight: 600, color: 'text.primary'}}>{title}</Typography>
-                    <Chip label="BETA" size="small" sx={{height: 18, fontSize: '0.625rem', fontWeight: 700}} />
-                </Stack>
-                <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
-                    {loading && <CircularProgress size={16} sx={{mr: 0.5}} />}
+                <Group gap="xs">
+                    <AutoMateLogo size={24}/>
+                    <Text size="sm" fw={600}>{title}</Text>
+                    <Badge size="xs" variant="default" fw={700}>BETA</Badge>
+                </Group>
+                <Group gap={4}>
+                    {loading && <Loader size={16} mr={4}/>}
                     {!loading && data && (
-                        <Tooltip title="Refresh">
-                            <IconButton size="small" onClick={handleRefresh} sx={{p: 0.5}} aria-label="Refresh blockers">
-                                <RefreshIcon sx={{fontSize: 18}} />
-                            </IconButton>
+                        <Tooltip label="Refresh">
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                size="sm"
+                                onClick={handleRefresh}
+                                aria-label="Refresh blockers"
+                            >
+                                <Icon lucide={RefreshCw} size={18}/>
+                            </ActionIcon>
                         </Tooltip>
                     )}
                     {collapsible && (
-                        <IconButton
-                            size="small"
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
                             tabIndex={-1}
-                            sx={{p: 0.5}}
                             aria-label={expanded ? 'Collapse blockers' : 'Expand blockers'}
                             onClick={(e) => {e.stopPropagation(); toggle();}}
                         >
-                            {expanded ? <ExpandLessIcon sx={{fontSize: 20}} /> : <ExpandMoreIcon sx={{fontSize: 20}} />}
-                        </IconButton>
+                            <Icon lucide={expanded ? ChevronUp : ChevronDown} size={20}/>
+                        </ActionIcon>
                     )}
-                </Stack>
-            </Box>
-            <Collapse in={expanded}>
-                <Box sx={{px: 2, py: 1.5}}>
+                </Group>
+            </Group>
+            <Collapse expanded={expanded}>
+                <Box px="md" py="sm">
                     {loading && !data && (
                         <>
-                            <Skeleton variant="text" width="50%" />
-                            <Skeleton variant="rectangular" height={28} sx={{mt: 1, borderRadius: 1}} />
+                            <Skeleton height={12} width="50%"/>
+                            <Skeleton height={28} mt="xs" radius="xs"/>
                         </>
                     )}
-                    {error && <Typography variant="body2" color="error">{error}</Typography>}
+                    {error && <Text size="sm" c="red">{error}</Text>}
                     {data && !hasBlockers && (
-                        <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                            No blockers detected in the notes.
-                        </Typography>
+                        <Text size="sm" c="dimmed">No blockers detected in the notes.</Text>
                     )}
                     {hasBlockers && (
-                        <Stack spacing={1}>
-                            <Typography variant="body2" sx={{color: 'text.secondary'}}>{data!.summary}</Typography>
-                            <Stack direction="row" spacing={0.75} sx={{flexWrap: 'wrap', rowGap: 0.75}}>
+                        <Stack gap="xs">
+                            <Text size="sm" c="dimmed">{data!.summary}</Text>
+                            <Group gap={6} wrap="wrap">
                                 {data!.blockers.map((b, i) => (
-                                    <Tooltip key={`${b.tag}-${i}`} title={b.evidence || ''}>
-                                        <Chip
-                                            label={b.tag}
-                                            size="small"
-                                            variant="outlined"
-                                            sx={(theme) => {
-                                                const color = severityColor(b.severity, theme);
-                                                return {
-                                                    color,
-                                                    borderColor: alpha(color, 0.5),
-                                                    bgcolor: alpha(color, 0.08),
-                                                };
-                                            }}
-                                        />
+                                    <Tooltip key={`${b.tag}-${i}`} label={b.evidence || ''} disabled={!b.evidence}>
+                                        <Badge size="sm" variant="light" tt="none" color={severityColor(b.severity)}>
+                                            {b.tag}
+                                        </Badge>
                                     </Tooltip>
                                 ))}
-                            </Stack>
+                            </Group>
                         </Stack>
                     )}
                 </Box>

@@ -10,50 +10,12 @@
  * dialog can drive the Confirm button.
  */
 
-import React, {useEffect, useState, useCallback} from 'react';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress';
-import TextField from '@mui/material/TextField';
-import Chip from '@mui/material/Chip';
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import type {SxProps, Theme} from '@mui/material';
+import React, {useCallback, useEffect, useState} from 'react';
+import {Alert, Badge, Box, Group, Loader, NumberInput, Paper, Text} from '@mantine/core';
+import {SegmentedToggle} from '../../common/segmented-toggle';
+import {sectionLabelProps, sectionPaperProps} from '../shared/mantine';
 import type {PartnerRateForJobResponse, PartnerRateQuote} from '../../../services/jobListApi';
-
-export interface PartnerRatePanelProps {
-    partnerId: number;
-    jobId: number;
-    fetchRate: (pairingId: number, jobId: number) => Promise<PartnerRateForJobResponse>;
-    /** Called whenever the operator-chosen rate or its validity changes. */
-    onRateChange: (rate: number, valid: boolean) => void;
-    /** Disables the rate input (used while the parent submits). */
-    disabled?: boolean;
-    /**
-     * Fires when the partner conclusively reports it cannot carry this route, so the parent can
-     * reframe its confirm button as "Send anyway". Never fires true for an unreachable partner.
-     */
-    onServiceabilityChange?: (unserviceable: boolean) => void;
-}
-
-const SECTION_LABEL_SX = {
-    color: 'text.secondary',
-    fontWeight: 500,
-    mb: 1,
-} satisfies SxProps<Theme>;
-
-const SECTION_PAPER_SX = {
-    bgcolor: 'background.paper',
-    borderRadius: 3,
-    p: 2.5,
-    border: '1px solid',
-    borderColor: 'grey.200',
-} satisfies SxProps<Theme>;
+import {PartnerRatePanelProps} from "./PartnerRatePanelProps";
 
 export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
     partnerId,
@@ -118,14 +80,12 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
 
     if (loading) {
         return (
-            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, py: 3}}>
-                <CircularProgress size={24}/>
-                <Typography variant="body2" sx={{
-                    color: "text.secondary"
-                }}>
+            <Group justify="center" gap="sm" py="lg">
+                <Loader size={24} role="progressbar" aria-label="Looking up rate"/>
+                <Text size="sm" c="dimmed">
                     Looking up rate...
-                </Typography>
-            </Box>
+                </Text>
+            </Group>
         );
     }
 
@@ -139,174 +99,153 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
     return (
         <>
             {laneUnserviceable && (
-                <Alert severity="warning" sx={{mb: 2}}>
-                    <AlertTitle>Partner cannot service this route</AlertTitle>
-                    <Typography variant="body2" sx={{mb: alternatives.length > 0 ? 1 : 0}}>
+                <Alert color="orange" variant="light" title="Partner cannot service this route" mb="md">
+                    <Text size="sm" mb={alternatives.length > 0 ? 'xs' : 0}>
                         {rateResult.serviceabilityMessage
                             ?? 'The partner does not offer this speed between these locations.'}
-                    </Typography>
+                    </Text>
                     {alternatives.length > 0 && (
                         <>
-                            <Typography variant="body2" sx={{fontWeight: 500}}>
+                            <Text size="sm" fw={500}>
                                 This partner can do:
-                            </Typography>
-                            <Box component="ul" sx={{m: 0, pl: 2.5}}>
+                            </Text>
+                            <Box component="ul" m={0} pl="md">
                                 {alternatives.map((a) => (
                                     <li key={a.partnerServiceCode}>
-                                        <Typography variant="body2">
+                                        <Text size="sm">
                                             {a.partnerServiceCode} — {a.serviceName}
                                             {a.totalCharge != null
                                                 && ` (${a.currency ?? ''} ${a.totalCharge.toFixed(2)})`}
                                             {a.transitDays != null && `, ${a.transitDays} day`}
-                                        </Typography>
+                                        </Text>
                                     </li>
                                 ))}
                             </Box>
                         </>
                     )}
-                    <Typography variant="body2" sx={{mt: 1}}>
+                    <Text size="sm" mt="xs">
                         Change the job&apos;s speed, then send again — or send anyway and it may be
                         rejected.
-                    </Typography>
+                    </Text>
                 </Alert>
             )}
 
             <Box>
-                <Typography variant="body2" sx={SECTION_LABEL_SX}>Pricing</Typography>
+                <Text {...sectionLabelProps}>Pricing</Text>
 
                 {rateResult.source === 'rate_card' && rateResult.rateCardRate != null && (
-                    <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-                            <Chip label="Rate Card" size="small" color="primary"/>
-                            <Typography variant="body2">
-                                Pre-agreed rate: <Box component="strong" sx={{fontWeight: 700}}>${rateResult.rateCardRate.toFixed(2)}</Box>
-                            </Typography>
-                        </Box>
+                    <Paper {...sectionPaperProps}>
+                        <Group gap="sm" align="center">
+                            <Badge size="sm" color="brand">Rate Card</Badge>
+                            <Text size="sm">
+                                Pre-agreed rate: <strong>${rateResult.rateCardRate.toFixed(2)}</strong>
+                            </Text>
+                        </Group>
                     </Paper>
                 )}
 
                 {rateResult.source === 'live_quote' && rateResult.liveQuotes.length > 0 && (
-                    <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mb: 1}}>
-                            <Chip label="Live Quote" size="small" color="primary"/>
-                            <Typography variant="body2" sx={{
-                                color: "text.secondary"
-                            }}>
+                    <Paper {...sectionPaperProps}>
+                        <Group gap="sm" align="center" mb="xs">
+                            <Badge size="sm" color="brand">Live Quote</Badge>
+                            <Text size="sm" c="dimmed">
                                 {rateResult.liveQuotes.length} rate{rateResult.liveQuotes.length > 1 ? 's' : ''} from partner
-                            </Typography>
-                        </Box>
-                        <RadioGroup value={selectedQuoteIndex}>
-                            {rateResult.liveQuotes.map((quote, index) => (
-                                <FormControlLabel
-                                    key={index}
-                                    value={index}
-                                    onClick={() => handleQuoteSelect(index, quote)}
-                                    control={<Radio size="small"/>}
-                                    label={
-                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                            <Typography variant="body2">
-                                                {quote.serviceName} &mdash; <Box component="strong" sx={{fontWeight: 700}}>${quote.totalCharge.toFixed(2)} {quote.currency}</Box>
-                                            </Typography>
-                                            {quote.transitDays != null && (
-                                                <Typography variant="caption" sx={{
-                                                    color: "text.disabled"
-                                                }}>
-                                                    ({quote.transitDays}d transit)
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    }
-                                />
-                            ))}
-                        </RadioGroup>
+                            </Text>
+                        </Group>
+                        <SegmentedToggle
+                            aria-label="Live quote"
+                            orientation="vertical"
+                            variant="inline"
+                            value={String(selectedQuoteIndex)}
+                            onChange={(value) => {
+                                const index = Number(value);
+                                handleQuoteSelect(index, rateResult.liveQuotes[index]);
+                            }}
+                            data={rateResult.liveQuotes.map((quote, index) => ({
+                                value: String(index),
+                                label: (
+                                    <Group gap="xs" align="center">
+                                        <Text size="sm">
+                                            {quote.serviceName} &mdash; <strong>${quote.totalCharge.toFixed(2)} {quote.currency}</strong>
+                                        </Text>
+                                        {quote.transitDays != null && (
+                                            <Text size="xs" c="dimmed">
+                                                ({quote.transitDays}d transit)
+                                            </Text>
+                                        )}
+                                    </Group>
+                                ),
+                            }))}
+                        />
                     </Paper>
                 )}
 
                 {rateResult.source === 'percentage' && rateResult.derivedRate != null && (
-                    <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-                            <Chip label="Percentage" size="small" color="primary"/>
-                            <Typography variant="body2">
-                                Partner will be paid <Box component="strong" sx={{fontWeight: 700}}>${rateResult.derivedRate.toFixed(2)}</Box>
+                    <Paper {...sectionPaperProps}>
+                        <Group gap="sm" align="center">
+                            <Badge size="sm" color="brand">Percentage</Badge>
+                            <Text size="sm">
+                                Partner will be paid <strong>${rateResult.derivedRate.toFixed(2)}</strong>
                                 {rateResult.percentageOfClientCharge != null && (
                                     <> ({rateResult.percentageOfClientCharge}% of the job amount)</>
                                 )}
-                            </Typography>
-                        </Box>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.disabled",
-                                display: 'block',
-                                mt: 0.5
-                            }}>
+                            </Text>
+                        </Group>
+                        <Text size="xs" c="dimmed" mt={4}>
                             IM substitutes this rate at dispatch &mdash; any value you type below will be ignored.
-                        </Typography>
+                        </Text>
                     </Paper>
                 )}
 
                 {rateResult.source === 'cost_plus' && rateResult.liveQuotes.length > 0 && (
-                    <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap'}}>
-                            <Chip label="Cost Plus" size="small" color="primary"/>
-                            <Typography variant="body2">
-                                Partner quote: <Box component="strong" sx={{fontWeight: 700}}>${rateResult.liveQuotes[0].totalCharge.toFixed(2)}</Box>
+                    <Paper {...sectionPaperProps}>
+                        <Group gap="sm" align="center" wrap="wrap">
+                            <Badge size="sm" color="brand">Cost Plus</Badge>
+                            <Text size="sm">
+                                Partner quote: <strong>${rateResult.liveQuotes[0].totalCharge.toFixed(2)}</strong>
                                 {rateResult.marginPercent != null && rateResult.derivedRevenue != null && (
-                                    <> &middot; margin {rateResult.marginPercent}% &rarr; revenue <Box component="strong" sx={{fontWeight: 700}}>${rateResult.derivedRevenue.toFixed(2)}</Box></>
+                                    <> &middot; margin {rateResult.marginPercent}% &rarr; revenue <strong>${rateResult.derivedRevenue.toFixed(2)}</strong></>
                                 )}
-                            </Typography>
-                        </Box>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.disabled",
-                                display: 'block',
-                                mt: 0.5
-                            }}>
+                            </Text>
+                        </Group>
+                        <Text size="xs" c="dimmed" mt={4}>
                             IM will use the partner quote at dispatch and rewrite the job amount to the margin-adjusted revenue.
-                        </Typography>
+                        </Text>
                     </Paper>
                 )}
 
                 {rateResult.source === 'none' && (
-                    <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
+                    <Paper {...sectionPaperProps}>
+                        <Text size="sm" c="dimmed">
                             {rateResult.message ?? 'No pre-agreed rate or live quote available. Enter a rate manually.'}
-                        </Typography>
+                        </Text>
                     </Paper>
                 )}
             </Box>
             <Box>
-                <Typography variant="body2" sx={SECTION_LABEL_SX}>Agreed Rate</Typography>
-                <TextField
+                <Text {...sectionLabelProps}>Agreed Rate</Text>
+                <NumberInput
                     label="Agreed Rate"
-                    type="number"
                     value={manualRate}
-                    onChange={(e) => {
-                        setManualRate(e.target.value);
+                    onChange={(value) => {
+                        setManualRate(value === '' || value === null ? '' : String(value));
                         setValidationError('');
                     }}
-                    slotProps={{
-                        input: {
-                            startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                        },
-                        htmlInput: {min: 0, step: '0.01'},
-                    }}
-                    helperText={
-                        validationError ||
-                        (rateResult.source === 'percentage' || rateResult.source === 'cost_plus'
+                    min={0}
+                    step={0.01}
+                    decimalScale={2}
+                    // A left section, not `prefix` — `prefix` becomes part of the
+                    // input's value, which is not what the currency marker means.
+                    leftSection="$"
+                    description={
+                        rateResult.source === 'percentage' || rateResult.source === 'cost_plus'
                             ? 'IM will substitute this rate at dispatch — input is informational only'
                             : rateResult.source !== 'none'
                                 ? 'You can override the suggested rate'
-                                : 'Enter the rate agreed with the partner')
+                                : 'Enter the rate agreed with the partner'
                     }
-                    error={!!validationError}
-                    fullWidth
-                    size="small"
+                    error={validationError || undefined}
                     disabled={disabled}
-                    sx={{'& .MuiOutlinedInput-root': {bgcolor: 'background.paper'}}}
                 />
             </Box>
         </>

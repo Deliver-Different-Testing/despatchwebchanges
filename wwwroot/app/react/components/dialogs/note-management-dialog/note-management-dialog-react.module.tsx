@@ -8,7 +8,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {NoteManagementDialog} from './NoteManagementDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {notesApi} from '../../../services/notesApi';
 import {toastService} from '../../../services/toastService';
 import {JobNote, NoteType, CreateNoteRequest, UpdateNoteRequest} from '../../../interfaces';
@@ -73,21 +73,19 @@ function renderDialog(): void {
     };
 
     // Get theme dynamically based on customer region
-    dialogRoot.render(
-        <DfrntMantineProvider>
-            <NoteManagementDialog
-                open={dialogState.open}
-                note={dialogState.note}
-                onClose={handleClose}
-                onSave={handleSave}
-                onLoadNoteTypes={handleLoadNoteTypes}
-                onCreateNote={handleCreateNote}
-                onUpdateNote={handleUpdateNote}
-                onCreateNoteType={handleCreateNoteType}
-                showToast={handleShowToast}
-            />
-        </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <NoteManagementDialog
+            open={dialogState.open}
+            note={dialogState.note}
+            onClose={handleClose}
+            onSave={handleSave}
+            onLoadNoteTypes={handleLoadNoteTypes}
+            onCreateNote={handleCreateNote}
+            onUpdateNote={handleUpdateNote}
+            onCreateNoteType={handleCreateNoteType}
+            showToast={handleShowToast}
+        />
+    ));
 }
 
 /**

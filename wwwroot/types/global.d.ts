@@ -375,6 +375,11 @@ declare global {
         ReactSwapPodsDialog?: {
             open: (jobNo: string, toastService?: ToastService) => Promise<boolean | null>;
         };
+        ReactRestoreConfirmDialog?: {
+            open: (request: {jobId: number; done?: boolean}) => Promise<
+                {action: 'restore'; removeCapturedImages: boolean} | {action: 'swapPod'} | null
+            >;
+        };
 
         // ── Lazy-loaded React utility modules ────────────────────────────
         ReactAiAssistant?: {

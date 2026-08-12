@@ -10,7 +10,7 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { AgentInfoDialog } from './AgentInfoDialog';
 import { AgentInfo } from '../../../interfaces';
-import { DfrntMantineProvider } from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import { agentApi } from '../../../services/agentApi';
 
 interface DialogState {
@@ -55,16 +55,14 @@ class AgentInfoDialogManager {
             this.renderDialog();
         };
 
-        this.dialogRoot.render(
-            <DfrntMantineProvider>
-                <AgentInfoDialog
-                    open={this.dialogState.open}
-                    agent={this.dialogState.agent}
-                    isLoading={this.dialogState.isLoading}
-                    onClose={handleClose}
-                />
-            </DfrntMantineProvider>
-        );
+        this.dialogRoot.render(islandTree(
+            <AgentInfoDialog
+                open={this.dialogState.open}
+                agent={this.dialogState.agent}
+                isLoading={this.dialogState.isLoading}
+                onClose={handleClose}
+            />
+        ));
     }
 
     async open(options: OpenAgentInfoDialogOptions): Promise<void> {

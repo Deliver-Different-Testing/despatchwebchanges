@@ -5,6 +5,7 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -43,7 +44,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+            <MantineTestProvider><ThemeProvider theme={theme}>{ui}</ThemeProvider></MantineTestProvider>
         </QueryClientProvider>,
     );
 };

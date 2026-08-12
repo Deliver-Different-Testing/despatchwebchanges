@@ -13,9 +13,11 @@
         {
             ["vendor-core.js"] = "vendor-core.js",
             ["vendor-plugins.js"] = "vendor-plugins.js",
+            ["vendor-react.js"] = "vendor-react.js",
             ["app.js"] = "app.js",
             ["vendor-core.css"] = "vendor-core.css",
             ["vendor-plugins.css"] = "vendor-plugins.css",
+            ["vendor-react.css"] = "vendor-react.css",
             ["app.css"] = "app.css"
         };
 
@@ -24,6 +26,7 @@
 
     var vendorCoreJs = manifest.GetValueOrDefault("vendor-core.js", "");
     var vendorPluginsJs = manifest.GetValueOrDefault("vendor-plugins.js", "");
+    var vendorReactJs = manifest.GetValueOrDefault("vendor-react.js", "");
     var appBundleFile = manifest.GetValueOrDefault("app.js", "");
     var vendorCoreCss = manifest.GetValueOrDefault("vendor-core.css", "");
     var vendorPluginsCss = manifest.GetValueOrDefault("vendor-plugins.css", "");
@@ -213,6 +216,12 @@
 @if (!string.IsNullOrEmpty(vendorPluginsJs))
 {
     <script src="/dist/@vendorPluginsJs"></script>
+}
+@* vendor-react must evaluate before app.js: the module bundles resolve React,
+   Mantine and MUI off the window globals it publishes. *@
+@if (!string.IsNullOrEmpty(vendorReactJs))
+{
+    <script src="/dist/@vendorReactJs"></script>
 }
 @if (!string.IsNullOrEmpty(appBundleFile))
 {

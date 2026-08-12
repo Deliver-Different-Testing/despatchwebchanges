@@ -5,13 +5,11 @@
  */
 
 import React, {useState} from 'react';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
+import {Alert, Badge, Box, Group, Stack, Text} from '@mantine/core';
+import {CircleCheck, CircleX, Info} from 'lucide-react';
+import {Icon, type LucideIcon} from '../common/icon/Icon';
 import {useAiDraft} from '../../hooks/useAiDraft';
-import {AiDraftButton} from '../common/ai-draft-button/AiDraftButton';
+import {AiDraftButton} from '../common/ai-draft-button/mantine/AiDraftButton';
 import {triageChangeRequest} from '../../services/aiAssistantApi';
 import type {ChangeRequestTriageResponse} from '../../interfaces/ai';
 
@@ -20,12 +18,19 @@ interface ChangeRequestTriageProps {
     jobId: number;
 }
 
-type Severity = 'success' | 'error' | 'info';
+/** The recommendation's tone: approve reads green, reject red, anything else neutral. */
+type Tone = 'approve' | 'reject' | 'other';
 
-function actionSeverity(action: string): Severity {
-    if (action === 'approve') return 'success';
-    if (action === 'reject') return 'error';
-    return 'info';
+const tones: Record<Tone, {color: string; glyph: LucideIcon}> = {
+    approve: {color: 'green', glyph: CircleCheck},
+    reject: {color: 'red', glyph: CircleX},
+    other: {color: 'reflex', glyph: Info},
+};
+
+function toneFor(action: string): Tone {
+    if (action === 'approve') return 'approve';
+    if (action === 'reject') return 'reject';
+    return 'other';
 }
 
 export const ChangeRequestTriage: React.FC<ChangeRequestTriageProps> = ({requestId, jobId}) => {
@@ -37,29 +42,36 @@ export const ChangeRequestTriage: React.FC<ChangeRequestTriageProps> = ({request
         if (r) setResult(r);
     };
 
+    const tone = result ? tones[toneFor(result.recommendedAction)] : null;
+
     return (
-        <Box sx={{flexBasis: '100%', width: '100%'}}>
-            <AiDraftButton onClick={handleClick} isDrafting={isDrafting} label="Auto-Mate recommendation" />
-            {result && (
-                <Alert severity={actionSeverity(result.recommendedAction)} sx={{mt: 1}}>
-                    <Stack spacing={0.5}>
-                        <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
-                            <Chip
-                                size="small"
-                                color={actionSeverity(result.recommendedAction)}
-                                label={`AI: ${result.recommendedAction.toUpperCase()}`}
-                            />
-                            <Typography variant="caption" sx={{color: 'text.secondary'}}>
+        <Box style={{flexBasis: '100%', width: '100%'}}>
+            <AiDraftButton onClick={handleClick} isDrafting={isDrafting} label="Auto-Mate recommendation"/>
+            {result && tone && (
+                <Alert
+                    color={tone.color}
+                    variant="light"
+                    icon={<Icon lucide={tone.glyph} size={18}/>}
+                    mt="xs"
+                >
+                    <Stack gap={4}>
+                        <Group gap="xs" align="center">
+                            <Badge size="sm" color={tone.color} tt="none">
+                                {`AI: ${result.recommendedAction.toUpperCase()}`}
+                            </Badge>
+                            <Text size="xs" c="dimmed">
                                 {Math.round(result.confidence * 100)}% confidence · suggestion only
-                            </Typography>
-                        </Stack>
-                        <Typography variant="body2">{result.rationale}</Typography>
+                            </Text>
+                        </Group>
+                        <Text size="sm">{result.rationale}</Text>
                         {result.riskFactors.length > 0 && (
-                            <Stack direction="row" spacing={0.5} sx={{flexWrap: 'wrap', rowGap: 0.5}}>
+                            <Group gap={4} wrap="wrap">
                                 {result.riskFactors.map((rf, i) => (
-                                    <Chip key={`${rf}-${i}`} size="small" variant="outlined" label={rf} />
+                                    <Badge key={`${rf}-${i}`} size="sm" variant="outline" color="gray" tt="none">
+                                        {rf}
+                                    </Badge>
                                 ))}
-                            </Stack>
+                            </Group>
                         )}
                     </Stack>
                 </Alert>

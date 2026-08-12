@@ -6,12 +6,11 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import Icon from '@mui/material/Icon';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {Button, Stack, Text, Title} from '@mantine/core';
+import {Info} from 'lucide-react';
+import {Icon} from '../icon/Icon';
 import {NoDataProps} from "./types";
+import classes from './NoData.module.css';
 
 /**
  * NoData Component - displays an empty state with icon, title, message, and optional action
@@ -19,89 +18,55 @@ import {NoDataProps} from "./types";
 export const NoData: React.FC<NoDataProps> = ({
                                                   title = 'No Data',
                                                   message = 'No items to display.',
-                                                  icon = <InfoOutlinedIcon/>,
+                                                  icon = <Icon lucide={Info}/>,
                                                   showAction = false,
                                                   actionText = 'Refresh',
                                                   onAction,
                                               }) => {
-    // React callers pass an `@mui/icons-material` element (preferred); the
-    // AngularJS `no-data-react` bridge passes a string ligature, which we
-    // render via the Material Symbols font for backward compatibility.
+    // React callers pass an icon element (preferred); the AngularJS `no-data-react`
+    // bridge passes a string ligature, which we render via the Material Symbols font
+    // for backward compatibility.
     const iconNode = typeof icon === 'string'
         ? (
-            <Icon
-                sx={{
-                    fontSize: 48,
-                    height: 'auto',
-                    width: 'auto',
-                    color: 'text.secondary',
-                    opacity: 0.7,
+            <Text
+                component="span"
+                c="dimmed"
+                style={{
                     fontFamily: 'Material Symbols Outlined',
+                    fontSize: 48,
+                    lineHeight: 1,
                     overflow: 'visible',
                 }}
             >
                 {icon}
-            </Icon>
+            </Text>
         )
         : (
-            <Box
-                sx={{
-                    display: 'inline-flex',
-                    color: 'text.secondary',
-                    opacity: 0.7,
-                    '& > svg': {fontSize: 48},
-                }}
-            >
+            // The slot sizes whatever glyph the caller handed over — see the stylesheet.
+            <Text component="span" c="dimmed" className={classes.iconSlot} style={{display: 'inline-flex'}}>
                 {icon}
-            </Box>
+            </Text>
         );
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                minHeight: 200,
-                bgcolor: 'transparent',
-                p: 3,
-            }}
-        >
-            <Box sx={{mb: 1}}>
+        <Stack align="center" justify="center" gap={0} p="lg" ta="center" mih={200}>
+            <Text component="span" opacity={0.7} mb="xs">
                 {iconNode}
-            </Box>
-            <Typography
-                variant="h6"
-                sx={{
-                    fontWeight: 600,
-                    color: 'text.primary',
-                    mb: 1,
-                }}
-            >
+            </Text>
+            {/* A real heading, as the MUI `Typography variant="h6"` was — a bare `Text`
+                would quietly drop the role that callers' tests query by. */}
+            <Title order={3} size="h5" fw={600} mb="xs">
                 {title}
-            </Typography>
-            <Typography
-                variant="body2"
-                sx={{
-                    color: 'text.secondary',
-                    mb: 2,
-                    maxWidth: 240,
-                }}
-            >
+            </Title>
+            <Text size="sm" c="dimmed" mb="md" maw={240}>
                 {message}
-            </Typography>
+            </Text>
             {showAction && (
-                <Button
-                    variant="contained"
-                    onClick={() => onAction?.()}
-                    sx={{borderRadius: 2}}
-                >
+                <Button onClick={() => onAction?.()}>
                     {actionText}
                 </Button>
             )}
-        </Box>
+        </Stack>
     );
 };
 

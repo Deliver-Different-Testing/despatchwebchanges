@@ -1,6 +1,6 @@
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {ScanList} from './ScanList';
 import {useScanDetail} from '../hooks/useScanDetail';
 import type {ScanDetailRecord} from '../../../services/jobSearchApi';
@@ -9,7 +9,6 @@ jest.mock('../hooks/useScanDetail');
 
 const mockUseScanDetail = useScanDetail as jest.MockedFunction<typeof useScanDetail>;
 
-const theme = createTheme();
 
 const scan: ScanDetailRecord = {
     bulkScanId: 1,
@@ -21,11 +20,7 @@ const scan: ScanDetailRecord = {
 const originalServerConfig = (window as any).serverConfig;
 
 const renderList = () =>
-    render(
-        <ThemeProvider theme={theme}>
-            <ScanList jobId={99} runDate="2024-01-15" />
-        </ThemeProvider>,
-    );
+    renderWithMantine(<ScanList jobId={99} runDate="2024-01-15" />);
 
 describe('ScanList date format', () => {
     beforeEach(() => {

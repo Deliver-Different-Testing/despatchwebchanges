@@ -14,11 +14,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {JobListPanel} from './JobListPanel';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 import type {DispatchJob, MountJobListConfig, JobListSearchParams} from '../../interfaces';
 import {ErrorBoundary} from '../common/error-boundary';
 
@@ -38,46 +36,42 @@ const instances = new Map<string, JobListInstance>();
  * Renders a single instance's JobListPanel into its React root.
  */
 function renderInstance(instance: JobListInstance): void {
-    const currentTheme = getTheme();
-
-    instance.root.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <ErrorBoundary>
-                    <JobListPanel
-                        showToast={instance.config.showToast}
-                        isUsCustomer={instance.config.isUsCustomer}
-                        appPage={instance.config.appPage ?? 3}
-                        onJobSelect={instance.config.onJobSelect}
-                        onJobDispatch={instance.config.onJobDispatch}
-                        onRefresh={instance.config.onRefresh}
-                        onSearchChange={instance.config.onSearchChange}
-                        onCategoryChange={instance.config.onCategoryChange}
-                        onBackendFilter={instance.config.onBackendFilter}
-                        onLoadMoreJobs={instance.config.onLoadMoreJobs}
-                        onAddStop={instance.config.onAddStop}
-                        onJobsLoaded={instance.config.onJobsLoaded}
-                        defaultCategory={instance.config.defaultCategory}
-                        storagePrefix={instance.config.storagePrefix}
-                        fetchConfig={instance.config.fetchConfig}
-                        setJobsCallback={(cb) => {
-                            instance.updateJobsCallback = cb;
-                        }}
-                        setRefreshCallback={(cb) => {
-                            instance.refreshCallback = cb;
-                        }}
-                        setSelectJobCallback={(cb) => {
-                            instance.selectJobCallback = cb;
-                        }}
-                        setUpdateSearchParamsCallback={(cb) => {
-                            instance.updateSearchParamsCallback = cb;
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
-    );
+    // ErrorBoundary is a shared MUI leaf still rendered by unmigrated islands.
+    instance.root.render(islandTree(
+        <MuiThemeIsland>
+            <ErrorBoundary>
+                <JobListPanel
+                    showToast={instance.config.showToast}
+                    isUsCustomer={instance.config.isUsCustomer}
+                    appPage={instance.config.appPage ?? 3}
+                    onJobSelect={instance.config.onJobSelect}
+                    onJobDispatch={instance.config.onJobDispatch}
+                    onRefresh={instance.config.onRefresh}
+                    onSearchChange={instance.config.onSearchChange}
+                    onCategoryChange={instance.config.onCategoryChange}
+                    onBackendFilter={instance.config.onBackendFilter}
+                    onLoadMoreJobs={instance.config.onLoadMoreJobs}
+                    onAddStop={instance.config.onAddStop}
+                    onJobsLoaded={instance.config.onJobsLoaded}
+                    defaultCategory={instance.config.defaultCategory}
+                    storagePrefix={instance.config.storagePrefix}
+                    fetchConfig={instance.config.fetchConfig}
+                    setJobsCallback={(cb) => {
+                        instance.updateJobsCallback = cb;
+                    }}
+                    setRefreshCallback={(cb) => {
+                        instance.refreshCallback = cb;
+                    }}
+                    setSelectJobCallback={(cb) => {
+                        instance.selectJobCallback = cb;
+                    }}
+                    setUpdateSearchParamsCallback={(cb) => {
+                        instance.updateSearchParamsCallback = cb;
+                    }}
+                />
+            </ErrorBoundary>
+        </MuiThemeIsland>
+    ));
 }
 
 /**

@@ -1,42 +1,40 @@
 /**
  * React Event Group Dialog
  *
- * A modern replacement for the AngularJS event-group-dialog using MUI components.
- * Manages task group assignments for jobs with editable due dates, user assignments, and active toggles.
+ * Manages task group assignments for jobs with editable due dates, user
+ * assignments, and active toggles.
+ *
+ * **Wall-clock in, `Date` out — unchanged.** `DateTimePicker` is string-valued
+ * (`YYYY-MM-DD HH:mm`), so the picker itself never carries a zone; the view model
+ * still holds a `Date`, exactly as the MUI version did, and the save path still
+ * formats with `dayjs(...).format()`. The tenant zone appears only as the
+ * abbreviation in the Due Date column head.
  */
 
-import React, { useState, useCallback } from 'react';
-import DialogContent from '@mui/material/DialogContent';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Checkbox from '@mui/material/Checkbox';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import Chip from '@mui/material/Chip';
-import Avatar from '@mui/material/Avatar';
-import ChecklistIcon from '@mui/icons-material/Checklist';
-import SaveIcon from '@mui/icons-material/Save';
-import EventBusyOutlinedIcon from '@mui/icons-material/EventBusyOutlined';
-import { DialogShell, DialogHeader, DialogFooter } from '../shared';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs, { Dayjs } from 'dayjs';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+    Avatar, Badge, Box, Checkbox, Paper, Select, Stack, Table, Text,
+} from '@mantine/core';
+import { DateTimePicker } from '@mantine/dates';
+import { CalendarOff, ListChecks, Save } from 'lucide-react';
+import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { DialogShell, DialogHeader, DialogFooter, dialogContentBg } from '../shared/mantine';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
-import { getTimezoneAbbreviation } from '../../../utils/dateUtils';
+import { getInputDateFormat, getTimezoneAbbreviation } from '../../../utils/dateUtils';
+import { Icon } from '../../common/icon/Icon';
 import { NoData } from '../../common/no-data/NoData';
 import type { ShowToastFn } from '../../../services/toastService';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+/** The string form `DateTimePicker` exchanges values in. */
+const PICKER_VALUE_FORMAT = 'YYYY-MM-DD HH:mm';
+
+/** Mantine table heads are sentence-case by default; this restores the tracked caps. */
+const thProps = {fz: 'xs', fw: 600, tt: 'uppercase', style: {letterSpacing: '0.05em'}} as const;
 
 export interface EventGroupDialogProps {
     open: boolean;
@@ -63,17 +61,18 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Reset local state when dialog opens with new events
-    React.useEffect(() => {
+    useEffect(() => {
         if (open && events.length > 0) {
             setLocalEvents(events.map(e => ({ ...e })));
         }
     }, [open, events]);
 
-    const handleDueDateChange = useCallback((index: number, date: Dayjs | null) => {
-        if (!date || !date.isValid()) return;
+    const handleDueDateChange = useCallback((index: number, value: string | null) => {
+        const parsed = value ? dayjs(value) : null;
+        if (!parsed?.isValid()) return;
         setLocalEvents(prev => {
             const updated = [...prev];
-            updated[index] = { ...updated[index], dueTime: date.toDate() };
+            updated[index] = { ...updated[index], dueTime: parsed.toDate() };
             return updated;
         });
     }, []);
@@ -116,225 +115,130 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
         }
     }, [localEvents, onSave, showToast]);
 
+    // `Select` is string-valued, so the staff ids round-trip through
+    // `String()`/`Number()` and the picked option is mapped back to its record.
+    const userOptions = useMemo(
+        () => users.map(({id, text}) => ({value: String(id), label: text})),
+        [users],
+    );
+
     const hasEvents = localEvents.length > 0;
+    const tzAbbreviation = getTimezoneAbbreviation(tz);
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DialogShell
-                open={open}
+        <DialogShell opened={open} onClose={onClose} size="85%" label="Task Groups Management">
+            <DialogHeader
+                icon={<Icon lucide={ListChecks}/>}
+                title="Task Groups Management"
+                subtitle="Manage task group assignments for jobs"
                 onClose={onClose}
-                maxWidth="lg"
-                slotProps={{
-                    paper: {
-                        sx: {
-                            overflow: 'hidden',
-                            width: '85%',
-                            maxWidth: 1200,
-                        },
-                    },
-                }}
-            >
-                <DialogHeader
-                    icon={<ChecklistIcon/>}
-                    title="Task Groups Management"
-                    subtitle="Manage task group assignments for jobs"
-                    onClose={onClose}
-                    closeDisabled={isSubmitting}
-                />
+                closeDisabled={isSubmitting}
+            />
 
-                {/* Content */}
-                <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
-                    {hasEvents ? (
-                        <Box
-                            sx={{
-                                p: 3,
-                                bgcolor: 'background.paper',
-                                borderRadius: 2,
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                            }}
+            <Box p="lg" bg={dialogContentBg}>
+                {hasEvents ? (
+                    <Paper p="lg" radius="md" withBorder>
+                        <Stack gap={4} pb="sm" mb="md" style={{borderBottom: '2px solid var(--mantine-color-default-border)'}}>
+                            <Text fw={600} size="lg">Active Task Groups</Text>
+                            <Text size="sm" c="dimmed">Manage task assignments and schedules</Text>
+                        </Stack>
+
+                        {/* `highlightOnHover`/`withTableBorder` replace the row-hover and
+                            container-border rules the MUI version hand-wrote. */}
+                        <Table
+                            highlightOnHover
+                            withTableBorder
+                            layout="fixed"
+                            verticalSpacing="sm"
                         >
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    mb: 2,
-                                    pb: 1.5,
-                                    borderBottom: '2px solid',
-                                    borderColor: 'divider',
-                                }}
-                            >
-                                <Box>
-                                    <Typography
-                                        variant="h6"
-                                        sx={{
-                                            fontWeight: 600,
-                                            color: "text.primary"
-                                        }}>
-                                        Active Task Groups
-                                    </Typography>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: "text.secondary",
-                                            mt: 0.5
-                                        }}>
-                                        Manage task assignments and schedules
-                                    </Typography>
-                                </Box>
-                            </Box>
+                            <Table.Thead>
+                                <Table.Tr>
+                                    <Table.Th w="18%" {...thProps}>Task Type</Table.Th>
+                                    <Table.Th w="15%" {...thProps}>Group</Table.Th>
+                                    <Table.Th w="10%" {...thProps}>Sequence</Table.Th>
+                                    <Table.Th w="22%" {...thProps}>
+                                        Due Date
+                                        {tzAbbreviation && (
+                                            <Text size="xs" c="dimmed" fs="italic" tt="none" fw={400}>
+                                                {tzAbbreviation}
+                                            </Text>
+                                        )}
+                                    </Table.Th>
+                                    <Table.Th w="25%" {...thProps}>Assign To</Table.Th>
+                                    <Table.Th w="10%" {...thProps}>Active</Table.Th>
+                                </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                                {localEvents.map((item, index) => (
+                                    <Table.Tr key={item.eventTypeGroupTypeGroupId}>
+                                        <Table.Td fw={500}>{item.eventType.text}</Table.Td>
+                                        <Table.Td>
+                                            <Badge color="gray" variant="filled" size="sm">{item.group}</Badge>
+                                        </Table.Td>
+                                        <Table.Td>
+                                            <Avatar size={32} radius="xl" color="gray">{item.sequence}</Avatar>
+                                        </Table.Td>
+                                        <Table.Td>
+                                            <DateTimePicker
+                                                aria-label={`Due date for ${item.eventType.text}`}
+                                                value={item.dueTime ? dayjs(item.dueTime).format(PICKER_VALUE_FORMAT) : null}
+                                                onChange={(value) => handleDueDateChange(index, value)}
+                                                valueFormat={`${getInputDateFormat()} HH:mm`}
+                                                timePickerProps={{format: '24h', withDropdown: true}}
+                                                disabled={isSubmitting}
+                                                size="sm"
+                                            />
+                                        </Table.Td>
+                                        <Table.Td>
+                                            <Select
+                                                aria-label={`Assign ${item.eventType.text} to`}
+                                                placeholder="Search User..."
+                                                data={userOptions}
+                                                value={item.assignTo ? String(item.assignTo.id) : null}
+                                                onChange={(value) => handleUserChange(
+                                                    index,
+                                                    users.find(u => String(u.id) === value) ?? null,
+                                                )}
+                                                searchable
+                                                clearable
+                                                disabled={isSubmitting}
+                                                size="sm"
+                                            />
+                                        </Table.Td>
+                                        <Table.Td>
+                                            <Checkbox
+                                                aria-label={`${item.eventType.text} active`}
+                                                checked={item.active}
+                                                onChange={() => handleActiveToggle(index)}
+                                                disabled={isSubmitting}
+                                            />
+                                        </Table.Td>
+                                    </Table.Tr>
+                                ))}
+                            </Table.Tbody>
+                        </Table>
+                    </Paper>
+                ) : (
+                    <NoData
+                        title="No Task Groups Found"
+                        message="Get started by adding task types in the Admin Manager to create your first task group."
+                        icon={<Icon lucide={CalendarOff}/>}
+                        showAction={true}
+                        actionText="Open Admin Manager"
+                        onAction={onOpenAdminManager}
+                    />
+                )}
+            </Box>
 
-                            <TableContainer
-                                sx={{
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    borderRadius: 2,
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <Table sx={{ tableLayout: 'fixed' }}>
-                                    <TableHead>
-                                        <TableRow sx={{ bgcolor: 'grey.50' }}>
-                                            <TableCell sx={{ width: '18%', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                Task Type
-                                            </TableCell>
-                                            <TableCell sx={{ width: '15%', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                Group
-                                            </TableCell>
-                                            <TableCell sx={{ width: '10%', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                Sequence
-                                            </TableCell>
-                                            <TableCell sx={{ width: '22%', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                Due Date
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        display: "block",
-                                                        color: "text.secondary",
-                                                        fontStyle: "italic"
-                                                    }}>
-                                                    {getTimezoneAbbreviation(tz)}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell sx={{ width: '25%', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                Assign To
-                                            </TableCell>
-                                            <TableCell sx={{ width: '10%', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                Active
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {localEvents.map((item, index) => (
-                                            <TableRow
-                                                key={item.eventTypeGroupTypeGroupId}
-                                                sx={{
-                                                    height: 70,
-                                                    '&:hover': {
-                                                        bgcolor: 'rgba(87, 83, 78, 0.06)',
-                                                    },
-                                                    '&:last-child td': { borderBottom: 0 },
-                                                }}
-                                            >
-                                                <TableCell sx={{ fontWeight: 500, color: 'text.primary' }}>
-                                                    {item.eventType.text}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={item.group}
-                                                        size="small"
-                                                        sx={{
-                                                            bgcolor: 'grey.600',
-                                                            color: 'white',
-                                                            fontWeight: 500,
-                                                            fontSize: '0.7rem',
-                                                            textTransform: 'uppercase',
-                                                            letterSpacing: '0.025em',
-                                                        }}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Avatar
-                                                        sx={{
-                                                            width: 32,
-                                                            height: 32,
-                                                            bgcolor: 'grey.100',
-                                                            color: 'text.secondary',
-                                                            fontSize: '0.875rem',
-                                                            fontWeight: 600,
-                                                        }}
-                                                    >
-                                                        {item.sequence}
-                                                    </Avatar>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <DateTimePicker
-                                                        value={item.dueTime ? dayjs(item.dueTime) : null}
-                                                        onChange={(date) => handleDueDateChange(index, date)}
-                                                        disabled={isSubmitting}
-                                                        slotProps={{
-                                                            textField: {
-                                                                size: 'small',
-                                                                fullWidth: true,
-                                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } },
-                                                            },
-                                                        }}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Autocomplete
-                                                        options={users}
-                                                        getOptionLabel={(option) => option.text}
-                                                        value={item.assignTo || null}
-                                                        onChange={(_e, value) => handleUserChange(index, value)}
-                                                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                                                        disabled={isSubmitting}
-                                                        size="small"
-                                                        renderInput={(params) => (
-                                                            <TextField
-                                                                {...params}
-                                                                placeholder="Search User..."
-                                                                sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
-                                                            />
-                                                        )}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Checkbox
-                                                        checked={item.active}
-                                                        onChange={() => handleActiveToggle(index)}
-                                                        disabled={isSubmitting}
-                                                        color="primary"
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </Box>
-                    ) : (
-                        <NoData
-                            title="No Task Groups Found"
-                            message="Get started by adding task types in the Admin Manager to create your first task group."
-                            icon={<EventBusyOutlinedIcon/>}
-                            showAction={true}
-                            actionText="Open Admin Manager"
-                            onAction={onOpenAdminManager}
-                        />
-                    )}
-                </DialogContent>
-
-                <DialogFooter
-                    onCancel={onClose}
-                    onConfirm={handleSave}
-                    confirmLabel={isSubmitting ? 'Saving...' : 'Save Changes'}
-                    confirmIcon={<SaveIcon />}
-                    confirmDisabled={!hasEvents}
-                    submitting={isSubmitting}
-                />
-            </DialogShell>
-        </LocalizationProvider>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSave}
+                confirmLabel={isSubmitting ? 'Saving...' : 'Save Changes'}
+                confirmIcon={<Icon lucide={Save} size={16}/>}
+                confirmDisabled={!hasEvents}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

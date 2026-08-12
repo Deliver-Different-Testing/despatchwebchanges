@@ -1,0 +1,15 @@
+/*
+ * The read-status bar is one big click target, so it gets a hover affordance.
+ * Resting border/background live here with the :hover rule — inline styles
+ * outrank class rules, so an inline resting colour would make the hover
+ * unreachable.
+ */
+.readStatusBar {
+    border: 1px solid var(--mantine-color-default-border);
+    transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.readStatusBar:hover {
+    border-color: var(--mantine-color-gray-4);
+    background-color: var(--mantine-color-gray-1);
+}

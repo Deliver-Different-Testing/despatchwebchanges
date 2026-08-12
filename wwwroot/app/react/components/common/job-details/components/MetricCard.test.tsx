@@ -3,16 +3,9 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {MetricCard} from './MetricCard';
-import {monoFontFamily} from '../../../../theme/muiTheme';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('MetricCard', () => {
     it('renders label and value', () => {
@@ -31,14 +24,20 @@ describe('MetricCard', () => {
         expect(screen.getByText('$45.50')).toHaveStyle({fontVariantNumeric: 'tabular-nums'});
     });
 
-    it('sets numeric (pricing/time) values in the mono face', () => {
-        renderWithTheme(<MetricCard label="Pricing" value="$45.50" category="pricing" />);
-        expect(screen.getByText('$45.50')).toHaveStyle({fontFamily: monoFontFamily});
-    });
-
-    it('leaves name/text (pod/info) values in the proportional UI face', () => {
-        renderWithTheme(<MetricCard label="POD Name" value="Jane Smith" category="pod" />);
-        expect(screen.getByText('Jane Smith')).not.toHaveStyle({fontFamily: monoFontFamily});
+    /**
+     * The category no longer switches the typeface (the theme's `mono` alias
+     * resolved to the body face, so the distinction was invisible); what it does
+     * carry is the accent used by the highlight rule and the "has a value"
+     * underline.
+     */
+    it('keys the accent to the metric category', () => {
+        const {container} = renderWithTheme(
+            <MetricCard label="Pricing" value="$45.50" category="pricing" filled highlight />
+        );
+        const card = container.querySelector('[style*="--metric-accent"]') as HTMLElement;
+        expect(card.style.getPropertyValue('--metric-accent')).toBe('var(--mantine-color-orange-5)');
+        expect(card).toHaveStyle({borderTopWidth: '3px', borderTopStyle: 'solid'});
+        expect(card.style.borderTopColor).toBe('var(--mantine-color-orange-5)');
     });
 
     it('renders a clickable button when onClick is provided and not disabled', () => {

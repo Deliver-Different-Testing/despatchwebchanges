@@ -7,15 +7,12 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {TaskHistory} from './TaskHistory';
 import {DeliveryJourney, DeliveryHistoryConfig} from './TaskHistory.interfaces';
-import {getTheme} from '../../../theme/muiTheme';
-import {queryClient} from '../../../query/queryClient';
 import {toastService} from '../../../services/toastService';
 import angular from 'angular';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React TaskHistory
@@ -53,30 +50,25 @@ class TaskHistoryReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap the AngularJS callback to match expected signature
         const handleDeliveryEventClick = this.onDeliveryEventClick
             ? (deliveryEvent: DeliveryJourney) => this.onDeliveryEventClick!({deliveryEvent})
             : undefined;
 
-        this.root.render(
-            <QueryClientProvider client={queryClient}>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <TaskHistory
-                        jobId={this.jobId}
-                        config={this.config}
-                        onDeliveryEventClick={handleDeliveryEventClick}
-                        showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
-                        showErrorToast={(msg) => toastService.showErrorToast(msg)}
-                        showInfoToast={(msg) => toastService.showInfoToast(msg)}
-                        isUsCustomer={this.appConfig.US_Customer}
-                    />
-                </ThemeProvider>
-            </QueryClientProvider>
-        );
+        this.root.render(islandTree(
+            <MuiThemeIsland>
+                <TaskHistory
+                    jobId={this.jobId}
+                    config={this.config}
+                    onDeliveryEventClick={handleDeliveryEventClick}
+                    showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
+                    showErrorToast={(msg) => toastService.showErrorToast(msg)}
+                    showInfoToast={(msg) => toastService.showInfoToast(msg)}
+                    isUsCustomer={this.appConfig.US_Customer}
+                />
+
+            </MuiThemeIsland>
+        ));
     }
 }
 

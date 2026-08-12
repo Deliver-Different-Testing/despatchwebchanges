@@ -3,16 +3,10 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
 import {AgentInformation} from './AgentInformation';
 import {createMockAgent} from '../__testUtils__/mockJob';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('AgentInformation', () => {
     it('renders agent name, contact details, and ranking/rate chips', () => {
@@ -28,8 +22,10 @@ describe('AgentInformation', () => {
     });
 
     it('renders nothing when agent is null', () => {
-        const {container} = renderWithTheme(<AgentInformation agent={null as any} />);
-        expect(container.firstChild).toBeNull();
+        renderWithTheme(<AgentInformation agent={null as any} />);
+        // `MantineProvider` injects a <style> element, so an empty container is no
+        // longer the signal — assert the section header is absent instead.
+        expect(screen.queryByTestId('section-header')).not.toBeInTheDocument();
     });
 
     it('omits contact rows when phone/email not provided', () => {

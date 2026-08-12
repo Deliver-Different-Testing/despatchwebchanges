@@ -21,6 +21,7 @@ import {
     Textarea,
     TextInput,
 } from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
 import {
     ChevronDown,
     ChevronUp,
@@ -109,7 +110,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
     // Note type creator state
-    const [showNoteTypeCreator, setShowNoteTypeCreator] = useState(false);
+    const [showNoteTypeCreator, {close: closeNoteTypeCreator, toggle: toggleNoteTypeCreator}] = useDisclosure(false);
     const [newNoteTypeName, setNewNoteTypeName] = useState('');
     const [newNoteTypeDescription, setNewNoteTypeDescription] = useState('');
     const [newNoteTypeIsPublic, setNewNoteTypeIsPublic] = useState(false);
@@ -117,7 +118,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     const [isCreatingNoteType, setIsCreatingNoteType] = useState(false);
 
     // Description toggle
-    const [showDescription, setShowDescription] = useState(false);
+    const [showDescription, {close: closeDescription, toggle: toggleDescription}] = useDisclosure(false);
 
     // Submit state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -158,8 +159,8 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                 setNoteTypeId(0);
                 setIsImportant(false);
             }
-            setShowNoteTypeCreator(false);
-            setShowDescription(false);
+            closeNoteTypeCreator();
+            closeDescription();
             resetNoteTypeForm();
         }
     }, [open, note]);
@@ -276,7 +277,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                 setNoteTypeId(createdType.id);
             }
 
-            setShowNoteTypeCreator(false);
+            closeNoteTypeCreator();
             resetNoteTypeForm();
         } catch (error) {
             console.error('Error creating note type:', error);
@@ -310,7 +311,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                             variant="subtle"
                             color="gray"
                             aria-label="Add note type"
-                            onClick={() => setShowNoteTypeCreator(!showNoteTypeCreator)}
+                            onClick={toggleNoteTypeCreator}
                         >
                             <Icon lucide={CirclePlus}/>
                         </ActionIcon>
@@ -333,7 +334,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 variant="subtle"
                                 color="gray"
                                 size="compact-sm"
-                                onClick={() => setShowDescription(!showDescription)}
+                                onClick={toggleDescription}
                                 leftSection={<Icon lucide={showDescription ? ChevronUp : ChevronDown} size={16}/>}
                             >
                                 View Description
@@ -429,7 +430,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 variant="subtle"
                                 color="gray"
                                 onClick={() => {
-                                    setShowNoteTypeCreator(false);
+                                    closeNoteTypeCreator();
                                     resetNoteTypeForm();
                                 }}
                                 disabled={isCreatingNoteType}

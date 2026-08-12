@@ -13,7 +13,7 @@
 
 import React from 'react';
 import {createRoot} from 'react-dom/client';
-import {Button, MantineProvider} from '@mantine/core';
+import {Button, Group, MantineProvider} from '@mantine/core';
 import {Notifications, notifications} from '@mantine/notifications';
 import {dfrntTheme, dfrntCssVariablesResolver} from '../theme/dfrntMantineTheme';
 import {DARK_MODE_ENABLED} from '../theme/DfrntMantineProvider';
@@ -86,7 +86,7 @@ class ToastServiceImpl implements ToastService {
     private renderMessage(id: string, message: string, action?: ToastAction): React.ReactNode {
         if (!action) return message;
         return (
-            <span style={{display: 'inline-flex', alignItems: 'center', gap: 8}}>
+            <Group component="span" display="inline-flex" gap="xs" wrap="nowrap">
                 {message}
                 <Button
                     size="compact-xs"
@@ -98,7 +98,7 @@ class ToastServiceImpl implements ToastService {
                 >
                     {action.label}
                 </Button>
-            </span>
+            </Group>
         );
     }
 

@@ -9,6 +9,7 @@ using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Authorization;
@@ -1523,6 +1524,95 @@ public class JobController(
                 data.JobIds?.ToString(),
                 ex.Message
             );
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    /// <summary>
+    /// Above this many jobs the S3 probe is skipped wholesale — one listing per job would make a
+    /// large bulk selection wait on S3 before the confirmation dialog could even open.
+    /// </summary>
+    public const int MaxRestorePodImageProbeJobs = 50;
+
+    /// <summary>How many jobs are probed against S3 at once.</summary>
+    private const int RestorePodImageProbeConcurrency = 8;
+
+    /// <summary>
+    /// Reports what proof of delivery a restore of these jobs would destroy — the POD name (always
+    /// cleared) and how many captured photos/signatures are held against each job. Read-only; the
+    /// UI calls this to decide whether to warn the operator, so it degrades rather than fails.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> GetRestorePodImpact([FromBody] RestorePodImpactRequest data)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(data);
+
+            if (data.JobIds is null or { Count: 0 })
+            {
+                return BadRequest("JobIds cannot be empty");
+            }
+
+            var details = await jobQueryRepository.GetRestorePodDetailsAsync(data.JobIds);
+            var probeImages = data.JobIds.Count <= MaxRestorePodImageProbeJobs;
+
+            if (!probeImages)
+            {
+                Log.Information(
+                    "GetRestorePodImpact skipped the S3 image probe for {JobCount} job(s) (cap is {Cap}).",
+                    data.JobIds.Count, MaxRestorePodImageProbeJobs);
+
+                return Json(details
+                    .Select(d => new RestorePodImpact { JobId = d.JobId, PodName = d.PodName })
+                    .ToList());
+            }
+
+            using var throttle = new SemaphoreSlim(RestorePodImageProbeConcurrency);
+            var impacts = await Task.WhenAll(details.Select(async detail =>
+            {
+                if (detail.CompletedTime is not { } completed)
+                {
+                    return new RestorePodImpact
+                    {
+                        JobId = detail.JobId, PodName = detail.PodName, ImageCountKnown = true
+                    };
+                }
+
+                await throttle.WaitAsync();
+                try
+                {
+                    var count = await jobPhotoService.CountJobCapturedMediaAsync(
+                        detail.JobId, completed.Year, completed.Month);
+
+                    return new RestorePodImpact
+                    {
+                        JobId = detail.JobId,
+                        PodName = detail.PodName,
+                        CapturedImageCount = count,
+                        ImageCountKnown = true
+                    };
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex,
+                        "Failed to count captured images for job {JobId}. Error: {ErrorMessage}",
+                        detail.JobId, ex.Message);
+
+                    return new RestorePodImpact { JobId = detail.JobId, PodName = detail.PodName };
+                }
+                finally
+                {
+                    throttle.Release();
+                }
+            }));
+
+            return Json((IReadOnlyList<RestorePodImpact>)impacts);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error checking the restore POD impact for jobs {JobIds}. Error: {ErrorMessage}",
+                data?.JobIds is null ? string.Empty : string.Join(",", data.JobIds), ex.Message);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }

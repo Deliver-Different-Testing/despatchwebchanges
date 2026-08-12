@@ -8,17 +8,12 @@
  * The single-job case still uses PriceChangeModal; this only appears for families.
  */
 import React from 'react';
-import type {SxProps, Theme} from '@mui/material';
-import Box from '@mui/material/Box';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import DialogContent from '@mui/material/DialogContent';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import CheckIcon from '@mui/icons-material/Check';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import {DialogShell, DialogHeader, DialogFooter, sectionPaperSx, PriceDelta} from '../shared';
+import {Badge, Divider, Box, Checkbox, Group, Paper, Stack, Text} from '@mantine/core';
+import {BellRing, Check} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogShell, DialogHeader, DialogFooter, PriceDelta, dialogContentBg, sectionPaperProps,
+} from '../shared/mantine';
 
 export interface FamilyPriceChangeRow {
     jobId: number;
@@ -38,14 +33,6 @@ export interface FamilyPriceChangeDialogProps {
     onAcceptSelected: () => void;
     onKeepAll: () => void;
 }
-
-const rowSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-    py: 0.5,
-    '&:not(:last-of-type)': {borderBottom: '1px solid', borderColor: 'divider'},
-} satisfies SxProps<Theme>;
 
 const formatMoney = (value: number) => `$${value.toFixed(2)}`;
 
@@ -67,73 +54,80 @@ export const FamilyPriceChangeDialog: React.FC<FamilyPriceChangeDialogProps> = (
         .reduce((sum, r) => sum + (r.newPrice - r.oldPrice), 0);
 
     return (
-        <DialogShell open={open} onClose={isApplying ? undefined : onKeepAll}>
+        <DialogShell
+            opened={open}
+            onClose={isApplying ? () => {} : onKeepAll}
+            label="Prices changed"
+        >
             <DialogHeader
-                icon={<NotificationsActiveIcon/>}
+                icon={<Icon lucide={BellRing}/>}
                 title="Prices changed"
                 subtitle={`${rows.length} job${rows.length === 1 ? '' : 's'} affected`}
                 onClose={onKeepAll}
                 variant="warning"
                 closeDisabled={isApplying}
             />
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
-                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
+            <Box p="lg" bg={dialogContentBg}>
+                <Stack gap="lg">
+                    <Text size="sm" c="dimmed">
                         The new date changes what these jobs would be priced at. Choose which prices to update.
-                    </Typography>
+                    </Text>
 
-                    <Paper elevation={0} sx={sectionPaperSx}>
-                        <Box sx={{...rowSx, borderBottom: '1px solid', borderColor: 'divider'}}>
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={allSelected}
-                                        indeterminate={selectedCount > 0 && !allSelected}
-                                        onChange={onToggleAll}
-                                        disabled={isApplying || selectable.length === 0}
-                                        slotProps={{input: {'aria-label': 'Select all price changes'}}}
-                                    />
-                                }
-                                label={<Typography variant="body2" sx={{fontWeight: 600}}>Select all</Typography>}
-                                sx={{flex: 1, m: 0}}
+                    {/* Rows are separated by real `Divider`s rather than a
+                        `:not(:last-of-type)` rule, so no stylesheet is needed. */}
+                    <Paper {...sectionPaperProps}>
+                        <Group gap="xs" py={4}>
+                            <Checkbox
+                                checked={allSelected}
+                                indeterminate={selectedCount > 0 && !allSelected}
+                                onChange={onToggleAll}
+                                disabled={isApplying || selectable.length === 0}
+                                aria-label="Select all price changes"
+                                label={<Text size="sm" fw={600}>Select all</Text>}
                             />
-                        </Box>
+                        </Group>
 
                         {rows.map((row) => (
-                            <Box key={row.jobId} sx={{...rowSx, opacity: row.ratedManually ? 0.6 : 1}}>
-                                <Checkbox
-                                    checked={selectedIds.has(row.jobId)}
-                                    onChange={() => onToggle(row.jobId)}
-                                    disabled={isApplying || row.ratedManually}
-                                    slotProps={{input: {'aria-label': `Update price for ${row.jobNo}`}}}
-                                />
-                                <Typography variant="body2" sx={{flex: 1, fontWeight: 500}}>
-                                    {row.jobNo}
-                                </Typography>
-                                {row.ratedManually && (
-                                    <Chip size="small" variant="outlined" label="Manual price"/>
-                                )}
-                                <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                                    {formatMoney(row.oldPrice)} → {formatMoney(row.newPrice)}
-                                </Typography>
-                                <PriceDelta oldPrice={row.oldPrice} newPrice={row.newPrice}/>
-                            </Box>
+                            <React.Fragment key={row.jobId}>
+                                <Divider/>
+                                <Group
+                                    gap="xs"
+                                    py={4}
+                                    wrap="nowrap"
+                                    style={{opacity: row.ratedManually ? 0.6 : 1}}
+                                >
+                                    <Checkbox
+                                        checked={selectedIds.has(row.jobId)}
+                                        onChange={() => onToggle(row.jobId)}
+                                        disabled={isApplying || row.ratedManually}
+                                        aria-label={`Update price for ${row.jobNo}`}
+                                    />
+                                    <Text size="sm" fw={500} style={{flex: 1}}>{row.jobNo}</Text>
+                                    {row.ratedManually && (
+                                        <Badge size="sm" variant="outline" color="gray" tt="none">Manual price</Badge>
+                                    )}
+                                    <Text size="sm" c="dimmed">
+                                        {formatMoney(row.oldPrice)} → {formatMoney(row.newPrice)}
+                                    </Text>
+                                    <PriceDelta oldPrice={row.oldPrice} newPrice={row.newPrice}/>
+                                </Group>
+                            </React.Fragment>
                         ))}
                     </Paper>
 
                     {selectedCount > 0 && (
-                        <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                        <Text size="sm" c="dimmed">
                             Net change: <strong>{netDelta >= 0 ? '+' : ''}{netDelta.toFixed(2)}</strong>
-                        </Typography>
+                        </Text>
                     )}
-                </Box>
-            </DialogContent>
+                </Stack>
+            </Box>
             <DialogFooter
                 onCancel={onKeepAll}
                 cancelLabel="Keep all"
                 onConfirm={onAcceptSelected}
                 confirmLabel={`Accept selected (${selectedCount})`}
-                confirmIcon={<CheckIcon/>}
+                confirmIcon={<Icon lucide={Check} size={16}/>}
                 confirmDisabled={selectedCount === 0}
                 submitting={isApplying}
             />

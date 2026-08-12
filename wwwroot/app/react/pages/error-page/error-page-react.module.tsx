@@ -7,11 +7,10 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {ErrorPage, ErrorType} from './ErrorPage';
-import {getTheme} from '../../theme/muiTheme';
 import angular from 'angular';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 
 let errorPageRoot: Root | null = null;
 let errorPageContainer: HTMLElement | null = null;
@@ -58,21 +57,18 @@ export function mountErrorPage(
         console.log('[ErrorPageReact] Creating new React root');
         errorPageRoot = createRoot(container);
     }
+    errorPageRoot.render(islandTree(
+        <MuiThemeIsland>
+        <ErrorPage
+            errorType={config.errorType}
+            customTitle={config.customTitle}
+            customMessage={config.customMessage}
+            onGoHome={config.onGoHome}
+            onGoBack={config.onGoBack}
+        />
 
-    const currentTheme = getTheme();
-
-    errorPageRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
-            <ErrorPage
-                errorType={config.errorType}
-                customTitle={config.customTitle}
-                customMessage={config.customMessage}
-                onGoHome={config.onGoHome}
-                onGoBack={config.onGoBack}
-            />
-        </ThemeProvider>
-    );
+            </MuiThemeIsland>
+    ));
 
     console.log('[ErrorPageReact] Error page rendered');
 }

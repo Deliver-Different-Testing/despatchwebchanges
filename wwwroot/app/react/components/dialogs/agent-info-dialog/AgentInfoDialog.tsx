@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import {alpha, Anchor, Badge, Box, em, Group, Loader, Paper, Rating, Stack, Text} from '@mantine/core';
+import {alpha, Anchor, Badge, Box, Divider, em, Flex, Group, Loader, Paper, Rating, SimpleGrid, Stack, Text, ThemeIcon} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
 import {Clock, Crosshair, HardHat, Mail, Phone} from 'lucide-react';
 import {IconMapPin, IconPlane, IconPlaneOff} from '@tabler/icons-react';
@@ -64,7 +64,12 @@ function formatCurrencyOrEmpty(value: number | undefined): string {
 }
 
 export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, isLoading, onClose}) => {
-    // Matches the MUI `breakpoints.down('sm')` this replaced (<600px).
+    /*
+     * Matches the MUI `breakpoints.down('sm')` this replaced (<600px). Also drives
+     * the two-column layout below, rather than `direction={{base, sm}}`: the query
+     * already exists for the Modal's `fullScreen` prop, and Mantine's `sm` is 768px
+     * against this dialog's 600px, so responsive props would add a 2nd breakpoint.
+     */
     const fullScreen = useMediaQuery(`(max-width: ${em(600)})`) ?? false;
     const rankingValue = getRankingValue(agent?.agentRanking);
 
@@ -90,27 +95,14 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                         <Loader size={40} role="progressbar" aria-label="Loading agent"/>
                     </Group>
                 ) : agent ? (
-                    <Box
-                        p="lg"
-                        style={{
-                            display: 'flex',
-                            flexDirection: fullScreen ? 'column' : 'row',
-                            gap: 'var(--mantine-spacing-lg)',
-                        }}
-                    >
+                    <Flex p="lg" gap="lg" direction={fullScreen ? 'column' : 'row'}>
                         {/* Left Column - Agent Details */}
                         <Stack gap="lg" style={{flex: '1 1 60%', minWidth: 0}}>
                             {/* Basic Information */}
                             <Box>
                                 <Text {...sectionLabelProps}>Basic Information</Text>
-                                <Paper
-                                    {...sectionPaperProps}
-                                    style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: fullScreen ? '1fr' : '1fr 1fr',
-                                        gap: 'var(--mantine-spacing-lg)',
-                                    }}
-                                >
+                                <Paper {...sectionPaperProps}>
+                                    <SimpleGrid cols={fullScreen ? 1 : 2} spacing="lg">
                                     <InfoField label="Name" value={agent.agentName}/>
 
                                     <InfoField
@@ -178,7 +170,8 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                                 {agent.address?.fullAddress || 'No address available'}
                                             </Text>
                                         </Group>
-                                    </Box>
+                                        </Box>
+                                    </SimpleGrid>
                                 </Paper>
                             </Box>
 
@@ -220,15 +213,9 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                         style={{maxHeight: AIRPORT_LIST_MAX_HEIGHT, overflowY: 'auto'}}
                                     >
                                         {agent.airports.map((airport: AirportViewModel, index: number) => (
-                                            <Box
-                                                key={airport.code || index}
-                                                p="md"
-                                                style={{
-                                                    borderBottom: index < agent.airports!.length - 1
-                                                        ? '1px solid var(--mantine-color-default-border)'
-                                                        : 'none',
-                                                }}
-                                            >
+                                            <React.Fragment key={airport.code || index}>
+                                                {index > 0 && <Divider/>}
+                                                <Box p="md">
                                                 <Group gap="sm" wrap="nowrap" mb="xs">
                                                     <Badge size="sm" fw={700} style={{letterSpacing: 0.5}}>
                                                         {airport.code}
@@ -249,32 +236,22 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                                         {formatCoordinates(airport.latitude, airport.longitude)}
                                                     </AirportDetail>
                                                 </Stack>
-                                            </Box>
+                                                </Box>
+                                            </React.Fragment>
                                         ))}
                                     </Box>
                                 ) : (
                                     <Stack align="center" justify="center" py={48} px="md" gap={0}>
-                                        <Box
-                                            mb="md"
-                                            style={{
-                                                width: 64,
-                                                height: 64,
-                                                borderRadius: '50%',
-                                                backgroundColor: alpha('var(--mantine-color-gray-6)', 0.08),
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: 'var(--mantine-color-gray-5)',
-                                            }}
-                                        >
-                                            <Icon tabler={IconPlaneOff} size={32}/>
-                                        </Box>
+                                            {/* An empty-state glyph in a tinted disc is `ThemeIcon variant="light"`. */}
+                                            <ThemeIcon size={64} radius="xl" variant="light" color="gray" mb="md">
+                                                <Icon tabler={IconPlaneOff} size={32}/>
+                                            </ThemeIcon>
                                         <Text size="sm" c="dimmed" fs="italic">No airports assigned</Text>
                                     </Stack>
                                 )}
                             </Paper>
                         </Box>
-                    </Box>
+                    </Flex>
                 ) : (
                     <Group justify="center" py={64}>
                         <Text c="dimmed">No agent data available</Text>

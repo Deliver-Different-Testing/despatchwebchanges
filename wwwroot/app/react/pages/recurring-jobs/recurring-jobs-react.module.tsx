@@ -7,11 +7,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {RecurringJobsPage} from './RecurringJobsPage';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {MountRecurringJobsConfig} from "../../interfaces";
 import {ErrorBoundary} from '../../components/common/error-boundary';
 
@@ -56,25 +54,22 @@ export function mountRecurringJobsPage(
         recurringJobsRoot = createRoot(container);
     }
 
-    const currentTheme = getTheme();
-
-    recurringJobsRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <ErrorBoundary>
-                    <RecurringJobsPage
-                        showToast={config.showToast}
-                        isUsCustomer={config.isUsCustomer}
-                        onAddStop={config.onAddStop}
-                        setRefreshCallback={(cb) => {
-                            refreshCallback = cb;
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+    // The page is still MUI; Mantine wraps it so the already-migrated
+    // DispatchDialog that JobDetails opens inside it finds a provider.
+    recurringJobsRoot.render(islandTree(
+        <MuiThemeIsland>
+            <ErrorBoundary>
+                <RecurringJobsPage
+                    showToast={config.showToast}
+                    isUsCustomer={config.isUsCustomer}
+                    onAddStop={config.onAddStop}
+                    setRefreshCallback={(cb) => {
+                        refreshCallback = cb;
+                    }}
+                />
+            </ErrorBoundary>
+        </MuiThemeIsland>
+    ));
 
     console.log('[RecurringJobsReact] Recurring jobs page rendered');
 }

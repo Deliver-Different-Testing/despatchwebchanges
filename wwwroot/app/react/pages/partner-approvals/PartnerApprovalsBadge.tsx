@@ -8,8 +8,9 @@
  * same query as the inbox itself so the count and the list never disagree.
  */
 
-import React, {useState, useMemo} from 'react';
+import React, {useMemo} from 'react';
 import {ActionIcon, Drawer, Indicator, Tooltip} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
 import {Handshake} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
 import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
@@ -38,7 +39,7 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
     onOpenJob,
     toolbarVariant = false,
 }) => {
-    const [open, setOpen] = useState(false);
+    const [opened, {open, close}] = useDisclosure(false);
     const {data: hasActivePartners} = useHasActivePartners();
     const {data: items = []} = useApproverInbox({enabled: hasActivePartners === true});
 
@@ -69,7 +70,7 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
         <>
             <Tooltip label={tooltip}>
                 <ActionIcon
-                    onClick={() => setOpen(true)}
+                    onClick={open}
                     aria-label="Open partner approvals"
                     size={toolbarVariant ? 'lg' : 30}
                     variant="subtle"
@@ -89,8 +90,8 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
             </Tooltip>
 
             <Drawer
-                opened={open}
-                onClose={() => setOpen(false)}
+                opened={opened}
+                onClose={close}
                 position="right"
                 size={460}
                 padding={0}
@@ -110,7 +111,7 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
                     <PartnerApprovalsInbox
                         onOpenJob={(jobId, jobNo) => {
                             onOpenJob?.(jobId, jobNo);
-                            setOpen(false);
+                            close();
                         }}
                     />
                 </MuiThemeIsland>

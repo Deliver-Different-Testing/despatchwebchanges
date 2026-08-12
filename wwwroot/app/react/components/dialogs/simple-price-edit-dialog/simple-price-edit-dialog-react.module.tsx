@@ -9,7 +9,7 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 
 import { SimplePriceEditDialog } from './SimplePriceEditDialog';
-import { DfrntMantineProvider } from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import { PriceEditResult, PricingMode, SimplePriceEditDialogOptions, ChildJobPrice, ChildPriceUpdate } from './types';
 import type { IJobGroupDto } from '../../../../interfaces/job.interface';
 import { apiClient } from '../../../services/apiClient';
@@ -125,23 +125,21 @@ class SimplePriceEditDialogManager {
             return savedAmount;
         };
 
-        this.dialogRoot.render(
-            <DfrntMantineProvider>
-                <SimplePriceEditDialog
-                    open={this.dialogState.open}
-                    jobNumber={this.dialogState.jobNumber}
-                    currentCharge={this.dialogState.currentCharge}
-                    isPrebook={this.dialogState.isPrebook}
-                    isBulk={this.dialogState.isBulk}
-                    hideRecalculate={this.dialogState.hideRecalculate}
-                    childJobs={this.dialogState.childJobs}
-                    readOnly={this.dialogState.readOnly}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    showToast={this.toastService.showToast}
-                />
-            </DfrntMantineProvider>
-        );
+        this.dialogRoot.render(islandTree(
+            <SimplePriceEditDialog
+                open={this.dialogState.open}
+                jobNumber={this.dialogState.jobNumber}
+                currentCharge={this.dialogState.currentCharge}
+                isPrebook={this.dialogState.isPrebook}
+                isBulk={this.dialogState.isBulk}
+                hideRecalculate={this.dialogState.hideRecalculate}
+                childJobs={this.dialogState.childJobs}
+                readOnly={this.dialogState.readOnly}
+                onClose={handleClose}
+                onSubmit={handleSubmit}
+                showToast={this.toastService.showToast}
+            />
+        ));
     }
 
     async open(options: SimplePriceEditDialogOptions): Promise<PriceEditResult | null> {

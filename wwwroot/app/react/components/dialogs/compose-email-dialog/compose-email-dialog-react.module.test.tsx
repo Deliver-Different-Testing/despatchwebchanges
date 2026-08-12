@@ -19,6 +19,7 @@ jest.mock('react-dom/client', () => ({
 // not the theme.
 jest.mock('../../../theme/DfrntMantineProvider', () => ({
     DfrntMantineProvider: ({children}: {children: React.ReactNode}) => children,
+    islandTree: (node: React.ReactNode) => node,
 }));
 
 // Capture whether angular.module was called with the correct args during module load

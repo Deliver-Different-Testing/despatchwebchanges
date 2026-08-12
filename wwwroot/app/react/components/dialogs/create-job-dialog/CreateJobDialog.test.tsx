@@ -5,7 +5,12 @@
 import React from 'react';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
 import {CreateJobDialog, CreateJobDialogProps} from './CreateJobDialog';
-import { createProps, renderWithAllProviders } from '../../../__testUtils__';
+import { createProps, renderWithMantineOverMui } from '../../../__testUtils__';
+
+// Mantine outside, MUI inside: the form is still MUI but its date field is Mantine.
+// The MUI LocalizationProvider is gone with the MUI picker.
+const renderWithAllProviders = (ui: React.ReactElement) =>
+    renderWithMantineOverMui(ui, {withQueryClient: true});
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {addressApi} from '../../../services/addressApi';
 import {jobApi} from '../../../services/jobApi';
@@ -66,6 +71,8 @@ jest.mock('../../../utils/dateUtils', () => {
     return {
         formatDateForApi: jest.fn(() => '2026-03-05T00:00:00-05:00'),
         getIanaTimezone: jest.fn(() => 'America/New_York'),
+        // The Mantine date field asks for the tenant's input order.
+        getInputDateFormat: jest.fn(() => 'MM/DD/YYYY'),
         dayjs: actualDayjs,
     };
 });

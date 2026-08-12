@@ -232,17 +232,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
     /// </summary>
     public async Task<AwsBatchOperationResult> ArchiveJobCapturedMediaAsync(int jobId, int year, int month)
     {
-        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-        var pattern = $"{jobId}-";
-
-        var objects = new List<S3Object>();
-        objects.AddRange(await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Delivery));
-        objects.AddRange(await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Pickup));
-
-        var keys = objects
-            .Select(o => o.Key)
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
+        var keys = await ListCapturedMediaKeysAsync(jobId, year, month);
 
         var successful = 0;
         var errors = new List<string>();
@@ -269,6 +259,33 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             FailedFiles = keys.Count - successful,
             ErrorMessages = errors
         };
+    }
+
+    /// <summary>
+    /// Counts the captured photos and signatures a restore would archive, without touching them.
+    /// Shares its discovery with <see cref="ArchiveJobCapturedMediaAsync"/> so the number shown to
+    /// the operator can never disagree with what archiving actually removes.
+    /// </summary>
+    public async Task<int> CountJobCapturedMediaAsync(int jobId, int year, int month) =>
+        (await ListCapturedMediaKeysAsync(jobId, year, month)).Count;
+
+    /// <summary>
+    /// The distinct S3 keys of a job's captured delivery and pickup media for the given anchor
+    /// month. User-uploaded job attachments live under a different prefix and are never included.
+    /// </summary>
+    private async Task<List<string>> ListCapturedMediaKeysAsync(int jobId, int year, int month)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var pattern = $"{jobId}-";
+
+        var objects = new List<S3Object>();
+        objects.AddRange(await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Delivery));
+        objects.AddRange(await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Pickup));
+
+        return objects
+            .Select(o => o.Key)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 
     /// <summary>

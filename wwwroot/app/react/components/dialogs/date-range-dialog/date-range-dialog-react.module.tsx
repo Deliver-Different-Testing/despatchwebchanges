@@ -7,11 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {DateRangeDialog, DateRange} from './DateRangeDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 
 // State management for the dialog
 interface DialogState {
@@ -45,21 +42,16 @@ function renderDialog(): void {
     };
 
     // Get theme dynamically based on customer region (US = blue, non-US = yellow)
-    const currentTheme = getTheme();
+    dialogRoot.render(islandTree(
+        <DateRangeDialog
+            open={dialogState.open}
+            initialRange={dialogState.initialRange}
+            onClose={handleClose}
+            onApply={handleApply}
+        />
 
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <DateRangeDialog
-                    open={dialogState.open}
-                    initialRange={dialogState.initialRange}
-                    onClose={handleClose}
-                    onApply={handleApply}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+
+    ));
 }
 
 /**

@@ -190,6 +190,9 @@ function createController(overrides: Record<string, any> = {}): InstanceType<typ
     const jobFileUploadDialogService = {openJobFileUploadDialog: jest.fn()};
     const bulkPriceUploadDialogService = {openBulkPriceUploadDialog: jest.fn()};
     const dashboardSettingsDialogService = {openSettingsDialog: jest.fn()};
+    const restoreConfirmationDialogService = overrides.restoreConfirmationDialogService ?? {
+        confirmRestore: jest.fn().mockResolvedValue({action: 'restore', removeCapturedImages: false}),
+    };
     const appConfig = {
         US_Customer: overrides.isUsCustomer ?? false,
         US_Coordinates_Center: {lat: 38.9, lng: -77.0},
@@ -214,7 +217,7 @@ function createController(overrides: Record<string, any> = {}): InstanceType<typ
         jobSearchService, $mdDialog, dispatchExecutor, toastrService, dispatchCore,
         $mdSidenav, $document, messagingDialogService, createJobDialogService,
         accessorialChargesDialogService, jobFileUploadDialogService, bulkPriceUploadDialogService,
-        dashboardSettingsDialogService, appConfig,
+        dashboardSettingsDialogService, restoreConfirmationDialogService, appConfig,
         $scope, $timeout, $interval,
     );
 }
@@ -554,8 +557,62 @@ describe('JobSearchController', () => {
             await ctrl.restoreJob({id: 5, jobNo: 'J005', isArchived: false} as any);
 
             expect(dispatchCore.addRestoreEvent).toHaveBeenCalledWith(5);
-            expect(dispatchCore.restoreJobs).toHaveBeenCalledWith([5]);
+            expect(dispatchCore.restoreJobs).toHaveBeenCalledWith([5], false);
             expect(dispatchCore.restoreSplitJobs).not.toHaveBeenCalled();
+        });
+
+        it('asks the restore confirmation first and passes its image decision through', async () => {
+            const dispatchCore = createMockDispatchCoreService();
+            const restoreConfirmationDialogService = {
+                confirmRestore: jest.fn().mockResolvedValue({action: 'restore', removeCapturedImages: true}),
+            };
+            const ctrl = createController({dispatchCore, restoreConfirmationDialogService});
+
+            await ctrl.restoreJob({id: 5, jobNo: 'J005', isArchived: false, done: true} as any);
+
+            expect(restoreConfirmationDialogService.confirmRestore)
+                .toHaveBeenCalledWith(expect.objectContaining({id: 5}));
+            expect(dispatchCore.restoreJobs).toHaveBeenCalledWith([5], true);
+        });
+
+        it('restores nothing when the operator cancels the confirmation', async () => {
+            const dispatchCore = createMockDispatchCoreService();
+            const restoreConfirmationDialogService = {
+                confirmRestore: jest.fn().mockResolvedValue(null),
+            };
+            const ctrl = createController({dispatchCore, restoreConfirmationDialogService});
+
+            await ctrl.restoreJob({id: 5, jobNo: 'J005', isArchived: false, done: true} as any);
+
+            expect(dispatchCore.addRestoreEvent).not.toHaveBeenCalled();
+            expect(dispatchCore.restoreJobs).not.toHaveBeenCalled();
+        });
+
+        it('opens Swap POD instead of restoring when the operator picks it', async () => {
+            const dispatchCore = createMockDispatchCoreService();
+            const restoreConfirmationDialogService = {
+                confirmRestore: jest.fn().mockResolvedValue({action: 'swapPod'}),
+            };
+            const ctrl = createController({dispatchCore, restoreConfirmationDialogService});
+            const swapPod = jest.spyOn(ctrl, 'swapPOD').mockResolvedValue(undefined);
+
+            await ctrl.restoreJob({id: 5, jobNo: 'J005', isArchived: false, done: true} as any);
+
+            expect(swapPod).toHaveBeenCalled();
+            expect(dispatchCore.restoreJobs).not.toHaveBeenCalled();
+        });
+
+        it('skips the confirmation for a split job — that restore has no image opt-in', async () => {
+            const dispatchCore = createMockDispatchCoreService();
+            const restoreConfirmationDialogService = {confirmRestore: jest.fn()};
+            const ctrl = createController({dispatchCore, restoreConfirmationDialogService});
+
+            await ctrl.restoreJob(
+                {id: 5, jobNo: 'J005', isArchived: false, displaySplitJobDetail: true} as any);
+
+            expect(restoreConfirmationDialogService.confirmRestore).not.toHaveBeenCalled();
+            expect(dispatchCore.restoreSplitJobs).toHaveBeenCalledWith([5]);
+            expect(dispatchCore.restoreJobs).not.toHaveBeenCalled();
         });
     });
 

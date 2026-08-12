@@ -626,6 +626,92 @@ public class JobPhotoServiceTests
             .CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task CountJobCapturedMediaAsync_CountsEveryCapturedFolderWithoutArchiving()
+    {
+        // Arrange — the same five folders the archive walks, one object in each.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        StubListByPrefixMap(new Dictionary<string, string>
+        {
+            ["DeliverySignatures/2024/07/5-"] = "DeliverySignatures/2024/07/5-20240705120000.png",
+            ["DeliveryPhotos/2024/07/5-"] = "DeliveryPhotos/2024/07/5-20240705120100.jpg",
+            ["PickupScannedDocuments/2024/07/5-"] = "PickupScannedDocuments/2024/07/5-20240705120200.pdf",
+            ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg",
+            ["PickupSignatures/2024/07/5-"] = "PickupSignatures/2024/07/5-20240705120400.png"
+        });
+
+        // Act
+        var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert — the probe is read-only.
+        Assert.Equal(5, count);
+        await _s3ClientMock.DidNotReceive()
+            .CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>());
+        await _s3ClientMock.DidNotReceive()
+            .DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CountJobCapturedMediaAsync_PhotoUploadedNextMonth_IsStillCounted()
+    {
+        // Arrange — photos are keyed by upload instant, the caller passes the completion month.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        StubListByPrefixMap(new Dictionary<string, string>
+        {
+            ["DeliveryPhotos/2024/08/5-"] = "DeliveryPhotos/2024/08/5-20240801090000.jpg"
+        });
+
+        // Act
+        var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task CountJobCapturedMediaAsync_NoMedia_ReturnsZero()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(new ListObjectsV2Response { S3Objects = new List<S3Object>() });
+
+        // Act
+        var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
+    public async Task CountJobCapturedMediaAsync_IgnoresJobAttachments()
+    {
+        // Arrange — attachments are user uploads, never removed by a restore, so they must not be counted.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                List<S3Object> objects = req!.Prefix.StartsWith("JobAttachments/")
+                    ? [new S3Object { Key = "JobAttachments/2024/07/5-20240705120400.pdf", Size = 3 }]
+                    : [];
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+
+        // Act
+        var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(0, count);
+    }
+
     // Returns a single object for each ListObjectsV2 whose prefix matches a map key (exact match),
     // so a captured-media object can be placed in a specific folder/month for the archive search.
     private void StubListByPrefixMap(Dictionary<string, string> keysByPrefix)

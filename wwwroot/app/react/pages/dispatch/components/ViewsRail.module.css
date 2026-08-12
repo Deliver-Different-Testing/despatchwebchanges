@@ -1,0 +1,44 @@
+/*
+ * The view pills scroll horizontally when the card is too narrow for them. The
+ * scrollbar is styled down to a hairline, which needs `::-webkit-scrollbar`
+ * pseudo-elements — no inline-style equivalent, hence a CSS module.
+ */
+.scroll {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-block: 2px;
+    scrollbar-width: thin;
+}
+
+.scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background-color: var(--mantine-color-gray-4);
+}
+
+/*
+ * View pills. Multi-select, so they cannot carry a FloatingIndicator — but they
+ * take SegmentedToggle's selection recipe so the card reads as one system: a
+ * tonal fill plus a 1px accent border (the fill alone is ~1.05:1 on a white
+ * bar), with the label staying Ink and weight carrying the emphasis. Unlayered,
+ * so it wins over `@layer mantine`.
+ */
+.viewPill {
+    border-radius: 9999px;
+    font-weight: 400;
+}
+
+.viewPill[data-selected] {
+    background-color: color-mix(in srgb, var(--vp-accent) 12%, transparent);
+    border-color: var(--vp-accent);
+    font-weight: 600;
+}
+
+.viewPill[data-selected]:hover {
+    background-color: color-mix(in srgb, var(--vp-accent) 18%, transparent);
+}

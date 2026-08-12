@@ -10,18 +10,10 @@
  */
 
 import React, {useRef} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
-import Switch from '@mui/material/Switch';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import DoneIcon from '@mui/icons-material/Done';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import type {SxProps, Theme} from '@mui/material/styles';
+import {ActionIcon, Box, Button, Group, NumberInput, Paper, Stack, Switch, Text, Tooltip} from '@mantine/core';
+import {Check, GripVertical, RotateCcw} from 'lucide-react';
+
+import {Icon} from '../common/icon/Icon';
 import type {ColumnDef} from './jobListColumns';
 import {MIN_COLUMN_WIDTH} from './useColumnResize';
 
@@ -39,28 +31,11 @@ export interface JobListColumnEditorProps {
     onDone: () => void;
 }
 
-const panelSx = {
-    m: 1,
-    p: 1.5,
-    borderRadius: 1.5,
-    border: '1px solid',
-    borderColor: 'divider',
-    bgcolor: 'background.paper',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 1,
-    flexShrink: 0,
-} satisfies SxProps<Theme>;
-
-const rowSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-    px: 0.5,
-    py: 0.25,
-    borderRadius: 1,
-    '&:hover': {bgcolor: 'action.hover'},
-} satisfies SxProps<Theme>;
+const rowStyle: React.CSSProperties = {
+    paddingInline: 4,
+    paddingBlock: 2,
+    borderRadius: 'var(--mantine-radius-sm)',
+};
 
 export const JobListColumnEditor: React.FC<JobListColumnEditorProps> = ({
     columns,
@@ -93,8 +68,8 @@ export const JobListColumnEditor: React.FC<JobListColumnEditorProps> = ({
             : [...hiddenColumns, key]);
     };
 
-    const handleWidth = (key: string, raw: string) => {
-        const parsed = Number.parseInt(raw, 10);
+    const handleWidth = (key: string, raw: number | string) => {
+        const parsed = typeof raw === 'number' ? raw : Number.parseInt(raw, 10);
         if (!Number.isFinite(parsed)) return;
         onColumnWidthsChange({...columnWidths, [key]: Math.max(MIN_COLUMN_WIDTH, parsed)});
     };
@@ -106,81 +81,85 @@ export const JobListColumnEditor: React.FC<JobListColumnEditorProps> = ({
     };
 
     return (
-        <Paper elevation={0} sx={panelSx} aria-label="Edit columns">
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                <Typography variant="subtitle2" sx={{flex: 1}}>
-                    Edit columns
-                </Typography>
-                <Button size="small" startIcon={<RestartAltIcon />} onClick={onReset}>
-                    Reset to defaults
-                </Button>
-                <Button size="small" variant="contained" startIcon={<DoneIcon />} onClick={onDone}>
-                    Done
-                </Button>
-            </Box>
+        <Paper withBorder radius="md" p="sm" m="xs" aria-label="Edit columns" style={{flexShrink: 0}}>
+            <Stack gap="xs">
+                <Group align="center" gap="xs">
+                    <Text size="sm" fw={600} style={{flex: 1}}>
+                        Edit columns
+                    </Text>
+                    <Button size="compact-sm" variant="subtle" leftSection={<Icon lucide={RotateCcw} size={16}/>} onClick={onReset}>
+                        Reset to defaults
+                    </Button>
+                    <Button size="compact-sm" leftSection={<Icon lucide={Check} size={16}/>} onClick={onDone}>
+                        Done
+                    </Button>
+                </Group>
 
-            <Box sx={{maxHeight: 240, overflow: 'auto'}}>
-                {editable.map((col, index) => (
-                    <Box
-                        key={col.key}
-                        sx={rowSx}
-                        onDragOver={(event) => {
-                            if (dragIndexRef.current === null) return;
-                            event.preventDefault();
-                            event.dataTransfer.dropEffect = 'move';
-                        }}
-                        onDrop={(event) => {
-                            const from = dragIndexRef.current;
-                            dragIndexRef.current = null;
-                            if (from === null) return;
-                            event.preventDefault();
-                            emitOrder(from, index);
-                        }}
-                    >
-                        <Tooltip title="Drag, or use the arrow keys, to reorder">
-                            <IconButton
-                                size="small"
-                                aria-label={`Reorder ${col.label || col.key} — use the up and down arrow keys`}
-                                aria-roledescription="sortable"
-                                draggable
-                                onDragStart={(event) => {
-                                    dragIndexRef.current = index;
-                                    event.dataTransfer.effectAllowed = 'move';
-                                    event.dataTransfer.setData(DRAG_MIME, '1');
-                                }}
-                                onKeyDown={handleReorderKeyDown(index)}
-                                sx={{cursor: 'grab'}}
-                            >
-                                <DragIndicatorIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-
-                        <Typography variant="body2" sx={{flex: 1}}>
-                            {col.label || col.key}
-                        </Typography>
-
-                        <TextField
-                            size="small"
-                            type="number"
-                            label="Width"
-                            value={columnWidths[col.key] ?? col.width}
-                            onChange={(event) => handleWidth(col.key, event.target.value)}
-                            slotProps={{
-                                htmlInput: {min: MIN_COLUMN_WIDTH, 'aria-label': `${col.label || col.key} width`},
-                                inputLabel: {shrink: true},
+                <Box style={{maxHeight: 240, overflow: 'auto'}}>
+                    {editable.map((col, index) => (
+                        <Group
+                            key={col.key}
+                            align="center"
+                            gap="xs"
+                            wrap="nowrap"
+                            style={rowStyle}
+                            onDragOver={(event) => {
+                                if (dragIndexRef.current === null) return;
+                                event.preventDefault();
+                                event.dataTransfer.dropEffect = 'move';
                             }}
-                            sx={{width: 104, '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'}}}
-                        />
+                            onDrop={(event) => {
+                                const from = dragIndexRef.current;
+                                dragIndexRef.current = null;
+                                if (from === null) return;
+                                event.preventDefault();
+                                emitOrder(from, index);
+                            }}
+                        >
+                            <Tooltip label="Drag, or use the arrow keys, to reorder" withArrow>
+                                <ActionIcon
+                                    size="md"
+                                    variant="subtle"
+                                    color="gray"
+                                    aria-label={`Reorder ${col.label || col.key} — use the up and down arrow keys`}
+                                    aria-roledescription="sortable"
+                                    draggable
+                                    onDragStart={(event) => {
+                                        dragIndexRef.current = index;
+                                        event.dataTransfer.effectAllowed = 'move';
+                                        event.dataTransfer.setData(DRAG_MIME, '1');
+                                    }}
+                                    onKeyDown={handleReorderKeyDown(index)}
+                                    style={{cursor: 'grab'}}
+                                >
+                                    <Icon lucide={GripVertical} size={16}/>
+                                </ActionIcon>
+                            </Tooltip>
 
-                        <Switch
-                            size="small"
-                            checked={!hiddenSet.has(col.key)}
-                            onChange={() => handleToggle(col.key)}
-                            slotProps={{input: {'aria-label': `Show ${col.label || col.key}`}}}
-                        />
-                    </Box>
-                ))}
-            </Box>
+                            <Text size="sm" style={{flex: 1}}>
+                                {col.label || col.key}
+                            </Text>
+
+                            <NumberInput
+                                size="xs"
+                                label="Width"
+                                w={104}
+                                min={MIN_COLUMN_WIDTH}
+                                value={columnWidths[col.key] ?? col.width}
+                                onChange={(value) => handleWidth(col.key, value)}
+                                aria-label={`${col.label || col.key} width`}
+                            />
+
+                            <Switch
+                                size="sm"
+                                checked={!hiddenSet.has(col.key)}
+                                onChange={() => handleToggle(col.key)}
+                                aria-label={`Show ${col.label || col.key}`}
+                            />
+                        </Group>
+                    ))}
+                </Box>
+            </Stack>
         </Paper>
     );
 };

@@ -12,6 +12,8 @@ import {ContactID, TimeZone} from "../../contants";
 import {JobProperty} from "../../enums/job-property.enum";
 import {AppPage} from "../../enums/app-pages.enum";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
+import RestoreConfirmationDialogService
+    from "../dialogs/restore-confirmation-dialog/restore-confirmation-dialog.service";
 import JobSearchBoxes from "./enums/jobSearchBoxes";
 import {IDeliveryHistoryConfig} from "../../react/components/common/task-history/TaskHistory.interfaces";
 import DensityMode from "../../enums/densityMode";
@@ -76,6 +78,7 @@ class JobSearchController extends BaseController {
         "jobFileUploadDialogService",
         "bulkPriceUploadDialogService",
         'dashboardSettingsDialogService',
+        'restoreConfirmationDialogService',
         'APP_CONFIG',
         '$scope',
         '$timeout',
@@ -146,6 +149,7 @@ class JobSearchController extends BaseController {
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private bulkPriceUploadDialogService: BulkPriceUploadDialogService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
+        private restoreConfirmationDialogService: RestoreConfirmationDialogService,
         appConfig: IAppConfig,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
@@ -789,25 +793,25 @@ class JobSearchController extends BaseController {
         }
 
         try {
-            const jobIds: number[] = [];
+            // Split jobs restore through a different proc with no image opt-in, so only the plain
+            // restore is gated on the proof of delivery it would destroy.
+            if (job.displaySplitJobDetail) {
+                await this.DispatchData.addRestoreEvent(job.id);
+                await this.DispatchData.restoreSplitJobs([job.id]);
+                await this.selectJobDetail(job.id);
+                return;
+            }
+
+            const decision = await this.restoreConfirmationDialogService.confirmRestore(job);
+            if (!decision) return;
+
+            if (decision.action === 'swapPod') {
+                await this.swapPOD();
+                return;
+            }
+
             await this.DispatchData.addRestoreEvent(job.id);
-
-            if (job.displaySplitJobDetail) {
-                jobIds.push(job.id);
-            } else {
-                jobIds.push(job.id);
-            }
-
-            if (jobIds.length === 0) return;
-
-            const promises = [];
-            if (job.displaySplitJobDetail) {
-                promises.push(this.DispatchData.restoreSplitJobs(jobIds));
-            } else {
-                promises.push(this.DispatchData.restoreJobs(jobIds));
-            }
-
-            await Promise.all(promises);
+            await this.DispatchData.restoreJobs([job.id], decision.removeCapturedImages);
             await this.selectJobDetail(job.id);
         } catch (error) {
             await this.toastrService.showErrorToast('Error in restoring job');
@@ -815,7 +819,7 @@ class JobSearchController extends BaseController {
         }
     }
 
-    async swapPOD($event: MouseEvent) {
+    async swapPOD($event?: MouseEvent) {
         try {
             const jobNumberPrompt = this.$mdDialog.prompt()
                 .title('Enter the other job number')
@@ -1210,7 +1214,7 @@ class JobSearchController extends BaseController {
             await this.dispatchJobService.dispatchJobs(courierId, jobsToDispatch);
 
             // Inform the user
-            this.toastrService.showSuccessToast(`${job.jobNo} successfully dispatched`);
+            await this.toastrService.showSuccessToast(`${job.jobNo} successfully dispatched`);
             await this.refreshData();
 
             // Update the job's assigned courier display
@@ -1305,11 +1309,11 @@ class JobSearchController extends BaseController {
 
             this.saveCurrentLayout();
             this.applyScope();
-            this.toastrService.showSuccessToast('Settings saved and applied successfully');
+            await this.toastrService.showSuccessToast('Settings saved and applied successfully');
         } catch (error) {
             if (!error) return;
             console.error('Error opening settings dialog:', error);
-            this.toastrService.showErrorToast('Failed to open settings dialog');
+            await this.toastrService.showErrorToast('Failed to open settings dialog');
         }
     }
 
@@ -1331,7 +1335,7 @@ class JobSearchController extends BaseController {
         } catch (error) {
             if (!error) return;
             console.error('Error opening customize panels dialog:', error);
-            this.toastrService.showErrorToast('Failed to open customize panels dialog');
+            await this.toastrService.showErrorToast('Failed to open customize panels dialog');
         }
     }
 

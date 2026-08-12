@@ -1,0 +1,54 @@
+/*
+ * The sticky-note card: a slight resting tilt that straightens and lifts on
+ * hover, plus the tape strip and the hover-revealed delete action. All of it is
+ * pseudo-element / pseudo-class / descendant work with no inline equivalent.
+ *
+ * The per-note tilt and fill come in as `--note-rotate` / `--note-fill`.
+ */
+.note {
+    position: relative;
+    transform: rotate(var(--note-rotate, 0deg));
+    background-color: var(--note-fill);
+    transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.note:hover {
+    transform: scale(1.02) rotate(0deg);
+    box-shadow: var(--mantine-shadow-md);
+    z-index: 2;
+}
+
+/* Tape effect. */
+.note::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 16px;
+    background-color: rgba(0, 0, 0, 0.1);
+    opacity: 0.5;
+}
+
+.noteActions {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    opacity: 0;
+    transition: opacity 200ms ease;
+}
+
+/* Keyboard users need the action too, so focus-within reveals it as well. */
+.note:hover .noteActions,
+.note:focus-within .noteActions {
+    opacity: 1;
+}
+
+.clearFilter {
+    cursor: pointer;
+}
+
+.clearFilter:hover {
+    text-decoration: underline;
+}

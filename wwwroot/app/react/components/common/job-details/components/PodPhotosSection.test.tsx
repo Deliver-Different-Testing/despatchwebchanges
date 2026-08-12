@@ -3,11 +3,11 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent, waitFor} from '@testing-library/react';
 import {PodPhotosSection} from './PodPhotosSection';
 import {deleteJobDeliveryPhotoOrSignature} from '../../../../services/jobDetailApi';
 import type {PodPhoto} from '../JobDetails.types';
+import {renderWithMantine} from '../../../../__testUtils__';
 
 jest.mock('../../../../services/jobDetailApi', () => ({
     downloadFile: jest.fn(),
@@ -16,10 +16,9 @@ jest.mock('../../../../services/jobDetailApi', () => ({
 
 const mockDeletePhoto = deleteJobDeliveryPhotoOrSignature as jest.Mock;
 
-const theme = createTheme();
 
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    return renderWithMantine(ui);
 }
 
 function createMockPhoto(overrides?: Partial<PodPhoto>): PodPhoto {
@@ -49,17 +48,17 @@ function createDefaultProps(overrides?: Record<string, any>) {
 
 describe('PodPhotosSection', () => {
     it('renders nothing when no photos and not loading', () => {
-        const {container} = renderWithTheme(
-            <PodPhotosSection {...createDefaultProps()} />
-        );
-        expect(container.firstChild).toBeNull();
+        renderWithTheme(<PodPhotosSection {...createDefaultProps()} />);
+        // `MantineProvider` injects a <style> element, so an empty container is no
+        // longer the signal — assert the section header is absent instead.
+        expect(screen.queryByTestId('section-header')).not.toBeInTheDocument();
     });
 
     it('renders loading skeleton when isLoading', () => {
         renderWithTheme(
             <PodPhotosSection {...createDefaultProps({isLoading: true})} />
         );
-        expect(document.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
+        expect(screen.getByTestId('pod-photos-loading')).toBeInTheDocument();
     });
 
     it('renders delivery and pickup photo sections when both exist', () => {

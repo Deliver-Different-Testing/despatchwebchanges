@@ -2,25 +2,24 @@
  * Job List view options — density selector, reset-columns, and the (dispatch-only)
  * "logged-in couriers only" toggle. Rendered either inline in the toolbar
  * (default) or, on the dispatch page, portaled into the panel header
- * (`headerVariant`) — a plain `'surface'` paper bar, so controls inherit
- * `text.primary` and tint with the shared header overlay colour.
+ * (`headerVariant`) — a plain `'surface'` paper bar, so controls inherit the
+ * body text colour and tint with the shared header overlay colour.
+ *
+ * Density is a mutually-exclusive choice, so it is a `SegmentedToggle` rather
+ * than a hand-rolled `aria-pressed` button group: it reads as one radio group to
+ * assistive tech, and it marks the selection with the same sliding indicator the
+ * scope toggles use.
  */
 
-import React, {useCallback} from 'react';
-import Box from '@mui/material/Box';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import ViewCompactIcon from '@mui/icons-material/ViewCompact';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import DensitySmallIcon from '@mui/icons-material/DensitySmall';
-import ViewWeekIcon from '@mui/icons-material/ViewWeek';
-import type {SxProps, Theme} from '@mui/material';
+import React from 'react';
+import {Group, Switch} from '@mantine/core';
+import {AlignJustify, Check, Columns3, Rows3, Rows4} from 'lucide-react';
+
+import {Icon} from '../common/icon/Icon';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../common/panel-controls';
+import {SegmentedToggle, SEGMENTED_TOGGLE_GLYPH_SIZE} from '../common/segmented-toggle';
+import {headerSurfaceAccent} from '../dialogs/shared/mantine/styles';
 import type {DensityMode} from '../../interfaces/dispatchJob';
-import {headerOverlayColor} from '../dialogs/shared/styles';
 
 interface JobListViewOptionsProps {
     densityMode: DensityMode;
@@ -30,28 +29,24 @@ interface JobListViewOptionsProps {
     onLoggedInCouriersOnlyChange: (checked: boolean) => void;
     /** Show the logged-in-couriers toggle (dispatch contexts only). */
     showLoggedInSwitch?: boolean;
-    /** Style for the gradient panel header (inherit contrast colour) vs the toolbar. */
+    /** Style for the panel header bar (inherit its on-colour) vs the toolbar. */
     headerVariant?: boolean;
 }
 
-const headerToggleSx = ((theme: Theme) => ({
-    '& .MuiToggleButton-root': {
-        color: 'inherit',
-        borderColor: 'divider',
-        px: 0.75,
-        py: 0.5,
-    },
-    '& .MuiToggleButton-root:hover': {bgcolor: headerOverlayColor(theme, 0.08, 'surface')},
-    '& .MuiToggleButton-root.Mui-selected': {
-        color: 'inherit',
-        bgcolor: headerOverlayColor(theme, 0.12, 'surface'),
-        '&:hover': {bgcolor: headerOverlayColor(theme, 0.16, 'surface')},
-    },
-})) satisfies SxProps<Theme>;
+const DENSITY_OPTIONS: {value: DensityMode; label: string; icon: React.ComponentProps<typeof Icon>['lucide']}[] = [
+    {value: 'normal', label: 'Normal', icon: Rows3},
+    {value: 'dense', label: 'Dense', icon: Rows4},
+    {value: 'ultra-dense', label: 'Ultra Dense', icon: AlignJustify},
+];
 
-const toolbarToggleSx = {
-    '& .MuiToggleButton-root': {px: 0.75, py: 0.5},
-} satisfies SxProps<Theme>;
+// The options render as glyphs only, so each carries its name as a tooltip —
+// the label is otherwise reachable only through the accessible name.
+const densityData = DENSITY_OPTIONS.map(({value, label, icon}) => ({
+    value,
+    label,
+    tooltip: label,
+    icon: <Icon lucide={icon} size={SEGMENTED_TOGGLE_GLYPH_SIZE}/>,
+}));
 
 export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
     densityMode,
@@ -61,62 +56,39 @@ export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
     onLoggedInCouriersOnlyChange,
     showLoggedInSwitch,
     headerVariant,
-}) => {
-    const handleDensityChange = useCallback(
-        (_: React.MouseEvent<HTMLElement>, newMode: DensityMode | null) => {
-            if (newMode !== null) onDensityModeChange(newMode);
-        },
-        [onDensityModeChange],
-    );
+}) => (
+    <Group align="center" gap={headerVariant ? 4 : 'xs'} wrap="nowrap">
+        {showLoggedInSwitch && (
+            /*
+             * `size="sm"` clears a usable hit target — the previous `xs` track was
+             * ~16px tall. The body is pinned to a centred nowrap row: the header
+             * bar is cramped, and a wrapped body drops the label under the track.
+             */
+            <Switch
+                size="sm"
+                checked={loggedInCouriersOnly}
+                onChange={(event) => onLoggedInCouriersOnlyChange(event.currentTarget.checked)}
+                label="Logged-in only"
+                thumbIcon={loggedInCouriersOnly
+                    ? <Icon lucide={Check} size={10} color={headerSurfaceAccent}/>
+                    : undefined}
+                styles={{
+                    body: {alignItems: 'center', flexWrap: 'nowrap'},
+                    label: {fontSize: 'var(--mantine-font-size-xs)', whiteSpace: 'nowrap', lineHeight: 1.2},
+                }}
+            />
+        )}
 
-    return (
-        <Box sx={{display: 'flex', alignItems: 'center', gap: headerVariant ? 0.5 : 1}}>
-            {showLoggedInSwitch && (
-                <FormControlLabel
-                    control={
-                        <Switch
-                            size="small"
-                            checked={loggedInCouriersOnly}
-                            onChange={(_, checked) => onLoggedInCouriersOnlyChange(checked)}
-                        />
-                    }
-                    label="Logged-in only"
-                    slotProps={{typography: {variant: 'body2', sx: {fontSize: '0.75rem', whiteSpace: 'nowrap', color: 'inherit'}}}}
-                    sx={{ml: 0, mr: 0, color: 'inherit'}}
-                />
-            )}
+        <SegmentedToggle<DensityMode>
+            aria-label="Row density"
+            value={densityMode}
+            onChange={onDensityModeChange}
+            variant={headerVariant ? 'header' : 'inline'}
+            data={densityData}
+        />
 
-            <ToggleButtonGroup
-                value={densityMode}
-                exclusive
-                onChange={handleDensityChange}
-                size="small"
-                aria-label="Row density"
-                sx={headerVariant ? headerToggleSx : toolbarToggleSx}
-            >
-                <ToggleButton value="normal">
-                    <Tooltip title="Normal"><ViewListIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-                <ToggleButton value="dense">
-                    <Tooltip title="Dense"><ViewCompactIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-                <ToggleButton value="ultra-dense">
-                    <Tooltip title="Ultra Dense"><DensitySmallIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-            </ToggleButtonGroup>
-
-            <Tooltip title="Reset columns">
-                <IconButton
-                    size="small"
-                    onClick={onResetColumns}
-                    aria-label="Reset columns"
-                    sx={headerVariant
-                        ? (theme) => ({color: 'inherit', '&:hover': {bgcolor: headerOverlayColor(theme, 0.08, 'surface')}})
-                        : {color: 'text.secondary'}}
-                >
-                    <ViewWeekIcon fontSize="small"/>
-                </IconButton>
-            </Tooltip>
-        </Box>
-    );
-};
+        <HeaderActionIcon label="Reset columns" onClick={onResetColumns}>
+            <Icon lucide={Columns3} size={PANEL_CONTROL_GLYPH_SIZE}/>
+        </HeaderActionIcon>
+    </Group>
+);

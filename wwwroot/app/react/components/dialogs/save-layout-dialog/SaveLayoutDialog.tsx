@@ -3,14 +3,17 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import DialogContent from '@mui/material/DialogContent';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import TextField from '@mui/material/TextField';
-import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
-import SaveIcon from '@mui/icons-material/Save';
-import {DialogShell, DialogHeader, DialogFooter, sectionPaperSx, sectionLabelSx, dialogFieldSx} from '../shared';
+import {Box, Paper, Text, TextInput} from '@mantine/core';
+import {LayoutGrid, Save} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    sectionLabelProps,
+    sectionPaperProps,
+} from '../shared/mantine';
 
 export interface SaveLayoutDialogProps {
     open: boolean;
@@ -54,9 +57,7 @@ export const SaveLayoutDialog: React.FC<SaveLayoutDialogProps> = ({
     const isDuplicate = trimmed.length > 0 && normalizedExisting.has(trimmed.toLowerCase());
     const isValid = trimmed.length > 0 && !isDuplicate;
 
-    const helperText = isDuplicate
-        ? 'A layout with this name already exists.'
-        : ' ';
+    const duplicateError = isDuplicate ? 'A layout with this name already exists.' : undefined;
 
     const handleConfirm = useCallback(() => {
         if (!isValid) return;
@@ -71,44 +72,35 @@ export const SaveLayoutDialog: React.FC<SaveLayoutDialogProps> = ({
     }, [handleConfirm]);
 
     return (
-        <DialogShell open={open} onClose={onClose}>
+        <DialogShell opened={open} onClose={onClose} label={title}>
             <DialogHeader
-                icon={<DashboardCustomizeIcon/>}
+                icon={<Icon lucide={LayoutGrid}/>}
                 title={title}
                 subtitle={subtitle}
                 onClose={onClose}
             />
 
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
-                    <Box>
-                        <Typography variant="body2" sx={sectionLabelSx}>
-                            Layout name
-                        </Typography>
-                        <Paper elevation={0} sx={sectionPaperSx}>
-                            <TextField
-                                size="small"
-                                fullWidth
-                                autoFocus
-                                label="Layout name"
-                                value={name}
-                                onChange={e => setName(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                error={isDuplicate}
-                                helperText={helperText}
-                                slotProps={{htmlInput: {maxLength: 50}}}
-                                sx={dialogFieldSx}
-                            />
-                        </Paper>
-                    </Box>
-                </Box>
-            </DialogContent>
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                <Text {...sectionLabelProps}>Layout name</Text>
+                <Paper {...sectionPaperProps}>
+                    <TextInput
+                        size="sm"
+                        data-autofocus
+                        label="Layout name"
+                        value={name}
+                        onChange={e => setName(e.currentTarget.value)}
+                        onKeyDown={handleKeyDown}
+                        error={duplicateError}
+                        maxLength={50}
+                    />
+                </Paper>
+            </Box>
 
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleConfirm}
                 confirmLabel={confirmLabel}
-                confirmIcon={<SaveIcon/>}
+                confirmIcon={<Icon lucide={Save} size={16}/>}
                 confirmDisabled={!isValid}
             />
         </DialogShell>

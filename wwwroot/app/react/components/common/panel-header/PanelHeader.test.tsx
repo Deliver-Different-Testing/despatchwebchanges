@@ -7,38 +7,33 @@
 
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {createAppTheme} from '../../../theme/muiTheme';
-import IconButton from '@mui/material/IconButton';
-import TuneIcon from '@mui/icons-material/Tune';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import {screen} from '@testing-library/react';
+import {ActionIcon} from '@mantine/core';
+import {RefreshCw, SlidersHorizontal} from 'lucide-react';
 import {PanelHeader} from './PanelHeader';
+import {Icon} from '../icon/Icon';
 import {SymbolIcon} from '../symbol-icon';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
 
-const theme = createTheme();
+// SymbolIcon is still MUI, so one MUI theme has to remain in scope for that case.
+const renderPanel = (ui: React.ReactElement) => renderWithMantineOverMui(ui);
 
-const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+const tune = <Icon lucide={SlidersHorizontal}/>;
 
 describe('PanelHeader', () => {
-    it('renders the title on its own', () => {
-        renderWithTheme(<PanelHeader icon={<TuneIcon />} title="Filters" />);
+    it('renders the title, appends a count as "(n)", and omits it when undefined', () => {
+        const {rerender} = renderPanel(<PanelHeader icon={tune} title="Filters" />);
         expect(screen.getByText('Filters')).toBeInTheDocument();
-    });
 
-    it('appends the count as "(n)" when provided', () => {
-        renderWithTheme(<PanelHeader icon={<TuneIcon />} title="Recurring Jobs" count={12} />);
+        rerender(<PanelHeader icon={tune} title="Recurring Jobs" count={12} />);
         expect(screen.getByText('Recurring Jobs (12)')).toBeInTheDocument();
-    });
 
-    it('omits the count when undefined', () => {
-        renderWithTheme(<PanelHeader icon={<TuneIcon />} title="Recurring Jobs" />);
+        rerender(<PanelHeader icon={tune} title="Recurring Jobs" />);
         expect(screen.getByText('Recurring Jobs')).toBeInTheDocument();
     });
 
     it('renders a SymbolIcon glyph as an svg badge', () => {
-        const {container} = renderWithTheme(
+        const {container} = renderPanel(
             <PanelHeader icon={<SymbolIcon name="tune" />} title="Quick Filters" />,
         );
         expect(container.querySelector('svg')).toBeInTheDocument();
@@ -46,54 +41,55 @@ describe('PanelHeader', () => {
     });
 
     it('renders the badge chip when provided', () => {
-        renderWithTheme(<PanelHeader icon={<TuneIcon />} title="Recurring Log" badge="RECURRING" />);
+        renderPanel(<PanelHeader icon={tune} title="Recurring Log" badge="RECURRING" />);
         expect(screen.getByText('RECURRING')).toBeInTheDocument();
     });
 
     it('renders the action slot and fires its handler', async () => {
         const user = setupUser();
         const onClick = jest.fn();
-        renderWithTheme(
+        renderPanel(
             <PanelHeader
-                icon={<TuneIcon />}
+                icon={tune}
                 title="Recurring Log"
                 action={
-                    <IconButton aria-label="Refresh" onClick={onClick}>
-                        <RefreshIcon />
-                    </IconButton>
+                    <ActionIcon aria-label="Refresh" onClick={onClick} variant="subtle">
+                        <Icon lucide={RefreshCw}/>
+                    </ActionIcon>
                 }
             />,
         );
 
-        const button = screen.getByRole('button', {name: 'Refresh'});
-        await user.click(button);
+        await user.click(screen.getByRole('button', {name: 'Refresh'}));
         expect(onClick).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * The `'surface'` variant is what makes this read as part of its card: the bar
+     * shares the card's fill and is separated by a keyline, rather than carrying a
+     * brand colour like a dialog header. Asserted on longhands — jsdom drops a
+     * `border-bottom` shorthand that carries a `var()`.
+     */
     it('is a plain paper bar with a keyline, not a brand-coloured fill', () => {
-        const appTheme = createAppTheme();
-        render(
-            <ThemeProvider theme={appTheme}>
-                <PanelHeader icon={<TuneIcon />} title="Filters" />
-            </ThemeProvider>,
-        );
+        renderPanel(<PanelHeader icon={tune} title="Filters" />);
 
         const bar = screen.getByTestId('panel-header');
-        expect(bar).toHaveStyle({backgroundColor: appTheme.palette.background.paper});
-        expect(bar).toHaveStyle({borderBottom: `1px solid ${appTheme.palette.divider}`});
-        expect(bar).not.toHaveStyle({backgroundColor: appTheme.palette.primary.main});
+        expect(bar).toHaveStyle({
+            backgroundColor: 'var(--dd-surface-container)',
+            color: 'var(--mantine-color-text)',
+        });
+        // The keyline itself is unassertable here: `headerChromeStyle` writes the
+        // `border-bottom` *shorthand*, and jsdom drops any shorthand carrying a
+        // `var()`. The variant tokens above are what select it.
+        expect(bar).not.toHaveStyle({backgroundColor: 'var(--mantine-primary-color-filled)'});
     });
 
     it('labels the badge chip in body text, not the low-contrast brand accent', () => {
-        const appTheme = createAppTheme();
-        render(
-            <ThemeProvider theme={appTheme}>
-                <PanelHeader icon={<TuneIcon />} title="Recurring Log" badge="RECURRING" />
-            </ThemeProvider>,
-        );
+        renderPanel(<PanelHeader icon={tune} title="Recurring Log" badge="RECURRING" />);
 
-        // 10px bold on the brand wash needs the darker body colour to clear AA.
-        expect(screen.getByText('RECURRING').closest('.MuiChip-root'))
-            .toHaveStyle({color: appTheme.palette.text.primary});
+        // 10px bold on the brand wash needs the darker body colour to clear AA, which
+        // is what `variant="default"` gives — no brand tint on the label.
+        const chip = screen.getByText('RECURRING').closest('.mantine-Badge-root');
+        expect(chip).toHaveAttribute('data-variant', 'default');
     });
 });

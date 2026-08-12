@@ -3,18 +3,17 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, within} from '@testing-library/react';
-import {ThemeProvider} from '@mui/material/styles';
+import {screen, fireEvent, within} from '@testing-library/react';
 import dayjs from 'dayjs';
 import {RecurringJobFields} from './RecurringJobFields';
 import {createMockJob} from '../__testUtils__/mockJob';
-import { testTheme } from '../../../../__testUtils__';
+import {renderWithMantine} from '../../../../__testUtils__';
 import { setupUser } from '../../../../__testUtils__/setupUser';
 import {DaysOfWeek} from '../../../../../enums/days-of-week.enum';
 import {Frequency} from '../../../../../enums/frequency.enum';
 
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={testTheme}>{ui}</ThemeProvider>);
+    return renderWithMantine(ui);
 }
 
 function createDefaultProps(overrides?: Record<string, any>) {
@@ -38,10 +37,10 @@ function createDefaultProps(overrides?: Record<string, any>) {
 describe('RecurringJobFields', () => {
     it('renders nothing when job is not a recurring job (preBook false)', () => {
         const job = createMockJob({preBook: false});
-        const {container} = renderWithTheme(
-            <RecurringJobFields {...createDefaultProps({job})} />
-        );
-        expect(container.firstChild).toBeNull();
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
+        // `MantineProvider` injects a <style> element, so an empty container is no
+        // longer the signal — assert the section header is absent instead.
+        expect(screen.queryByTestId('section-header')).not.toBeInTheDocument();
     });
 
     it('renders day-of-week chips with correct selection state and weekend coloring', () => {
@@ -57,16 +56,16 @@ describe('RecurringJobFields', () => {
         expect(screen.getByText('Saturday')).toBeInTheDocument();
         expect(screen.getByText('Sunday')).toBeInTheDocument();
 
-        // Weekday selected → primary. Weekend selected → secondary. Unselected
-        // weekday → default outlined (so we just assert it's not primary).
-        const mondayChip = screen.getByText('Monday').closest('.MuiChip-root');
-        const tuesdayChip = screen.getByText('Tuesday').closest('.MuiChip-root');
-        const saturdayChip = screen.getByText('Saturday').closest('.MuiChip-root');
-        const sundayChip = screen.getByText('Sunday').closest('.MuiChip-root');
-        expect(mondayChip).toHaveClass('MuiChip-colorPrimary');
-        expect(tuesdayChip).not.toHaveClass('MuiChip-colorPrimary');
-        expect(saturdayChip).toHaveClass('MuiChip-colorSecondary');
-        expect(sundayChip).toHaveClass('MuiChip-colorSecondary');
+        // Selection is carried by `aria-pressed` (a multi-select rail of buttons,
+        // not checkboxes) and the weekday/weekend distinction by `data-tone` — the
+        // tone is the contract, the palette is not.
+        const pill = (day: string) => screen.getByRole('button', {name: day});
+        expect(pill('Monday')).toHaveAttribute('aria-pressed', 'true');
+        expect(pill('Monday')).toHaveAttribute('data-tone', 'weekday');
+        expect(pill('Tuesday')).toHaveAttribute('aria-pressed', 'false');
+        expect(pill('Saturday')).toHaveAttribute('aria-pressed', 'true');
+        expect(pill('Saturday')).toHaveAttribute('data-tone', 'weekend');
+        expect(pill('Sunday')).toHaveAttribute('data-tone', 'weekend');
     });
 
     it('calls onDaysOfWeekChange when a day chip is clicked to add', () => {
@@ -129,9 +128,8 @@ describe('RecurringJobFields', () => {
         const onEditFirstDue = jest.fn();
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onEditFirstDue})} />);
 
-        const firstDueText = screen.getByText('First Due');
-        const listItemButton = firstDueText.closest('[role="button"]') || firstDueText.parentElement;
-        if (listItemButton) fireEvent.click(listItemButton);
+        const firstDueRow = screen.getByText('First Due').closest('button');
+        if (firstDueRow) fireEvent.click(firstDueRow);
         expect(onEditFirstDue).toHaveBeenCalled();
     });
 
@@ -205,7 +203,9 @@ describe('RecurringJobFields', () => {
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onEditSavedFlight})} />);
 
         // The Flight card's row shows "Not set" (date rows may too — scope to this row).
-        const flightRow = screen.getByText('Saved Flight').closest('[role="button"]') as HTMLElement;
+        // The rows are real <button> elements now (Mantine `UnstyledButton`), not
+        // MUI's `role="button"` list items.
+        const flightRow = screen.getByText('Saved Flight').closest('button') as HTMLElement;
         expect(within(flightRow).getByText('Not set')).toBeInTheDocument();
         fireEvent.click(screen.getByText('Saved Flight'));
         expect(onEditSavedFlight).toHaveBeenCalled();

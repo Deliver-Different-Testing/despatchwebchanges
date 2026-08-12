@@ -5,7 +5,7 @@
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
 import {JobChangeRequestsForJob} from './JobChangeRequestsForJob';
-import { renderWithProviders } from '../../__testUtils__';
+import { renderWithMantineProviders as renderWithProviders } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
 import type {JobChangeRequestDto} from '../../interfaces/jobChangeRequest';
@@ -422,16 +422,19 @@ describe('JobChangeRequestsForJob', () => {
         });
     });
 
-    describe('chip color coding', () => {
-        it('renders the origin label as a color-coded Chip (primary for local, secondary for partner)', async () => {
+    /**
+     * The badges carry their meaning as a data attribute rather than a palette
+     * class, so the colours can be re-tuned without rewriting these.
+     */
+    describe('badge coding', () => {
+        it('distinguishes a locally-raised request from a partner-raised one', async () => {
             mockApi.forJob.mockResolvedValueOnce([
                 {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'},
             ]);
             const {unmount} = renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
             expect(await screen.findByText('You requested')).toBeInTheDocument();
-            const localChip = screen.getByText('You requested').closest('.MuiChip-root');
-            expect(localChip).not.toBeNull();
-            expect(localChip!.className).toMatch(/MuiChip-colorPrimary/);
+            expect(screen.getByText('You requested').closest('[data-origin]'))
+                .toHaveAttribute('data-origin', 'local');
             unmount();
 
             mockApi.forJob.mockResolvedValueOnce([
@@ -439,19 +442,19 @@ describe('JobChangeRequestsForJob', () => {
             ]);
             renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="OwnerTenant"/>);
             expect(await screen.findByText('Partner requested')).toBeInTheDocument();
-            const partnerChip = screen.getByText('Partner requested').closest('.MuiChip-root');
-            expect(partnerChip).not.toBeNull();
-            expect(partnerChip!.className).toMatch(/MuiChip-colorSecondary/);
+            expect(screen.getByText('Partner requested').closest('[data-origin]'))
+                .toHaveAttribute('data-origin', 'partner');
         });
 
-        it('renders the "Awaiting partner" chip with the info color', async () => {
+        it('marks the status badge with the row lifecycle and the wait with its own tone', async () => {
             mockApi.forJob.mockResolvedValueOnce([baseRow]);
             renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="PartnerTenant"/>);
 
             expect(await screen.findByText('Awaiting partner')).toBeInTheDocument();
-            const chip = screen.getByText('Awaiting partner').closest('.MuiChip-root');
-            expect(chip).not.toBeNull();
-            expect(chip!.className).toMatch(/MuiChip-colorInfo/);
+            expect(screen.getByText('Awaiting partner').closest('[data-tone]'))
+                .toHaveAttribute('data-tone', 'awaiting');
+            expect(screen.getByText('Pending').closest('[data-tone]'))
+                .toHaveAttribute('data-tone', 'pending');
         });
     });
 });

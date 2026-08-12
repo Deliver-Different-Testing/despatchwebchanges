@@ -3,16 +3,10 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {RelatedJobTabs} from './RelatedJobTabs';
 import {createMockJob} from '../__testUtils__/mockJob';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('RelatedJobTabs', () => {
     const onTabChange = jest.fn();
@@ -22,14 +16,16 @@ describe('RelatedJobTabs', () => {
     });
 
     it('renders nothing when there is only one job', () => {
-        const {container} = renderWithTheme(
+        renderWithTheme(
             <RelatedJobTabs
                 sortedRelatedJobs={[createMockJob()]}
                 selectedTabIndex={0}
                 onTabChange={onTabChange}
             />
         );
-        expect(container.firstChild).toBeNull();
+        // `MantineProvider` injects a <style> element, so assert on the absence
+        // of tabs rather than on an empty container.
+        expect(screen.queryAllByRole('tab')).toHaveLength(0);
     });
 
     it('renders tabs for multiple related jobs', () => {

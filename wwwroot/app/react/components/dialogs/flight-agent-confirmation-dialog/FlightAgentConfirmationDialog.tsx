@@ -5,7 +5,7 @@
  * Handles both flight and agent assignment confirmation with cargo processing calculations.
  */
 
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import DialogContent from '@mui/material/DialogContent';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -31,24 +31,40 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import {DateTimePicker} from '@mui/x-date-pickers/DateTimePicker';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import {DateTimePicker} from '@mantine/dates';
 import dayjs, {Dayjs} from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 
 import {
-    FlightAgentConfirmationDialogProps,
-    FlightCargoProcessing,
-    CargoStatus,
-    CargoIndicator,
     AvailableTime,
+    CargoIndicator,
+    CargoStatus,
+    FlightAgentConfirmationDialogProps,
     FlightAgentDialogResult,
+    FlightCargoProcessing,
     FlightSegment,
 } from './types';
-import {DialogShell, DialogHeader, DialogFooter, AgentEmailFields, type AgentEmailState} from '../shared';
+import {AgentEmailFields, type AgentEmailState, DialogFooter, DialogHeader, DialogShell} from '../shared';
+
+/**
+ * `DateTimePicker` is string-valued, so these two fields are wall-clock end to end —
+ * no instant is constructed and no zone is applied. The surrounding dialog is still
+ * MUI; see the plan's Phase 7b note on picker-only conversions.
+ */
+const PICKER_VALUE_FORMAT = 'YYYY-MM-DD HH:mm';
+const PICKER_DISPLAY_FORMAT = 'DD MMM YYYY HH:mm';
+
+const pickerValue = (value: Dayjs | null): string | null =>
+    value?.isValid() ? value.format(PICKER_VALUE_FORMAT) : null;
+
+const applyPicked = (value: string | null, set: (next: Dayjs) => void): void => {
+    const parsed = value ? dayjs(value) : null;
+    if (parsed?.isValid()) {
+        set(parsed);
+    }
+};
 
 dayjs.extend(duration);
 dayjs.extend(utc);
@@ -416,7 +432,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             // Process flight data if in flight mode
             if (mode === 'flight' && flight) {
                 initializeLoadingStates();
-                processFlightData();
+                void processFlightData();
             }
         }
     }, [open, mode, flight, existingAwb, processFlightData, initializeLoadingStates]);
@@ -491,7 +507,6 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     };
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DialogShell
                 open={open}
                 onClose={onClose}
@@ -649,15 +664,12 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                         <CircularProgress size={20}/>
                                     ) : packageTimeEditEnabled ? (
                                         <DateTimePicker
-                                            value={packageReadyTime}
-                                            onChange={(newValue) => {
-                                                if (newValue && newValue.isValid()) {
-                                                    setPackageReadyTime(newValue);
-                                                }
-                                            }}
-                                            slotProps={{
-                                                textField: {size: 'small', fullWidth: true},
-                                            }}
+                                            aria-label="Package ready"
+                                            value={pickerValue(packageReadyTime)}
+                                            onChange={(value) => applyPicked(value, setPackageReadyTime)}
+                                            valueFormat={PICKER_DISPLAY_FORMAT}
+                                            timePickerProps={{format: '24h', withDropdown: true}}
+                                            size="sm"
                                         />
                                     ) : packageReadyTime ? (
                                         <>
@@ -731,15 +743,12 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                         Deliver By
                                     </Typography>
                                     <DateTimePicker
-                                        value={deliveryByTime}
-                                        onChange={(newValue) => {
-                                            if (newValue && newValue.isValid()) {
-                                                setDeliveryByTime(newValue);
-                                            }
-                                        }}
-                                        slotProps={{
-                                            textField: {size: 'small', fullWidth: true},
-                                        }}
+                                        aria-label="Deliver by"
+                                        value={pickerValue(deliveryByTime)}
+                                        onChange={(value) => applyPicked(value, setDeliveryByTime)}
+                                        valueFormat={PICKER_DISPLAY_FORMAT}
+                                        timePickerProps={{format: '24h', withDropdown: true}}
+                                        size="sm"
                                     />
                                     {!deliveryByTime && (
                                         <Button
@@ -846,7 +855,6 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                     confirmDisabled={mode === 'flight' && isCalculatingTimes}
                 />
             </DialogShell>
-        </LocalizationProvider>
     );
 };
 

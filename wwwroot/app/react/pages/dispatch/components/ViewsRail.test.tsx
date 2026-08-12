@@ -1,9 +1,9 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {setupUser} from '../../../__testUtils__/setupUser';
 import {ViewsRail} from './ViewsRail';
 import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 const userEvent = setupUser();
 
@@ -21,7 +21,7 @@ function renderRail(props: Partial<React.ComponentProps<typeof ViewsRail>> = {})
     const onToggle = jest.fn();
     const onClearAll = jest.fn();
     render(
-        <ThemeProvider theme={createTheme()}>
+        <MantineTestProvider>
             <ViewsRail
                 views={views}
                 selectedIds={[11]}
@@ -30,7 +30,7 @@ function renderRail(props: Partial<React.ComponentProps<typeof ViewsRail>> = {})
                 onClearAll={onClearAll}
                 {...props}
             />
-        </ThemeProvider>,
+        </MantineTestProvider>,
     );
     return {onToggle, onClearAll};
 }
@@ -57,18 +57,18 @@ describe('ViewsRail', () => {
 
     it('replaces Clear with a tenant-specific hint when nothing is selected', () => {
         const {rerender} = render(
-            <ThemeProvider theme={createTheme()}>
+            <MantineTestProvider>
                 <ViewsRail views={views} selectedIds={[]} isUsCustomer={false} onToggle={jest.fn()} onClearAll={jest.fn()}/>
-            </ThemeProvider>,
+            </MantineTestProvider>,
         );
 
         expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
         expect(screen.getByText('Select a view to load jobs.')).toBeInTheDocument();
 
         rerender(
-            <ThemeProvider theme={createTheme()}>
+            <MantineTestProvider>
                 <ViewsRail views={views} selectedIds={[]} isUsCustomer onToggle={jest.fn()} onClearAll={jest.fn()}/>
-            </ThemeProvider>,
+            </MantineTestProvider>,
         );
         expect(screen.getByText('No view selected — showing all jobs.')).toBeInTheDocument();
     });
@@ -81,12 +81,14 @@ describe('ViewsRail', () => {
     });
 
     it('renders nothing when the tenant has no views configured', () => {
-        const {container} = render(
-            <ThemeProvider theme={createTheme()}>
+        render(
+            <MantineTestProvider>
                 <ViewsRail views={[]} selectedIds={[]} isUsCustomer={false} onToggle={jest.fn()} onClearAll={jest.fn()}/>
-            </ThemeProvider>,
+            </MantineTestProvider>,
         );
 
-        expect(container).toBeEmptyDOMElement();
+        // `container` is not empty under a MantineProvider — it injects a <style>.
+        expect(screen.queryByRole('group', {name: 'Job list views'})).not.toBeInTheDocument();
+        expect(screen.queryByTestId('views-rail-loading')).not.toBeInTheDocument();
     });
 });

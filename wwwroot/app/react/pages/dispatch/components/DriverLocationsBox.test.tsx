@@ -2,7 +2,6 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import dayjs from 'dayjs';
 
 const fetchDriverLocationsMock = jest.fn();
@@ -24,6 +23,7 @@ jest.mock('../../../components/common/driver-locations', () => ({
 }));
 
 import {DriverLocationsBox} from './DriverLocationsBox';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
@@ -33,7 +33,7 @@ function renderBox(overrides: Partial<React.ComponentProps<typeof DriverLocation
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={createTheme()}>
+            <MantineTestProvider>
                 <DriverLocationsBox
                     isUsCustomer={false}
                     despatchViewIds={[]}
@@ -42,7 +42,7 @@ function renderBox(overrides: Partial<React.ComponentProps<typeof DriverLocation
                     truckMode="On"
                     {...overrides}
                 />
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }

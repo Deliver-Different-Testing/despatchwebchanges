@@ -3,22 +3,18 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
 import {WarningBanner} from './WarningBanner';
 import {createMockJob} from '../__testUtils__/mockJob';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('WarningBanner', () => {
     it('renders nothing for a normal job', () => {
         const job = createMockJob({isArchived: false, preBook: false, isBulkJob: false});
-        const {container} = renderWithTheme(<WarningBanner job={job} />);
-        expect(container.firstChild).toBeNull();
+        renderWithTheme(<WarningBanner job={job} />);
+        // `MantineProvider` injects a <style> element, so an empty container is
+        // no longer the signal — assert the banner's role is absent instead.
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('shows archived warning', () => {

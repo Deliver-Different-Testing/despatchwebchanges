@@ -3,10 +3,9 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Collapse from '@mui/material/Collapse';
-import RouteIcon from '@mui/icons-material/Route';
+import {Collapse, Group, Text} from '@mantine/core';
+import {IconRoute} from '@tabler/icons-react';
+import {Icon} from '../../icon/Icon';
 
 interface TotalDistanceProps {
     distance: number;
@@ -17,27 +16,34 @@ interface TotalDistanceProps {
 export const TotalDistance = React.memo(function TotalDistance({distance, isUsCustomer, visible}: TotalDistanceProps) {
     const unit = isUsCustomer ? 'miles' : 'km';
 
+    // Mantine v9 spells MUI's `in` as `expanded` (an unknown `in` falls through
+    // to the DOM and the collapse silently never opens), and `keepMounted={false}`
+    // is its `unmountOnExit`: without it the collapsed row stays in the DOM but
+    // leaves the a11y tree.
     return (
-        <Collapse in={visible && !!distance} unmountOnExit>
-            <Box
-                sx={{
-                    bgcolor: 'grey.50',
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: 'divider',
-                    py: 1,
-                    px: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1,
+        <Collapse expanded={visible && !!distance} keepMounted={false}>
+            <Group
+                justify="center"
+                gap={8}
+                style={{
+                    backgroundColor: 'var(--mantine-color-gray-1)',
+                    borderRadius: 'var(--mantine-radius-lg)',
+                    border: '1px solid var(--mantine-color-default-border)',
+                    paddingBlock: 8,
+                    paddingInline: 16,
                 }}
             >
-                <RouteIcon sx={{fontSize: 18, color: 'primary.main', opacity: 0.7}}/>
-                <Typography variant="body2" sx={{fontSize: '0.875rem', fontWeight: 600}}>
+                <Icon
+                    tabler={IconRoute}
+                    size={18}
+                    color="var(--mantine-primary-color-filled)"
+                    style={{opacity: 0.7}}
+                    aria-hidden
+                />
+                <Text style={{fontSize: '0.875rem', fontWeight: 600}}>
                     {distance ? distance.toFixed(1) : 0} {unit}
-                </Typography>
-            </Box>
+                </Text>
+            </Group>
         </Collapse>
     );
 });

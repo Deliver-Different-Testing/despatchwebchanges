@@ -4,7 +4,7 @@
 
 import React from 'react';
 import {screen} from '@testing-library/react';
-import { renderWithTheme } from '../../__testUtils__';
+import { renderWithMantine } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {JobListToolbar} from './JobListToolbar';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
@@ -38,22 +38,22 @@ function createDefaultProps(overrides?: Partial<{
 }
 
 describe('JobListToolbar', () => {
-    it('renders category buttons, search input, and density toggle buttons', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps()}/>);
+    it('renders the category radio group, the search input, and the density toggle', () => {
+        renderWithMantine(<JobListToolbar {...createDefaultProps()}/>);
 
-        expect(screen.getByText('Unassigned')).toBeInTheDocument();
-        expect(screen.getByText('Active')).toBeInTheDocument();
-        expect(screen.getByText('Done')).toBeInTheDocument();
-        expect(screen.getByText('All')).toBeInTheDocument();
+        // Categories are mutually exclusive, so they are one radio group.
+        expect(screen.getByRole('radio', {name: 'Unassigned'})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: 'Active'})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: 'Done'})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: 'All'})).toBeChecked();
         expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
-        const buttons = screen.getAllByRole('button');
-        expect(buttons.length).toBeGreaterThanOrEqual(4);
+        expect(screen.getByRole('radiogroup', {name: 'Row density'})).toBeInTheDocument();
     });
 
     it('fires onCategoryChange when a category is clicked', async () => {
         const user = setupUser();
         const props = createDefaultProps();
-        renderWithTheme(<JobListToolbar {...props}/>);
+        renderWithMantine(<JobListToolbar {...props}/>);
 
         await user.click(screen.getByText('Unassigned'));
 
@@ -61,12 +61,12 @@ describe('JobListToolbar', () => {
     });
 
     it('shows logged-in only toggle when dispatching is enabled', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})}/>);
+        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})}/>);
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();
     });
 
     it('omits the view options (density / logged-in) when they are relocated to the header', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps()} renderViewOptions={false}/>);
+        renderWithMantine(<JobListToolbar {...createDefaultProps()} renderViewOptions={false}/>);
         // Category tabs + search stay; view options move to the panel header.
         expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
         expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
@@ -74,24 +74,24 @@ describe('JobListToolbar', () => {
     });
 
     it('shows logged-in only toggle on job search page', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})}/>);
+        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})}/>);
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();
     });
 
     it('hides logged-in only toggle when dispatching is not enabled', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Domestic})}/>);
+        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.Domestic})}/>);
         expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
     });
 
     it('hides logged-in only toggle when hideLoggedInSwitch is true', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})} hideLoggedInSwitch/>);
+        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})} hideLoggedInSwitch/>);
         expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
     });
 
     it('fires onResetColumns when reset button is clicked', async () => {
         const user = setupUser();
         const props = createDefaultProps();
-        renderWithTheme(<JobListToolbar {...props}/>);
+        renderWithMantine(<JobListToolbar {...props}/>);
 
         const resetButton = screen.getByRole('button', {name: /reset columns/i});
         await user.click(resetButton);

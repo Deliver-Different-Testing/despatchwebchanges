@@ -9,6 +9,7 @@ import {apiClient} from './apiClient';
 import {JobStatus} from '../../enums/job-status.enum';
 import InternalJobStatus from "../../enums/job-internal-status.enum";
 import type {EditAddressDialogViewModel} from '../interfaces';
+import type {RestorePodImpactRow} from './restorePodImpact';
 
 // ── Add Stop ─────────────────────────────────────────────────────────
 
@@ -84,6 +85,14 @@ export async function reAllocateJobs(courierId: number, jobIds: number[]): Promi
 
 export async function restoreJobs(jobIds: number[], removeCapturedImages = false): Promise<void> {
     await apiClient.post('job/RestoreJobs', {jobIds, removeCapturedImages});
+}
+
+/**
+ * Read-only: what a restore of these jobs would cost in proof of delivery — the POD name it would
+ * clear and how many captured photos/signatures are held against each job.
+ */
+export async function getRestorePodImpact(jobIds: number[]): Promise<RestorePodImpactRow[]> {
+    return await apiClient.post<RestorePodImpactRow[]>('job/GetRestorePodImpact', {jobIds}) ?? [];
 }
 
 export async function restoreSplitJobs(jobIds: number[]): Promise<void> {
@@ -278,6 +287,7 @@ export const jobListApi = {
     allocateJobs,
     reAllocateJobs,
     restoreJobs,
+    getRestorePodImpact,
     restoreSplitJobs,
     addRestoreEvent,
     setJobLocked,

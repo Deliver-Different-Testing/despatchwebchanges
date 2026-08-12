@@ -1,17 +1,8 @@
 import React from 'react';
-import {alpha} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import CheckIcon from '@mui/icons-material/Check';
-import EditNoteIcon from '@mui/icons-material/EditNote';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
-import {PriceDelta} from '../shared/PriceDelta';
+import {Box, Button, Group, Text} from '@mantine/core';
+import {ArrowRight, BellRing, Check, NotepadText} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {DialogHeader, DialogShell, PriceDelta} from '../shared/mantine';
 
 export interface PriceChangeModalProps {
     open: boolean;
@@ -25,6 +16,24 @@ export interface PriceChangeModalProps {
     onManualEdit: () => void;
 }
 
+/** The two price tiles sit on a faint wash so the pair reads as one comparison. */
+const comparisonStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    padding: 16,
+    backgroundColor: 'var(--mantine-color-gray-1)',
+    borderRadius: 'var(--mantine-radius-lg)',
+    marginBottom: 4,
+};
+
+const secondaryActionProps = {
+    variant: 'default',
+    radius: 'md',
+    fullWidth: true,
+} as const;
+
 export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
     open,
     jobNumber,
@@ -37,182 +46,100 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
     onManualEdit,
 }) => {
     const diff = newPrice - oldPrice;
-    const diffColor = diff > 0 ? 'error.main' : diff < 0 ? 'success.main' : 'text.secondary';
+    // Up is bad news on a price change, down is good; no change reads neutral.
+    const diffColor = diff > 0
+        ? 'var(--mantine-color-red-6)'
+        : diff < 0 ? 'var(--mantine-color-green-6)' : 'var(--mantine-color-dimmed)';
 
     return (
-        <Dialog
-            open={open}
-            onClose={isApplying ? undefined : onKeep}
-            maxWidth="xs"
-            disableEnforceFocus
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {overflow: 'hidden', width: 400, maxWidth: '95vw'},
-                },
-            }}
+        <DialogShell
+            opened={open}
+            onClose={isApplying ? () => {} : onKeep}
+            size={400}
+            label="Price Change"
+            trapFocus={false}
         >
-            {/* Header */}
-            <Box sx={(theme) => ({
-                ...headerChromeSx(theme, 'warning'),
-                minHeight: 48,
-            })}>
-                <Box sx={(theme) => headerChipSx(theme, 'warning')}>
-                    <NotificationsActiveIcon/>
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>Price Change</Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>{jobNumber}</Typography>
-                </Box>
-                <IconButton
-                    onClick={onKeep}
-                    disabled={isApplying}
-                    sx={(theme) => ({
-                        color: headerOnColor(theme, 'warning'),
-                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.15, 'warning')}
-                    })}>
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<Icon lucide={BellRing}/>}
+                title="Price Change"
+                subtitle={jobNumber}
+                variant="warning"
+                onClose={onKeep}
+                closeDisabled={isApplying}
+            />
             {/* Price comparison */}
-            <Box sx={{p: '24px 24px 20px'}}>
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: "text.secondary",
-                        mb: 2.5
-                    }}>
+            <Box px="lg" pt="lg" pb="md">
+                <Text size="sm" c="dimmed" mb="lg">
                     Updating this job changes its calculated price. How would you like to proceed?
-                </Typography>
+                </Text>
 
-                <Box sx={(theme) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 1,
-                    p: 2,
-                    bgcolor: alpha(theme.palette.common.black, 0.04),
-                    borderRadius: 2.5,
-                    mb: 0.5,
-                })}>
-                    <Box sx={{textAlign: 'center', flex: 1}}>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.secondary",
-                                display: "block",
-                                mb: 0.5
-                            }}>
-                            Original
-                        </Typography>
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                fontWeight: 600,
-                                color: "text.secondary"
-                            }}>
-                            ${oldPrice.toFixed(2)}
-                        </Typography>
+                <Box style={comparisonStyle}>
+                    <Box style={{textAlign: 'center', flex: 1}}>
+                        <Text size="xs" c="dimmed" mb={4}>Original</Text>
+                        <Text fz="lg" fw={600} c="dimmed">${oldPrice.toFixed(2)}</Text>
                     </Box>
-                    <ArrowForwardIcon sx={{fontSize: 20, color: 'text.disabled', flexShrink: 0}} />
-                    <Box sx={{textAlign: 'center', flex: 1}}>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.secondary",
-                                display: "block",
-                                mb: 0.5
-                            }}>
-                            New
-                        </Typography>
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                fontWeight: 700,
-                                color: "primary.main"
-                            }}>
+                    <Icon lucide={ArrowRight} size={20} color="var(--mantine-color-dimmed)" aria-hidden/>
+                    <Box style={{textAlign: 'center', flex: 1}}>
+                        <Text size="xs" c="dimmed" mb={4}>New</Text>
+                        <Text fz="lg" fw={700} c="var(--mantine-primary-color-filled)">
                             ${newPrice.toFixed(2)}
-                        </Typography>
+                        </Text>
                     </Box>
                 </Box>
 
                 {diff !== 0 && (
-                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mt: 1}}>
-                        <PriceDelta oldPrice={oldPrice} newPrice={newPrice} />
-                        <Typography variant="body2" color={diffColor} sx={{
-                            fontWeight: 600
-                        }}>
+                    <Group justify="center" gap={4} mt="xs">
+                        <PriceDelta oldPrice={oldPrice} newPrice={newPrice}/>
+                        <Text size="sm" fw={600} style={{color: diffColor}}>
                             {diff > 0 ? '+' : ''}{diff.toFixed(2)}
-                        </Typography>
-                    </Box>
+                        </Text>
+                    </Group>
                 )}
 
                 {description && (
-                    <Box sx={(theme) => ({
-                        mt: 2,
-                        p: 1.5,
-                        bgcolor: alpha(theme.palette.common.black, 0.04),
-                        borderRadius: 2,
-                    })}>
+                    <Box
+                        mt="md"
+                        p="sm"
+                        style={{
+                            backgroundColor: 'var(--mantine-color-gray-1)',
+                            borderRadius: 'var(--mantine-radius-md)',
+                        }}
+                    >
                         {description.split(/\r|\n/).filter(Boolean).map((line, i) => (
-                            <Typography
-                                key={i}
-                                variant="caption"
-                                sx={{
-                                    color: "text.secondary",
-                                    display: "block",
-                                    lineHeight: 1.8
-                                }}>
+                            <Text key={i} size="xs" c="dimmed" style={{lineHeight: 1.8}}>
                                 {line}
-                            </Typography>
+                            </Text>
                         ))}
                     </Box>
                 )}
             </Box>
-            {/* Actions */}
-            <Box sx={{
-                px: 2,
-                pb: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-            }}>
+            {/* Actions — stacked rather than the standard footer: accepting is the
+                headline choice and the two alternatives share the row below it. */}
+            <Box px="md" pb="md" style={{display: 'flex', flexDirection: 'column', gap: 8}}>
                 <Button
-                    variant="contained"
-                    color="primary"
                     fullWidth
+                    radius="md"
                     onClick={onAccept}
                     disabled={isApplying}
-                    startIcon={<CheckIcon />}
-                    sx={{borderRadius: 2, fontWeight: 500, py: 1}}
+                    leftSection={<Icon lucide={Check} size={16}/>}
                 >
                     {isApplying ? 'Applying…' : `Accept New Price ($${newPrice.toFixed(2)})`}
                 </Button>
-                <Box sx={{display: 'flex', gap: 1}}>
-                    <Button
-                        variant="outlined"
-                        fullWidth
-                        onClick={onKeep}
-                        disabled={isApplying}
-                        sx={{borderRadius: 2, color: 'text.secondary', borderColor: 'divider'}}
-                    >
+                <Group gap="xs" grow>
+                    <Button {...secondaryActionProps} onClick={onKeep} disabled={isApplying}>
                         Keep Original
                     </Button>
                     <Button
-                        variant="outlined"
-                        fullWidth
+                        {...secondaryActionProps}
                         onClick={onManualEdit}
                         disabled={isApplying}
-                        startIcon={<EditNoteIcon />}
-                        sx={{borderRadius: 2, color: 'text.secondary', borderColor: 'divider'}}
+                        leftSection={<Icon lucide={NotepadText} size={16}/>}
                     >
                         Set Manually
                     </Button>
-                </Box>
+                </Group>
             </Box>
-        </Dialog>
+        </DialogShell>
     );
 };
 

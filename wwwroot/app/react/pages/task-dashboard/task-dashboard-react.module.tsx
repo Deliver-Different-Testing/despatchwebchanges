@@ -7,12 +7,10 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {TaskDashboardPage} from './TaskDashboardPage';
-import {getTheme} from '../../theme/muiTheme';
 import {MountTaskDashboardConfig} from './TaskDashboardPage.interfaces';
-import {ReactQueryProvider} from '../../query';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 
 let taskDashboardRoot: Root | null = null;
@@ -56,24 +54,21 @@ export function mountTaskDashboardPage(
         taskDashboardRoot = createRoot(container);
     }
 
-    const currentTheme = getTheme();
-
-    taskDashboardRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <ErrorBoundary>
-                    <TaskDashboardPage
-                        showToast={config.showToast}
-                        isUsCustomer={config.isUsCustomer}
-                        setRefreshCallback={(cb) => {
-                            refreshCallback = cb;
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+    // The page is still MUI; Mantine wraps it so the already-migrated
+    // DispatchDialog that JobDetails opens inside it finds a provider.
+    taskDashboardRoot.render(islandTree(
+        <MuiThemeIsland>
+            <ErrorBoundary>
+                <TaskDashboardPage
+                    showToast={config.showToast}
+                    isUsCustomer={config.isUsCustomer}
+                    setRefreshCallback={(cb) => {
+                        refreshCallback = cb;
+                    }}
+                />
+            </ErrorBoundary>
+        </MuiThemeIsland>
+    ));
 
     console.log('[TaskDashboardReact] Task dashboard page rendered');
 }

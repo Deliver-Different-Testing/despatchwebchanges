@@ -10,10 +10,8 @@
  * chip centres and sizes it.
  */
 import React from 'react';
-import {ActionIcon, Box, Group, Text} from '@mantine/core';
-import {X} from 'lucide-react';
-import {DEFAULT_ICON_STROKE} from '../../../common/icon/Icon';
-import {headerChipStyle, headerColors, headerOnColor} from './styles';
+import {Box, CloseButton, Group, Text, ThemeIcon} from '@mantine/core';
+import {headerChipProps, headerColors, headerOnColor} from './styles';
 import {DialogHeaderProps} from "./DialogHeaderProps";
 
 export const DialogHeader: React.FC<DialogHeaderProps> = ({
@@ -28,9 +26,9 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
     const fg = headerOnColor(variant);
     return (
         <Group wrap="nowrap" gap="md" px="lg" py="sm" style={{backgroundColor: headerColors[variant].bg, color: fg}}>
-            <Box style={headerChipStyle(variant)}>
+            <ThemeIcon {...headerChipProps(variant)}>
                 {icon}
-            </Box>
+            </ThemeIcon>
             <Box style={{flex: 1, minWidth: 0}}>
                 {/* A real heading, so the dialog title is reachable by role and
                     can name the dialog for assistive tech. */}
@@ -40,15 +38,15 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
                 )}
             </Box>
             {actions}
-            <ActionIcon
-                variant="subtle"
+            {/* Mantine's own close affordance — it brings the icon, the size ramp
+                and the hover, so the header only has to set the on-colour. */}
+            <CloseButton
                 onClick={onClose}
                 disabled={closeDisabled}
                 aria-label="Close dialog"
-                style={{color: fg}}
-            >
-                <X size={20} strokeWidth={DEFAULT_ICON_STROKE}/>
-            </ActionIcon>
+                c={fg}
+                iconSize={20}
+            />
         </Group>
     );
 };

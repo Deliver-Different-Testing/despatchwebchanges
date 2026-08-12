@@ -7,10 +7,7 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { FlightAgentDataTable } from './FlightAgentDataTable';
-import { getTheme } from '../../../theme/muiTheme';
 import { IAppConfig } from '../../../../interfaces/app-config.interface';
 import angular from 'angular';
 import {
@@ -22,6 +19,8 @@ import {
     AirportSuggestion,
     CurrentJob,
 } from './types';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React FlightAgentDataTable
@@ -110,9 +109,6 @@ class FlightAgentDataTableReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap AngularJS callbacks to match React expected signatures
         const handleFlightSearchChange = (searchText: string) => {
             if (this.onFlightSearchChange) {
@@ -276,12 +272,12 @@ class FlightAgentDataTableReactController implements angular.IController {
             isUsCustomer: this.isUsCustomer,
         };
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <FlightAgentDataTable {...props} />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+            <MuiThemeIsland>
+            <FlightAgentDataTable {...props} />
+
+            </MuiThemeIsland>
+        ));
     }
 }
 

@@ -223,6 +223,9 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
         primaryShade: {light: 5, dark: 4},
         autoContrast: true,
         luminanceThreshold: 0.4,
+        // FloatingIndicator and the control transitions read this; without it
+        // Mantine animates regardless of the OS preference.
+        respectReducedMotion: true,
         colors: {brand: brandRamp(isUsCustomer), cyan, gold, ink, reflex, grape, green, orange, red, gray, dark},
         white: '#ffffff',
         black: ink[9],
@@ -262,6 +265,13 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             },
             Tooltip: {defaultProps: {radius: 'sm', color: 'ink'}},
             Badge: {defaultProps: {radius: 'sm'}},
+            Chip: {defaultProps: {radius: 9999}},
+            // Selection controls. Prefer `SegmentedToggle` (components/common/
+            // segmented-toggle) for any single-select choice — these defaults
+            // only keep stock usages on-brand.
+            SegmentedControl: {defaultProps: {radius: 9999, withItemsBorders: false}},
+            Switch: {defaultProps: {radius: 9999}},
+            Radio: {defaultProps: {size: 'sm'}},
             Tabs: {styles: {tab: {paddingBlock: 14, fontWeight: 500}}},
         },
         other: {

@@ -8,10 +8,11 @@
 
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
-import {PartnerRatePanel, type PartnerRatePanelProps} from './PartnerRatePanel';
-import { renderWithTheme } from '../../../__testUtils__';
+import {PartnerRatePanel} from './PartnerRatePanel';
+import { renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import type {PartnerRateForJobResponse} from '../../../services/jobListApi';
+import {PartnerRatePanelProps} from "./PartnerRatePanelProps";
 
 const rateCardResponse: PartnerRateForJobResponse = {
     rateCardRate: 85.00,
@@ -60,7 +61,7 @@ function renderPanel(overrides: Partial<PartnerRatePanelProps> = {}) {
         onRateChange: jest.fn(),
         ...overrides,
     };
-    renderWithTheme(<PartnerRatePanel {...defaultProps} />);
+    renderWithMantine(<PartnerRatePanel {...defaultProps} />);
     return defaultProps;
 }
 

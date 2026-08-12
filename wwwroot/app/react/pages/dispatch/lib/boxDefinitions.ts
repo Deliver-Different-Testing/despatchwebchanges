@@ -10,7 +10,7 @@ export function createDispatchBoxes(): Record<string, IBox> {
     return {
         [DispatchBoxes.JobsList]: {
             name: DispatchBoxes.JobsList,
-            title: 'Live Job Data',
+            title: 'Job List',
             icon: 'list_alt',
             showRefresh: true,
             visible: true,

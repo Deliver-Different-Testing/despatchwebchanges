@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
 import { DriverLocations } from './DriverLocations';
 import type {
     DriverLocationsProps,
@@ -14,14 +14,9 @@ import type {
 } from './DriverLocations.types';
 import { shouldShowCourier } from './DriverLocations.types';
 
-const theme = createTheme();
 
 const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
+    return renderWithMantineOverMui(ui);
 };
 
 // Sample data factories

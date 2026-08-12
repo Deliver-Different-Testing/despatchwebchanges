@@ -5,7 +5,7 @@
  * 34px circle with the shared cyan hover wash — see `toolbarIconStyles`.
  */
 
-import React, {useState} from 'react';
+import React from 'react';
 import {
     ActionIcon,
     Box,
@@ -19,6 +19,7 @@ import {
     Tooltip,
     UnstyledButton,
 } from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
 import {
     Check,
     Columns3,
@@ -38,7 +39,6 @@ import {
 import {Icon} from '../icon/Icon';
 import {
     badgeOverflowStyle,
-    SHELL_ICON_BUTTON_PX,
     SHELL_ICON_HOVER_FILL,
     toolbarIconButtonStyle,
 } from './toolbarIconStyles';
@@ -53,7 +53,7 @@ export {ActionsMenu} from './ActionsMenu';
 export type {ActionsMenuProps} from './ActionsMenu';
 
 // Re-exported so the existing import sites keep working now the tokens live in a leaf module.
-export {badgeOverflowStyle, SHELL_ICON_BUTTON_PX, SHELL_ICON_HOVER_FILL, toolbarIconButtonStyle};
+export {badgeOverflowStyle, SHELL_ICON_HOVER_FILL, toolbarIconButtonStyle};
 
 /** Glyph size shared by the toolbar's icon buttons. */
 const TOOLBAR_ICON_SIZE = 18;
@@ -292,9 +292,8 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
     columnEditMode,
     onToggleColumnEditMode,
 }) => {
-    const [opened, setOpened] = useState(false);
-
-    const handleClose = () => setOpened(false);
+    // `close` keeps the `handleClose` name the save/cancel handlers already call.
+    const [opened, {close: handleClose, toggle}] = useDisclosure(false);
 
     const handleSave = () => {
         onSaveLayout();
@@ -361,7 +360,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                     <ActionIcon
                         variant="subtle"
                         size="lg"
-                        onClick={() => setOpened(o => !o)}
+                        onClick={toggle}
                         style={toolbarIconButtonStyle}
                         aria-label="Layouts"
                     >

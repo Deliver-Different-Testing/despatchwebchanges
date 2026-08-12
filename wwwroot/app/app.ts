@@ -29,6 +29,8 @@ import MessagingDialogService from "./components/dialogs/messaging-dialog/messag
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import SwapPodsDialogService from "./components/dialogs/swap-pods-dialog/swap-pods-dialog.service";
+import RestoreConfirmationDialogService
+    from "./components/dialogs/restore-confirmation-dialog/restore-confirmation-dialog.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
 import SimplePriceEditDialogService
@@ -38,6 +40,8 @@ import BulkPriceUploadDialogService
 import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
 import {DriverLocationsReactComponent} from "./react/components/common/driver-locations/driver-locations-react.module";
 import {NoDataReactComponent} from "./react/components/common/no-data/no-data-react.module";
+import {HereMapReactComponent} from "./react/components/common/here-map";
+import {DispatchMapReactComponent} from "./react/components/common/dispatch-map";
 import {
     FlightAgentDataTableReactComponent
 } from "./react/components/common/flight-agent-data-table/flight-agent-data-table-react.module";
@@ -207,6 +211,8 @@ app.component("taskItemReact", TaskItemReactComponent);
 app.component("driverLocationsReact", DriverLocationsReactComponent);
 app.component("noDataReact", NoDataReactComponent);
 app.component("flightAgentDataTableReact", FlightAgentDataTableReactComponent);
+app.component("hereMapReact", HereMapReactComponent);
+app.component("dispatchMapReact", DispatchMapReactComponent);
 
 // Directives
 app.directive("reactAppShell", reactAppShellDirective);
@@ -229,6 +235,7 @@ app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingDialogService", MessagingDialogService);
 app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
 app.service('swapPodsDialogService', SwapPodsDialogService);
+app.service('restoreConfirmationDialogService', RestoreConfirmationDialogService);
 app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
 app.service('bulkPriceUploadDialogService', BulkPriceUploadDialogService);
 app.service('dispatchJobService', DispatchExecutorService);

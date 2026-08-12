@@ -10,7 +10,21 @@
  */
 
 import React, {useEffect, useCallback, useRef, useState} from 'react';
-import {ActionIcon, Box, Button, Group, Progress, Stack, Table, Tabs, Text, TextInput, Tooltip} from '@mantine/core';
+import {
+    ActionIcon,
+    Box,
+    Button,
+    FileButton,
+    Group,
+    Progress,
+    Stack,
+    Table,
+    Tabs,
+    Text,
+    TextInput,
+    Tooltip,
+    UnstyledButton,
+} from '@mantine/core';
 import {Camera, ChevronsRight, CloudDownload, CloudUpload, FileUp, Trash2} from 'lucide-react';
 import dayjs from 'dayjs';
 import type {JobFileUploadDialogProps, JobFile} from './types';
@@ -53,6 +67,8 @@ function dropBoxStyle(isPodMode: boolean, isDragOver: boolean): React.CSSPropert
             ? 'var(--mantine-color-brand-0)'
             : 'var(--mantine-color-gray-0)';
     return {
+        display: 'block',
+        width: '100%',
         padding: 'var(--mantine-spacing-lg)',
         border: `2px dashed ${borderColor}`,
         borderRadius: 'var(--mantine-radius-sm)',
@@ -76,7 +92,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
     const [activeTab, setActiveTab] = useState<string>('normal');
 
     const upload = useFileUpload({jobId, initialUploadType, showToast});
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const resetFileInputRef = useRef<() => void>(null);
 
     // In multi-tab mode, the active tab determines whether the current upload is POD
     const currentIsPOD = isBothMode ? activeTab === 'pod' : isPODOnly;
@@ -90,15 +106,11 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
         }
     }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selected = e.target.files ? Array.from(e.target.files) : [];
-        if (selected.length) await upload.uploadFiles(selected, currentIsPOD, upload.podDescription);
-        if (fileInputRef.current) fileInputRef.current.value = '';
+    const handleFilesSelected = useCallback(async (selected: File[] | null) => {
+        if (selected?.length) await upload.uploadFiles(selected, currentIsPOD, upload.podDescription);
+        // Clears the underlying input so re-picking the same file fires again.
+        resetFileInputRef.current?.();
     }, [upload, currentIsPOD]);
-
-    const handleDropBoxClick = useCallback(() => {
-        fileInputRef.current?.click();
-    }, []);
 
     const onDrop = useCallback((e: React.DragEvent) => {
         upload.handleDrop(e, currentIsPOD, upload.podDescription);
@@ -107,31 +119,32 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
     // ── Render helpers ──────────────────────────────────────────────
 
     const renderDropBox = (isPodMode: boolean) => (
-        <Box
-            style={dropBoxStyle(isPodMode, upload.isDragOver)}
-            onDrop={onDrop}
-            onDragOver={upload.handleDragOver}
-            onDragLeave={upload.handleDragLeave}
-            onClick={handleDropBoxClick}
+        <FileButton
+            multiple
+            accept={ACCEPTED_TYPES}
+            onChange={handleFilesSelected}
+            resetRef={resetFileInputRef}
         >
-            <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept={ACCEPTED_TYPES}
-                onChange={handleFileInputChange}
-                style={{display: 'none'}}
-            />
-            <Box mb="xs" c={isPodMode ? 'brand.6' : 'gray.6'} style={{display: 'flex', justifyContent: 'center'}}>
-                <Icon lucide={isPodMode ? Camera : CloudUpload} size={48}/>
-            </Box>
-            <Text>
-                {isPodMode ? 'Drag and drop POD photo here or click to upload' : 'Drag and drop files here or click to upload'}
-            </Text>
-            <Text size="xs" c="dimmed">
-                Accepted file types: Images, PDF. Max size: 10MB
-            </Text>
-        </Box>
+            {(triggerProps) => (
+                <UnstyledButton
+                    {...triggerProps}
+                    style={dropBoxStyle(isPodMode, upload.isDragOver)}
+                    onDrop={onDrop}
+                    onDragOver={upload.handleDragOver}
+                    onDragLeave={upload.handleDragLeave}
+                >
+                    <Box mb="xs" c={isPodMode ? 'brand.6' : 'gray.6'} style={{display: 'flex', justifyContent: 'center'}}>
+                        <Icon lucide={isPodMode ? Camera : CloudUpload} size={48}/>
+                    </Box>
+                    <Text>
+                        {isPodMode ? 'Drag and drop POD photo here or click to upload' : 'Drag and drop files here or click to upload'}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                        Accepted file types: Images, PDF. Max size: 10MB
+                    </Text>
+                </UnstyledButton>
+            )}
+        </FileButton>
     );
 
     const renderFileTable = (fileList: JobFile[], isPodMode: boolean) => (

@@ -14,7 +14,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {AutoCompleteDialog, AssignTypeOption, Suggestion} from './AutoCompleteDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 
 // Result interface for the dialog
 export interface AutoCompleteResult {
@@ -77,24 +77,22 @@ function renderDialog(): void {
     };
 
     // Get theme dynamically based on customer region
-    dialogRoot.render(
-        <DfrntMantineProvider>
-                <AutoCompleteDialog
-                    open={dialogState.open}
-                    title={dialogState.title}
-                    placeholder={dialogState.placeholder}
-                    itemIcon={dialogState.itemIcon}
-                    existingItem={dialogState.existingItem}
-                    showRerateOption={dialogState.showRerateOption}
-                    minInputLength={dialogState.minInputLength}
-                    typeOptions={dialogState.typeOptions}
-                    initialTypeValue={dialogState.initialTypeValue}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    onSearch={handleSearch}
-                />
-            </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <AutoCompleteDialog
+            open={dialogState.open}
+            title={dialogState.title}
+            placeholder={dialogState.placeholder}
+            itemIcon={dialogState.itemIcon}
+            existingItem={dialogState.existingItem}
+            showRerateOption={dialogState.showRerateOption}
+            minInputLength={dialogState.minInputLength}
+            typeOptions={dialogState.typeOptions}
+            initialTypeValue={dialogState.initialTypeValue}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            onSearch={handleSearch}
+        />
+    ));
 }
 
 /**

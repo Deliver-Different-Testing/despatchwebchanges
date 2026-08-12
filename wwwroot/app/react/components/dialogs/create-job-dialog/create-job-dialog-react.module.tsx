@@ -8,12 +8,10 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {CreateJobDialog} from './CreateJobDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 // State management for the dialog
 interface DialogState {
@@ -58,23 +56,19 @@ function renderDialog(): void {
         }
         dialogState.toastService.showToast(message, type);
     };
+    dialogRoot.render(islandTree(
+        <MuiThemeIsland>
+        <CreateJobDialog
+            open={dialogState.open}
+            isUsTenant={dialogState.isUsTenant}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            showToast={handleShowToast}
+        />
 
-    const currentTheme = getTheme();
+        </MuiThemeIsland>
 
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <CreateJobDialog
-                    open={dialogState.open}
-                    isUsTenant={dialogState.isUsTenant}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+    ));
 }
 
 /**

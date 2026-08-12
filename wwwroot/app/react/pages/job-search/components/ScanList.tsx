@@ -1,14 +1,8 @@
 import React from 'react';
-import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import {Group, Loader, Table} from '@mantine/core';
+import {IconQrcode} from '@tabler/icons-react';
 import {NoData} from '../../../components/common/no-data/NoData';
+import {Icon} from '../../../components/common/icon/Icon';
 import {formatLongDateTime} from '../../../utils/dateUtils';
 import {useScanDetail} from '../hooks/useScanDetail';
 
@@ -19,6 +13,8 @@ export interface ScanListProps {
     timeZoneShort?: string;
 }
 
+const scanIcon = <Icon tabler={IconQrcode}/>;
+
 export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = false, timeZoneShort}) => {
     const {scans, isLoading} = useScanDetail({jobId, runDate, isBulkJob});
 
@@ -27,16 +23,16 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
             <NoData
                 title="No Job Selected"
                 message="Select a job to see its scan records."
-                icon={<QrCodeScannerIcon/>}
+                icon={scanIcon}
             />
         );
     }
 
     if (isLoading) {
         return (
-            <Box sx={{p: 2}}>
-                <LinearProgress />
-            </Box>
+            <Group justify="center" p="md">
+                <Loader size="sm" aria-label="Loading scan records"/>
+            </Group>
         );
     }
 
@@ -45,34 +41,36 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
             <NoData
                 title="No Scan Records"
                 message="This job has no scan records. Use the driver application to scan the job items."
-                icon={<QrCodeScannerIcon/>}
+                icon={scanIcon}
             />
         );
     }
 
     return (
-        <TableContainer sx={{height: '100%', overflow: 'auto'}}>
-            <Table size="small" stickyHeader>
-                <TableHead>
-                    <TableRow>
-                        <TableCell>Date/Time</TableCell>
-                        <TableCell>Scan Detail</TableCell>
-                        <TableCell>Courier</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
+        // `stickyHeader` and `highlightOnHover` are native props; the scroll box is the
+        // panel body, so the table only needs to fill it.
+        <Table.ScrollContainer minWidth={480} h="100%">
+            <Table stickyHeader highlightOnHover verticalSpacing="xs" fz="sm">
+                <Table.Thead>
+                    <Table.Tr>
+                        <Table.Th>Date/Time</Table.Th>
+                        <Table.Th>Scan Detail</Table.Th>
+                        <Table.Th>Courier</Table.Th>
+                    </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
                     {scans.map(scan => (
-                        <TableRow key={scan.bulkScanId} hover>
-                            <TableCell>
+                        <Table.Tr key={scan.bulkScanId}>
+                            <Table.Td>
                                 {formatLongDateTime(scan.scanDateTime)}
                                 {timeZoneShort ? ` (${timeZoneShort})` : null}
-                            </TableCell>
-                            <TableCell>{scan.scanDetail}</TableCell>
-                            <TableCell>{scan.courier}</TableCell>
-                        </TableRow>
+                            </Table.Td>
+                            <Table.Td>{scan.scanDetail}</Table.Td>
+                            <Table.Td>{scan.courier}</Table.Td>
+                        </Table.Tr>
                     ))}
-                </TableBody>
+                </Table.Tbody>
             </Table>
-        </TableContainer>
+        </Table.ScrollContainer>
     );
 };

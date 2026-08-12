@@ -7,7 +7,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {AppShell} from './AppShell';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {MuiThemeIsland} from '../mui-interop/MuiThemeIsland';
 import type {BreadcrumbItem} from '../app-toolbar/AppToolbar';
 import {
@@ -266,25 +266,23 @@ function renderShell(): void {
 
     const children = buildToolbarChildren();
 
-    shellRoot.render(
-        <DfrntMantineProvider>
-            <AppShell
-                title={shellState.title}
-                breadcrumbs={shellState.breadcrumbs}
-                firstName={shellState.firstName}
-                fullName={shellState.fullName}
-                isUsCustomer={shellState.isUsCustomer}
-                currentState={shellState.currentState}
-                logoUrl={shellState.logoUrl}
-                companyName={shellState.companyName}
-                onLogoClick={shellState.onLogoClick}
-                onNavigate={shellState.onNavigate}
-                beta={shellState.beta}
-            >
-                {children}
-            </AppShell>
-        </DfrntMantineProvider>
-    );
+    shellRoot.render(islandTree(
+        <AppShell
+            title={shellState.title}
+            breadcrumbs={shellState.breadcrumbs}
+            firstName={shellState.firstName}
+            fullName={shellState.fullName}
+            isUsCustomer={shellState.isUsCustomer}
+            currentState={shellState.currentState}
+            logoUrl={shellState.logoUrl}
+            companyName={shellState.companyName}
+            onLogoClick={shellState.onLogoClick}
+            onNavigate={shellState.onNavigate}
+            beta={shellState.beta}
+        >
+            {children}
+        </AppShell>
+    ));
 }
 
 /**

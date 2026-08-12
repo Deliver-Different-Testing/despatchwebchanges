@@ -8,8 +8,6 @@ import React from 'react';
 import { render, RenderOptions, screen } from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { MantineProvider, type MantineThemeOverride } from '@mantine/core';
 import { dfrntTheme, dfrntCssVariablesResolver } from '../theme/dfrntMantineTheme';
 
@@ -70,7 +68,6 @@ export function createTestQueryClient(): QueryClient {
 interface WrapperOptions {
     withTheme?: boolean;
     withQueryClient?: boolean;
-    withLocalization?: boolean;
     queryClient?: QueryClient;
 }
 
@@ -81,20 +78,11 @@ export function createWrapper(options: WrapperOptions = {}) {
     const {
         withTheme = true,
         withQueryClient = false,
-        withLocalization = false,
         queryClient,
     } = options;
 
     const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         let result = <>{children}</>;
-
-        if (withLocalization) {
-            result = (
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    {result}
-                </LocalizationProvider>
-            );
-        }
 
         if (withQueryClient) {
             const client = queryClient ?? createTestQueryClient();
@@ -144,7 +132,7 @@ export function renderWithProviders(
 }
 
 /**
- * Render with all providers (Theme, QueryClient, Localization)
+ * Render with all providers (Theme, QueryClient)
  */
 export function renderWithAllProviders(
     ui: React.ReactElement,
@@ -155,12 +143,23 @@ export function renderWithAllProviders(
         wrapper: createWrapper({
             withTheme: true,
             withQueryClient: true,
-            withLocalization: true,
             queryClient,
         }),
         ...renderOptions,
     });
 }
+
+/**
+ * The Mantine provider as a component, for tests that build their own wrapper
+ * element (rather than calling `renderWithMantine`) — typically because they
+ * also need `rerender` with the wrapper inline. The drop-in replacement for
+ * `<ThemeProvider theme={createTheme()}>`.
+ */
+export const MantineTestProvider: React.FC<{children: React.ReactNode}> = ({children}) => (
+    <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+        {children}
+    </MantineProvider>
+);
 
 /**
  * Render inside the DFRNT Mantine theme provider. The Mantine counterpart to
@@ -175,6 +174,31 @@ export function renderWithMantine(
     const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
         <MantineProvider theme={theme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
             {children}
+        </MantineProvider>
+    );
+    return render(ui, {wrapper: Wrapper, ...renderOptions});
+}
+
+/**
+ * Mantine outside, MUI inside — the coexistence order the islands themselves
+ * use (`islandTree(<MuiThemeIsland>…)`).
+ *
+ * For a component still on MUI that renders a migrated Mantine child: MUI
+ * silently falls back to its default theme without a provider, but Mantine's
+ * `useStyles` **throws**, so the Mantine provider has to be there even when the
+ * component under test has no Mantine of its own.
+ */
+export function renderWithMantineOverMui(
+    ui: React.ReactElement,
+    options?: Omit<RenderOptions, 'wrapper'> & {queryClient?: QueryClient; withQueryClient?: boolean}
+) {
+    const {queryClient, withQueryClient = false, ...renderOptions} = options ?? {};
+    const client = withQueryClient || queryClient ? (queryClient ?? createTestQueryClient()) : undefined;
+    const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
+        <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+            <ThemeProvider theme={testTheme}>
+                {client ? <QueryClientProvider client={client}>{children}</QueryClientProvider> : children}
+            </ThemeProvider>
         </MantineProvider>
     );
     return render(ui, {wrapper: Wrapper, ...renderOptions});

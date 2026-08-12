@@ -1,43 +1,25 @@
 /**
  * Job List Table
  *
- * MUI Table rendering dispatch jobs with sortable headers, row styling,
- * density modes, and right-click context menu trigger.
+ * The dispatch job list: sortable headers, resizable columns, density modes,
+ * row highlighting and a right-click context-menu trigger.
  *
- * Follows app design conventions:
- * - gray.100 header background with 2px bottom border
- * - alpha-based selection highlighting
- * - theme-token status chips
- * - @mui/icons-material for all icons (no font Icon component)
+ * It keeps **raw `<table>` markup** rather than a component tree. The body is
+ * virtualised with `@tanstack/react-virtual`, so rows re-render on every scroll
+ * frame; all of its styling therefore lives in `JobListTable.module.css` and is
+ * selected with `data-*` attributes, with density carried by two CSS custom
+ * properties on the table element.
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useVirtualizer} from '@tanstack/react-virtual';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableSortLabel from '@mui/material/TableSortLabel';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import Button from '@mui/material/Button';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
-import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
-import type {SxProps, Theme} from '@mui/material';
+import {ActionIcon, Badge, Box, Button, Group, Text, Tooltip} from '@mantine/core';
+import {useDisclosure, useInterval} from '@mantine/hooks';
+import {Briefcase, ChevronUp, Info, UserPlus, UserSearch, Zap} from 'lucide-react';
 
-// MUI Icons
-import WorkOutlineIcon from '@mui/icons-material/WorkOutlined';
-import BoltIcon from '@mui/icons-material/Bolt';
-import PersonSearchIcon from '@mui/icons-material/PersonSearch';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-
+import {Icon} from '../common/icon/Icon';
+import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
+import {SearchSelect} from '../common/search-select/SearchSelect';
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
 import type {CourierSuggestion} from '../../interfaces/afterhours';
@@ -56,6 +38,7 @@ import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './j
 import {JobListLegendDialog} from './JobListLegendDialog';
 import {FLIGHT_INDICATORS, INDICATORS, renderLegendMarker, renderTableIndicator} from './jobListIndicators';
 import {NoData} from '../common/no-data/NoData';
+import classes from './JobListTable.module.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -177,152 +160,40 @@ function formatJobTime(booked: dayjs.Dayjs | undefined): string {
     return tz ? `${time} ${tz}` : time;
 }
 
-// ── Styles ───────────────────────────────────────────────────────────
+// ── Row appearance ───────────────────────────────────────────────────
 
-// Pre-defined keyframes so MUI/emotion doesn't re-hash on every render
-const newJobAnimationSx = {
-    '@keyframes newJobHighlight': {
-        '0%': {backgroundColor: '#bbf7d0'},
-        '100%': {backgroundColor: 'transparent'},
-    },
-    animation: 'newJobHighlight 2s ease-out',
-} as const;
+type RowVariant = 'selected' | 'related' | 'direct-chilled' | 'direct' | 'chilled' | 'multipart' | 'child' | undefined;
 
-const headerCellSx: SxProps<Theme> = {
-    fontWeight: 600,
-    fontSize: '0.75rem',
-    py: 1,
-    px: 1,
-    whiteSpace: 'nowrap',
-    bgcolor: 'grey.100',
-    borderBottom: 2,
-    borderColor: 'grey.300',
-    color: 'text.secondary',
-    textTransform: 'uppercase',
-    letterSpacing: '0.025em',
-};
+/**
+ * The row's category, in precedence order — the first match wins. Multi-select
+ * and unread are *additive* and ride on their own attributes, so they can
+ * overlay whichever category applies.
+ */
+function getRowVariant(job: DispatchJob, isSelected: boolean, isRelated: boolean): RowVariant {
+    if (isSelected) return 'selected';
+    if (isRelated) return 'related';
 
-function getRowSx(
-    job: DispatchJob,
-    isSelected: boolean,
-    isRelated: boolean,
-    densityMode: DensityMode,
-    isMultiSelected: boolean,
-): Record<string, any> {
-    const basePy = densityMode === 'ultra-dense' ? 0 : densityMode === 'dense' ? 0.25 : 0.75;
-
-    const baseCellSx = {
-        py: basePy,
-        px: 1,
-        fontSize: densityMode === 'ultra-dense' ? '0.75rem' : '0.8125rem',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-    } satisfies SxProps<Theme>;
-
-    const sx: Record<string, any> = {
-        cursor: 'pointer',
-        transition: 'background-color 150ms ease',
-        '& .MuiTableCell-root': {...baseCellSx},
-        '&:hover': {
-            bgcolor: '#cbd5e1',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
-        },
-    };
-
-    // Determine highlight flags
     const isDirect = !!job.direct;
     const isChilled = isChilledJob(job);
-    const isChildJob = !job.isParentOrSingle && !!job.parentId;
-    const isMultiPart = isMultiPartJob(job);
-    // Apply highlight in priority order (highest wins for bg/border)
-    if (isSelected) {
-        sx.bgcolor = '#e9f2ff';
-        sx.boxShadow = 'inset 3px 0 0 0 #0c66e4';
-        sx.borderLeft = 'none';
-        sx['& .MuiTableCell-root'] = {
-            ...baseCellSx,
-            fontWeight: 600,
-        };
-        sx['&:hover'] = {
-            bgcolor: '#cce0ff',
-        };
-    } else if (isRelated) {
-        sx.bgcolor = '#f1f2f4';
-        sx.borderLeft = 'none';
-        sx['& .MuiTableCell-root'] = {
-            ...baseCellSx,
-            color: '#656d76',
-        };
-        sx['&:hover'] = {
-            bgcolor: '#e4e6e9',
-        };
-    } else if (isDirect && isChilled) {
-        // Combined direct + chilled = purple
-        sx.bgcolor = 'rgba(128, 0, 128, 0.05)';
-        sx.borderLeft = '3px solid #9333ea';
-        sx['& .MuiTableCell-root'] = {
-            ...baseCellSx,
-            color: '#7e22ce',
-            fontWeight: 600,
-        };
-        sx['&:hover'] = {
-            bgcolor: 'rgba(128, 0, 128, 0.1)',
-        };
-    } else if (isDirect) {
-        sx.bgcolor = 'rgba(255, 0, 0, 0.05)';
-        sx.borderLeft = '3px solid #dc2626';
-        sx['& .MuiTableCell-root'] = {
-            ...baseCellSx,
-            color: '#dc2626',
-            fontWeight: 600,
-        };
-        sx['&:hover'] = {
-            bgcolor: 'rgba(255, 0, 0, 0.1)',
-        };
-    } else if (isChilled) {
-        sx.bgcolor = 'rgba(30, 144, 255, 0.05)';
-        sx.borderLeft = '3px solid #0ea5e9';
-        sx['& .MuiTableCell-root'] = {
-            ...baseCellSx,
-            color: '#0284c7',
-            fontWeight: 600,
-        };
-        sx['&:hover'] = {
-            bgcolor: 'rgba(30, 144, 255, 0.1)',
-        };
-    } else if (isMultiPart) {
-        sx.bgcolor = '#f1f5f9';
-        sx.borderLeft = '3px solid #8b5cf6';
-        sx['&:hover'] = {
-            bgcolor: '#e2e8f0',
-        };
-    } else if (isChildJob) {
-        sx.bgcolor = '#f8fafc';
-        sx.borderLeft = '3px solid #64748b';
-        sx['&:hover'] = {
-            bgcolor: '#cbd5e1',
-        };
-    }
+    if (isDirect && isChilled) return 'direct-chilled';
+    if (isDirect) return 'direct';
+    if (isChilled) return 'chilled';
+    if (isMultiPartJob(job)) return 'multipart';
+    if (!job.isParentOrSingle && !!job.parentId) return 'child';
+    return undefined;
+}
 
-    // Multi-select is additive — overlays on top of any category color
-    if (isMultiSelected) {
-        sx.bgcolor = '#d1c4e9';
-        sx.borderLeft = '4px solid #651fff';
-        sx['&:hover'] = {
-            bgcolor: '#b39ddb',
-            boxShadow: '0 1px 3px rgba(101, 31, 255, 0.2)',
-        };
-    }
+/** Cell padding and font size per density mode, as the CSS module's two custom properties. */
+function densityVars(densityMode: DensityMode): React.CSSProperties {
+    const py = densityMode === 'ultra-dense' ? '0px' : densityMode === 'dense' ? '2px' : '6px';
+    const fz = densityMode === 'ultra-dense' ? '0.75rem' : '0.8125rem';
+    return {'--jl-cell-py': py, '--jl-cell-fz': fz} as React.CSSProperties;
+}
 
-    // Unread is additive — overrides font-weight to 900 regardless of other highlights
-    if (!job.hasBeenRead) {
-        sx['& .MuiTableCell-root'] = {
-            ...sx['& .MuiTableCell-root'],
-            fontWeight: 900,
-        };
-    }
-
-    return sx;
+function alignClass(align: ColumnDef['align'], right: string, center: string): string | undefined {
+    if (align === 'right') return right;
+    if (align === 'center') return center;
+    return undefined;
 }
 
 // The branch order below IS the precedence — the first match is the marker shown
@@ -363,24 +234,24 @@ function getPriorityIndicator(job: DispatchJob): React.ReactNode {
     return null;
 }
 
-function getStatusChipColor(job: DispatchJob): 'default' | 'success' | 'warning' | 'error' | 'info' | 'primary' {
+function getStatusBadgeColor(job: DispatchJob): string {
     switch (job.statusId) {
         case JOB_STATUS.Completed:
-            return 'success';
+            return 'green';
         case JOB_STATUS.Warning:
         case JOB_STATUS.LatePickup:
         case JOB_STATUS.LateDelivery:
-            return 'warning';
+            return 'orange';
         case JOB_STATUS.Rejected:
         case JOB_STATUS.Missing:
-            return 'error';
+            return 'red';
         case JOB_STATUS.Dispatched:
         case JOB_STATUS.Accepted:
         case JOB_STATUS.PickedUp:
         case JOB_STATUS.InTransit:
-            return 'info';
+            return 'reflex';
         default:
-            return 'default';
+            return 'gray';
     }
 }
 
@@ -437,17 +308,14 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     // time-sensitive status (late/urgent) will pick up changes via the
     // parent's useMemo recomputation on the next data refresh.
     const tickRef = useRef(0);
-    useEffect(() => {
-        const timer = setInterval(() => {
-            tickRef.current++;
-        }, 60_000);
-        return () => clearInterval(timer);
-    }, []);
+    useInterval(() => {
+        tickRef.current++;
+    }, 60_000, {autoInvoke: true});
 
-    const [legendOpen, setLegendOpen] = useState(false);
+    const [legendOpen, {open: openLegend, close: closeLegend}] = useDisclosure(false);
 
     const handleSort = useCallback(
-        (e: React.MouseEvent<HTMLSpanElement>) => {
+        (e: React.MouseEvent<HTMLButtonElement>) => {
             const column = e.currentTarget.dataset.sortColumn;
             if (column) onSortChange(column);
         },
@@ -519,91 +387,91 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     }, [virtualItems, jobs.length, onLoadMore, hasMore, isFetchingMore]);
 
     if (jobs.length === 0) {
+        // `NoData` is a shared leaf still rendered by unmigrated MUI islands, so
+        // it moves in a later phase; until then it needs the MUI theme.
         return (
-            <NoData
-                title="No Jobs"
-                message="No jobs to display"
-                icon={<WorkOutlineIcon/>}
-            />
+            <MuiThemeIsland>
+                <NoData
+                    title="No Jobs"
+                    message="No jobs to display"
+                    icon={<Icon lucide={Briefcase} size={48}/>}
+                />
+            </MuiThemeIsland>
         );
     }
 
     return (
         <>
-        <TableContainer
-            ref={(node: HTMLDivElement | null) => {
-                scrollContainerRef.current = node;
-                // Also share with column-resize hook
-                (tableRef as React.RefObject<HTMLDivElement | null>).current = node;
-            }}
-            sx={{flex: 1, overflow: 'auto'}}
-        >
-            <Table stickyHeader size="small" sx={{tableLayout: 'fixed'}}>
-                <TableHead>
-                    <TableRow>
+            <div
+                ref={(node: HTMLDivElement | null) => {
+                    scrollContainerRef.current = node;
+                    // Also share with column-resize hook
+                    (tableRef as React.RefObject<HTMLDivElement | null>).current = node;
+                }}
+                className={classes.container}
+            >
+                <table className={classes.table} style={densityVars(densityMode)}>
+                    <thead>
+                    <tr>
                         {columns.map((col) => (
-                            <TableCell
+                            <th
                                 key={col.key}
                                 data-column-key={col.key}
-                                align={col.align || 'left'}
-                                sx={{
-                                    ...headerCellSx,
-                                    width: columnWidths[col.key] ?? col.width,
-                                    position: 'relative',
-                                }}
+                                className={[
+                                    classes.headerCell,
+                                    alignClass(col.align, classes.headerCellRight, classes.headerCellCenter),
+                                ].filter(Boolean).join(' ')}
+                                style={{width: columnWidths[col.key] ?? col.width, position: 'relative'}}
                             >
                                 {col.sortable ? (
-                                    <TableSortLabel
-                                        active={sortState.column === col.key}
-                                        direction={sortState.column === col.key ? (sortState.direction ?? 'asc') : 'asc'}
+                                    <button
+                                        type="button"
+                                        className={classes.sortButton}
                                         onClick={handleSort}
                                         data-sort-column={col.key}
-                                        sx={{
-                                            fontSize: '0.75rem',
-                                            color: 'text.secondary',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.025em',
-                                        }}
+                                        aria-sort={sortState.column === col.key
+                                            ? (sortState.direction === 'desc' ? 'descending' : 'ascending')
+                                            : undefined}
                                     >
                                         {col.label}
-                                    </TableSortLabel>
-                                ) : col.key === 'priority' ? (
-                                    <Tooltip title="What do these icons mean?" arrow>
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => setLegendOpen(true)}
-                                            aria-label="Column legend"
-                                            sx={{p: 0.25, color: 'text.secondary'}}
+                                        <span
+                                            className={[
+                                                classes.sortIcon,
+                                                sortState.column === col.key ? classes.sortIconActive : '',
+                                                sortState.column === col.key && sortState.direction === 'desc' ? classes.sortIconDesc : '',
+                                            ].filter(Boolean).join(' ')}
+                                            aria-hidden="true"
                                         >
-                                            <InfoOutlinedIcon sx={{fontSize: 16}}/>
-                                        </IconButton>
+                                            <Icon lucide={ChevronUp} size={12}/>
+                                        </span>
+                                    </button>
+                                ) : col.key === 'priority' ? (
+                                    <Tooltip label="What do these icons mean?" withArrow>
+                                        <ActionIcon
+                                            size="sm"
+                                            variant="subtle"
+                                            color="gray"
+                                            onClick={openLegend}
+                                            aria-label="Column legend"
+                                        >
+                                            <Icon lucide={Info} size={16}/>
+                                        </ActionIcon>
                                     </Tooltip>
                                 ) : (
                                     col.label
                                 )}
                                 {col.key !== lastColumnKey && (
-                                    <Box
+                                    <span
                                         data-testid={`resize-handle-${col.key}`}
                                         onMouseDown={(e) => handleResizeStart(col.key, e)}
-                                        sx={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            right: 0,
-                                            width: 4,
-                                            height: '100%',
-                                            cursor: 'col-resize',
-                                            bgcolor: 'transparent',
-                                            zIndex: 1,
-                                            '&:hover': {bgcolor: 'primary.main', opacity: 0.3},
-                                            '&:active': {bgcolor: 'primary.main', opacity: 0.5},
-                                        }}
+                                        className={classes.resizeHandle}
                                     />
                                 )}
-                            </TableCell>
+                            </th>
                         ))}
-                    </TableRow>
-                </TableHead>
-                <TableBody>
+                    </tr>
+                    </thead>
+                    <tbody>
                     {/* Spacer row for virtual scroll offset */}
                     {virtualItems.length > 0 && (
                         <tr style={{height: virtualItems[0].start}}/>
@@ -633,10 +501,10 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                     {virtualItems.length > 0 && (
                         <tr style={{height: virtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1].end)}}/>
                     )}
-                </TableBody>
-            </Table>
-        </TableContainer>
-        <JobListLegendDialog open={legendOpen} onClose={() => setLegendOpen(false)}/>
+                    </tbody>
+                </table>
+            </div>
+            <JobListLegendDialog open={legendOpen} onClose={closeLegend}/>
         </>
     );
 };
@@ -689,35 +557,31 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
 
     const isUltraDense = densityMode === 'ultra-dense';
 
-    const rowSx = useMemo(
-        () => {
-            const sx = getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected);
-            if (isNew) {
-                Object.assign(sx, newJobAnimationSx);
-            }
-            return sx;
-        },
-        [job.statusId, job.direct, job.vehicle?.text, job.isParentOrSingle, job.parentId, job.hasBeenRead, job.booked, job.assignedCourier?.id, job._groupChildren?.length, isSelected, isRelated, densityMode, isMultiSelected, isNew],
+    const variant = useMemo(
+        () => getRowVariant(job, isSelected, isRelated),
+        [job.direct, job.vehicle?.text, job.isParentOrSingle, job.parentId, job._groupChildren?.length, isSelected, isRelated],
     );
 
     return (
-        <TableRow
-            hover
-            selected={isSelected}
+        <tr
+            className={classes.row}
+            data-variant={variant}
+            data-multiselected={isMultiSelected || undefined}
+            data-unread={!job.hasBeenRead || undefined}
+            data-new={isNew || undefined}
+            aria-selected={isSelected}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
-            sx={rowSx}
         >
             {columns.map((col, colIndex) => (
-                <TableCell
+                <td
                     key={col.key}
-                    align={col.align || 'left'}
-                    sx={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+                    className={alignClass(col.align, classes.cellRight, classes.cellCenter)}
                 >
                     {isRelated && !isSelected && colIndex === 0 ? (
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                            <Tooltip title={INDICATORS.related.label} arrow>
-                                <Box component="span" sx={{display: 'inline-flex', flexShrink: 0}}>
+                        <Group gap={4} wrap="nowrap">
+                            <Tooltip label={INDICATORS.related.label} withArrow>
+                                <Box component="span" style={{display: 'inline-flex', flexShrink: 0}}>
                                     {renderLegendMarker(INDICATORS.related.marker)}
                                 </Box>
                             </Tooltip>
@@ -725,15 +589,15 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
                                                  isUsCustomer={isUsCustomer} appPage={appPage}
                                                  onJobDispatch={onJobDispatch}
                                                  loggedInCouriersOnly={loggedInCouriersOnly}/>
-                        </Box>
+                        </Group>
                     ) : (
                         <MemoizedCellContent col={col.key} job={job} isUltraDense={isUltraDense}
                                              isUsCustomer={isUsCustomer} appPage={appPage} onJobDispatch={onJobDispatch}
                                              loggedInCouriersOnly={loggedInCouriersOnly}/>
                     )}
-                </TableCell>
+                </td>
             ))}
-        </TableRow>
+        </tr>
     );
 });
 JobRow.displayName = 'JobRow';
@@ -760,119 +624,56 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
                                                                 allowDispatch,
                                                                 loggedInCouriersOnly
                                                             }) => {
-    const [showSearch, setShowSearch] = useState(false);
-    const [searchText, setSearchText] = useState('');
-    const [options, setOptions] = useState<CourierOption[]>([]);
-    const [loading, setLoading] = useState(false);
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const abortRef = useRef<AbortController | null>(null);
-
-    // Clean up on unmount
-    useEffect(() => {
-        return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-            if (abortRef.current) abortRef.current.abort();
-        };
-    }, []);
+    const [showSearch, {open: openSearch, close: closeSearch}] = useDisclosure(false);
 
     const handleAssignClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation(); // Don't trigger row click
-        setShowSearch(true);
-        setSearchText('');
-        setOptions([]);
-    }, []);
+        openSearch();
+    }, [openSearch]);
 
-    const handleSearchChange = useCallback((_event: React.SyntheticEvent, value: string) => {
-        setSearchText(value);
+    /**
+     * Numeric input is treated as a courier code, so results are narrowed to
+     * codes that actually start with what was typed — the server matches the
+     * term anywhere in the label, which for a number is almost never what the
+     * dispatcher meant.
+     */
+    const searchCouriers = useCallback(async (term: string, options?: {signal?: AbortSignal}): Promise<CourierOption[]> => {
+        const isDg = (job.dgClass ?? 0) > 0;
+        const results = await searchActiveCouriersExtended(term, {
+            dgOnly: isDg || undefined,
+            loggedInOnly: loggedInCouriersOnly || undefined,
+            signal: options?.signal,
+        });
 
-        // Clear previous debounce/abort
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        if (abortRef.current) abortRef.current.abort();
-
-        if (!value.trim()) {
-            setOptions([]);
-            setLoading(false);
-            return;
+        let filtered: CourierSuggestion[] = results;
+        if (/^\d+$/.test(term.trim())) {
+            filtered = results.filter((r) => {
+                const code = r.text.split(' - ')[0]?.trim();
+                return code?.startsWith(term.trim());
+            });
         }
-
-        setLoading(true);
-        debounceRef.current = setTimeout(async () => {
-            const controller = new AbortController();
-            abortRef.current = controller;
-            try {
-                const isDg = (job.dgClass ?? 0) > 0;
-                const results = await searchActiveCouriersExtended(value, {
-                    dgOnly: isDg || undefined,
-                    loggedInOnly: loggedInCouriersOnly || undefined,
-                    signal: controller.signal,
-                });
-
-                // For numeric input, apply exact code-match filtering
-                let filtered: CourierSuggestion[] = results;
-                if (/^\d+$/.test(value.trim())) {
-                    filtered = results.filter((r) => {
-                        const code = r.text.split(' - ')[0]?.trim();
-                        return code?.startsWith(value.trim());
-                    });
-                }
-
-                setOptions(filtered.map((r) => ({id: r.id, text: r.text})));
-            } catch (err: any) {
-                if (err?.name !== 'AbortError') {
-                    setOptions([]);
-                }
-            } finally {
-                setLoading(false);
-            }
-        }, 300);
+        return filtered.map((r) => ({id: r.id, text: r.text}));
     }, [job.dgClass, loggedInCouriersOnly]);
 
-    const handleSelect = useCallback((_event: React.SyntheticEvent, value: CourierOption | null) => {
-        if (value && onDispatch) {
-            onDispatch(job, value.id, value.text);
+    const handleSelect = useCallback((option: CourierOption | null) => {
+        if (option && onDispatch) {
+            onDispatch(job, option.id, option.text);
+            closeSearch();
         }
-        setShowSearch(false);
-        setSearchText('');
-        setOptions([]);
-    }, [job, onDispatch]);
-
-    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && options.length > 0) {
-            // autoHighlight highlights the first option, so Enter selects it
-            // MUI handles this natively with autoHighlight — but if the popup
-            // hasn't opened yet (e.g. still loading), force-select the first option
-            const highlighted = (e.target as HTMLElement)
-                .closest('.MuiAutocomplete-root')
-                ?.querySelector('.MuiAutocomplete-option[data-focus="true"]');
-            if (!highlighted && options.length > 0) {
-                e.preventDefault();
-                handleSelect(e as any, options[0]);
-            }
-        }
-    }, [options, handleSelect]);
-
-    const handleBlur = useCallback(() => {
-        // Short delay to allow selection click to register
-        setTimeout(() => {
-            setShowSearch(false);
-            setSearchText('');
-            setOptions([]);
-        }, 200);
-    }, []);
+    }, [job, onDispatch, closeSearch]);
 
     // State 1: Courier already assigned → show courier info
     if (hasAssignedCourier(job)) {
         if (isUsCustomer) {
             return (
                 <>
-                    <Typography variant="body2" sx={{fontSize: 'inherit'}} noWrap>
+                    <Text fz="inherit" truncate>
                         {getCourierName(job)}
-                    </Typography>
+                    </Text>
                     {getCourierCode(job) && (
-                        <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}}
-                                    noWrap>
+                        <Text size="xs" c="dimmed" lh={1.2} truncate>
                             {getCourierCode(job)}
-                        </Typography>
+                        </Text>
                     )}
                 </>
             );
@@ -881,9 +682,9 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
         const name = getCourierName(job);
         const display = code && name ? `${code} - ${name}` : (name || code);
         return (
-            <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
+            <Text fz="inherit" truncate>
                 {display}
-            </Typography>
+            </Text>
         );
     }
 
@@ -893,89 +694,38 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
     // Dispatch not allowed → nothing
     if (!allowDispatch) return null;
 
-    // State 2: Search active → Autocomplete
+    // State 2: Search active → object-valued picker
     if (showSearch) {
         return (
-            <Autocomplete<CourierOption, false, false, false>
-                size="small"
-                options={options}
-                getOptionLabel={(option) => option.text}
-                filterOptions={(x) => x} // Server-side filtering
-                autoHighlight
-                openOnFocus
-                loading={loading}
-                inputValue={searchText}
-                onInputChange={handleSearchChange}
-                onChange={handleSelect}
-                onBlur={handleBlur}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderOption={(props, option) => (
-                    <li {...props} key={option.id}>
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0}}>
-                            <Tooltip title="Search Result"><PersonSearchIcon
-                                sx={{fontSize: 16, color: 'text.secondary', flexShrink: 0}}/></Tooltip>
-                            <Typography variant="body2" noWrap sx={{fontSize: '0.8125rem'}}>
-                                {option.text}
-                            </Typography>
-                        </Box>
-                    </li>
-                )}
-                renderInput={(params) => (
-                    <TextField
-                        {...params}
-                        autoFocus
-                        placeholder="Search courier..."
-                        variant="outlined"
-                        size="small"
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={handleKeyDown}
-                        slotProps={{
-                            ...params.slotProps,
-                            input: {
-                                ...params.slotProps.input,
-                                sx: {fontSize: '0.8125rem', py: 0},
-                                endAdornment: (
-                                    <>
-                                        {loading && <CircularProgress color="inherit" size={16}/>}
-                                        {params.slotProps.input.endAdornment}
-                                    </>
-                                ),
-                            },
-                        }}
-                    />
-                )}
-                sx={{
-                    width: '100%',
-                    '& .MuiOutlinedInput-root': {py: 0, minHeight: 28},
-                    '& .MuiAutocomplete-listbox': {maxHeight: 200},
-                }}
-                slotProps={{
-                    popper: {
-                        sx: {minWidth: 220},
-                        placement: 'bottom-start',
-                    },
-                }}
-            />
+            <Box onClick={(e) => e.stopPropagation()}>
+                <SearchSelect<CourierOption>
+                    aria-label="Search courier"
+                    placeholder="Search courier..."
+                    autoFocus
+                    value={null}
+                    onChange={handleSelect}
+                    search={searchCouriers}
+                    getOptionKey={(option) => option.id}
+                    getOptionLabel={(option) => option.text}
+                    minSearchLength={1}
+                    renderOption={(option) => (
+                        <Group gap={4} wrap="nowrap">
+                            <Icon lucide={UserSearch} size={16} color="var(--mantine-color-dimmed)"/>
+                            <Text size="xs" truncate>{option.text}</Text>
+                        </Group>
+                    )}
+                />
+            </Box>
         );
     }
 
     // State 3: No courier → "Assign" button
     return (
         <Button
-            size="small"
-            variant="text"
-            startIcon={<PersonAddIcon sx={{fontSize: 16}}/>}
+            size="compact-xs"
+            variant="subtle"
+            leftSection={<Icon lucide={UserPlus} size={16}/>}
             onClick={handleAssignClick}
-            sx={{
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                py: 0,
-                px: 0.5,
-                minWidth: 0,
-                minHeight: 24,
-                color: 'primary.main',
-                '&:hover': {bgcolor: 'action.hover'},
-            }}
         >
             Assign
         </Button>
@@ -1018,23 +768,20 @@ const CellContent: React.FC<{
         case 'jobNo':
             return (
                 <>
-                    <Typography variant="body2" sx={{
-                        fontWeight: 'inherit',
-                        fontSize: 'inherit',
-                        display: 'inline-flex',
-                        alignItems: 'center'
-                    }}>
+                    <Text component="span" fw="inherit" fz="inherit" style={{display: 'inline-flex', alignItems: 'center'}}>
                         {job.jobNo}
                         {job.direct && (
-                            <Tooltip title="Direct"><BoltIcon
-                                sx={{fontSize: 14, ml: 0.5, color: 'warning.main'}}/></Tooltip>
+                            <Tooltip label="Direct" withArrow>
+                                <Box component="span" ml={4} style={{display: 'inline-flex'}}>
+                                    <Icon lucide={Zap} size={14} color="var(--mantine-color-orange-5)"/>
+                                </Box>
+                            </Tooltip>
                         )}
-                    </Typography>
+                    </Text>
                     {isUsCustomer && job.clientName && (
-                        <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}}
-                                    noWrap>
+                        <Text size="xs" c="dimmed" lh={1.2} truncate>
                             {job.clientName}
-                        </Typography>
+                        </Text>
                     )}
                 </>
             );
@@ -1044,13 +791,11 @@ const CellContent: React.FC<{
             if (isUsCustomer) {
                 return (
                     <>
-                        <Typography variant="body2" sx={{fontSize: 'inherit'}}
-                                    noWrap>{getPickupAddressUs(job)}</Typography>
+                        <Text fz="inherit" truncate>{getPickupAddressUs(job)}</Text>
                         {getPickupCityState(job) && (
-                            <Typography variant="caption"
-                                        sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                            <Text size="xs" c="dimmed" lh={1.2} truncate>
                                 {getPickupCityState(job)}
-                            </Typography>
+                            </Text>
                         )}
                     </>
                 );
@@ -1060,13 +805,11 @@ const CellContent: React.FC<{
             if (isUsCustomer) {
                 return (
                     <>
-                        <Typography variant="body2" sx={{fontSize: 'inherit'}}
-                                    noWrap>{getDeliveryAddressUs(job)}</Typography>
+                        <Text fz="inherit" truncate>{getDeliveryAddressUs(job)}</Text>
                         {getDeliveryCityState(job) && (
-                            <Typography variant="caption"
-                                        sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                            <Text size="xs" c="dimmed" lh={1.2} truncate>
                                 {getDeliveryCityState(job)}
-                            </Typography>
+                            </Text>
                         )}
                     </>
                 );
@@ -1076,25 +819,25 @@ const CellContent: React.FC<{
             // Flight assignment — show flight number, no Assign button
             if (job.assignedFlight) {
                 return (
-                    <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
+                    <Text fz="inherit" truncate>
                         {job.assignedFlight.flightNumber}
-                    </Typography>
+                    </Text>
                 );
             }
             // Sent to DFRNT partner — show partner name, no Assign button
             if (job.sentToPartnerName) {
                 return (
-                    <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
+                    <Text fz="inherit" truncate>
                         {job.sentToPartnerName}
-                    </Typography>
+                    </Text>
                 );
             }
             // Agent assignment — show agent name, no Assign button
             if (job.assignedAgent) {
                 return (
-                    <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
+                    <Text fz="inherit" truncate>
                         {job.assignedAgent.agentName}
-                    </Typography>
+                    </Text>
                 );
             }
             // Courier assignment / inline dispatch
@@ -1117,34 +860,26 @@ const CellContent: React.FC<{
             const overdue = remain < 0;
             const lateLabel = lateForPickup ? 'LP' : lateForDelivery ? 'LD' : null;
             return (
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end'}}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontSize: 'inherit',
-                            color: overdue ? 'error.main' : 'text.primary',
-                            fontWeight: overdue ? 600 : 'inherit',
-                        }}
+                <Group gap={4} justify="flex-end" wrap="nowrap">
+                    <Text
+                        component="span"
+                        fz="inherit"
+                        c={overdue ? 'var(--mantine-color-red-5)' : undefined}
+                        fw={overdue ? 600 : 'inherit'}
                     >
                         {remain}
-                    </Typography>
+                    </Text>
                     {lateLabel && (
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                fontSize: '0.625rem',
-                                fontWeight: 700,
-                                color: '#fff',
-                                bgcolor: lateForPickup ? '#d32f2f' : '#e65100',
-                                borderRadius: '3px',
-                                px: 0.5,
-                                lineHeight: 1.4,
-                            }}
+                        <span
+                            className={[
+                                classes.lateBadge,
+                                lateForPickup ? classes.lateBadgePickup : classes.lateBadgeDelivery,
+                            ].join(' ')}
                         >
                             {lateLabel}
-                        </Typography>
+                        </span>
                     )}
-                </Box>
+                </Group>
             );
         }
         case 'status': {
@@ -1153,18 +888,9 @@ const CellContent: React.FC<{
                 return <>{statusText.charAt(0).toUpperCase()}</>;
             }
             return (
-                <Chip
-                    label={statusText}
-                    size="small"
-                    color={getStatusChipColor(job)}
-                    sx={{
-                        height: 22,
-                        fontSize: '0.6875rem',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.02em',
-                    }}
-                />
+                <Badge size="sm" variant="light" color={getStatusBadgeColor(job)}>
+                    {statusText}
+                </Badge>
             );
         }
         default:

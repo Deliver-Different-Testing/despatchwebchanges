@@ -8,11 +8,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {JobListPanel} from './JobListPanel';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 import type {DispatchJob, MountJobListConfig} from '../../interfaces';
 import {ErrorBoundary} from '../common/error-boundary';
 
@@ -64,41 +62,37 @@ export function mountCurrentWorkJobList(
 function renderCurrentWorkJobList(config: MountJobListConfig): void {
     if (!cwRoot) return;
 
-    const currentTheme = getTheme();
-
-    cwRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <ErrorBoundary>
-                    <JobListPanel
-                        showToast={config.showToast}
-                        isUsCustomer={config.isUsCustomer}
-                        appPage={config.appPage ?? 1}
-                        onJobSelect={config.onJobSelect}
-                        onJobDispatch={config.onJobDispatch}
-                        onRefresh={config.onRefresh}
-                        onSearchChange={config.onSearchChange}
-                        onCategoryChange={config.onCategoryChange}
-                        onBackendFilter={config.onBackendFilter}
-                        onLoadMoreJobs={config.onLoadMoreJobs}
-                        onAddStop={config.onAddStop}
-                        defaultCategory={config.defaultCategory}
-                        storagePrefix={config.storagePrefix ?? 'currentWorkJobList'}
-                        hideLoggedInSwitch
-                        setJobsCallback={(cb) => {
-                            updateJobsCallback = cb;
-                        }}
-                        setRefreshCallback={(cb) => {
-                            refreshCallback = cb;
-                        }}
-                        setSelectJobCallback={() => {
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
-    );
+    // ErrorBoundary is a shared MUI leaf still rendered by unmigrated islands.
+    cwRoot.render(islandTree(
+        <MuiThemeIsland>
+            <ErrorBoundary>
+                <JobListPanel
+                    showToast={config.showToast}
+                    isUsCustomer={config.isUsCustomer}
+                    appPage={config.appPage ?? 1}
+                    onJobSelect={config.onJobSelect}
+                    onJobDispatch={config.onJobDispatch}
+                    onRefresh={config.onRefresh}
+                    onSearchChange={config.onSearchChange}
+                    onCategoryChange={config.onCategoryChange}
+                    onBackendFilter={config.onBackendFilter}
+                    onLoadMoreJobs={config.onLoadMoreJobs}
+                    onAddStop={config.onAddStop}
+                    defaultCategory={config.defaultCategory}
+                    storagePrefix={config.storagePrefix ?? 'currentWorkJobList'}
+                    hideLoggedInSwitch
+                    setJobsCallback={(cb) => {
+                        updateJobsCallback = cb;
+                    }}
+                    setRefreshCallback={(cb) => {
+                        refreshCallback = cb;
+                    }}
+                    setSelectJobCallback={() => {
+                    }}
+                />
+            </ErrorBoundary>
+        </MuiThemeIsland>
+    ));
 }
 
 /**

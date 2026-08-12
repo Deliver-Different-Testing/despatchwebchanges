@@ -3,11 +3,11 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {screen} from '@testing-library/react';
 import { setupUser } from '../../../../__testUtils__/setupUser';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {FlightInformation} from './FlightInformation';
 import {createMockFlight} from '../__testUtils__/mockJob';
+import {renderWithMantine} from '../../../../__testUtils__';
 import dayjs from 'dayjs';
 import nationwideApi from '../../../../services/nationwideApi';
 
@@ -23,10 +23,9 @@ jest.mock('../../../../services/nationwideApi', () => ({
 
 const mockGetFlightWebhookStatus = nationwideApi.getFlightWebhookStatus as jest.Mock;
 
-const theme = createTheme();
 
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    return renderWithMantine(ui);
 }
 
 describe('FlightInformation', () => {
@@ -35,15 +34,18 @@ describe('FlightInformation', () => {
     });
 
     it('renders nothing when flight has no or undefined segments', () => {
-        const {container: c1} = renderWithTheme(
+        // `MantineProvider` injects a <style> element, so an empty container is no
+        // longer the signal — assert the section header is absent instead.
+        const {unmount} = renderWithTheme(
             <FlightInformation flight={createMockFlight({flightSegments: []})} jobId={1} />
         );
-        expect(c1.firstChild).toBeNull();
+        expect(screen.queryByTestId('section-header')).not.toBeInTheDocument();
+        unmount();
 
-        const {container: c2} = renderWithTheme(
+        renderWithTheme(
             <FlightInformation flight={createMockFlight({flightSegments: undefined})} jobId={1} />
         );
-        expect(c2.firstChild).toBeNull();
+        expect(screen.queryByTestId('section-header')).not.toBeInTheDocument();
     });
 
     it('renders flight segment details and the Check Webhooks button', () => {

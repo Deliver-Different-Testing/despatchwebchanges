@@ -11,7 +11,7 @@
  */
 
 import React, {useState} from 'react';
-import {Box, Button, Combobox, Loader, Text, TextInput, useCombobox} from '@mantine/core';
+import {Button, Combobox, Loader, Stack, Text, TextInput, useCombobox} from '@mantine/core';
 import {IconTruck} from '@tabler/icons-react';
 import {Icon} from '../../common/icon/Icon';
 import {useCourierSearch} from '../../../hooks/useCourierApi';
@@ -50,7 +50,7 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
                 subtitle="Optionally assign a courier for delivery"
                 onClose={cancel}
             />
-            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
+            <Stack p="lg" gap="md" bg={dialogContentBg}>
                 <Text fz="sm" c="dimmed">
                     Optionally assign a courier to the delivery leg (Leg B). You can skip this step.
                 </Text>
@@ -96,7 +96,7 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
                         </Combobox.Options>
                     </Combobox.Dropdown>
                 </Combobox>
-            </Box>
+            </Stack>
             <DialogFooter
                 onCancel={cancel}
                 onConfirm={handleAssign}

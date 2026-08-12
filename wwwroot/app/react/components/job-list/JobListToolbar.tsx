@@ -5,22 +5,14 @@
  * Follows the app's standard toolbar pattern (44px minHeight, divider border).
  */
 
-import React, {useCallback, useRef, useEffect} from 'react';
-import Box from '@mui/material/Box';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import SearchIcon from '@mui/icons-material/Search';
-import CloseIcon from '@mui/icons-material/Close';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import RestoreIcon from '@mui/icons-material/Restore';
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
-import type {SxProps, Theme} from '@mui/material';
+import React, {useCallback, useRef} from 'react';
+import {ActionIcon, Box, Button, Group, Text, TextInput} from '@mantine/core';
+import {useDebouncedCallback} from '@mantine/hooks';
+import {ArchiveRestore, Mail, MailOpen, Search, X} from 'lucide-react';
+import {IconTruck} from '@tabler/icons-react';
+
+import {Icon} from '../common/icon/Icon';
+import {SegmentedToggle} from '../common/segmented-toggle';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
 import {JobListViewOptions} from './JobListViewOptions';
@@ -54,67 +46,36 @@ interface JobListToolbarProps {
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-const styles: Record<string, SxProps<Theme>> = {
-    container: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.5,
-        px: 2,
-        py: 1,
-        borderBottom: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        minHeight: 44,
-        flexWrap: 'wrap',
-    },
-    categoryToggle: {
-        borderRadius: 1,
-        '& .MuiToggleButton-root': {
-            px: 1.5,
-            py: 0.5,
-            fontSize: '0.75rem',
-            textTransform: 'none',
-            fontWeight: 500,
-        },
-        '& .MuiToggleButton-root[value="needs-dispatch"].Mui-selected': {
-            bgcolor: 'warning.main',
-            color: 'warning.contrastText',
-            '&:hover': {bgcolor: 'warning.dark'},
-        },
-        '& .MuiToggleButton-root[value="in-progress"].Mui-selected': {
-            bgcolor: 'info.main',
-            color: 'info.contrastText',
-            '&:hover': {bgcolor: 'info.dark'},
-        },
-        '& .MuiToggleButton-root[value="delivered"].Mui-selected': {
-            bgcolor: 'success.main',
-            color: 'success.contrastText',
-            '&:hover': {bgcolor: 'success.dark'},
-        },
-        '& .MuiToggleButton-root[value="all"].Mui-selected': {
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            '&:hover': {bgcolor: 'primary.dark'},
-        },
-    },
-    searchField: {
-        flex: '1 1 160px',
-        maxWidth: 280,
-        '& .MuiOutlinedInput-root': {
-            height: 32,
-            borderRadius: 1,
-        },
-        '& .MuiInputBase-input': {
-            fontSize: '0.8125rem',
-            py: 0.5,
-        },
-    },
-    densityToggle: {
-        '& .MuiToggleButton-root': {
-            px: 0.75,
-            py: 0.5,
-        },
-    },
+const CATEGORY_OPTIONS: {value: JobCategory; label: string}[] = [
+    {value: 'needs-dispatch', label: 'Unassigned'},
+    {value: 'in-progress', label: 'Active'},
+    {value: 'delivered', label: 'Done'},
+    {value: 'all', label: 'All'},
+];
+
+/**
+ * The active tab keeps its category's semantic colour — Unassigned/Active/Done
+ * encode real state, so the colour is information, not decoration. Only the
+ * indicator is tinted, so the accent follows the current selection rather than
+ * being set per option.
+ */
+const CATEGORY_COLORS: Record<JobCategory, string> = {
+    'needs-dispatch': 'orange',
+    'in-progress': 'reflex',
+    delivered: 'green',
+    all: 'brand',
+};
+
+const containerStyle: React.CSSProperties = {
+    borderBottom: '1px solid var(--mantine-color-default-border)',
+    backgroundColor: 'var(--dd-surface-container)',
+    minHeight: 44,
+};
+
+const selectionBarStyle: React.CSSProperties = {
+    borderBottom: '1px solid var(--mantine-color-default-border)',
+    backgroundColor: 'var(--mantine-color-brand-light)',
+    minHeight: 44,
 };
 
 export const JobListToolbar: React.FC<JobListToolbarProps> = ({
@@ -138,63 +99,36 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     renderViewOptions = true,
 }) => {
     const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
-    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const localInputRef = useRef(searchQuery);
 
-    useEffect(() => {
-        return () => {
-            if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-        };
-    }, []);
+    // useDebouncedCallback owns the timer and clears it on unmount.
+    const emitSearch = useDebouncedCallback(onSearchChange, SEARCH_DEBOUNCE_MS);
 
     const handleSearchInput = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const value = e.target.value;
             localInputRef.current = value;
-
-            if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-            searchTimerRef.current = setTimeout(() => {
-                onSearchChange(value);
-            }, SEARCH_DEBOUNCE_MS);
+            emitSearch(value);
         },
-        [onSearchChange],
-    );
-
-    const handleCategoryChange = useCallback(
-        (_: React.MouseEvent<HTMLElement>, newCategory: JobCategory | null) => {
-            if (newCategory !== null) {
-                onCategoryChange(newCategory);
-            }
-        },
-        [onCategoryChange],
+        [emitSearch],
     );
 
     // Selection action bar
     if (selectedCount > 0) {
         return (
-            <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                px: 2,
-                py: 1,
-                borderBottom: 1,
-                borderColor: 'divider',
-                bgcolor: 'rgba(25, 118, 210, 0.08)',
-                minHeight: 44,
-            }}>
-                <IconButton size="small" onClick={onClearSelection} sx={{mr: 0.5}}>
-                    <CloseIcon fontSize="small"/>
-                </IconButton>
-                <Typography variant="body2" sx={{fontWeight: 600, mr: 2}}>
+            <Group align="center" gap="xs" px="md" py="xs" wrap="wrap" style={selectionBarStyle}>
+                <ActionIcon size="md" variant="subtle" color="gray" aria-label="Clear selection" onClick={onClearSelection}>
+                    <Icon lucide={X} size={16}/>
+                </ActionIcon>
+                <Text size="sm" fw={600} mr="md">
                     {selectedCount} job{selectedCount !== 1 ? 's' : ''} selected
-                </Typography>
+                </Text>
 
                 {allowDispatch && (
                     <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<LocalShippingIcon/>}
+                        size="compact-sm"
+                        variant="outline"
+                        leftSection={<Icon tabler={IconTruck} size={16}/>}
                         onClick={onBulkDispatchClick}
                     >
                         Dispatch
@@ -202,56 +136,43 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 )}
 
                 {allowDispatch && (
-                    <Button size="small" variant="outlined" startIcon={<RestoreIcon/>} onClick={onBulkRestore}>
+                    <Button size="compact-sm" variant="outline" leftSection={<Icon lucide={ArchiveRestore} size={16}/>} onClick={onBulkRestore}>
                         Restore
                     </Button>
                 )}
 
-                <Button size="small" variant="outlined" startIcon={<MarkEmailReadIcon/>} onClick={onBulkMarkRead}>
+                <Button size="compact-sm" variant="outline" leftSection={<Icon lucide={MailOpen} size={16}/>} onClick={onBulkMarkRead}>
                     Mark Read
                 </Button>
-                <Button size="small" variant="outlined" startIcon={<MarkEmailUnreadIcon/>} onClick={onBulkMarkUnread}>
+                <Button size="compact-sm" variant="outline" leftSection={<Icon lucide={Mail} size={16}/>} onClick={onBulkMarkUnread}>
                     Mark Unread
                 </Button>
-            </Box>
+            </Group>
         );
     }
 
     return (
-        <Box sx={styles.container}>
+        <Group align="center" gap="sm" px="md" py="xs" wrap="wrap" style={containerStyle}>
             {/* Category filter tabs */}
-            <ToggleButtonGroup
+            <SegmentedToggle<JobCategory>
+                aria-label="Job category"
                 value={selectedCategory}
-                exclusive
-                onChange={handleCategoryChange}
-                size="small"
-                sx={styles.categoryToggle}
-            >
-                <ToggleButton value="needs-dispatch">Unassigned</ToggleButton>
-                <ToggleButton value="in-progress">Active</ToggleButton>
-                <ToggleButton value="delivered">Done</ToggleButton>
-                <ToggleButton value="all">All</ToggleButton>
-            </ToggleButtonGroup>
+                onChange={onCategoryChange}
+                color={CATEGORY_COLORS[selectedCategory]}
+                data={CATEGORY_OPTIONS}
+            />
 
             {/* Search */}
-            <TextField
-                size="small"
+            <TextInput
+                size="xs"
                 placeholder="Search jobs..."
                 defaultValue={searchQuery}
                 onChange={handleSearchInput}
-                slotProps={{
-                    input: {
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon fontSize="small" sx={{color: 'text.disabled'}}/>
-                            </InputAdornment>
-                        ),
-                    },
-                }}
-                sx={styles.searchField}
+                leftSection={<Icon lucide={Search} size={16} color="var(--mantine-color-gray-5)"/>}
+                style={{flex: '1 1 160px', maxWidth: 280}}
             />
 
-            <Box sx={{flex: 1}}/>
+            <Box style={{flex: 1}}/>
 
             {/* View options — relocated to the panel header on the dispatch page
                 (renderViewOptions=false); rendered inline elsewhere. */}
@@ -265,6 +186,6 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                     showLoggedInSwitch={allowDispatch && !hideLoggedInSwitch}
                 />
             )}
-        </Box>
+        </Group>
     );
 };

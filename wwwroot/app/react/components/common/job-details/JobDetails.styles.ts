@@ -1,159 +1,85 @@
 /**
  * Shared styles for the job detail component tree.
  *
- * Mirrors the AngularJS job-details LESS spacing and card patterns
- * using MUI theme tokens and sx-prop conventions.
+ * Mirrors the AngularJS job-details LESS spacing and card patterns, expressed as
+ * plain style objects over `var(--mantine-*)` tokens — the idiom the converted
+ * dialogs use (`dialogs/shared/mantine/styles.ts`). Sizes stay in raw px where
+ * the AngularJS 4px grid does not land on a Mantine spacing step.
  *
- * Spacing reference (AngularJS 4px grid → MUI 8px scale):
- *   4px → 0.5    8px → 1    12px → 1.5    16px → 2    24px → 3
+ * Spacing reference (AngularJS 4px grid → the MUI 8px scale these were ported
+ * from): 4px → 0.5, 8px → 1, 12px → 1.5, 16px → 2, 24px → 3.
  */
 
-import type {SxProps, Theme} from '@mui/material/styles';
+import type React from 'react';
 
-/* ── Card container (Option B — bordered card + gradient header) ──── */
+/**
+ * Props for the bordered card that wraps a job-detail section. The 16px corner
+ * matches the MUI `borderRadius: 2` these cards used (the `sx` multiplier base
+ * was pinned to 8), and `Paper`'s theme default already supplies the
+ * `--dd-surface-container` fill, so this only has to add the keyline and clip
+ * the header.
+ */
+export const cardContainerProps = {
+    withBorder: true,
+    radius: 'lg',
+    style: {overflow: 'hidden'},
+} as const;
 
-export const cardContainerSx: SxProps<Theme> = {
-    bgcolor: 'background.paper',
-    borderRadius: 2,
-    overflow: 'hidden',
-    border: 1,
-    borderColor: 'divider',
+/** The keyline that separates stacked sections inside one card. */
+export const sectionBorderStyle: React.CSSProperties = {
+    borderTop: '1px solid var(--mantine-color-default-border)',
 };
 
-/* ── Section toolbar (legacy 40px grey bar — superseded by SectionHeader)
- *  Still exported for any non-job-details callers; new code should use
- *  the SectionHeader component instead. */
-
-export const sectionToolbarSx: SxProps<Theme> = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-    px: 2,
-    height: 40,
-    minHeight: 40,
-    bgcolor: 'grey.100',
-    borderBottom: 1,
-    borderColor: 'divider',
-};
-
-export const sectionToolbarTitleSx: SxProps<Theme> = {
-    fontSize: '0.8125rem',
-    fontWeight: 600,
-    color: 'text.primary',
-    letterSpacing: '0.01em',
-};
-
-export const sectionToolbarIconSx: SxProps<Theme> = {
-    fontSize: 18,
-    color: 'action.active',
-};
-
-/* ── Section border separator ─────────────────────────────────────── */
-
-export const sectionBorderSx: SxProps<Theme> = {
-    borderTop: 1,
-    borderColor: 'divider',
-};
-
-/* ── ListItemText slotProps (two-line md-list-item pattern) ──────── */
-/* h3: 12px 500 muted  /  p: 13px normal primary                     */
-/* Uses slotProps.primary / slotProps.secondary (MUI v7)              */
-
-export const listItemTextSlotProps = {
-    primary: {
-        variant: 'caption' as const,
-        color: 'text.secondary',
-        fontSize: '0.6875rem',
-        fontWeight: 500,
-        sx: {mb: 0.25},
-    },
-    secondary: {
-        variant: 'body2' as const,
-        color: 'text.primary',
-        fontSize: '0.875rem',
-        lineHeight: 1.4,
-        noWrap: true,
-    },
-};
-
-/* ── List-item icon (32 × 32 circle avatar) ───────────────────────── */
-
-export const listItemIconSx: SxProps<Theme> = {
-    minWidth: 36,
-};
-
-export const listItemIconInnerSx: SxProps<Theme> = {
-    fontSize: 18,
-    color: 'text.secondary',
-};
-
-/* ── Metric label / value ─────────────────────────────────────────── */
-
-export const metricLabelSx: SxProps<Theme> = {
-    fontSize: '0.6875rem',
+export const metricLabelStyle = (dense: boolean): React.CSSProperties => ({
+    fontSize: dense ? '0.625rem' : '0.6875rem',
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    mb: 0.75,
-};
+    marginBottom: dense ? 2 : 6,
+});
 
-export const metricValueSx: SxProps<Theme> = {
-    fontSize: '0.875rem',
+export const metricValueStyle = (dense: boolean): React.CSSProperties => ({
+    fontSize: dense ? '0.8125rem' : '0.875rem',
     fontWeight: 700,
     lineHeight: 1.2,
-    color: 'text.primary',
     fontVariantNumeric: 'tabular-nums',
-};
-
-/* ── Card content padding ────────────────────────────────────────── */
-
-export const cardContentSx: SxProps<Theme> = {
-    px: 2,
-    py: 1.5,
-};
-
-export const cardContentDenseSx: SxProps<Theme> = {
-    px: 1.5,
-    py: 1,
-};
-
-/* ── Notes container (shared by AgentInformation, FlightInformation) */
-
-export const cardNotesContainerSx: SxProps<Theme> = {
-    px: 2,
-    py: 1,
-    borderTop: 1,
-    borderColor: 'divider',
-};
-
-/* ── Dense-aware helpers ─────────────────────────────────────────── */
-
-export const getSectionToolbarSx = (dense: boolean): SxProps<Theme> => ({
-    ...sectionToolbarSx as object,
-    height: dense ? 32 : 40,
-    minHeight: dense ? 32 : 40,
-    px: dense ? 1.5 : 2,
 });
 
-export const getMetricLabelSx = (dense: boolean): SxProps<Theme> => ({
-    ...metricLabelSx as object,
-    mb: dense ? 0.25 : 0.75,
+export const cardContentStyle = (dense: boolean): React.CSSProperties => ({
+    paddingInline: dense ? 12 : 16,
+    paddingBlock: dense ? 8 : 12,
+});
+
+/** Notes strip under a card body (AgentInformation, FlightInformation). */
+export const cardNotesContainerStyle: React.CSSProperties = {
+    paddingInline: 16,
+    paddingBlock: 8,
+    borderTop: '1px solid var(--mantine-color-default-border)',
+};
+
+/**
+ * The two-line field row — label above value, the `md-list-item md-2-line`
+ * pattern the AngularJS detail template used.
+ */
+export const fieldLabelStyle = (dense: boolean): React.CSSProperties => ({
     fontSize: dense ? '0.625rem' : '0.6875rem',
+    fontWeight: 500,
+    marginBottom: dense ? 0 : 2,
 });
 
-export const getMetricValueSx = (dense: boolean): SxProps<Theme> => ({
-    ...metricValueSx as object,
+/**
+ * The value line. Truncation is **not** here: the row renders it as
+ * `<Text truncate>`, which is Mantine's own single-line ellipsis.
+ */
+export const fieldValueStyle = (dense: boolean): React.CSSProperties => ({
     fontSize: dense ? '0.8125rem' : '0.875rem',
+    lineHeight: 1.4,
 });
 
-export const getListItemTextSlotProps = (dense: boolean) => ({
-    primary: {
-        ...listItemTextSlotProps.primary,
-        fontSize: dense ? '0.625rem' : '0.6875rem',
-        sx: {mb: dense ? 0 : 0.25},
-    },
-    secondary: {
-        ...listItemTextSlotProps.secondary,
-        fontSize: dense ? '0.8125rem' : '0.875rem',
-    },
-});
+/** The 36px icon gutter in front of a field row. */
+export const fieldIconGutterStyle: React.CSSProperties = {
+    minWidth: 36,
+    display: 'flex',
+    alignItems: 'center',
+    flexShrink: 0,
+};

@@ -1,19 +1,12 @@
 import React, {Fragment, useCallback, useRef, useState} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import AddIcon from '@mui/icons-material/Add';
-import DoneIcon from '@mui/icons-material/Done';
-import RemoveIcon from '@mui/icons-material/Remove';
-import ViewColumnIcon from '@mui/icons-material/ViewColumn';
-import type {SxProps, Theme} from '@mui/material/styles';
-import {alpha} from '@mui/material/styles';
+import {ActionIcon, Badge, Box, Button, Group, Text} from '@mantine/core';
+import {Check, Columns3, Minus, Plus} from 'lucide-react';
 import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
 import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
 import {MAX_COLUMNS, MIN_COLUMNS, parsePercent} from '../lib/columnLayout';
+import {Icon} from '../../../components/common/icon/Icon';
 import {BoxHeader} from './BoxHeader';
+import classes from './JobSearchShell.module.css';
 
 export interface JobSearchShellProps {
     layout: ILayout;
@@ -60,55 +53,21 @@ export interface JobSearchShellProps {
     onRemoveColumn?: () => void;
 }
 
-// The gutter affordance is the same shape used by recurring-jobs:
-// transparent by default, glows on hover, intensifies on drag.
-const horizontalHandleSx = ((theme: Theme) => ({
-    width: 8,
-    mx: 0,
-    bgcolor: 'transparent',
-    cursor: 'col-resize',
-    borderRadius: 1,
-    transition: 'background-color 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s cubic-bezier(0.4,0,0.2,1)',
-    '[data-resize-handle-state="hover"] &': {
-        bgcolor: alpha(theme.palette.primary.main, 0.3),
-        boxShadow: `0 0 8px ${alpha(theme.palette.primary.main, 0.3)}`,
-    },
-    '[data-resize-handle-state="drag"] &': {
-        bgcolor: alpha(theme.palette.primary.main, 0.5),
-        boxShadow: `0 0 12px ${alpha(theme.palette.primary.main, 0.5)}`,
-    },
-})) satisfies SxProps<Theme>;
+// The gutter affordance lives in the stylesheet: its glow is keyed off
+// `data-resize-handle-state` on the parent handle, which no prop can express.
 
-const verticalHandleSx = ((theme: Theme) => ({
-    height: 8,
-    my: 0,
-    bgcolor: 'transparent',
-    cursor: 'row-resize',
-    borderRadius: 1,
-    transition: 'background-color 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s cubic-bezier(0.4,0,0.2,1)',
-    '[data-resize-handle-state="hover"] &': {
-        bgcolor: alpha(theme.palette.primary.main, 0.3),
-        boxShadow: `0 0 8px ${alpha(theme.palette.primary.main, 0.3)}`,
-    },
-    '[data-resize-handle-state="drag"] &': {
-        bgcolor: alpha(theme.palette.primary.main, 0.5),
-        boxShadow: `0 0 12px ${alpha(theme.palette.primary.main, 0.5)}`,
-    },
-})) satisfies SxProps<Theme>;
-
-const boxCardSx: SxProps<Theme> = {
+const boxCardStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     minHeight: 0,
     height: '100%',
-    bgcolor: 'background.paper',
-    border: '1px solid',
-    borderColor: 'divider',
-    borderRadius: 1,
+    backgroundColor: 'var(--dd-surface-container)',
+    border: '1px solid var(--mantine-color-default-border)',
+    borderRadius: 'var(--mantine-radius-sm)',
     overflow: 'hidden',
 };
 
-const boxContentSx: SxProps<Theme> = {
+const boxContentStyle: React.CSSProperties = {
     flex: 1,
     minHeight: 0,
     overflow: 'auto',
@@ -117,9 +76,9 @@ const boxContentSx: SxProps<Theme> = {
 // Insets each card inside its panel so neighbouring cards get a small,
 // uniform gap. border-box keeps the card at the panel's full size minus
 // the padding, so it never overflows / triggers a scrollbar.
-const boxPanelPadSx: SxProps<Theme> = {
+const boxPanelPadStyle: React.CSSProperties = {
     height: '100%',
-    p: 0.25,
+    padding: 2,
     boxSizing: 'border-box',
 };
 
@@ -136,9 +95,9 @@ interface BoxCardBodyProps {
 const BoxCardBody: React.FC<BoxCardBodyProps> = ({onDragOver, onDrop, renderHeader, renderContent}) => {
     const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
     return (
-        <Box sx={boxCardSx} onDragOver={onDragOver} onDrop={onDrop}>
+        <Box data-testid="job-search-box-card" style={boxCardStyle} onDragOver={onDragOver} onDrop={onDrop}>
             {renderHeader(setHeaderSlot)}
-            <Box sx={boxContentSx}>{renderContent(headerSlot)}</Box>
+            <Box style={boxContentStyle}>{renderContent(headerSlot)}</Box>
         </Box>
     );
 };
@@ -228,77 +187,79 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
         };
 
     return (
-        <Box sx={{
+        <Box style={{
             height: '100%',
             width: '100%',
-            p: 0.5,
+            padding: 4,
             boxSizing: 'border-box',
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: 0.5,
+            gap: 4,
         }}>
             {columnEditMode && !isDefaultLayout && (
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, px: 0.5, flexShrink: 0}}>
-                    <Chip
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        icon={<ViewColumnIcon/>}
-                        label="Editing columns"
-                    />
-                    <Typography variant="caption" sx={{color: 'text.secondary', flex: 1}}>
+                <Group gap="xs" px={4} wrap="nowrap" style={{flexShrink: 0}}>
+                    <Badge
+                        variant="outline"
+                        size="md"
+                        tt="none"
+                        leftSection={<Icon lucide={Columns3} size={14}/>}
+                    >
+                        Editing columns
+                    </Badge>
+                    <Text size="xs" c="dimmed" style={{flex: 1}}>
                         Set the layout&rsquo;s columns here, and each list&rsquo;s columns in its own panel
-                    </Typography>
+                    </Text>
                     {showColumnStepper && (
-                        <Box
+                        <Group
                             role="group"
                             aria-label="Number of columns"
-                            sx={{display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0}}
+                            gap={4}
+                            wrap="nowrap"
+                            style={{flexShrink: 0}}
                         >
-                            <Typography variant="caption" sx={{color: 'text.secondary'}}>
-                                Columns
-                            </Typography>
-                            <IconButton
-                                size="small"
+                            <Text size="xs" c="dimmed">Columns</Text>
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
                                 aria-label="Remove column"
                                 disabled={columnCount <= MIN_COLUMNS}
                                 onClick={onRemoveColumn}
                             >
-                                <RemoveIcon fontSize="small"/>
-                            </IconButton>
-                            <Typography
-                                variant="body2"
+                                <Icon lucide={Minus} size={16}/>
+                            </ActionIcon>
+                            <Text
+                                size="sm"
                                 aria-live="polite"
-                                sx={{minWidth: 16, textAlign: 'center', fontVariantNumeric: 'tabular-nums'}}
+                                ta="center"
+                                style={{minWidth: 16, fontVariantNumeric: 'tabular-nums'}}
                             >
                                 {columnCount}
-                            </Typography>
-                            <IconButton
-                                size="small"
+                            </Text>
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
                                 aria-label="Add column"
                                 disabled={columnCount >= MAX_COLUMNS}
                                 onClick={onAddColumn}
                             >
-                                <AddIcon fontSize="small"/>
-                            </IconButton>
-                        </Box>
+                                <Icon lucide={Plus} size={16}/>
+                            </ActionIcon>
+                        </Group>
                     )}
                     {onExitColumnEditMode && (
                         <Button
-                            size="small"
-                            variant="contained"
-                            color="primary"
-                            startIcon={<DoneIcon/>}
+                            size="xs"
+                            leftSection={<Icon lucide={Check} size={16}/>}
                             onClick={onExitColumnEditMode}
-                            sx={{flexShrink: 0}}
+                            style={{flexShrink: 0}}
                         >
                             Done
                         </Button>
                     )}
-                </Box>
+                </Group>
             )}
-            <Box sx={{flex: 1, minHeight: 0}}>
+            <Box style={{flex: 1, minHeight: 0}}>
             <PanelGroup
                 key={`columns-${layoutVersion}`}
                 direction="horizontal"
@@ -319,7 +280,7 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                         <Fragment key={column.id}>
                             {columnIdx > 0 && !isDefaultLayout && (
                                 <PanelResizeHandle>
-                                    <Box sx={horizontalHandleSx} />
+                                    <Box className={`${classes.handle} ${classes.horizontal}`} />
                                 </PanelResizeHandle>
                             )}
                             <Panel
@@ -327,24 +288,23 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                                 minSize={10}
                             >
                                 <Box
-                                    sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}
+                                    style={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}
                                     onDragOver={handleDragOver}
                                     onDrop={handleDropAtColumnEnd(column.id, column.boxes.length)}
                                 >
                                     {visibleBoxes.length === 0 ? (
                                         <Box
-                                            sx={(theme) => ({
+                                            c="dimmed"
+                                            fz={12}
+                                            style={{
                                                 flex: 1,
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                color: 'text.secondary',
-                                                fontSize: 12,
-                                                border: '1px dashed',
-                                                borderColor: alpha(theme.palette.primary.main, 0.3),
-                                                borderRadius: 1,
-                                                m: 0.25,
-                                            })}
+                                                border: '1px dashed var(--mantine-primary-color-light-color)',
+                                                borderRadius: 'var(--mantine-radius-sm)',
+                                                margin: 2,
+                                            }}
                                         >
                                             {isDefaultLayout ? 'Empty column' : 'Drop a panel here'}
                                         </Box>
@@ -382,11 +342,11 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                                                     <Fragment key={boxRef.name}>
                                                         {vIdx > 0 && !isDefaultLayout && (
                                                             <PanelResizeHandle>
-                                                                <Box sx={verticalHandleSx} />
+                                                                <Box className={`${classes.handle} ${classes.vertical}`} />
                                                             </PanelResizeHandle>
                                                         )}
                                                         <Panel defaultSize={defaultSize} minSize={12}>
-                                                            <Box sx={boxPanelPadSx}>
+                                                            <Box style={boxPanelPadStyle}>
                                                                 <BoxCardBody
                                                                     onDragOver={handleDragOver}
                                                                     onDrop={handleDropOnBox(column.id, originalIndex)}

@@ -1,6 +1,7 @@
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {screen} from '@testing-library/react';
 import { setupUser } from '../../__testUtils__/setupUser';
+import {renderWithMantine as render} from '../../__testUtils__';
 import {ChangeRequestTriage} from './ChangeRequestTriage';
 import {triageChangeRequest} from '../../services/aiAssistantApi';
 import {isAiEnabled} from '../../../functions/aiSettings';

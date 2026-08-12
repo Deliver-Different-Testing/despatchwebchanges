@@ -7,13 +7,11 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {OverviewPage} from './OverviewPage';
-import {getTheme} from '../../theme/muiTheme';
 import {MountOverviewConfig} from './OverviewPage.interfaces';
-import {ReactQueryProvider} from '../../query';
 import {ErrorBoundary} from '../../components/common/error-boundary';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 
 let overviewRoot: Root | null = null;
 let overviewContainer: HTMLElement | null = null;
@@ -53,26 +51,20 @@ export function mountOverviewPage(
         console.log('[OverviewReact] Creating new React root');
         overviewRoot = createRoot(container);
     }
-
-    const currentTheme = getTheme();
-
-    overviewRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <ErrorBoundary>
-                    <OverviewPage
-                        showToast={config.showToast}
-                        isUsCustomer={config.isUsCustomer}
-                        onOpenJobDetail={config.onOpenJobDetail}
-                        setRefreshCallback={(cb) => {
-                            refreshCallback = cb;
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
-    );
+    overviewRoot.render(islandTree(
+        <MuiThemeIsland>
+            <ErrorBoundary>
+                <OverviewPage
+                    showToast={config.showToast}
+                    isUsCustomer={config.isUsCustomer}
+                    onOpenJobDetail={config.onOpenJobDetail}
+                    setRefreshCallback={(cb) => {
+                        refreshCallback = cb;
+                    }}
+                />
+            </ErrorBoundary>
+        </MuiThemeIsland>
+    ));
 
     console.log('[OverviewReact] Overview page rendered');
 }

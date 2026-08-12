@@ -6,7 +6,7 @@
  */
 
 import React, {useState, useCallback, useEffect} from 'react';
-import {Box, Group, Paper, Stack, TextInput} from '@mantine/core';
+import {Box, Group, Paper, Stack, TextInput, NumberInput} from '@mantine/core';
 import {Banknote, Check} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {SearchSelect} from '../../common/search-select/SearchSelect';
@@ -163,27 +163,25 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                         />
 
                         <Group gap="md" align="flex-start" grow>
-                            <TextInput
+                            <NumberInput
                                 label="Zones"
-                                type="number"
                                 withAsterisk
                                 min={0}
                                 value={zones}
-                                onChange={(e) => handleZonesChange(e.currentTarget.value)}
+                                onChange={(value) => handleZonesChange(String(value ?? ''))}
                                 error={
                                     submitted && zones === '' ? 'This field is required.'
                                         : submitted && parseFloat(zones) < 0 ? 'Value must be zero or greater.'
                                             : undefined
                                 }
                             />
-                            <TextInput
+                            <NumberInput
                                 label="Amount"
-                                type="number"
                                 withAsterisk
                                 min={0}
                                 step={0.01}
                                 value={amount}
-                                onChange={(e) => setAmount(e.currentTarget.value)}
+                                onChange={(value) => setAmount(String(value ?? ''))}
                                 error={
                                     submitted && amount === '' ? 'This field is required.'
                                         : submitted && parseFloat(amount) < 0 ? 'Value must be zero or greater.'
