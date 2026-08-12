@@ -4,8 +4,11 @@
 
 import React from 'react';
 import {screen} from '@testing-library/react';
-import {renderWithTheme} from '../../__testUtils__';
+import {renderWithMantine} from '../../__testUtils__';
+import {setupUser} from '../../__testUtils__/setupUser';
 import {JobListViewOptions} from './JobListViewOptions';
+import {PANEL_CONTROL_HOVER} from '../common/panel-controls';
+import {SEGMENTED_TOGGLE_HEADER_HEIGHT, SEGMENTED_TOGGLE_INLINE_HEIGHT} from '../common/segmented-toggle';
 import type {DensityMode} from '../../interfaces/dispatchJob';
 
 function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobListViewOptions>>) {
@@ -20,45 +23,76 @@ function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobL
     };
 }
 
-/**
- * Collect the emotion CSS rules generated for `selector` under the rendered
- * `root` element's own style hash. jsdom's getComputedStyle can't resolve MUI's
- * nested-slot cascade, so we assert on the generated stylesheet text instead of
- * the computed colour.
- */
-function emotionRulesFor(root: string, selector: string): string {
-    const el = document.querySelector(root) as Element;
-    const hash = Array.from(el.classList).find((c) => c.startsWith('css-'))!.split('-')[1];
-    let text = '';
-    for (const styleEl of Array.from(document.querySelectorAll('style'))) {
-        const sheet = (styleEl as HTMLStyleElement).sheet;
-        if (!sheet) continue;
-        for (const rule of Array.from(sheet.cssRules)) {
-            if (rule.cssText.includes(hash) && rule.cssText.includes(selector)) {
-                text += rule.cssText;
-            }
-        }
-    }
-    return text;
-}
-
-const switchTrackRules = () => emotionRulesFor('.MuiSwitch-root', 'MuiSwitch-track');
-const densityToggleRules = () => emotionRulesFor('.MuiToggleButtonGroup-root', 'MuiToggleButton-root');
-
-const WHITE = /#fff|rgba\(\s*255,\s*255,\s*255/i;
-
 describe('JobListViewOptions', () => {
-    it('renders the logged-in only switch and keeps its track at the theme default', () => {
-        renderWithTheme(<JobListViewOptions {...createDefaultProps({headerVariant: false})}/>);
-        expect(screen.getByRole('switch')).toBeInTheDocument();
-        expect(switchTrackRules()).not.toMatch(WHITE);
+    it('marks the active density, and reports density, reset and switch changes', async () => {
+        const props = createDefaultProps();
+        renderWithMantine(<JobListViewOptions {...props}/>);
+        const user = setupUser();
+
+        // Density is a real radio group, not a row of aria-pressed buttons.
+        expect(screen.getByRole('radio', {name: 'Dense'})).toBeChecked();
+        expect(screen.getByRole('radio', {name: 'Normal'})).not.toBeChecked();
+
+        await user.click(screen.getByRole('radio', {name: 'Ultra Dense'}));
+        expect(props.onDensityModeChange).toHaveBeenCalledWith('ultra-dense');
+
+        await user.click(screen.getByRole('button', {name: 'Reset columns'}));
+        expect(props.onResetColumns).toHaveBeenCalledTimes(1);
+
+        await user.click(screen.getByRole('switch', {name: 'Logged-in only'}));
+        expect(props.onLoggedInCouriersOnlyChange).toHaveBeenCalledWith(true);
     });
 
-    it('takes the switch and density toggle colours from the theme in the header variant', () => {
-        renderWithTheme(<JobListViewOptions {...createDefaultProps({headerVariant: true})}/>);
-        // The panel header is a plain `background.paper` bar, so hardcoded white
-        // would be invisible against it.
-        expect(switchTrackRules()).not.toMatch(WHITE);
-        expect(densityToggleRules()).not.toMatch(WHITE);
+    it('names each density option on hover, since they render as glyphs only', async () => {
+        renderWithMantine(<JobListViewOptions {...createDefaultProps()}/>);
+        const user = setupUser();
+
+        // The tooltip anchors to the option's content box, not the visually
+        // hidden input, so hover what the operator's pointer actually lands on.
+        const optionBody = (name: string) =>
+            screen.getByRole('radio', {name}).parentElement!.querySelector('span')!;
+
+        await user.hover(optionBody('Ultra Dense'));
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Ultra Dense');
+
+        await user.hover(optionBody('Normal'));
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Normal');
+    });
+
+    it('keeps the switch label beside the track rather than stacking it', () => {
+        // Mantine lays the label out in the switch body; the header bar is a
+        // nowrap row, so the body must not wrap the text onto its own line.
+        renderWithMantine(<JobListViewOptions {...createDefaultProps()}/>);
+
+        const label = screen.getByText('Logged-in only');
+        const body = label.closest('.mantine-Switch-body') as HTMLElement;
+        expect(body).toHaveStyle({flexWrap: 'nowrap', alignItems: 'center'});
+    });
+
+    it('hides the logged-in switch outside dispatch contexts', () => {
+        renderWithMantine(<JobListViewOptions {...createDefaultProps({showLoggedInSwitch: false})}/>);
+        expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    });
+
+    it('washes the header-variant controls with the bar accent and leaves colour to the stylesheet', () => {
+        // The panel header is a plain `surface` bar, so the hover has to be a
+        // translucent step of the bar's accent — and the colour must stay in the
+        // stylesheet, because an inline one outranks Mantine's disabled colour.
+        renderWithMantine(<JobListViewOptions {...createDefaultProps({headerVariant: true})}/>);
+
+        const reset = screen.getByRole('button', {name: 'Reset columns'});
+        expect(reset.style.getPropertyValue('--ai-hover')).toBe(PANEL_CONTROL_HOVER);
+        expect(reset.style.color).toBe('');
+    });
+
+    it('puts the density toggle on the header band only in the header variant', () => {
+        const {unmount} = renderWithMantine(<JobListViewOptions {...createDefaultProps({headerVariant: true})}/>);
+        expect(screen.getByRole('radiogroup', {name: 'Row density'}).style.getPropertyValue('--st-height'))
+            .toBe(`${SEGMENTED_TOGGLE_HEADER_HEIGHT}px`);
+        unmount();
+
+        renderWithMantine(<JobListViewOptions {...createDefaultProps()}/>);
+        expect(screen.getByRole('radiogroup', {name: 'Row density'}).style.getPropertyValue('--st-height'))
+            .toBe(`${SEGMENTED_TOGGLE_INLINE_HEIGHT}px`);
     });
 });

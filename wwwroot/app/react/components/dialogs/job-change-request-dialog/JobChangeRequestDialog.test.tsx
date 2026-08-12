@@ -8,7 +8,7 @@
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
 import {JobChangeRequestDialog, JobChangeRequestDialogProps} from './JobChangeRequestDialog';
-import { renderWithTheme } from '../../../__testUtils__';
+import { renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {jobChangeRequestApi} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
@@ -123,7 +123,9 @@ describe('JobChangeRequestDialog', () => {
             request: {status: 'Pending'},
         });
         renderDialog({preselectedFieldName: 'PartnerAgreedRate'});
-        const input = screen.getByRole('spinbutton', {name: /Agreed rate/i});
+        // Mantine's `NumberInput` is a formatted text input (react-number-format),
+        // so it has no spinbutton role and its value reads back as a string.
+        const input = screen.getByRole('textbox', {name: /Agreed rate/i});
         await user.click(input);
         await user.paste('185');
         await user.click(screen.getByRole('button', {name: /Submit/}));
@@ -207,7 +209,7 @@ describe('JobChangeRequestDialog', () => {
                 preInitialValue: '123.45',
             });
             expect(screen.getByRole('heading', {name: /Request change to Agreed Rate/})).toBeInTheDocument();
-            expect(screen.getByRole('spinbutton', {name: /Agreed rate/i})).toHaveValue(123.45);
+            expect(screen.getByRole('textbox', {name: /Agreed rate/i})).toHaveValue('123.45');
         });
 
         it('re-primes when reopened with different props', () => {
@@ -226,7 +228,7 @@ describe('JobChangeRequestDialog', () => {
                     preInitialValue="50"
                 />,
             );
-            expect(screen.getByRole('spinbutton', {name: /Agreed rate/i})).toHaveValue(50);
+            expect(screen.getByRole('textbox', {name: /Agreed rate/i})).toHaveValue('50');
 
             rerender(
                 <JobChangeRequestDialog
@@ -248,7 +250,7 @@ describe('JobChangeRequestDialog', () => {
                     preInitialValue="7"
                 />,
             );
-            expect(screen.getByRole('spinbutton', {name: /Quantity/i})).toHaveValue(7);
+            expect(screen.getByRole('textbox', {name: /Quantity/i})).toHaveValue('7');
         });
     });
 
@@ -273,7 +275,7 @@ describe('JobChangeRequestDialog', () => {
 
             // The field combobox and numeric value input must NOT be present.
             expect(screen.queryByLabelText(/Field/i)).not.toBeInTheDocument();
-            expect(screen.queryByRole('spinbutton', {name: /Agreed rate/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('textbox', {name: /Agreed rate/i})).not.toBeInTheDocument();
 
             // The header switches to confirmation copy.
             expect(screen.getByRole('heading', {name: /Confirm Agreed Rate change/})).toBeInTheDocument();

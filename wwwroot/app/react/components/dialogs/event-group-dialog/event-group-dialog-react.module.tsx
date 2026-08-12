@@ -8,16 +8,14 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { EventGroupDialog } from './EventGroupDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import { getIanaTimezone, getTenantTimezone } from '../../../utils/dateUtils';
 import { getEventTypeGroups, getActiveStaff } from '../../../services/tasksApi';
 import { saveTasks } from './saveTasks';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
 import type { ShowToastFn, ToastService } from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 interface DialogState {
     open: boolean;
@@ -97,27 +95,24 @@ class EventGroupDialogManager {
             }
             this.dialogState.toastService.showToast(message, type);
         };
-
-        const currentTheme = getTheme();
         const timezone = getIanaTimezone(getTenantTimezone());
 
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <EventGroupDialog
-                        open={this.dialogState.open}
-                        events={this.dialogState.events}
-                        users={this.dialogState.users}
-                        onClose={handleClose}
-                        onSave={handleSave}
-                        onOpenAdminManager={handleOpenAdminManager}
-                        showToast={handleShowToast}
-                        timezone={timezone}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
+        this.dialogRoot.render(islandTree(
+                <MuiThemeIsland>
+                <EventGroupDialog
+                    open={this.dialogState.open}
+                    events={this.dialogState.events}
+                    users={this.dialogState.users}
+                    onClose={handleClose}
+                    onSave={handleSave}
+                    onOpenAdminManager={handleOpenAdminManager}
+                    showToast={handleShowToast}
+                    timezone={timezone}
+                />
+
+            </MuiThemeIsland>
+
+        ));
     }
 
     async open(options: OpenEventGroupDialogOptions): Promise<boolean> {

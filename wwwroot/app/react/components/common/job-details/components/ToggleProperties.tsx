@@ -4,27 +4,18 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
-import Collapse from '@mui/material/Collapse';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import IconButton from '@mui/material/IconButton';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import TuneIcon from '@mui/icons-material/Tune';
+import {ActionIcon, Box, Checkbox, Collapse, Divider, Group, Paper, Text, UnstyledButton} from '@mantine/core';
+import {Eye, EyeOff, SlidersHorizontal} from 'lucide-react';
+import {Icon} from '../../icon/Icon';
 import type {IJob} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
-import {cardContainerSx} from '../JobDetails.styles';
+import {cardContainerProps, sectionBorderStyle} from '../JobDetails.styles';
 import {SectionHeader} from './SectionHeader';
 
-const togglesBodySx = {px: 2, py: 1.5} as const;
-const togglesBodyDenseSx = {px: 1.5, py: 0.75} as const;
+const togglesBodyStyle = (dense: boolean): React.CSSProperties => ({
+    paddingInline: dense ? 12 : 16,
+    paddingBlock: dense ? 6 : 12,
+});
 
 interface TogglePropertiesProps {
     job: IJob;
@@ -43,12 +34,12 @@ interface TogglePropertiesProps {
 }
 
 function PropertyCheckbox({
-                              label,
-                              checked,
-                              onChange,
-                              disabled,
-                              dense,
-                          }: {
+    label,
+    checked,
+    onChange,
+    disabled,
+    dense,
+}: {
     label: string;
     checked: boolean;
     onChange: () => void;
@@ -56,159 +47,134 @@ function PropertyCheckbox({
     dense?: boolean;
 }) {
     return (
-        <FormControlLabel
-            control={
-                <Checkbox
-                    size="small"
-                    checked={checked}
-                    onChange={onChange}
-                    disabled={disabled}
-                    sx={{p: dense ? 0.25 : 0.5}}
-                />
-            }
-            label={<Typography variant="body2" sx={{fontSize: '0.8125rem'}}>{label}</Typography>}
-            sx={{ml: 0, mr: 2}}
+        <Checkbox
+            size={dense ? 'xs' : 'sm'}
+            label={label}
+            checked={checked}
+            onChange={onChange}
+            disabled={disabled}
+            styles={{label: {fontSize: '0.8125rem', paddingInlineStart: 6}}}
+            mr={16}
         />
     );
 }
 
 export const ToggleProperties = React.memo(({
-                                                job,
-                                                isRecurringJob,
-                                                dense,
-                                                isEditMode,
-                                                isFieldVisible,
-                                                onToggleField,
-                                                onToggleProperty,
-                                                onVoidClick,
-                                                onActiveClick,
-                                                onTailLiftPickupClick,
-                                                onTailLiftDropOffClick,
-                                                onDeliverToPrivateResChanged,
-                                                onDoneClick,
-                                            }: TogglePropertiesProps) => {
+    job,
+    isRecurringJob,
+    dense,
+    isEditMode,
+    isFieldVisible,
+    onToggleField,
+    onToggleProperty,
+    onVoidClick,
+    onActiveClick,
+    onTailLiftPickupClick,
+    onTailLiftDropOffClick,
+    onDeliverToPrivateResChanged,
+    onDoneClick,
+}: TogglePropertiesProps) => {
     if (isEditMode) {
+        const visible = isFieldVisible('checkboxes');
         return (
-            <Box sx={{borderTop: 1, borderColor: 'divider'}}>
-                <List dense disablePadding>
-                    <ListItem
-                        dense
-                        secondaryAction={
-                            <IconButton edge="end" size="small" onClick={() => onToggleField('checkboxes')}>
-                                {isFieldVisible('checkboxes') ? <VisibilityIcon sx={{fontSize: 18}}/> :
-                                    <VisibilityOffIcon sx={{fontSize: 18}}/>}
-                            </IconButton>
-                        }
-                    >
-                        <ListItemButton dense onClick={() => onToggleField('checkboxes')}>
-                            <ListItemText
-                                primary="Properties"
-                                slotProps={{
-                                    primary: {
-                                        variant: 'body2',
-                                        color: isFieldVisible('checkboxes') ? 'text.primary' : 'text.disabled',
-                                        sx: {fontSize: '0.8125rem'},
-                                    }
-                                }}
-                            />
-                        </ListItemButton>
-                    </ListItem>
-                </List>
-            </Box>
+            <Group justify="space-between" style={{...sectionBorderStyle, paddingInline: 8, paddingBlock: 4}}>
+                <UnstyledButton
+                    onClick={() => onToggleField('checkboxes')}
+                    style={{flex: 1, minWidth: 0, textAlign: 'left'}}
+                >
+                    <Text size="sm" c={visible ? undefined : 'dimmed'} style={{fontSize: '0.8125rem'}}>
+                        Properties
+                    </Text>
+                </UnstyledButton>
+                <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="sm"
+                    onClick={() => onToggleField('checkboxes')}
+                    aria-label={visible ? 'Hide Properties' : 'Show Properties'}
+                >
+                    <Icon lucide={visible ? Eye : EyeOff} size={18}/>
+                </ActionIcon>
+            </Group>
         );
     }
 
     const locked = !!job.locked;
 
     return (
-        <Collapse in={isFieldVisible('checkboxes')} unmountOnExit>
-            <Box sx={cardContainerSx}>
-                <SectionHeader icon={TuneIcon} title="Job Properties" dense={dense} />
-                <Box sx={dense ? togglesBodyDenseSx : togglesBodySx}>
-                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: dense ? 0.25 : 0.5, justifyContent: 'center'}}>
-                    <PropertyCheckbox
-                        label="Truck" checked={!!job.truck} dense={dense}
-                        onChange={() => onToggleProperty(JobProperty.Truck, !!job.truck)}
-                        disabled={locked}
-                    />
-                    <PropertyCheckbox
-                        label="Direct" checked={!!job.direct} dense={dense}
-                        onChange={() => onToggleProperty(JobProperty.Direct, !!job.direct)}
-                        disabled={locked}
-                    />
-                    <PropertyCheckbox
-                        label="Van" checked={job.van} dense={dense}
-                        onChange={() => onToggleProperty(JobProperty.Van, job.van)}
-                        disabled={locked}
-                    />
-                    <PropertyCheckbox
-                        label="Reprice" checked={!!job.reprice} dense={dense}
-                        onChange={() => onToggleProperty(JobProperty.Reprice, !!job.reprice)}
-                        disabled={locked}
-                    />
-                    {!isRecurringJob && (
+        <Collapse expanded={isFieldVisible('checkboxes')} keepMounted={false}>
+            <Paper {...cardContainerProps}>
+                <SectionHeader lucide={SlidersHorizontal} title="Job Properties" dense={dense}/>
+                <Box style={togglesBodyStyle(dense)}>
+                    <Group justify="center" gap={dense ? 2 : 4} wrap="wrap">
                         <PropertyCheckbox
-                            label="Done" checked={!!job.done} dense={dense}
-                            onChange={() => onDoneClick?.()}
+                            label="Truck" checked={!!job.truck} dense={dense}
+                            onChange={() => onToggleProperty(JobProperty.Truck, !!job.truck)}
                             disabled={locked}
                         />
-                    )}
-                    {!isRecurringJob && (
                         <PropertyCheckbox
-                            label="Void" checked={!!job.void} dense={dense}
-                            onChange={onVoidClick}
+                            label="Direct" checked={!!job.direct} dense={dense}
+                            onChange={() => onToggleProperty(JobProperty.Direct, !!job.direct)}
                             disabled={locked}
                         />
-                    )}
-                    {isRecurringJob && (
                         <PropertyCheckbox
-                            label="Active" checked={!!job.active} dense={dense}
-                            onChange={onActiveClick}
+                            label="Van" checked={job.van} dense={dense}
+                            onChange={() => onToggleProperty(JobProperty.Van, job.van)}
+                            disabled={locked}
                         />
-                    )}
-                </Box>
+                        <PropertyCheckbox
+                            label="Reprice" checked={!!job.reprice} dense={dense}
+                            onChange={() => onToggleProperty(JobProperty.Reprice, !!job.reprice)}
+                            disabled={locked}
+                        />
+                        {!isRecurringJob && (
+                            <PropertyCheckbox
+                                label="Done" checked={!!job.done} dense={dense}
+                                onChange={() => onDoneClick?.()}
+                                disabled={locked}
+                            />
+                        )}
+                        {!isRecurringJob && (
+                            <PropertyCheckbox
+                                label="Void" checked={!!job.void} dense={dense}
+                                onChange={onVoidClick}
+                                disabled={locked}
+                            />
+                        )}
+                        {isRecurringJob && (
+                            <PropertyCheckbox
+                                label="Active" checked={!!job.active} dense={dense}
+                                onChange={onActiveClick}
+                            />
+                        )}
+                    </Group>
 
-                {/* Truck Options */}
-                <Collapse in={isFieldVisible('truckOptions') && !!job.truck} unmountOnExit>
-                    <Divider sx={{my: 0.5}}/>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: "text.secondary",
-                            mb: 0.5,
-                            display: 'block',
-                            fontWeight: 500
-                        }}>
-                        Truck Options
-                    </Typography>
-                    <Box sx={{display: 'flex', flexWrap: 'wrap', justifyContent: 'center'}}>
-                        <PropertyCheckbox
-                            label="Tail Lift PU" checked={job.tailLiftPu} dense={dense}
-                            onChange={onTailLiftPickupClick}
-                            disabled={locked || job.isBulkJob}
-                        />
-                        <PropertyCheckbox
-                            label="Tail Lift DO" checked={job.tailLiftDo} dense={dense}
-                            onChange={onTailLiftDropOffClick}
-                            disabled={locked || job.isBulkJob}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    size="small"
-                                    checked={job.deliverToPrivateRes}
-                                    onChange={(e) => onDeliverToPrivateResChanged(e.target.checked)}
-                                    disabled={locked || job.isBulkJob}
-                                    sx={{p: dense ? 0.25 : 0.5}}
-                                />
-                            }
-                            label={<Typography variant="body2" sx={{fontSize: '0.8125rem'}}>Residential</Typography>}
-                            sx={{ml: 0, mr: 2}}
-                        />
-                    </Box>
-                </Collapse>
+                    {/* Truck Options */}
+                    <Collapse expanded={isFieldVisible('truckOptions') && !!job.truck} keepMounted={false}>
+                        <Divider my={4}/>
+                        <Text size="xs" c="dimmed" fw={500} mb={4}>
+                            Truck Options
+                        </Text>
+                        <Group justify="center" wrap="wrap" gap={0}>
+                            <PropertyCheckbox
+                                label="Tail Lift PU" checked={job.tailLiftPu} dense={dense}
+                                onChange={onTailLiftPickupClick}
+                                disabled={locked || job.isBulkJob}
+                            />
+                            <PropertyCheckbox
+                                label="Tail Lift DO" checked={job.tailLiftDo} dense={dense}
+                                onChange={onTailLiftDropOffClick}
+                                disabled={locked || job.isBulkJob}
+                            />
+                            <PropertyCheckbox
+                                label="Residential" checked={job.deliverToPrivateRes} dense={dense}
+                                onChange={() => onDeliverToPrivateResChanged(!job.deliverToPrivateRes)}
+                                disabled={locked || job.isBulkJob}
+                            />
+                        </Group>
+                    </Collapse>
                 </Box>
-            </Box>
+            </Paper>
         </Collapse>
     );
 });

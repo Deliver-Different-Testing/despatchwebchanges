@@ -3,21 +3,14 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
-import WorkOutlinedIcon from '@mui/icons-material/WorkOutlined';
+import { screen, fireEvent } from '@testing-library/react';
+import {Briefcase} from 'lucide-react';
+import {renderWithMantine} from '../../../__testUtils__';
+import {Icon} from '../icon/Icon';
 import { NoData } from './NoData';
 import type { NoDataProps } from './types';
 
-const theme = createTheme();
-
-const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+const renderWithProviders = (ui: React.ReactElement) => renderWithMantine(ui);
 
 const createDefaultProps = (overrides?: Partial<NoDataProps>): NoDataProps => ({
     ...overrides,
@@ -47,10 +40,10 @@ describe('NoData', () => {
         });
 
         it('renders a passed React icon element', () => {
-            const props = createDefaultProps({ icon: <WorkOutlinedIcon/> });
+            const props = createDefaultProps({ icon: <Icon lucide={Briefcase} aria-label="Work"/> });
             renderWithProviders(<NoData {...props} />);
 
-            expect(screen.getByTestId('WorkOutlinedIcon')).toBeInTheDocument();
+            expect(screen.getByLabelText('Work')).toBeInTheDocument();
         });
 
         it('renders a string icon via the Material Symbols font (AngularJS bridge)', () => {
@@ -63,7 +56,7 @@ describe('NoData', () => {
         it('renders default icon when not specified', () => {
             renderWithProviders(<NoData />);
 
-            expect(screen.getByTestId('InfoOutlinedIcon')).toBeInTheDocument();
+            expect(document.querySelector('.mantine-Text-root svg')).toBeTruthy();
         });
     });
 
@@ -107,22 +100,21 @@ describe('NoData', () => {
         });
     });
 
-    describe('Theme Styling', () => {
-        it('renders with NZ customer styling by default', () => {
-            const props = createDefaultProps({ showAction: true });
-            renderWithProviders(<NoData {...props} />);
+    /**
+     * `isUsCustomer` is inert — it always has been, in the MUI version too. The action
+     * is a plain Mantine `Button`, so its colour comes from the tenant's brand primary
+     * via the provider rather than from anything this component decides. The pair of
+     * tests that used to assert `MuiButton-contained` on both tenants is one test that
+     * says the button is Mantine's and the prop changes nothing.
+     */
+    describe('Action button styling', () => {
+        it('renders the theme default button regardless of isUsCustomer', () => {
+            renderWithProviders(<NoData {...createDefaultProps({showAction: true})} />);
+            const nzButton = screen.getByRole('button');
+            expect(nzButton).toHaveClass('mantine-Button-root');
 
-            const button = screen.getByRole('button');
-            // We verify the button exists and has MuiButton class
-            expect(button).toHaveClass('MuiButton-contained');
-        });
-
-        it('renders with US customer styling when isUsCustomer is true', () => {
-            const props = createDefaultProps({ showAction: true, isUsCustomer: true });
-            renderWithProviders(<NoData {...props} />);
-
-            const button = screen.getByRole('button');
-            expect(button).toHaveClass('MuiButton-contained');
+            renderWithProviders(<NoData {...createDefaultProps({showAction: true, isUsCustomer: true})} />);
+            expect(screen.getAllByRole('button')[1].className).toBe(nzButton.className);
         });
     });
 

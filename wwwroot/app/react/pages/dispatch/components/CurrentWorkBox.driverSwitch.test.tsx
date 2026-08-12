@@ -2,7 +2,6 @@ import React, {useState} from 'react';
 import dayjs from 'dayjs';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 // Mock JobListPanel: expose the courierId it fetches for, and let the test
 // simulate selecting one of that driver's jobs (drives the parent's currentJob).
@@ -36,6 +35,7 @@ jest.mock('./CourierSearchField', () => ({CourierSearchField: () => <div />}));
 jest.mock('./TruckLoadingStatusDialog', () => ({TruckLoadingStatusDialog: () => null}));
 
 import {CurrentWorkBox} from './CurrentWorkBox';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // Mimics DispatchPage: currentJob drives selectedJobCourierId, and the box
 // remounts when `layoutBump` changes (JobSearchShell keys boxes by layoutVersion).
@@ -62,9 +62,9 @@ function renderHarness() {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={createTheme()}>
+            <MantineTestProvider>
                 <Harness />
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -73,7 +73,7 @@ async function drillInto(name: string) {
     fireEvent.click(await screen.findByText(name));
     await screen.findByTestId('mock-job-list');
 }
-const backToAllDrivers = () => fireEvent.click(screen.getByRole('button', {name: /all drivers/i}));
+const backToAllDrivers = () => fireEvent.click(screen.getByRole('radio', {name: /all drivers/i}));
 const selectShownJob = () => fireEvent.click(screen.getByRole('button', {name: 'select-job'}));
 const bumpLayout = () => fireEvent.click(screen.getByRole('button', {name: 'bump-layout'}));
 

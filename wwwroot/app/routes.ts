@@ -1,4 +1,19 @@
 import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
+
+/**
+ * The JS bundle for an island plus its stylesheet, when the build emitted one.
+ *
+ * Islands that use a `*.module.css` (the job-list table, for one) get a sibling
+ * CSS entry in the manifest; loading only the `.js` leaves them unstyled.
+ */
+function islandFiles(manifest: Record<string, string>, entry: string): string[] {
+    const asset = (filename: string) => `dist/${manifest[filename] || filename}`;
+    const files = [asset(`${entry}.js`)];
+    if (manifest[`${entry}.css`]) {
+        files.push(asset(`${entry}.css`));
+    }
+    return files;
+}
 import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
 import {openJobInSearch} from './react/services/navigationService';
@@ -116,11 +131,11 @@ class RouterConfig {
                         }
                         await $ocLazyLoad.load({
                             name: 'uDispatch.jobListReact',
-                            files: [getAssetPath('jobListReact.js')]
+                            files: islandFiles(manifest, 'jobListReact')
                         });
                         await $ocLazyLoad.load({
                             name: 'uDispatch.currentWorkJobListReact',
-                            files: [getAssetPath('currentWorkJobListReact.js')]
+                            files: islandFiles(manifest, 'currentWorkJobListReact')
                         });
                     } catch (error) {
                         console.error('[ROUTES] Failed to load home modules:', error);
@@ -216,7 +231,7 @@ class RouterConfig {
                     ];
                     await Promise.all(lazyLoads.map(d => $ocLazyLoad.load({
                         name: d.name,
-                        files: [getAssetPath(d.file)],
+                        files: islandFiles(manifest, d.file.replace(/\.js$/, '')),
                     })));
                     const dispatchFiles = [getAssetPath('dispatchReact.js')];
                     if (manifest['dispatchReact.css']) {
@@ -671,7 +686,7 @@ class RouterConfig {
                     }
                     await $ocLazyLoad.load({
                         name: 'uDispatch.nationwideJobListReact',
-                        files: [getAssetPath('nationwideJobListReact.js')]
+                        files: islandFiles(manifest, 'nationwideJobListReact')
                     });
                 }]
             }
@@ -721,7 +736,7 @@ class RouterConfig {
                     }
                     await $ocLazyLoad.load({
                         name: 'uDispatch.jobSearchJobListReact',
-                        files: [getAssetPath('jobSearchJobListReact.js')]
+                        files: islandFiles(manifest, 'jobSearchJobListReact')
                     });
                 }]
             },
@@ -814,7 +829,7 @@ class RouterConfig {
                     ];
                     await Promise.all(lazyLoads.map(d => $ocLazyLoad.load({
                         name: d.name,
-                        files: [getAssetPath(d.file)],
+                        files: islandFiles(manifest, d.file.replace(/\.js$/, '')),
                     })));
                     const jobSearchFiles = [getAssetPath('jobSearchReact.js')];
                     if (manifest['jobSearchReact.css']) {
@@ -1179,7 +1194,10 @@ class RouterConfig {
                     // Load vendor-react first (React, ReactDOM, React Query)
                     await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
                     // Then load the recurring jobs React module
-                    return $ocLazyLoad.load(getAssetPath('recurringJobsReact.js'));
+                    return $ocLazyLoad.load({
+                        name: 'uDispatch.recurringJobsReact',
+                        files: islandFiles(manifest, 'recurringJobsReact'),
+                    });
                 }]
             },
             controller: ['$scope', 'toastrService', 'jobAddStopService', 'APP_CONFIG',
@@ -1258,8 +1276,11 @@ class RouterConfig {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
                     // Load vendor-react first (React, ReactDOM)
                     await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
-                    // Then load the overview React module
-                    return $ocLazyLoad.load(getAssetPath('overviewReact.js'));
+                    // Then load the overview React module — via islandFiles so its
+                    // emitted stylesheet is fetched too (the HERE-map wrapper's
+                    // isolation: isolate lives there; without the CSS the map's own
+                    // z-index covers the control rails).
+                    return $ocLazyLoad.load(islandFiles(manifest, 'overviewReact'));
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
@@ -1327,7 +1348,10 @@ class RouterConfig {
                     // Load vendor-react first (React, ReactDOM)
                     await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
                     // Then load the task dashboard React module
-                    return $ocLazyLoad.load(getAssetPath('taskDashboardReact.js'));
+                    return $ocLazyLoad.load({
+                        name: 'uDispatch.taskDashboardReact',
+                        files: islandFiles(manifest, 'taskDashboardReact'),
+                    });
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',

@@ -6,13 +6,12 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
+import {renderWithMantine as render} from '../../../__testUtils__';
 import {CascadeDateConfirmDialog} from './CascadeDateConfirmDialog';
 import type {DateCascadeFamilyMember} from '../../../services/jobDetailApi';
 import {setupUser} from '../../../__testUtils__/setupUser';
 
-const theme = createTheme();
 
 function member(overrides: Partial<DateCascadeFamilyMember> & {jobId: number}): DateCascadeFamilyMember {
     return {
@@ -37,7 +36,6 @@ function renderDialog(overrides?: {
     const onChoose = overrides?.onChoose ?? jest.fn();
     const onCancel = overrides?.onCancel ?? jest.fn();
     render(
-        <ThemeProvider theme={theme}>
             <CascadeDateConfirmDialog
                 open
                 jobNumber="E8938MC"
@@ -47,7 +45,6 @@ function renderDialog(overrides?: {
                 onCancel={onCancel}
                 onChoose={onChoose}
             />
-        </ThemeProvider>,
     );
     return {onChoose, onCancel};
 }

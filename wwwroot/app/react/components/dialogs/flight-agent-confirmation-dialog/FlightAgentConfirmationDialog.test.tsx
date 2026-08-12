@@ -4,9 +4,9 @@
 
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {screen, waitFor} from '@testing-library/react';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {QueryClient} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
 import {AgentSuggestion, FlightCargoProcessing, FlightSegment, FlightViewModel} from './types';
@@ -23,17 +23,14 @@ const mockPreview = getAgentInboundEmailPreview as jest.Mock;
 const neverResolves = () => new Promise(() => { /* never resolves */ });
 
 // Create a theme for testing
-const theme = createTheme();
 
-// Helper to render component with theme + a QueryClient (production mounts this dialog
-// inside ReactQueryProvider via its bridge module).
+// Helper to render the dialog with both themes + a QueryClient. Mantine goes outside,
+// MUI inside: the dialog is still MUI but its two date fields are Mantine.
+// (Production mounts this dialog inside ReactQueryProvider via its bridge module.)
 function renderWithTheme(ui: React.ReactElement) {
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>{ui}</ThemeProvider>
-        </QueryClientProvider>,
-    );
+    return renderWithMantineOverMui(ui, {
+        queryClient: new QueryClient({defaultOptions: {queries: {retry: false}}}),
+    });
 }
 
 // Create sample flight segment

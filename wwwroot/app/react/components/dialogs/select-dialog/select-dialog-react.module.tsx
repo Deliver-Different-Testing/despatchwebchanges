@@ -9,7 +9,7 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 
 import { SelectDialog } from './SelectDialog';
-import { DfrntMantineProvider } from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import { SelectDialogResult, SelectDialogOptions, SelectDialogItem } from './types';
 import type { ToastService } from '../../../services/toastService';
 
@@ -86,23 +86,21 @@ class SelectDialogManager {
             this.renderDialog();
         };
 
-        this.dialogRoot.render(
-            <DfrntMantineProvider>
-                <SelectDialog
-                    open={this.dialogState.open}
-                    title={this.dialogState.title}
-                    fieldName={this.dialogState.fieldName}
-                    items={this.dialogState.items}
-                    initialValue={this.dialogState.initialValue}
-                    warningMessage={this.dialogState.warningMessage}
-                    showCheckbox={this.dialogState.showCheckbox}
-                    checkboxLabel={this.dialogState.checkboxLabel}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    showToast={this.toastService.showToast}
-                />
-            </DfrntMantineProvider>
-        );
+        this.dialogRoot.render(islandTree(
+            <SelectDialog
+                open={this.dialogState.open}
+                title={this.dialogState.title}
+                fieldName={this.dialogState.fieldName}
+                items={this.dialogState.items}
+                initialValue={this.dialogState.initialValue}
+                warningMessage={this.dialogState.warningMessage}
+                showCheckbox={this.dialogState.showCheckbox}
+                checkboxLabel={this.dialogState.checkboxLabel}
+                onClose={handleClose}
+                onSubmit={handleSubmit}
+                showToast={this.toastService.showToast}
+            />
+        ));
     }
 
     showSelectDialog(options: SelectDialogOptions): Promise<SelectDialogResult | null> {

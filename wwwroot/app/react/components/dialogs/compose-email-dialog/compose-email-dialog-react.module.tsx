@@ -1,7 +1,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {ComposeEmailDialog} from './ComposeEmailDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
 
 interface DialogState {
@@ -34,16 +34,14 @@ function renderDialog(): void {
         renderDialog();
     };
 
-    dialogRoot.render(
-        <DfrntMantineProvider>
-            <ComposeEmailDialog
-                open={dialogState.open}
-                selectedCouriers={dialogState.selectedCouriers}
-                onClose={handleClose}
-                onSend={handleSend}
-            />
-        </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <ComposeEmailDialog
+            open={dialogState.open}
+            selectedCouriers={dialogState.selectedCouriers}
+            onClose={handleClose}
+            onSend={handleSend}
+        />
+    ));
 }
 
 function initializeDialogRoot(): void {

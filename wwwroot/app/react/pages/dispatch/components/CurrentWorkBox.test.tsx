@@ -1,7 +1,6 @@
 import React, {act} from 'react';
 import {render, screen, waitFor, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 // Stub the heavy children so the test exercises CurrentWorkBox's own wiring.
 const jobListPanelProps: {fetchConfig?: any; defaultCategory?: string} = {};
@@ -48,6 +47,7 @@ jest.mock('./TruckLoadingStatusDialog', () => ({
 import dayjs from 'dayjs';
 import {CurrentWorkBox} from './CurrentWorkBox';
 import {fetchDriverWorkOverview} from '../../../services/courierApi';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 const defaultStart = dayjs('2026-07-10T00:00:00');
 const defaultEnd = dayjs('2026-07-12T23:59:59');
@@ -56,7 +56,7 @@ function renderBox(overrides: Partial<React.ComponentProps<typeof CurrentWorkBox
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={createTheme()}>
+            <MantineTestProvider>
                 <CurrentWorkBox
                     showToast={jest.fn()}
                     isUsCustomer={false}
@@ -64,7 +64,7 @@ function renderBox(overrides: Partial<React.ComponentProps<typeof CurrentWorkBox
                     endDate={defaultEnd}
                     {...overrides}
                 />
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -83,7 +83,7 @@ describe('CurrentWorkBox', () => {
         it('prompts to select a courier when none is provided', () => {
             renderBox();
             expect(screen.getByText(/select a courier to view/i)).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /all drivers/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('radio', {name: /all drivers/i})).not.toBeInTheDocument();
         });
 
         it('renders the current-work job list for the selected courier', () => {
@@ -138,17 +138,17 @@ describe('CurrentWorkBox', () => {
             renderBox({isUsCustomer: true});
 
             // Overview mode: the focused-driver toggle has no courier yet, so it is disabled.
-            expect(screen.getByRole('button', {name: /selected driver/i})).toBeDisabled();
+            expect(screen.getByRole('radio', {name: /selected driver/i})).toBeDisabled();
 
             await act(async () => {
                 mockOverview.onDriverSelect?.({courierId: 7, name: 'Jane Smith'});
             });
             expect(await screen.findByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
             // The focused-driver toggle now carries the picked driver's name.
-            expect(screen.getByRole('button', {name: 'Jane Smith'})).toBeEnabled();
+            expect(screen.getByRole('radio', {name: 'Jane Smith'})).toBeEnabled();
 
             await act(async () => {
-                screen.getByRole('button', {name: /all drivers/i}).click();
+                screen.getByRole('radio', {name: /all drivers/i}).click();
             });
 
             expect(screen.getByTestId('mock-all-drivers')).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe('CurrentWorkBox', () => {
             await waitFor(() => expect(mockOverview.drivers?.map(d => d.courierId)).toEqual([1, 2, 3]));
 
             await act(async () => {
-                screen.getByRole('button', {name: /active drivers/i}).click();
+                screen.getByRole('radio', {name: /active drivers/i}).click();
             });
 
             // Active scope narrows the list to logged-in (Active) drivers only.
@@ -205,8 +205,8 @@ describe('CurrentWorkBox', () => {
                 });
                 // The selected job drills straight into its courier, so the header shows the
                 // "All Drivers / <driver>" scope toggle with the driver name on the focused side.
-                expect(within(slot).getByRole('button', {name: /all drivers/i})).toBeInTheDocument();
-                expect(within(slot).getByRole('button', {name: 'Jane Smith'})).toBeInTheDocument();
+                expect(within(slot).getByRole('radio', {name: /all drivers/i})).toBeInTheDocument();
+                expect(within(slot).getByRole('radio', {name: 'Jane Smith'})).toBeInTheDocument();
                 expect(within(slot).getByRole('button', {name: 'Truck loading status'})).toBeInTheDocument();
             } finally {
                 document.body.removeChild(slot);

@@ -1,104 +1,84 @@
 /**
- * JobDetails.styles - Dense helper function tests
+ * JobDetails.styles - dense helper tests.
+ *
+ * The ramps are the contract these carry: every job-detail card composes them,
+ * so the dense/normal steps are pinned here rather than in each consumer.
  */
 
 import {
-    sectionToolbarSx,
-    metricLabelSx,
-    metricValueSx,
-    listItemTextSlotProps,
-    getSectionToolbarSx,
-    getMetricLabelSx,
-    getMetricValueSx,
-    getListItemTextSlotProps,
+    cardContainerProps,
+    cardContentStyle,
+    cardNotesContainerStyle,
+    fieldIconGutterStyle,
+    fieldLabelStyle,
+    fieldValueStyle,
+    metricLabelStyle,
+    metricValueStyle,
+    sectionBorderStyle,
 } from './JobDetails.styles';
 
-describe('Dense style helpers', () => {
-    describe('getSectionToolbarSx', () => {
-        it('returns normal dimensions when dense is false', () => {
-            const result = getSectionToolbarSx(false) as Record<string, any>;
-            expect(result.height).toBe(40);
-            expect(result.minHeight).toBe(40);
-            expect(result.px).toBe(2);
-        });
+describe('cardContainerProps', () => {
+    it('keeps the card corner on the 16px step, bordered and clipping its header', () => {
+        expect(cardContainerProps.radius).toBe('lg');
+        expect(cardContainerProps.withBorder).toBe(true);
+        expect(cardContainerProps.style.overflow).toBe('hidden');
+    });
+});
 
-        it('returns compact dimensions when dense is true', () => {
-            const result = getSectionToolbarSx(true) as Record<string, any>;
-            expect(result.height).toBe(32);
-            expect(result.minHeight).toBe(32);
-            expect(result.px).toBe(1.5);
-        });
-
-        it('preserves base toolbar properties', () => {
-            const result = getSectionToolbarSx(true) as Record<string, any>;
-            const base = sectionToolbarSx as Record<string, any>;
-            expect(result.display).toBe(base.display);
-            expect(result.alignItems).toBe(base.alignItems);
-            expect(result.bgcolor).toBe(base.bgcolor);
-        });
+describe('metric ramps', () => {
+    it('steps the label down and tightens its gap when dense', () => {
+        expect(metricLabelStyle(false)).toMatchObject({fontSize: '0.6875rem', marginBottom: 6});
+        expect(metricLabelStyle(true)).toMatchObject({fontSize: '0.625rem', marginBottom: 2});
     });
 
-    describe('getMetricLabelSx', () => {
-        it('returns normal spacing when dense is false', () => {
-            const result = getMetricLabelSx(false) as Record<string, any>;
-            expect(result.mb).toBe(0.75);
-            expect(result.fontSize).toBe('0.6875rem');
-        });
-
-        it('returns compact spacing when dense is true', () => {
-            const result = getMetricLabelSx(true) as Record<string, any>;
-            expect(result.mb).toBe(0.25);
-            expect(result.fontSize).toBe('0.625rem');
-        });
-
-        it('preserves base label properties', () => {
-            const result = getMetricLabelSx(true) as Record<string, any>;
-            const base = metricLabelSx as Record<string, any>;
-            expect(result.fontWeight).toBe(base.fontWeight);
-            expect(result.textTransform).toBe(base.textTransform);
-        });
+    it('keeps the label upper-case and tracked at both densities', () => {
+        for (const dense of [false, true]) {
+            expect(metricLabelStyle(dense)).toMatchObject({
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+            });
+        }
     });
 
-    describe('getMetricValueSx', () => {
-        it('returns normal font size when dense is false', () => {
-            const result = getMetricValueSx(false) as Record<string, any>;
-            expect(result.fontSize).toBe('0.875rem');
-        });
+    it('steps the value down when dense but keeps tabular figures so numbers align', () => {
+        expect(metricValueStyle(false)).toMatchObject({fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums'});
+        expect(metricValueStyle(true)).toMatchObject({fontSize: '0.8125rem', fontVariantNumeric: 'tabular-nums'});
+        expect(metricValueStyle(false).fontWeight).toBe(700);
+    });
+});
 
-        it('returns smaller font size when dense is true', () => {
-            const result = getMetricValueSx(true) as Record<string, any>;
-            expect(result.fontSize).toBe('0.8125rem');
-        });
-
-        it('preserves base value properties', () => {
-            const result = getMetricValueSx(true) as Record<string, any>;
-            const base = metricValueSx as Record<string, any>;
-            expect(result.fontWeight).toBe(base.fontWeight);
-            expect(result.lineHeight).toBe(base.lineHeight);
-        });
+describe('card padding', () => {
+    it('tightens on both axes when dense', () => {
+        expect(cardContentStyle(false)).toMatchObject({paddingInline: 16, paddingBlock: 12});
+        expect(cardContentStyle(true)).toMatchObject({paddingInline: 12, paddingBlock: 8});
     });
 
-    describe('getListItemTextSlotProps', () => {
-        it('returns normal sizes when dense is false', () => {
-            const result = getListItemTextSlotProps(false);
-            expect(result.primary.fontSize).toBe('0.6875rem');
-            expect(result.primary.sx.mb).toBe(0.25);
-            expect(result.secondary.fontSize).toBe('0.875rem');
-        });
+    it('separates the notes strip and stacked sections with a keyline', () => {
+        expect(cardNotesContainerStyle.borderTop).toBe('1px solid var(--mantine-color-default-border)');
+        expect(sectionBorderStyle.borderTop).toBe('1px solid var(--mantine-color-default-border)');
+    });
+});
 
-        it('returns compact sizes when dense is true', () => {
-            const result = getListItemTextSlotProps(true);
-            expect(result.primary.fontSize).toBe('0.625rem');
-            expect(result.primary.sx.mb).toBe(0);
-            expect(result.secondary.fontSize).toBe('0.8125rem');
-        });
+describe('two-line field row', () => {
+    it('steps both lines down when dense and drops the label gap', () => {
+        expect(fieldLabelStyle(false)).toMatchObject({fontSize: '0.6875rem', marginBottom: 2});
+        expect(fieldLabelStyle(true)).toMatchObject({fontSize: '0.625rem', marginBottom: 0});
+        expect(fieldValueStyle(false).fontSize).toBe('0.875rem');
+        expect(fieldValueStyle(true).fontSize).toBe('0.8125rem');
+    });
 
-        it('preserves base slot prop properties', () => {
-            const result = getListItemTextSlotProps(true);
-            expect(result.primary.variant).toBe(listItemTextSlotProps.primary.variant);
-            expect(result.primary.fontWeight).toBe(listItemTextSlotProps.primary.fontWeight);
-            expect(result.secondary.variant).toBe(listItemTextSlotProps.secondary.variant);
-            expect(result.secondary.noWrap).toBe(listItemTextSlotProps.secondary.noWrap);
-        });
+    /**
+     * Truncation is not this module's job any more — the row renders the value as
+     * `<Text truncate>`, Mantine's own single-line ellipsis, so the style object
+     * must NOT carry a competing `white-space`/`overflow` triple.
+     */
+    it('leaves truncation to the Text component', () => {
+        expect(fieldValueStyle(false)).not.toHaveProperty('whiteSpace');
+        expect(fieldValueStyle(false)).not.toHaveProperty('textOverflow');
+    });
+
+    it('reserves the icon gutter so labels line up with and without a glyph', () => {
+        expect(fieldIconGutterStyle).toMatchObject({minWidth: 36, flexShrink: 0});
     });
 });

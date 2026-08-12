@@ -1,12 +1,9 @@
-import React, {useState} from 'react';
-import Button from '@mui/material/Button';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import CheckIcon from '@mui/icons-material/Check';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import {headerTextButtonSx} from './headerScopeToggleSx';
+import React from 'react';
+import {Menu} from '@mantine/core';
+import {Check} from 'lucide-react';
+import {IconTruck} from '@tabler/icons-react';
+import {Icon} from '../../../components/common/icon/Icon';
+import {HeaderMenuButton, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
 import type {TruckMode} from '../../../components/common/driver-locations/DriverLocations.types';
 
 export interface TruckModeMenuProps {
@@ -22,42 +19,29 @@ const MODES: TruckMode[] = ['On', 'Off', 'Only'];
  * "Filters" control. The current mode stays visible in the button label
  * ("Trucks: On"). Mirrors V1's "Trucks {mode}" control.
  */
-export const TruckModeMenu: React.FC<TruckModeMenuProps> = ({value, onChange}) => {
-    const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-
-    const handleSelect = (mode: TruckMode) => {
-        onChange(mode);
-        setAnchor(null);
-    };
-
-    return (
-        <>
-            <Button
-                size="small"
-                startIcon={<LocalShippingIcon />}
-                endIcon={<ArrowDropDownIcon />}
-                onClick={(e) => setAnchor(e.currentTarget)}
-                aria-haspopup="true"
-                aria-expanded={anchor ? 'true' : undefined}
+export const TruckModeMenu: React.FC<TruckModeMenuProps> = ({value, onChange}) => (
+    <Menu position="bottom-end" shadow="md" withinPortal>
+        <Menu.Target>
+            <HeaderMenuButton
+                icon={<Icon tabler={IconTruck} size={PANEL_CONTROL_GLYPH_SIZE}/>}
                 aria-label="Truck mode"
-                sx={headerTextButtonSx}
             >
                 Trucks: {value}
-            </Button>
-            <Menu
-                anchorEl={anchor}
-                open={Boolean(anchor)}
-                onClose={() => setAnchor(null)}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-            >
-                {MODES.map((mode) => (
-                    <MenuItem key={mode} selected={mode === value} onClick={() => handleSelect(mode)}>
-                        <ListItemIcon>{mode === value && <CheckIcon fontSize="small" />}</ListItemIcon>
-                        {mode}
-                    </MenuItem>
-                ))}
-            </Menu>
-        </>
-    );
-};
+            </HeaderMenuButton>
+        </Menu.Target>
+        <Menu.Dropdown>
+            {MODES.map((mode) => (
+                <Menu.Item
+                    key={mode}
+                    onClick={() => onChange(mode)}
+                    leftSection={mode === value
+                        // Lucide emits no `data-testid`, so the active mark names itself.
+                        ? <span data-testid="mode-check"><Icon lucide={Check} size={16}/></span>
+                        : <span style={{width: 16}}/>}
+                >
+                    {mode}
+                </Menu.Item>
+            ))}
+        </Menu.Dropdown>
+    </Menu>
+);

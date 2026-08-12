@@ -10,13 +10,15 @@
 // into every React island. The `.layer.css` variants scope Mantine's rules to
 // an `@layer mantine`, keeping its internal cascade clean alongside the
 // (unlayered) Angular Material + app CSS in the shared document.
+//
+// There is no companion reset: `mantineReset.css` existed only to undo
+// Bootstrap's reboot (`p{margin-bottom}`, `button{border-radius:0}`), which
+// beat the layer regardless of specificity. Bootstrap is gone and nothing
+// else in the document sets those at element level, so Mantine's own rules
+// apply. Re-check that before adding any unlayered stylesheet.
 import '@mantine/core/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import '@mantine/notifications/styles.layer.css';
-
-// Unlayered, and imported last so it outranks the legacy stylesheets that override
-// Mantine's own reset. See the file header for what it repairs and why.
-import './react/theme/mantineReset.css';
 
 // Mantine JS — bundled once here and exposed as window globals for the same
 // reason MUI is (see below). Without this every migrated island embeds its own

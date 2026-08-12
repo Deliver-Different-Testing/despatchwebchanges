@@ -9,7 +9,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {EditAfterhoursDialog} from './EditAfterhoursDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {AfterHoursCourierSchedule} from '../../../interfaces';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
@@ -60,18 +60,16 @@ function renderDialog(): void {
         dialogState.toastService.showToast(message, type);
     };
 
-    dialogRoot.render(
-        <DfrntMantineProvider>
-            <EditAfterhoursDialog
-                open={dialogState.open}
-                schedule={dialogState.schedule}
-                isUsTenant={dialogState.isUsTenant}
-                onClose={handleClose}
-                onSave={handleSave}
-                showToast={handleShowToast}
-            />
-        </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <EditAfterhoursDialog
+            open={dialogState.open}
+            schedule={dialogState.schedule}
+            isUsTenant={dialogState.isUsTenant}
+            onClose={handleClose}
+            onSave={handleSave}
+            showToast={handleShowToast}
+        />
+    ));
 }
 
 /**

@@ -12,27 +12,23 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import DialogContent from '@mui/material/DialogContent';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Paper from '@mui/material/Paper';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import CircularProgress from '@mui/material/CircularProgress';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Tooltip from '@mui/material/Tooltip';
-import MenuItem from '@mui/material/MenuItem';
-import Alert from '@mui/material/Alert';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import type {SxProps, Theme} from '@mui/material';
-import {DialogShell, DialogHeader, DialogFooter, AgentEmailFields, type AgentEmailState} from '../shared';
+import {Alert, Box, Button, Paper, Select, Stack, Text} from '@mantine/core';
+import {useDebouncedValue} from '@mantine/hooks';
+import {SegmentedToggle} from '../../common/segmented-toggle';
+import {Handshake, Headset, Network, UserMinus} from 'lucide-react';
+import {IconTruck} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
+import {SearchSelect} from '../../common/search-select/SearchSelect';
+import {
+    AgentEmailFields,
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    sectionLabelProps,
+    sectionPaperProps,
+    type AgentEmailState,
+} from '../shared/mantine';
 
 import {autocompleteSearch} from '../../../services/jobDetailApi';
 import {apiClient} from '../../../services/apiClient';
@@ -41,24 +37,6 @@ import type {EventGroupItem} from '../../../services/jobListApi';
 
 import {PartnerRatePanel} from './PartnerRatePanel';
 import type {DispatchDialogProps, DispatchMode, DispatchType} from './types';
-
-const SECTION_LABEL_SX = {
-    color: 'text.secondary',
-    fontWeight: 500,
-    mb: 1,
-} satisfies SxProps<Theme>;
-
-const SECTION_PAPER_SX = {
-    bgcolor: 'background.paper',
-    borderRadius: 3,
-    p: 2.5,
-    border: '1px solid',
-    borderColor: 'grey.200',
-} satisfies SxProps<Theme>;
-
-const TEXT_FIELD_SX = {
-    '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'},
-} satisfies SxProps<Theme>;
 
 // Per-type search backends. Mirrors the legacy useJobActions.handleCourierClick
 // type-options exactly so behaviour is identical to the old recurring-job picker.
@@ -179,27 +157,33 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
             .finally(() => setPartnerOptionsLoading(false));
     }, [open, selectedType, partnerOptions.length, partnerOptionsLoading, getPartnerOptions]);
 
+    const [debouncedTerm] = useDebouncedValue(inputValue, 300);
+
     // Debounced destination search — only fires for Courier / Agent / NP.
+    // Clearing the box empties the list immediately; only the fetch is debounced.
     useEffect(() => {
         if (selectedType === 'DfrntPartner') return;
-        const term = inputValue;
-        if (!term || term.length < 1) {
+        if (!inputValue || inputValue.length < 1) {
             setOptions([]);
             return;
         }
-        const handle = setTimeout(async () => {
+        if (!debouncedTerm || debouncedTerm.length < 1) return;
+        let cancelled = false;
+        void (async () => {
             setSearchLoading(true);
             try {
-                const results = await SEARCH_FN[selectedType](term);
-                setOptions(results);
+                const results = await SEARCH_FN[selectedType](debouncedTerm);
+                if (!cancelled) setOptions(results);
             } catch {
-                setOptions([]);
+                if (!cancelled) setOptions([]);
             } finally {
-                setSearchLoading(false);
+                if (!cancelled) setSearchLoading(false);
             }
-        }, 300);
-        return () => clearTimeout(handle);
-    }, [inputValue, selectedType]);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [inputValue, debouncedTerm, selectedType]);
 
     const handleTypeChange = useCallback((newType: DispatchType) => {
         setSelectedType(newType);
@@ -288,10 +272,10 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         NP: {idle: 'Send to NP', busy: 'Sending...'},
     };
     const CONFIRM_ICONS: Record<DispatchType, React.ReactElement> = {
-        Courier: <LocalShippingIcon/>,
-        DfrntPartner: <HandshakeIcon/>,
-        Agent: <SupportAgentIcon/>,
-        NP: <AccountTreeIcon/>,
+        Courier: <Icon tabler={IconTruck} size={16}/>,
+        DfrntPartner: <Icon lucide={Handshake} size={16}/>,
+        Agent: <Icon lucide={Headset} size={16}/>,
+        NP: <Icon lucide={Network} size={16}/>,
     };
     // The operator has been shown the warning and the alternatives; reframing the button makes it
     // explicit that confirming now overrides a known objection rather than proceeding normally.
@@ -302,95 +286,65 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
             : CONFIRM_LABELS[selectedType].idle;
     const confirmIcon = CONFIRM_ICONS[selectedType];
 
-    // Wrap the disabled DFRNT Partner radio in a Tooltip — Tooltip needs a
-    // non-disabled child to receive pointer events, hence the <span>.
-    const dfrntRadio = (
-        <FormControlLabel
-            value="DfrntPartner"
-            control={<Radio size="small" disabled={dfrntState.disabled}/>}
-            label="DFRNT Partner"
-            disabled={dfrntState.disabled}
-        />
-    );
-
     return (
-        <DialogShell open={open} onClose={submitting ? undefined : onClose}>
+        <DialogShell
+            opened={open}
+            onClose={submitting ? () => {} : onClose}
+            label="Dispatch"
+        >
             <DialogHeader
-                icon={<LocalShippingIcon/>}
+                icon={<Icon tabler={IconTruck}/>}
                 title="Dispatch"
                 subtitle={subtitleForMode(mode)}
                 onClose={onClose}
                 closeDisabled={submitting}
             />
             {/* Content */}
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                <Stack gap="lg">
                     {/* Type radio row */}
                     <Box>
-                        <Typography variant="body2" sx={SECTION_LABEL_SX}>Type</Typography>
-                        <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                            <RadioGroup
-                                row
+                        <Text {...sectionLabelProps}>Type</Text>
+                        <Paper {...sectionPaperProps}>
+                            <SegmentedToggle<DispatchType>
+                                aria-label="Dispatch type"
+                                variant="inline"
                                 value={selectedType}
-                                onChange={(e) => handleTypeChange(e.target.value as DispatchType)}
-                            >
-                                <FormControlLabel value="Courier" control={<Radio size="small"/>} label="Courier"/>
-                                {dfrntState.disabled ? (
-                                    <Tooltip title={dfrntState.tooltip} placement="top" enterDelay={0} enterTouchDelay={0}>
-                                        <span>{dfrntRadio}</span>
-                                    </Tooltip>
-                                ) : (
-                                    dfrntRadio
-                                )}
-                                <FormControlLabel value="Agent" control={<Radio size="small"/>} label="Agent"/>
-                                <FormControlLabel value="NP" control={<Radio size="small"/>} label="NP"/>
-                            </RadioGroup>
+                                onChange={handleTypeChange}
+                                data={[
+                                    {value: 'Courier', label: 'Courier'},
+                                    {
+                                        value: 'DfrntPartner',
+                                        label: 'DFRNT Partner',
+                                        disabled: dfrntState.disabled,
+                                        tooltip: dfrntState.disabled ? dfrntState.tooltip : undefined,
+                                    },
+                                    {value: 'Agent', label: 'Agent'},
+                                    {value: 'NP', label: 'NP'},
+                                ]}
+                            />
                         </Paper>
                     </Box>
 
                     {/* Destination panel */}
                     {selectedType !== 'DfrntPartner' && (
                         <Box>
-                            <Typography variant="body2" sx={SECTION_LABEL_SX}>Destination</Typography>
-                            <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                                <Autocomplete
-                                    fullWidth
+                            <Text {...sectionLabelProps}>Destination</Text>
+                            <Paper {...sectionPaperProps}>
+                                <SearchSelect<ISuggestion>
+                                    aria-label="Destination"
+                                    placeholder={PLACEHOLDERS[selectedType]}
+                                    autoFocus
                                     autoHighlight
-                                    options={options}
-                                    loading={searchLoading}
                                     value={destination}
-                                    inputValue={inputValue}
-                                    getOptionLabel={(option) => option.text}
-                                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                                    onInputChange={(_, v) => setInputValue(v)}
-                                    onChange={(_, v) => setDestination(v)}
+                                    onChange={setDestination}
+                                    options={options}
+                                    onSearchChange={setInputValue}
+                                    loading={searchLoading}
                                     disabled={submitting}
-                                    noOptionsText={
-                                        inputValue.length >= 1
-                                            ? `No ${selectedType.toLowerCase()} matching "${inputValue}" were found.`
-                                            : 'Type to search'
-                                    }
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            autoFocus
-                                            placeholder={PLACEHOLDERS[selectedType]}
-                                            size="small"
-                                            sx={TEXT_FIELD_SX}
-                                            slotProps={{
-                                                ...params.slotProps,
-                                                input: {
-                                                    ...params.slotProps.input,
-                                                    endAdornment: (
-                                                        <>
-                                                            {searchLoading ? <CircularProgress color="inherit" size={18}/> : null}
-                                                            {params.slotProps.input.endAdornment}
-                                                        </>
-                                                    ),
-                                                },
-                                            }}
-                                        />
-                                    )}
+                                    getOptionKey={(option) => option.id}
+                                    getOptionLabel={(option) => option.text}
+                                    minSearchLength={1}
                                 />
                             </Paper>
                         </Box>
@@ -410,35 +364,17 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                     {/* DFRNT Partner panel */}
                     {selectedType === 'DfrntPartner' && (
                         <Box>
-                            <Typography variant="body2" sx={SECTION_LABEL_SX}>Partner</Typography>
-                            <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                                <TextField
-                                    select
-                                    fullWidth
-                                    size="small"
+                            <Text {...sectionLabelProps}>Partner</Text>
+                            <Paper {...sectionPaperProps}>
+                                <Select
                                     label="Partner"
-                                    value={selectedPartnerId === '' ? '' : String(selectedPartnerId)}
-                                    onChange={(e) => {
-                                        const v = e.target.value;
-                                        setSelectedPartnerId(v === '' ? '' : Number(v));
-                                    }}
+                                    value={selectedPartnerId === '' ? null : String(selectedPartnerId)}
+                                    onChange={(value) => setSelectedPartnerId(value === null ? '' : Number(value))}
                                     disabled={submitting || partnerOptionsLoading}
-                                    sx={TEXT_FIELD_SX}
-                                    slotProps={{
-                                        input: {
-                                            endAdornment: partnerOptionsLoading
-                                                ? <CircularProgress size={18}/>
-                                                : undefined,
-                                        },
-                                    }}
-                                >
-                                    {partnerOptions.length === 0 && !partnerOptionsLoading && (
-                                        <MenuItem value="" disabled>No active partners</MenuItem>
-                                    )}
-                                    {partnerOptions.map((opt) => (
-                                        <MenuItem key={opt.id} value={String(opt.id)}>{opt.text}</MenuItem>
-                                    ))}
-                                </TextField>
+                                    comboboxProps={{keepMounted: false}}
+                                    nothingFoundMessage="No active partners"
+                                    data={partnerOptions.map((opt) => ({value: String(opt.id), label: opt.text}))}
+                                />
                             </Paper>
                         </Box>
                     )}
@@ -456,16 +392,16 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                     )}
 
                     {showUnassign && (
-                        <Alert severity="info">
+                        <Alert color="reflex" variant="light">
                             Unassigning removes the courier from this recurring job and from any
                             upcoming jobs already created that aren&apos;t completed yet. Completed jobs
                             keep their assigned courier.
                         </Alert>
                     )}
 
-                    {submitError && <Alert severity="error">{submitError}</Alert>}
-                </Box>
-            </DialogContent>
+                    {submitError && <Alert color="red" variant="light">{submitError}</Alert>}
+                </Stack>
+            </Box>
             {/* Footer */}
             <DialogFooter
                 onCancel={onClose}
@@ -477,11 +413,10 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                 secondaryAction={showUnassign ? (
                     <Button
                         onClick={handleUnassign}
-                        variant="text"
-                        color="error"
+                        variant="subtle"
+                        color="red"
                         disabled={submitting}
-                        startIcon={<PersonRemoveIcon/>}
-                        sx={{minHeight: 44}}
+                        leftSection={<Icon lucide={UserMinus} size={16}/>}
                     >
                         Unassign courier
                     </Button>

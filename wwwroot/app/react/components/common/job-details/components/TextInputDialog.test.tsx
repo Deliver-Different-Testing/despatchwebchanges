@@ -4,15 +4,9 @@
 
 import React from 'react';
 import { setupUser } from '../../../../__testUtils__/setupUser';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {TextInputDialog} from './TextInputDialog';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('TextInputDialog', () => {
     const defaultProps = {
@@ -59,47 +53,39 @@ describe('TextInputDialog', () => {
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('REF-001');
     });
 
+    // `user.click` does not focus an input inside a Mantine Modal, so typing has
+    // to be driven with `fireEvent.change` rather than clear + paste.
     it('updates value as user types and submits new value', async () => {
         const user = setupUser({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
 
-        const input = screen.getByDisplayValue('REF-001');
-        await user.clear(input);
-        await user.paste('NEW-REF');
+        fireEvent.change(screen.getByDisplayValue('REF-001'), {target: {value: 'NEW-REF'}});
 
         await user.click(screen.getByRole('button', {name: 'Save'}));
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('NEW-REF');
     });
 
-    it('disables Save and shows helper text when required and value is empty', async () => {
-        const user = setupUser({delay: null});
+    it('disables Save and shows helper text when required and value is empty', () => {
         renderWithTheme(<TextInputDialog {...defaultProps} required={true} />);
 
-        const input = screen.getByDisplayValue('REF-001');
-        await user.clear(input);
+        fireEvent.change(screen.getByDisplayValue('REF-001'), {target: {value: ''}});
 
         expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
         expect(screen.getByText('This field is required')).toBeInTheDocument();
     });
 
-    it('does not submit on Enter when required and value is empty', async () => {
-        const user = setupUser({delay: null});
+    it('does not submit on Enter when required and value is empty', () => {
         renderWithTheme(<TextInputDialog {...defaultProps} required={true} initialValue="" />);
 
-        const input = screen.getByRole('textbox');
-        await user.click(input);
-        await user.keyboard('{Enter}');
+        fireEvent.submit(screen.getByRole('textbox').closest('form')!);
 
         expect(defaultProps.onSubmit).not.toHaveBeenCalled();
     });
 
-    it('submits on Enter key when value is valid', async () => {
-        const user = setupUser({delay: null});
+    it('submits on Enter key when value is valid', () => {
         renderWithTheme(<TextInputDialog {...defaultProps} />);
 
-        const input = screen.getByDisplayValue('REF-001');
-        await user.click(input);
-        await user.keyboard('{Enter}');
+        fireEvent.submit(screen.getByDisplayValue('REF-001').closest('form')!);
 
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('REF-001');
     });
@@ -136,11 +122,9 @@ describe('TextInputDialog', () => {
 
     it('resets value when reopened with new initialValue', () => {
         const {rerender} = renderWithTheme(<TextInputDialog {...defaultProps} open={false} />);
-        rerender(
-            <ThemeProvider theme={theme}>
-                <TextInputDialog {...defaultProps} open={true} initialValue="NEW-VALUE" />
-            </ThemeProvider>
-        );
+        // The provider comes from `renderWithMantine`'s wrapper, so the rerender
+        // must not re-wrap it — that would remount the subtree.
+        rerender(<TextInputDialog {...defaultProps} open={true} initialValue="NEW-VALUE" />);
         expect(screen.getByDisplayValue('NEW-VALUE')).toBeInTheDocument();
     });
 });

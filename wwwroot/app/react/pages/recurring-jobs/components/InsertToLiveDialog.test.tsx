@@ -6,9 +6,9 @@
  */
 
 import React from 'react';
+import { renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {screen, waitFor} from '@testing-library/react';
 import dayjs from 'dayjs';
 
 import {InsertToLiveDialog, InsertToLiveDialogProps} from './InsertToLiveDialog';
@@ -27,7 +27,6 @@ const mockInsertToLive = recurringJobsApi.insertToLive as jest.MockedFunction<
     typeof recurringJobsApi.insertToLive
 >;
 
-const theme = createTheme();
 
 function emptyAddress(): AddressViewModel {
     return {
@@ -80,10 +79,8 @@ function createProps(overrides?: Partial<InsertToLiveDialogProps>): InsertToLive
 }
 
 function renderDialog(props: InsertToLiveDialogProps) {
-    return render(
-        <ThemeProvider theme={theme}>
+    return renderWithMantine(
             <InsertToLiveDialog {...props} />
-        </ThemeProvider>
     );
 }
 
@@ -101,7 +98,7 @@ describe('InsertToLiveDialog', () => {
         expect(screen.getAllByText(/RJ-1001/).length).toBeGreaterThan(0);
         expect(screen.getAllByText(/Nightly medical run/).length).toBeGreaterThan(0);
         expect(screen.getByText('Route: North loop')).toBeInTheDocument();
-        expect(screen.getByLabelText('Insert date')).toBeInTheDocument();
+        expect(screen.getByLabelText(/Insert date/)).toBeInTheDocument();
         expect(screen.getByLabelText('Selected booking (parent + any children)')).toBeInTheDocument();
         expect(screen.getByLabelText('All Manual bookings on the same route for that date')).toBeInTheDocument();
         expect(screen.getByText(/fresh job number is minted per push/i)).toBeInTheDocument();

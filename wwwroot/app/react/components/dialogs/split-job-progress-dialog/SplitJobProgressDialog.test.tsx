@@ -1,16 +1,11 @@
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
 import {SplitJobProgressDialog} from './SplitJobProgressDialog';
-
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+import {renderWithMantine} from '../../../__testUtils__';
 
 describe('SplitJobProgressDialog', () => {
     it('renders the header, job number, and a progress bar when open', () => {
-        renderWithTheme(<SplitJobProgressDialog open jobNo="JOB-001"/>);
+        renderWithMantine(<SplitJobProgressDialog open jobNo="JOB-001"/>);
 
         expect(screen.getByRole('dialog')).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: 'Splitting Job'})).toBeInTheDocument();
@@ -20,12 +15,12 @@ describe('SplitJobProgressDialog', () => {
     });
 
     it('has no close button (not dismissable)', () => {
-        renderWithTheme(<SplitJobProgressDialog open jobNo="JOB-001"/>);
+        renderWithMantine(<SplitJobProgressDialog open jobNo="JOB-001"/>);
         expect(screen.queryByRole('button', {name: /close dialog/i})).not.toBeInTheDocument();
     });
 
     it('does not render when closed', () => {
-        renderWithTheme(<SplitJobProgressDialog open={false} jobNo="JOB-001"/>);
+        renderWithMantine(<SplitJobProgressDialog open={false} jobNo="JOB-001"/>);
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 });

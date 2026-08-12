@@ -16,6 +16,7 @@
 import React, {useMemo, useState} from 'react';
 import {
     ActionIcon, Alert, Badge, Box, Group, Paper, Stack, Table, Text, TextInput, Tooltip,
+    NumberInput,
 } from '@mantine/core';
 import {Check, Split, Undo2} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
@@ -195,7 +196,7 @@ export const SplitPricingDialog: React.FC<SplitPricingDialogProps> = ({
                 subtitle={`${jobNo} · ${formatCurrency(preview.parentTotalRevenue)} to divide`}
                 onClose={handleCancel}
             />
-            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-lg)'}}>
+            <Stack p="lg" gap="lg" bg={dialogContentBg}>
                 <Alert color={preview.basis === 'EvenSplit' ? 'orange' : 'cyan'} variant="light">
                     {BASIS_LABELS[preview.basis]}. The job total stays{' '}
                     {formatCurrency(preview.parentTotalRevenue)} — splitting does not change what
@@ -229,17 +230,16 @@ export const SplitPricingDialog: React.FC<SplitPricingDialogProps> = ({
                                 ))}
                             </Stack>
                             {legs.length === 2 && (
-                                <TextInput
+                                <NumberInput
                                     label="Share %"
-                                    type="number"
                                     w={120}
                                     min={0}
                                     max={100}
                                     step={0.5}
                                     value={firstShare}
-                                    onChange={(event) => {
+                                    onChange={(value) => {
                                         setEdited(true);
-                                        setFirstShare(toShare(event.currentTarget.value, firstShare));
+                                        setFirstShare(toShare(String(value ?? ''), firstShare));
                                     }}
                                 />
                             )}
@@ -271,19 +271,18 @@ export const SplitPricingDialog: React.FC<SplitPricingDialogProps> = ({
                                         {perLineEditable && (
                                             <Table.Td ta="right">
                                                 <Group gap={4} justify="flex-end" wrap="nowrap">
-                                                    <TextInput
-                                                        type="number"
+                                                    <NumberInput
                                                         w={84}
                                                         min={0}
                                                         max={100}
                                                         step={0.5}
                                                         aria-label={`${row.name} share %`}
                                                         value={row.firstPercent}
-                                                        onChange={(event) =>
+                                                        onChange={(value) =>
                                                             setLineShare(
                                                                 row.pricingBreakdownId,
                                                                 toShare(
-                                                                    event.currentTarget.value,
+                                                                    String(value ?? ''),
                                                                     row.firstPercent,
                                                                 ),
                                                             )
@@ -341,7 +340,7 @@ export const SplitPricingDialog: React.FC<SplitPricingDialogProps> = ({
                 <Text fz="xs" c="dimmed">
                     {footerHint({overriddenCount, edited, perLineEditable})}
                 </Text>
-            </Box>
+            </Stack>
             <DialogFooter
                 onCancel={handleCancel}
                 onConfirm={handleConfirm}

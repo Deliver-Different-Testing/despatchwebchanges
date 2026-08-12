@@ -7,15 +7,12 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { Dayjs } from 'dayjs';
 
 import { EditDateTimeDialog } from './EditDateTimeDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import { EditDateTimeDialogResult, EditDateTimeDialogOptions } from './types';
 import type { ToastService } from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 
 interface DialogState {
     open: boolean;
@@ -95,31 +92,25 @@ class EditDateTimeDialogManager {
             this.dialogState.resolve = undefined;
             this.renderDialog();
         };
+        this.dialogRoot.render(islandTree(
+                <EditDateTimeDialog
+                    open={this.dialogState.open}
+                    title={this.dialogState.title}
+                    fieldName={this.dialogState.fieldName}
+                    dateTime={this.dialogState.dateTime}
+                    defaultTimeZone={this.dialogState.defaultTimeZone}
+                    showDate={this.dialogState.showDate}
+                    showTime={this.dialogState.showTime}
+                    isUSCustomer={this.dialogState.isUSCustomer}
+                    readOnly={this.dialogState.readOnly}
+                    allowClear={this.dialogState.allowClear}
+                    onClose={handleClose}
+                    onSubmit={handleSubmit}
+                    showToast={this.toastService.showToast}
+                />
 
-        const currentTheme = getTheme();
 
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <EditDateTimeDialog
-                        open={this.dialogState.open}
-                        title={this.dialogState.title}
-                        fieldName={this.dialogState.fieldName}
-                        dateTime={this.dialogState.dateTime}
-                        defaultTimeZone={this.dialogState.defaultTimeZone}
-                        showDate={this.dialogState.showDate}
-                        showTime={this.dialogState.showTime}
-                        isUSCustomer={this.dialogState.isUSCustomer}
-                        readOnly={this.dialogState.readOnly}
-                        allowClear={this.dialogState.allowClear}
-                        onClose={handleClose}
-                        onSubmit={handleSubmit}
-                        showToast={this.toastService.showToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
+        ));
     }
 
     /**

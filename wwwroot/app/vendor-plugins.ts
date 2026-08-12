@@ -13,17 +13,15 @@ import "angular-ui-sortable/dist/sortable";
 import "angular-resizable/angular-resizable.min";
 import "angular-material-data-table";
 
-// Bootstrap (CSS only - JS not needed, using Angular Material for UI)
-import "bootstrap/dist/css/bootstrap.css";
+// Bootstrap was removed: its JS was never loaded, and across every AngularJS
+// template and React component there were no Bootstrap class names left — the UI
+// is Angular Material, Mantine and MUI. Its 280 KB of CSS shipped on every page
+// for two class usages on one Razor error page, and its reboot actively fought
+// the Mantine theme. Do not re-add it.
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
 
-// React HereMap component
-import {HereMapReactComponent} from "./react/components/common/here-map";
-
-// React DispatchMap component
-import {DispatchMapReactComponent} from "./react/components/common/dispatch-map";
 import angular from "angular";
 
 // Create the main Angular module
@@ -39,11 +37,10 @@ const app = angular.module("uDispatch", [
     "md.data.table",
 ]);
 
-// Register React HereMap component
-app.component("hereMapReact", HereMapReactComponent);
-
-// Register React DispatchMap component
-app.component("dispatchMapReact", DispatchMapReactComponent);
+// The React island components are registered from app.ts, not here. vendor-plugins
+// loads BEFORE vendor-react, so it cannot resolve React/Mantine off the window
+// globals — importing an island here makes esbuild inline a second copy of the
+// Mantine runtime, giving the page two provider contexts that cannot see each other.
 
 // Make the module available globally
 window.uDispatchApp = app;

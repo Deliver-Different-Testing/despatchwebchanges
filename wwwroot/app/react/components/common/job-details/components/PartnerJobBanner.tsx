@@ -16,22 +16,29 @@
  *      to redispatch the job to the partner to recreate the link rather
  *      than try to edit the stale mirror.
  *
- * Visual signal comes from a coloured left border — info.main for the
- * normal case, warning.main for the stale-link case.
+ * Visual signal comes from a coloured left border — Reflex Blue for the
+ * normal case, brand orange for the stale-link case.
  */
 
-import React, {useState, useCallback, useEffect} from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
-import CloseIcon from '@mui/icons-material/Close';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {alpha} from '@mui/material/styles';
+import React, {useCallback} from 'react';
+import {ActionIcon, alpha, Box, Text, Tooltip} from '@mantine/core';
+import {useLocalStorage} from '@mantine/hooks';
+import {Handshake, Info, Link2Off, X} from 'lucide-react';
+import {Icon} from '../../icon/Icon';
+import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
 
 const STORAGE_KEY = 'despatchweb.partnerJobBanner.dismissed';
+
+/**
+ * Reflex Blue, pinned rather than taken from the Mantine `info` variant: `info`
+ * is the tenant primary (Cyan on US), which would repaint this banner in the
+ * brand colour. It has always been reflex — the MUI `info.main` hex — and stays
+ * so. Orange keeps carrying the blocking state.
+ */
+const bannerAccent = {
+    info: dfrntBrand.reflexBlue,
+    warning: dfrntBrand.orange,
+} as const;
 
 export interface PartnerJobBannerProps {
     partnerName?: string;
@@ -43,35 +50,37 @@ export interface PartnerJobBannerProps {
     pairingId?: number | null;
 }
 
-function readDismissed(): boolean {
-    try {
-        return window.localStorage.getItem(STORAGE_KEY) === '1';
-    } catch {
-        return false;
-    }
-}
-
-function writeDismissed(value: boolean): void {
-    try {
-        if (value) {
-            window.localStorage.setItem(STORAGE_KEY, '1');
-        } else {
-            window.localStorage.removeItem(STORAGE_KEY);
-        }
-    } catch {
-        // localStorage unavailable (private mode, etc.) — silently ignore.
-    }
-}
+const railStyle = (accent: string, tint: number): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    paddingInline: 16,
+    paddingBlock: 8,
+    marginInline: 12,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftStyle: 'solid',
+    borderLeftColor: accent,
+    backgroundColor: alpha(accent, tint),
+    borderRadius: 'var(--mantine-radius-xs)',
+});
 
 export const PartnerJobBanner: React.FC<PartnerJobBannerProps> = ({partnerName, pairingId}) => {
-    const [dismissed, setDismissed] = useState(() => readDismissed());
+    const [dismissed, setDismissed, clearDismissed] = useLocalStorage({
+        key: STORAGE_KEY,
+        defaultValue: false,
+        // Keeps the pre-existing '1'/absent encoding: dismissing writes '1' and
+        // restoring removes the key outright, so a banner dismissed before this
+        // hook landed stays dismissed.
+        serialize: (value) => (value ? '1' : ''),
+        deserialize: (value) => value === '1',
+        // Read synchronously on first render — the default defers to an effect,
+        // which would flash the banner before the stored dismissal applies.
+        getInitialValueInEffect: false,
+    });
 
-    useEffect(() => {
-        writeDismissed(dismissed);
-    }, [dismissed]);
-
-    const handleDismiss = useCallback(() => setDismissed(true), []);
-    const handleRestore = useCallback(() => setDismissed(false), []);
+    const handleDismiss = useCallback(() => setDismissed(true), [setDismissed]);
+    const handleRestore = useCallback(() => clearDismissed(), [clearDismissed]);
 
     // Stale link: a partner job whose source pairing isn't recorded locally.
     // Change-request routing requires the pairing id, so editing this job will
@@ -82,36 +91,18 @@ export const PartnerJobBanner: React.FC<PartnerJobBannerProps> = ({partnerName, 
             <Box
                 role="region"
                 aria-label="Stale partner link"
-                sx={(theme) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    px: 2,
-                    py: 1,
-                    mx: 1.5,
-                    mt: 1,
-                    borderLeft: 3,
-                    borderLeftColor: 'warning.main',
-                    bgcolor: alpha(theme.palette.warning.main, 0.08),
-                    borderRadius: 1,
-                })}
+                style={railStyle(bannerAccent.warning, 0.08)}
             >
-                <LinkOffIcon sx={{color: 'warning.main', fontSize: 22, flexShrink: 0}}/>
-                <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="subtitle2" sx={{lineHeight: 1.3, fontWeight: 600}}>
+                <Icon lucide={Link2Off} size={22} color={bannerAccent.warning} style={{flexShrink: 0}} aria-hidden/>
+                <Box style={{flex: 1, minWidth: 0}}>
+                    <Text fz="sm" fw={600} style={{lineHeight: 1.3}}>
                         Stale partner link
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: "text.secondary",
-                            display: 'block',
-                            lineHeight: 1.4
-                        }}>
+                    </Text>
+                    <Text fz="xs" c="dimmed" style={{display: 'block', lineHeight: 1.4}}>
                         This partner job is missing its pairing reference, so change requests
                         can&apos;t be routed. Resend the job to {partnerName ?? 'the partner'} to
                         re-establish the link.
-                    </Typography>
+                    </Text>
                 </Box>
             </Box>
         );
@@ -119,11 +110,11 @@ export const PartnerJobBanner: React.FC<PartnerJobBannerProps> = ({partnerName, 
 
     if (dismissed) {
         return (
-            <Box sx={{display: 'flex', justifyContent: 'flex-end', px: 2, pt: 0.5}}>
-                <Tooltip title="Show partner-job guidance">
-                    <IconButton size="small" onClick={handleRestore}>
-                        <InfoOutlinedIcon fontSize="small" color="info"/>
-                    </IconButton>
+            <Box style={{display: 'flex', justifyContent: 'flex-end', paddingInline: 16, paddingTop: 4}}>
+                <Tooltip label="Show partner-job guidance">
+                    <ActionIcon variant="subtle" color="gray" size="sm" onClick={handleRestore} aria-label="Show partner-job guidance">
+                        <Icon lucide={Info} size={18} color={bannerAccent.info}/>
+                    </ActionIcon>
                 </Tooltip>
             </Box>
         );
@@ -133,40 +124,22 @@ export const PartnerJobBanner: React.FC<PartnerJobBannerProps> = ({partnerName, 
         <Box
             role="region"
             aria-label="Partner job context"
-            sx={(theme) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                px: 2,
-                py: 1,
-                mx: 1.5,
-                mt: 1,
-                borderLeft: 3,
-                borderLeftColor: 'info.main',
-                bgcolor: alpha(theme.palette.info.main, 0.06),
-                borderRadius: 1,
-            })}
+            style={railStyle(bannerAccent.info, 0.06)}
         >
-            <HandshakeIcon sx={{color: 'info.main', fontSize: 22, flexShrink: 0}}/>
-            <Box sx={{flex: 1, minWidth: 0}}>
-                <Typography variant="subtitle2" sx={{lineHeight: 1.3, fontWeight: 600}}>
+            <Icon lucide={Handshake} size={22} color={bannerAccent.info} style={{flexShrink: 0}} aria-hidden/>
+            <Box style={{flex: 1, minWidth: 0}}>
+                <Text fz="sm" fw={600} style={{lineHeight: 1.3}}>
                     Partner job{partnerName ? ` — owned by ${partnerName}` : ''}
-                </Typography>
-                <Typography
-                    variant="caption"
-                    sx={{
-                        color: "text.secondary",
-                        display: 'block',
-                        lineHeight: 1.4
-                    }}>
+                </Text>
+                <Text fz="xs" c="dimmed" style={{display: 'block', lineHeight: 1.4}}>
                     Notes, references and tracking sync automatically. Rate, dates, contacts and addresses need
                     partner approval — your edits queue as change requests below.
-                </Typography>
+                </Text>
             </Box>
-            <Tooltip title="Dismiss for this device">
-                <IconButton size="small" onClick={handleDismiss}>
-                    <CloseIcon fontSize="small"/>
-                </IconButton>
+            <Tooltip label="Dismiss for this device">
+                <ActionIcon variant="subtle" color="gray" size="sm" onClick={handleDismiss} aria-label="Dismiss for this device">
+                    <Icon lucide={X} size={18}/>
+                </ActionIcon>
             </Tooltip>
         </Box>
     );

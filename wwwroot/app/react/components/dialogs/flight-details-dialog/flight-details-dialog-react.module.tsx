@@ -7,14 +7,12 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import { FlightDetailsDialog } from './FlightDetailsDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import { FlightData } from './types';
 import { IFlightViewModel } from '../../../../components/Nationwide/nationwide.interfaces';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 interface DialogState {
     open: boolean;
@@ -98,23 +96,19 @@ class FlightDetailsDialogManager {
             this.dialogState.resolve = undefined;
             this.renderDialog();
         };
+        this.dialogRoot.render(islandTree(
+                <MuiThemeIsland>
+                {this.dialogState.flight && (
+                    <FlightDetailsDialog
+                        open={this.dialogState.open}
+                        flight={this.dialogState.flight}
+                        onClose={handleClose}
+                    />
+                )}
 
-        const currentTheme = getTheme();
+            </MuiThemeIsland>
 
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    {this.dialogState.flight && (
-                        <FlightDetailsDialog
-                            open={this.dialogState.open}
-                            flight={this.dialogState.flight}
-                            onClose={handleClose}
-                        />
-                    )}
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
+        ));
     }
 
     openFlightDetailsDialog(flightData: IFlightViewModel): Promise<void> {

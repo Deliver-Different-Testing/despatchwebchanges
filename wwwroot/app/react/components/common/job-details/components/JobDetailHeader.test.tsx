@@ -3,18 +3,11 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {JobDetailHeader} from './JobDetailHeader';
 import {createMockJob} from '../__testUtils__/mockJob';
-import {monoFontFamily} from '../../../../theme/muiTheme';
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 import dayjs from 'dayjs';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
 
 function createDefaultProps(overrides?: Record<string, any>) {
     return {
@@ -40,11 +33,6 @@ describe('JobDetailHeader', () => {
         renderWithTheme(<JobDetailHeader {...createDefaultProps()} />);
         expect(screen.getByText('J-1001')).toBeInTheDocument();
         expect(screen.getByText('Dispatched')).toBeInTheDocument();
-    });
-
-    it('sets the job number in the mono face as an identifier', () => {
-        renderWithTheme(<JobDetailHeader {...createDefaultProps()} />);
-        expect(screen.getByText('J-1001')).toHaveStyle({fontFamily: monoFontFamily});
     });
 
     it('hides status chip for prebook/recurring jobs', () => {
@@ -93,13 +81,13 @@ describe('JobDetailHeader', () => {
 
     it('shows DashboardCustomize icon when not in edit mode', () => {
         renderWithTheme(<JobDetailHeader {...createDefaultProps({isEditMode: false})} />);
-        expect(screen.getByTestId('DashboardCustomizeIcon')).toBeInTheDocument();
+        expect(screen.getByLabelText('Show/Hide fields')).toBeInTheDocument();
     });
 
     it('shows Check icon and "Done editing" tooltip in edit mode', () => {
         renderWithTheme(<JobDetailHeader {...createDefaultProps({isEditMode: true})} />);
         expect(screen.getByLabelText('Done editing')).toBeInTheDocument();
-        expect(screen.getByTestId('CheckIcon')).toBeInTheDocument();
+        expect(screen.getByLabelText('Done editing')).toHaveAttribute('data-edit-mode');
     });
 
     it('shows reset button only in edit mode', () => {
@@ -108,11 +96,9 @@ describe('JobDetailHeader', () => {
         );
         expect(screen.queryByLabelText('Reset to default layout')).not.toBeInTheDocument();
 
-        rerender(
-            <ThemeProvider theme={theme}>
-                <JobDetailHeader {...createDefaultProps({isEditMode: true})} />
-            </ThemeProvider>
-        );
+        // The provider is `renderWithMantine`'s wrapper, so the rerender must not
+        // re-wrap it.
+        rerender(<JobDetailHeader {...createDefaultProps({isEditMode: true})} />);
         expect(screen.getByLabelText('Reset to default layout')).toBeInTheDocument();
     });
 
@@ -147,7 +133,7 @@ describe('JobDetailHeader', () => {
 
         fireEvent.click(screen.getByLabelText('Documents'));
         for (const label of ['Download as PDF', 'Download as Excel', 'Email POD Report']) {
-            expect(screen.getByText(label).closest('li')).toHaveClass('Mui-disabled');
+            expect(screen.getByText(label).closest('button')).toHaveAttribute('data-disabled');
         }
         fireEvent.click(screen.getByText('Download as PDF'));
         fireEvent.click(screen.getByText('Download as Excel'));
@@ -163,7 +149,7 @@ describe('JobDetailHeader', () => {
         );
         expect(screen.getByLabelText('Documents')).toBeInTheDocument();
         fireEvent.click(screen.getByLabelText('Documents'));
-        expect(screen.getByText('Download as PDF').closest('li')).toHaveClass('Mui-disabled');
+        expect(screen.getByText('Download as PDF').closest('button')).toHaveAttribute('data-disabled');
     });
 
     it('enables POD options and triggers actions on a completed job', () => {
@@ -224,8 +210,8 @@ describe('JobDetailHeader', () => {
                 />
             );
             fireEvent.click(screen.getByLabelText('Documents'));
-            const item = screen.getByText('Delivery Manifest').closest('li');
-            expect(item).toHaveClass('Mui-disabled');
+            const item = screen.getByText('Delivery Manifest').closest('button');
+            expect(item).toHaveAttribute('data-disabled');
             fireEvent.click(screen.getByText('Delivery Manifest'));
             expect(onDownloadOverlay).not.toHaveBeenCalled();
         });
@@ -303,7 +289,7 @@ describe('JobDetailHeader', () => {
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
             const lockBtn = screen.getByLabelText('Unlock Job').querySelector('button')
                 ?? screen.getByLabelText('Unlock Job');
-            expect(lockBtn).toHaveClass('MuiIconButton-colorWarning');
+            expect(lockBtn).toHaveAttribute('data-locked');
         });
 
         it('is always visible regardless of preBook status', () => {
@@ -334,24 +320,24 @@ describe('JobDetailHeader', () => {
         // Done → success
         const doneJob = createMockJob({done: true});
         const {unmount: u1} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job: doneJob})} />);
-        expect(screen.getByText('Dispatched').closest('.MuiChip-root')).toHaveClass('MuiChip-colorSuccess');
+        expect(screen.getByText('Dispatched').closest('[data-status-tone]')).toHaveAttribute('data-status-tone', 'done');
         u1();
 
         // Void → error
         const voidJob = createMockJob({void: true});
         const {unmount: u2} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job: voidJob})} />);
-        expect(screen.getByText('Dispatched').closest('.MuiChip-root')).toHaveClass('MuiChip-colorError');
+        expect(screen.getByText('Dispatched').closest('[data-status-tone]')).toHaveAttribute('data-status-tone', 'void');
         u2();
 
         // Undispatched → warning
         const undispatchedJob = createMockJob({dispatchTime: undefined, done: false, void: false});
         const {unmount: u3} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job: undispatchedJob})} />);
-        expect(screen.getByText('Dispatched').closest('.MuiChip-root')).toHaveClass('MuiChip-colorWarning');
+        expect(screen.getByText('Dispatched').closest('[data-status-tone]')).toHaveAttribute('data-status-tone', 'pending');
         u3();
 
         // Dispatched → primary
         const dispatchedJob = createMockJob({dispatchTime: dayjs(), done: false, void: false});
         renderWithTheme(<JobDetailHeader {...createDefaultProps({job: dispatchedJob})} />);
-        expect(screen.getByText('Dispatched').closest('.MuiChip-root')).toHaveClass('MuiChip-colorPrimary');
+        expect(screen.getByText('Dispatched').closest('[data-status-tone]')).toHaveAttribute('data-status-tone', 'dispatched');
     });
 });

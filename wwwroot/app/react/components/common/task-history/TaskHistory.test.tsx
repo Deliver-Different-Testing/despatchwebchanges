@@ -6,9 +6,7 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor, within} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {TaskHistory} from './TaskHistory';
@@ -34,7 +32,6 @@ jest.mock('../../../utils/currencyUtils', () => ({
     formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
 }));
 
-const theme = createTheme();
 
 function createTestQueryClient() {
     return new QueryClient({
@@ -45,18 +42,9 @@ function createTestQueryClient() {
     });
 }
 
-const renderWithProviders = (ui: React.ReactElement) => {
-    const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    {ui}
-                </LocalizationProvider>
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
-};
+const renderWithProviders = (ui: React.ReactElement) =>
+    // Mantine outside, MUI inside — the list is still MUI, its rows are Mantine.
+    renderWithMantineOverMui(ui, {queryClient: createTestQueryClient()});
 
 // Sample delivery journey data
 const createMockDeliveryEvents = (): DeliveryJourney[] => [
@@ -341,16 +329,7 @@ describe('TaskHistory', () => {
 
         it('reloads delivery journey when jobId changes', async () => {
             const props = createDefaultProps();
-            const queryClient = createTestQueryClient();
-            const {rerender} = render(
-                <QueryClientProvider client={queryClient}>
-                    <ThemeProvider theme={theme}>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <TaskHistory {...props} />
-                        </LocalizationProvider>
-                    </ThemeProvider>
-                </QueryClientProvider>
-            );
+            const {rerender} = renderWithProviders(<TaskHistory {...props} />);
 
             await waitFor(() => {
                 expect(mockGetDeliveryJourney).toHaveBeenCalledWith(123, expect.objectContaining({signal: expect.any(AbortSignal)}));
@@ -359,15 +338,9 @@ describe('TaskHistory', () => {
             mockGetDeliveryJourney.mockClear();
 
             // Change jobId
-            rerender(
-                <QueryClientProvider client={queryClient}>
-                    <ThemeProvider theme={theme}>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <TaskHistory {...props} jobId={456} />
-                        </LocalizationProvider>
-                    </ThemeProvider>
-                </QueryClientProvider>
-            );
+            // Re-rendered without re-wrapping the providers — re-wrapping remounts the
+            // subtree and the query would refetch for the wrong reason.
+            rerender(<TaskHistory {...props} jobId={456} />);
 
             await waitFor(() => {
                 expect(mockGetDeliveryJourney).toHaveBeenCalledWith(456, expect.objectContaining({signal: expect.any(AbortSignal)}));

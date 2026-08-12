@@ -7,18 +7,16 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import { EditParcelDimensionsDialog } from './EditParcelDimensionsDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import {
     ParcelDimensions,
     EditParcelDimensionsDialogOptions,
     EditParcelDimensionsDialogResult,
 } from './types';
 import type { ToastService } from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 interface DialogState {
     open: boolean;
@@ -79,31 +77,27 @@ class EditParcelDimensionsDialogManager {
             this.dialogState.resolve = undefined;
             this.renderDialog();
         };
+        this.dialogRoot.render(islandTree(
+                <MuiThemeIsland>
+                <EditParcelDimensionsDialog
+                    open={this.dialogState.open}
+                    parcels={this.dialogState.parcels}
+                    jobId={this.dialogState.jobId}
+                    bulkJobId={this.dialogState.bulkJobId}
+                    jobNumber={this.dialogState.jobNumber}
+                    isUsCustomer={this.dialogState.isUsCustomer}
+                    jobWeight={this.dialogState.jobWeight}
+                    calculateDimsOncePerJob={this.dialogState.calculateDimsOncePerJob}
+                    partnerMode={this.dialogState.partnerMode}
+                    readOnly={this.dialogState.readOnly}
+                    onClose={handleClose}
+                    onSubmit={handleSubmit}
+                    showToast={this.toastService.showToast}
+                />
 
-        const currentTheme = getTheme();
+            </MuiThemeIsland>
 
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <EditParcelDimensionsDialog
-                        open={this.dialogState.open}
-                        parcels={this.dialogState.parcels}
-                        jobId={this.dialogState.jobId}
-                        bulkJobId={this.dialogState.bulkJobId}
-                        jobNumber={this.dialogState.jobNumber}
-                        isUsCustomer={this.dialogState.isUsCustomer}
-                        jobWeight={this.dialogState.jobWeight}
-                        calculateDimsOncePerJob={this.dialogState.calculateDimsOncePerJob}
-                        partnerMode={this.dialogState.partnerMode}
-                        readOnly={this.dialogState.readOnly}
-                        onClose={handleClose}
-                        onSubmit={handleSubmit}
-                        showToast={this.toastService.showToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
+        ));
     }
 
     showEditParcelDimensionsDialog(options: EditParcelDimensionsDialogOptions): Promise<EditParcelDimensionsDialogResult | null> {

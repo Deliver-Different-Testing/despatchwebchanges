@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Badge, Box, Button, Group, Text, TextInput, Textarea} from '@mantine/core';
+import {Badge, Box, Button, Group, Stack, Text, Textarea, TextInput} from '@mantine/core';
 import {Mail} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {DialogShell, DialogHeader, DialogFooter, dialogContentBg} from '../shared/mantine';
@@ -166,7 +166,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                 subtitle="Send an email to selected couriers"
                 onClose={handleClose}
             />
-            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
+            <Stack p="lg" gap="md" bg={dialogContentBg}>
                 {/* Recipients */}
                 <Box>
                     <Text fz="xs" c="dimmed" mb={4}>
@@ -213,7 +213,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                     onChange={(e) => { setBody(e.currentTarget.value); setBodyError(false); }}
                     error={bodyError ? 'Please enter an email message' : undefined}
                 />
-            </Box>
+            </Stack>
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSend}

@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantineOverMui} from '../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../interfaces';
@@ -65,7 +65,6 @@ const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useC
 const mockRecurringJobsApi = recurringJobsApi as jest.Mocked<typeof recurringJobsApi>;
 const mockUpdateJobDetail = updateJobDetail as jest.MockedFunction<typeof updateJobDetail>;
 
-const theme = createTheme();
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -78,13 +77,7 @@ const createTestQueryClient = () =>
 
 const renderWithProviders = (props: RecurringJobsPageProps) => {
     const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                <RecurringJobsPage {...props} />
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
+    return renderWithMantineOverMui(<RecurringJobsPage {...props} />, {queryClient});
 };
 
 const createMockAddress = (line1: string, full: string) => ({

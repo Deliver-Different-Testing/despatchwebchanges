@@ -6,7 +6,7 @@ import {
     DialogHeader,
     DialogFooter,
     dialogSize,
-    headerChipStyle,
+    headerChipProps,
     headerSurfaceAccent,
     headerChromeStyle,
     headerColors,
@@ -117,10 +117,12 @@ describe('header style helpers', () => {
     });
 
     it('sizes the icon chip and scrims it in the on-colour', () => {
-        expect(headerChipStyle('warning')).toMatchObject({width: 40, height: 40});
-        expect(headerChipStyle('warning', 32)).toMatchObject({width: 32, height: 32});
-        expect(headerChipStyle('warning').backgroundColor).toBe(headerOverlayColor(0.18, 'warning'));
-        expect(headerChipStyle('warning').color).toBe(headerColors.warning.fg);
+        // A ThemeIcon prop bag, not a style object: size/radius are real props
+        // and the scrim rides ThemeIcon's own CSS variables.
+        expect(headerChipProps('warning')).toMatchObject({size: 40, radius: 'md'});
+        expect(headerChipProps('warning', 32)).toMatchObject({size: 32});
+        expect(headerChipProps('warning').style['--ti-bg']).toBe(headerOverlayColor(0.18, 'warning'));
+        expect(headerChipProps('warning').style['--ti-color']).toBe(headerColors.warning.fg);
     });
 
     it('fills the primary header with the tenant primary — matching the MUI dialogs', () => {
@@ -150,7 +152,7 @@ describe('header style helpers', () => {
         expect(chrome.borderBottom).toBe('1px solid var(--mantine-color-default-border)');
         expect(headerChromeStyle('error').borderBottom).toBe('none');
         // The chip is the only brand colour left on the neutral bar.
-        expect(headerChipStyle('surface', 32).color).toBe(headerSurfaceAccent);
+        expect(headerChipProps('surface', 32).style['--ti-color']).toBe(headerSurfaceAccent);
     });
 
     it('maps the MUI breakpoint widths so converted dialogs keep their size', () => {

@@ -1,8 +1,7 @@
 import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import PageInfoIcon from '@mui/icons-material/Info';
+import {ActionIcon, Group, Tooltip} from '@mantine/core';
+import {Info} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
 
@@ -64,31 +63,36 @@ export const JobDetailFab: React.FC<JobDetailFabProps> = ({currentJob, onAction}
     const visibleActions = ACTIONS.filter(a => a.available(currentJob));
 
     return (
-        <Box
-            sx={{display: 'flex', alignItems: 'center', gap: 0.5}}
+        <Group
+            data-testid="job-detail-actions"
+            gap={4}
+            wrap="nowrap"
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
         >
             {open ? (
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                <Group gap={4} wrap="nowrap">
                     {visibleActions.map(action => (
-                        <Tooltip key={action.id} title={action.label}>
-                            <IconButton
-                                size="small"
+                        <Tooltip key={action.id} label={action.label}>
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
                                 aria-label={action.label}
                                 onClick={() => onAction?.(action.id, currentJob)}
                             >
+                                {/* `SymbolIcon` is still MUI — the glyph names come from
+                                    data, so it waits for the icon phase (§8). */}
                                 <SymbolIcon name={action.icon} sx={{fontSize: 20}} />
-                            </IconButton>
+                            </ActionIcon>
                         </Tooltip>
                     ))}
-                </Box>
+                </Group>
             ) : null}
-            <Tooltip title="Options">
-                <IconButton size="small" color="primary" aria-label="Options">
-                    <PageInfoIcon fontSize="small" />
-                </IconButton>
+            <Tooltip label="Options">
+                <ActionIcon variant="subtle" aria-label="Options">
+                    <Icon lucide={Info} size={18}/>
+                </ActionIcon>
             </Tooltip>
-        </Box>
+        </Group>
     );
 };

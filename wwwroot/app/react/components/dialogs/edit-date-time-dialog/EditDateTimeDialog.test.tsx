@@ -1,34 +1,28 @@
 /**
  * EditDateTimeDialog Component Tests
- *
+import {fireEvent, screen, waitFor} from '@testing-library/react';
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import {EditDateTimeDialog} from './EditDateTimeDialog';
 import {EditDateTimeDialogProps} from './types';
+import {renderWithMantine} from '../../../__testUtils__';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const theme = createTheme();
 
+
+// The pickers render for real: Mantine's are string-valued and light enough for jsdom,
+// so none of the `muiDatePickerMocks` indirection is involved any more.
 function renderWithProviders(props: EditDateTimeDialogProps) {
-    return render(
-        <ThemeProvider theme={theme}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <EditDateTimeDialog {...props} />
-            </LocalizationProvider>
-        </ThemeProvider>
-    );
+    return renderWithMantine(<EditDateTimeDialog {...props} />);
 }
 
 function createDefaultProps(overrides?: Partial<EditDateTimeDialogProps>): EditDateTimeDialogProps {
@@ -90,10 +84,13 @@ describe('EditDateTimeDialog', () => {
         // locale (12-hour AM/PM under en-US, 24-hour under en-NZ), so the
         // "Time (24-hour)" label lied for half our users. Using MUI's
         // TimePicker with ampm={false} keeps the display 24-hour everywhere.
-        // The mock TimePicker tags its wrapper with data-testid="mock-time-picker".
-        it('uses the MUI TimePicker for the time field in date+time mode', () => {
+        // Mantine's `TimePicker format="24h"` renders hour/minute segments rather than a
+        // native <input type="time">, whose display would follow the browser locale.
+        it('uses a segmented 24-hour picker, not a native time input', () => {
             renderWithProviders(createDefaultProps({showDate: true, showTime: true}));
-            expect(screen.getByTestId('mock-time-picker')).toBeInTheDocument();
+            expect(screen.getByLabelText('Hours')).toBeInTheDocument();
+            expect(screen.getByLabelText('Minutes')).toBeInTheDocument();
+            expect(document.querySelector('input[type="time"]')).toBeNull();
         });
     });
 
@@ -134,11 +131,13 @@ describe('EditDateTimeDialog', () => {
             renderWithProviders(createDefaultProps({readOnly: true}));
 
             expect(screen.queryByRole('button', {name: /Save/i})).not.toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /Close/i})).toBeInTheDocument();
+            // `/Close/i` also matches the header's `Close dialog`, so match exactly.
+            expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
             expect(screen.getByText('View only — this job is locked')).toBeInTheDocument();
 
             // Date/time pickers are disabled while locked.
-            const dateInput = screen.getByLabelText(/Date/i) as HTMLInputElement;
+            // Exact 'Date': the dialog's own aria-label ('Edit Date & Time') also matches /Date/i.
+            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
             expect(dateInput).toBeDisabled();
         });
     });
@@ -229,19 +228,21 @@ describe('EditDateTimeDialog', () => {
             expect(showToast).not.toHaveBeenCalledWith('Please provide valid date/time information', 'warning');
         });
 
-        it('shows warning toast when submitting with invalid date', async () => {
+        it('ignores unparseable text and keeps the last valid date', async () => {
             const user = setupUser();
             const onSubmit = jest.fn();
             const showToast = jest.fn();
             renderWithProviders(createDefaultProps({onSubmit, showToast, showDate: true, showTime: false}));
 
-            fireEvent.change(screen.getByLabelText('Date'), {target: {value: '2024-01'}});
+            // DateInput only calls back with a date it parsed, so garbage never reaches
+            // state and the previously valid value is what gets saved.
+            fireEvent.change(screen.getByLabelText('Date'), {target: {value: 'not-a-date'}});
             await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Please provide valid date/time information', 'warning');
+                expect(onSubmit).toHaveBeenCalled();
             });
-            expect(onSubmit).not.toHaveBeenCalled();
+            expect(onSubmit.mock.calls[0][0].value.format('YYYY-MM-DD')).toBe('2024-03-15');
         });
     });
 
@@ -254,9 +255,11 @@ describe('EditDateTimeDialog', () => {
             fireEvent.change(dateInput, {target: {value: '2025-06-15'}});
             expect(dateInput).toHaveValue('2025-06-15');
 
-            const timeInput = screen.getByLabelText('Time (24-hour)') as HTMLInputElement;
-            fireEvent.change(timeInput, {target: {value: '09:45'}});
-            expect(timeInput).toHaveValue('09:45');
+            // The time picker is segmented: set the hour and the minute separately.
+            fireEvent.change(screen.getByLabelText('Hours'), {target: {value: '09'}});
+            fireEvent.change(screen.getByLabelText('Minutes'), {target: {value: '45'}});
+            expect(screen.getByLabelText('Hours')).toHaveValue('09');
+            expect(screen.getByLabelText('Minutes')).toHaveValue('45');
         });
 
         it('accepts intermediate invalid values without freezing', () => {
@@ -309,7 +312,8 @@ describe('EditDateTimeDialog', () => {
             // Time-only
             onSubmit.mockClear();
             renderWithProviders(createDefaultProps({showDate: false, showTime: true, onSubmit}));
-            fireEvent.change(screen.getByLabelText('Time (24-hour)'), {target: {value: '16:30'}});
+            fireEvent.change(screen.getByLabelText('Hours'), {target: {value: '16'}});
+            fireEvent.change(screen.getByLabelText('Minutes'), {target: {value: '30'}});
             await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {

@@ -2,33 +2,22 @@
  * AddressSection - Pickup + delivery address cards.
  *
  * Matches the AngularJS pattern: two side-by-side bordered cards,
- * each with a colored toolbar header (primary for pickup, green for delivery),
+ * each with a colored toolbar header (map-blue for pickup, green for delivery),
  * a bordered address display area with hover, and contact cards.
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import ButtonBase from '@mui/material/ButtonBase';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import type {SxProps, Theme} from '@mui/material/styles';
-import type {SvgIconProps} from '@mui/material/SvgIcon';
-import PersonIcon from '@mui/icons-material/Person';
-import PhoneIcon from '@mui/icons-material/Phone';
-import CallIcon from '@mui/icons-material/Call';
-import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import PlaceIcon from '@mui/icons-material/Place';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import Chip from '@mui/material/Chip';
+import {ActionIcon, Badge, Box, Flex, Group, Text, Tooltip, UnstyledButton} from '@mantine/core';
+import {ArrowDown, ArrowRight, Phone, PhoneCall, User} from 'lucide-react';
+import {IconMapPin, IconPlaneDeparture} from '@tabler/icons-react';
+import {Icon, type LucideIcon, type TablerIcon} from '../../icon/Icon';
 import type {IJob} from '../JobDetails.types';
 import {usePendingChangeForField} from '../../../job-change-requests/useJobChangeRequests';
 import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
 import {AddressType} from '../../../../../enums/address-type.enum';
 import {SectionHeader} from './SectionHeader';
-import {cardContainerSx} from '../JobDetails.styles';
 import type {JobChangeRequestDto} from '../../../../interfaces/jobChangeRequest';
+import classes from './AddressSection.module.css';
 
 interface AddressSectionProps {
     job: IJob;
@@ -44,7 +33,8 @@ interface AddressSectionProps {
 interface AddressBlockProps {
     title: string;
     variant: AddressType;
-    icon: React.ComponentType<SvgIconProps>;
+    /** Passed straight to `SectionHeader`'s Tabler slot (place / flight). */
+    icon: TablerIcon;
     address?: { fullAddress?: string };
     contactName?: string;
     contactPhone?: string;
@@ -61,70 +51,52 @@ interface AddressBlockProps {
 
 /* ── Styles ─────────────────────────────────────────────────────── */
 
-const blockSx: SxProps<Theme> = {
-    ...cardContainerSx as object,
+/** The card shell. The keyline + its hover live in the CSS module. */
+const blockStyle: React.CSSProperties = {
     flex: 1,
-    transition: (theme) => `border-color ${theme.transitions.duration.short}ms ease`,
-    '&:hover': {
-        borderColor: 'grey.400',
-    },
+    overflow: 'hidden',
+    borderRadius: 'var(--mantine-radius-lg)',
+    backgroundColor: 'var(--dd-surface-container)',
 };
 
-const addressDisplaySx: SxProps<Theme> = {
-    mx: 1.5,
-    mt: 1.5,
-    mb: 1,
-    p: 1.5,
-    borderRadius: 1,
-    border: 1,
-    borderColor: 'divider',
-    bgcolor: 'grey.50',
-    transition: (theme) => `all ${theme.transitions.duration.short}ms ease`,
-    '&:hover': {
-        bgcolor: 'grey.100',
-        borderColor: 'grey.400',
-    },
-};
+const addressDisplayStyle = (dense: boolean): React.CSSProperties => ({
+    marginInline: dense ? 8 : 12,
+    marginTop: dense ? 6 : 12,
+    marginBottom: dense ? 4 : 8,
+    padding: dense ? 6 : 12,
+    borderRadius: 'var(--mantine-radius-xs)',
+});
 
-const contactCardSx: SxProps<Theme> = {
-    bgcolor: 'grey.50',
-    p: 1.5,
-    borderRadius: 1,
-    transition: (theme) => `all ${theme.transitions.duration.short}ms ease`,
-    border: 1,
-    borderColor: 'transparent',
-    '&:hover': {
-        bgcolor: 'action.selected',
-        borderColor: 'grey.400',
-    },
-};
+const contactCardStyle = (dense?: boolean): React.CSSProperties => ({
+    padding: dense ? 8 : 12,
+    borderRadius: 'var(--mantine-radius-xs)',
+});
 
-const contactCardDenseSx: SxProps<Theme> = {...contactCardSx as object, p: 1};
-
-const contactLabelSx: SxProps<Theme> = {
+const contactLabelStyle: React.CSSProperties = {
     fontSize: '0.6875rem',
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
 };
 
-const contactValueSx: SxProps<Theme> = {
+// Truncation is <Text truncate> at the call site, not three properties here.
+const contactValueStyle: React.CSSProperties = {
     fontSize: '0.8125rem',
-    mt: 0.25,
+    marginTop: 2,
 };
 
 /* ── Sub-components ─────────────────────────────────────────────── */
 
 function ContactCard({
-                         icon: IconComp,
-                         label,
-                         value,
-                         onClick,
-                         locked,
-                         dense,
-                         children,
-                     }: {
-    icon: React.ComponentType<SvgIconProps>;
+    icon,
+    label,
+    value,
+    onClick,
+    locked,
+    dense,
+    children,
+}: {
+    icon: LucideIcon;
     label: string;
     value?: string;
     onClick?: () => void;
@@ -133,36 +105,27 @@ function ContactCard({
     children?: React.ReactNode;
 }) {
     const card = (
-        <Box sx={dense ? contactCardDenseSx : contactCardSx}>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25}}>
-                <IconComp sx={{fontSize: 14, color: 'text.secondary'}}/>
-                <Typography
-                    variant="caption"
-                    sx={[{
-                        color: "text.secondary"
-                    }, ...(Array.isArray(contactLabelSx) ? contactLabelSx : [contactLabelSx])]}>
-                    {label}
-                </Typography>
+        <Box className={classes.contact} style={contactCardStyle(dense)}>
+            <Group gap={4} mb={2} wrap="nowrap">
+                <Icon lucide={icon} size={14} color="var(--mantine-color-dimmed)" aria-hidden/>
+                <Text c="dimmed" style={contactLabelStyle}>{label}</Text>
                 {children}
-            </Box>
-            <Typography variant="body2" noWrap sx={contactValueSx}>
-                {value || <Typography component="span" sx={{
-                    fontStyle: 'italic',
-                    color: 'text.disabled',
-                    fontSize: 'inherit'
-                }}>{'\u2014'}</Typography>}
-            </Typography>
+            </Group>
+            <Text truncate style={contactValueStyle}>
+                {value || (
+                    <Text component="span" c="dimmed" fs="italic" style={{fontSize: 'inherit'}}>
+                        {'—'}
+                    </Text>
+                )}
+            </Text>
         </Box>
     );
 
     if (onClick && !locked) {
         return (
-            <ButtonBase
-                onClick={onClick}
-                sx={{borderRadius: 1, width: '100%', textAlign: 'left', display: 'block'}}
-            >
+            <UnstyledButton onClick={onClick} style={{width: '100%', display: 'block', textAlign: 'left'}}>
                 {card}
-            </ButtonBase>
+            </UnstyledButton>
         );
     }
 
@@ -170,32 +133,28 @@ function ContactCard({
 }
 
 function AddressBlock({
-                          title,
-                          variant,
-                          icon: IconComponent,
-                          address,
-                          contactName,
-                          contactPhone,
-                          phoneSource,
-                          onEditAddress,
-                          onEditContact,
-                          onEditPhone,
-                          locked,
-                          dense,
-                          pendingAddress,
-                          pendingContact,
-                          pendingPhone,
-                      }: AddressBlockProps) {
+    title,
+    variant,
+    icon: IconComponent,
+    address,
+    contactName,
+    contactPhone,
+    phoneSource,
+    onEditAddress,
+    onEditContact,
+    onEditPhone,
+    locked,
+    dense,
+    pendingAddress,
+    pendingContact,
+    pendingPhone,
+}: AddressBlockProps) {
     const isPu = variant === AddressType.Pickup;
 
     return (
-        <Box
-            sx={{
-                ...blockSx as object,
-            } as SxProps<Theme>}
-        >
+        <Box className={classes.block} style={blockStyle}>
             <SectionHeader
-                icon={IconComponent}
+                tabler={IconComponent}
                 title={title}
                 dense={dense}
                 variant={isPu ? 'pickup' : 'delivery'}
@@ -204,26 +163,31 @@ function AddressBlock({
             {/* Address display — opens the address dialog even when locked; the
                 dialog renders read-only. Contact cards below stay non-interactive
                 (contact editing is out of the read-only subset). */}
-            <ButtonBase
+            <UnstyledButton
                 onClick={onEditAddress}
-                sx={{width: '100%', display: 'block', textAlign: 'left'}}
+                style={{width: '100%', display: 'block', textAlign: 'left'}}
             >
-                <Box sx={dense ? {
-                    ...addressDisplaySx as object,
-                    mx: 1, mt: 0.75, mb: 0.5, p: 0.75,
-                } : addressDisplaySx}>
-                    <Typography variant="body2" sx={{fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.6}}>
-                        {address?.fullAddress || '\u2014'}
-                    </Typography>
+                <Box className={classes.address} style={addressDisplayStyle(dense)}>
+                    <Text style={{fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.6}}>
+                        {address?.fullAddress || '—'}
+                    </Text>
                     {pendingAddress && <PendingChangeBadge request={pendingAddress} variant="inline"/>}
                 </Box>
-            </ButtonBase>
+            </UnstyledButton>
 
             {/* Contact cards */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: dense ? 0.5 : 1, px: dense ? 1 : 1.5, pb: dense ? 1 : 1.5}}>
+            <Box
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: dense ? 4 : 8,
+                    paddingInline: dense ? 8 : 12,
+                    paddingBottom: dense ? 8 : 12,
+                }}
+            >
                 <Box>
                     <ContactCard
-                        icon={PersonIcon}
+                        icon={User}
                         label="Contact"
                         value={contactName}
                         onClick={onEditContact}
@@ -231,7 +195,7 @@ function AddressBlock({
                         dense={dense}
                     />
                     {pendingContact && (
-                        <Box sx={{pl: dense ? 0.5 : 1}}>
+                        <Box pl={dense ? 4 : 8}>
                             <PendingChangeBadge request={pendingContact} variant="inline"/>
                         </Box>
                     )}
@@ -239,7 +203,7 @@ function AddressBlock({
                 {contactPhone != null && (
                     <Box>
                         <ContactCard
-                            icon={PhoneIcon}
+                            icon={Phone}
                             label="Phone"
                             value={contactPhone}
                             onClick={onEditPhone}
@@ -247,25 +211,28 @@ function AddressBlock({
                             dense={dense}
                         >
                             {phoneSource && (
-                                <Chip label={phoneSource} size="small"
-                                      sx={{height: 20, fontSize: '0.6875rem', ml: 0.5}}/>
+                                <Badge size="sm" variant="default" tt="none" ml={4} style={{height: 20, fontSize: '0.6875rem'}}>
+                                    {phoneSource}
+                                </Badge>
                             )}
                             {contactPhone && (
-                                <Tooltip title={`Call ${contactPhone}`}>
-                                    <IconButton
-                                        size="small"
+                                <Tooltip label={`Call ${contactPhone}`}>
+                                    <ActionIcon
+                                        size="sm"
+                                        variant="subtle"
                                         component="a"
                                         href={`tel:${contactPhone}`}
+                                        aria-label={`Call ${contactPhone}`}
                                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                        sx={{p: 0.25, ml: 'auto'}}
+                                        ml="auto"
                                     >
-                                        <CallIcon sx={{fontSize: 14, color: 'primary.main'}}/>
-                                    </IconButton>
+                                        <Icon lucide={PhoneCall} size={14} color="var(--mantine-primary-color-filled)"/>
+                                    </ActionIcon>
                                 </Tooltip>
                             )}
                         </ContactCard>
                         {pendingPhone && (
-                            <Box sx={{pl: dense ? 0.5 : 1}}>
+                            <Box pl={dense ? 4 : 8}>
                                 <PendingChangeBadge request={pendingPhone} variant="inline"/>
                             </Box>
                         )}
@@ -278,24 +245,17 @@ function AddressBlock({
 
 /* ── Main export ────────────────────────────────────────────────── */
 
-const flowArrowSx: SxProps<Theme> = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-};
-
 export const AddressSection = React.memo(({
-                                              job,
-                                              dense,
-                                              onEditPickupAddress,
-                                              onEditDeliveryAddress,
-                                              onEditFromContact,
-                                              onEditToContact,
-                                              onEditFromContactPhone,
-                                              onEditToContactPhone,
-                                          }: AddressSectionProps) => {
-    const addressIcon = job.isFlightAssigned ? FlightTakeoffIcon : PlaceIcon;
+    job,
+    dense,
+    onEditPickupAddress,
+    onEditDeliveryAddress,
+    onEditFromContact,
+    onEditToContact,
+    onEditFromContactPhone,
+    onEditToContactPhone,
+}: AddressSectionProps) => {
+    const addressIcon = job.isFlightAssigned ? IconPlaneDeparture : IconMapPin;
 
     // Partner-job pending-change indicators for address + contact fields.
     // Reads the shared change-request cache; returns null for non-partner
@@ -308,12 +268,11 @@ export const AddressSection = React.memo(({
     const pendingToContactPhone = usePendingChangeForField(job.id, 'ToContactPhone');
 
     return (
-        <Box sx={{
-            display: 'flex',
-            gap: 1,
-            flexDirection: {xs: 'column', sm: 'row'},
-            alignItems: {xs: 'center', sm: 'stretch'}
-        }}>
+        <Flex
+            gap="xs"
+            direction={{base: 'column', sm: 'row'}}
+            align={{base: 'center', sm: 'stretch'}}
+        >
             <AddressBlock
                 title="Pickup"
                 variant={AddressType.Pickup}
@@ -331,9 +290,15 @@ export const AddressSection = React.memo(({
                 pendingContact={pendingFromContact}
                 pendingPhone={pendingFromContactPhone}
             />
-            <Box sx={flowArrowSx}>
-                <ArrowForwardIcon sx={{fontSize: 20, color: 'text.disabled', display: {xs: 'none', sm: 'block'}}}/>
-                <ArrowDownwardIcon sx={{fontSize: 20, color: 'text.disabled', display: {xs: 'block', sm: 'none'}}}/>
+            {/* The flow arrow turns with the layout: across on a wide card, down
+                once the two blocks stack. */}
+            <Box style={{display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>
+                <Box visibleFrom="sm">
+                    <Icon lucide={ArrowRight} size={20} color="var(--mantine-color-dimmed)" aria-hidden/>
+                </Box>
+                <Box hiddenFrom="sm">
+                    <Icon lucide={ArrowDown} size={20} color="var(--mantine-color-dimmed)" aria-hidden/>
+                </Box>
             </Box>
             <AddressBlock
                 title="Delivery"
@@ -351,6 +316,6 @@ export const AddressSection = React.memo(({
                 pendingContact={pendingToContact}
                 pendingPhone={pendingToContactPhone}
             />
-        </Box>
+        </Flex>
     );
 });

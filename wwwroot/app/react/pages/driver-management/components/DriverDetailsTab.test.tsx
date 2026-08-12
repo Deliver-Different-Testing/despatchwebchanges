@@ -1,5 +1,6 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverDetailsTab} from './DriverDetailsTab';
@@ -21,9 +22,9 @@ const renderWithProviders = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider><ThemeProvider theme={theme}>
                 <DriverDetailsTab showToast={showToast} />
-            </ThemeProvider>
+            </ThemeProvider></MantineTestProvider>
         </QueryClientProvider>
     );
 };

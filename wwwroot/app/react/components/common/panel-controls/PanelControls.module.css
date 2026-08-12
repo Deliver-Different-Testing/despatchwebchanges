@@ -1,0 +1,24 @@
+/*
+ * Panel-bar control chrome.
+ *
+ * These rules are attribute/pseudo state, which Mantine's `styles` prop cannot
+ * express — its values land as inline styles and drop the selector. This file is
+ * unlayered and Mantine ships in `@layer mantine`, so it wins without specificity
+ * games. Same idiom as `side-nav/SideNav.module.css`.
+ */
+
+.control {
+    /*
+     * Take the bar's own on-colour rather than Mantine's primary, which would
+     * put a cyan glyph on a white bar. Set here, not inline: an inline `color`
+     * outranks Mantine's disabled colour and leaves disabled controls looking
+     * live.
+     */
+    color: inherit;
+}
+
+.control:disabled,
+.control[data-disabled] {
+    color: var(--mantine-color-gray-5);
+    background-color: transparent;
+}

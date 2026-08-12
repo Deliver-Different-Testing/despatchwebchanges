@@ -1,7 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {
-    Alert, Badge, Box, Button, Checkbox, CloseButton, Divider, Group, Paper, Text, TextInput, Textarea,
-} from '@mantine/core';
+import {Alert, Badge, Box, Button, Checkbox, CloseButton, Divider, Group, Paper, Stack, Text, Textarea, TextInput} from '@mantine/core';
 import {Check, FileText, Paperclip, Send} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {
@@ -212,7 +210,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                 onClose={handleClose}
             />
 
-            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-lg)'}}>
+            <Stack p="lg" gap="lg" bg={dialogContentBg}>
                 {errorMessage && <Alert color="red" variant="light">{errorMessage}</Alert>}
 
                 {/* Recipients */}
@@ -345,7 +343,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                         />
                     </Paper>
                 </Box>
-            </Box>
+            </Stack>
 
             <DialogFooter
                 onCancel={handleClose}

@@ -1,5 +1,6 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {Badge, Box, Button, Collapse, Group, Loader, Paper, Stack, Text} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
 import {ChevronDown, ChevronUp, History, Pencil} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {NoteHistoryProps} from "./NoteHistoryProps";
@@ -7,7 +8,7 @@ import {NoteHistoryProps} from "./NoteHistoryProps";
 const captionProps = {size: 'xs', c: 'dimmed', tt: 'uppercase', style: {letterSpacing: 0.5}} as const;
 
 export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, timeZoneAbbr}) => {
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, {toggle}] = useDisclosure(false);
 
     if (isLoading) {
         return (
@@ -27,7 +28,7 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
                 color="gray"
                 size="compact-sm"
                 mb="xs"
-                onClick={() => setExpanded(!expanded)}
+                onClick={toggle}
                 leftSection={<Icon lucide={History} size={16}/>}
                 rightSection={<Icon lucide={expanded ? ChevronUp : ChevronDown} size={16}/>}
             >

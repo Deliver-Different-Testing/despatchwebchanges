@@ -305,7 +305,7 @@ describe('AccessorialChargesDialog — adding charges', () => {
 
         const row = screen.getByText('Waiting Time').closest('tr') as HTMLElement;
         fireEvent.click(within(row).getByRole('checkbox'));
-        fireEvent.change(within(row).getByRole('spinbutton'), {target: {value: '2'}});
+        fireEvent.change(within(row).getByRole('textbox', {name: /input value/i}), {target: {value: '2'}});
 
         fireEvent.click(await screen.findByRole('button', {name: /add selected charges/i}));
 
@@ -340,10 +340,25 @@ describe('AccessorialChargesDialog — portion jobs', () => {
         renderDialog({job: portionJob});
         await screen.findByText('Add Charges');
 
-        expect(screen.getByRole('button', {name: 'Leg 1'})).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', {name: 'Leg 2'}));
+        expect(screen.getByRole('tab', {name: 'Leg 1'})).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('tab', {name: 'Leg 2'}));
 
         await waitFor(() => expect(api.getAppliedCharges).toHaveBeenCalledWith(456));
         expect(api.getAvailableCharges).toHaveBeenCalledWith(8, 456);
+    });
+
+    it('exposes the portion strip as a tablist and marks only the active leg selected', async () => {
+        renderDialog({job: portionJob});
+        await screen.findByText('Add Charges');
+
+        expect(screen.getByRole('tablist')).toBeInTheDocument();
+        expect(screen.getByRole('tab', {name: 'Leg 1'})).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('tab', {name: 'Leg 2'})).toHaveAttribute('aria-selected', 'false');
+
+        fireEvent.click(screen.getByRole('tab', {name: 'Leg 2'}));
+
+        await waitFor(() =>
+            expect(screen.getByRole('tab', {name: 'Leg 2'})).toHaveAttribute('aria-selected', 'true'));
+        expect(screen.getByRole('tab', {name: 'Leg 1'})).toHaveAttribute('aria-selected', 'false');
     });
 });

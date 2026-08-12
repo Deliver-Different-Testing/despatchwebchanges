@@ -9,7 +9,7 @@ import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 
 import {JobFileUploadDialog} from './JobFileUploadDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import type {FileUploadType} from './types';
 import type {ToastService} from '../../../services/toastService';
 
@@ -59,17 +59,15 @@ class JobFileUploadDialogManager {
             this.renderDialog();
         };
 
-        this.dialogRoot.render(
-            <DfrntMantineProvider>
-                <JobFileUploadDialog
-                    open={this.dialogState.open}
-                    jobId={this.dialogState.jobId}
-                    initialUploadType={this.dialogState.initialUploadType}
-                    onClose={handleClose}
-                    showToast={this.toastService.showToast}
-                />
-            </DfrntMantineProvider>
-        );
+        this.dialogRoot.render(islandTree(
+            <JobFileUploadDialog
+                open={this.dialogState.open}
+                jobId={this.dialogState.jobId}
+                initialUploadType={this.dialogState.initialUploadType}
+                onClose={handleClose}
+                showToast={this.toastService.showToast}
+            />
+        ));
     }
 
     open(jobId: number, uploadType: FileUploadType | string = 'normal'): Promise<void> {

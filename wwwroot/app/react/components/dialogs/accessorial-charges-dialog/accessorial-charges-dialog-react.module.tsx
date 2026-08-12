@@ -9,7 +9,7 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { AccessorialChargesDialog } from './AccessorialChargesDialog';
 import { AccessorialChargesJob, OpenAccessorialChargesDialogOptions } from './types';
-import { DfrntMantineProvider } from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 interface DialogState {
@@ -55,16 +55,14 @@ class AccessorialChargesDialogManager {
         };
 
 
-        this.dialogRoot.render(
-            <DfrntMantineProvider>
-                <AccessorialChargesDialog
-                    open={this.dialogState.open}
-                    job={this.dialogState.job}
-                    onClose={handleClose}
-                    showToast={handleShowToast}
-                />
-            </DfrntMantineProvider>
-        );
+        this.dialogRoot.render(islandTree(
+            <AccessorialChargesDialog
+                open={this.dialogState.open}
+                job={this.dialogState.job}
+                onClose={handleClose}
+                showToast={handleShowToast}
+            />
+        ));
     }
 
     async open(options: OpenAccessorialChargesDialogOptions): Promise<boolean> {

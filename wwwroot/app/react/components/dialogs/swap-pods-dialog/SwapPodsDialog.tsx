@@ -129,7 +129,7 @@ export function SwapPodsDialog({
                 closeDisabled={loading}
             />
             {/* Content */}
-            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
+            <Stack p="lg" gap="md" bg={dialogContentBg}>
                 {/* Info banner */}
                 <Alert color="cyan" variant="light" icon={<Icon lucide={Info}/>}>
                     This will move the POD signature from <strong>{jobNo}</strong> to the job you specify, and vice versa.
@@ -169,7 +169,7 @@ export function SwapPodsDialog({
                         </Group>
                     </Paper>
                 )}
-            </Box>
+            </Stack>
             {/* Actions */}
             {phase === 'input' ? (
                 <DialogFooter

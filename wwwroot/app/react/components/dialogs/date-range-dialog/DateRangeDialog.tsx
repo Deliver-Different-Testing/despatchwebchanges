@@ -1,27 +1,29 @@
 /**
  * React Date Range Dialog
  *
- * A modern replacement for the AngularJS date-range-dialog using MUI components.
+ * Two side-by-side calendars — a start and an end — with a live summary bar.
+ *
+ * **Wall-clock only.** Mantine's calendars are string-valued (`YYYY-MM-DD`), so
+ * neither the value nor the `minDate`/`maxDate` bounds ever carry a zone. The
+ * `Date`s in the result are built at the boundary, from the picked wall-clock day,
+ * exactly as before.
+ *
+ * Kept as *two* calendars rather than one `DatePicker type="range"`: the range
+ * variant would fold the start/end cards, the cross-wired bounds and the "Invalid"
+ * state into one control, but it also changes how the dialog is operated
+ * (click-start-then-end), which is a design decision rather than a migration.
  */
 
 import React, {useState, useMemo} from 'react';
-import {alpha} from '@mui/material/styles';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import CloseIcon from '@mui/icons-material/Close';
-import DateRangeIcon from '@mui/icons-material/DateRange';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import CalendarIcon from '@mui/icons-material/CalendarMonth';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
-import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
+import {Badge, Box, Flex, Group, Paper, Text} from '@mantine/core';
+import {DatePicker} from '@mantine/dates';
+import {ArrowRight, CalendarDays, CalendarRange} from 'lucide-react';
 import dayjs, {Dayjs} from 'dayjs';
-import {DialogShell, DialogFooter} from '../shared';
-import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, dialogSize} from '../shared/mantine';
+import {Icon} from '../../common/icon/Icon';
+
+/** The string form the calendars exchange values in. */
+const ISO_DATE = 'YYYY-MM-DD';
 
 export interface DateRange {
     start: Date;
@@ -34,6 +36,40 @@ export interface DateRangeDialogProps {
     onClose: () => void;
     onApply: (range: DateRange) => void;
 }
+
+interface CalendarCardProps {
+    title: string;
+    value: Dayjs;
+    onChange: (value: Dayjs) => void;
+    minDate?: string;
+    maxDate?: string;
+}
+
+const CalendarCard: React.FC<CalendarCardProps> = ({title, value, onChange, minDate, maxDate}) => (
+    <Paper radius="lg" withBorder style={{overflow: 'hidden'}}>
+        <Box
+            px="md"
+            py="sm"
+            bg="var(--mantine-primary-color-light)"
+            style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
+        >
+            <Text size="sm" fw={600} c="var(--mantine-primary-color-filled)">{title}</Text>
+        </Box>
+        {/* `defaultDate` is load-bearing: unlike MUI's `DateCalendar`, a Mantine
+            calendar does NOT navigate to its `value` — without it every calendar
+            opens on the current month, which with the cross-wired bounds means a
+            range in another month renders entirely disabled. */}
+        <DatePicker
+            aria-label={title}
+            value={value.format(ISO_DATE)}
+            defaultDate={value.format(ISO_DATE)}
+            onChange={(next) => next && onChange(dayjs(next))}
+            minDate={minDate}
+            maxDate={maxDate}
+            p="sm"
+        />
+    </Paper>
+);
 
 export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
     open,
@@ -67,225 +103,76 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
     };
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DialogShell
-                open={open}
+        <DialogShell
+            opened={open}
+            onClose={onClose}
+            size={dialogSize.md}
+            label="Select Date Range"
+        >
+            <DialogHeader
+                icon={<Icon lucide={CalendarRange}/>}
+                title="Select Date Range"
+                subtitle="Choose a start and end date for your report"
                 onClose={onClose}
-                maxWidth="md"
-                slotProps={{
-                    paper: {
-                        sx: {
-                            overflow: 'hidden',
-                        },
-                    },
-                }}
+            />
+
+            {/* Summary bar */}
+            <Group
+                justify="center"
+                gap="md"
+                px="lg"
+                py="md"
+                bg="var(--mantine-primary-color-light)"
+                style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
             >
-                {/* Header */}
-                <Box sx={(theme) => headerChromeSx(theme)}>
-                    <Box sx={(theme) => headerChipSx(theme)}>
-                        <DateRangeIcon/>
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                        <Typography variant="h5" sx={{
-                            fontWeight: 600
-                        }}>
-                            Select Date Range
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                            Choose a start and end date for your report
-                        </Typography>
-                    </Box>
-                    <IconButton
-                        onClick={onClose}
-                        sx={(theme) => ({
-                            color: headerOnColor(theme),
-                            '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
-                        })}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
+                <Paper px="md" py={6} radius="md" withBorder>
+                    <Group gap="xs" wrap="nowrap">
+                        <Icon lucide={CalendarDays} size={16} color="var(--mantine-primary-color-filled)"/>
+                        <Text size="sm" c="dimmed">From</Text>
+                        <Text size="sm" fw={600}>{startDate?.format('MMM D, YYYY')}</Text>
+                    </Group>
+                </Paper>
 
-                {/* Summary Bar */}
-                <Box
-                    sx={(theme) => ({
-                        px: 3,
-                        py: 2,
-                        bgcolor: alpha(theme.palette.primary.main, 0.04),
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 2,
-                    })}
-                >
-                    <Paper
-                        elevation={0}
-                        sx={(theme) => ({
-                            px: 2.5,
-                            py: 1,
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            border: `1px solid ${theme.palette.divider}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                        })}
-                    >
-                        <CalendarIcon fontSize="small" color="primary" />
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            From
-                        </Typography>
-                        <Typography variant="subtitle2" sx={{
-                            fontWeight: 600
-                        }}>
-                            {startDate?.format('MMM D, YYYY')}
-                        </Typography>
-                    </Paper>
+                <Icon lucide={ArrowRight} size={20} color="var(--mantine-color-dimmed)" aria-label="to"/>
 
-                    <ArrowForwardIcon color="action" />
+                <Paper px="md" py={6} radius="md" withBorder>
+                    <Group gap="xs" wrap="nowrap">
+                        <Icon lucide={CalendarDays} size={16} color="var(--mantine-primary-color-filled)"/>
+                        <Text size="sm" c="dimmed">To</Text>
+                        <Text size="sm" fw={600}>{endDate?.format('MMM D, YYYY')}</Text>
+                    </Group>
+                </Paper>
 
-                    <Paper
-                        elevation={0}
-                        sx={(theme) => ({
-                            px: 2.5,
-                            py: 1,
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            border: `1px solid ${theme.palette.divider}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                        })}
-                    >
-                        <CalendarIcon fontSize="small" color="primary" />
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            To
-                        </Typography>
-                        <Typography variant="subtitle2" sx={{
-                            fontWeight: 600
-                        }}>
-                            {endDate?.format('MMM D, YYYY')}
-                        </Typography>
-                    </Paper>
+                {/* A `Badge` is the tonal pill the MUI version built out of a Paper. */}
+                <Badge color={isValidRange ? 'green' : 'red'} variant="light" size="lg" tt="none">
+                    {isValidRange ? `${duration} Day${duration !== 1 ? 's' : ''}` : 'Invalid'}
+                </Badge>
+            </Group>
 
-                    <Paper
-                        elevation={0}
-                        sx={(theme) => ({
-                            px: 2,
-                            py: 1,
-                            borderRadius: 2,
-                            bgcolor: isValidRange ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.error.main, 0.1),
-                            border: `1px solid ${isValidRange ? alpha(theme.palette.success.main, 0.3) : alpha(theme.palette.error.main, 0.3)}`,
-                        })}
-                    >
-                        <Typography
-                            variant="subtitle2"
-                            color={isValidRange ? 'success.main' : 'error.main'}
-                            sx={{
-                                fontWeight: 600
-                            }}
-                        >
-                            {isValidRange ? `${duration} Day${duration !== 1 ? 's' : ''}` : 'Invalid'}
-                        </Typography>
-                    </Paper>
-                </Box>
+            <Box p="lg" bg={dialogContentBg}>
+                <Flex direction={{base: 'column', md: 'row'}} gap="lg" justify="center">
+                    <CalendarCard
+                        title="Start Date"
+                        value={startDate}
+                        onChange={setStartDate}
+                        maxDate={endDate.format(ISO_DATE)}
+                    />
+                    <CalendarCard
+                        title="End Date"
+                        value={endDate}
+                        onChange={setEndDate}
+                        minDate={startDate.format(ISO_DATE)}
+                    />
+                </Flex>
+            </Box>
 
-                {/* Content */}
-                <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
-                    <Stack
-                        direction={{ xs: 'column', md: 'row' }}
-                        spacing={3}
-                        sx={{
-                            justifyContent: "center"
-                        }}
-                    >
-                        {/* Start Date Calendar */}
-                        <Paper
-                            elevation={0}
-                            sx={(theme) => ({
-                                borderRadius: 3,
-                                overflow: 'hidden',
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'background.paper',
-                            })}
-                        >
-                            <Box
-                                sx={(theme) => ({
-                                    px: 2,
-                                    py: 1.5,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.06),
-                                    borderBottom: `1px solid ${theme.palette.divider}`,
-                                })}
-                            >
-                                <Typography variant="subtitle2" color="primary" sx={{
-                                    fontWeight: 600
-                                }}>
-                                    Start Date
-                                </Typography>
-                            </Box>
-                            <DateCalendar
-                                value={startDate}
-                                onChange={(newValue) => newValue && setStartDate(newValue)}
-                                maxDate={endDate}
-                                sx={{
-                                    '& .MuiPickersDay-root.Mui-selected': {
-                                        fontWeight: 600,
-                                    },
-                                }}
-                            />
-                        </Paper>
-
-                        {/* End Date Calendar */}
-                        <Paper
-                            elevation={0}
-                            sx={(theme) => ({
-                                borderRadius: 3,
-                                overflow: 'hidden',
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'background.paper',
-                            })}
-                        >
-                            <Box
-                                sx={(theme) => ({
-                                    px: 2,
-                                    py: 1.5,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.06),
-                                    borderBottom: `1px solid ${theme.palette.divider}`,
-                                })}
-                            >
-                                <Typography variant="subtitle2" color="primary" sx={{
-                                    fontWeight: 600
-                                }}>
-                                    End Date
-                                </Typography>
-                            </Box>
-                            <DateCalendar
-                                value={endDate}
-                                onChange={(newValue) => newValue && setEndDate(newValue)}
-                                minDate={startDate}
-                                sx={{
-                                    '& .MuiPickersDay-root.Mui-selected': {
-                                        fontWeight: 600,
-                                    },
-                                }}
-                            />
-                        </Paper>
-                    </Stack>
-                </DialogContent>
-
-                <DialogFooter
-                    onCancel={onClose}
-                    onConfirm={handleApply}
-                    confirmLabel="Apply"
-                    confirmDisabled={!isValidRange}
-                />
-            </DialogShell>
-        </LocalizationProvider>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleApply}
+                confirmLabel="Apply"
+                confirmDisabled={!isValidRange}
+            />
+        </DialogShell>
     );
 };
 

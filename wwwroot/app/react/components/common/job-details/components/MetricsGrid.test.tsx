@@ -6,13 +6,14 @@ import React from 'react';
 import {screen, fireEvent} from '@testing-library/react';
 import {MetricsGrid} from './MetricsGrid';
 import {createMockJob} from '../__testUtils__/mockJob';
-import {renderWithProviders} from '../../../../__testUtils__';
+import {renderWithMantineProviders} from '../../../../__testUtils__';
 import dayjs from 'dayjs';
 
 // MetricsGrid reads usePendingChangeForField (React Query), so tests need
-// both ThemeProvider AND QueryClientProvider — renderWithProviders bundles them.
+// both MantineProvider AND QueryClientProvider — renderWithMantineProviders
+// bundles them.
 function renderWithTheme(ui: React.ReactElement) {
-    return renderWithProviders(ui);
+    return renderWithMantineProviders(ui);
 }
 
 function createDefaultProps(overrides?: Record<string, any>) {

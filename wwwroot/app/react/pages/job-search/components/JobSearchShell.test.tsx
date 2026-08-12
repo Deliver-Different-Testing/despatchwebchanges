@@ -1,5 +1,6 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {JobSearchShell, JobSearchShellProps} from './JobSearchShell';
 import {ILayout} from '../../../../interfaces/layout.interfaces';
@@ -25,9 +26,9 @@ const baseProps: JobSearchShellProps = {
 
 const renderShell = (props: Partial<JobSearchShellProps> = {}) =>
     render(
-        <ThemeProvider theme={theme}>
+        <MantineTestProvider><ThemeProvider theme={theme}>
             <JobSearchShell {...baseProps} {...props} />
-        </ThemeProvider>,
+        </ThemeProvider></MantineTestProvider>,
     );
 
 const twoBoxLayout = (name: string): ILayout => ({
@@ -175,17 +176,33 @@ describe('JobSearchShell resize persistence', () => {
 
         // A drag re-lays-out the same (un-remounted) group with new sizes.
         rerender(
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider><ThemeProvider theme={theme}>
                 <JobSearchShell
                     {...baseProps}
                     layout={resized('Default', '70%', '30%')}
                     boxes={multiColBoxes}
                     onColumnSizes={onColumnSizes}
                 />
-            </ThemeProvider>,
+            </ThemeProvider></MantineTestProvider>,
         );
 
         expect(onColumnSizes).toHaveBeenCalledTimes(1);
         expect(onColumnSizes).toHaveBeenCalledWith([70, 30]);
+    });
+
+});
+
+describe('JobSearchShell box card chrome', () => {
+    /*
+     * A box card is a card: bordered, rounded, and raised above the page. It has
+     * to sit on the container surface, not the page one. When it took the page
+     * token, any panel that did not repaint its own background — the empty-state
+     * branches especially — rendered on grey while its neighbours were white.
+     */
+    it('paints each box card on the card surface rather than the page background', () => {
+        renderShell();
+
+        expect(screen.getByTestId('job-search-box-card').style.backgroundColor)
+            .toBe('var(--dd-surface-container)');
     });
 });

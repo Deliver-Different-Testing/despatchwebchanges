@@ -27,6 +27,7 @@ const DEFAULT_DEBOUNCE_MS = 300;
 
 export function SearchSelect<T>({
     label,
+    'aria-label': ariaLabel,
     placeholder,
     value,
     onChange,
@@ -43,6 +44,7 @@ export function SearchSelect<T>({
     autoFocus,
     minSearchLength = DEFAULT_MIN_SEARCH_LENGTH,
     debounceMs = DEFAULT_DEBOUNCE_MS,
+    autoHighlight,
 }: SearchSelectProps<T>) {
     const combobox = useCombobox({onDropdownClose: () => combobox.resetSelectedOption()});
 
@@ -109,6 +111,10 @@ export function SearchSelect<T>({
 
     useEffect(() => () => abortRef.current?.abort(), []);
 
+    useEffect(() => {
+        if (autoHighlight && options.length > 0) combobox.selectFirstOption();
+    }, [autoHighlight, options]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const handleSubmit = useCallback((optionKey: string) => {
         const selected = options.find(o => String(getOptionKey(o)) === optionKey) ?? null;
         emittedRef.current = selected;
@@ -131,6 +137,7 @@ export function SearchSelect<T>({
             <Combobox.Target>
                 <TextInput
                     label={label}
+                    aria-label={ariaLabel}
                     placeholder={placeholder}
                     withAsterisk={withAsterisk}
                     disabled={disabled}

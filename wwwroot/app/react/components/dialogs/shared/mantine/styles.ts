@@ -114,22 +114,23 @@ export function headerChromeStyle(variant: PanelHeaderVariant = 'primary'): Reac
 /**
  * The square icon chip inside a header: a translucent on-colour scrim behind the
  * glyph. `size` is load-bearing — 40 in dialogs, 32 on the dispatch panel bar, 36
- * on the messaging header. Unlike the MUI original there is no `& svg` rule to
- * auto-size the glyph, so pass the icon its own size at the call site.
+ * on the messaging header. Spread onto a `<ThemeIcon {...headerChipProps(v)}>`,
+ * which brings the box, the centring and `min-width`/`min-height` natively; the
+ * scrim rides ThemeIcon's own `--ti-bg`/`--ti-color` variables. Pass the icon its
+ * own size at the call site — ThemeIcon sizes the box, not the glyph.
  */
-export function headerChipStyle(variant: PanelHeaderVariant = 'primary', size = 40): React.CSSProperties {
+export function headerChipProps(variant: PanelHeaderVariant = 'primary', size = 40) {
     return {
-        width: size,
-        height: size,
-        borderRadius: 8,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        backgroundColor: headerOverlayColor(0.18, variant),
-        // On the neutral bar the chip is the only brand colour, so the glyph
-        // takes the accent rather than the body text colour.
-        color: variant === 'surface' ? headerSurfaceAccent : headerOnColor(variant),
+        size,
+        radius: 'md' as const,
+        // Typed to admit the custom properties — `CSSProperties` alone cannot be
+        // indexed by `--*`, which makes the vars unassertable in tests.
+        style: {
+            '--ti-bg': headerOverlayColor(0.18, variant),
+            // On the neutral bar the chip is the only brand colour, so the glyph
+            // takes the accent rather than the body text colour.
+            '--ti-color': variant === 'surface' ? headerSurfaceAccent : headerOnColor(variant),
+        } as React.CSSProperties & Record<`--${string}`, string>,
     };
 }
 

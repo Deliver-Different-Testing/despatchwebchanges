@@ -1,0 +1,44 @@
+/*
+ * Timeline chrome that props cannot express: a spinning refresh glyph
+ * (`@keyframes`), and an event card whose `:hover` lifts it and repaints its
+ * border. Everything else — density-driven padding, the per-event accent, the
+ * staggered entrance delay — stays inline, because it is computed per row.
+ */
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinning svg {
+    animation: spin 1s linear infinite;
+}
+
+/*
+ * Only a clickable card reacts. The left keyline is the event's own accent and is
+ * set inline, so the hover rule must not touch `border-left-color`.
+ */
+.clickableCard {
+    transition:
+        box-shadow 150ms ease,
+        border-color 150ms ease;
+}
+
+.clickableCard:hover {
+    box-shadow: var(--mantine-shadow-sm);
+    border-top-color: var(--mantine-primary-color-filled);
+    border-right-color: var(--mantine-primary-color-filled);
+    border-bottom-color: var(--mantine-primary-color-filled);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinning svg,
+    .clickableCard {
+        animation: none;
+        transition: none;
+    }
+}

@@ -11,10 +11,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {DispatchPage, DispatchPageProps, DispatchLayoutBridge} from './DispatchPage';
 import type {DispatchFilters, DispatchRefreshIntervals} from './lib/dispatchFilters';
@@ -63,31 +61,27 @@ export function mountDispatchPage(
         dispatchRoot = createRoot(container);
     }
 
-    const currentTheme = getTheme();
-
-    dispatchRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <ErrorBoundary>
-                    <DispatchPage
-                        {...config}
-                        onLayoutBridgeReady={bridge => {
-                            layoutBridge = bridge;
-                            if (pendingFilters) {
-                                bridge.updateFilters(pendingFilters);
-                                pendingFilters = null;
-                            }
-                            if (pendingViewsListener) {
-                                unregisterViewsListener = bridge.registerViewsListener(pendingViewsListener);
-                            }
-                            config.onLayoutBridgeReady?.(bridge);
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
-    );
+    // ErrorBoundary is a shared MUI leaf still used by unmigrated islands.
+    dispatchRoot.render(islandTree(
+        <MuiThemeIsland>
+            <ErrorBoundary>
+                <DispatchPage
+                    {...config}
+                    onLayoutBridgeReady={bridge => {
+                        layoutBridge = bridge;
+                        if (pendingFilters) {
+                            bridge.updateFilters(pendingFilters);
+                            pendingFilters = null;
+                        }
+                        if (pendingViewsListener) {
+                            unregisterViewsListener = bridge.registerViewsListener(pendingViewsListener);
+                        }
+                        config.onLayoutBridgeReady?.(bridge);
+                    }}
+                />
+            </ErrorBoundary>
+        </MuiThemeIsland>
+    ));
 
     console.log('[DispatchReact] Page rendered');
 }

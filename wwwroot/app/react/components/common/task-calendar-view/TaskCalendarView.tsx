@@ -690,6 +690,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
 
     return (
         <Box
+            data-testid="task-calendar-view"
             sx={{
                 height: '100%',
                 minHeight: 0,

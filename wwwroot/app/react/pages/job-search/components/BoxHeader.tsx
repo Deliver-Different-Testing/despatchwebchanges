@@ -6,13 +6,10 @@
  */
 
 import React, {useEffect, useRef} from 'react';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import type {Theme} from '@mui/material/styles';
-import {headerOverlayColor} from '../../../components/dialogs/shared/styles';
+import {ActionIcon, Box, Tooltip} from '@mantine/core';
+import {GripVertical, RefreshCw} from 'lucide-react';
+import {PANEL_CONTROL_GLYPH_SIZE, PANEL_CONTROL_HEIGHT, panelIconButtonStyle} from '../../../components/common/panel-controls';
+import {Icon} from '../../../components/common/icon/Icon';
 import {PanelHeader} from '../../../components/common/panel-header';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 
@@ -51,12 +48,19 @@ export interface BoxHeaderProps {
     headerSlotRef?: (el: HTMLElement | null) => void;
 }
 
-const actionButtonSx = (theme: Theme) => ({
-    color: 'inherit',
-    // Subtle hover derived from the header's own on-colour, so it darkens the
-    // paper bar rather than washing out against it.
-    '&:hover': {bgcolor: headerOverlayColor(theme, 0.08, 'surface')},
-});
+/*
+ * Both buttons share the panel bar with the other Mantine controls, so they take
+ * the bar's own metrics and hover wash from `panel-controls` rather than choosing
+ * their own. Hover is pseudo-state, so it rides `--ai-hover` (see
+ * `panelControlTokens`); the box is a plain size.
+ */
+const actionButtonProps = {
+    variant: 'subtle' as const,
+    color: 'gray' as const,
+    w: PANEL_CONTROL_HEIGHT,
+    h: PANEL_CONTROL_HEIGHT,
+    style: panelIconButtonStyle,
+};
 
 export const BoxHeader: React.FC<BoxHeaderProps> = ({
     icon,
@@ -107,31 +111,32 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
             {headerSlotRef ? <span ref={headerSlotRef} style={{display: 'contents'}} /> : null}
             {rightSlot}
             {showRefresh && onRefresh ? (
-                <Tooltip title="Refresh">
-                    <IconButton size="small" onClick={onRefresh} aria-label="Refresh" sx={actionButtonSx}>
-                        <RefreshIcon fontSize="small" />
-                    </IconButton>
+                <Tooltip label="Refresh">
+                    <ActionIcon {...actionButtonProps} onClick={onRefresh} aria-label="Refresh">
+                        <Icon lucide={RefreshCw} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                    </ActionIcon>
                 </Tooltip>
             ) : null}
             {showDragHandle ? (
-                <Tooltip title="Drag, or use the arrow keys, to reorder">
-                    <IconButton
+                <Tooltip label="Drag, or use the arrow keys, to reorder">
+                    <ActionIcon
+                        {...actionButtonProps}
                         ref={dragHandleRef}
-                        size="small"
                         aria-label={`Reorder ${title} — use the up and down arrow keys`}
                         aria-roledescription="sortable"
                         onKeyDown={handleReorderKeyDown}
-                        sx={[actionButtonSx, {cursor: 'grab', opacity: 0.85, '&:active': {cursor: 'grabbing'}}]}
+                        opacity={0.85}
+                        style={{...panelIconButtonStyle, cursor: 'grab'}}
                     >
-                        <DragIndicatorIcon fontSize="small" />
-                    </IconButton>
+                        <Icon lucide={GripVertical} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                    </ActionIcon>
                 </Tooltip>
             ) : null}
         </>
     );
 
     return (
-        <Box draggable={!!onDragStart} onDragStart={onDragStart} sx={{cursor: onDragStart ? 'grab' : 'default'}}>
+        <Box draggable={!!onDragStart} onDragStart={onDragStart} style={{cursor: onDragStart ? 'grab' : 'default'}}>
             <PanelHeader
                 icon={<SymbolIcon name={icon} aria-hidden />}
                 title={composedTitle}

@@ -12,7 +12,7 @@ export {
     headerColors,
     headerSurfaceAccent,
     headerChromeStyle,
-    headerChipStyle,
+    headerChipProps,
     headerOnColor,
     headerOverlayColor,
     sectionPaperProps,

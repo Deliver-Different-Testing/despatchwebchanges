@@ -9,17 +9,13 @@
  * Presentational only — the page owns the selection and its persistence.
  */
 
-import React, {useCallback} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Skeleton from '@mui/material/Skeleton';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Typography from '@mui/material/Typography';
-import ClearAllIcon from '@mui/icons-material/ClearAll';
-import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
-import type {SxProps, Theme} from '@mui/material';
+import React from 'react';
+import {Box, Button, Group, Skeleton, Text} from '@mantine/core';
+import {Layers, ListX} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
 import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
+import {headerSurfaceAccent} from '../../../components/dialogs/shared/mantine/styles';
+import classes from './ViewsRail.module.css';
 
 export interface ViewsRailProps {
     views: DfrntPageViewModel[];
@@ -37,52 +33,15 @@ export interface ViewsRailProps {
 
 // Matches the card's standard toolbar chrome (JobListToolbar) so the rail and
 // the category tabs below it read as one bar of controls.
-const railSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1.5,
-    px: 2,
-    py: 0.75,
+const railStyle: React.CSSProperties = {
     minHeight: 40,
-    borderBottom: 1,
-    borderColor: 'divider',
-    bgcolor: 'background.paper',
-} satisfies SxProps<Theme>;
-
-const scrollSx = {
-    flex: '1 1 auto',
-    minWidth: 0,
-    overflowX: 'auto',
-    overflowY: 'hidden',
-    py: 0.25,
-    scrollbarWidth: 'thin',
-    '&::-webkit-scrollbar': {height: 6},
-    '&::-webkit-scrollbar-thumb': {
-        borderRadius: 3,
-        bgcolor: 'action.disabled',
-    },
-} satisfies SxProps<Theme>;
-
-// Same pill geometry as the category tabs; primary fill for the neutral
-// "scope" meaning, leaving the semantic colours to the status tabs.
-const toggleGroupSx = {
-    borderRadius: 1,
-    '& .MuiToggleButton-root': {
-        px: 1.5,
-        py: 0.5,
-        fontSize: '0.75rem',
-        textTransform: 'none',
-        fontWeight: 500,
-        whiteSpace: 'nowrap',
-    },
-    '& .MuiToggleButton-root.Mui-selected': {
-        bgcolor: 'primary.main',
-        color: 'primary.contrastText',
-        '&:hover': {bgcolor: 'primary.dark'},
-    },
-} satisfies SxProps<Theme>;
-
-const trailingSx = {flexShrink: 0} satisfies SxProps<Theme>;
+    borderBottom: '1px solid var(--mantine-color-default-border)',
+    backgroundColor: 'var(--dd-surface-container)',
+    // The pills borrow SegmentedToggle's selection recipe (tonal fill + 1px
+    // accent border + Ink label) so multi-select speaks the same grammar as the
+    // single-select toggles, without an indicator it could not share.
+    '--vp-accent': headerSurfaceAccent,
+} as React.CSSProperties;
 
 export const ViewsRail: React.FC<ViewsRailProps> = ({
     views,
@@ -92,62 +51,64 @@ export const ViewsRail: React.FC<ViewsRailProps> = ({
     onToggle,
     onClearAll,
 }) => {
-    const handleChange = useCallback(
-        (_event: React.MouseEvent<HTMLElement>, nextIds: number[]) => {
-            const before = new Set(selectedIds);
-            const after = new Set(nextIds);
-            const changed = [...before, ...after].find(id => before.has(id) !== after.has(id));
-            if (changed !== undefined) onToggle(changed);
-        },
-        [selectedIds, onToggle],
-    );
-
     if (loading) {
         return (
-            <Box sx={railSx} data-testid="views-rail-loading">
-                <LayersOutlinedIcon fontSize="small" sx={{color: 'text.secondary'}} aria-hidden/>
+            <Group align="center" gap="sm" px="md" py={6} wrap="nowrap" style={railStyle} data-testid="views-rail-loading">
+                <Icon lucide={Layers} size={16} color="var(--mantine-color-dimmed)" aria-hidden/>
                 {[96, 78, 64].map(width => (
-                    <Skeleton key={width} variant="rounded" width={width} height={28}/>
+                    <Skeleton key={width} width={width} height={28} radius="sm"/>
                 ))}
-            </Box>
+            </Group>
         );
     }
 
     if (views.length === 0) return null;
 
     return (
-        <Box sx={railSx}>
-            <LayersOutlinedIcon fontSize="small" sx={{color: 'text.secondary', flexShrink: 0}} aria-hidden/>
-            <Box sx={scrollSx}>
-                <ToggleButtonGroup
-                    size="small"
-                    value={selectedIds}
-                    onChange={handleChange}
-                    aria-label="Job list views"
-                    sx={toggleGroupSx}
-                >
-                    {views.map(view => (
-                        <ToggleButton key={view.id} value={view.id}>
-                            {view.name}
-                        </ToggleButton>
-                    ))}
-                </ToggleButtonGroup>
+        <Group align="center" gap="sm" px="md" py={6} wrap="nowrap" style={railStyle}>
+            <Icon lucide={Layers} size={16} color="var(--mantine-color-dimmed)" aria-hidden style={{flexShrink: 0}}/>
+            <Box className={classes.scroll}>
+                {/*
+                  * Multi-select toggles, so these stay buttons with `aria-pressed`
+                  * rather than becoming a `Chip.Group` — Mantine chips are checkboxes,
+                  * which reads wrong for a scope filter and loses the pressed state.
+                  */}
+                <Group gap="xs" wrap="nowrap" role="group" aria-label="Job list views">
+                    {views.map(view => {
+                        const selected = selectedIds.includes(view.id);
+                        return (
+                            <Button
+                                key={view.id}
+                                size="compact-xs"
+                                variant="default"
+                                className={classes.viewPill}
+                                data-selected={selected || undefined}
+                                aria-pressed={selected}
+                                onClick={() => onToggle(view.id)}
+                                style={{whiteSpace: 'nowrap'}}
+                            >
+                                {view.name}
+                            </Button>
+                        );
+                    })}
+                </Group>
             </Box>
             {selectedIds.length > 0 ? (
                 <Button
-                    size="small"
-                    startIcon={<ClearAllIcon/>}
+                    size="compact-sm"
+                    variant="subtle"
+                    leftSection={<Icon lucide={ListX} size={16}/>}
                     onClick={onClearAll}
-                    sx={{...trailingSx, textTransform: 'none'}}
+                    style={{flexShrink: 0}}
                 >
                     Clear
                 </Button>
             ) : (
-                <Typography variant="caption" sx={{...trailingSx, color: 'text.secondary'}}>
+                <Text size="xs" c="dimmed" style={{flexShrink: 0}}>
                     {isUsCustomer ? 'No view selected — showing all jobs.' : 'Select a view to load jobs.'}
-                </Typography>
+                </Text>
             )}
-        </Box>
+        </Group>
     );
 };
 

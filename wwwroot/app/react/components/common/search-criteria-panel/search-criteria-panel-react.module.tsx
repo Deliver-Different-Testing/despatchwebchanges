@@ -8,13 +8,12 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {SearchCriteriaPanel} from './SearchCriteriaPanel';
-import {getTheme} from '../../../theme/muiTheme';
 import angular from 'angular';
 import {Dayjs} from 'dayjs';
 import {ISuggestion} from '../../../../interfaces/job.interface';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 class SearchCriteriaPanelReactController implements angular.IController {
     static $inject = ['$element', '$scope'];
@@ -58,9 +57,6 @@ class SearchCriteriaPanelReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap AngularJS '&' callbacks to match React callback signatures.
         // Each callback calls $applyAsync() to trigger a digest cycle so
         // AngularJS detects the state change and re-renders via $onChanges.
@@ -119,28 +115,28 @@ class SearchCriteriaPanelReactController implements angular.IController {
         const handleSpeedSearch = (searchText: string) =>
             this.onSpeedSearch!({searchText});
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <SearchCriteriaPanel
-                    dateSearchRange={this.dateSearchRange ?? 'fortnight'}
-                    fromDate={this.fromDate!}
-                    toDate={this.toDate!}
-                    onSearchRangeChange={handleSearchRangeChange}
-                    onFromDateChange={handleFromDateChange}
-                    onToDateChange={handleToDateChange}
-                    onCriteriaChange={handleCriteriaChange}
-                    onSearch={handleSearch}
-                    onDownload={handleDownload}
-                    onClientReport={handleClientReport}
-                    onPriceDetailReport={handlePriceDetailReport}
-                    onUpload={handleUpload}
-                    onClientSearch={handleClientSearch}
-                    onCourierSearch={handleCourierSearch}
-                    onSpeedSearch={handleSpeedSearch}
-                />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+            <MuiThemeIsland>
+            <SearchCriteriaPanel
+                dateSearchRange={this.dateSearchRange ?? 'fortnight'}
+                fromDate={this.fromDate!}
+                toDate={this.toDate!}
+                onSearchRangeChange={handleSearchRangeChange}
+                onFromDateChange={handleFromDateChange}
+                onToDateChange={handleToDateChange}
+                onCriteriaChange={handleCriteriaChange}
+                onSearch={handleSearch}
+                onDownload={handleDownload}
+                onClientReport={handleClientReport}
+                onPriceDetailReport={handlePriceDetailReport}
+                onUpload={handleUpload}
+                onClientSearch={handleClientSearch}
+                onCourierSearch={handleCourierSearch}
+                onSpeedSearch={handleSpeedSearch}
+            />
+
+            </MuiThemeIsland>
+        ));
     }
 }
 

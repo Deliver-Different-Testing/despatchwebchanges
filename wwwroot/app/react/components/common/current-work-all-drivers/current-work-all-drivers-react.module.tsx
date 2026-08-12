@@ -7,11 +7,9 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { CurrentWorkAllDrivers } from './CurrentWorkAllDrivers';
 import type { IDriverWorkOverview } from './CurrentWorkAllDrivers.types';
-import { getTheme } from '../../../theme/muiTheme';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import angular from 'angular';
 
 /**
@@ -53,24 +51,19 @@ class CurrentWorkAllDriversReactController implements angular.IController {
     private render(): void {
         if (!this.root) return;
 
-        const currentTheme = getTheme();
-
         // Wrap AngularJS callback to match React expected signature
         const handleDriverSelect = this.onDriverSelect
             ? (driver: IDriverWorkOverview) => this.onDriverSelect!({ driver })
             : () => {};
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <CurrentWorkAllDrivers
-                    drivers={this.drivers || []}
-                    loading={this.loading}
-                    selectedCourierId={this.selectedCourierId}
-                    onDriverSelect={handleDriverSelect}
-                />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+            <CurrentWorkAllDrivers
+                drivers={this.drivers || []}
+                loading={this.loading}
+                selectedCourierId={this.selectedCourierId}
+                onDriverSelect={handleDriverSelect}
+            />
+        ));
     }
 }
 

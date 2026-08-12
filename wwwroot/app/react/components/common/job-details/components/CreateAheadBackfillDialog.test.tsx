@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {screen, waitFor, fireEvent} from '@testing-library/react';
+import {renderWithMantine} from '../../../../__testUtils__';
 
 import {CreateAheadBackfillDialog, CreateAheadBackfillDialogProps}
     from './CreateAheadBackfillDialog';
@@ -29,8 +29,6 @@ import {recurringJobsApi} from '../../../../services/recurringJobsApi';
 
 const mockPreview = recurringJobsApi.previewCreateAheadBackfill as jest.MockedFunction<typeof recurringJobsApi.previewCreateAheadBackfill>;
 const mockCreate = recurringJobsApi.createCreateAheadBackfill as jest.MockedFunction<typeof recurringJobsApi.createCreateAheadBackfill>;
-
-const theme = createTheme();
 
 function createPreview(
     overrides?: Partial<PreviewCreateAheadBackfillResult>
@@ -74,11 +72,7 @@ function createProps(
 }
 
 function renderDialog(props: CreateAheadBackfillDialogProps) {
-    return render(
-        <ThemeProvider theme={theme}>
-            <CreateAheadBackfillDialog {...props} />
-        </ThemeProvider>
-    );
+    return renderWithMantine(<CreateAheadBackfillDialog {...props} />);
 }
 
 describe('CreateAheadBackfillDialog', () => {

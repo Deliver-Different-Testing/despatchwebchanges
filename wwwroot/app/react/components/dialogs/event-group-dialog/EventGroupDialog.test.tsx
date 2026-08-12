@@ -3,11 +3,10 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
 import {EventGroupDialog, EventGroupDialogProps} from './EventGroupDialog';
 import {EventGroupViewModel} from '../../../interfaces';
-import {testTheme} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 
 const mockEvents: EventGroupViewModel[] = [
     {
@@ -23,9 +22,8 @@ const mockEvents: EventGroupViewModel[] = [
 ];
 
 const renderDialog = (props: Partial<EventGroupDialogProps> = {}) =>
-    render(
-        <ThemeProvider theme={testTheme}>
-            <EventGroupDialog
+    renderWithMantine(
+        <EventGroupDialog
                 open
                 events={mockEvents}
                 users={[]}
@@ -34,9 +32,8 @@ const renderDialog = (props: Partial<EventGroupDialogProps> = {}) =>
                 onOpenAdminManager={jest.fn()}
                 showToast={jest.fn()}
                 timezone="America/New_York"
-                {...props}
-            />
-        </ThemeProvider>
+            {...props}
+        />
     );
 
 describe('EventGroupDialog timezone display', () => {

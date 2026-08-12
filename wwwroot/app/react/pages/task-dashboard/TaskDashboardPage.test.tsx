@@ -5,11 +5,9 @@
  */
 
 import React from 'react';
+import { renderWithMantineOverMui } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -81,7 +79,6 @@ Object.defineProperty(window, 'localStorage', {value: localStorageMock});
 Object.defineProperty(window, 'ContactID', {value: 1, writable: true});
 
 const mockTasksApi = tasksApi as jest.Mocked<typeof tasksApi>;
-const theme = createTheme();
 
 // Create a fresh QueryClient for each test
 const createTestQueryClient = () =>
@@ -97,18 +94,10 @@ const createTestQueryClient = () =>
         },
     });
 
-const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) => {
-    const client = queryClient || createTestQueryClient();
-    return render(
-        <QueryClientProvider client={client}>
-            <ThemeProvider theme={theme}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    {ui}
-                </LocalizationProvider>
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
-};
+const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) =>
+    // Mantine outside, MUI inside: the page is still MUI but its rows (`TaskItem`)
+    // are Mantine, so both providers have to be present.
+    renderWithMantineOverMui(ui, {queryClient: queryClient ?? createTestQueryClient()});
 
 // Sample test data
 const createMockTasks = (): Task[] => [

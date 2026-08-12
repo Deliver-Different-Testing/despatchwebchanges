@@ -7,8 +7,6 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import dayjs, {Dayjs} from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -16,12 +14,12 @@ import isBetween from 'dayjs/plugin/isBetween';
 import duration from 'dayjs/plugin/duration';
 
 import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
 import {formatDateForApi, getIanaTimezone, getTenantTimezone} from '../../../utils/dateUtils';
 import {nationwideApi} from '../../../services/nationwideApi';
 import {AgentSuggestion, FlightAgentDialogResult, FlightCargoProcessing, FlightViewModel, ToastService,} from './types';
 import type {ShowToastFn} from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -112,33 +110,30 @@ class FlightAgentConfirmationDialogManager {
             }
             this.dialogState.toastService.showToast(message, type);
         };
-
-        const currentTheme = getTheme();
         const tz = getIanaTimezone(getTenantTimezone());
 
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <FlightAgentConfirmationDialog
-                        open={this.dialogState.open}
-                        mode={this.dialogState.mode}
-                        jobId={this.dialogState.jobId}
-                        jobNumber={this.dialogState.jobNumber}
-                        flight={this.dialogState.flight}
-                        agent={this.dialogState.agent}
-                        existingAwb={this.dialogState.existingAwb}
-                        dgClass={this.dialogState.dgClass}
-                        stopJobCount={this.dialogState.stopJobCount}
-                        timezone={tz}
-                        onClose={handleClose}
-                        onConfirm={handleConfirm}
-                        onCalculateCargoTimes={handleCalculateCargoTimes}
-                        showToast={handleShowToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
+        this.dialogRoot.render(islandTree(
+                <MuiThemeIsland>
+                <FlightAgentConfirmationDialog
+                    open={this.dialogState.open}
+                    mode={this.dialogState.mode}
+                    jobId={this.dialogState.jobId}
+                    jobNumber={this.dialogState.jobNumber}
+                    flight={this.dialogState.flight}
+                    agent={this.dialogState.agent}
+                    existingAwb={this.dialogState.existingAwb}
+                    dgClass={this.dialogState.dgClass}
+                    stopJobCount={this.dialogState.stopJobCount}
+                    timezone={tz}
+                    onClose={handleClose}
+                    onConfirm={handleConfirm}
+                    onCalculateCargoTimes={handleCalculateCargoTimes}
+                    showToast={handleShowToast}
+                />
+
+            </MuiThemeIsland>
+
+        ));
     }
 
     openFlightDialog(options: {

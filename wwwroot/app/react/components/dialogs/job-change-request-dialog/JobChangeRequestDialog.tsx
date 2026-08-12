@@ -15,18 +15,10 @@
  */
 
 import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
-import DialogContent from '@mui/material/DialogContent';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import MenuItem from '@mui/material/MenuItem';
-import Alert from '@mui/material/Alert';
-import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
-import SendIcon from '@mui/icons-material/Send';
-import SyncAltIcon from '@mui/icons-material/SyncAlt';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {Alert, Box, Group, NumberInput, Paper, Select, Stack, Text, TextInput, Textarea} from '@mantine/core';
+import {ArrowLeftRight, CircleX, Info, Send} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg} from '../shared/mantine';
 import {jobChangeRequestApi} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
 import {toastService} from '../../../services/toastService';
@@ -260,26 +252,16 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             : `Requires ${partnerLabel} to approve before it applies`;
 
     return (
-        <DialogShell open={open} onClose={handleClose} disableEnforceFocus>
+        <DialogShell opened={open} onClose={handleClose} label={`Request change to ${meta.label}`} trapFocus={false}>
             <DialogHeader
-                icon={<SyncAltIcon/>}
+                icon={<Icon lucide={ArrowLeftRight}/>}
                 title={lockedField ? `Confirm ${meta.label} change` : `Request change to ${meta.label}`}
                 subtitle={`Job ${jobNo} · ${subtitle}`}
                 onClose={handleClose}
             />
             {/* Content */}
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box
-                    sx={{
-                        p: 3,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 2,
-                        // Surface the form controls against the muted content
-                        // background — matches SelectDialog / EditDateTimeDialog.
-                        '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'},
-                    }}
-                >
+            <Box p="lg" bg={dialogContentBg}>
+                <Stack gap="md">
                     {lockedField ? (
                         <LockedFieldSummary
                             fieldName={fieldName}
@@ -310,34 +292,36 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                         </>
                     )}
 
-                    <TextField
+                    <Textarea
                         label={lockedField ? 'Reason' : 'Reason (optional)'}
                         value={reason}
-                        onChange={e => setReason(e.target.value)}
-                        size="small"
-                        fullWidth
-                        multiline
+                        onChange={e => setReason(e.currentTarget.value)}
                         minRows={2}
                         maxRows={5}
-                        autoFocus={lockedField}
-                        helperText={`Visible to ${partnerLabel} during approval`}
+                        autosize
+                        data-autofocus={lockedField || undefined}
+                        description={`Visible to ${partnerLabel} during approval`}
                     />
 
                     {meta.commercial && (
-                        <Alert severity="info" variant="outlined" sx={{py: 0.5}}>
+                        <Alert color="reflex" variant="outline" icon={<Icon lucide={Info} size={18}/>} py={4}>
                             This change re-rates the job. {partnerName?.trim() ? partnerName.trim() : 'The partner'} will see the new price when they approve.
                         </Alert>
                     )}
 
-                    {error && <Alert severity="error">{error}</Alert>}
-                </Box>
-            </DialogContent>
+                    {error && (
+                        <Alert color="red" variant="light" icon={<Icon lucide={CircleX} size={18}/>}>
+                            {error}
+                        </Alert>
+                    )}
+                </Stack>
+            </Box>
             {/* Actions */}
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSubmit}
                 confirmLabel={meta.mode === 'auto' ? 'Apply' : 'Submit'}
-                confirmIcon={<SendIcon/>}
+                confirmIcon={<Icon lucide={Send} size={16}/>}
             />
         </DialogShell>
     );
@@ -358,58 +342,32 @@ interface LockedFieldSummaryProps {
  * summary instead of an editable picker / input pair. The only thing they
  * still control is the reason textarea below this block.
  */
+/** The quiet caption above each value in the summary. */
+const overlineProps = {size: 'xs', c: 'dimmed', tt: 'uppercase', lh: 1} as const;
+
+/** Fixed gutter so the glyph and label line up between the picker and the summary. */
+const glyphStyle: React.CSSProperties = {
+    display: 'inline-block',
+    minWidth: 20,
+    textAlign: 'center',
+    marginRight: 8,
+};
+
 function LockedFieldSummary({fieldName, meta, value}: LockedFieldSummaryProps) {
     const displayValue = formatChangeRequestValue(fieldName, value) || '—';
     return (
-        <Box
-            sx={theme => ({
-                px: 2,
-                py: 1.5,
-                borderRadius: 1,
-                border: `1px solid ${theme.palette.divider}`,
-                bgcolor: 'action.hover',
-            })}
-        >
-            <Typography
-                variant="overline"
-                sx={{
-                    color: "text.secondary",
-                    letterSpacing: 1,
-                    lineHeight: 1
-                }}>
-                Field
-            </Typography>
-            <Typography variant="body2" sx={{mb: 1, mt: 0.25}}>
-                <Box component="span" sx={{display: 'inline-block', minWidth: 20, textAlign: 'center', mr: 1}}>
-                    {meta.glyph}
-                </Box>
+        <Paper withBorder radius="xs" px="md" py="sm" bg="var(--mantine-color-gray-1)">
+            <Text {...overlineProps} style={{letterSpacing: 1}}>Field</Text>
+            <Text size="sm" mb="xs" mt={2}>
+                <Box component="span" style={glyphStyle}>{meta.glyph}</Box>
                 {meta.label}
-            </Typography>
-            <Typography
-                variant="overline"
-                sx={{
-                    color: "text.secondary",
-                    letterSpacing: 1,
-                    lineHeight: 1
-                }}>
-                New value
-            </Typography>
-            <Typography
-                variant="body2"
-                sx={{mt: 0.25, whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}
-            >
+            </Text>
+            <Text {...overlineProps} style={{letterSpacing: 1}}>New value</Text>
+            <Text size="sm" mt={2} style={{whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
                 {displayValue}
-            </Typography>
-            <Typography
-                variant="caption"
-                sx={{
-                    color: "text.secondary",
-                    display: 'block',
-                    mt: 1
-                }}>
-                {meta.hint}
-            </Typography>
-        </Box>
+            </Text>
+            <Text size="xs" c="dimmed" mt="xs">{meta.hint}</Text>
+        </Paper>
     );
 }
 
@@ -420,78 +378,46 @@ interface FieldPickerProps {
 }
 
 function FieldPicker({value, onChange, meta}: FieldPickerProps) {
-    const grouped = useMemo(() => {
-        const autos: Array<[string, JobChangeRequestFieldMeta]> = [];
-        const manuals: Array<[string, JobChangeRequestFieldMeta]> = [];
+    /**
+     * Mantine `Select` groups natively, which replaces the hand-rolled disabled
+     * "list header" MenuItems and the divider between them.
+     */
+    const data = useMemo(() => {
+        const autos: Array<{value: string; label: string}> = [];
+        const manuals: Array<{value: string; label: string}> = [];
         for (const key of SELECTABLE_FIELDS) {
             const m = FIELD_META[key];
             if (!m) continue;
-            (m.mode === 'auto' ? autos : manuals).push([key, m]);
+            (m.mode === 'auto' ? autos : manuals).push({value: key, label: m.label});
         }
-        return {autos, manuals};
+        return [
+            {group: 'Applies immediately', items: autos},
+            {group: 'Requires partner approval', items: manuals},
+        ];
     }, []);
 
     return (
-        <TextField
-            select
+        <Select
             label="Field"
             value={value}
-            onChange={e => onChange(e.target.value)}
-            size="small"
-            fullWidth
-            helperText={meta.hint}
-        >
-            <ListHeader>Applies immediately</ListHeader>
-            {grouped.autos.map(([key, m]) => (
-                <MenuItem key={key} value={key}>
-                    <Box component="span" sx={{display: 'inline-block', minWidth: 20, textAlign: 'center', mr: 1}}>{m.glyph}</Box>
-                    {m.label}
-                </MenuItem>
-            ))}
-            <Divider component="li"/>
-            <ListHeader>Requires partner approval</ListHeader>
-            {grouped.manuals.map(([key, m]) => (
-                <MenuItem key={key} value={key}>
-                    <Box component="span" sx={{display: 'inline-block', minWidth: 20, textAlign: 'center', mr: 1}}>{m.glyph}</Box>
-                    {m.label}
-                    {m.commercial && (
-                        <Box component="span" sx={{ml: 'auto', fontSize: '0.7rem', color: 'warning.main', pl: 2}}>
-                            re-rates
-                        </Box>
-                    )}
-                </MenuItem>
-            ))}
-        </TextField>
-    );
-}
-
-/**
- * Non-interactive header inside a select dropdown. MUI's MenuItem is the
- * right primitive (gets the correct typography + spacing) but it needs
- * `disabled` so the keyboard / mouse skip past it on selection. We render
- * it as muted overline text to read as a section heading.
- */
-function ListHeader({children}: {children: React.ReactNode}) {
-    return (
-        <MenuItem
-            disabled
-            sx={{
-                opacity: '1 !important',
-                py: 0.25,
-                cursor: 'default',
-                '&.Mui-disabled': {opacity: 1},
+            onChange={next => next && onChange(next)}
+            data={data}
+            allowDeselect={false}
+            description={meta.hint}
+            comboboxProps={{keepMounted: false}}
+            renderOption={({option}) => {
+                const m = FIELD_META[option.value];
+                return (
+                    <Group gap={0} wrap="nowrap" style={{flex: 1}}>
+                        <Box component="span" style={glyphStyle}>{m?.glyph}</Box>
+                        <span>{option.label}</span>
+                        {m?.commercial && (
+                            <Text component="span" size="xs" c="orange" ml="auto" pl="md">re-rates</Text>
+                        )}
+                    </Group>
+                );
             }}
-        >
-            <Typography
-                variant="overline"
-                sx={{
-                    color: "text.secondary",
-                    letterSpacing: 1,
-                    fontSize: '0.65rem'
-                }}>
-                {children}
-            </Typography>
-        </MenuItem>
+        />
     );
 }
 
@@ -513,62 +439,43 @@ function FieldValueInput({
     }
     if (fieldName === 'Speed') {
         if (speedList === null) {
-            return (
-                <TextField
-                    label="Service speed"
-                    value="Loading…"
-                    size="small"
-                    fullWidth
-                    disabled
-                />
-            );
+            return <TextInput label="Service speed" value="Loading…" disabled/>;
         }
         return (
-            <TextField
-                select
+            <Select
                 label="Service speed"
-                value={textValue}
-                onChange={e => onTextChange(e.target.value)}
-                size="small"
-                fullWidth
-            >
-                {speedList.length === 0 && (
-                    <MenuItem value="" disabled>No speeds available</MenuItem>
-                )}
-                {speedList.map(s => (
-                    <MenuItem key={s.id} value={String(s.id)}>{s.text}</MenuItem>
-                ))}
-            </TextField>
+                value={textValue || null}
+                onChange={next => onTextChange(next ?? '')}
+                data={speedList.map(s => ({value: String(s.id), label: s.text ?? ''}))}
+                nothingFoundMessage="No speeds available"
+                comboboxProps={{keepMounted: false}}
+            />
         );
     }
     if (fieldName === 'PartnerAgreedRate') {
+        // The currency marker goes in `leftSection`, never `prefix` — Mantine's
+        // prefix becomes part of the value and would ship "$185.50" on the wire.
         return (
-            <TextField
+            <NumberInput
                 label="Agreed rate"
                 value={textValue}
-                onChange={e => onTextChange(e.target.value)}
-                size="small"
-                fullWidth
-                type="number"
-                slotProps={{
-                    input: {
-                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                        inputProps: {step: '0.01', min: '0'},
-                    },
-                }}
+                onChange={value => onTextChange(String(value ?? ''))}
+                decimalScale={2}
+                step={0.01}
+                min={0}
+                leftSection="$"
             />
         );
     }
     if (fieldName === 'Quantity') {
         return (
-            <TextField
+            <NumberInput
                 label="Quantity"
                 value={textValue}
-                onChange={e => onTextChange(e.target.value)}
-                size="small"
-                fullWidth
-                type="number"
-                slotProps={{input: {inputProps: {step: '1', min: '1'}}}}
+                onChange={value => onTextChange(String(value ?? ''))}
+                allowDecimal={false}
+                step={1}
+                min={1}
             />
         );
     }
@@ -576,27 +483,31 @@ function FieldValueInput({
         // Native datetime-local keeps the bundle slim. Picks up the user's
         // locale formatting and supports keyboard input.
         return (
-            <TextField
+            <TextInput
                 label={meta.label}
                 value={textValue}
-                onChange={e => onTextChange(e.target.value)}
-                size="small"
-                fullWidth
+                onChange={e => onTextChange(e.currentTarget.value)}
                 type="datetime-local"
-                slotProps={{inputLabel: {shrink: true}}}
+            />
+        );
+    }
+    if (meta.category === 'note') {
+        return (
+            <Textarea
+                label={`New ${meta.label.toLowerCase()}`}
+                value={textValue}
+                onChange={e => onTextChange(e.currentTarget.value)}
+                minRows={3}
+                maxRows={8}
+                autosize
             />
         );
     }
     return (
-        <TextField
+        <TextInput
             label={`New ${meta.label.toLowerCase()}`}
             value={textValue}
-            onChange={e => onTextChange(e.target.value)}
-            size="small"
-            fullWidth
-            multiline={meta.category === 'note'}
-            minRows={meta.category === 'note' ? 3 : 1}
-            maxRows={meta.category === 'note' ? 8 : 1}
+            onChange={e => onTextChange(e.currentTarget.value)}
         />
     );
 }
@@ -608,63 +519,29 @@ interface AddressFieldGroupProps {
 
 function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
     const set = (key: keyof AddressDraft) => (event: React.ChangeEvent<HTMLInputElement>) =>
-        onChange({...value, [key]: event.target.value});
+        onChange({...value, [key]: event.currentTarget.value});
     return (
-        <Stack spacing={1}>
-            <TextField
+        <Stack gap="xs">
+            <TextInput
                 label="Address line 1"
                 value={value.addressLine1}
                 onChange={set('addressLine1')}
-                size="small"
-                fullWidth
-                autoFocus
+                data-autofocus
             />
-            <TextField
+            <TextInput
                 label="Address line 2"
                 value={value.addressLine2}
                 onChange={set('addressLine2')}
-                size="small"
-                fullWidth
             />
-            <Stack direction="row" spacing={1}>
-                <TextField
-                    label="Suburb"
-                    value={value.addressLine3}
-                    onChange={set('addressLine3')}
-                    size="small"
-                    fullWidth
-                />
-                <TextField
-                    label="City"
-                    value={value.addressLine4}
-                    onChange={set('addressLine4')}
-                    size="small"
-                    fullWidth
-                />
-            </Stack>
-            <Stack direction="row" spacing={1}>
-                <TextField
-                    label="State"
-                    value={value.addressLine5}
-                    onChange={set('addressLine5')}
-                    size="small"
-                    fullWidth
-                />
-                <TextField
-                    label="Postcode"
-                    value={value.addressLine6}
-                    onChange={set('addressLine6')}
-                    size="small"
-                    fullWidth
-                />
-                <TextField
-                    label="Country"
-                    value={value.addressLine7}
-                    onChange={set('addressLine7')}
-                    size="small"
-                    fullWidth
-                />
-            </Stack>
+            <Group gap="xs" grow align="flex-start">
+                <TextInput label="Suburb" value={value.addressLine3} onChange={set('addressLine3')}/>
+                <TextInput label="City" value={value.addressLine4} onChange={set('addressLine4')}/>
+            </Group>
+            <Group gap="xs" grow align="flex-start">
+                <TextInput label="State" value={value.addressLine5} onChange={set('addressLine5')}/>
+                <TextInput label="Postcode" value={value.addressLine6} onChange={set('addressLine6')}/>
+                <TextInput label="Country" value={value.addressLine7} onChange={set('addressLine7')}/>
+            </Group>
         </Stack>
     );
 }

@@ -8,13 +8,11 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { MessagingDialog } from './MessagingDialog';
 import { OpenMessagingDialogOptions, ToastService } from './types';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import type { ShowToastFn } from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 // Get current staff info from global variables
 declare const ContactID: number;
@@ -65,29 +63,25 @@ class MessagingDialogManager {
             }
             this.dialogState.toastService.showToast(message, type);
         };
-
-        const currentTheme = getTheme();
-
         // Get current staff info
         const currentStaffId = typeof ContactID !== 'undefined' ? ContactID : 0;
         const currentStaffName = typeof FullName !== 'undefined' ? FullName : 'Unknown';
         const timeZone = typeof TimeZone !== 'undefined' ? TimeZone : 'UTC';
 
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <MessagingDialog
-                        open={this.dialogState.open}
-                        onClose={handleClose}
-                        showToast={handleShowToast}
-                        currentStaffId={currentStaffId}
-                        currentStaffName={currentStaffName}
-                        timeZone={timeZone}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
+        this.dialogRoot.render(islandTree(
+                <MuiThemeIsland>
+                <MessagingDialog
+                    open={this.dialogState.open}
+                    onClose={handleClose}
+                    showToast={handleShowToast}
+                    currentStaffId={currentStaffId}
+                    currentStaffName={currentStaffName}
+                    timeZone={timeZone}
+                />
+
+            </MuiThemeIsland>
+
+        ));
     }
 
     async open(options?: OpenMessagingDialogOptions): Promise<void> {

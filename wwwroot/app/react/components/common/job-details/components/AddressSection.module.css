@@ -1,0 +1,36 @@
+/*
+ * Hover affordances for the two address cards. Each pair (resting + :hover) has
+ * to live together in CSS: inline styles outrank class rules, so a resting
+ * `background-color`/`border-color` written inline would make its own hover rule
+ * unreachable. Layout and spacing stay inline.
+ */
+.block {
+    border: 1px solid var(--mantine-color-default-border);
+    transition: border-color 150ms ease;
+}
+
+.block:hover {
+    border-color: var(--mantine-color-gray-4);
+}
+
+.address {
+    border: 1px solid var(--mantine-color-default-border);
+    background-color: var(--mantine-color-gray-1);
+    transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.address:hover {
+    background-color: var(--mantine-color-gray-2);
+    border-color: var(--mantine-color-gray-4);
+}
+
+.contact {
+    border: 1px solid transparent;
+    background-color: var(--mantine-color-gray-1);
+    transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.contact:hover {
+    background-color: var(--mantine-color-gray-2);
+    border-color: var(--mantine-color-gray-4);
+}

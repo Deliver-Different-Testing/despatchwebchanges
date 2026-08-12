@@ -5,19 +5,14 @@
 
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
 import {RecurringJobsTable, RecurringJobsTableProps} from './RecurringJobsTable';
 import {PrebookListModel} from '../../../interfaces';
 import dayjs from 'dayjs';
 
-const theme = createTheme();
 
 const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
+    return renderWithMantineOverMui(ui);
 };
 
 const createMockAddress = (line1: string, line2: string, full: string) => ({

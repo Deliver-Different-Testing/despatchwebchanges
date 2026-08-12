@@ -147,6 +147,20 @@ describe('JobFileUploadDialog — normal (attached files) mode', () => {
 
         expect(props.onClose).toHaveBeenCalledTimes(2);
     });
+
+    it('exposes the drop target as a keyboard-reachable button', async () => {
+        const user = setupUser();
+        renderDialog();
+
+        const dropTarget = screen.getByRole('button', {name: /drag and drop files here or click to upload/i});
+
+        // A div with an onClick is not reachable by keyboard — the trigger has
+        // to be a real button so tabbing lands on it.
+        await user.tab();
+        for (let i = 0; i < 12 && document.activeElement !== dropTarget; i++) await user.tab();
+
+        expect(dropTarget).toHaveFocus();
+    });
 });
 
 describe('JobFileUploadDialog — POD-only mode', () => {

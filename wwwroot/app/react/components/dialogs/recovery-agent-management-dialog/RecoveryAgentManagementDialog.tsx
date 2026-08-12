@@ -21,8 +21,10 @@ import {
     Select,
     Stack,
     Text,
+    ThemeIcon,
     alpha,
 } from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
 import {
     Building2,
     Check,
@@ -144,8 +146,8 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     const [airportOptions, setAirportOptions] = useState<Suggestion[]>([]);
     const [agentOptions, setAgentOptions] = useState<Suggestion[]>([]);
 
-    const [showAssignForm, setShowAssignForm] = useState(false);
-    const [showEditForm, setShowEditForm] = useState(false);
+    const [showAssignForm, {open: openAssignForm, close: closeAssignForm}] = useDisclosure(false);
+    const [showEditForm, {open: openEditForm, close: closeEditForm}] = useDisclosure(false);
 
     const [selectedAirportId, setSelectedAirportId] = useState<number>(0);
     const [selectedAgentId, setSelectedAgentId] = useState<number>(0);
@@ -202,7 +204,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     };
 
     const resetAssignForm = () => {
-        setShowAssignForm(false);
+        closeAssignForm();
         setSelectedAirportId(0);
         setSelectedAgentId(0);
         setIsPrimaryRecoveryAgent(false);
@@ -210,20 +212,20 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     };
 
     const resetEditForm = () => {
-        setShowEditForm(false);
+        closeEditForm();
         setEditingAgent(null);
         setEditIsPrimaryRecoveryAgent(false);
     };
 
     const handleShowAssignForm = () => {
-        setShowAssignForm(true);
+        openAssignForm();
         setIsPrimaryRecoveryAgent(false);
     };
 
     const handleShowEditForm = (agent: RecoveryAgentViewModel) => {
         setEditingAgent(agent);
         setEditIsPrimaryRecoveryAgent(agent.primaryRecoveryAgent || false);
-        setShowEditForm(true);
+        openEditForm();
     };
 
     const handleAssignAgent = async () => {
@@ -631,22 +633,10 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     ta="center"
                                     style={{border: '1px dashed var(--mantine-color-default-border)'}}
                                 >
-                                    <Box
-                                        mb="md"
-                                        mx="auto"
-                                        c="gray.5"
-                                        style={{
-                                            width: 64,
-                                            height: 64,
-                                            borderRadius: '50%',
-                                            backgroundColor: alpha('var(--mantine-color-gray-6)', 0.08),
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <Icon lucide={UsersRound} size={32}/>
-                                    </Box>
+                                        {/* An empty-state glyph in a tinted disc is `ThemeIcon variant="light"`. */}
+                                        <ThemeIcon size={64} radius="xl" variant="light" color="gray" mx="auto" mb="md">
+                                            <Icon lucide={UsersRound} size={32}/>
+                                        </ThemeIcon>
                                     <Text fw={600} fz="lg" mb="xs">No Recovery Agents Assigned</Text>
                                     <Text size="sm" c="dimmed" mb="md" mx="auto" maw={480}>
                                         Get started by assigning recovery agents to specific locations where the package
@@ -723,20 +713,13 @@ function AddressRow({icon, label, value}: {
 }): React.ReactElement {
     return (
         <Group gap="md" align="flex-start" wrap="nowrap">
-            <Box
-                style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 'var(--mantine-radius-sm)',
-                    backgroundColor: headerOverlayColor(0.2),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                }}
+            <ThemeIcon
+                size={32}
+                radius="sm"
+                style={{'--ti-bg': headerOverlayColor(0.2), '--ti-color': 'inherit'} as React.CSSProperties}
             >
                 {icon}
-            </Box>
+            </ThemeIcon>
             <Box style={{flex: 1, minWidth: 0}}>
                 <Text size="xs" tt="uppercase" style={{opacity: 0.85, letterSpacing: 0.5}}>{label}</Text>
                 <Text size="sm" mt={2}>{value}</Text>
@@ -765,21 +748,9 @@ function DetailCard({icon, label, value, valueColor}: DetailCardProps): React.Re
                 border: '1px solid var(--mantine-color-default-border)',
             }}
         >
-            <Box
-                c="brand.6"
-                style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 'var(--mantine-radius-sm)',
-                    backgroundColor: alpha('var(--mantine-color-brand-6)', 0.08),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                }}
-            >
+            <ThemeIcon size={32} radius="sm" variant="light" color="brand">
                 {icon}
-            </Box>
+            </ThemeIcon>
             <Box style={{minWidth: 0}}>
                 <Text {...captionProps} display="block">{label}</Text>
                 <Text size="sm" fw={500} c={valueColor} mt={2}>{value || '—'}</Text>
@@ -822,23 +793,18 @@ function AgentCard({
             }}
         >
             <Group gap="md" align="flex-start" wrap="nowrap">
-                <Box
+                <ThemeIcon
+                    size={48}
+                    radius="md"
                     c={isNeutral ? 'dimmed' : `${accentColor}.6`}
                     style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 'var(--mantine-radius-md)',
-                        backgroundColor: isNeutral
+                        '--ti-bg': isNeutral
                             ? alpha('var(--mantine-color-gray-6)', 0.12)
                             : alpha(accentVar, 0.12),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                    }}
+                    } as React.CSSProperties}
                 >
                     {icon}
-                </Box>
+                </ThemeIcon>
                 <Box style={{flex: 1, minWidth: 0}}>
                     <Text fw={600} truncate>{title}</Text>
                     <Text size="sm" c="dimmed" mb={6}>{role}</Text>

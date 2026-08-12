@@ -1,24 +1,24 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import Box from '@mui/material/Box';
+import {Badge, Box, CloseButton, Group, Text} from '@mantine/core';
 import dayjs from 'dayjs';
+import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
 import {ContactID} from '../../../contants';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 import {fetchBulkJobs, fetchDispatchBulkJobDetail, fetchPodJobs} from '../../services/jobSearchApi';
-import {getDispatchJobDetail} from '../../services/dispatchExecutorApi';
+import {getDispatchJobDetail, searchSpeedOptions} from '../../services/dispatchExecutorApi';
 import {queryClient, queryKeys} from '../../query/queryClient';
-import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
-import {ISuggestion, IDispatchMapItem} from '../../../interfaces/job.interface';
+import {IDispatchMapItem, ISuggestion} from '../../../interfaces/job.interface';
 import type {ShowToastFn} from '../../services/toastService';
 import JobSearchBoxes from '../../../components/jobSearch/enums/jobSearchBoxes';
 import {searchActiveClients} from '../../services/jobApi';
 import {searchActiveCouriers} from '../../services/courierApi';
-import {searchSpeedOptions} from '../../services/dispatchExecutorApi';
 import {
     addRestoreEvent,
     allocateJobs,
     getActivePartnerOptions,
     getPartnerRateForJob,
+    getRestorePodImpact,
     reAllocateJobs,
     restoreJobs,
     restoreSplitJobs,
@@ -26,12 +26,15 @@ import {
     setJobLocked,
     unSplitJob,
 } from '../../services/jobListApi';
-import Chip from '@mui/material/Chip';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import WorkOutlineIcon from '@mui/icons-material/WorkOutlined';
-import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined';
+import type {RestorePodImpactSummary} from '../../components/dialogs/restore-confirmation-dialog';
+import {RestoreConfirmationDialog} from '../../components/dialogs/restore-confirmation-dialog';
+import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
+import {Briefcase, Route} from 'lucide-react';
+import {Icon} from '../../components/common/icon/Icon';
+
+
+
+
 import {NoData} from '../../components/common/no-data/NoData';
 import {useDismissibleBanner} from '../../hooks/useDismissibleBanner';
 import {SearchCriteriaPanel} from '../../components/common/search-criteria-panel/SearchCriteriaPanel';
@@ -49,42 +52,12 @@ import {getPriceDetailReportDownloadUrl} from './lib/priceDetailExport';
 import {
     openInterCourierChargeDialog
 } from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
-import type {ImportLayoutsResult, LayoutStorageKeys} from './lib/layoutPersistence';
+import type {LayoutStorageKeys} from './lib/layoutPersistence';
 import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/SaveLayoutDialog';
 import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
 import {DispatchDialog} from '../../components/dialogs/dispatch-dialog';
 import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
-
-export interface JobSearchLayoutBridge {
-    setCurrentLayoutName: (name: string) => void;
-    reloadFromStorage: () => void;
-    /** Opens the MUI "Save Layout" dialog and resolves with the entered name (or null if cancelled). */
-    promptSaveLayout: () => Promise<string | null>;
-    /** Opens the MUI "Delete Layout" confirmation and resolves true if confirmed. */
-    promptDeleteLayout: (layoutName: string) => Promise<boolean>;
-    /** Opens the MUI "Rename Layout" dialog and resolves with the new name (or null if cancelled). */
-    promptRenameLayout: (layoutName: string) => Promise<string | null>;
-    /** Set layout edit mode (driven by the toolbar's Layouts → Edit layout toggle). */
-    resetCurrentLayout: () => void;
-    setColumnEditMode: (enabled: boolean) => void;
-    /** Opens the Inter-Courier Charge dialog, wired to this page's toast. */
-    openInterCourierCharge: () => Promise<void>;
-    /** Copy the user's V1 layouts into this page's (V2) layout store. */
-    importLegacyLayouts: () => ImportLayoutsResult;
-}
-
-export interface JobSearchPageProps {
-    showToast: ShowToastFn;
-    isUsCustomer: boolean;
-    timeZone: string;
-    timeZoneShort?: string;
-    deepLinkJobId?: number;
-    /** Called once with imperative handles for the AppShell toolbar to drive layout selection. */
-    /** Leave "Edit columns" mode; routes back through the toolbar so its menu stays in sync. */
-    onExitColumnEditMode?: () => void;
-    onLayoutBridgeReady?: (bridge: JobSearchLayoutBridge) => void;
-    /** Leave edit mode (in-shell "Done editing" button). Routes back through the toolbar. */
-}
+import {JobSearchPageProps} from "./JobSearchPageProps";
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 showToast,
@@ -125,6 +98,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const [sortColumn, setSortColumn] = useState<string | undefined>();
     const [sortDirection, setSortDirection] = useState<string | undefined>();
     const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
+    const [restoreConfirm, setRestoreConfirm] =
+        useState<{job: DispatchJob; summary: RestorePodImpactSummary} | null>(null);
 
     // Save-layout dialogue — opened imperatively via the layout bridge from the
     // AngularJS toolbar. Resolves the pending promise with the entered name (or
@@ -428,6 +403,25 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         }
     }, [showToast]);
 
+    const invalidateJob = useCallback((job: DispatchJob) => Promise.all([
+        queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all}),
+        queryClient.invalidateQueries({
+            queryKey: queryKeys.jobs.detail(job.id, job.isBulkJob ? 'bulk' : 'standard'),
+        }),
+    ]), []);
+
+    const performRestore = useCallback(async (job: DispatchJob, removeCapturedImages = false) => {
+        await addRestoreEvent(job.id);
+        await restoreJobs([job.id], removeCapturedImages);
+        showToast(`${job.jobNo} restored.`, 'success');
+        await invalidateJob(job);
+    }, [showToast, invalidateJob]);
+
+    const openSwapPod = useCallback(async (job: DispatchJob) => {
+        await (window as any).ReactSwapPodsDialog?.open(job.jobNo, {showToast});
+        await invalidateJob(job);
+    }, [showToast, invalidateJob]);
+
     const fabAction = useCallback(async (actionId: string, job: DispatchJob) => {
         const w = window as any;
         const invalidateDetail = () => queryClient.invalidateQueries({
@@ -463,20 +457,34 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     setDispatchDialogOpen(true);
                     return;
 
-                case 'restore':
-                    await addRestoreEvent(job.id);
+                case 'restore': {
+                    // Split jobs go through a different proc that has no image opt-in, so only the
+                    // plain restore is gated on what it would destroy.
                     if (job.displaySplitJobDetail) {
+                        await addRestoreEvent(job.id);
                         await restoreSplitJobs([job.id]);
-                    } else {
-                        await restoreJobs([job.id]);
+                        showToast(`${job.jobNo} restored.`, 'success');
+                        await Promise.all([invalidateLists(), invalidateDetail()]);
+                        return;
                     }
-                    showToast(`${job.jobNo} restored.`, 'success');
-                    await Promise.all([invalidateLists(), invalidateDetail()]);
+
+                    let summary: RestorePodImpactSummary = {jobsWithPodName: 0, imageCount: 0};
+                    try {
+                        summary = summarisePodImpact(await getRestorePodImpact([job.id]));
+                    } catch {
+                        // Never block a restore on the pre-check.
+                    }
+
+                    if (needsRestoreConfirmation(!!job.done, summary)) {
+                        setRestoreConfirm({job, summary});
+                        return;
+                    }
+                    await performRestore(job);
                     return;
+                }
 
                 case 'swapPod':
-                    await w.ReactSwapPodsDialog?.open(job.jobNo, {showToast});
-                    await Promise.all([invalidateLists(), invalidateDetail()]);
+                    await openSwapPod(job);
                     return;
 
                 case 'sendPod':
@@ -580,7 +588,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         switch (boxName) {
             case JobSearchBoxes.SearchWidget:
                 return (
-                    <Box sx={{height: '100%', overflow: 'auto'}}>
+                    <Box style={{height: '100%', overflow: 'auto'}}>
                         <SearchCriteriaPanel
                             dateSearchRange={searchCriteria.dateSearchRange}
                             fromDate={searchCriteria.criteria.from_date}
@@ -645,7 +653,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         <NoData
                             title="No Job Selected"
                             message="Select a job from the list to see its details."
-                            icon={<WorkOutlineIcon/>}
+                            icon={<Icon lucide={Briefcase}/>}
                         />
                     );
                 }
@@ -686,7 +694,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     }
                     : undefined;
                 return (
-                    <Box sx={{height: '100%', minHeight: 0}}>
+                    <Box style={{height: '100%', minHeight: 0}}>
                         <DispatchMap
                             jobs={mapItem ? [mapItem] : []}
                             currentJob={mapItem}
@@ -703,7 +711,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         <NoData
                             title="No Job Selected"
                             message="Select a job to see its delivery journey."
-                            icon={<RouteOutlinedIcon/>}
+                            icon={<Icon lucide={Route}/>}
                         />
                     );
                 }
@@ -736,46 +744,39 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     }, [currentJob?.locked]);
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>
+        <Box style={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>
             {/* BETA banner — dismissible; the opt-out toggle lives in Settings. */}
             {!betaBanner.dismissed && (
-                <Box
-                    sx={(theme) => ({
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        px: 2,
-                        py: 0.75,
-                        bgcolor: theme.palette.primary.main,
-                        color: 'primary.contrastText',
-                    })}
+                <Group
+                    gap="sm"
+                    px="md"
+                    py={6}
+                    wrap="nowrap"
+                    bg="var(--mantine-primary-color-filled)"
+                    c="var(--mantine-primary-color-contrast)"
                 >
-                    <Chip
-                        label="BETA"
-                        size="small"
-                        sx={{
-                            height: 18,
-                            fontSize: '0.625rem',
-                            fontWeight: 700,
-                            bgcolor: 'rgba(255,255,255,0.2)',
-                            color: '#fff',
-                        }}
-                    />
-                    <Typography variant="body2" sx={{flex: 1}}>
+                    {/* The pill sits on the brand fill, so it washes with the header's
+                        own on-colour rather than a literal white. */}
+                    <Badge
+                        variant="white"
+                        h={18}
+                        fw={700}
+                        style={{fontSize: '0.625rem'}}
+                    >
+                        BETA
+                    </Badge>
+                    <Text size="sm" style={{flex: 1}}>
                         You&apos;re on the rebuilt Job Search. Spot something off? Open Settings and turn the toggle off to
                         switch back.
-                    </Typography>
-                    <IconButton
-                        size="small"
+                    </Text>
+                    <CloseButton
                         aria-label="Dismiss beta notice"
                         onClick={betaBanner.dismiss}
-                        sx={{color: '#fff', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}
-                    >
-                        <CloseIcon fontSize="small" />
-                    </IconButton>
-                </Box>
+                        c="var(--mantine-primary-color-contrast)"
+                    />
+                </Group>
             )}
-            <Box sx={{flex: 1, minHeight: 0, position: 'relative'}}>
+            <Box style={{flex: 1, minHeight: 0, position: 'relative'}}>
                 <JobSearchShell
                     layout={boxLayout.layout}
                     layoutVersion={boxLayout.layoutVersion}
@@ -795,7 +796,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 />
                 {/* Job-detail FAB. Layout Edit/Done lives in the toolbar's
                     Layouts dropdown (driven via the bridge). */}
-                <Box sx={{position: 'absolute', top: 8, right: 16, zIndex: 1}}>
+                <Box style={{position: 'absolute', top: 8, right: 16, zIndex: 1}}>
                     <JobDetailFab currentJob={currentJob} onAction={fabAction}/>
                 </Box>
             </Box>
@@ -820,6 +821,22 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 layoutName={deleteDialogName ?? ''}
                 onClose={() => resolveDeleteLayout(false)}
                 onConfirm={() => resolveDeleteLayout(true)}
+            />
+            <RestoreConfirmationDialog
+                open={restoreConfirm !== null}
+                count={restoreConfirm?.job.done ? 1 : 0}
+                podImpact={restoreConfirm?.summary}
+                onClose={() => setRestoreConfirm(null)}
+                onSwapPod={restoreConfirm ? async () => {
+                    const {job} = restoreConfirm;
+                    setRestoreConfirm(null);
+                    await openSwapPod(job);
+                } : undefined}
+                onConfirm={async (removeCapturedImages) => {
+                    const {job} = restoreConfirm!;
+                    setRestoreConfirm(null);
+                    await performRestore(job, removeCapturedImages);
+                }}
             />
             {currentJob && (
                 <DispatchDialog

@@ -3,11 +3,9 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
+import { renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import {TaskItem} from './TaskItem';
 import {Task, TaskItemProps} from './TaskItem.interfaces';
@@ -24,17 +22,8 @@ jest.mock('../../../utils/dateUtils', () => ({
     formatTime: jest.fn((date: any) => date?.format?.('HH:mm') ?? ''),
 }));
 
-const theme = createTheme();
 
-const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                {ui}
-            </LocalizationProvider>
-        </ThemeProvider>
-    );
-};
+const renderWithProviders = (ui: React.ReactElement) => renderWithMantine(ui);
 
 // Sample task data
 const createMockTask = (overrides?: Partial<Task>): Task => ({
@@ -498,8 +487,7 @@ describe('TaskItem', () => {
             const dateButton = screen.getByRole('button', {name: /Jan 15, 2025/});
             await userEvent.click(dateButton!);
 
-            // DateCalendar should be visible in the popover
-            expect(await screen.findByRole('grid')).toBeInTheDocument();
+            expect(await screen.findByLabelText('Task due date')).toBeInTheDocument();
         });
 
         it('calls tasksService.updateTaskDate when a new date is selected', async () => {
@@ -509,11 +497,9 @@ describe('TaskItem', () => {
             const dateButton = screen.getByRole('button', {name: /Jan 15, 2025/});
             await userEvent.click(dateButton!);
 
-            // Wait for calendar to open
-            expect(await screen.findByRole('grid')).toBeInTheDocument();
+            await screen.findByLabelText('Task due date');
 
-            // Click on a day (day 20)
-            const day20 = screen.getByRole('gridcell', {name: '20'});
+            const day20 = screen.getByRole('button', {name: '20 January 2025'});
             await userEvent.click(day20);
 
             await waitFor(() => {
@@ -528,9 +514,9 @@ describe('TaskItem', () => {
             const dateButton = screen.getByRole('button', {name: /Jan 15, 2025/});
             await userEvent.click(dateButton!);
 
-            expect(await screen.findByRole('grid')).toBeInTheDocument();
+            await screen.findByLabelText('Task due date');
 
-            const day20 = screen.getByRole('gridcell', {name: '20'});
+            const day20 = screen.getByRole('button', {name: '20 January 2025'});
             await userEvent.click(day20);
 
             await waitFor(() => {
@@ -539,16 +525,42 @@ describe('TaskItem', () => {
         });
     });
 
+    /**
+     * The editor is a segmented `TimePicker` seeded from the task's due time, and it
+     * commits on an explicit button — a segmented input fires per segment, and each
+     * fire here would be an API write.
+     */
     describe('Time Picker', () => {
-        it('opens time popover when time button is clicked', async () => {
+        const openTimeEditor = async () => {
+            await userEvent.click(screen.getByRole('button', {name: /2:00 PM/}));
+            return screen.findByRole('button', {name: 'Set time'});
+        };
+
+        it('opens the time editor seeded with the task time', async () => {
+            renderWithProviders(<TaskItem {...createDefaultProps()} />);
+
+            await openTimeEditor();
+
+            expect(screen.getByLabelText('Hours')).toHaveValue('14');
+            expect(screen.getByLabelText('Minutes')).toHaveValue('00');
+        });
+
+        it('does not write until Set time is pressed, then updates the task', async () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            const timeButton = screen.getByRole('button', {name: /2:00 PM/});
-            await userEvent.click(timeButton!);
+            const apply = await openTimeEditor();
+            fireEvent.change(screen.getByLabelText('Hours'), {target: {value: '09'}});
+            expect(props.tasksService.updateTaskTime).not.toHaveBeenCalled();
 
-            // TimeClock should be visible in the popover
-            expect(await screen.findByRole('listbox')).toBeInTheDocument();
+            await userEvent.click(apply);
+
+            await waitFor(() => {
+                expect(props.tasksService.updateTaskTime).toHaveBeenCalled();
+            });
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task time updated successfully');
+            const committed = (props.tasksService.updateTaskTime as jest.Mock).mock.calls[0][1];
+            expect(committed.format('HH:mm')).toBe('09:00');
         });
     });
 
@@ -654,12 +666,12 @@ describe('TaskItem', () => {
             const assigneeButton = screen.getByRole('button', {name: /John Doe/});
             await userEvent.click(assigneeButton!);
 
-            expect(screen.getByRole('progressbar')).toBeInTheDocument();
+            expect(screen.getByLabelText('Loading staff')).toBeInTheDocument();
 
             // Resolve to avoid act() warnings from dangling promise
             resolveStaff([]);
             await waitFor(() => {
-                expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+                expect(screen.queryByLabelText('Loading staff')).not.toBeInTheDocument();
             });
         });
     });
@@ -670,7 +682,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps({task});
             renderWithProviders(<TaskItem {...props} />);
 
-            expect(screen.getByTitle(`Priority: ${priority}`)).toBeInTheDocument();
+            expect(screen.getByLabelText(`Priority: ${priority}`)).toBeInTheDocument();
         });
 
         it('renders no priority flag when priority is undefined', () => {
@@ -678,7 +690,7 @@ describe('TaskItem', () => {
             const props = createDefaultProps({task});
             renderWithProviders(<TaskItem {...props} />);
 
-            expect(screen.queryByTitle(/Priority:/)).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(/Priority:/)).not.toBeInTheDocument();
         });
     });
 

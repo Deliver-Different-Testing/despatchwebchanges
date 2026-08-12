@@ -1,7 +1,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {SendPodDialog, SendPodJobData, SendPodRequest} from './SendPodDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {sendPodReport} from '../../../services/jobDetailApi';
 import type {ApiError} from '../../../interfaces';
 
@@ -76,19 +76,17 @@ function renderDialog(): void {
         }
     };
 
-    dialogRoot.render(
-        <DfrntMantineProvider>
-            <SendPodDialog
-                open={dialogState.open}
-                jobData={dialogState.jobData}
-                onClose={handleClose}
-                onSend={handleSend}
-                sending={dialogState.sending}
-                sent={dialogState.sent}
-                errorMessage={dialogState.error}
-            />
-        </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <SendPodDialog
+            open={dialogState.open}
+            jobData={dialogState.jobData}
+            onClose={handleClose}
+            onSend={handleSend}
+            sending={dialogState.sending}
+            sent={dialogState.sent}
+            errorMessage={dialogState.error}
+        />
+    ));
 }
 
 function initializeDialogRoot(): void {

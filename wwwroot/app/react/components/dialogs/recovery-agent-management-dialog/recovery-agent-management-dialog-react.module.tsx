@@ -9,7 +9,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {RecoveryAgentManagementDialog} from './RecoveryAgentManagementDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {nationwideApi} from '../../../services/nationwideApi';
 import {toastService} from '../../../services/toastService';
 import type {RecoveryAgentJobViewModel} from '../../../interfaces/nationwideJobs';
@@ -52,29 +52,27 @@ class RecoveryAgentManagementDialogManager {
         };
 
 
-        this.dialogRoot.render(
-            <DfrntMantineProvider>
-                <RecoveryAgentManagementDialog
-                    open={this.dialogState.open}
-                    job={this.dialogState.job}
-                    onClose={handleClose}
-                    onLoadAirports={() => nationwideApi.getAllActiveAirports()}
-                    onLoadAgentsForAirport={(airportId) =>
-                        nationwideApi.getAgentOptionsByAirport(airportId)
+        this.dialogRoot.render(islandTree(
+            <RecoveryAgentManagementDialog
+                open={this.dialogState.open}
+                job={this.dialogState.job}
+                onClose={handleClose}
+                onLoadAirports={() => nationwideApi.getAllActiveAirports()}
+                onLoadAgentsForAirport={(airportId) =>
+                    nationwideApi.getAgentOptionsByAirport(airportId)
+                }
+                onAddAgent={(request) => nationwideApi.addAgentRecoveryJob(request)}
+                onUpdateAgent={(request) => nationwideApi.updateAgentRecoveryJob(request)}
+                onRemoveAgent={(recoveryId) => nationwideApi.removeAgentRecoveryJob(recoveryId)}
+                onRefresh={async () => {
+                    if (!this.dialogState.job) {
+                        throw new Error('No job loaded');
                     }
-                    onAddAgent={(request) => nationwideApi.addAgentRecoveryJob(request)}
-                    onUpdateAgent={(request) => nationwideApi.updateAgentRecoveryJob(request)}
-                    onRemoveAgent={(recoveryId) => nationwideApi.removeAgentRecoveryJob(recoveryId)}
-                    onRefresh={async () => {
-                        if (!this.dialogState.job) {
-                            throw new Error('No job loaded');
-                        }
-                        return nationwideApi.getAgentRecoveryJobs(this.dialogState.job.jobId);
-                    }}
-                    showToast={(message, type) => toastService.showToast(message, type)}
-                />
-            </DfrntMantineProvider>
-        );
+                    return nationwideApi.getAgentRecoveryJobs(this.dialogState.job.jobId);
+                }}
+                showToast={(message, type) => toastService.showToast(message, type)}
+            />
+        ));
     }
 
     async open(options: OpenRecoveryAgentManagementDialogOptions): Promise<void> {

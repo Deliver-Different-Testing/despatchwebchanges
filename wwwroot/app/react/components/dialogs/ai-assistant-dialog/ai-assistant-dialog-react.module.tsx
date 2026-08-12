@@ -8,10 +8,10 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
 import { AiSummaryCard } from '../../common/ai-summary-card/AiSummaryCard';
-import { getTheme } from '../../../theme/muiTheme';
 import { summarizeJob, summarizeOperations } from '../../../services/aiAssistantApi';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 const panelRoots = new Map<HTMLElement, Root>();
 
@@ -21,17 +21,15 @@ function renderSummaryPanel(container: HTMLElement, jobId: number): void {
         root = createRoot(container);
         panelRoots.set(container, root);
     }
+    root.render(islandTree(
+        <MuiThemeIsland>
+        <AiSummaryCard
+            title="Auto-mate Job Briefing"
+            fetchSummary={(signal) => summarizeJob(jobId, {signal})}
+        />
 
-    const currentTheme = getTheme();
-
-    root.render(
-        <ThemeProvider theme={currentTheme}>
-            <AiSummaryCard
-                title="Auto-mate Job Briefing"
-                fetchSummary={(signal) => summarizeJob(jobId, {signal})}
-            />
-        </ThemeProvider>
-    );
+            </MuiThemeIsland>
+    ));
 }
 
 function renderOperationsInsightsPanel(container: HTMLElement): void {
@@ -40,17 +38,14 @@ function renderOperationsInsightsPanel(container: HTMLElement): void {
         root = createRoot(container);
         panelRoots.set(container, root);
     }
-
-    const currentTheme = getTheme();
-
-    root.render(
-        <ThemeProvider theme={currentTheme}>
+    root.render(islandTree(
+        <MuiThemeIsland>
             <AiSummaryCard
                 title="Auto-mate Operations Insights"
                 fetchSummary={(signal) => summarizeOperations({signal})}
             />
-        </ThemeProvider>
-    );
+        </MuiThemeIsland>
+    ));
 }
 
 function unmountSummaryPanel(container: HTMLElement): void {

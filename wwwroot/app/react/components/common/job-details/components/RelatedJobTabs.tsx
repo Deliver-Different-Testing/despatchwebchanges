@@ -17,8 +17,7 @@
  */
 
 import React from 'react';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
+import {Tabs} from '@mantine/core';
 import type {IJob} from '../JobDetails.types';
 
 interface RelatedJobTabsProps {
@@ -50,35 +49,31 @@ export function RelatedJobTabs({
 
     const parent = sortedRelatedJobs[0];
 
+    // Mantine keys tabs by string, so the index round-trips through `String`.
     return (
         <Tabs
-            value={selectedTabIndex}
-            onChange={(_e, value: number) => onTabChange(value)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-                borderBottom: 1,
-                borderColor: 'divider',
-                minHeight: 36,
-                '& .MuiTab-root': {
+            value={String(selectedTabIndex)}
+            onChange={(value) => onTabChange(Number(value))}
+            styles={{
+                tab: {
                     minHeight: 36,
-                    py: 0.5,
-                    textTransform: 'none',
+                    paddingBlock: 4,
                     fontSize: '0.8125rem',
                     fontWeight: 500,
                 },
-                '& .Mui-selected': {
-                    fontWeight: 600,
-                },
             }}
         >
-            {sortedRelatedJobs.map((job, index) => (
-                <Tab
-                    key={job.id}
-                    label={tabLabel(job, parent, index)}
-                    title={job.jobNo ?? ''}
-                />
-            ))}
+            <Tabs.List style={{flexWrap: 'nowrap', overflowX: 'auto', minHeight: 36}}>
+                {sortedRelatedJobs.map((job, index) => (
+                    <Tabs.Tab
+                        key={job.id}
+                        value={String(index)}
+                        title={job.jobNo ?? ''}
+                    >
+                        {tabLabel(job, parent, index)}
+                    </Tabs.Tab>
+                ))}
+            </Tabs.List>
         </Tabs>
     );
 }

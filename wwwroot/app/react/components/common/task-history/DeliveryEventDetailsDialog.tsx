@@ -8,22 +8,16 @@
  */
 
 import React from 'react';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import {alpha} from '@mui/material/styles';
-import NotesIcon from '@mui/icons-material/Notes';
+import {Alert, Badge, Box, Group, Paper, Stack, Text} from '@mantine/core';
+import {NotebookPen} from 'lucide-react';
 
 import {DeliveryJourney} from './TaskHistory.interfaces';
 import {getEventIcon} from './eventIcons';
 import {formatCurrency} from '../../../utils/currencyUtils';
-import {DialogShell, DialogHeader, sectionPaperSx, sectionLabelSx} from '../../dialogs/shared';
+import {Icon} from '../icon/Icon';
+import {
+    DialogFooter, DialogHeader, DialogShell, dialogContentBg, sectionLabelProps, sectionPaperProps,
+} from '../../dialogs/shared/mantine';
 
 interface DeliveryEventDetailsDialogProps {
     open: boolean;
@@ -33,7 +27,6 @@ interface DeliveryEventDetailsDialogProps {
 }
 
 type StatusKey = DeliveryJourney['status'];
-type StatusToneKey = 'success' | 'info' | 'warning' | 'error' | 'default';
 
 const STATUS_LABEL: Record<StatusKey, string> = {
     completed: 'Completed',
@@ -43,12 +36,13 @@ const STATUS_LABEL: Record<StatusKey, string> = {
     waiting: 'Waiting',
 };
 
-const STATUS_TONE: Record<StatusKey, StatusToneKey> = {
-    completed: 'success',
-    current: 'info',
-    todo: 'error',
-    pending: 'warning',
-    waiting: 'default',
+/** Mantine colour per status — `gray` is the neutral the MUI `default` chip was. */
+const STATUS_TONE: Record<StatusKey, string> = {
+    completed: 'green',
+    current: 'blue',
+    todo: 'red',
+    pending: 'orange',
+    waiting: 'gray',
 };
 
 export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProps> = ({
@@ -59,7 +53,9 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                                                                                       }) => {
     if (!event) return null;
 
-    const Icon = getEventIcon(event.icon);
+    // Still an MUI icon component: the glyph names come from the backend, so the map
+    // in `eventIcons.ts` waits for the icon phase (§8) like `SymbolIcon`.
+    const EventIcon = getEventIcon(event.icon);
     // event.status is on the TS interface but the backend ViewModel does not
     // populate it — only render the chip if a real label resolves.
     const statusLabel = event.status ? STATUS_LABEL[event.status] : undefined;
@@ -71,20 +67,20 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
     const showDescription = event.description && event.description.trim() !== event.title.trim();
 
     return (
-        <DialogShell open={open} onClose={onClose}>
+        <DialogShell opened={open} onClose={onClose} label={event.title}>
             <DialogHeader
-                icon={<Icon/>}
+                icon={<EventIcon/>}
                 title={event.title}
                 subtitle={
                     <>
                         {event._dateStr}
                         {timeZoneShort && (
-                            <Box component="span" sx={{ml: 0.5, opacity: 0.85}}>
+                            <Box component="span" ml={4} opacity={0.85}>
                                 &middot; {timeZoneShort}
                             </Box>
                         )}
                         {event.performedBy && (
-                            <Box component="span" sx={{ml: 0.5, opacity: 0.85}}>
+                            <Box component="span" ml={4} opacity={0.85}>
                                 &middot; by {event.performedBy}
                             </Box>
                         )}
@@ -93,38 +89,27 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                 onClose={onClose}
             />
 
-            {/* Content */}
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
+            <Box p="lg" bg={dialogContentBg}>
+                <Stack gap="lg">
                     {/* Status + Total summary — rendered only when there's
                         something real to show (status is often absent in
                         production data; total only appears on pricing events). */}
                     {showSummary && (
                         <Box>
-                            <Typography variant="body2" sx={sectionLabelSx}>Summary</Typography>
-                            <Paper elevation={0} sx={sectionPaperSx}>
-                                <Stack
-                                    direction="row"
-                                    spacing={1}
-                                    useFlexGap
-                                    sx={{flexWrap: 'wrap', alignItems: 'center'}}
-                                >
+                            <Text {...sectionLabelProps}>Summary</Text>
+                            <Paper {...sectionPaperProps}>
+                                <Group gap="xs" wrap="wrap">
                                     {statusLabel && (
-                                        <Chip
-                                            label={statusLabel}
-                                            size="small"
-                                            color={statusTone === 'default' || !statusTone ? 'default' : statusTone}
-                                        />
+                                        <Badge color={statusTone} variant="filled" size="sm" tt="none">
+                                            {statusLabel}
+                                        </Badge>
                                     )}
                                     {hasTotal && (
-                                        <Chip
-                                            label={`Total: ${formatCurrency(event.grandTotalAfter!)}`}
-                                            size="small"
-                                            color="success"
-                                            variant="filled"
-                                        />
+                                        <Badge color="green" variant="filled" size="sm" tt="none">
+                                            {`Total: ${formatCurrency(event.grandTotalAfter!)}`}
+                                        </Badge>
                                     )}
-                                </Stack>
+                                </Group>
                             </Paper>
                         </Box>
                     )}
@@ -132,14 +117,11 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                     {/* Description (if it adds info beyond the title) */}
                     {showDescription && (
                         <Box>
-                            <Typography variant="body2" sx={sectionLabelSx}>Description</Typography>
-                            <Paper elevation={0} sx={sectionPaperSx}>
-                                <Typography
-                                    variant="body2"
-                                    sx={{color: 'text.primary', whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}
-                                >
+                            <Text {...sectionLabelProps}>Description</Text>
+                            <Paper {...sectionPaperProps}>
+                                <Text size="sm" style={{whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
                                     {event.description}
-                                </Typography>
+                                </Text>
                             </Paper>
                         </Box>
                     )}
@@ -147,20 +129,19 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                     {/* All tags, full text */}
                     {event.tags && event.tags.length > 0 && (
                         <Box>
-                            <Typography variant="body2" sx={sectionLabelSx}>Details</Typography>
-                            <Paper elevation={0} sx={sectionPaperSx}>
-                                <Stack spacing={1}>
+                            <Text {...sectionLabelProps}>Details</Text>
+                            <Paper {...sectionPaperProps}>
+                                <Stack gap="xs">
                                     {event.tags.map((tag, i) => (
                                         <Box
                                             key={i}
-                                            sx={(theme) => ({
-                                                fontSize: '0.875rem',
-                                                color: 'text.primary',
-                                                bgcolor: alpha(theme.palette.primary.main, 0.04),
-                                                borderRadius: 1,
-                                                p: 1,
+                                            fz="sm"
+                                            p="xs"
+                                            bg="var(--mantine-primary-color-light)"
+                                            style={{
+                                                borderRadius: 'var(--mantine-radius-sm)',
                                                 wordBreak: 'break-word',
-                                            })}
+                                            }}
                                         >
                                             {tag}
                                         </Box>
@@ -173,34 +154,21 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                     {/* Notes */}
                     {event.notes && (
                         <Box>
-                            <Typography variant="body2" sx={sectionLabelSx}>Notes</Typography>
+                            <Text {...sectionLabelProps}>Notes</Text>
                             <Alert
-                                severity="info"
-                                variant="outlined"
-                                icon={<NotesIcon fontSize="small"/>}
-                                sx={{'& .MuiAlert-message': {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}}
+                                color="blue"
+                                variant="outline"
+                                icon={<Icon lucide={NotebookPen} size={18}/>}
+                                styles={{message: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}}
                             >
                                 {event.notes}
                             </Alert>
                         </Box>
                     )}
-                </Box>
-            </DialogContent>
+                </Stack>
+            </Box>
 
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'white',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={onClose} variant="outlined" sx={{minWidth: 100}}>
-                    Close
-                </Button>
-            </DialogActions>
+            <DialogFooter onCancel={onClose} cancelLabel="Close" hideConfirm/>
         </DialogShell>
     );
 };

@@ -4,7 +4,7 @@
 
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekday from 'dayjs/plugin/weekday';
@@ -29,10 +29,10 @@ jest.mock('../../../utils/dateUtils', () => ({
     getTimezoneAbbreviation: jest.fn(() => '(EST)'),
 }));
 
-const theme = createTheme();
 
 const renderWithProviders = (ui: React.ReactElement) => {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    // Mantine outside, MUI inside — the view is still MUI, its rows are Mantine.
+    return renderWithMantineOverMui(ui);
 };
 
 // Sample task data - use relative dates from today
@@ -413,9 +413,9 @@ describe('TaskCalendarView', () => {
         // overflow:hidden clips the bottom with no scrollbar.
         it('fills its container height instead of a fixed viewport height', () => {
             const props = createDefaultProps();
-            const {container} = renderWithProviders(<TaskCalendarView {...props} />);
+            renderWithProviders(<TaskCalendarView {...props} />);
 
-            const root = container.firstChild as HTMLElement;
+            const root = screen.getByTestId('task-calendar-view');
 
             expect(root).toHaveStyle({height: '100%'});
             expect(root).not.toHaveStyle({height: 'calc(100vh - 205px)'});
@@ -423,9 +423,9 @@ describe('TaskCalendarView', () => {
 
         it('makes the view region scrollable', () => {
             const props = createDefaultProps();
-            const {container} = renderWithProviders(<TaskCalendarView {...props} />);
+            renderWithProviders(<TaskCalendarView {...props} />);
 
-            const root = container.firstChild as HTMLElement;
+            const root = screen.getByTestId('task-calendar-view');
             const scrollRegion = root.lastElementChild as HTMLElement;
 
             expect(scrollRegion).toHaveStyle({overflow: 'auto'});

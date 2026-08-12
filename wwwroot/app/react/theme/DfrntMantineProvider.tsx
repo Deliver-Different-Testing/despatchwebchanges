@@ -66,13 +66,33 @@ export const DfrntMantineProvider: React.FC<DfrntMantineProviderProps> = ({child
 );
 
 /**
+ * Wraps `node` in the island provider stack, for an existing root's `render()`.
+ *
+ * Every `*-react.module.tsx` mounts through this (or {@link mountReactIsland},
+ * which is built on it). That is not a style preference: `@mantine/core`'s
+ * `useStyles` *throws* without a provider — unlike MUI, which silently falls
+ * back to its stock theme — so an island that renders a Mantine component
+ * without one dies at mount. Routing every root through one helper is what makes
+ * that unrepresentable rather than a judgement call repeated per island. An
+ * island whose own tree is still MUI nests `<MuiThemeIsland>` *inside* this.
+ *
+ * Enforced by `islandProviders.spec.ts`.
+ */
+export function islandTree(node: React.ReactNode): React.ReactElement {
+    return <DfrntMantineProvider>{node}</DfrntMantineProvider>;
+}
+
+/**
  * Create a React root on `container` and render `node` inside the full DFRNT
  * provider stack. Returns the root so callers can `unmount()` on teardown
  * (AngularJS `$onDestroy`, dialog close, etc.).
+ *
+ * For an island that re-renders to push new props, keep the root yourself and
+ * call `root.render(islandTree(node))` — this helper only covers mount-once.
  */
 export function mountReactIsland(container: Element | DocumentFragment, node: React.ReactNode): Root {
     const root = createRoot(container);
-    root.render(<DfrntMantineProvider>{node}</DfrntMantineProvider>);
+    root.render(islandTree(node));
     return root;
 }
 

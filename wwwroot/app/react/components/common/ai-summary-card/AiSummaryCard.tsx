@@ -7,29 +7,16 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import type {SxProps, Theme} from '@mui/material';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import Collapse from '@mui/material/Collapse';
-import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
-import Skeleton from '@mui/material/Skeleton';
-import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import StopIcon from '@mui/icons-material/Stop';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {
+    ActionIcon, Alert, Badge, Box, Card, Collapse, CopyButton, Group, Loader, Skeleton, Stack, Text,
+    Tooltip, UnstyledButton,
+} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {
+    Check, ChevronDown, ChevronUp, CircleAlert, CircleCheck, Copy, Info, OctagonAlert, RefreshCw,
+    Square, TriangleAlert,
+} from 'lucide-react';
+import {Icon, type LucideIcon} from '../icon/Icon';
 import {SummarySeverity, TimelineStatus} from '../../../services/aiAssistantApi';
 import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
 import {formatRelativeTime} from '../../../utils/dateUtils';
@@ -58,61 +45,33 @@ interface AiSummaryCardProps {
     autoOpen?: boolean;
 }
 
-interface SeverityVisuals {
-    color: string;
-    bg: string;
-    label: string;
-    Icon: React.ComponentType<{sx?: SxProps<Theme>; fontSize?: 'inherit' | 'small' | 'medium' | 'large'}>;
-}
+/**
+ * One table maps a severity to a Mantine colour, its glyph and its label. Every
+ * tonal surface then comes from a `variant="light"` Badge or Alert rather than
+ * three hand-mixed alphas per call site.
+ */
+const severityVisuals: Record<SummarySeverity | 'Ok', {color: string; label: string; glyph: LucideIcon}> = {
+    Critical: {color: 'red', label: 'Critical', glyph: OctagonAlert},
+    Urgent: {color: 'orange', label: 'Urgent', glyph: CircleAlert},
+    Caution: {color: 'orange', label: 'Caution', glyph: TriangleAlert},
+    Info: {color: 'reflex', label: 'Info', glyph: Info},
+    Ok: {color: 'green', label: 'On track', glyph: CircleCheck},
+};
 
-function severityVisuals(severity: SummarySeverity, theme: Theme): SeverityVisuals {
-    switch (severity) {
-        case 'Critical':
-            return {
-                color: theme.palette.error.main,
-                bg: alpha(theme.palette.error.main, 0.08),
-                label: 'Critical',
-                Icon: ReportProblemIcon,
-            };
-        case 'Urgent':
-            return {
-                color: theme.palette.warning.dark,
-                bg: alpha(theme.palette.warning.main, 0.12),
-                label: 'Urgent',
-                Icon: ErrorOutlineIcon,
-            };
-        case 'Caution':
-            return {
-                color: theme.palette.warning.main,
-                bg: alpha(theme.palette.warning.main, 0.08),
-                label: 'Caution',
-                Icon: WarningAmberIcon,
-            };
-        case 'Info':
-            return {
-                color: theme.palette.info.main,
-                bg: alpha(theme.palette.info.main, 0.08),
-                label: 'Info',
-                Icon: InfoOutlinedIcon,
-            };
-        default:
-            return {
-                color: theme.palette.success.main,
-                bg: alpha(theme.palette.success.main, 0.08),
-                label: 'On track',
-                Icon: CheckCircleOutlineIcon,
-            };
-    }
-}
+const visualsFor = (severity: SummarySeverity | undefined) =>
+    severityVisuals[severity ?? 'Info'] ?? severityVisuals.Ok;
 
-function timelineColor(status: TimelineStatus, theme: Theme): string {
+function timelineColor(status: TimelineStatus): string {
     switch (status) {
-        case 'Late': return theme.palette.error.main;
-        case 'Warning': return theme.palette.warning.main;
-        case 'Pending': return theme.palette.info.main;
-        default: return theme.palette.success.main;
+        case 'Late': return 'red';
+        case 'Warning': return 'orange';
+        case 'Pending': return 'reflex';
+        default: return 'green';
     }
 }
+
+/** The quiet section captions inside the card body. */
+const overlineProps = {size: 'xs', tt: 'uppercase', lh: 1, c: 'dimmed'} as const;
 
 function buildPlainTextCopy(summary: StructuredSummaryResponse): string {
     const lines: string[] = [summary.verdict];
@@ -145,9 +104,8 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
     const [summary, setSummary] = useState<StructuredSummaryResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
-    const [highlightsOpen, setHighlightsOpen] = useState(false);
+    const [highlightsOpen, {toggle: toggleHighlights}] = useDisclosure(false);
     const [, setTick] = useState(0);
-    const [copyTooltip, setCopyTooltip] = useState('Copy briefing');
     // In collapsible mode the card starts collapsed; the first expand kicks
     // off the fetch. Non-collapsible callers stay always-open. With autoOpen
     // a collapsible card starts expanded and fetches on mount.
@@ -200,18 +158,6 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
         await loadSummary();
     }, [loadSummary]);
 
-    const handleCopy = useCallback(async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!summary) return;
-        const text = buildPlainTextCopy(summary);
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopyTooltip('Copied!');
-        } catch {
-            setCopyTooltip('Copy failed');
-        }
-        setTimeout(() => setCopyTooltip('Copy briefing'), 2000);
-    }, [summary]);
 
     // First-fetch trigger. Non-collapsible cards start expanded, so this
     // fires on mount and matches the legacy behaviour. Collapsible cards
@@ -220,7 +166,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
         if (!expanded) return;
         if (hasFetchedRef.current) return;
         hasFetchedRef.current = true;
-        
+
         void loadSummary();
     }, [expanded]);
 
@@ -234,17 +180,20 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
         setExpanded(v => !v);
     }, [collapsible]);
 
+    const visuals = visualsFor(summary?.severity);
+    const accent = `var(--mantine-color-${visuals.color}-6)`;
+
     return (
-        <Card sx={(theme) => {
-            const v = summary ? severityVisuals(summary.severity, theme) : severityVisuals('Info', theme);
-            return {
-                borderRadius: 3,
-                boxShadow: 1,
-                overflow: 'hidden',
-                borderLeft: `4px solid ${v.color}`,
-            };
-        }}>
-            <Box
+        <Card
+            radius="lg"
+            shadow="xs"
+            padding={0}
+            style={{overflow: 'hidden', borderLeft: `4px solid ${accent}`}}
+        >
+            <Group
+                justify="space-between"
+                px="md"
+                py={10}
                 onClick={collapsible ? handleToggleExpanded : undefined}
                 onKeyDown={collapsible ? (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -255,317 +204,198 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                 role={collapsible ? 'button' : undefined}
                 tabIndex={collapsible ? 0 : undefined}
                 aria-expanded={collapsible ? expanded : undefined}
-                sx={(theme) => {
-                    const v = summary ? severityVisuals(summary.severity, theme) : severityVisuals('Info', theme);
-                    return {
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        px: 2,
-                        py: 1.25,
-                        bgcolor: v.bg,
-                        cursor: collapsible ? 'pointer' : undefined,
-                        userSelect: collapsible ? 'none' : undefined,
-                    };
-                }}>
-                <Stack direction="row" spacing={1} sx={{
-                    alignItems: "center"
-                }}>
-                    <AutoMateLogo size={24} />
-                    <Typography
-                        variant="subtitle2"
-                        sx={{
-                            fontWeight: 600,
-                            color: "text.primary"
-                        }}>
-                        {title}
-                    </Typography>
-                    <Chip
-                        label="BETA"
-                        size="small"
-                        sx={(theme) => {
-                            const v = summary ? severityVisuals(summary.severity, theme) : severityVisuals('Info', theme);
-                            return {
-                                height: 18,
-                                fontSize: '0.625rem',
-                                fontWeight: 700,
-                                bgcolor: v.color,
-                                color: '#fff',
-                            };
-                        }}
-                    />
+                style={{
+                    backgroundColor: `color-mix(in srgb, ${accent} 8%, transparent)`,
+                    cursor: collapsible ? 'pointer' : undefined,
+                    userSelect: collapsible ? 'none' : undefined,
+                }}
+            >
+                <Group gap="xs">
+                    <AutoMateLogo size={24}/>
+                    <Text size="sm" fw={600}>{title}</Text>
+                    <Badge size="xs" color={visuals.color} fw={700}>BETA</Badge>
                     {summary && (
-                        <Chip
-                            label={(() => {
-                                /* show severity unless trivially Ok */
-                                return summary.severity === 'Ok' ? 'On track' : summary.severity;
-                            })()}
-                            size="small"
-                            sx={(theme) => {
-                                const v = severityVisuals(summary.severity, theme);
-                                return {
-                                    height: 20,
-                                    fontWeight: 600,
-                                    bgcolor: alpha(v.color, 0.16),
-                                    color: v.color,
-                                    border: `1px solid ${alpha(v.color, 0.4)}`,
-                                };
-                            }}
-                        />
+                        <Badge size="sm" variant="light" color={visuals.color} tt="none" fw={600}>
+                            {summary.severity === 'Ok' ? 'On track' : summary.severity}
+                        </Badge>
                     )}
-                </Stack>
-                <Stack direction="row" spacing={0.5} sx={{
-                    alignItems: "center"
-                }}>
+                </Group>
+                <Group gap={4}>
                     {generatedAt && !loading && (
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.disabled",
-                                mr: 0.5
-                            }}>
-                            {relativeTime}
-                        </Typography>
+                        <Text size="xs" c="dimmed" mr={4}>{relativeTime}</Text>
                     )}
                     {loading && (
                         <>
-                            <CircularProgress size={16} sx={{mr: 0.5}} />
-                            <Tooltip title="Stop generating">
-                                <IconButton
-                                    size="small"
+                            <Loader size={16} mr={4}/>
+                            <Tooltip label="Stop generating">
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="sm"
                                     onClick={(e) => {e.stopPropagation(); handleStop();}}
-                                    sx={{p: 0.5}}
                                     aria-label="Stop generating"
                                 >
-                                    <StopIcon sx={{fontSize: 18}} />
-                                </IconButton>
+                                    <Icon lucide={Square} size={18}/>
+                                </ActionIcon>
                             </Tooltip>
                         </>
                     )}
                     {!loading && summary && (
-                        <Tooltip title="Refresh">
-                            <IconButton size="small" onClick={handleRefresh} sx={{p: 0.5}} aria-label="Refresh summary">
-                                <RefreshIcon sx={{fontSize: 18}} />
-                            </IconButton>
+                        <Tooltip label="Refresh">
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                size="sm"
+                                onClick={handleRefresh}
+                                aria-label="Refresh summary"
+                            >
+                                <Icon lucide={RefreshCw} size={18}/>
+                            </ActionIcon>
                         </Tooltip>
                     )}
+                    {/* `CopyButton` owns the copied flag and its reset timeout, so the
+                        card carries no clipboard state of its own. */}
                     {!loading && summary && (
-                        <Tooltip title={copyTooltip}>
-                            <IconButton size="small" onClick={handleCopy} sx={{p: 0.5}} aria-label="Copy briefing">
-                                <ContentCopyIcon sx={{fontSize: 16}} />
-                            </IconButton>
-                        </Tooltip>
+                        <CopyButton value={buildPlainTextCopy(summary)} timeout={2000}>
+                            {({copied, copy}) => (
+                                <Tooltip label={copied ? 'Copied!' : 'Copy briefing'}>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color={copied ? 'green' : 'gray'}
+                                        size="sm"
+                                        onClick={(e) => {e.stopPropagation(); copy();}}
+                                        aria-label="Copy briefing"
+                                    >
+                                        <Icon lucide={copied ? Check : Copy} size={16}/>
+                                    </ActionIcon>
+                                </Tooltip>
+                            )}
+                        </CopyButton>
                     )}
                     {collapsible && (
-                        <IconButton
-                            size="small"
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
                             tabIndex={-1}
-                            sx={{p: 0.5}}
                             aria-label={expanded ? 'Collapse Auto-mate briefing' : 'Expand Auto-mate briefing'}
                             onClick={(e) => {e.stopPropagation(); handleToggleExpanded();}}
                         >
-                            {expanded ? <ExpandLessIcon sx={{fontSize: 20}} /> : <ExpandMoreIcon sx={{fontSize: 20}} />}
-                        </IconButton>
+                            <Icon lucide={expanded ? ChevronUp : ChevronDown} size={20}/>
+                        </ActionIcon>
                     )}
-                </Stack>
-            </Box>
-            <Collapse in={expanded} unmountOnExit={false}>
-            <Box sx={{px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5}}>
-                {loading && !summary && (
-                    <Box>
-                        <Stack direction="row" spacing={1} sx={{alignItems: 'center', mb: 1}}>
-                            <AutoMateLogo size={32} animated />
-                            <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                                Auto-mate is thinking…
-                            </Typography>
-                        </Stack>
-                        <Skeleton variant="text" width="80%" height={28} />
-                        <Skeleton variant="text" width="60%" />
-                        <Skeleton variant="rectangular" height={48} sx={{mt: 1, borderRadius: 1}} />
-                        <Skeleton variant="rectangular" height={48} sx={{mt: 1, borderRadius: 1}} />
-                    </Box>
-                )}
+                </Group>
+            </Group>
+            <Collapse expanded={expanded}>
+                <Stack gap="sm" px="md" py="sm">
+                    {loading && !summary && (
+                        <Box>
+                            <Group gap="xs" mb="xs">
+                                <AutoMateLogo size={32} animated/>
+                                <Text size="sm" c="dimmed">Auto-mate is thinking…</Text>
+                            </Group>
+                            <Skeleton height={28} width="80%"/>
+                            <Skeleton height={12} width="60%" mt={4}/>
+                            <Skeleton height={48} mt="xs" radius="xs"/>
+                            <Skeleton height={48} mt="xs" radius="xs"/>
+                        </Box>
+                    )}
 
-                {error && (
-                    <Typography variant="body2" color="error">{error}</Typography>
-                )}
+                    {error && <Text size="sm" c="red">{error}</Text>}
 
-                {summary && (
-                    <>
-                        <Typography
-                            variant="subtitle1"
-                            sx={{
-                                fontWeight: 600,
-                                lineHeight: 1.4
-                            }}>
-                            {summary.verdict}
-                        </Typography>
+                    {summary && (
+                        <>
+                            <Text fz="md" fw={600} style={{lineHeight: 1.4}}>{summary.verdict}</Text>
 
-                        {summary.keyFacts.length > 0 && (
-                            <Stack
-                                direction="row"
-                                spacing={0.75}
-                                sx={{
-                                    flexWrap: "wrap",
-                                    rowGap: 0.75
-                                }}>
-                                {summary.keyFacts.map((fact, i) => (
-                                    <Chip
-                                        key={`${fact}-${i}`}
-                                        label={fact}
-                                        size="small"
-                                        sx={{bgcolor: 'background.paper'}}
-                                    />
-                                ))}
-                            </Stack>
-                        )}
+                            {summary.keyFacts.length > 0 && (
+                                <Group gap={6} wrap="wrap">
+                                    {summary.keyFacts.map((fact, i) => (
+                                        <Badge key={`${fact}-${i}`} size="sm" variant="default" tt="none">
+                                            {fact}
+                                        </Badge>
+                                    ))}
+                                </Group>
+                            )}
 
-                        {summary.attention.length > 0 && (
-                            <Stack spacing={1} sx={{mt: 0.5}}>
-                                <Typography
-                                    variant="overline"
-                                    sx={{
-                                        color: "text.secondary",
-                                        lineHeight: 1,
-                                        letterSpacing: 0.5
-                                    }}>
-                                    Needs attention
-                                </Typography>
-                                {summary.attention.map((item, i) => (
-                                    <AttentionCallout key={`${item.headline}-${i}`} item={item} />
-                                ))}
-                            </Stack>
-                        )}
-
-                        {summary.timeline.length > 0 && (
-                            <Stack spacing={0.5} sx={{mt: 0.5}}>
-                                <Typography
-                                    variant="overline"
-                                    sx={{
-                                        color: "text.secondary",
-                                        lineHeight: 1,
-                                        letterSpacing: 0.5
-                                    }}>
-                                    Timeline
-                                </Typography>
-                                <Stack
-                                    direction="row"
-                                    spacing={0.75}
-                                    sx={{
-                                        flexWrap: "wrap",
-                                        rowGap: 0.75
-                                    }}>
-                                    {summary.timeline.map((item, i) => (
-                                        <TimelinePill key={`${item.label}-${i}`} item={item} />
+                            {summary.attention.length > 0 && (
+                                <Stack gap="xs" mt={4}>
+                                    <Text {...overlineProps} style={{letterSpacing: 0.5}}>Needs attention</Text>
+                                    {summary.attention.map((item, i) => (
+                                        <AttentionCallout key={`${item.headline}-${i}`} item={item}/>
                                     ))}
                                 </Stack>
-                            </Stack>
-                        )}
+                            )}
 
-                        {summary.highlights.length > 0 && (
-                            <Box>
-                                <Box
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => setHighlightsOpen(v => !v)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            setHighlightsOpen(v => !v);
-                                        }
-                                    }}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 0.5,
-                                        cursor: 'pointer',
-                                        userSelect: 'none',
-                                        color: 'text.secondary',
-                                    }}
-                                >
-                                    <Typography variant="overline" sx={{lineHeight: 1, letterSpacing: 0.5}}>
-                                        Highlights ({summary.highlights.length})
-                                    </Typography>
-                                    {highlightsOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-                                </Box>
-                                <Collapse in={highlightsOpen}>
-                                    <Stack component="ul" sx={{pl: 3, m: 0, mt: 0.5}} spacing={0.25}>
-                                        {summary.highlights.map((h, i) => (
-                                            <li key={`${h}-${i}`}>
-                                                <Typography variant="body2">{h}</Typography>
-                                            </li>
+                            {summary.timeline.length > 0 && (
+                                <Stack gap={4} mt={4}>
+                                    <Text {...overlineProps} style={{letterSpacing: 0.5}}>Timeline</Text>
+                                    <Group gap={6} wrap="wrap">
+                                        {summary.timeline.map((item, i) => (
+                                            <TimelinePill key={`${item.label}-${i}`} item={item}/>
                                         ))}
-                                    </Stack>
-                                </Collapse>
-                            </Box>
-                        )}
-                    </>
-                )}
-            </Box>
+                                    </Group>
+                                </Stack>
+                            )}
+
+                            {summary.highlights.length > 0 && (
+                                <Box>
+                                    <UnstyledButton
+                                        onClick={toggleHighlights}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 4,
+                                            color: 'var(--mantine-color-dimmed)',
+                                        }}
+                                    >
+                                        <Text {...overlineProps} style={{letterSpacing: 0.5}}>
+                                            Highlights ({summary.highlights.length})
+                                        </Text>
+                                        <Icon lucide={highlightsOpen ? ChevronUp : ChevronDown} size={16}/>
+                                    </UnstyledButton>
+                                    <Collapse expanded={highlightsOpen}>
+                                        <Stack component="ul" gap={2} pl="lg" m={0} mt={4}>
+                                            {summary.highlights.map((h, i) => (
+                                                <li key={`${h}-${i}`}>
+                                                    <Text size="sm">{h}</Text>
+                                                </li>
+                                            ))}
+                                        </Stack>
+                                    </Collapse>
+                                </Box>
+                            )}
+                        </>
+                    )}
+                </Stack>
             </Collapse>
         </Card>
     );
 };
 
-const AttentionCallout: React.FC<{item: AttentionItem}> = ({item}) => (
-    <Paper
-        elevation={0}
-        sx={(theme) => {
-            const v = severityVisuals(item.severity, theme);
-            return {
-                p: 1.25,
-                borderRadius: 1.5,
-                borderLeft: `4px solid ${v.color}`,
-                bgcolor: v.bg,
-                display: 'flex',
-                gap: 1,
-            };
-        }}
-    >
-        {(() => {
-            // Inline IIFE to compute Icon once per render
-            return null;
-        })()}
-        <Box sx={(theme) => {
-            const v = severityVisuals(item.severity, theme);
-            return {color: v.color, display: 'flex', alignItems: 'flex-start', pt: 0.25};
-        }}>
-            {(() => {
-                const Severity = item.severity;
-                if (Severity === 'Critical') return <ReportProblemIcon fontSize="small" />;
-                if (Severity === 'Urgent') return <ErrorOutlineIcon fontSize="small" />;
-                if (Severity === 'Caution') return <WarningAmberIcon fontSize="small" />;
-                if (Severity === 'Info') return <InfoOutlinedIcon fontSize="small" />;
-                return <CheckCircleOutlineIcon fontSize="small" />;
-            })()}
-        </Box>
-        <Box>
-            <Typography variant="body2" sx={{
-                fontWeight: 600
-            }}>{item.headline}</Typography>
-            <Typography variant="body2" sx={{
-                color: "text.secondary"
-            }}>{item.action}</Typography>
-        </Box>
-    </Paper>
-);
+/**
+ * One "needs attention" row. A tinted, icon-led callout with a headline and a
+ * body line is exactly Mantine's `Alert`, so the severity only has to pick a
+ * colour — the fill, border and icon slot come from the component.
+ */
+const AttentionCallout: React.FC<{item: AttentionItem}> = ({item}) => {
+    const visuals = visualsFor(item.severity);
+    return (
+        <Alert
+            color={visuals.color}
+            variant="light"
+            radius="md"
+            icon={<Icon lucide={visuals.glyph} size={18}/>}
+            title={item.headline}
+            p={10}
+        >
+            <Text size="sm" c="dimmed">{item.action}</Text>
+        </Alert>
+    );
+};
 
 const TimelinePill: React.FC<{item: TimelineItem}> = ({item}) => (
-    <Chip
-        size="small"
-        label={
-            <Box component="span" sx={{display: 'inline-flex', alignItems: 'center', gap: 0.5}}>
-                <Box component="span" sx={{fontWeight: 600}}>{item.label}</Box>
-                <Box component="span" sx={{opacity: 0.85}}>· {item.detail}</Box>
-            </Box>
-        }
-        sx={(theme) => {
-            const color = timelineColor(item.status, theme);
-            return {
-                bgcolor: alpha(color, 0.1),
-                color,
-                border: `1px solid ${alpha(color, 0.35)}`,
-            };
-        }}
-    />
+    <Badge size="sm" variant="light" color={timelineColor(item.status)} tt="none">
+        <Box component="span" style={{fontWeight: 600}}>{item.label}</Box>
+        <Box component="span" style={{opacity: 0.85}}> · {item.detail}</Box>
+    </Badge>
 );

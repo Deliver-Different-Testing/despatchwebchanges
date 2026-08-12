@@ -4,6 +4,7 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverComplianceTab} from './DriverComplianceTab';
@@ -33,9 +34,9 @@ const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider><ThemeProvider theme={theme}>
                 <DriverComplianceTab showToast={showToast} fleetOptions={fleetOptions} />
-            </ThemeProvider>
+            </ThemeProvider></MantineTestProvider>
         </QueryClientProvider>
     );
 };

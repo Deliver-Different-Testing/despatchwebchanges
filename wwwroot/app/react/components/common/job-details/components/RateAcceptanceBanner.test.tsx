@@ -3,8 +3,9 @@
  */
 import React from 'react';
 import { setupUser } from '../../../../__testUtils__/setupUser';
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {render, screen, waitFor, within, fireEvent} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {MantineTestProvider} from '../../../../__testUtils__';
 import {RateAcceptanceBanner} from './RateAcceptanceBanner';
 import type {
     PartnerInboundJobAcceptanceState,
@@ -32,7 +33,9 @@ function renderBanner(jobId = 42) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={client}>
-            <RateAcceptanceBanner jobId={jobId}/>
+            <MantineTestProvider>
+                <RateAcceptanceBanner jobId={jobId}/>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -51,11 +54,12 @@ describe('RateAcceptanceBanner', () => {
             partnerJobGuid: null,
         });
 
-        const {container} = renderBanner();
+        renderBanner();
 
         await waitFor(() => expect(api.getPartnerInboundRateAcceptance).toHaveBeenCalled());
-        // Banner renders no visible content for Allowed.
-        expect(container.textContent).toBe('');
+        // Banner renders no visible content for Allowed. (`MantineProvider` injects
+        // a <style> element, so the container is no longer empty.)
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('renders the offered rate and accept / reject buttons when PendingAcceptance', async () => {
@@ -112,9 +116,9 @@ describe('RateAcceptanceBanner', () => {
         const submit = within(dialog).getByRole('button', {name: /Reject Rate/});
         expect(submit).toBeDisabled();
 
-        const reasonInput = within(dialog).getByLabelText('Reason');
-        await user.click(reasonInput);
-        await user.paste('Rate too low');
+        // `user.click` does not focus an input inside a Mantine Modal, so the
+        // reason has to be driven with `fireEvent.change`.
+        fireEvent.change(within(dialog).getByLabelText('Reason'), {target: {value: 'Rate too low'}});
         expect(submit).not.toBeDisabled();
 
         await user.click(submit);

@@ -7,8 +7,8 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
+import {Box, Progress} from '@mantine/core';
+import {useDebouncedValue, useDisclosure, useHotkeys, useLocalStorage} from '@mantine/hooks';
 import dayjs from 'dayjs';
 import type {
     CourierData,
@@ -33,6 +33,7 @@ import {
     allocateJobs,
     bulkUpdateReadStatus,
     restoreJobs,
+    getRestorePodImpact,
     updateJobReadStatus,
     getActivePartnerOptions,
     getPartnerRateForJob,
@@ -44,7 +45,9 @@ import {jobListStorageKey, loadJobListCategory, persistJobListCategory, toStatus
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
 import {DispatchDialog} from '../dialogs/dispatch-dialog';
-import {RestoreCompletedConfirmationDialog} from '../dialogs/restore-completed-confirmation-dialog';
+import {RestoreConfirmationDialog} from '../dialogs/restore-confirmation-dialog';
+import type {RestorePodImpactSummary} from '../dialogs/restore-confirmation-dialog';
+import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -298,50 +301,58 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         () => loadJobListCategory(storagePrefix) ?? defaultCategory ?? 'all',
     );
     const [searchQuery, setSearchQuery] = useState('');
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-    const [sortState, setSortState] = useState<JobListSort>(() => {
-        try {
-            const saved = localStorage.getItem(getStorageKey('sortState'));
-            if (saved) return JSON.parse(saved);
-        } catch { /* ignore */
-        }
-        return {column: null, direction: null};
+    const [debouncedRawQuery] = useDebouncedValue(searchQuery, 200);
+    // Clearing the box filters immediately; only typing pays the debounce.
+    const debouncedSearchQuery = searchQuery ? debouncedRawQuery : '';
+    /*
+     * Persisted panel preferences. `getInitialValueInEffect: false` throughout —
+     * the default defers the read to an effect, which would paint one frame of
+     * default widths/order before the saved layout lands. The two non-JSON keys
+     * keep their original encodings so preferences saved before this hook
+     * arrived still load.
+     */
+    const [sortState, setSortState] = useLocalStorage<JobListSort>({
+        key: getStorageKey('sortState'),
+        defaultValue: {column: null, direction: null},
+        getInitialValueInEffect: false,
     });
-    const [densityMode, setDensityMode] = useState<DensityMode>(() => {
-        try {
-            const saved = localStorage.getItem(getStorageKey('densityMode'));
-            if (saved) return saved as DensityMode;
-        } catch { /* ignore */
-        }
-        return 'dense';
+    const [densityMode, setDensityMode] = useLocalStorage<DensityMode>({
+        key: getStorageKey('densityMode'),
+        defaultValue: 'dense',
+        serialize: (value) => value,
+        deserialize: (value) => (value as DensityMode) || 'dense',
+        getInitialValueInEffect: false,
     });
-    const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
-        try {
-            const saved = localStorage.getItem(getStorageKey('columnWidths'));
-            if (saved) return {...DEFAULT_COLUMN_WIDTHS, ...JSON.parse(saved)};
-        } catch { /* ignore */
-        }
-        return {...DEFAULT_COLUMN_WIDTHS};
+    const [columnWidths, setColumnWidths] = useLocalStorage<Record<string, number>>({
+        key: getStorageKey('columnWidths'),
+        defaultValue: {...DEFAULT_COLUMN_WIDTHS},
+        // A saved width map only covers the columns the user actually resized,
+        // so it layers over the defaults rather than replacing them.
+        deserialize: (value) => {
+            try {
+                return value ? {...DEFAULT_COLUMN_WIDTHS, ...JSON.parse(value)} : {...DEFAULT_COLUMN_WIDTHS};
+            } catch {
+                return {...DEFAULT_COLUMN_WIDTHS};
+            }
+        },
+        getInitialValueInEffect: false,
     });
-    const [columnOrder, setColumnOrder] = useState<string[]>(() => {
-        try {
-            const saved = localStorage.getItem(getStorageKey('columnOrder'));
-            if (saved) return JSON.parse(saved);
-        } catch { /* ignore */ }
-        return [];
+    const [columnOrder, setColumnOrder] = useLocalStorage<string[]>({
+        key: getStorageKey('columnOrder'),
+        defaultValue: [],
+        getInitialValueInEffect: false,
     });
-    const [hiddenColumns, setHiddenColumns] = useState<string[]>(() => {
-        try {
-            const saved = localStorage.getItem(getStorageKey('hiddenColumns'));
-            if (saved) return JSON.parse(saved);
-        } catch { /* ignore */ }
-        return [];
+    const [hiddenColumns, setHiddenColumns] = useLocalStorage<string[]>({
+        key: getStorageKey('hiddenColumns'),
+        defaultValue: [],
+        getInitialValueInEffect: false,
     });
-    const [loggedInCouriersOnly, setLoggedInCouriersOnly] = useState(() => {
-        try {
-            return localStorage.getItem(getStorageKey('loggedInCouriersOnly')) === 'true';
-        } catch { /* ignore */ }
-        return false;
+    const [loggedInCouriersOnly, setLoggedInCouriersOnly] = useLocalStorage<boolean>({
+        key: getStorageKey('loggedInCouriersOnly'),
+        defaultValue: false,
+        serialize: (value) => String(value),
+        deserialize: (value) => value === 'true',
+        getInitialValueInEffect: false,
     });
     const [lastUpdated, setLastUpdated] = useState(() => `Last updated: ${dayjs().format('h:mm A')}`);
 
@@ -413,41 +424,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [hookData?.isLoading, hookData?.isFetching]);
 
-    // ── Persist preferences ──────────────────────────────────────────
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('sortState'), JSON.stringify(sortState));
-    }, [sortState, getStorageKey]);
-
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('densityMode'), densityMode);
-    }, [densityMode, getStorageKey]);
-
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('columnWidths'), JSON.stringify(columnWidths));
-    }, [columnWidths, getStorageKey]);
-
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('columnOrder'), JSON.stringify(columnOrder));
-    }, [columnOrder, getStorageKey]);
-
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('hiddenColumns'), JSON.stringify(hiddenColumns));
-    }, [hiddenColumns, getStorageKey]);
-
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('loggedInCouriersOnly'), String(loggedInCouriersOnly));
-    }, [loggedInCouriersOnly, getStorageKey]);
-
-    // ── Debounced search (avoids filtering on every keystroke) ────────
-    useEffect(() => {
-        if (!searchQuery) {
-            setDebouncedSearchQuery('');
-            return;
-        }
-        const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 200);
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
-
     // ── Computed: filtered & sorted jobs ─────────────────────────────
     const {filteredJobs, stats} = useMemo(() => {
         let filtered = jobs;
@@ -502,16 +478,12 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         multiSelect.clear();
     }, [selectedCategory, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Escape key clears multi-select
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && multiSelect.selectCount > 0) {
-                multiSelect.clear();
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [multiSelect.selectCount]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Escape key clears multi-select. The empty tags-to-ignore list keeps the
+    // previous document-level reach — Escape works from inside the search box
+    // too, which useHotkeys would otherwise skip.
+    useHotkeys([['Escape', () => {
+        if (multiSelect.selectCount > 0) multiSelect.clear();
+    }]], []);
 
     // ── Handlers ─────────────────────────────────────────────────────
 
@@ -592,7 +564,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 return {column, direction: newDirection};
             });
         },
-        [],
+        [setSortState],
     );
 
     // When sort changes: update hook params (fetchConfig mode) or notify AngularJS (legacy mode)
@@ -613,21 +585,21 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const handleLoggedInCouriersOnlyChange = useCallback((checked: boolean) => {
         setLoggedInCouriersOnly(checked);
-    }, []);
+    }, [setLoggedInCouriersOnly]);
 
     const handleDensityModeChange = useCallback((mode: DensityMode) => {
         setDensityMode(mode);
-    }, []);
+    }, [setDensityMode]);
 
     const handleColumnWidthsChange = useCallback((widths: Record<string, number>) => {
         setColumnWidths(widths);
-    }, []);
+    }, [setColumnWidths]);
 
     const handleResetColumns = useCallback(() => {
         setColumnWidths({...DEFAULT_COLUMN_WIDTHS});
         setColumnOrder([]);
         setHiddenColumns([]);
-    }, []);
+    }, [setColumnWidths, setColumnOrder, setHiddenColumns]);
 
     // Every configurable column for this tenant/page, in the user's order —
     // what the editor lists. The table then drops the hidden ones.
@@ -650,7 +622,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     // ── Bulk action handlers ───────────────────────────────────────────
 
-    const [bulkRestoreConfirmOpen, setBulkRestoreConfirmOpen] = useState(false);
+    const [bulkRestoreConfirm, setBulkRestoreConfirm] = useState<RestorePodImpactSummary | null>(null);
+    const [bulkRestoreChecking, setBulkRestoreChecking] = useState(false);
 
     const performBulkRestore = useCallback(async (removeCapturedImages = false) => {
         // Archived jobs live only in the archive tables; restore operates on live (tucJob)
@@ -680,7 +653,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [multiSelect, jobs, showToast, fetchConfig, onRefresh]);
 
-    const handleBulkRestore = useCallback(() => {
+    const handleBulkRestore = useCallback(async () => {
         // Exclude archived jobs — restore only operates on live rows.
         const restorableIds = [...multiSelect.selectedIds].filter(
             id => !jobs.find(j => j.id === id)?.isArchived,
@@ -689,14 +662,27 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             showToast('Archived jobs can’t be restored', 'warning');
             return;
         }
-        // Confirm only when a restorable job is completed, since restoring re-opens it.
+        if (bulkRestoreChecking) return;
+
+        // Restoring re-opens a completed job and always clears the POD name, so find out what it
+        // would cost before doing it. A failed check falls back to confirming completed jobs only.
+        setBulkRestoreChecking(true);
+        let summary: RestorePodImpactSummary = {jobsWithPodName: 0, imageCount: 0};
+        try {
+            summary = summarisePodImpact(await getRestorePodImpact(restorableIds));
+        } catch {
+            // Never block a restore on the pre-check.
+        } finally {
+            setBulkRestoreChecking(false);
+        }
+
         const anyCompleted = restorableIds.some(id => jobs.find(j => j.id === id)?.done);
-        if (anyCompleted) {
-            setBulkRestoreConfirmOpen(true);
+        if (needsRestoreConfirmation(anyCompleted, summary)) {
+            setBulkRestoreConfirm(summary);
             return;
         }
         void performBulkRestore();
-    }, [multiSelect, jobs, performBulkRestore, showToast]);
+    }, [multiSelect, jobs, performBulkRestore, showToast, bulkRestoreChecking]);
 
     const handleBulkMarkRead = useCallback(async () => {
         const ids = [...multiSelect.selectedIds];
@@ -732,10 +718,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     // Bulk dispatch dialog state. The universal DispatchDialog is rendered at the
     // panel level so the toolbar's "Dispatch" button just toggles open=true.
-    const [bulkDispatchOpen, setBulkDispatchOpen] = useState(false);
+    const [bulkDispatchOpen, {open: openBulkDispatch, close: closeBulkDispatch}] = useDisclosure(false);
     const handleBulkDispatchClick = useCallback(() => {
-        if (multiSelect.selectCount > 0) setBulkDispatchOpen(true);
-    }, [multiSelect.selectCount]);
+        if (multiSelect.selectCount > 0) openBulkDispatch();
+    }, [multiSelect.selectCount, openBulkDispatch]);
 
     const handleBulkDispatchCourier = useCallback(async (
         type: 'Courier' | 'Agent' | 'NP',
@@ -751,7 +737,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         try {
             await allocateJobs(destination.id, ids);
             showToast(`${ids.length} job(s) dispatched to ${destination.text}`, 'success');
-            setBulkDispatchOpen(false);
+            closeBulkDispatch();
             multiSelect.clear();
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             if (fetchConfig) {
@@ -764,7 +750,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             const message = err instanceof Error ? err.message : 'Failed to dispatch jobs';
             throw new Error(message, {cause: err});
         }
-    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+    }, [multiSelect, showToast, fetchConfig, onRefresh, closeBulkDispatch]);
 
     // Bulk DFRNT Partner is disabled in the dialog (per-job rates required),
     // so this should never fire — but the dialog still needs the prop.
@@ -820,19 +806,26 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // ── Render ───────────────────────────────────────────────────────
 
     return (
-        <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            bgcolor: 'background.paper',
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 1,
-            overflow: 'hidden',
-            position: 'relative',
-        }}>
+        <Box
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                backgroundColor: 'var(--dd-surface-container)',
+                border: '1px solid var(--mantine-color-default-border)',
+                borderRadius: 'var(--mantine-radius-sm)',
+                overflow: 'hidden',
+                position: 'relative',
+            }}
+        >
             {fetchConfig && hookData.isFetching && (
-                <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 }} />
+                <Progress.Root
+                    size="xs"
+                   
+                    style={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1}}
+                >
+                    <Progress.Section value={100} animated aria-label="Loading jobs"/>
+                </Progress.Root>
             )}
             {topSlot}
             <JobListStatsHeader stats={stats}/>
@@ -930,22 +923,23 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                         .map(j => ({id: j.id, jobNo: j.jobNo})),
                 }}
                 initialType="Courier"
-                onClose={() => setBulkDispatchOpen(false)}
+                onClose={closeBulkDispatch}
                 onDispatchCourier={handleBulkDispatchCourier}
                 onSendToPartner={handleBulkSendToPartner}
                 fetchRate={getPartnerRateForJob}
                 getPartnerOptions={getActivePartnerOptions}
             />
-            {/* Confirm before restoring a selection that includes completed jobs. */}
-            <RestoreCompletedConfirmationDialog
-                open={bulkRestoreConfirmOpen}
+            {/* Confirm before a restore that reopens a completed job or destroys proof of delivery. */}
+            <RestoreConfirmationDialog
+                open={bulkRestoreConfirm !== null}
                 count={[...multiSelect.selectedIds].filter(id => {
                     const j = jobs.find(x => x.id === id);
                     return j && !j.isArchived && j.done;
                 }).length}
-                onClose={() => setBulkRestoreConfirmOpen(false)}
+                podImpact={bulkRestoreConfirm ?? undefined}
+                onClose={() => setBulkRestoreConfirm(null)}
                 onConfirm={async (removeCapturedImages) => {
-                    setBulkRestoreConfirmOpen(false);
+                    setBulkRestoreConfirm(null);
                     await performBulkRestore(removeCapturedImages);
                 }}
             />

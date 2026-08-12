@@ -183,6 +183,28 @@ describe('VoidJobConfirmationDialog', () => {
         expect(await screen.findByText('1 of 3 jobs selected')).toBeInTheDocument();
     });
 
+    // ── Related-job rows are real, reachable checkboxes ─────────────
+    it('exposes each related job as a focusable checkbox that reports its own state', async () => {
+        renderWithTheme(<VoidJobConfirmationDialog {...createMockProps()} />);
+
+        await userEvent.click(screen.getByRole('switch'));
+        await screen.findByText('Related Jobs');
+
+        const mainJob = await screen.findByRole('checkbox', {name: /JOB-001 - Main Job/});
+        const pickup = screen.getByRole('checkbox', {name: /JOB-002 - Related Pickup/});
+
+        expect(mainJob).toBeChecked();
+        expect(pickup).not.toBeChecked();
+
+        // The checkbox itself must be operable — not a decorative glyph behind a button.
+        pickup.focus();
+        expect(pickup).toHaveFocus();
+        await userEvent.keyboard(' ');
+
+        expect(await screen.findByText('2 of 3 jobs selected')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox', {name: /JOB-002 - Related Pickup/})).toBeChecked();
+    });
+
     // ── Loading + empty related jobs (single render) ────────────────
     it('shows loading state then empty state for related jobs', async () => {
         let resolveLoad!: (value: RelatedJob[]) => void;

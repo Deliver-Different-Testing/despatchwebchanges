@@ -1,7 +1,6 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 
 const useCourierSearchMock = jest.fn();
 jest.mock('../../../hooks/useCourierApi', () => ({
@@ -14,14 +13,15 @@ jest.mock('../../../services/courierApi', () => ({
 }));
 
 import {CourierSearchField} from './CourierSearchField';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 function renderField(overrides: Partial<React.ComponentProps<typeof CourierSearchField>> = {}) {
     const onSelect = jest.fn();
     const showToast = jest.fn();
     render(
-        <ThemeProvider theme={createTheme()}>
+        <MantineTestProvider>
             <CourierSearchField onSelect={onSelect} showToast={showToast} {...overrides} />
-        </ThemeProvider>,
+        </MantineTestProvider>,
     );
     return {onSelect, showToast};
 }
@@ -49,7 +49,7 @@ describe('CourierSearchField', () => {
         const {onSelect} = renderField();
 
         // Open the dropdown (options come from the mocked search hook).
-        await user.click(screen.getByRole('button', {name: 'Open'}));
+        await user.click(screen.getByLabelText('Search courier'));
         await user.click(await screen.findByRole('option', {name: '101 - Alice'}));
 
         expect(onSelect).toHaveBeenCalledWith({id: 9, text: '101 - Alice'});
@@ -63,7 +63,7 @@ describe('CourierSearchField', () => {
         });
         const {onSelect} = renderField();
 
-        await user.type(screen.getByRole('combobox'), '78');
+        await user.type(screen.getByLabelText('Search courier'), '78');
         // The exact-code match is the only option offered, so Enter cannot pick 178.
         expect(await screen.findByRole('option', {name: '78 (Bob Jones)'})).toBeInTheDocument();
         expect(screen.queryByRole('option', {name: '178 (Ann Smith)'})).not.toBeInTheDocument();
@@ -80,14 +80,15 @@ describe('CourierSearchField', () => {
         getExactCourierByCodeMock.mockResolvedValue({id: 78, text: '78: Bob Jones'});
         const {onSelect} = renderField();
 
-        const input = screen.getByRole('combobox');
+        const input = screen.getByLabelText('Search courier');
         await user.type(input, '78');
         await user.keyboard('{Enter}');
 
         await waitFor(() => expect(onSelect).toHaveBeenCalledWith({id: 78, text: '78: Bob Jones'}));
         expect(getExactCourierByCodeMock).toHaveBeenCalledWith('78');
         // V1 cleared the code box so the next code can be typed straight away.
-        await waitFor(() => expect(input).toHaveValue(''));
+        // Re-query: clearing remounts the picker, so the original node is stale.
+        await waitFor(() => expect(screen.getByLabelText('Search courier')).toHaveValue(''));
     });
 
     it('warns and selects nothing when no courier has the typed code', async () => {
@@ -96,7 +97,7 @@ describe('CourierSearchField', () => {
         getExactCourierByCodeMock.mockResolvedValue(null);
         const {onSelect, showToast} = renderField();
 
-        await user.type(screen.getByRole('combobox'), '999');
+        await user.type(screen.getByLabelText('Search courier'), '999');
         await user.keyboard('{Enter}');
 
         await waitFor(() =>
@@ -110,7 +111,7 @@ describe('CourierSearchField', () => {
         getExactCourierByCodeMock.mockRejectedValue(new Error('boom'));
         const {onSelect, showToast} = renderField();
 
-        await user.type(screen.getByRole('combobox'), '78');
+        await user.type(screen.getByLabelText('Search courier'), '78');
         await user.keyboard('{Enter}');
 
         await waitFor(() =>

@@ -20,7 +20,9 @@ import {
     Text,
     TextInput,
     Tooltip,
+    ThemeIcon,
     alpha,
+    NumberInput,
 } from '@mantine/core';
 import {
     Briefcase,
@@ -402,21 +404,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                 <Table.Tr key={item.chargeId}>
                                                     <Table.Td>
                                                         <Group gap="sm" wrap="nowrap">
-                                                            <Box
-                                                                c="brand.6"
-                                                                style={{
-                                                                    width: 36,
-                                                                    height: 36,
-                                                                    borderRadius: 'var(--mantine-radius-md)',
-                                                                    backgroundColor: alpha('var(--mantine-color-brand-6)', 0.08),
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    flexShrink: 0,
-                                                                }}
-                                                            >
+                                                            <ThemeIcon size={36} radius="md" variant="light" color="brand">
                                                                 <Icon tabler={IconPackage} size={18}/>
-                                                            </Box>
+                                                            </ThemeIcon>
                                                             <Box>
                                                                 <Text size="sm" fw={500}>{item.name}</Text>
                                                                 {item.childJobId === jobId && (
@@ -487,22 +477,10 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     backgroundColor: 'var(--mantine-color-gray-0)',
                                 }}
                             >
-                                <Box
-                                    mx="auto"
-                                    mb="md"
-                                    c="brand.6"
-                                    style={{
-                                        width: 72,
-                                        height: 72,
-                                        borderRadius: '50%',
-                                        backgroundColor: alpha('var(--mantine-color-brand-6)', 0.08),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <Icon lucide={ReceiptText} size={36}/>
-                                </Box>
+                                    {/* An empty-state glyph in a tinted disc is `ThemeIcon variant="light"`. */}
+                                    <ThemeIcon size={72} radius="xl" variant="light" mx="auto" mb="md">
+                                        <Icon lucide={ReceiptText} size={36}/>
+                                    </ThemeIcon>
                                 <Text fz="lg" c="dimmed" mb="xs">No price items yet</Text>
                                 <Text size="sm" c="dimmed" mb="md">
                                     {readOnly
@@ -534,22 +512,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     borderBottom: '1px solid var(--mantine-color-default-border)',
                                 }}
                             >
-                                <Box
-                                    c="brand.6"
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 'var(--mantine-radius-md)',
-                                        backgroundColor: 'var(--mantine-color-white)',
-                                        border: '1px solid var(--mantine-color-default-border)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexShrink: 0,
-                                    }}
-                                >
+                                <ThemeIcon size={40} radius="md" variant="default" c="brand.6">
                                     <Icon lucide={isNew ? Plus : Pencil}/>
-                                </Box>
+                                </ThemeIcon>
                                 <Text fw={600} fz="lg">{isNew ? 'Add New Price Item' : 'Edit Price Item'}</Text>
                             </Group>
 
@@ -564,26 +529,26 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                 />
 
                                 <Group gap="md" grow align="flex-start">
-                                    <TextInput
+                                    <NumberInput
                                         label="Revenue Amount"
-                                        type="number"
                                         value={formAmount}
-                                        onChange={(e) => setFormAmount(e.currentTarget.value ? parseFloat(e.currentTarget.value) : '')}
+                                        onChange={(value) => setFormAmount(value === '' || value == null ? '' : Number(value))}
                                         placeholder="0.00"
                                         description="Optional"
                                         min={0}
                                         step={0.01}
+                                        decimalScale={2}
                                         leftSection={moneyIcon}
                                     />
-                                    <TextInput
+                                    <NumberInput
                                         label="Cost Amount"
-                                        type="number"
                                         value={formCostAmount}
-                                        onChange={(e) => setFormCostAmount(e.currentTarget.value ? parseFloat(e.currentTarget.value) : '')}
+                                        onChange={(value) => setFormCostAmount(value === '' || value == null ? '' : Number(value))}
                                         placeholder="0.00"
                                         description="Defaults to 0"
                                         min={0}
                                         step={0.01}
+                                        decimalScale={2}
                                         leftSection={moneyIcon}
                                     />
                                 </Group>
@@ -614,29 +579,29 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
 
                                         {applyFuel && (
                                             <Group gap="md" mt="md" align="flex-start" wrap="nowrap">
-                                                <TextInput
+                                                <NumberInput
                                                     label="Fuel Charge Amount"
-                                                    type="number"
                                                     value={formFuelChargeAmount}
-                                                    onChange={(e) => setFormFuelChargeAmount(e.currentTarget.value ? parseFloat(e.currentTarget.value) : '')}
+                                                    onChange={(value) => setFormFuelChargeAmount(value === '' || value == null ? '' : Number(value))}
                                                     placeholder="0.00"
                                                     description="Suggested — editable before saving"
                                                     disabled={isFuelLoading}
                                                     min={0}
                                                     step={0.01}
+                                                    decimalScale={2}
                                                     leftSection={moneyIcon}
                                                     style={{flex: 1}}
                                                 />
-                                                <TextInput
+                                                <NumberInput
                                                     label="Fuel Cost Amount"
-                                                    type="number"
                                                     value={formFuelCostAmount}
-                                                    onChange={(e) => setFormFuelCostAmount(e.currentTarget.value ? parseFloat(e.currentTarget.value) : '')}
+                                                    onChange={(value) => setFormFuelCostAmount(value === '' || value == null ? '' : Number(value))}
                                                     placeholder="0.00"
                                                     description="Driver's share of the fuel charge"
                                                     disabled={isFuelLoading}
                                                     min={0}
                                                     step={0.01}
+                                                    decimalScale={2}
                                                     leftSection={moneyIcon}
                                                     style={{flex: 1}}
                                                 />
@@ -814,21 +779,14 @@ function SummaryCard({color, icon, label, value, footer}: {
                 gap: 'var(--mantine-spacing-md)',
             }}
         >
-            <Box
+            <ThemeIcon
+                size={52}
+                radius="md"
                 c={`${color}.6`}
-                style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 'var(--mantine-radius-md)',
-                    backgroundColor: alpha(accent, 0.12),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                }}
+                style={{'--ti-bg': alpha(accent, 0.12)} as React.CSSProperties}
             >
                 {icon}
-            </Box>
+            </ThemeIcon>
             <Box>
                 <Text size="sm" c="dimmed" fw={500}>{label}</Text>
                 <Text fz="h3" fw={700} c={`${color}.8`}>{value}</Text>

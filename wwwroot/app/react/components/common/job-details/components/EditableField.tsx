@@ -1,88 +1,68 @@
 /**
- * EditableField - Material Design list item: icon avatar + two-line text (label + value)
+ * EditableField - a two-line list row: icon gutter + label above value.
  *
  * Matches the AngularJS md-list-item md-2-line pattern.
  */
 
 import React from 'react';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import IconButton from '@mui/material/IconButton';
-import Collapse from '@mui/material/Collapse';
-import type {SxProps, Theme} from '@mui/material/styles';
-import type {SvgIconProps} from '@mui/material/SvgIcon';
-import PersonIcon from '@mui/icons-material/Person';
-import PhoneIcon from '@mui/icons-material/Phone';
-import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import StraightenIcon from '@mui/icons-material/Straighten';
-import ScaleIcon from '@mui/icons-material/Scale';
-import QrCodeIcon from '@mui/icons-material/QrCode';
-import WarningIcon from '@mui/icons-material/Warning';
-import DescriptionIcon from '@mui/icons-material/Description';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import EmailIcon from '@mui/icons-material/Email';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import SourceIcon from '@mui/icons-material/Source';
-import ContactsIcon from '@mui/icons-material/Contacts';
-import LabelIcon from '@mui/icons-material/Label';
-import SpeedIcon from '@mui/icons-material/Speed';
-import CategoryIcon from '@mui/icons-material/Category';
-import PhotoSizeSelectLargeIcon from '@mui/icons-material/PhotoSizeSelectLarge';
-import BookmarkIcon from '@mui/icons-material/Bookmark';
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
-import TagIcon from '@mui/icons-material/Tag';
-import BadgeIcon from '@mui/icons-material/Badge';
-import BusinessIcon from '@mui/icons-material/Business';
-import PersonOffIcon from '@mui/icons-material/PersonOff';
-import EventIcon from '@mui/icons-material/Event';
-import EventBusyIcon from '@mui/icons-material/EventBusy';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import {ActionIcon, Box, Collapse, Text, UnstyledButton} from '@mantine/core';
 import {
-    listItemTextSlotProps,
-    listItemIconSx,
-    listItemIconInnerSx,
-    getListItemTextSlotProps,
+    Award, BadgeCheck, Bell, Bookmark, Building2, Calendar, CalendarCheck, CalendarX,
+    CircleUserRound, Clock, Contact, Eye, EyeOff, FileText, Gauge, Hash, IdCard, Import,
+    Mail, Maximize, Phone, QrCode, Ruler, Scale, Shapes, Smartphone, Tag, TriangleAlert,
+    User, UserX,
+} from 'lucide-react';
+import {IconPackage, IconTruck} from '@tabler/icons-react';
+import {Icon} from '../../icon/Icon';
+import type {IconMapEntry} from '../../icon/iconMap';
+import {
+    fieldIconGutterStyle,
+    fieldLabelStyle,
+    fieldValueStyle,
 } from '../JobDetails.styles';
+import classes from './EditableField.module.css';
 
-const iconMap: Record<string, React.ComponentType<SvgIconProps>> = {
-    person: PersonIcon,
-    phone: PhoneIcon,
-    phone_android: PhoneAndroidIcon,
-    delivery_truck_speed: LocalShippingIcon,
-    local_shipping: LocalShippingIcon,
-    schedule: ScheduleIcon,
-    straighten: StraightenIcon,
-    scale: ScaleIcon,
-    qr_code: QrCodeIcon,
-    warning: WarningIcon,
-    description: DescriptionIcon,
-    package_2: Inventory2Icon,
-    inventory_2: Inventory2Icon,
-    notifications: NotificationsIcon,
-    email: EmailIcon,
-    account_circle: AccountCircleIcon,
-    source: SourceIcon,
-    contacts: ContactsIcon,
-    label: LabelIcon,
-    speed: SpeedIcon,
-    category: CategoryIcon,
-    photo_size_select_large: PhotoSizeSelectLargeIcon,
-    bookmark: BookmarkIcon,
-    bookmark_border: BookmarkBorderIcon,
-    tag: TagIcon,
-    badge: BadgeIcon,
-    business: BusinessIcon,
-    person_off: PersonOffIcon,
-    event: EventIcon,
-    event_busy: EventBusyIcon,
-    event_available: EventAvailableIcon,
+/**
+ * Keys are the AngularJS Material-Symbols names the job-detail field configs
+ * still pass; values are their DFRNT (Lucide/Tabler) replacements. Same shape as
+ * `iconMap.ts`'s `MUI_ICON_MAP`, whose keys are MUI component names instead.
+ */
+const FIELD_ICONS: Record<string, IconMapEntry> = {
+    person: {lib: 'lucide', component: User},
+    phone: {lib: 'lucide', component: Phone},
+    phone_android: {lib: 'lucide', component: Smartphone},
+    delivery_truck_speed: {lib: 'tabler', component: IconTruck},
+    local_shipping: {lib: 'tabler', component: IconTruck},
+    schedule: {lib: 'lucide', component: Clock},
+    straighten: {lib: 'lucide', component: Ruler},
+    scale: {lib: 'lucide', component: Scale},
+    qr_code: {lib: 'lucide', component: QrCode},
+    warning: {lib: 'lucide', component: TriangleAlert},
+    description: {lib: 'lucide', component: FileText},
+    package_2: {lib: 'tabler', component: IconPackage},
+    inventory_2: {lib: 'tabler', component: IconPackage},
+    notifications: {lib: 'lucide', component: Bell},
+    email: {lib: 'lucide', component: Mail},
+    account_circle: {lib: 'lucide', component: CircleUserRound},
+    source: {lib: 'lucide', component: Import},
+    contacts: {lib: 'lucide', component: Contact},
+    label: {lib: 'lucide', component: Tag},
+    speed: {lib: 'lucide', component: Gauge},
+    category: {lib: 'lucide', component: Shapes},
+    photo_size_select_large: {lib: 'lucide', component: Maximize},
+    bookmark: {lib: 'lucide', component: Bookmark},
+    // Lucide is a single outline set, so the filled/outline pair collapses to one
+    // glyph; the rank/priority pair keeps its distinction through Award.
+    bookmark_border: {lib: 'lucide', component: Bookmark},
+    ranking: {lib: 'lucide', component: Award},
+    tag: {lib: 'lucide', component: Hash},
+    badge: {lib: 'lucide', component: IdCard},
+    verified: {lib: 'lucide', component: BadgeCheck},
+    business: {lib: 'lucide', component: Building2},
+    person_off: {lib: 'lucide', component: UserX},
+    event: {lib: 'lucide', component: Calendar},
+    event_busy: {lib: 'lucide', component: CalendarX},
+    event_available: {lib: 'lucide', component: CalendarCheck},
 };
 
 interface EditableFieldProps {
@@ -96,36 +76,42 @@ interface EditableFieldProps {
     onToggleVisibility?: ((fieldKey: string) => void) | (() => void);
     fieldKey?: string;
     dense?: boolean;
-    sx?: SxProps<Theme>;
     endAdornment?: React.ReactNode;
 }
 
-const getDensePy = (dense?: boolean) => (dense ? 0.125 : 0.5);
-const getDenseMinHeight = (dense?: boolean) => (dense ? 30 : 44);
+const rowStyle = (dense?: boolean): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    textAlign: 'left',
+    paddingBlock: dense ? 1 : 4,
+    paddingInline: 8,
+    minHeight: dense ? 30 : 44,
+});
 
 export const EditableField = React.memo(({
-                                             icon,
-                                             label,
-                                             value,
-                                             onClick,
-                                             disabled,
-                                             isEditMode,
-                                             isVisible = true,
-                                             onToggleVisibility,
-                                             fieldKey,
-                                             dense,
-                                             endAdornment,
-                                         }: EditableFieldProps) => {
-    const IconComponent = icon ? iconMap[icon] : undefined;
-    const displayValue = value != null && value !== '' ? String(value) : '\u2014';
+    icon,
+    label,
+    value,
+    onClick,
+    disabled,
+    isEditMode,
+    isVisible = true,
+    onToggleVisibility,
+    fieldKey,
+    dense,
+    endAdornment,
+}: EditableFieldProps) => {
+    const glyph = icon ? FIELD_ICONS[icon] : undefined;
+    const displayValue = value != null && value !== '' ? String(value) : '—';
 
-    const iconElement = !dense && IconComponent ? (
-        <ListItemIcon sx={listItemIconSx}>
-            <IconComponent sx={listItemIconInnerSx}/>
-        </ListItemIcon>
-    ) : undefined;
-
-    const slotProps = dense ? getListItemTextSlotProps(true) : listItemTextSlotProps;
+    // The gutter is dropped entirely in dense mode — at 30px rows there is no
+    // vertical space for it.
+    const iconElement = !dense && glyph ? (
+        <Box style={fieldIconGutterStyle} data-testid="field-icon">
+            <Icon {...{[glyph.lib]: glyph.component}} size={18} className={classes.icon} aria-hidden/>
+        </Box>
+    ) : null;
 
     const handleToggle = React.useCallback(() => {
         if (onToggleVisibility && fieldKey) {
@@ -135,81 +121,68 @@ export const EditableField = React.memo(({
         }
     }, [onToggleVisibility, fieldKey]);
 
-    // Edit mode: show visibility toggle
+    const textBlock = (
+        <Box style={{flex: 1, minWidth: 0}}>
+            <Text c="dimmed" style={fieldLabelStyle(!!dense)}>{label}</Text>
+            <Text truncate style={fieldValueStyle(!!dense)}>{displayValue}</Text>
+        </Box>
+    );
+
+    // Edit mode: the row picks the field's visibility rather than opening it, so
+    // hidden fields stay listed (dimmed) and only the label is shown.
     if (isEditMode) {
         return (
-            <ListItem
-                dense
-                disablePadding
-                secondaryAction={
-                    onToggleVisibility ? (
-                        <IconButton edge="end" size="small" onClick={handleToggle}>
-                            {isVisible ? <VisibilityIcon sx={{fontSize: 18}}/> :
-                                <VisibilityOffIcon sx={{fontSize: 18}}/>}
-                        </IconButton>
-                    ) : undefined
-                }
-                sx={{minHeight: dense ? 36 : 40}}
+            <Box
+                className={classes.row}
+                style={{...rowStyle(dense), minHeight: dense ? 36 : 40}}
             >
-                <ListItemButton dense onClick={handleToggle} sx={{py: getDensePy(dense)}}>
-                    {iconElement}
-                    <ListItemText
-                        primary={label}
-                        slotProps={{
-                            primary: {
-                                ...listItemTextSlotProps.primary,
-                                color: isVisible ? 'text.primary' : 'text.disabled'
-                            }
-                        }}
-                    />
-                </ListItemButton>
-            </ListItem>
+                <UnstyledButton
+                    onClick={handleToggle}
+                    style={{flex: 1, minWidth: 0, textAlign: 'left'}}
+                >
+                    <Text
+                        c={isVisible ? undefined : 'dimmed'}
+                        style={fieldLabelStyle(false)}
+                    >
+                        {label}
+                    </Text>
+                </UnstyledButton>
+                {onToggleVisibility && (
+                    <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        onClick={handleToggle}
+                        aria-label={isVisible ? `Hide ${label}` : `Show ${label}`}
+                    >
+                        <Icon lucide={isVisible ? Eye : EyeOff} size={18}/>
+                    </ActionIcon>
+                )}
+            </Box>
         );
     }
 
     const isClickable = onClick && !disabled;
 
-    // Normal mode with click handler
-    if (isClickable) {
-        return (
-            <Collapse in={isVisible} unmountOnExit>
-                <ListItemButton dense onClick={onClick} sx={{
-                    py: getDensePy(dense),
-                    minHeight: getDenseMinHeight(dense),
-                    borderLeft: '2px solid transparent',
-                    transition: (theme: Theme) => `all ${theme.transitions.duration.shortest}ms ease`,
-                    '&:hover': {
-                        borderLeftColor: 'primary.main',
-                        bgcolor: 'action.hover',
-                        '& .MuiListItemIcon-root .MuiSvgIcon-root': {
-                            color: 'primary.main',
-                        },
-                    },
-                }}>
-                    {iconElement}
-                    <ListItemText
-                        primary={label}
-                        secondary={displayValue}
-                        slotProps={slotProps}
-                    />
-                    {endAdornment}
-                </ListItemButton>
-            </Collapse>
-        );
-    }
-
-    // Non-clickable display
     return (
-        <Collapse in={isVisible} unmountOnExit>
-            <ListItem dense sx={{py: getDensePy(dense), minHeight: getDenseMinHeight(dense)}}>
-                {iconElement}
-                <ListItemText
-                    primary={label}
-                    secondary={displayValue}
-                    slotProps={slotProps}
-                />
-                {endAdornment}
-            </ListItem>
+        <Collapse expanded={isVisible} keepMounted={false}>
+            {isClickable ? (
+                <UnstyledButton
+                    className={`${classes.row} ${classes.clickable}`}
+                    style={rowStyle(dense)}
+                    onClick={onClick}
+                >
+                    {iconElement}
+                    {textBlock}
+                    {endAdornment}
+                </UnstyledButton>
+            ) : (
+                <Box className={classes.row} style={rowStyle(dense)}>
+                    {iconElement}
+                    {textBlock}
+                    {endAdornment}
+                </Box>
+            )}
         </Collapse>
     );
 });

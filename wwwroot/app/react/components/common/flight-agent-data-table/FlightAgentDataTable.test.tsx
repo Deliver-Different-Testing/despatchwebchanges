@@ -7,7 +7,7 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
 import {FlightAgentDataTable} from './FlightAgentDataTable';
 import {AgentOption, FlightAgentDataTableProps, FlightOption, FlightSegment} from './types';
 import dayjs from 'dayjs';
@@ -25,10 +25,9 @@ jest.mock('../../dialogs/agent-info-dialog', () => ({
     openAgentInfoDialog: jest.fn().mockResolvedValue(undefined),
 }));
 
-const theme = createTheme();
 
 const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    renderWithMantineOverMui(ui);
 
 const mockFlightSegment: FlightSegment = {
     segmentOrder: 0,

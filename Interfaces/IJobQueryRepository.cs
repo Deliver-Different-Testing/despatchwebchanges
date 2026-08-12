@@ -145,6 +145,12 @@ public interface IJobQueryRepository
     /// </summary>
     Task<Dictionary<int, DateTime?>> GetJobCompletionTimesAsync(IReadOnlyList<int> jobIds);
 
+    /// <summary>
+    /// Returns the POD name and completion time of each live job. Used to tell the operator what
+    /// proof of delivery a restore would destroy before it happens.
+    /// </summary>
+    Task<IReadOnlyList<RestorePodDetail>> GetRestorePodDetailsAsync(IReadOnlyList<int> jobIds);
+
     Task<List<Suggestion>> GetActivePartnerOptionsAsync();
     Task<bool> IsPartnerJobAsync(int jobId);
     Task<bool> IsOutboundPartnerJobAsync(int jobId, string? localTenantId);

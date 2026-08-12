@@ -8,14 +8,12 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { BulkPriceUploadDialog } from './BulkPriceUploadDialog';
 import { OpenBulkPriceUploadDialogOptions, PricingMode, BulkPricePreviewResponse } from './types';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import { bulkPriceApi } from '../../../services/bulkPriceApi';
 import type { ShowToastFn, ToastService } from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 interface DialogState {
     open: boolean;
@@ -72,22 +70,18 @@ class BulkPriceUploadDialogManager {
             }
             this.dialogState.toastService.showToast(message, type);
         };
+        this.dialogRoot.render(islandTree(
+                <MuiThemeIsland>
+                <BulkPriceUploadDialog
+                    open={this.dialogState.open}
+                    onClose={handleClose}
+                    onSubmit={handleSubmit}
+                    showToast={handleShowToast}
+                />
 
-        const currentTheme = getTheme();
+            </MuiThemeIsland>
 
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <BulkPriceUploadDialog
-                        open={this.dialogState.open}
-                        onClose={handleClose}
-                        onSubmit={handleSubmit}
-                        showToast={handleShowToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
+        ));
     }
 
     async open(options: OpenBulkPriceUploadDialogOptions): Promise<boolean> {

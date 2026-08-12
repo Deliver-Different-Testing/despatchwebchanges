@@ -33,6 +33,15 @@ public interface IJobPhotoService
     /// <param name="month">The completion month used to locate the S3 folders.</param>
     Task<AwsBatchOperationResult> ArchiveJobCapturedMediaAsync(int jobId, int year, int month);
 
+    /// <summary>
+    /// Counts the captured photos and signatures <see cref="ArchiveJobCapturedMediaAsync"/> would
+    /// archive for a job, without changing anything. Used to warn the operator before a restore.
+    /// </summary>
+    /// <param name="jobId">The job whose captured media should be counted.</param>
+    /// <param name="year">The completion year used to locate the S3 folders.</param>
+    /// <param name="month">The completion month used to locate the S3 folders.</param>
+    Task<int> CountJobCapturedMediaAsync(int jobId, int year, int month);
+
     // Job Attachment methods
     Task<IReadOnlyList<S3FileInfo>> GetAttachedFilesAsync(int jobId);
     Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file);

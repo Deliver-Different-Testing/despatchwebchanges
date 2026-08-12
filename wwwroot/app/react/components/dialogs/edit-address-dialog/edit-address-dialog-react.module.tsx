@@ -8,14 +8,12 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {EditAddressDialog} from './EditAddressDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
 import {EditAddressDialogViewModel} from '../../../interfaces';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 import {AddressType} from '../../../../enums/address-type.enum';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 // State management for the dialog
 interface DialogState {
@@ -74,28 +72,25 @@ function renderDialog(): void {
     };
 
     // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
+    dialogRoot.render(islandTree(
+        <MuiThemeIsland>
+        <EditAddressDialog
+            open={dialogState.open}
+            addressDetails={dialogState.addressDetails}
+            title={dialogState.title}
+            submitLabel={dialogState.submitLabel}
+            showContactInfo={dialogState.showContactInfo}
+            isUsTenant={dialogState.isUsTenant}
+            addressType={dialogState.addressType}
+            readOnly={dialogState.readOnly}
+            onClose={handleClose}
+            onSave={handleSave}
+            showToast={handleShowToast}
+        />
 
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <EditAddressDialog
-                    open={dialogState.open}
-                    addressDetails={dialogState.addressDetails}
-                    title={dialogState.title}
-                    submitLabel={dialogState.submitLabel}
-                    showContactInfo={dialogState.showContactInfo}
-                    isUsTenant={dialogState.isUsTenant}
-                    addressType={dialogState.addressType}
-                    readOnly={dialogState.readOnly}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
+        </MuiThemeIsland>
+
+    ));
 }
 
 /**

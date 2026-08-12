@@ -8,7 +8,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
 import type {ToastService} from '../../../services/toastService';
 
@@ -98,26 +98,24 @@ function renderDialog(): void {
 
     // Get theme dynamically based on customer region
 
-    dialogRoot.render(
-        <DfrntMantineProvider>
-            <PriceBreakdownDialog
-                open={dialogState.open}
-                priceBreakdowns={dialogState.priceBreakdowns}
-                jobId={dialogState.jobId}
-                isPrebook={dialogState.isPrebook}
-                isArchived={dialogState.isArchived}
-                isUsCustomer={dialogState.isUsCustomer}
-                readOnly={dialogState.readOnly}
-                onClose={handleClose}
-                onSave={handleSave}
-                onAddItem={handleAddItem}
-                onUpdateItem={handleUpdateItem}
-                onDeleteItem={handleDeleteItem}
-                onGetSuggestedFuelCharge={handleGetSuggestedFuelCharge}
-                showToast={toastService.showToast}
-            />
-        </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <PriceBreakdownDialog
+            open={dialogState.open}
+            priceBreakdowns={dialogState.priceBreakdowns}
+            jobId={dialogState.jobId}
+            isPrebook={dialogState.isPrebook}
+            isArchived={dialogState.isArchived}
+            isUsCustomer={dialogState.isUsCustomer}
+            readOnly={dialogState.readOnly}
+            onClose={handleClose}
+            onSave={handleSave}
+            onAddItem={handleAddItem}
+            onUpdateItem={handleUpdateItem}
+            onDeleteItem={handleDeleteItem}
+            onGetSuggestedFuelCharge={handleGetSuggestedFuelCharge}
+            showToast={toastService.showToast}
+        />
+    ));
 }
 
 export function setToastService(service: ToastService): void {

@@ -1,5 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {OpenJobsWidget} from './OpenJobsWidget';
 import type {IOpenJobResponse} from '../OverviewPage.interfaces';
@@ -16,7 +17,7 @@ const VIEW_MODE_KEY = 'openJobsViewMode_0';
 const LIMIT_KEY = 'openJobsTableViewLimit0';
 
 const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    render(<MantineTestProvider><ThemeProvider theme={theme}>{ui}</ThemeProvider></MantineTestProvider>);
 
 function createMockOpenJob(overrides: Partial<IOpenJobResponse> = {}): IOpenJobResponse {
     return {

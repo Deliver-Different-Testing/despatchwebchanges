@@ -10,7 +10,8 @@
  */
 
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
-import {ActionIcon, Box, Modal, Text, alpha} from '@mantine/core';
+import {ActionIcon, Box, Group, Image, Modal, Text, alpha} from '@mantine/core';
+import {useWindowEvent} from '@mantine/hooks';
 import {ChevronLeft, ChevronRight, X} from 'lucide-react';
 import {Icon} from '../icon/Icon';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
@@ -68,27 +69,25 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
         setCurrentIndex(index);
     }, []);
 
-    // Handle keyboard navigation
-    useEffect(() => {
+    /*
+     * Keyboard navigation. `useWindowEvent`, not `useHotkeys`: the latter binds
+     * to `document`, and a keydown dispatched on `window` never reaches a
+     * document listener — which is exactly how this viewer is driven and tested.
+     */
+    useWindowEvent('keydown', (event: KeyboardEvent) => {
         if (!isOpen) return;
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            switch (event.key) {
-                case 'ArrowLeft':
-                    prevPhoto();
-                    break;
-                case 'ArrowRight':
-                    nextPhoto();
-                    break;
-                case 'Escape':
-                    onClose();
-                    break;
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, nextPhoto, prevPhoto, onClose]);
+        switch (event.key) {
+            case 'ArrowLeft':
+                prevPhoto();
+                break;
+            case 'ArrowRight':
+                nextPhoto();
+                break;
+            case 'Escape':
+                onClose();
+                break;
+        }
+    });
 
     if (!currentPhoto) return null;
 
@@ -100,8 +99,8 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
             withCloseButton={false}
             padding={0}
             /*
-             * Escape is owned by the arrow-key handler above. Mantine closes on
-             * Escape via a window listener that does not stop propagation, so
+             * Escape is owned by the keydown handler above. Mantine closes on
+             * Escape via its own listener that does not stop propagation, so
              * leaving it on would fire onClose twice for one key press.
              */
             closeOnEscape={false}
@@ -134,15 +133,12 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
 
                     {/* Photo Container */}
                     <Box style={{position: 'relative', width: '100%'}}>
-                        <img
+                        <Image
                             src={currentPhoto.url}
                             alt={`POD ${currentIndex + 1}`}
-                            style={{
-                                width: '100%',
-                                height: 'auto',
-                                borderRadius: 'var(--mantine-radius-sm)',
-                                display: 'block',
-                            }}
+                            radius="sm"
+                            w="100%"
+                            h="auto"
                         />
 
                         {/* Previous Button */}
@@ -167,14 +163,7 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                     </Box>
 
                     {/* Indicator Dots */}
-                    <Box
-                        style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            marginTop: 'var(--mantine-spacing-md)',
-                            gap: 'var(--mantine-spacing-xs)',
-                        }}
-                    >
+                    <Group justify="center" gap="xs" mt="md" wrap="nowrap">
                         {photos.map((_, index) => (
                             <button
                                 key={index}
@@ -194,7 +183,7 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                                 }}
                             />
                         ))}
-                    </Box>
+                    </Group>
 
                     {/* Photo Info */}
                     <Box style={{textAlign: 'center', marginTop: 'var(--mantine-spacing-xs)', color: WHITE}}>

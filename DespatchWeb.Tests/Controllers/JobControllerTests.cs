@@ -1694,6 +1694,130 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task GetRestorePodImpact_ReturnsPodNameAndCapturedImageCountPerJob()
+    {
+        // Arrange
+        var request = new RestorePodImpactRequest { JobIds = [1, 2] };
+        _jobQueryRepositoryMock.GetRestorePodDetailsAsync(request.JobIds)
+            .Returns(new List<RestorePodDetail>
+            {
+                new() { JobId = 1, PodName = "J. Smith", CompletedTime = new DateTime(2024, 7, 15) },
+                new() { JobId = 2, PodName = null, CompletedTime = new DateTime(2024, 8, 3) }
+            });
+        _jobPhotoServiceMock.CountJobCapturedMediaAsync(1, 2024, 7).Returns(3);
+        _jobPhotoServiceMock.CountJobCapturedMediaAsync(2, 2024, 8).Returns(0);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(request);
+
+        // Assert
+        var json = Assert.IsType<JsonResult>(result);
+        var impacts = Assert.IsAssignableFrom<IReadOnlyList<RestorePodImpact>>(json.Value);
+
+        var first = Assert.Single(impacts, i => i.JobId == 1);
+        Assert.Equal("J. Smith", first.PodName);
+        Assert.Equal(3, first.CapturedImageCount);
+        Assert.True(first.ImageCountKnown);
+
+        var second = Assert.Single(impacts, i => i.JobId == 2);
+        Assert.Null(second.PodName);
+        Assert.Equal(0, second.CapturedImageCount);
+        Assert.True(second.ImageCountKnown);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_JobWithoutCompletionTime_SkipsTheS3Probe()
+    {
+        // Arrange — with no completion time there is no anchor month, so nothing is locatable in S3.
+        var request = new RestorePodImpactRequest { JobIds = [1] };
+        _jobQueryRepositoryMock.GetRestorePodDetailsAsync(request.JobIds)
+            .Returns(new List<RestorePodDetail>
+            {
+                new() { JobId = 1, PodName = "J. Smith", CompletedTime = null }
+            });
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(request);
+
+        // Assert
+        var json = Assert.IsType<JsonResult>(result);
+        var impact = Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<RestorePodImpact>>(json.Value));
+        Assert.Equal("J. Smith", impact.PodName);
+        Assert.Equal(0, impact.CapturedImageCount);
+        Assert.True(impact.ImageCountKnown);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().CountJobCapturedMediaAsync(0, 0, 0);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_ProbeThrows_ReportsCountUnknownAndStillReturnsThePodName()
+    {
+        // Arrange — the POD-name half is a plain DB read and must survive an S3 outage.
+        var request = new RestorePodImpactRequest { JobIds = [1] };
+        _jobQueryRepositoryMock.GetRestorePodDetailsAsync(request.JobIds)
+            .Returns(new List<RestorePodDetail>
+            {
+                new() { JobId = 1, PodName = "J. Smith", CompletedTime = new DateTime(2024, 7, 15) }
+            });
+        _jobPhotoServiceMock.CountJobCapturedMediaAsync(1, 2024, 7).ThrowsAsync(new Exception("S3 down"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(request);
+
+        // Assert
+        var json = Assert.IsType<JsonResult>(result);
+        var impact = Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<RestorePodImpact>>(json.Value));
+        Assert.Equal("J. Smith", impact.PodName);
+        Assert.False(impact.ImageCountKnown);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_SelectionAboveTheProbeCap_SkipsS3Entirely()
+    {
+        // Arrange — a large bulk selection must not stall on one S3 listing per job.
+        var jobIds = Enumerable.Range(1, JobController.MaxRestorePodImageProbeJobs + 1).ToList();
+        var request = new RestorePodImpactRequest { JobIds = jobIds };
+        _jobQueryRepositoryMock.GetRestorePodDetailsAsync(request.JobIds)
+            .Returns(jobIds.Select(id => new RestorePodDetail
+            {
+                JobId = id, PodName = "J. Smith", CompletedTime = new DateTime(2024, 7, 15)
+            }).ToList());
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(request);
+
+        // Assert
+        var json = Assert.IsType<JsonResult>(result);
+        var impacts = Assert.IsAssignableFrom<IReadOnlyList<RestorePodImpact>>(json.Value);
+        Assert.Equal(jobIds.Count, impacts.Count);
+        Assert.All(impacts, i => Assert.False(i.ImageCountKnown));
+        Assert.All(impacts, i => Assert.Equal("J. Smith", i.PodName));
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().CountJobCapturedMediaAsync(0, 0, 0);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_EmptyJobIds_ReturnsBadRequest()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(new RestorePodImpactRequest { JobIds = [] });
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobQueryRepositoryMock.DidNotReceiveWithAnyArgs()
+            .GetRestorePodDetailsAsync(Arg.Any<IReadOnlyList<int>>());
+    }
+
+    [Fact]
     public async Task RestoreSplitJobs_ValidJobIds_ReturnsOk()
     {
         // Arrange

@@ -19,9 +19,12 @@ import {
     LayoutGrid, FilePen, Heart, Download, UserCog, EllipsisVertical,
     CircleCheckBig, Eye, EyeOff, Phone, HardHat, Crosshair, ChevronsRight,
     CloudUpload, CloudDownload, Camera, FileUp,
+    Network, Handshake, Link as LinkIcon, ListFilter, Columns3, Copy, Ban, Printer,
+    ExternalLink, ArrowUpDown,
 } from 'lucide-react';
 import {
     IconTruck, IconPlane, IconPlaneOff, IconMapPin, IconRoute, IconPackage, IconMap,
+    IconPlaneDeparture, IconPlaneArrival, IconSnowflake, IconQuestionMark,
 } from '@tabler/icons-react';
 import type {LucideIcon, TablerIcon} from './Icon';
 
@@ -83,6 +86,16 @@ export const MUI_ICON_MAP: Record<string, IconMapEntry> = {
     CloudDownload: {lib: 'lucide', component: CloudDownload},
     CameraAlt: {lib: 'lucide', component: Camera},
     UploadFile: {lib: 'lucide', component: FileUp},
+    AccountTree: {lib: 'lucide', component: Network},
+    Handshake: {lib: 'lucide', component: Handshake},
+    Link: {lib: 'lucide', component: LinkIcon},
+    FilterList: {lib: 'lucide', component: ListFilter},
+    ViewColumn: {lib: 'lucide', component: Columns3},
+    ContentCopy: {lib: 'lucide', component: Copy},
+    Cancel: {lib: 'lucide', component: Ban},
+    Print: {lib: 'lucide', component: Printer},
+    OpenInNew: {lib: 'lucide', component: ExternalLink},
+    Sort: {lib: 'lucide', component: ArrowUpDown},
 
     // ── Tabler: transport & logistics ────────────────────────────────────
     LocalShipping: {lib: 'tabler', component: IconTruck},
@@ -94,6 +107,11 @@ export const MUI_ICON_MAP: Record<string, IconMapEntry> = {
     Route: {lib: 'tabler', component: IconRoute},
     Inventory2: {lib: 'tabler', component: IconPackage},
     Map: {lib: 'tabler', component: IconMap},
+    FlightTakeoff: {lib: 'tabler', component: IconPlaneDeparture},
+    FlightLand: {lib: 'tabler', component: IconPlaneArrival},
+    LocalAirport: {lib: 'tabler', component: IconPlane},
+    AcUnit: {lib: 'tabler', component: IconSnowflake},
+    QuestionMark: {lib: 'tabler', component: IconQuestionMark},
 };
 
 export default MUI_ICON_MAP;

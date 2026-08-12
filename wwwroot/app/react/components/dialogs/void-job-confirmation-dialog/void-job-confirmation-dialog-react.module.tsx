@@ -8,7 +8,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {VoidJobConfirmationDialog, VoidJobDialogJob, VoidJobResult, RelatedJob} from './VoidJobConfirmationDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {jobApi} from '../../../services/jobApi';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
@@ -81,20 +81,18 @@ function renderDialog(): void {
         dialogState.toastService.showToast(message, type);
     };
 
-    dialogRoot.render(
-        <DfrntMantineProvider>
-            <VoidJobConfirmationDialog
-                open={dialogState.open}
-                job={dialogState.job}
-                onClose={handleClose}
-                onConfirm={handleConfirm}
-                onLoadRelatedJobs={handleLoadRelatedJobs}
-                onVoidJob={handleVoidJob}
-                onVoidBulkJob={handleVoidBulkJob}
-                showToast={handleShowToast}
-            />
-        </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <VoidJobConfirmationDialog
+            open={dialogState.open}
+            job={dialogState.job}
+            onClose={handleClose}
+            onConfirm={handleConfirm}
+            onLoadRelatedJobs={handleLoadRelatedJobs}
+            onVoidJob={handleVoidJob}
+            onVoidBulkJob={handleVoidBulkJob}
+            showToast={handleShowToast}
+        />
+    ));
 }
 
 function initializeDialogRoot(): void {

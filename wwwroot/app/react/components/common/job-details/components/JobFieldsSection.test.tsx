@@ -3,15 +3,14 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {JobFieldsSection} from './JobFieldsSection';
 import {createMockJob} from '../__testUtils__/mockJob';
+import {renderWithMantine} from '../../../../__testUtils__';
 
-const theme = createTheme();
 
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    return renderWithMantine(ui);
 }
 
 function createDefaultProps(overrides?: Record<string, any>) {
@@ -307,9 +306,11 @@ describe('JobFieldsSection', () => {
             renderWithTheme(
                 <JobFieldsSection {...createDefaultProps({isEditMode: true, onToggleField})} />
             );
-            const visibilityIcons = screen.getAllByTestId('VisibilityIcon');
-            expect(visibilityIcons.length).toBeGreaterThan(0);
-            fireEvent.click(visibilityIcons[0]);
+            // MUI's icon `data-testid`s are gone with the conversion — the toggles
+            // carry real accessible names instead.
+            const sectionToggles = screen.getAllByRole('button', {name: 'Hide section'});
+            expect(sectionToggles.length).toBeGreaterThan(0);
+            fireEvent.click(sectionToggles[0]);
             expect(onToggleField).toHaveBeenCalled();
         });
     });

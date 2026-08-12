@@ -8,7 +8,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {SwapPodsDialog} from './SwapPodsDialog';
-import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {jobApi} from '../../../services/jobApi';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
@@ -57,18 +57,16 @@ function renderDialog(): void {
         dialogState.toastService.showToast(message, type);
     };
 
-    dialogRoot.render(
-        <DfrntMantineProvider>
-                <SwapPodsDialog
-                    open={dialogState.open}
-                    jobNo={dialogState.jobNo}
-                    onClose={handleClose}
-                    onValidate={handleValidate}
-                    onSwap={handleSwap}
-                    showToast={handleShowToast}
-                />
-            </DfrntMantineProvider>
-    );
+    dialogRoot.render(islandTree(
+        <SwapPodsDialog
+            open={dialogState.open}
+            jobNo={dialogState.jobNo}
+            onClose={handleClose}
+            onValidate={handleValidate}
+            onSwap={handleSwap}
+            showToast={handleShowToast}
+        />
+    ));
 }
 
 function initializeDialogRoot(): void {

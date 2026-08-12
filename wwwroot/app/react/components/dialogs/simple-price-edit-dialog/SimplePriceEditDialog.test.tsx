@@ -134,7 +134,7 @@ describe('SimplePriceEditDialog', () => {
         it('hides amount input for recalculate mode', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
-            expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+            expect(screen.queryByRole('textbox', {name: /Amount/i})).not.toBeInTheDocument();
         });
 
         it('shows amount input when base mode is selected', async () => {
@@ -143,7 +143,7 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByText('Base Price (add surcharges)'));
 
-            expect(screen.getByRole('spinbutton')).toBeInTheDocument();
+            expect(screen.getByRole('textbox', {name: /Amount/i})).toBeInTheDocument();
         });
 
         it('shows amount input when gross mode is selected', async () => {
@@ -152,7 +152,7 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByText('Final Price (use as-is)'));
 
-            expect(screen.getByRole('spinbutton')).toBeInTheDocument();
+            expect(screen.getByRole('textbox', {name: /Amount/i})).toBeInTheDocument();
         });
     });
 
@@ -163,8 +163,8 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByText('Base Price (add surcharges)'));
 
-            const input = screen.getByRole('spinbutton');
-            expect(input).toHaveValue(250.50);
+            const input = screen.getByRole('textbox', {name: /Amount/i});
+            expect(input).toHaveValue('250.5');
         });
 
         it('shows "Enter Base Amount" label for base mode', async () => {
@@ -235,7 +235,7 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByText('Base Price (add surcharges)'));
 
-            const input = screen.getByRole('spinbutton');
+            const input = screen.getByRole('textbox', {name: /Amount/i});
             await userEvent.clear(input);
 
             const button = screen.getByRole('button', { name: /Apply Base Amount/i });
@@ -500,7 +500,7 @@ describe('SimplePriceEditDialog', () => {
             const radios = screen.getAllByRole('radio');
             expect(radios[0]).toBeChecked();
             // Amount input should be hidden (recalculate mode)
-            expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+            expect(screen.queryByRole('textbox', {name: /Amount/i})).not.toBeInTheDocument();
         });
 
         it('resets success state when dialog reopens', async () => {

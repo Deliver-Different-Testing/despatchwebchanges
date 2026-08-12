@@ -1,34 +1,35 @@
 /**
  * React Date Filter Menu Component
  *
- * A dropdown menu for filtering data by date range.
+ * A dropdown panel for filtering data by date range.
  * Supports: All Time, Time Range (minutes), and Custom Date Range.
+ *
+ * **A `Popover`, not a `Menu`.** The dropdown holds a form — radios, two date
+ * fields, a select and two action buttons — and a menu's item semantics fight
+ * that: MUI's `Menu` owns keyboard navigation and type-ahead, which is why the
+ * old date fields each carried an `onKeyDown` `stopPropagation()` guard just so
+ * the user could type a date. `Popover` has no such claim on the keys, so the
+ * guards are gone.
+ *
+ * **Wall-clock only.** `DateInput` is string-valued (`YYYY-MM-DD`), so the picker
+ * cannot introduce an instant. Everything that *does* need a zone — the
+ * all-time/today/rolling-window bounds — still goes through `dayjs().tz(iana)`
+ * exactly as before, unchanged by this conversion.
  */
 
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import FormControl from '@mui/material/FormControl';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import Select from '@mui/material/Select';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import CalendarIcon from '@mui/icons-material/CalendarToday';
-import DateRangeIcon from '@mui/icons-material/DateRange';
-import {DatePicker} from '@mui/x-date-pickers/DatePicker';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+    ActionIcon, Box, Button, Divider, Group, Popover, Radio, Select, Stack, Text, Tooltip,
+} from '@mantine/core';
+import {DateInput} from '@mantine/dates';
+import {Calendar, CalendarRange} from 'lucide-react';
 import dayjs, {Dayjs} from 'dayjs';
 import {getIanaTimezone, getInputDateFormat, getTimezoneName} from '../../../utils/dateUtils';
-import {onBrandScrim} from '../../../theme/dfrntMantineTheme';
-import {SHELL_ICON_BUTTON_PX, SHELL_ICON_HOVER_FILL} from '../app-toolbar/toolbarIconStyles';
+import {Icon} from '../icon/Icon';
+import {toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
+
+/** The string form `DateInput` speaks. */
+const ISO_DATE = 'YYYY-MM-DD';
 
 // Types
 export interface DateFilterData {
@@ -100,8 +101,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                                                   onRefreshData,
                                                                   onShowToast,
                                                               }) => {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
+    const [opened, setOpened] = useState(false);
 
     const ianaTimeZone = getIanaTimezone(timeZone);
     const timeZoneLong = getTimezoneName(timeZone);
@@ -114,7 +114,12 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     const [endDate, setEndDate] = useState<Dayjs>(dayjs().tz(ianaTimeZone).add(24, 'hours'));
     const [selectedMinsOption, setSelectedMinsOption] = useState<number>(10800); // 3 hours default
 
-    const minsOptions = getMinsSelectionOptions(300, 300, 180);
+    // `Select` is string-valued; the durations are seconds, so they round-trip
+    // through `String()`/`Number()` at the boundary.
+    const minsOptions = useMemo(
+        () => getMinsSelectionOptions(300, 300, 180).map(({id, text}) => ({value: String(id), label: text})),
+        [],
+    );
     const minsUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const prevDateFilterRef = useRef<DateFilterData | null>(null);
 
@@ -192,13 +197,14 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     }, []);
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+        // The trigger sits inside AngularJS chrome that also listens for clicks.
         event.preventDefault();
         event.stopPropagation();
-        setAnchorEl(event.currentTarget);
+        setOpened((prev) => !prev);
     };
 
     const handleClose = () => {
-        setAnchorEl(null);
+        setOpened(false);
     };
 
     const stopMinsUpdate = useCallback(() => {
@@ -346,207 +352,116 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         handleClose();
     }, [startDate, endDate, selectedRangeOption, selectedMinsOption, onRefreshData, onShowToast]);
 
+    const inputFormat = getInputDateFormat();
+
+    const rangeSummary = selectedRangeOption === 'custom_date'
+        ? `${startDate.format('MMM DD, YYYY')} — ${endDate.format('MMM DD, YYYY')}`
+        : `All Time — ${endDate.format('MMM DD, h:mm A')}`;
+
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
-            <Tooltip title="Date Filter">
-                <IconButton
-                    color="inherit"
-                    onClick={handleClick}
-                    // The wash rides a custom property rather than sitting inline in the
-                    // `sx` so it reads the same way as the Mantine buttons' `--ai-hover`,
-                    // and so a test can assert it without reaching into emotion's sheet.
-                    style={{'--shell-icon-hover': SHELL_ICON_HOVER_FILL} as React.CSSProperties}
-                    sx={{
-                        // Match the Mantine `ActionIcon size="lg"` neighbours exactly —
-                        // the MUI theme's 44px hit target would leave this one button
-                        // wider than the rest of the bar.
-                        width: SHELL_ICON_BUTTON_PX,
-                        height: SHELL_ICON_BUTTON_PX,
-                        minWidth: SHELL_ICON_BUTTON_PX,
-                        minHeight: SHELL_ICON_BUTTON_PX,
-                        p: 0,
-                        color: onBrandScrim.text,
-                        '&:hover': {bgcolor: 'var(--shell-icon-hover)'},
-                    }}
-                >
-                    <CalendarIcon sx={{fontSize: 18}}/>
-                </IconButton>
-            </Tooltip>
-            <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                slotProps={{
-                    paper: {
-                        elevation: 3,
-                        sx: {
-                            width: 320,
-                            mt: 0.5,
-                        },
-                    }
-                }}
-            >
+        <Popover
+            opened={opened}
+            onChange={setOpened}
+            onDismiss={handleClose}
+            position="bottom-end"
+            width={320}
+            shadow="md"
+            withinPortal
+        >
+            <Popover.Target>
+                <Tooltip label="Date Filter">
+                    {/* Same box, glyph colour and hover wash as every other shell icon —
+                        the shared style object is the single source for all three. */}
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        onClick={handleClick}
+                        aria-label="Date Filter"
+                        style={toolbarIconButtonStyle}
+                    >
+                        <Icon lucide={Calendar} size={18}/>
+                    </ActionIcon>
+                </Tooltip>
+            </Popover.Target>
+            <Popover.Dropdown p={0}>
                 {/* Header */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        px: 2,
-                        py: 1.5,
-                        bgcolor: 'grey.50',
-                        borderBottom: 1,
-                        borderColor: 'divider',
-                    }}
+                <Group
+                    gap="sm"
+                    px="md"
+                    py="sm"
+                    bg="var(--mantine-color-default-hover)"
+                    style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
                 >
-                    <DateRangeIcon color="primary" sx={{fontSize: 20}}/>
-                    <Typography variant="subtitle2" sx={{
-                        fontWeight: 600
-                    }}>
-                        Date Filter
-                    </Typography>
+                    <Icon lucide={CalendarRange} size={20} color="var(--mantine-primary-color-filled)"/>
+                    <Text size="sm" fw={600}>Date Filter</Text>
                     {timeZoneLong && (
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.secondary",
-                                ml: 'auto'
-                            }}>
-                            {timeZoneLong}
-                        </Typography>
+                        <Text size="xs" c="dimmed" ml="auto">{timeZoneLong}</Text>
                     )}
-                </Box>
+                </Group>
 
                 {/* Content */}
-                <Box sx={{p: 2}}>
-                    {/* Range Options */}
-                    <RadioGroup
+                <Box p="md">
+                    <Radio.Group
                         value={selectedRangeOption}
-                        onChange={(e) => handleRangeOptionChange(e.target.value as DateRangeOption)}
+                        onChange={(value) => handleRangeOptionChange(value as DateRangeOption)}
                     >
-                        <FormControlLabel
-                            value="all_time"
-                            control={<Radio size="small"/>}
-                            label="All Time"
-                        />
-                        <FormControlLabel
-                            value="today"
-                            control={<Radio size="small"/>}
-                            label="Today"
-                        />
-                        <FormControlLabel
-                            value="custom_minutes"
-                            control={<Radio size="small"/>}
-                            label="Time Range"
-                        />
-                        <FormControlLabel
-                            value="custom_date"
-                            control={<Radio size="small"/>}
-                            label="Custom Dates"
-                        />
-                    </RadioGroup>
+                        <Stack gap="xs">
+                            <Radio value="all_time" label="All Time"/>
+                            <Radio value="today" label="Today"/>
+                            <Radio value="custom_minutes" label="Time Range"/>
+                            <Radio value="custom_date" label="Custom Dates"/>
+                        </Stack>
+                    </Radio.Group>
 
-                    {/* Custom Date Range */}
                     {selectedRangeOption === 'custom_date' && (
-                        <Box sx={{mt: 2}}>
-                            <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                                <DatePicker
-                                    label="Start Date"
-                                    value={startDate}
-                                    onChange={(newValue) => newValue && setStartDate(newValue)}
-                                    format={getInputDateFormat()}
-                                    slotProps={{
-                                        field: {
-                                            onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
-                                        },
-                                        textField: {size: 'small', fullWidth: true},
-                                    }}
-                                />
-                                <DatePicker
-                                    label="End Date"
-                                    value={endDate}
-                                    onChange={(newValue) => newValue && setEndDate(newValue)}
-                                    format={getInputDateFormat()}
-                                    slotProps={{
-                                        field: {
-                                            onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
-                                        },
-                                        textField: {size: 'small', fullWidth: true},
-                                    }}
-                                />
-                            </Box>
-                            {startDate && endDate && (
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: "text.secondary",
-                                        display: 'block',
-                                        mt: 1,
-                                        textAlign: 'center'
-                                    }}>
-                                    {startDate.format('MMM DD, YYYY')} — {endDate.format('MMM DD, YYYY')}
-                                </Typography>
-                            )}
-                        </Box>
+                        <Stack gap="md" mt="md">
+                            <DateInput
+                                label="Start Date"
+                                value={startDate.format(ISO_DATE)}
+                                onChange={(value) => value && setStartDate(dayjs(value))}
+                                valueFormat={inputFormat}
+                                placeholder={inputFormat}
+                                size="sm"
+                            />
+                            <DateInput
+                                label="End Date"
+                                value={endDate.format(ISO_DATE)}
+                                onChange={(value) => value && setEndDate(dayjs(value))}
+                                valueFormat={inputFormat}
+                                placeholder={inputFormat}
+                                size="sm"
+                            />
+                            <Text size="xs" c="dimmed" ta="center">{rangeSummary}</Text>
+                        </Stack>
                     )}
 
-                    {/* Time Range (Minutes) */}
                     {selectedRangeOption === 'custom_minutes' && (
-                        <Box sx={{mt: 2}}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Duration</InputLabel>
-                                <Select
-                                    value={selectedMinsOption}
-                                    label="Duration"
-                                    onChange={(e) => handleMinsOptionChange(e.target.value as number)}
-                                >
-                                    {minsOptions.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>
-                                            {option.text}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    color: "text.secondary",
-                                    display: 'block',
-                                    mt: 1,
-                                    textAlign: 'center'
-                                }}>
-                                {'All Time'} — {endDate.format('MMM DD, h:mm A')}
-                            </Typography>
-                        </Box>
+                        <Stack gap="xs" mt="md">
+                            <Select
+                                label="Duration"
+                                value={String(selectedMinsOption)}
+                                onChange={(value) => value && handleMinsOptionChange(Number(value))}
+                                data={minsOptions}
+                                allowDeselect={false}
+                                size="sm"
+                            />
+                            <Text size="xs" c="dimmed" ta="center">{rangeSummary}</Text>
+                        </Stack>
                     )}
                 </Box>
 
                 <Divider/>
 
-                {/* Actions */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        gap: 1,
-                        p: 1.5,
-                    }}
-                >
-                    <Button size="small" onClick={handleClear}>
+                <Group justify="flex-end" gap="xs" p="sm">
+                    <Button size="xs" variant="subtle" onClick={handleClear}>
                         Reset
                     </Button>
-                    <Button
-                        size="small"
-                        variant="contained"
-                        onClick={handleApply}
-                    >
+                    <Button size="xs" onClick={handleApply}>
                         Apply
                     </Button>
-                </Box>
-            </Menu>
-        </LocalizationProvider>
+                </Group>
+            </Popover.Dropdown>
+        </Popover>
     );
 };
 

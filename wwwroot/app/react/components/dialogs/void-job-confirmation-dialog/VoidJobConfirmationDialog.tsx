@@ -3,7 +3,7 @@
  */
 
 import React, {useState, useMemo, useEffect, useCallback} from 'react';
-import {Alert, Badge, Box, Button, Checkbox, Group, Loader, Paper, Switch, Text, Textarea, UnstyledButton} from '@mantine/core';
+import {Alert, Badge, Box, Button, Checkbox, Group, Loader, Paper, Stack, Switch, Text, Textarea} from '@mantine/core';
 import {Info, Trash2, TriangleAlert} from 'lucide-react';
 import {Icon, UI_ICON_SIZE} from '../../common/icon/Icon';
 import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
@@ -88,10 +88,10 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
         }
     }, [relatedJobs.length, job, onLoadRelatedJobs, showToast]);
 
-    const toggleJobSelection = (jobId: number): void => {
-        setRelatedJobs(prev => prev.map(j =>
-            j.id === jobId ? {...j, selected: !j.selected} : j
-        ));
+    // Checkbox.Group reports the whole selection as string values, so every
+    // selection change — including Select/Deselect All — is the same setter.
+    const setSelectedJobIds = (ids: string[]): void => {
+        setRelatedJobs(prev => prev.map(j => ({...j, selected: ids.includes(String(j.id))})));
     };
 
     const selectAllJobs = (): void => {
@@ -152,7 +152,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 closeDisabled={isSubmitting}
             />
 
-            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
+            <Stack p="lg" gap="md" bg={dialogContentBg}>
                 {/* Warning */}
                 <Alert variant="light" color="orange" icon={<Icon lucide={TriangleAlert}/>}>
                     You are about to void job <strong>#{job.jobNo}</strong>.
@@ -230,37 +230,40 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                                         <Text fz="sm" c="dimmed" fs="italic">No related jobs found.</Text>
                                     </Box>
                                 ) : (
-                                    <Box mah={200} style={{overflowY: 'auto'}}>
-                                        {relatedJobs.map((relatedJob) => (
-                                            <UnstyledButton
-                                                key={relatedJob.id}
-                                                onClick={() => toggleJobSelection(relatedJob.id)}
-                                                disabled={isSubmitting}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 'var(--mantine-spacing-sm)',
-                                                    width: '100%',
-                                                    padding: '8px 12px',
-                                                    borderBottom: '1px solid var(--mantine-color-gray-3)',
-                                                    borderLeft: relatedJob.selected ? '3px solid var(--mantine-color-gray-6)' : '3px solid transparent',
-                                                    backgroundColor: relatedJob.selected ? 'var(--mantine-color-gray-1)' : undefined,
-                                                }}
-                                            >
-                                                <Checkbox checked={relatedJob.selected} readOnly tabIndex={-1} size="sm"/>
-                                                <Text fz="sm" style={{flex: 1, textAlign: 'left'}}>{relatedJob.text}</Text>
-                                                {relatedJob.id === job.id && (
-                                                    <Badge size="sm" variant="light" color="gray">current</Badge>
-                                                )}
-                                                {relatedJob.isBulkJob && (
-                                                    <Badge size="sm" variant="light" color="cyan">Bulk</Badge>
-                                                )}
-                                                {relatedJob.isArchived && (
-                                                    <Badge size="sm" variant="light" color="orange">Archived</Badge>
-                                                )}
-                                            </UnstyledButton>
-                                        ))}
-                                    </Box>
+                                    <Checkbox.Group value={selectedJobIds.map(String)} onChange={setSelectedJobIds}>
+                                        <Box mah={200} style={{overflowY: 'auto'}}>
+                                            {relatedJobs.map((relatedJob) => (
+                                                <Checkbox
+                                                    key={relatedJob.id}
+                                                    value={String(relatedJob.id)}
+                                                    disabled={isSubmitting}
+                                                    size="sm"
+                                                    px={12}
+                                                    py={8}
+                                                    styles={{labelWrapper: {flex: 1}}}
+                                                    style={{
+                                                        borderBottom: '1px solid var(--mantine-color-gray-3)',
+                                                        borderLeft: relatedJob.selected ? '3px solid var(--mantine-color-gray-6)' : '3px solid transparent',
+                                                        backgroundColor: relatedJob.selected ? 'var(--mantine-color-gray-1)' : undefined,
+                                                    }}
+                                                    label={
+                                                        <Group gap="xs" wrap="nowrap">
+                                                            <Text fz="sm" style={{flex: 1}}>{relatedJob.text}</Text>
+                                                            {relatedJob.id === job.id && (
+                                                                <Badge size="sm" variant="light" color="gray">current</Badge>
+                                                            )}
+                                                            {relatedJob.isBulkJob && (
+                                                                <Badge size="sm" variant="light" color="cyan">Bulk</Badge>
+                                                            )}
+                                                            {relatedJob.isArchived && (
+                                                                <Badge size="sm" variant="light" color="orange">Archived</Badge>
+                                                            )}
+                                                        </Group>
+                                                    }
+                                                />
+                                            ))}
+                                        </Box>
+                                    </Checkbox.Group>
                                 )}
 
                                 {/* Summary */}
@@ -278,7 +281,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                         )}
                     </Paper>
                 )}
-            </Box>
+            </Stack>
 
             <DialogFooter
                 onCancel={onClose}

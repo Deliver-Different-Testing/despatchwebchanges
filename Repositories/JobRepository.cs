@@ -847,8 +847,9 @@ public partial class JobRepository(
 
     /// <summary>
     /// Restores the given jobs back to active dispatch status, including genuinely-completed
-    /// jobs (the operator confirms that in the UI). Proof of delivery is always preserved
-    /// (see <see cref="RestoreJobsCoreAsync"/>).
+    /// jobs (the operator confirms that in the UI). The POD name is always cleared — the board
+    /// view excludes jobs that still carry one — while the captured images in S3 are left alone
+    /// unless the caller archives them separately (see <see cref="RestoreJobsCoreAsync"/>).
     /// </summary>
     /// <param name="jobIds">List of job IDs to restore.</param>
     public async Task RestoreJobsAsync(IReadOnlyList<int> jobIds)
@@ -3473,29 +3474,6 @@ public partial class JobRepository(
             .ToListAsync();
 
     /// <summary>
-    /// Filters archived jobs down to those with no live row of the same id. Archiving is performed
-    /// by legacy SQL outside this codebase, so nothing guarantees the two tables are exclusive;
-    /// live-precedence matches MergePreferLive in the price-detail report.
-    /// </summary>
-    /// <param name="archivedJobs">Archived-job query to filter.</param>
-    /// <param name="liveJobs">Live-job set from the <em>same</em> context, so the exclusion
-    /// translates to a single NOT EXISTS rather than a client-side round trip.</param>
-    private static IQueryable<TucJobArchive> ExcludeLiveDuplicates(
-        IQueryable<TucJobArchive> archivedJobs,
-        IQueryable<TucJob> liveJobs) =>
-        archivedJobs.Where(a => !liveJobs.Any(live => live.UcjbId == a.UcjbId));
-
-    /// <summary>
-    /// Resolves the display name of the Void status from the lookup table, falling back to the
-    /// enum name if the row is missing so exports never surface a blank status for a voided job.
-    /// </summary>
-    private static async Task<string> GetVoidStatusNameAsync(DespatchContext context) =>
-        await context.TucJobStatuses
-            .Where(s => s.UcjsId == (int)JobStatus.Void)
-            .Select(s => s.UcjsName)
-            .FirstOrDefaultAsync() ?? nameof(JobStatus.Void);
-
-    /// <summary>
     /// Retrieves event types for customer service, general events, and partner-task events.
     /// 'PT' covers the inter-tenant job-change-request workflow (Partner Change Request /
     /// Approved / Rejected / Applied).
@@ -4574,6 +4552,47 @@ public partial class JobRepository(
             .ToDictionaryAsync(x => x.UcjbId, x => x.UcjbComplTime);
     }
 
+    public async Task<IReadOnlyList<RestorePodDetail>> GetRestorePodDetailsAsync(IReadOnlyList<int> jobIds)
+    {
+        if (jobIds is null or { Count: 0 })
+        {
+            return [];
+        }
+
+        return await Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .Select(j => new RestorePodDetail
+            {
+                JobId = j.UcjbId,
+                PodName = j.UcjbPodname,
+                CompletedTime = j.UcjbComplTime
+            })
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Filters archived jobs down to those with no live row of the same id. Archiving is performed
+    /// by legacy SQL outside this codebase, so nothing guarantees the two tables are exclusive;
+    /// live-precedence matches MergePreferLive in the price-detail report.
+    /// </summary>
+    /// <param name="archivedJobs">Archived-job query to filter.</param>
+    /// <param name="liveJobs">Live-job set from the <em>same</em> context, so the exclusion
+    /// translates to a single NOT EXISTS rather than a client-side round trip.</param>
+    private static IQueryable<TucJobArchive> ExcludeLiveDuplicates(
+        IQueryable<TucJobArchive> archivedJobs,
+        IQueryable<TucJob> liveJobs) =>
+        archivedJobs.Where(a => !liveJobs.Any(live => live.UcjbId == a.UcjbId));
+
+    /// <summary>
+    /// Resolves the display name of the Void status from the lookup table, falling back to the
+    /// enum name if the row is missing so exports never surface a blank status for a voided job.
+    /// </summary>
+    private static async Task<string> GetVoidStatusNameAsync(DespatchContext context) =>
+        await context.TucJobStatuses
+            .Where(s => s.UcjsId == (int)JobStatus.Void)
+            .Select(s => s.UcjsName)
+            .FirstOrDefaultAsync() ?? nameof(JobStatus.Void);
+
     /// <summary>
     /// Restores the given jobs back onto the dispatch board (the C# replacement for the legacy
     /// uspRestoreJobs proc). Per job, it un-assigns the courier, clears dispatch/paging/completion
@@ -4660,6 +4679,9 @@ public partial class JobRepository(
                     .SetProperty(j => j.UcjbPaged, false)
                     .SetProperty(j => j.UcjbPagedTime, (DateTime?)null)
                     .SetProperty(j => j.UcjbComplTime, (DateTime?)null)
+                    .SetProperty(j => j.PickUpTime, (DateTime?)null)
+                    .SetProperty(j => j.PickupArrivalTime, (DateTime?)null)
+                    .SetProperty(j => j.DeliveryArrivalTime, (DateTime?)null)
                     .SetProperty(j => j.UcjbMobileSend, false)
                     .SetProperty(j => j.AutoDespatch, false)
                     .SetProperty(j => j.DisplayInDespatch, true)

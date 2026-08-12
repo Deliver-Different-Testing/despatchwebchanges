@@ -7,8 +7,6 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { DriverLocations } from './DriverLocations';
 import type {
     IClearListViewModelWithColumns,
@@ -16,8 +14,9 @@ import type {
     ICourierData,
     TruckMode,
 } from './DriverLocations.types';
-import { getTheme } from '../../../theme/muiTheme';
 import angular from 'angular';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React DriverLocations
@@ -63,9 +62,6 @@ class DriverLocationsReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap AngularJS callbacks to match React expected signatures
         const handleAreaClick = this.onAreaClick
             ? (area: IAreaClearList) => this.onAreaClick!({ area })
@@ -79,23 +75,23 @@ class DriverLocationsReactController implements angular.IController {
             ? () => this.onClearFilter!()
             : undefined;
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <DriverLocations
-                    driverLocations={this.driverLocations}
-                    loading={this.loading}
-                    showNoData={this.showNoData}
-                    showData={this.showData}
-                    truckMode={this.truckMode}
-                    activeAreaId={this.activeAreaId}
-                    onAreaClick={handleAreaClick}
-                    onCourierClick={handleCourierClick}
-                    onClearFilter={handleClearFilter}
-                    isUsCustomer={this.isUsCustomer}
-                />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+            <MuiThemeIsland>
+            <DriverLocations
+                driverLocations={this.driverLocations}
+                loading={this.loading}
+                showNoData={this.showNoData}
+                showData={this.showData}
+                truckMode={this.truckMode}
+                activeAreaId={this.activeAreaId}
+                onAreaClick={handleAreaClick}
+                onCourierClick={handleCourierClick}
+                onClearFilter={handleClearFilter}
+                isUsCustomer={this.isUsCustomer}
+            />
+
+            </MuiThemeIsland>
+        ));
     }
 }
 

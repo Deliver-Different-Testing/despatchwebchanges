@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Alert, Box, Checkbox, Divider, Select } from '@mantine/core';
+import {Alert, Box, Checkbox, Divider, Select, Stack} from '@mantine/core';
 import { ListChecks, TriangleAlert } from 'lucide-react';
 import { Icon } from '../../common/icon/Icon';
 import { DialogShell, DialogHeader, DialogFooter, dialogContentBg } from '../shared/mantine';
@@ -88,7 +88,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
                 closeDisabled={isLoading}
             />
             {/* Content */}
-            <Box p="lg" style={{backgroundColor: dialogContentBg, display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-md)'}}>
+            <Stack p="lg" gap="md" bg={dialogContentBg}>
                 {/* Select Dropdown */}
                 <Select
                     label={title}
@@ -118,7 +118,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
                         />
                     </>
                 )}
-            </Box>
+            </Stack>
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSubmit}

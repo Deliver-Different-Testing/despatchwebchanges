@@ -9,19 +9,12 @@
  * Renders nothing when the gate doesn't apply (Modes 2/3 / Accepted / non-partner job).
  */
 import React, {useState} from 'react';
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
+import {Alert, Box, Button, Group, Stack, Text, Textarea} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {Ban, TriangleAlert} from 'lucide-react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {Icon} from '../../icon/Icon';
+import {DialogFooter, DialogHeader, DialogShell, dialogContentBg} from '../../../dialogs/shared/mantine';
 import {
     acceptPartnerRate,
     getPartnerInboundRateAcceptance,
@@ -35,7 +28,7 @@ interface RateAcceptanceBannerProps {
 
 export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId}) => {
     const queryClient = useQueryClient();
-    const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+    const [rejectDialogOpen, {open: openRejectDialog, close: closeRejectDialog}] = useDisclosure(false);
     const [reason, setReason] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
 
@@ -71,7 +64,7 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
                 return;
             }
             setActionError(null);
-            setRejectDialogOpen(false);
+            closeRejectDialog();
             setReason('');
             void queryClient.invalidateQueries({queryKey});
         },
@@ -86,87 +79,98 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
         const proposed = state.proposedAgreedRate;
         return (
             <>
-                <Alert severity="warning" sx={{mb: 1}}>
-                    <AlertTitle>Partner rate needs review</AlertTitle>
-                    <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} sx={{
-                        alignItems: {sm: 'center'}
-                    }}>
-                        <Typography variant="body2" sx={{flex: 1}}>
-                            The partner has dispatched this job at{' '}
-                            <strong>{proposed != null ? formatCurrency(proposed) : 'an unspecified rate'}</strong>.
-                            Accept the rate to allocate a courier, or reject it with a note for the partner.
-                        </Typography>
-                        <Stack direction="row" spacing={1}>
-                            <Button
-                                size="small"
-                                variant="contained"
-                                color="success"
-                                disabled={acceptMutation.isPending}
-                                onClick={() => acceptMutation.mutate()}
-                            >
-                                {acceptMutation.isPending ? <CircularProgress size={16} color="inherit"/> : 'Accept'}
-                            </Button>
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                color="error"
-                                disabled={acceptMutation.isPending}
-                                onClick={() => setRejectDialogOpen(true)}
-                            >
-                                Reject
-                            </Button>
-                        </Stack>
+                <Alert
+                    color="orange"
+                    variant="light"
+                    icon={<Icon lucide={TriangleAlert} size={18}/>}
+                    title="Partner rate needs review"
+                    mb="xs"
+                >
+                    <Stack gap="sm">
+                        <Group align="center" gap="md" wrap="wrap">
+                            <Text size="sm" style={{flex: 1, minWidth: 240}}>
+                                The partner has dispatched this job at{' '}
+                                <strong>{proposed != null ? formatCurrency(proposed) : 'an unspecified rate'}</strong>.
+                                Accept the rate to allocate a courier, or reject it with a note for the partner.
+                            </Text>
+                            <Group gap="xs">
+                                <Button
+                                    size="xs"
+                                    color="green"
+                                    loading={acceptMutation.isPending}
+                                    onClick={() => acceptMutation.mutate()}
+                                >
+                                    Accept
+                                </Button>
+                                <Button
+                                    size="xs"
+                                    variant="outline"
+                                    color="red"
+                                    disabled={acceptMutation.isPending}
+                                    onClick={openRejectDialog}
+                                >
+                                    Reject
+                                </Button>
+                            </Group>
+                        </Group>
+                        {actionError && (
+                            <Text size="xs" c="red">{actionError}</Text>
+                        )}
                     </Stack>
-                    {actionError && (
-                        <Typography variant="caption" color="error" sx={{display: 'block', mt: 1}}>
-                            {actionError}
-                        </Typography>
-                    )}
                 </Alert>
-                <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} maxWidth="sm" fullWidth>
-                    <DialogTitle>Reject partner rate</DialogTitle>
-                    <DialogContent>
-                        <Typography variant="body2" sx={{mb: 2}}>
+                <DialogShell
+                    opened={rejectDialogOpen}
+                    onClose={closeRejectDialog}
+                    label="Reject partner rate"
+                >
+                    <DialogHeader
+                        icon={<Icon lucide={Ban}/>}
+                        title="Reject partner rate"
+                        variant="error"
+                        onClose={closeRejectDialog}
+                        closeDisabled={rejectMutation.isPending}
+                    />
+                    <Box p="lg" bg={dialogContentBg}>
+                        <Text size="sm" mb="md">
                             The partner will be notified that the rate was rejected, with the reason you supply
                             below. The job stays unactioned on your side until they re-dispatch or cancel.
-                        </Typography>
-                        <TextField
-                            autoFocus
-                            fullWidth
-                            multiline
-                            minRows={2}
+                        </Text>
+                        <Textarea
+                            data-autofocus
                             label="Reason"
+                            minRows={2}
+                            autosize
                             value={reason}
-                            onChange={(e) => setReason(e.target.value)}
+                            onChange={(e) => setReason(e.currentTarget.value)}
                             disabled={rejectMutation.isPending}
                         />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setRejectDialogOpen(false)} disabled={rejectMutation.isPending}>
-                            Cancel
-                        </Button>
-                        <Button
-                            color="error"
-                            variant="contained"
-                            disabled={!reason.trim() || rejectMutation.isPending}
-                            onClick={() => rejectMutation.mutate(reason.trim())}
-                        >
-                            {rejectMutation.isPending ? <CircularProgress size={16} color="inherit"/> : 'Reject Rate'}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    </Box>
+                    <DialogFooter
+                        onCancel={closeRejectDialog}
+                        onConfirm={() => rejectMutation.mutate(reason.trim())}
+                        confirmLabel="Reject Rate"
+                        confirmColor="red"
+                        confirmDisabled={!reason.trim()}
+                        submitting={rejectMutation.isPending}
+                    />
+                </DialogShell>
             </>
         );
     }
 
     if (state.status === 'Rejected') {
         return (
-            <Alert severity="error" sx={{mb: 1}}>
-                <AlertTitle>Partner rate rejected</AlertTitle>
-                <Typography variant="body2">
+            <Alert
+                color="red"
+                variant="light"
+                icon={<Icon lucide={Ban} size={18}/>}
+                title="Partner rate rejected"
+                mb="xs"
+            >
+                <Text size="sm">
                     {state.rejectionReason ?? 'No reason supplied.'} The partner has been notified; allocate
                     only after they re-dispatch.
-                </Typography>
+                </Text>
             </Alert>
         );
     }

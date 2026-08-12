@@ -1,0 +1,42 @@
+/*
+ * Resize gutters for the shell's column/row panels.
+ *
+ * These cannot be props: the glow is driven by `data-resize-handle-state` on the
+ * *parent* `PanelResizeHandle`, so both rules are ancestor-attribute selectors.
+ * Same shape as the recurring-jobs gutters — transparent at rest, glowing on
+ * hover, brighter while dragging.
+ */
+
+.handle {
+    background-color: transparent;
+    border-radius: var(--mantine-radius-sm);
+    transition:
+        background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.horizontal {
+    width: 8px;
+    cursor: col-resize;
+}
+
+.vertical {
+    height: 8px;
+    cursor: row-resize;
+}
+
+[data-resize-handle-state='hover'] .handle {
+    background-color: var(--mantine-primary-color-light);
+    box-shadow: 0 0 8px var(--mantine-primary-color-light);
+}
+
+[data-resize-handle-state='drag'] .handle {
+    background-color: var(--mantine-primary-color-filled);
+    box-shadow: 0 0 12px var(--mantine-primary-color-filled);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .handle {
+        transition: none;
+    }
+}

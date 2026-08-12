@@ -17,21 +17,10 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import Divider from '@mui/material/Divider';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import FormHelperText from '@mui/material/FormHelperText';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import Typography from '@mui/material/Typography';
+import {Alert, Box, Checkbox, Divider, Group, Loader, Stack, Text} from '@mantine/core';
+import {CalendarPlus, Info, TriangleAlert} from 'lucide-react';
+import {Icon} from '../../icon/Icon';
+import {DialogFooter, DialogHeader, DialogShell, dialogContentBg} from '../../../dialogs/shared/mantine';
 import {recurringJobsApi} from '../../../../services/recurringJobsApi';
 import type {
     CreateAheadBackfillCandidate,
@@ -178,125 +167,113 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
         return `Raising create-ahead days from ${oldValue} to ${newValue} would have covered these interim service dates.`;
     }, [oldValue, newValue]);
 
+    const nothingToBackfill = !!preview && preview.candidates.length === 0;
+
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <DialogTitle>Create missing interim bookings?</DialogTitle>
-            <DialogContent>
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, pt: 1}}>
-                    <Typography variant="body2" color="text.secondary">
-                        {summaryText}
-                    </Typography>
+        <DialogShell opened={open} onClose={handleClose} label="Create missing interim bookings?">
+            <DialogHeader
+                icon={<Icon lucide={CalendarPlus}/>}
+                title="Create missing interim bookings?"
+                onClose={handleClose}
+                closeDisabled={isSubmitting}
+            />
+            <Box p="lg" bg={dialogContentBg}>
+                <Stack gap="md">
+                    <Text size="sm" c="dimmed">{summaryText}</Text>
 
                     {isLoadingPreview && (
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                            <CircularProgress size={16}/>
-                            <Typography variant="body2">Loading preview...</Typography>
-                        </Box>
+                        <Group gap="xs">
+                            <Loader size={16} role="progressbar" aria-label="Loading preview"/>
+                            <Text size="sm">Loading preview...</Text>
+                        </Group>
                     )}
 
                     {previewError && (
-                        <Alert severity="error">{previewError}</Alert>
+                        <Alert color="red" variant="light" icon={<Icon lucide={TriangleAlert} size={18}/>}>
+                            {previewError}
+                        </Alert>
                     )}
 
                     {preview && !isLoadingPreview && (
                         <>
-                            {preview.candidates.length === 0 ? (
-                                <Alert severity="info">
+                            {nothingToBackfill ? (
+                                <Alert color="reflex" variant="light" icon={<Icon lucide={Info} size={18}/>}>
                                     No interim dates need backfilling. Every service date in the new
                                     window is either already live or does not match the recurrence
                                     pattern / holiday rules.
                                 </Alert>
                             ) : (
                                 <>
-                                    <FormControlLabel
-                                        control={
+                                    <Checkbox
+                                        label={`Select all (${preview.candidates.length})`}
+                                        checked={selectedDates.size === preview.candidates.length}
+                                        indeterminate={
+                                            selectedDates.size > 0
+                                            && selectedDates.size < preview.candidates.length
+                                        }
+                                        onChange={toggleAll}
+                                        disabled={isSubmitting}
+                                    />
+                                    <Stack gap="xs">
+                                        {preview.candidates.map((c: CreateAheadBackfillCandidate) => (
                                             <Checkbox
-                                                checked={selectedDates.size === preview.candidates.length}
-                                                indeterminate={
-                                                    selectedDates.size > 0
-                                                    && selectedDates.size < preview.candidates.length
-                                                }
-                                                onChange={toggleAll}
+                                                key={c.serviceDate}
+                                                label={`${c.displayLabel} (${c.serviceDate})`}
+                                                checked={selectedDates.has(c.serviceDate)}
+                                                onChange={() => toggleDate(c.serviceDate)}
                                                 disabled={isSubmitting}
                                             />
-                                        }
-                                        label={`Select all (${preview.candidates.length})`}
-                                    />
-                                    <List dense disablePadding>
-                                        {preview.candidates.map((c: CreateAheadBackfillCandidate) => (
-                                            <ListItem key={c.serviceDate} disableGutters>
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            checked={selectedDates.has(c.serviceDate)}
-                                                            onChange={() => toggleDate(c.serviceDate)}
-                                                            disabled={isSubmitting}
-                                                        />
-                                                    }
-                                                    label={`${c.displayLabel} (${c.serviceDate})`}
-                                                />
-                                            </ListItem>
                                         ))}
-                                    </List>
-                                    <FormHelperText>
+                                    </Stack>
+                                    <Text size="xs" c="dimmed">
                                         A fresh job number is minted per push (same logic as the nightly
                                         cron), so re-pushes are always safe against duplicates.
-                                    </FormHelperText>
+                                    </Text>
                                 </>
                             )}
 
                             {preview.alreadyExistingDates.length > 0 && (
                                 <>
                                     <Divider/>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Text size="xs" c="dimmed">
                                         Already live (no action needed): {preview.alreadyExistingDates.join(', ')}
-                                    </Typography>
+                                    </Text>
                                 </>
                             )}
 
                             {preview.skippedDates.length > 0 && (
                                 <>
                                     <Divider/>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Text size="xs" c="dimmed">
                                         Skipped by pattern / holiday rules:
-                                    </Typography>
-                                    <List dense disablePadding>
+                                    </Text>
+                                    <Stack gap={2} pl="xs">
                                         {preview.skippedDates.map((s) => (
-                                            <ListItem key={s.serviceDate} disableGutters sx={{pl: 1}}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {s.serviceDate} — {s.reason}
-                                                </Typography>
-                                            </ListItem>
+                                            <Text key={s.serviceDate} size="xs" c="dimmed">
+                                                {s.serviceDate} — {s.reason}
+                                            </Text>
                                         ))}
-                                    </List>
+                                    </Stack>
                                 </>
                             )}
                         </>
                     )}
-                </Box>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={handleClose} disabled={isSubmitting}>
-                    {preview && preview.candidates.length === 0 ? 'Close' : 'Skip backfill'}
-                </Button>
-                <Button
-                    onClick={handleCreate}
-                    color="primary"
-                    variant="contained"
-                    disabled={
-                        isSubmitting
-                        || isLoadingPreview
-                        || !preview
-                        || selectedDates.size === 0
-                    }
-                    startIcon={isSubmitting ? <CircularProgress size={16} color="inherit"/> : undefined}
-                >
-                    {isSubmitting
-                        ? 'Creating...'
-                        : `Create ${selectedDates.size} booking(s)`}
-                </Button>
-            </DialogActions>
-        </Dialog>
+                </Stack>
+            </Box>
+            <DialogFooter
+                onCancel={handleClose}
+                cancelLabel={nothingToBackfill ? 'Close' : 'Skip backfill'}
+                onConfirm={handleCreate}
+                confirmLabel={isSubmitting ? 'Creating...' : `Create ${selectedDates.size} booking(s)`}
+                confirmDisabled={
+                    isSubmitting
+                    || isLoadingPreview
+                    || !preview
+                    || selectedDates.size === 0
+                }
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

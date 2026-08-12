@@ -5,7 +5,9 @@
  */
 
 import React, {useState, useCallback, useEffect} from 'react';
-import {Box, Checkbox, Combobox, Group, Loader, Paper, Radio, Text, TextInput, useCombobox} from '@mantine/core';
+import {Box, Checkbox, Combobox, Group, Loader, Paper, Text, TextInput, useCombobox} from '@mantine/core';
+import {useDebouncedValue} from '@mantine/hooks';
+import {SegmentedToggle} from '../../common/segmented-toggle';
 import {Check, ListFilter, SearchX} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
@@ -129,16 +131,13 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
         }
     }, [activeSearchFn, minInputLength]);
 
-    // Debounce the search
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            if (inputValue && inputValue.length >= minInputLength) {
-               await handleSearch(inputValue);
-            }
-        }, 300);
+    const [debouncedInput] = useDebouncedValue(inputValue, 300);
 
-        return () => clearTimeout(timer);
-    }, [inputValue, handleSearch, minInputLength]);
+    useEffect(() => {
+        if (debouncedInput && debouncedInput.length >= minInputLength) {
+            void handleSearch(debouncedInput);
+        }
+    }, [debouncedInput, handleSearch, minInputLength]);
 
     const handleSubmit = () => {
         if (selectedItem) {
@@ -161,18 +160,16 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                         Steve 2026-05-26: "Add a radio button row above the
                         existing dropdown" for the 3-way Assign picker. */}
                     {hasTypeOptions && (
-                        <Radio.Group
-                            value={selectedType}
-                            onChange={handleTypeChange}
-                            mb="md"
-                        >
-                            <Group gap="md" align="center">
-                                <Text fz="sm" fw={600} c="dimmed">Type:</Text>
-                                {typeOptions!.map((opt) => (
-                                    <Radio key={opt.value} value={opt.value} label={opt.label} size="sm" />
-                                ))}
-                            </Group>
-                        </Radio.Group>
+                        <Group gap="md" align="center" mb="md">
+                            <Text fz="sm" fw={600} c="dimmed">Type:</Text>
+                            <SegmentedToggle
+                                aria-label="Type"
+                                variant="inline"
+                                value={selectedType}
+                                onChange={handleTypeChange}
+                                data={typeOptions!.map((opt) => ({value: opt.value, label: opt.label}))}
+                            />
+                        </Group>
                     )}
 
                     <Combobox

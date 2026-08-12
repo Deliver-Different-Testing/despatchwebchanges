@@ -14,19 +14,17 @@
  * there, this test fails.
  */
 
-// Force Jest to load the real AdapterDayjs instead of the lightweight mock that
-// jest.config.js moduleNameMapper routes @mui/x-date-pickers/AdapterDayjs to.
-// Pattern lifted from EditDateTimeDialog.realpicker.test.tsx:15-20.
-jest.mock('./mocks/muiDatePickerMocks', () => ({
-    ...require('../../../node_modules/@mui/x-date-pickers/AdapterDayjs'),
-}));
+// The real AdapterDayjs loads directly now: no app code imports the MUI pickers any
+// more (Phase 7b), so the mock module and its moduleNameMapper entries are gone.
+// AdapterDayjs itself is still shipped by vendor-react until Phase 9, so the plugin
+// contract below is still live.
 
 import dayjs from 'dayjs';
 import '../vendor-core-dayjs';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 
 describe('vendor-core dayjs plugins required by AdapterDayjs', () => {
-    it('customParseFormat: parses DD/MM/YYYY (the format used by DateFilterMenu/EditDateTimeDialog)', () => {
+    it('customParseFormat: parses DD/MM/YYYY through the adapter', () => {
         const adapter = new AdapterDayjs();
         const parsed = adapter.parse('15/03/2025', 'DD/MM/YYYY');
         expect(parsed).not.toBeNull();

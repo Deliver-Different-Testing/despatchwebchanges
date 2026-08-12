@@ -7,12 +7,11 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { NoData } from './NoData';
-import { getTheme } from '../../../theme/muiTheme';
 import {IAppConfig} from "../../../../interfaces/app-config.interface";
 import angular from 'angular';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React NoData
@@ -58,9 +57,6 @@ class NoDataReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap AngularJS callback to match React expected signature
         const handleAction = this.onAction
             ? () => this.onAction!()
@@ -74,20 +70,20 @@ class NoDataReactController implements angular.IController {
             showActionBool = this.showAction;
         }
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <NoData
-                    title={this.title}
-                    message={this.message}
-                    icon={this.icon}
-                    showAction={showActionBool}
-                    actionText={this.actionText}
-                    onAction={handleAction}
-                    isUsCustomer={this.isUsCustomer}
-                />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+            <MuiThemeIsland>
+            <NoData
+                title={this.title}
+                message={this.message}
+                icon={this.icon}
+                showAction={showActionBool}
+                actionText={this.actionText}
+                onAction={handleAction}
+                isUsCustomer={this.isUsCustomer}
+            />
+
+            </MuiThemeIsland>
+        ));
     }
 }
 

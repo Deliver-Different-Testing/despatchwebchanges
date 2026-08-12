@@ -7,16 +7,12 @@
  * written.
  */
 import React from 'react';
-import type {SxProps, Theme} from '@mui/material';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import DialogContent from '@mui/material/DialogContent';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import EventRepeatIcon from '@mui/icons-material/EventRepeat';
-import {DialogShell, DialogHeader, DialogFooter, sectionPaperSx} from '../shared';
+import {Alert, Badge, Box, Button, Divider, Group, Paper, Stack, Text} from '@mantine/core';
+import {CalendarSync, Info, TriangleAlert} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps,
+} from '../shared/mantine';
 import type {DateCascadeFamilyMember} from '../../../services/jobDetailApi';
 
 export type CascadeChoice = 'self' | 'all';
@@ -32,14 +28,6 @@ export interface CascadeDateConfirmDialogProps {
     onCancel: () => void;
     onChoose: (choice: CascadeChoice) => void;
 }
-
-const memberRowSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-    py: 1,
-    '&:not(:last-of-type)': {borderBottom: '1px solid', borderColor: 'divider'},
-} satisfies SxProps<Theme>;
 
 function reasonLabel(member: DateCascadeFamilyMember): string | null {
     if (member.locked) return 'Locked';
@@ -60,51 +48,62 @@ export const CascadeDateConfirmDialog: React.FC<CascadeDateConfirmDialogProps> =
     const blocked = members.filter((m) => !m.cascadable);
 
     return (
-        <DialogShell open={open} onClose={submitting ? undefined : onCancel}>
+        <DialogShell
+            opened={open}
+            onClose={submitting ? () => {} : onCancel}
+            label="Apply date to linked jobs?"
+        >
             <DialogHeader
-                icon={<EventRepeatIcon/>}
+                icon={<Icon lucide={CalendarSync}/>}
                 title="Apply date to linked jobs?"
                 subtitle={`${jobNumber} · ${cascadable.length} linked job${cascadable.length === 1 ? '' : 's'}`}
                 onClose={onCancel}
                 variant="warning"
                 closeDisabled={submitting}
             />
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
-                    <Alert severity="info">
+            <Box p="lg" bg={dialogContentBg}>
+                <Stack gap="lg">
+                    <Alert color="reflex" variant="light" icon={<Icon lucide={Info} size={18}/>}>
                         {jobNumber} moves to <strong>{newDateLabel}</strong>. Each linked job keeps its own
                         time — only the date changes.
                     </Alert>
 
-                    <Paper elevation={0} sx={sectionPaperSx}>
+                    <Paper {...sectionPaperProps}>
                         {members.length === 0 && (
-                            <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                                No linked jobs found.
-                            </Typography>
+                            <Text size="sm" c="dimmed">No linked jobs found.</Text>
                         )}
-                        {members.map((member) => {
+                        {/* Real `Divider`s between rows rather than a
+                            `:not(:last-of-type)` rule, so no stylesheet is needed. */}
+                        {members.map((member, index) => {
                             const reason = reasonLabel(member);
                             return (
-                                <Box
-                                    key={member.jobId}
-                                    sx={{...memberRowSx, opacity: member.cascadable ? 1 : 0.6}}
-                                >
-                                    <Typography variant="body2" sx={{flex: 1, fontWeight: 500}}>
-                                        {member.jobNo ?? `Job ${member.jobId}`}
-                                    </Typography>
-                                    {reason && <Chip size="small" variant="outlined" label={reason}/>}
-                                </Box>
+                                <React.Fragment key={member.jobId}>
+                                    {index > 0 && <Divider/>}
+                                    <Group
+                                        gap="xs"
+                                        py="xs"
+                                        wrap="nowrap"
+                                        style={{opacity: member.cascadable ? 1 : 0.6}}
+                                    >
+                                        <Text size="sm" fw={500} style={{flex: 1}}>
+                                            {member.jobNo ?? `Job ${member.jobId}`}
+                                        </Text>
+                                        {reason && (
+                                            <Badge size="sm" variant="outline" color="gray" tt="none">{reason}</Badge>
+                                        )}
+                                    </Group>
+                                </React.Fragment>
                             );
                         })}
                     </Paper>
 
                     {blocked.length > 0 && (
-                        <Alert severity="warning">
+                        <Alert color="orange" variant="light" icon={<Icon lucide={TriangleAlert} size={18}/>}>
                             {blocked.length} linked job{blocked.length === 1 ? '' : 's'} will not be changed.
                         </Alert>
                     )}
-                </Box>
-            </DialogContent>
+                </Stack>
+            </Box>
             <DialogFooter
                 onCancel={onCancel}
                 onConfirm={() => onChoose('all')}
@@ -113,10 +112,10 @@ export const CascadeDateConfirmDialog: React.FC<CascadeDateConfirmDialogProps> =
                 submitting={submitting}
                 secondaryAction={
                     <Button
-                        variant="outlined"
+                        variant="default"
                         onClick={() => onChoose('self')}
                         disabled={submitting}
-                        sx={{minWidth: 100, minHeight: 44}}
+                        miw={100}
                     >
                         This job only
                     </Button>

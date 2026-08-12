@@ -5,9 +5,8 @@
 
 import React, {useCallback, useRef, useEffect} from 'react';
 import {formatCurrency} from '../../../../utils/currencyUtils';
-import Box from '@mui/material/Box';
-import type {SxProps, Theme} from '@mui/material/styles';
-import Chip from '@mui/material/Chip';
+import {Badge, Group, SimpleGrid} from '@mantine/core';
+import {sectionBorderStyle} from '../JobDetails.styles';
 import {MetricCard} from './MetricCard';
 import type {IJob} from '../JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../../utils/dateUtils';
@@ -28,16 +27,17 @@ interface MetricsGridProps {
     onInternalStatusClick: () => void;
 }
 
-const gridSx: SxProps<Theme> = {
-    display: 'grid',
-    gridTemplateColumns: {
-        xs: 'repeat(2, 1fr)',
-        sm: 'repeat(3, 1fr)',
-        md: 'repeat(6, 1fr)',
-    },
-    gap: '1px',
-    bgcolor: 'grey.200',
-};
+/**
+ * The 1px gap over a grey fill is what draws the separators between tiles — the
+ * cards themselves are borderless. `spacing={1}` is 1px (Mantine converts number
+ * spacing to rem).
+ */
+const gridProps = {
+    cols: {base: 2, sm: 3, md: 6},
+    spacing: 1,
+    verticalSpacing: 1,
+    style: {backgroundColor: 'var(--mantine-color-gray-3)'},
+} as const;
 
 function getTzStr(timezone?: { text?: string }): string {
     if (timezone?.text) return getTimezoneAbbreviation(timezone.text);
@@ -117,7 +117,7 @@ export const MetricsGrid = React.memo(({
     return (
         <>
             {/* Row 1: PRICING, READY, PU ARRIVAL, PU TIME, DELIVER BY */}
-            <Box sx={gridSx}>
+            <SimpleGrid {...gridProps}>
                 <MetricCard
                     label="Pricing"
                     value={job.charge != null ? formatCurrency(job.charge) : ''}
@@ -163,10 +163,10 @@ export const MetricsGrid = React.memo(({
                     filled
                     dense={dense}
                 />
-            </Box>
+            </SimpleGrid>
 
             {/* Row 2: DISPATCHED, DEL ARRIVAL, POD NAME, POD TIME, FOLLOW UP, CLIENT NAME */}
-            <Box sx={{...gridSx as object, borderTop: 1, borderColor: 'divider'}}>
+            <SimpleGrid {...gridProps} style={{...gridProps.style, ...sectionBorderStyle}}>
                 <MetricCard
                     label="Dispatched"
                     value={job.dispatchTime ? `${job._dispatchTimeStr} ${defaultTz}` : '-'}
@@ -218,19 +218,26 @@ export const MetricsGrid = React.memo(({
                     filled
                     dense={dense}
                 />
-            </Box>
+            </SimpleGrid>
 
             {/* Internal Status - only editable on nationwide jobs */}
             {job.hasNationwide && job.internalStatusId != null && (
-                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: dense ? 0.25 : 0.75, borderTop: 1, borderColor: 'divider'}}>
-                    <Chip
-                        label={`Internal: ${getInternalStatusLabel(job.internalStatusId)}`}
-                        size="small"
-                        clickable
+                <Group
+                    justify="center"
+                    style={{paddingBlock: dense ? 2 : 6, ...sectionBorderStyle}}
+                >
+                    {/* Mantine has no clickable `Chip` in the MUI sense (its Chip is a
+                        checkbox), so the status pill is a `Badge` rendered as a button. */}
+                    <Badge
+                        component="button"
+                        type="button"
+                        variant="default"
                         onClick={onInternalStatusClick}
-                        sx={{fontSize: '0.75rem', fontWeight: 500}}
-                    />
-                </Box>
+                        style={{fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer', textTransform: 'none'}}
+                    >
+                        {`Internal: ${getInternalStatusLabel(job.internalStatusId)}`}
+                    </Badge>
+                </Group>
             )}
         </>
     );

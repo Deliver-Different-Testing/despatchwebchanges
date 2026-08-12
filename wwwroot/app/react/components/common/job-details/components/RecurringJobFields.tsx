@@ -6,30 +6,16 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import InputLabel from '@mui/material/InputLabel';
-import Tooltip from '@mui/material/Tooltip';
-import ListItemButton from '@mui/material/ListItemButton';
-import TextField from '@mui/material/TextField';
-import RepeatIcon from '@mui/icons-material/Repeat';
-import EventIcon from '@mui/icons-material/Event';
-import EventBusyIcon from '@mui/icons-material/EventBusy';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import {alpha} from '@mui/material/styles';
-import type {SxProps, Theme} from '@mui/material/styles';
-import type {SvgIconProps} from '@mui/material/SvgIcon';
+import {
+    Box, Button, Divider, Group, NumberInput, Paper, Select, Stack, Text, ThemeIcon, Tooltip,
+    UnstyledButton,
+} from '@mantine/core';
+import {Calendar, CalendarCheck, CalendarX, ChevronRight, Repeat} from 'lucide-react';
+import {IconPlaneDeparture} from '@tabler/icons-react';
 import dayjs from 'dayjs';
+import {Icon, type LucideIcon, type TablerIcon} from '../../icon/Icon';
 import type {IJob} from '../JobDetails.types';
-import {cardContainerSx} from '../JobDetails.styles';
+import {cardContainerProps} from '../JobDetails.styles';
 import {SectionHeader} from './SectionHeader';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {Frequency} from '../../../../../enums/frequency.enum';
@@ -66,8 +52,8 @@ const dayOptions = DaysOfWeekHelpers.allDays.map(day => ({
     label: DaysOfWeekHelpers.dayLabels[day],
 }));
 
-/** Saturday/Sunday selected chips render as `secondary` to call out
- *  weekend scheduling at a glance — the rest of the week stays `primary`. */
+/** Saturday/Sunday selected pills take the grape accent to call out weekend
+ *  scheduling at a glance — the rest of the week stays on the tenant brand. */
 function isWeekend(day: DaysOfWeek): boolean {
     return day === DaysOfWeek.Saturday || day === DaysOfWeek.Sunday;
 }
@@ -89,56 +75,50 @@ const holidayOptions = [
     {value: HolidayDeliveryOptions.BookAnyway, label: 'Book Anyway'},
 ];
 
-const captionSx = {
+/** Mantine `Select` is string-keyed, so the numeric enums round-trip as strings. */
+const toSelectData = (options: Array<{value: number; label: string}>) =>
+    options.map(o => ({value: String(o.value), label: o.label}));
+
+const captionStyle: React.CSSProperties = {
     display: 'block',
     fontSize: '0.6875rem',
     fontWeight: 600,
-    color: 'text.secondary',
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
-    mb: 1,
-} satisfies SxProps<Theme>;
+    marginBottom: 8,
+};
 
-const dateAvatarSx = (theme: Theme) => ({
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 36,
-    height: 36,
-    borderRadius: '50%',
-    flexShrink: 0,
-    bgcolor: alpha(theme.palette.primary.main, 0.08),
-    color: theme.palette.primary.main,
+/**
+ * The round tinted glyph in front of each date row — Mantine's `ThemeIcon` in its
+ * `light` variant, which is exactly a brand-tinted disc with the brand glyph.
+ */
+const dateAvatarProps = {
+    size: 36,
+    radius: 'xl',
+    variant: 'light',
+    style: {flexShrink: 0},
+} as const;
+
+const dateLabelStyle: React.CSSProperties = {
+    fontSize: '0.75rem',
+    lineHeight: 1.3,
+};
+
+// Truncation is <Text truncate> at the call site, not three properties here.
+const dateValueStyle = (isSet: boolean): React.CSSProperties => ({
+    fontSize: '0.875rem',
+    fontWeight: isSet ? 500 : 400,
+    lineHeight: 1.4,
 });
 
-const dateLabelSx = {
-    fontSize: '0.75rem',
-    color: 'text.secondary',
-    lineHeight: 1.3,
-} satisfies SxProps<Theme>;
-
-const dateValueSetSx = {
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    color: 'text.primary',
-    lineHeight: 1.4,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-} satisfies SxProps<Theme>;
-
-const dateValueUnsetSx = {
-    ...dateValueSetSx,
-    fontWeight: 400,
-    color: 'text.disabled',
-} satisfies SxProps<Theme>;
-
-const dateRowSx = (dense: boolean): SxProps<Theme> => ({
+const dateRowStyle = (dense: boolean): React.CSSProperties => ({
     display: 'flex',
     alignItems: 'center',
-    gap: 2,
-    px: dense ? 2 : 2.5,
-    py: dense ? 1.25 : 1.75,
+    gap: 16,
+    width: '100%',
+    textAlign: 'left',
+    paddingInline: dense ? 16 : 20,
+    paddingBlock: dense ? 10 : 14,
 });
 
 export function RecurringJobFields({
@@ -228,90 +208,124 @@ export function RecurringJobFields({
     const dateRows: Array<{
         label: string;
         value: string | undefined;
-        Icon: React.ComponentType<SvgIconProps>;
+        glyph: LucideIcon;
         onClick: () => void;
         tooltipDate: dayjs.Dayjs | undefined;
     }> = [
-        {label: 'First Due', value: firstDueDisplay, Icon: EventIcon, onClick: onEditFirstDue, tooltipDate: job.firstDue},
-        {label: 'Stop Date', value: job._stopDateStr, Icon: EventBusyIcon, onClick: onEditStopDate, tooltipDate: job.stopDate},
-        {label: 'Restart Date', value: job._restartDateStr, Icon: EventAvailableIcon, onClick: onEditRestartDate, tooltipDate: job.restartDate},
+        {label: 'First Due', value: firstDueDisplay, glyph: Calendar, onClick: onEditFirstDue, tooltipDate: job.firstDue},
+        {label: 'Stop Date', value: job._stopDateStr, glyph: CalendarX, onClick: onEditStopDate, tooltipDate: job.stopDate},
+        {label: 'Restart Date', value: job._restartDateStr, glyph: CalendarCheck, onClick: onEditRestartDate, tooltipDate: job.restartDate},
     ];
 
-    const innerDividerMx = dense ? 2 : 2.5;
-    const bodyPx = dense ? 2 : 2.5;
-    const bodyPy = dense ? 1.5 : 2;
+    const innerDividerMx = dense ? 16 : 20;
+    const bodyPx = dense ? 16 : 20;
+    const bodyPy = dense ? 12 : 16;
+
+    /** One of the three "tap to edit" rows (a date, or the saved flight). */
+    const detailRow = (
+        {label, value, glyph, tabler, onClick, tooltip}: {
+            label: string;
+            value: string | undefined;
+            glyph?: LucideIcon;
+            tabler?: TablerIcon;
+            onClick: () => void;
+            tooltip: string;
+        }
+    ) => (
+        <Tooltip label={tooltip} position="top-start" withArrow>
+            <UnstyledButton onClick={onClick} style={dateRowStyle(dense)}>
+                <ThemeIcon {...dateAvatarProps}>
+                    <Icon lucide={glyph} tabler={tabler} size={20}/>
+                </ThemeIcon>
+                <Box style={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
+                    <Text c="dimmed" style={dateLabelStyle}>{label}</Text>
+                    <Text truncate c={value ? undefined : 'dimmed'} style={dateValueStyle(!!value)}>
+                        {value || 'Not set'}
+                    </Text>
+                </Box>
+                <Icon lucide={ChevronRight} size={20} color="var(--mantine-color-dimmed)" style={{flexShrink: 0}} aria-hidden/>
+            </UnstyledButton>
+        </Tooltip>
+    );
 
     return (
-        <Stack spacing={1.5}>
+        <Stack gap="sm">
             {/* Card 1 — Recurring Schedule (days, frequency, holiday) */}
-            <Box sx={cardContainerSx}>
+            <Paper {...cardContainerProps}>
                 <SectionHeader
-                    icon={RepeatIcon}
+                    lucide={Repeat}
                     title="Recurring Schedule"
                     subtitle="When this job repeats"
                     dense={dense}
                 />
-                <Box sx={{px: bodyPx, py: bodyPy}}>
-                    <Typography sx={captionSx}>Days of Week</Typography>
-                    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2}}>
+                <Box style={{paddingInline: bodyPx, paddingBlock: bodyPy}}>
+                    <Text c="dimmed" style={captionStyle}>Days of Week</Text>
+                    {/*
+                      * Multi-select toggles, so these stay buttons with `aria-pressed`
+                      * rather than a `Chip.Group` — Mantine chips are checkboxes, which
+                      * loses the pressed state. `data-tone` carries the weekday/weekend
+                      * distinction so tests assert the contract, not the palette.
+                      */}
+                    <Group gap={6} wrap="wrap" mb="md" role="group" aria-label="Days of week">
                         {dayOptions.map(day => {
                             const selected = daysOfWeekArray.includes(day.value);
-                            const selectedColor = isWeekend(day.value) ? 'secondary' : 'primary';
+                            const weekend = isWeekend(day.value);
                             return (
-                                <Chip
+                                <Button
                                     key={day.value}
-                                    label={day.label}
-                                    size="small"
-                                    color={selected ? selectedColor : 'default'}
-                                    variant={selected ? 'filled' : 'outlined'}
+                                    size="compact-xs"
+                                    radius="xl"
+                                    variant={selected ? 'filled' : 'default'}
+                                    color={selected && weekend ? 'grape' : undefined}
+                                    aria-pressed={selected}
+                                    data-tone={weekend ? 'weekend' : 'weekday'}
                                     onClick={() => toggleDay(day.value)}
-                                    clickable
-                                    sx={{fontSize: '0.75rem', fontWeight: 500}}
-                                />
+                                    style={{fontSize: '0.75rem', fontWeight: 500}}
+                                >
+                                    {day.label}
+                                </Button>
                             );
                         })}
-                    </Box>
-                    <Stack direction="row" spacing={1.5}>
-                        <FormControl size="small" sx={{flex: 1}}>
-                            <InputLabel>Frequency</InputLabel>
-                            <Select
-                                value={job.frequency ?? Frequency.None}
-                                label="Frequency"
-                                onChange={(e) => onFrequencyChange(Number(e.target.value))}
-                            >
-                                {frequencyOptions.map(opt => (
-                                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <FormControl size="small" sx={{flex: 1}}>
-                            <InputLabel>Holiday</InputLabel>
-                            <Select
-                                value={job.holidayDeliveryOption ?? HolidayDeliveryOptions.DontBook}
-                                label="Holiday"
-                                onChange={(e) => onHolidayOptionChange(Number(e.target.value))}
-                            >
-                                {holidayOptions.map(opt => (
-                                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Stack>
+                    </Group>
+                    <Group gap="sm" grow align="flex-start">
+                        <Select
+                            label="Frequency"
+                            data={toSelectData(frequencyOptions)}
+                            value={String(job.frequency ?? Frequency.None)}
+                            onChange={(value) => value != null && onFrequencyChange(Number(value))}
+                            allowDeselect={false}
+                            // Two selects in one row: keeping both dropdowns mounted
+                            // would leave two listboxes in the DOM at once.
+                            comboboxProps={{keepMounted: false}}
+                        />
+                        <Select
+                            label="Holiday"
+                            data={toSelectData(holidayOptions)}
+                            value={String(job.holidayDeliveryOption ?? HolidayDeliveryOptions.DontBook)}
+                            onChange={(value) => value != null && onHolidayOptionChange(Number(value))}
+                            allowDeselect={false}
+                            comboboxProps={{keepMounted: false}}
+                        />
+                    </Group>
                     {/* Create-ahead offset. Save-on-blur so the confirmation
                      *  dialog for the interim backfill only opens once per edit
                      *  cycle, not on every keystroke. Enter also commits. */}
                     <Tooltip
-                        title="Cron creates this recurring job's live tucJob N days ahead of the service date. Raising this value offers to backfill the interim service dates that would otherwise be skipped."
-                        placement="top-start"
-                        arrow
+                        label="Cron creates this recurring job's live tucJob N days ahead of the service date. Raising this value offers to backfill the interim service dates that would otherwise be skipped."
+                        position="top-start"
+                        withArrow
+                        multiline
+                        w={320}
                     >
-                        <TextField
+                        {/* Mantine's own numeric control: it refuses non-numeric
+                            input at the source and clamps to [0, 30] on blur, so
+                            `commitInitialDays` only has to decide whether the
+                            settled value differs from what is saved. */}
+                        <NumberInput
                             label="Create bookings X days ahead"
-                            size="small"
-                            fullWidth
-                            type="number"
+                            mt="sm"
                             value={initialDaysDraft}
-                            onChange={(e) => setInitialDaysDraft(e.target.value)}
+                            onChange={(value) => setInitialDaysDraft(String(value ?? ''))}
                             onBlur={commitInitialDays}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
@@ -325,83 +339,60 @@ export function RecurringJobFields({
                                     (e.target as HTMLInputElement).blur();
                                 }
                             }}
-                            slotProps={{
-                                htmlInput: {
-                                    min: 0,
-                                    max: MAX_RECURRING_INITIAL_DAYS,
-                                    step: 1,
-                                    inputMode: 'numeric',
-                                },
-                            }}
-                            sx={{mt: 1.5}}
+                            min={0}
+                            max={MAX_RECURRING_INITIAL_DAYS}
+                            step={1}
+                            clampBehavior="blur"
+                            allowDecimal={false}
+                            // Negatives stay *typable* on purpose: `allowNegative={false}`
+                            // would silently turn "-5" into 5, whereas clamping turns it
+                            // into 0 — the value the operator actually meant.
                         />
                     </Tooltip>
                 </Box>
-            </Box>
+            </Paper>
 
             {/* Card 2 — Schedule Dates (always pickup-timezone anchored) */}
-            <Box sx={cardContainerSx}>
+            <Paper {...cardContainerProps}>
                 <SectionHeader
-                    icon={EventIcon}
+                    lucide={Calendar}
                     title="Schedule Dates"
                     subtitle="Anchored to pickup timezone"
                     dense={dense}
                 />
-                {dateRows.map((row, index) => {
-                    const {Icon} = row;
-                    const isSet = !!row.value;
-                    return (
-                        <React.Fragment key={row.label}>
-                            {index > 0 && <Divider sx={{mx: innerDividerMx}} />}
-                            <Tooltip title={dateTooltip(row.label, row.tooltipDate, row.value)} placement="top-start" arrow>
-                                <ListItemButton onClick={row.onClick} sx={dateRowSx(dense)}>
-                                    <Box sx={dateAvatarSx}>
-                                        <Icon sx={{fontSize: 20}} />
-                                    </Box>
-                                    <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
-                                        <Typography sx={dateLabelSx}>{row.label}</Typography>
-                                        <Typography sx={isSet ? dateValueSetSx : dateValueUnsetSx}>
-                                            {isSet ? row.value : 'Not set'}
-                                        </Typography>
-                                    </Box>
-                                    <ChevronRightIcon sx={{color: 'text.secondary', fontSize: 20, flexShrink: 0}} />
-                                </ListItemButton>
-                            </Tooltip>
-                        </React.Fragment>
-                    );
-                })}
-            </Box>
+                {dateRows.map((row, index) => (
+                    <React.Fragment key={row.label}>
+                        {index > 0 && <Divider mx={innerDividerMx}/>}
+                        {detailRow({
+                            label: row.label,
+                            value: row.value,
+                            glyph: row.glyph,
+                            onClick: row.onClick,
+                            tooltip: dateTooltip(row.label, row.tooltipDate, row.value),
+                        })}
+                    </React.Fragment>
+                ))}
+            </Paper>
 
             {/* Card 3 — Saved Flight (flight bookings only) */}
             {isFlightJob && hasRoute && (
-                <Box sx={cardContainerSx}>
+                <Paper {...cardContainerProps}>
                     <SectionHeader
-                        icon={FlightTakeoffIcon}
+                        tabler={IconPlaneDeparture}
                         title="Flight"
                         subtitle="Auto-assigned on push to live"
                         dense={dense}
                     />
-                    <Tooltip
-                        title={job.savedFlightNumber
+                    {detailRow({
+                        label: 'Saved Flight',
+                        value: job.savedFlightNumber || undefined,
+                        tabler: IconPlaneDeparture,
+                        onClick: onEditSavedFlight,
+                        tooltip: job.savedFlightNumber
                             ? `Saved flight ${job.savedFlightNumber} — re-assigned each push`
-                            : 'No saved flight — set one to auto-assign on push'}
-                        placement="top-start"
-                        arrow
-                    >
-                        <ListItemButton onClick={onEditSavedFlight} sx={dateRowSx(dense)}>
-                            <Box sx={dateAvatarSx}>
-                                <FlightTakeoffIcon sx={{fontSize: 20}} />
-                            </Box>
-                            <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
-                                <Typography sx={dateLabelSx}>Saved Flight</Typography>
-                                <Typography sx={job.savedFlightNumber ? dateValueSetSx : dateValueUnsetSx}>
-                                    {job.savedFlightNumber || 'Not set'}
-                                </Typography>
-                            </Box>
-                            <ChevronRightIcon sx={{color: 'text.secondary', fontSize: 20, flexShrink: 0}} />
-                        </ListItemButton>
-                    </Tooltip>
-                </Box>
+                            : 'No saved flight — set one to auto-assign on push',
+                    })}
+                </Paper>
             )}
 
             {/* Card 3 (no route yet) — Add Flight. Lets the operator attach a
@@ -409,30 +400,31 @@ export function RecurringJobFields({
                 the dialog collects From/To airports + flight number and the
                 push-to-live auto-assign takes over from there. */}
             {isFlightJob && !hasRoute && (
-                <Box sx={cardContainerSx}>
+                <Paper {...cardContainerProps}>
                     <SectionHeader
-                        icon={FlightTakeoffIcon}
+                        tabler={IconPlaneDeparture}
                         title="Flight"
                         subtitle="Auto-assigned on push to live"
                         dense={dense}
                     />
+                    {/* No saved value here — the row's own copy is the affordance. */}
                     <Tooltip
-                        title="Add a flight — pick the route airports and flight number to auto-assign on push"
-                        placement="top-start"
-                        arrow
+                        label="Add a flight — pick the route airports and flight number to auto-assign on push"
+                        position="top-start"
+                        withArrow
                     >
-                        <ListItemButton onClick={onAddFlight} sx={dateRowSx(dense)}>
-                            <Box sx={dateAvatarSx}>
-                                <FlightTakeoffIcon sx={{fontSize: 20}} />
+                        <UnstyledButton onClick={onAddFlight} style={dateRowStyle(dense)}>
+                            <ThemeIcon {...dateAvatarProps}>
+                                <Icon tabler={IconPlaneDeparture} size={20}/>
+                            </ThemeIcon>
+                            <Box style={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
+                                <Text c="dimmed" style={dateLabelStyle}>Flight</Text>
+                                <Text truncate c="dimmed" style={dateValueStyle(false)}>Add flight</Text>
                             </Box>
-                            <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
-                                <Typography sx={dateLabelSx}>Flight</Typography>
-                                <Typography sx={dateValueUnsetSx}>Add flight</Typography>
-                            </Box>
-                            <ChevronRightIcon sx={{color: 'text.secondary', fontSize: 20, flexShrink: 0}} />
-                        </ListItemButton>
+                            <Icon lucide={ChevronRight} size={20} color="var(--mantine-color-dimmed)" style={{flexShrink: 0}} aria-hidden/>
+                        </UnstyledButton>
                     </Tooltip>
-                </Box>
+                </Paper>
             )}
         </Stack>
     );

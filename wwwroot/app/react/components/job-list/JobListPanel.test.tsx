@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
-import { renderWithProviders } from '../../__testUtils__';
+import { renderWithMantineProviders } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {JobListPanel} from './JobListPanel';
 import type {DispatchJob, FetchConfig, JobListPanelProps, JobListSearchParams, JobSearchResult} from '../../interfaces/dispatchJob';
@@ -59,6 +59,7 @@ jest.mock('../../services/jobListApi', () => ({
     lateCall: jest.fn().mockResolvedValue(undefined),
     reAllocateJobs: jest.fn().mockResolvedValue(undefined),
     restoreJobs: jest.fn().mockResolvedValue(undefined),
+    getRestorePodImpact: jest.fn().mockResolvedValue([]),
     addRestoreEvent: jest.fn().mockResolvedValue(undefined),
     setFirstJob: jest.fn().mockResolvedValue(undefined),
     releaseBulkJob: jest.fn().mockResolvedValue({jobNumbers: []}),
@@ -69,11 +70,18 @@ jest.mock('../../services/jobListApi', () => ({
     restoreNationwideJob: jest.fn().mockResolvedValue(undefined),
 }));
 
-import {allocateJobs, updateJobReadStatus, restoreJobs, addRestoreEvent} from '../../services/jobListApi';
+import {
+    allocateJobs,
+    updateJobReadStatus,
+    restoreJobs,
+    getRestorePodImpact,
+    addRestoreEvent,
+} from '../../services/jobListApi';
 import {queryClient} from '../../query/queryClient';
 const mockedAllocateJobs = allocateJobs as jest.Mock;
 const mockedUpdateJobReadStatus = updateJobReadStatus as jest.Mock;
 const mockedRestoreJobs = restoreJobs as jest.Mock;
+const mockedGetRestorePodImpact = getRestorePodImpact as jest.Mock;
 const mockedAddRestoreEvent = addRestoreEvent as jest.Mock;
 
 // ── Mock Data Factory ────────────────────────────────────────────────
@@ -141,7 +149,7 @@ function renderAndPushJobs(
         setJobsCallback: (cb) => { pushJobs = cb; },
         ...propOverrides,
     });
-    const {unmount, rerender, ...rest} = renderWithProviders(<JobListPanel {...props}/>);
+    const {unmount, rerender, ...rest} = renderWithMantineProviders(<JobListPanel {...props}/>);
     act(() => pushJobs(jobs, jobs.length));
     return {result: {unmount, rerender, ...rest}, pushJobs, props};
 }
@@ -159,7 +167,7 @@ describe('JobListPanel', () => {
         it('prefetches note types when the panel mounts', () => {
             const prefetchSpy = jest.spyOn(queryClient, 'prefetchQuery').mockResolvedValue(undefined);
 
-            renderWithProviders(<JobListPanel {...createDefaultProps()}/>);
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps()}/>);
 
             expect(prefetchSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -181,7 +189,7 @@ describe('JobListPanel', () => {
             let selectJob: (id: number) => void = () => {};
             let pushJobs: (j: DispatchJob[], t: number) => void = () => {};
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
                     onJobSelect,
                     onRefresh,
@@ -194,7 +202,7 @@ describe('JobListPanel', () => {
             // Empty state checks
             expect(screen.getByText('Total')).toBeInTheDocument();
             expect(screen.getByText('Unassigned')).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'All'})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: 'All'})).toBeInTheDocument();
             expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
             // Footer is hidden when there are no jobs to display
             expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
@@ -219,11 +227,13 @@ describe('JobListPanel', () => {
             // Select job bridge
             act(() => selectJob(10));
             const row = screen.getByText('J010').closest('tr');
-            expect(row).toHaveClass('Mui-selected');
+            // The row's category rides on `data-variant` (see JobListTable.module.css),
+            // not a class, so styling refactors do not break this assertion.
+            expect(row).toHaveAttribute('data-variant', 'selected');
         });
 
         it('renders topSlot content above the stats header', () => {
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
                     topSlot: <div data-testid="top-slot">Views</div>,
                 })}/>
@@ -257,12 +267,12 @@ describe('JobListPanel', () => {
             expect(screen.queryByText('DONE-1')).not.toBeInTheDocument();
 
             // Done filter
-            fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+            fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
             expect(screen.getByText('DONE-1')).toBeInTheDocument();
             expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
             // All filter (switch away and back)
-            fireEvent.click(screen.getByRole('button', {name: 'All'}));
+            fireEvent.click(screen.getByRole('radio', {name: 'All'}));
             expect(screen.getByText('UNASSIGNED-1')).toBeInTheDocument();
             expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
             expect(screen.getByText('DONE-1')).toBeInTheDocument();
@@ -404,9 +414,7 @@ describe('JobListPanel', () => {
             renderAndPushJobs([createMockDispatchJob()], {storagePrefix});
 
             // Density mode restored
-            const buttons = screen.getAllByRole('button');
-            const normalBtn = buttons.find(b => b.getAttribute('aria-pressed') === 'true' && b.getAttribute('value') === 'normal');
-            expect(normalBtn).toBeTruthy();
+            expect(screen.getByRole('radio', {name: 'Normal'})).toBeChecked();
 
             // loggedInCouriersOnly restored
             const toggle = screen.getByRole('switch');
@@ -417,10 +425,7 @@ describe('JobListPanel', () => {
             renderAndPushJobs([createMockDispatchJob()], {storagePrefix});
 
             // Persist density mode
-            const buttons = screen.getAllByRole('button');
-            const normalButton = buttons.find(b => b.getAttribute('value') === 'normal');
-            expect(normalButton).toBeTruthy();
-            fireEvent.click(normalButton!);
+            fireEvent.click(screen.getByRole('radio', {name: 'Normal'}));
             expect(localStorage.getItem(key('densityMode'))).toBe('normal');
 
             // Persist loggedInCouriersOnly
@@ -462,7 +467,7 @@ describe('JobListPanel', () => {
             expect(screen.getByText('NEW-1')).toBeInTheDocument();
             expect(screen.queryByText('DONE-1')).not.toBeInTheDocument();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Unassigned'}));
+            fireEvent.click(screen.getByRole('radio', {name: 'Unassigned'}));
             expect(localStorage.getItem(key('selectedCategory'))).toBe('needs-dispatch');
         });
 
@@ -569,7 +574,7 @@ describe('JobListPanel', () => {
                 setJobsCallback: (cb) => { pushJobs = cb; },
             });
 
-            const {rerender} = renderWithProviders(<JobListPanel {...props}/>);
+            const {rerender} = renderWithMantineProviders(<JobListPanel {...props}/>);
             act(() => pushJobs(jobs, 2));
 
             // Both visible initially
@@ -643,7 +648,7 @@ describe('JobListPanel', () => {
 
     describe('Logged-in Couriers Toggle', () => {
         it('defaults to unchecked and can be toggled on and off', () => {
-            renderWithProviders(<JobListPanel {...createDefaultProps()}/>);
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps()}/>);
 
             expect(screen.getByText('Logged-in only')).toBeInTheDocument();
             const toggle = screen.getByRole('switch');
@@ -682,7 +687,7 @@ describe('JobListPanel', () => {
             const setJobsCallback = jest.fn();
             let updateParamsFn: ((params: Partial<JobListSearchParams>) => void) | null = null;
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
                     fetchConfig,
                     setJobsCallback,
@@ -715,7 +720,7 @@ describe('JobListPanel', () => {
             const fetchConfig = createMockFetchConfig({fetchFn});
             let updateParamsFn: ((params: Partial<JobListSearchParams>) => void) = () => {};
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
                     fetchConfig,
                     setUpdateSearchParamsCallback: (cb) => { updateParamsFn = cb; },
@@ -747,7 +752,7 @@ describe('JobListPanel', () => {
             const fetchConfig = createMockFetchConfig();
             let refreshFn: () => void = () => {};
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
                     fetchConfig,
                     setRefreshCallback: (cb) => { refreshFn = cb; },
@@ -776,7 +781,7 @@ describe('JobListPanel', () => {
             const fetchConfig = createMockFetchConfig();
             const onBackendFilter = jest.fn();
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
                     fetchConfig,
                     onBackendFilter,
@@ -820,7 +825,7 @@ describe('JobListPanel', () => {
             const fetchConfig = createMockFetchConfig({fetchFn, queryKeyFn});
             let updateParamsFn: ((params: Partial<JobListSearchParams>) => void) = () => {};
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
                     fetchConfig,
                     setUpdateSearchParamsCallback: (cb) => { updateParamsFn = cb; },
@@ -868,12 +873,12 @@ describe('JobListPanel', () => {
             const fetchFn = jest.fn().mockReturnValue(new Promise<JobSearchResult>(r => { resolveFetch = r; }));
             const fetchConfig = createMockFetchConfig({fetchFn});
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({fetchConfig})} />,
             );
 
             // LinearProgress should be visible while fetching
-            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+            expect(screen.getByRole('progressbar', {name: 'Loading jobs'})).toBeInTheDocument();
 
             // Resolve the fetch
             await act(async () => {
@@ -883,7 +888,7 @@ describe('JobListPanel', () => {
             expect(await screen.findByText('LOADED')).toBeInTheDocument();
 
             // LinearProgress should be gone after fetch completes
-            expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
+            expect(screen.queryByRole('progressbar', {name: 'Loading jobs'})).not.toBeInTheDocument();
         });
 
         it('calls onJobsLoaded when jobs arrive in fetchConfig mode', async () => {
@@ -900,7 +905,7 @@ describe('JobListPanel', () => {
                 } as JobSearchResult),
             });
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({fetchConfig, onJobsLoaded})} />,
             );
 
@@ -919,7 +924,7 @@ describe('JobListPanel', () => {
                 } as JobSearchResult),
             });
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({fetchConfig, onJobsLoaded})} />,
             );
 
@@ -940,7 +945,7 @@ describe('JobListPanel', () => {
         it('does not show loading indicator in pushed-data mode', () => {
             renderAndPushJobs([createMockDispatchJob()]);
 
-            expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
+            expect(screen.queryByRole('progressbar', {name: 'Loading jobs'})).not.toBeInTheDocument();
         });
 
         it('shows empty state and stats from hook data', async () => {
@@ -953,7 +958,7 @@ describe('JobListPanel', () => {
                 }),
             });
 
-            const {unmount} = renderWithProviders(
+            const {unmount} = renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({fetchConfig: emptyFetchConfig})} />,
             );
 
@@ -975,7 +980,7 @@ describe('JobListPanel', () => {
                 }),
             });
 
-            renderWithProviders(
+            renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({fetchConfig: statsFetchConfig})} />,
             );
 
@@ -1095,6 +1100,7 @@ describe('JobListPanel', () => {
     describe('Bulk Restore', () => {
         beforeEach(() => {
             mockedRestoreJobs.mockClear().mockResolvedValue(undefined);
+            mockedGetRestorePodImpact.mockClear().mockResolvedValue([]);
             mockedAddRestoreEvent.mockClear().mockResolvedValue(undefined);
         });
 
@@ -1139,6 +1145,69 @@ describe('JobListPanel', () => {
             expect(props.showToast).toHaveBeenCalledWith('Archived jobs can’t be restored', 'warning');
             expect(mockedRestoreJobs).not.toHaveBeenCalled();
             expect(mockedAddRestoreEvent).not.toHaveBeenCalled();
+            expect(mockedGetRestorePodImpact).not.toHaveBeenCalled();
+        });
+
+        it('warns about the PODs held by the restorable selection before restoring', async () => {
+            const user = setupUser();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-A', isArchived: false}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-B', isArchived: false}),
+            ];
+            mockedGetRestorePodImpact.mockResolvedValue([
+                {jobId: 1, podName: 'J. Smith', capturedImageCount: 2, imageCountKnown: true},
+                {jobId: 2, podName: 'A. Jones', capturedImageCount: 1, imageCountKnown: true},
+            ]);
+            renderAndPushJobs(jobs);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-A'));
+            await user.click(screen.getByText('JOB-B'));
+            await user.keyboard('{/Control}');
+
+            await user.click(screen.getByText('Restore'));
+
+            expect(await screen.findByText(/clears the proof of delivery .* on 2 of the selected jobs/i))
+                .toBeInTheDocument();
+            expect(mockedGetRestorePodImpact).toHaveBeenCalledWith([1, 2]);
+            expect(mockedRestoreJobs).not.toHaveBeenCalled();
+
+            await user.click(screen.getByRole('checkbox', {name: /Also remove the 3 images captured on these jobs/i}));
+            await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: 'Restore'}));
+
+            await waitFor(() => {
+                expect(mockedRestoreJobs).toHaveBeenCalledWith([1, 2], true);
+            });
+        });
+
+        it('restores straight through when the selection holds no POD', async () => {
+            const user = setupUser();
+            renderAndPushJobs([createMockDispatchJob({id: 1, jobNo: 'JOB-A', isArchived: false})]);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-A'));
+            await user.keyboard('{/Control}');
+            await user.click(screen.getByText('Restore'));
+
+            await waitFor(() => {
+                expect(mockedRestoreJobs).toHaveBeenCalledWith([1], false);
+            });
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        });
+
+        it('falls back to the completed-only rule when the POD pre-check fails', async () => {
+            const user = setupUser();
+            mockedGetRestorePodImpact.mockRejectedValue(new Error('offline'));
+            renderAndPushJobs([createMockDispatchJob({id: 1, jobNo: 'JOB-A', isArchived: false})]);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-A'));
+            await user.keyboard('{/Control}');
+            await user.click(screen.getByText('Restore'));
+
+            await waitFor(() => {
+                expect(mockedRestoreJobs).toHaveBeenCalledWith([1], false);
+            });
         });
     });
 });
