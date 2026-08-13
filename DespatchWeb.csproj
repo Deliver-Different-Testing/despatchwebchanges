@@ -2,8 +2,27 @@
   <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(CI)' != 'true'">
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)" />
   </Target>
+  <!--
+    esbuild's metafile is several MB of build introspection (it enumerates every source
+    path in the app). It is written into wwwroot/dist so the analyze script can find it
+    next to the bundles it describes, but it has no business in the published image.
+    dist is generated during the build, after content globbing, so it is removed from the
+    output rather than excluded from an item group.
+  -->
+  <Target Name="RemoveBuildMetafileFromPublish" AfterTargets="Publish">
+    <Delete Files="$(PublishDir)wwwroot\dist\meta.json" />
+  </Target>
+
   <PropertyGroup Label="Globals">
       <Nullable>disable</Nullable>
+      <!--
+        The SDK's static-web-asset compression only pays off with MapStaticAssets, which
+        this app doesn't use — it serves wwwroot through UseStaticFiles. Left on, publish
+        spends time producing .br/.gz for everything under wwwroot (including the 14 MB of
+        esbuild sourcemaps) that nothing ever reads. build.ts already pre-compresses the
+        bundles that matter, and PrecompressedStaticFilesMiddleware serves those.
+      -->
+      <CompressionEnabled>false</CompressionEnabled>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="DespatchWeb.Tests" />
@@ -317,6 +336,7 @@
     <TypeScriptCompile Include="wwwroot\app\react\interfaces\nationwideJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\interfaces\priceBreakdown.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\interfaces\splitJobs.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\pages\dispatch\components\ViewsRailProps.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\pages\job-search\JobSearchLayoutBridge.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\pages\job-search\JobSearchPageProps.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\services\requestOptions.ts" />

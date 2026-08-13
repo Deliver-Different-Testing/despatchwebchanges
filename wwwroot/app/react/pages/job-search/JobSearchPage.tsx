@@ -41,7 +41,7 @@ import {SearchCriteriaPanel} from '../../components/common/search-criteria-panel
 import {JobListPanel} from '../../components/job-list/JobListPanel';
 import {TaskHistory} from '../../components/common/task-history/TaskHistory';
 import {JobSearchShell} from './components/JobSearchShell';
-import {JobDetailFab} from './components/JobDetailFab';
+import {JobSearchJobActionsMenu, type JobSearchJobActionId} from './components/JobSearchJobActionsMenu';
 import {ScanList} from './components/ScanList';
 import {useSearchCriteria} from './hooks/useSearchCriteria';
 import {useBoxLayout} from './hooks/useBoxLayout';
@@ -166,7 +166,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const selectedIdRef = useRef<number | undefined>(undefined);
 
     // Fetch the full dispatch-shaped job detail (matches V1 selectJobDetail /
-    // selectBulkJobDetail). FAB action availability and the ScanList run date
+    // selectBulkJobDetail). Job action availability and the ScanList run date
     // rely on fields the list-row DTO may not carry, so we replace the optimistic
     // row with the full record once it lands.
     const loadFullDetail = useCallback((jobId: number, bulk: boolean) => {
@@ -190,7 +190,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         deepLinkJobId,
         onSelectJob: jobId => {
             // Deep-link gives us only the id. Fetch the full detail so the
-            // job-detail panel, FAB and ScanList (booked run date) have real
+            // job-detail panel, actions menu and ScanList (booked run date) have real
             // data instead of waiting for the list results to land.
             selectedIdRef.current = jobId;
             setCurrentJobId(jobId);
@@ -422,7 +422,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
 
-    const fabAction = useCallback(async (actionId: string, job: DispatchJob) => {
+    const jobAction = useCallback(async (actionId: JobSearchJobActionId, job: DispatchJob) => {
         const w = window as any;
         const invalidateDetail = () => queryClient.invalidateQueries({
             queryKey: queryKeys.jobs.detail(job.id, job.isBulkJob ? 'bulk' : 'standard'),
@@ -509,7 +509,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
 
                 case 'split': {
                     // Intent confirmation lives with the caller — the context menu uses its own
-                    // dialog, this FAB matches the un-split entry below. The pricing dialog inside
+                    // dialog, this menu matches the un-split entry below. The pricing dialog inside
                     // the flow confirms the money separately.
                     const confirmed = window.confirm('Are you sure you wish to split this job?');
                     if (!confirmed) return;
@@ -538,16 +538,16 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 }
 
                 default:
-                    showToast(`Unknown FAB action: ${actionId}`, 'warning');
+                    showToast(`Unknown job action: ${actionId}`, 'warning');
             }
         } catch (error) {
-            console.error(`[JobSearchPage] FAB action "${actionId}" failed:`, error);
+            console.error(`[JobSearchPage] Job action "${actionId}" failed:`, error);
             showToast(`Failed to ${actionId}: ${error instanceof Error ? error.message : 'unknown error'}`, 'error');
         }
     }, [showToast]);
 
-    // ── FAB dispatch (DispatchDialog) ─────────────────────────────────
-    // Single-job dispatch from the job-detail FAB. Courier path allocates (or
+    // ── Job-actions dispatch (DispatchDialog) ─────────────────────────
+    // Single-job dispatch from the job-detail actions menu. Courier path allocates (or
     // re-allocates if a courier is already assigned); partner path sends to a
     // DFRNT partner. Mirrors JobListContextMenu's handlers.
     const handleDispatchCourier = useCallback(async (
@@ -743,6 +743,15 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         return false;
     }, [currentJob?.locked]);
 
+    // The job actions live in the Job Detail panel header rather than floating over
+    // the shell, so they can't be mistaken for a control of the right-most column.
+    const boxRightSlotFor = useCallback((boxName: string): React.ReactNode => {
+        if (boxName === JobSearchBoxes.JobDetail) {
+            return <JobSearchJobActionsMenu currentJob={currentJob} onAction={jobAction}/>;
+        }
+        return undefined;
+    }, [currentJob, jobAction]);
+
     return (
         <Box style={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>
             {/* BETA banner — dismissible; the opt-out toggle lives in Settings. */}
@@ -776,7 +785,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     />
                 </Group>
             )}
-            <Box style={{flex: 1, minHeight: 0, position: 'relative'}}>
+            <Box style={{flex: 1, minHeight: 0}}>
                 <JobSearchShell
                     layout={boxLayout.layout}
                     layoutVersion={boxLayout.layoutVersion}
@@ -785,6 +794,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     onRefreshBox={handleRefreshBox}
                     boxSubtitle={subtitleFor}
                     boxLocked={lockedFor}
+                    boxRightSlot={boxRightSlotFor}
                     onColumnSizes={boxLayout.setColumnSizes}
                     onBoxHeights={boxLayout.setBoxHeights}
                     onMoveBox={boxLayout.moveBox}
@@ -794,11 +804,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     onAddColumn={boxLayout.addColumn}
                     onRemoveColumn={boxLayout.removeColumn}
                 />
-                {/* Job-detail FAB. Layout Edit/Done lives in the toolbar's
-                    Layouts dropdown (driven via the bridge). */}
-                <Box style={{position: 'absolute', top: 8, right: 16, zIndex: 1}}>
-                    <JobDetailFab currentJob={currentJob} onAction={fabAction}/>
-                </Box>
             </Box>
             <SaveLayoutDialog
                 open={saveDialogOpen}

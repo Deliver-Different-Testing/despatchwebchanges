@@ -11,7 +11,7 @@ import {ChevronDown} from 'lucide-react';
 
 import {renderWithMantine} from '../../../__testUtils__';
 import {setupUser} from '../../../__testUtils__/setupUser';
-import {headerSurfaceAccent} from '../../dialogs/shared/mantine/styles';
+import {headerColors, headerSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 import {Icon} from '../icon/Icon';
 import {
     HeaderActionIcon,
@@ -25,16 +25,26 @@ import {
 } from './index';
 
 describe('panel control tokens', () => {
-    it('lines every control up with the 32px icon badge PanelHeader already uses', () => {
-        // PanelHeader is a 48px bar = 32px badge + 2×8px padding, and the badge
-        // glyph is sized `32 × 0.55`. Matching both keeps the bar on one grid.
+    it('lines every control up with the 32px band PanelHeader already uses', () => {
+        // PanelHeader is a 48px bar = a 32px control band + 2×8px padding, and its
+        // own glyph is 20px. Matching both keeps the bar on one grid.
         expect(PANEL_CONTROL_HEIGHT).toBe(32);
         expect(PANEL_CONTROL_GLYPH_SIZE).toBe(18);
     });
 
-    it('washes every control with a translucent step of the header accent', () => {
-        expect(PANEL_CONTROL_HOVER).toBe(alpha(headerSurfaceAccent, 0.08));
-        expect(PANEL_CONTROL_SELECTED).toBe(alpha(headerSurfaceAccent, 0.12));
+    /**
+     * Neutral, not brand-tinted: the bar carries no brand colour since its glyph
+     * went to the body ink, and washing with the bar's own on-colour is what keeps
+     * hover legible in dark mode — a fixed accent wash would not follow the scheme.
+     */
+    it('washes every control with a translucent step of the bar\'s own on-colour', () => {
+        expect(PANEL_CONTROL_HOVER).toBe(alpha(headerColors.surface.fg, 0.08));
+        expect(PANEL_CONTROL_SELECTED).toBe(alpha(headerColors.surface.fg, 0.12));
+
+        // `alpha()` emits a `color-mix` for a CSS variable, so the wash stays a
+        // live reference to the scheme-aware text colour rather than a baked hex.
+        expect(PANEL_CONTROL_HOVER).toContain('var(--mantine-color-text)');
+        expect(PANEL_CONTROL_HOVER).not.toContain(headerSurfaceAccent);
     });
 
     it('drives hover through Mantine CSS variables, never a styles-prop pseudo-selector', () => {

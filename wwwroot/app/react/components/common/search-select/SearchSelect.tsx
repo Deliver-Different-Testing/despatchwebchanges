@@ -141,6 +141,7 @@ export function SearchSelect<T>({
                     placeholder={placeholder}
                     withAsterisk={withAsterisk}
                     disabled={disabled}
+                    autoFocus={autoFocus}
                     data-autofocus={autoFocus || undefined}
                     value={inputValue}
                     error={error}

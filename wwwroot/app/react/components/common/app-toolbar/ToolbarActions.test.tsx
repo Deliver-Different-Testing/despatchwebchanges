@@ -19,15 +19,46 @@ import {
 
 
 describe('Shell icon buttons', () => {
-    it('takes its hover wash and glyph colour from the shell variables', () => {
+    it.each([
+        ['Settings', <SettingsButton key="s" onClick={jest.fn()} />],
+        ['Refresh', <RefreshButton key="r" onClick={jest.fn()} />],
+        ['Layouts', <LayoutsMenu key="l" layouts={[]} onSaveLayout={jest.fn()} onLoadLayout={jest.fn()} onDeleteLayout={jest.fn()} />],
+        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={jest.fn()} />],
+        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={jest.fn()} onClearAll={jest.fn()} />],
+        ['Custom', <ToolbarIconButton key="c" icon={<span />} tooltip="Custom" onClick={jest.fn()} />],
+    ])('%s takes its hover wash and glyph colour from the shell variables', (name, element) => {
         // The wash and on-colour differ per tenant (the gold bar cannot use a brand
         // wash), so the button defers to the vars the theme resolver publishes rather
         // than baking either value in. `dfrntMantineTheme.spec` asserts the values.
-        renderWithMantine(<SettingsButton onClick={jest.fn()} />);
+        // Every button in the bar shares this chrome — hence the sweep rather than a
+        // single sample.
+        renderWithMantine(element);
 
-        const button = screen.getByRole('button', {name: 'Settings'});
+        const button = screen.getByRole('button', {name});
         expect(button.style.getPropertyValue('--ai-hover')).toBe('var(--dd-shell-icon-hover)');
         expect(button).toHaveStyle({color: 'var(--dd-on-shell)'});
+    });
+
+    it.each([
+        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={jest.fn()} />],
+        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={jest.fn()} onClearAll={jest.fn()} />],
+    ])('does not let %s repaint its glyph on the way down from the button', (name, element) => {
+        // A count badge is an Indicator wrapping the glyph, and Mantine resolves style
+        // props like `c` to inline styles on the Indicator ROOT — which is the glyph's
+        // parent. Lucide draws with currentColor, so a colour there silently overrides
+        // the button's on-shell glyph. Asserting the button root is not enough: it was
+        // already correct while the Views eye rendered in the brand accent.
+        renderWithMantine(element);
+
+        const button = screen.getByRole('button', {name});
+        const glyph = button.querySelector('svg');
+        expect(glyph).not.toBeNull();
+
+        // The badge is a sibling of the glyph inside the Indicator root, so walking
+        // ancestors deliberately leaves the badge free to carry its own colour.
+        for (let el = glyph!.parentElement; el && el !== button; el = el.parentElement) {
+            expect(el.style.color).toBe('');
+        }
     });
 
     it.each([
@@ -134,25 +165,34 @@ describe('ViewsMenu', () => {
         expect(screen.getByText('2')).toBeInTheDocument();
     });
 
-    it('should open menu with views, Clear Selection, and support onClearAll and onToggleView', async () => {
+    it('should open menu with views and a selection header that clears', async () => {
         const onClearAll = jest.fn();
         const onToggleView = jest.fn();
         renderWithMantine(
             <ViewsMenu {...defaultProps} onClearAll={onClearAll} onToggleView={onToggleView} />
         );
 
-        fireEvent.click(screen.getByRole('button'));
+        fireEvent.click(screen.getByRole('button', {name: 'Views'}));
 
         expect(await screen.findByText('View 1')).toBeInTheDocument();
         expect(screen.getByText('View 2')).toBeInTheDocument();
         expect(screen.getByText('View 3')).toBeInTheDocument();
 
-        // Clear Selection is visible
-        expect(screen.getByText('Clear Selection')).toBeInTheDocument();
+        expect(screen.getByText('2 selected')).toBeInTheDocument();
 
-        // Click Clear Selection
-        fireEvent.click(screen.getByText('Clear Selection'));
+        fireEvent.click(screen.getByRole('button', {name: 'Clear selected views'}));
         expect(onClearAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('should hide the selection header when no view is selected', async () => {
+        const unselected = mockViews.map(view => ({...view, selected: false}));
+        renderWithMantine(<ViewsMenu {...defaultProps} views={unselected} />);
+
+        fireEvent.click(screen.getByRole('button', {name: 'Views'}));
+
+        expect(await screen.findByText('View 1')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Clear selected views'})).not.toBeInTheDocument();
+        expect(screen.queryByText(/selected$/)).not.toBeInTheDocument();
     });
 
     it('should call onToggleView when a view is clicked', async () => {

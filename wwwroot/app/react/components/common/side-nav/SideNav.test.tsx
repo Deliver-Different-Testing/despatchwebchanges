@@ -7,6 +7,7 @@ import {fireEvent, screen} from '@testing-library/react';
 import {renderWithMantine} from '../../../__testUtils__';
 import {SideNav} from './SideNav';
 import {createDfrntTheme} from '../../../theme/dfrntMantineTheme';
+import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 
 describe('SideNav', () => {
     const defaultProps = {
@@ -45,7 +46,7 @@ describe('SideNav', () => {
             // one; that colour change is the separator, so there is no keyline under it.
             expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#0d0c2c'});
             expect(screen.getByTestId('sidenav-avatar')).toHaveStyle({
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 color: 'rgba(255, 255, 255, 0.95)',
             });
         });
@@ -58,7 +59,7 @@ describe('SideNav', () => {
 
             expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#f4c430'});
             expect(screen.getByTestId('sidenav-avatar')).toHaveStyle({
-                backgroundColor: 'rgba(13, 12, 44, 0.15)',
+                backgroundColor: 'rgba(13, 12, 44, 0.2)',
                 color: 'rgba(13, 12, 44, 0.95)',
             });
         });
@@ -84,11 +85,11 @@ describe('SideNav', () => {
             const tablerRow = screen.getByRole('button', {name: 'Courier Map'});
             for (const row of [lucideRow, tablerRow]) {
                 const glyph = row.querySelector('svg');
-                expect(glyph).toHaveAttribute('width', '20');
-                expect(glyph).toHaveAttribute('height', '20');
+                expect(glyph).toHaveAttribute('width', '24');
+                expect(glyph).toHaveAttribute('height', '24');
             }
 
-            // The faint cyan wash and pill are a hover/active concern, so they live in
+            // The faint cyan wash and rail are a hover/active concern, so they live in
             // the stylesheet — the row keeps the `subtle` variant's transparent fill
             // rather than the solid cyan an inline `--nl-bg` used to paint, which would
             // outrank any rule there.
@@ -97,12 +98,43 @@ describe('SideNav', () => {
             expect(active.style.getPropertyValue('--nl-bg')).toBe('transparent');
         });
 
-        it('exposes the nav as a labelled landmark, with no close button in the header', () => {
+        it('gives the rows the Material glyph column and label size', () => {
             renderWithMantine(<SideNav {...defaultProps} />);
 
-            expect(screen.getByRole('navigation', {name: 'Main navigation'})).toBeInTheDocument();
+            // 24px glyph + 20px gap reproduces the classic drawer's 44px icon column,
+            // so labels start 64px in from the panel edge.
+            const row = screen.getByRole('button', {name: 'Tasks'});
+            expect(row.querySelector('svg')?.parentElement).toHaveStyle({
+                width: '24px',
+                height: '24px',
+                marginInlineEnd: '20px',
+            });
+            expect(screen.getByText('Tasks')).toHaveStyle({fontSize: '16px'});
+        });
+
+        it('exposes the nav as a labelled landmark with a Menu heading, and no close button', () => {
+            renderWithMantine(<SideNav {...defaultProps} />);
+
+            const nav = screen.getByRole('navigation', {name: 'Main navigation'});
+            expect(nav).toContainElement(screen.getByRole('heading', {name: 'Menu'}));
             // Dismissal is the overlay and Escape, both handled by Drawer.Root.
             expect(screen.queryByRole('button', {name: 'Close navigation menu'})).not.toBeInTheDocument();
+        });
+
+        it('hands the active rail a brand step dark enough to read, on either tenant', () => {
+            // The 12% wash is ~1.05:1 on the panel, so the 4px rail is what actually
+            // carries WCAG 1.4.11's 3:1 state boundary — it has to be the darker step,
+            // and it differs per tenant.
+            const {unmount} = renderWithMantine(<SideNav {...defaultProps} isUsCustomer={true} />);
+            expect(
+                screen.getByRole('navigation', {name: 'Main navigation'}).style.getPropertyValue('--sidenav-accent')
+            ).toBe(getHeaderSurfaceAccent(true));
+            unmount();
+
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={false} />, {theme: createDfrntTheme(false)});
+            expect(
+                screen.getByRole('navigation', {name: 'Main navigation'}).style.getPropertyValue('--sidenav-accent')
+            ).toBe(getHeaderSurfaceAccent(false));
         });
     });
 
@@ -130,6 +162,12 @@ describe('SideNav', () => {
         it('should highlight the current navigation item', () => {
             renderWithMantine(<SideNav {...defaultProps} currentState="home" />);
             expect(screen.getByRole('button', {name: 'Dashboard'})).toHaveAttribute('data-active', 'true');
+        });
+
+        it('marks only the current item as the current page for screen readers', () => {
+            renderWithMantine(<SideNav {...defaultProps} currentState="home" />);
+            expect(screen.getByRole('button', {name: 'Dashboard'})).toHaveAttribute('aria-current', 'page');
+            expect(screen.getByRole('button', {name: 'Tasks'})).not.toHaveAttribute('aria-current');
         });
 
         it('should highlight Dashboard on the v2 dispatch state', () => {

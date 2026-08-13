@@ -6,12 +6,14 @@
  */
 
 import React, {useCallback, useRef} from 'react';
-import {ActionIcon, Box, Button, Group, Text, TextInput} from '@mantine/core';
+import {Box, Group, Text, TextInput} from '@mantine/core';
 import {useDebouncedCallback} from '@mantine/hooks';
 import {ArchiveRestore, Mail, MailOpen, Search, X} from 'lucide-react';
 import {IconTruck} from '@tabler/icons-react';
 
 import {Icon} from '../common/icon/Icon';
+import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../common/action-button';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../common/panel-controls';
 import {SegmentedToggle} from '../common/segmented-toggle';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -35,7 +37,8 @@ interface JobListToolbarProps {
     onBulkRestore?: () => void;
     onBulkMarkRead?: () => void;
     onBulkMarkUnread?: () => void;
-    hideLoggedInSwitch?: boolean;
+    /** Owned by JobListPanel — the switch is live-dispatch-only. */
+    showLoggedInSwitch?: boolean;
     /**
      * Render the view options (density / reset columns / logged-in toggle) inline
      * in the toolbar. Set false when they're relocated to the panel header.
@@ -66,16 +69,21 @@ const CATEGORY_COLORS: Record<JobCategory, string> = {
     all: 'brand',
 };
 
+// 48 is what both bars measure — 8px padding around the 32px control band. They
+// have to agree: the selection bar replaces the toolbar in place, and a
+// disagreement shifts the whole table down every time a row is ticked.
+const BAR_MIN_HEIGHT = 48;
+
 const containerStyle: React.CSSProperties = {
     borderBottom: '1px solid var(--mantine-color-default-border)',
     backgroundColor: 'var(--dd-surface-container)',
-    minHeight: 44,
+    minHeight: BAR_MIN_HEIGHT,
 };
 
 const selectionBarStyle: React.CSSProperties = {
     borderBottom: '1px solid var(--mantine-color-default-border)',
     backgroundColor: 'var(--mantine-color-brand-light)',
-    minHeight: 44,
+    minHeight: BAR_MIN_HEIGHT,
 };
 
 export const JobListToolbar: React.FC<JobListToolbarProps> = ({
@@ -95,7 +103,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     onBulkRestore,
     onBulkMarkRead,
     onBulkMarkUnread,
-    hideLoggedInSwitch,
+    showLoggedInSwitch,
     renderViewOptions = true,
 }) => {
     const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
@@ -117,36 +125,39 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     if (selectedCount > 0) {
         return (
             <Group align="center" gap="xs" px="md" py="xs" wrap="wrap" style={selectionBarStyle}>
-                <ActionIcon size="md" variant="subtle" color="gray" aria-label="Clear selection" onClick={onClearSelection}>
-                    <Icon lucide={X} size={16}/>
-                </ActionIcon>
+                <HeaderActionIcon label="Clear selection" onClick={onClearSelection}>
+                    <Icon lucide={X} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                </HeaderActionIcon>
                 <Text size="sm" fw={600} mr="md">
                     {selectedCount} job{selectedCount !== 1 ? 's' : ''} selected
                 </Text>
 
+                {/*
+                  * Dispatch is the action people select rows for, so it is the
+                  * bar's one filled lozenge; everything else stays a raised chip.
+                  */}
                 {allowDispatch && (
-                    <Button
-                        size="compact-sm"
-                        variant="outline"
-                        leftSection={<Icon tabler={IconTruck} size={16}/>}
+                    <ActionButton
+                        variant="filled"
+                        leftSection={<Icon tabler={IconTruck} size={ACTION_BUTTON_GLYPH_SIZE}/>}
                         onClick={onBulkDispatchClick}
                     >
                         Dispatch
-                    </Button>
+                    </ActionButton>
                 )}
 
                 {allowDispatch && (
-                    <Button size="compact-sm" variant="outline" leftSection={<Icon lucide={ArchiveRestore} size={16}/>} onClick={onBulkRestore}>
+                    <ActionButton leftSection={<Icon lucide={ArchiveRestore} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onBulkRestore}>
                         Restore
-                    </Button>
+                    </ActionButton>
                 )}
 
-                <Button size="compact-sm" variant="outline" leftSection={<Icon lucide={MailOpen} size={16}/>} onClick={onBulkMarkRead}>
+                <ActionButton leftSection={<Icon lucide={MailOpen} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onBulkMarkRead}>
                     Mark Read
-                </Button>
-                <Button size="compact-sm" variant="outline" leftSection={<Icon lucide={Mail} size={16}/>} onClick={onBulkMarkUnread}>
+                </ActionButton>
+                <ActionButton leftSection={<Icon lucide={Mail} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onBulkMarkUnread}>
                     Mark Unread
-                </Button>
+                </ActionButton>
             </Group>
         );
     }
@@ -183,7 +194,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                     onResetColumns={onResetColumns}
                     loggedInCouriersOnly={loggedInCouriersOnly}
                     onLoggedInCouriersOnlyChange={onLoggedInCouriersOnlyChange}
-                    showLoggedInSwitch={allowDispatch && !hideLoggedInSwitch}
+                    showLoggedInSwitch={showLoggedInSwitch}
                 />
             )}
         </Group>

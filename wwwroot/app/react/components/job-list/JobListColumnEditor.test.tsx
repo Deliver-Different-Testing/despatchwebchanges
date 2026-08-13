@@ -99,5 +99,9 @@ describe('JobListColumnEditor', () => {
 
         expect(onReset).toHaveBeenCalledTimes(1);
         expect(onDone).toHaveBeenCalledTimes(1);
+
+        // Done finishes the edit, so it is the bar's primary; Reset is a chip.
+        expect(screen.getByRole('button', {name: /^done$/i})).toHaveAttribute('data-ab-variant', 'filled');
+        expect(screen.getByRole('button', {name: /reset to defaults/i})).toHaveAttribute('data-ab-variant', 'chip');
     });
 });

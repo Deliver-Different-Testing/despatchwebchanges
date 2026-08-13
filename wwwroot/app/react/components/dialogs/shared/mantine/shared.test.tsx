@@ -14,6 +14,7 @@ import {
     headerOverlayColor,
     PriceDelta,
 } from './index';
+import {alpha} from '@mantine/core';
 import {getHeaderColors, getHeaderSurfaceAccent} from './styles';
 import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
 import {dfrntPrimaryPalette, urgentPrimaryPalette} from '../../../../theme/palettes';
@@ -141,7 +142,8 @@ describe('header style helpers', () => {
         for (const variant of ['secondary', 'info', 'success', 'warning', 'error', 'surface'] as const) {
             expect(getHeaderColors(false)[variant]).toEqual(getHeaderColors(true)[variant]);
         }
-        // Only the glyph on the neutral bar follows the brand.
+        // The on-paper brand accent still follows the tenant, even though the neutral
+        // bar no longer uses it.
         expect(getHeaderSurfaceAccent(false)).toBe(dfrntBrand.goldDeep);
         expect(getHeaderSurfaceAccent(true)).not.toBe(getHeaderSurfaceAccent(false));
     });
@@ -151,8 +153,19 @@ describe('header style helpers', () => {
         expect(chrome.backgroundColor).toBe(headerColors.surface.bg);
         expect(chrome.borderBottom).toBe('1px solid var(--mantine-color-default-border)');
         expect(headerChromeStyle('error').borderBottom).toBe('none');
-        // The chip is the only brand colour left on the neutral bar.
-        expect(headerChipProps('surface', 32).style['--ti-color']).toBe(headerSurfaceAccent);
+    });
+
+    /**
+     * The neutral bar carries no brand colour at all: its glyph is the body ink and
+     * its washes follow that same on-colour, so both sides of the bar invert with
+     * the colour scheme instead of pinning a fixed accent.
+     */
+    it('washes the neutral bar in its own on-colour, not the brand accent', () => {
+        expect(headerOverlayColor(0.08, 'surface')).toBe(alpha(headerColors.surface.fg, 0.08));
+        expect(headerOverlayColor(0.08, 'surface')).not.toContain(headerSurfaceAccent);
+        expect(headerChipProps('surface').style['--ti-color']).toBe(headerColors.surface.fg);
+        // The solid fills still wash in their hand-picked on-colour.
+        expect(headerOverlayColor(0.1, 'error')).toBe(alpha(headerColors.error.fg, 0.1));
     });
 
     it('maps the MUI breakpoint widths so converted dialogs keep their size', () => {

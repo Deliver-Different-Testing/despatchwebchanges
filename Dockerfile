@@ -18,8 +18,13 @@ RUN GITLAB_NUGET_USERNAME=${GITLAB_NUGET_USERNAME} \
     GITLAB_NUGET_TOKEN=${GITLAB_NUGET_TOKEN} \
     dotnet restore DespatchWeb.csproj
 
+# Copy the npm manifests for install layer caching, mirroring the restore layer above.
+# `npm ci` installs exactly what the lockfile pins, and keeping it ahead of `COPY . ./`
+# means editing source doesn't rebuild node_modules.
+COPY package.json package-lock.json ./
+RUN npm ci
+
 COPY . ./
-RUN npm install
 RUN dotnet publish DespatchWeb.csproj -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 as base

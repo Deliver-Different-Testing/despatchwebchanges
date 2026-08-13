@@ -32,6 +32,59 @@ public class DockerfileBuildTests
             $"Without it, MSBuild properties defined in {fileName} (like TargetFramework or package versions) will be missing.");
     }
 
+    [Theory]
+    [InlineData("package.json")]
+    [InlineData("package-lock.json")]
+    public void Dockerfile_CopiesNpmManifest_BeforeNpmInstall(string fileName)
+    {
+        var installLineIndex = NpmInstallLineIndex();
+
+        var copyLineIndex = Array.FindIndex(DockerfileLines, 0, installLineIndex,
+            l => l.StartsWith("COPY", StringComparison.OrdinalIgnoreCase)
+                 && l.Contains(fileName, StringComparison.OrdinalIgnoreCase));
+
+        Assert.True(copyLineIndex > -1,
+            $"{fileName} must be copied into the Docker build context before npm installs. " +
+            "Copying the whole source tree first invalidates the npm layer on every code change.");
+    }
+
+    [Fact]
+    public void Dockerfile_CopiesFullSource_AfterNpmInstall()
+    {
+        // This is the actual caching property: if `COPY . ./` runs before npm, the
+        // install layer is busted by any source edit and node_modules is rebuilt every
+        // image build.
+        var installLineIndex = NpmInstallLineIndex();
+
+        var fullCopyIndex = Array.FindIndex(DockerfileLines,
+            l => l.Trim().StartsWith("COPY . ", StringComparison.OrdinalIgnoreCase));
+
+        Assert.True(fullCopyIndex > -1, "Dockerfile should copy the full source tree");
+        Assert.True(fullCopyIndex > installLineIndex,
+            "`COPY . ./` must come after the npm install step so the dependency layer stays cached.");
+    }
+
+    [Fact]
+    public void Dockerfile_UsesNpmCi_ForReproducibleInstalls()
+    {
+        // npm ci installs exactly what package-lock.json pins and fails if the two have
+        // drifted; npm install will happily resolve something newer mid-release.
+        var installLine = DockerfileLines[NpmInstallLineIndex()];
+
+        Assert.Contains("npm ci", installLine, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static int NpmInstallLineIndex()
+    {
+        var index = Array.FindIndex(DockerfileLines,
+            l => !l.TrimStart().StartsWith('#')
+                 && (l.Contains("npm ci", StringComparison.OrdinalIgnoreCase)
+                     || l.Contains("npm install", StringComparison.OrdinalIgnoreCase)));
+
+        Assert.True(index > -1, "Dockerfile should install npm dependencies");
+        return index;
+    }
+
     [Fact]
     public void MSBuildInfrastructureFiles_AllExistOnDisk()
     {

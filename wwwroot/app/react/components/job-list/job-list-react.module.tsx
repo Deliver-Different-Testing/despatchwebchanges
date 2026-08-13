@@ -84,6 +84,7 @@ function renderJobList(config: MountJobListConfig): void {
                     onJobsLoaded={config.onJobsLoaded}
                     defaultCategory={config.defaultCategory}
                     storagePrefix={config.storagePrefix}
+                    hideLoggedInSwitch={config.hideLoggedInSwitch}
                     fetchConfig={config.fetchConfig}
                     setJobsCallback={(cb) => {
                         updateJobsCallback = cb;

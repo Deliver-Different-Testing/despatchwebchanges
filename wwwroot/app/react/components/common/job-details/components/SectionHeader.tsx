@@ -19,7 +19,7 @@ import React from 'react';
 import {Box, Text} from '@mantine/core';
 import {Icon, type LucideIcon, type TablerIcon} from '../../icon/Icon';
 import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
-import {headerColors, headerSurfaceAccent} from '../../../dialogs/shared/mantine/styles';
+import {headerColors} from '../../../dialogs/shared/mantine/styles';
 
 export type SectionHeaderVariant = 'primary' | 'pickup' | 'delivery';
 
@@ -90,9 +90,10 @@ export const SectionHeader = React.memo(function SectionHeader({
                 lucide={lucide}
                 tabler={tabler}
                 size={dense ? 18 : 20}
-                // The glyph is the only brand colour on the neutral bar; on the
-                // pickup/delivery fills it matches the text.
-                color={variant === 'primary' ? headerSurfaceAccent : fg}
+                // The glyph takes the bar's own on-colour on every variant — ink on
+                // the neutral bar (colour-scheme aware, so it inverts in dark mode),
+                // white on the two coloured fills.
+                color="currentColor"
                 style={{flexShrink: 0}}
                 aria-hidden
             />

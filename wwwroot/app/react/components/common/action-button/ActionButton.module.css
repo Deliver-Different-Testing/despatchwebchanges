@@ -1,0 +1,152 @@
+/*
+ * ActionButton chrome.
+ *
+ * Every rule here is pseudo-state or attribute-state work, which cannot go
+ * through Mantine's `styles` prop: those values land as *inline* styles and
+ * silently drop `:hover` / `[data-selected]` selectors. Mantine ships inside
+ * `@layer mantine` and this file is unlayered, so these win over its own
+ * `--button-*` variables without specificity games. Same idiom as
+ * `segment-toggle/SegmentedToggle.module.css` and `side-nav/SideNav.module.css`.
+ *
+ * The instance publishes `--ab-height` and `--ab-accent` inline (see
+ * `actionButtonTokens.ts`); everything below is derived from them.
+ *
+ * `.root` is the control band both gears share. `.chip` is the raised surface;
+ * `.filled` leaves the fill to Mantine, so no rule here may give it a
+ * background — it would outrank `--button-bg` and flatten the primary action.
+ */
+.root {
+    height: var(--ab-height);
+    padding-inline: 14px;
+    border-radius: 9999px; /* lozenge, per the brand's Software-UI spec */
+    font-size: var(--mantine-font-size-xs);
+    /*
+     * Weight stays constant and *colour* carries the selected emphasis: these
+     * chips sit in a horizontally-scrolling rail, where a weight shift on click
+     * re-flows every chip to its right. The neutral grey→black step also clears
+     * AA in both states, which a brand tint cannot on this fill.
+     */
+    font-weight: 500;
+    transition:
+        color 150ms ease,
+        background-color 150ms ease,
+        border-color 150ms ease,
+        box-shadow 100ms ease,
+        transform 100ms ease;
+}
+
+/* In-row: tighter sides and a smaller label, so the chip fits a dense table. */
+.root[data-ab-size='compact'] {
+    padding-inline: 10px;
+    font-size: 0.75rem;
+}
+
+/* The press: the button drops its shadow and sinks into the bar. */
+.root:active:not(:disabled):not([data-disabled]) {
+    box-shadow: none;
+    transform: translateY(1px);
+}
+
+.root:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 2px;
+}
+
+/*
+ * The chip: an opaque surface raised off the bar by a hairline border and
+ * `shadow-sm` — the same material as SegmentedToggle's indicator, so the two
+ * read as one system on a card that carries both.
+ */
+.chip {
+    background-color: var(--mantine-color-white);
+    border: 1px solid var(--mantine-color-default-border);
+    box-shadow: var(--mantine-shadow-sm);
+    color: var(--mantine-color-gray-7);
+}
+
+/*
+ * gray-1, not `--mantine-color-default-hover`: the warm-grey ramp starts at
+ * white, so Mantine's default hover (gray-0) is the chip's own fill and the
+ * hover would never show.
+ */
+.chip:hover:not(:disabled):not([data-disabled]) {
+    background-color: var(--mantine-color-gray-1);
+}
+
+/*
+ * Selected. Multi-select cannot carry a sliding indicator, so the accent does
+ * the work: the fill is mixed *into* the chip surface rather than washed over
+ * the bar, so the chip stays opaque and keeps reading as one raised object. 12%
+ * matches SEGMENTED_TOGGLE_FILL_OPACITY; the border is what clears WCAG 1.4.11.
+ */
+.chip[data-selected] {
+    background-color: color-mix(in srgb, var(--ab-accent) 12%, var(--mantine-color-white));
+    border-color: var(--ab-accent);
+    color: var(--mantine-color-black);
+}
+
+.chip[data-selected]:hover:not(:disabled):not([data-disabled]) {
+    background-color: color-mix(in srgb, var(--ab-accent) 18%, var(--mantine-color-white));
+}
+
+.chip:disabled,
+.chip[data-disabled] {
+    background-color: var(--mantine-color-gray-1);
+    border-color: var(--mantine-color-default-border);
+    color: var(--mantine-color-gray-5);
+    box-shadow: none;
+}
+
+[data-mantine-color-scheme='dark'] .chip {
+    background-color: var(--mantine-color-dark-5);
+    border-color: var(--mantine-color-dark-4);
+    box-shadow: none; /* the charcoal ladder separates by tone, not shadow */
+    color: var(--mantine-color-dark-1);
+}
+
+[data-mantine-color-scheme='dark'] .chip:hover:not(:disabled):not([data-disabled]) {
+    background-color: var(--mantine-color-dark-4);
+}
+
+/* A heavier mix: 12% of the accent disappears into the charcoal ladder. */
+[data-mantine-color-scheme='dark'] .chip[data-selected] {
+    background-color: color-mix(in srgb, var(--ab-accent) 22%, var(--mantine-color-dark-5));
+    border-color: var(--ab-accent);
+    color: var(--mantine-color-white);
+}
+
+[data-mantine-color-scheme='dark'] .chip[data-selected]:hover:not(:disabled):not([data-disabled]) {
+    background-color: color-mix(in srgb, var(--ab-accent) 30%, var(--mantine-color-dark-5));
+}
+
+/* Outranks the dark selected rule, so a selected-then-disabled chip stays dimmed. */
+[data-mantine-color-scheme='dark'] .chip:disabled,
+[data-mantine-color-scheme='dark'] .chip[data-disabled] {
+    background-color: var(--mantine-color-dark-6);
+    border-color: var(--mantine-color-dark-4);
+    color: var(--mantine-color-dark-3);
+}
+
+/*
+ * The primary action. Mantine's filled variant is flat, so the shadow is the
+ * only thing added — it has to sit at the same height off the bar as the chips
+ * beside it, or the bar reads as two unrelated families.
+ */
+.filled {
+    border: 1px solid transparent;
+    box-shadow: var(--mantine-shadow-sm);
+}
+
+[data-mantine-color-scheme='dark'] .filled {
+    box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .root {
+        transition: none;
+    }
+
+    .root:active:not(:disabled):not([data-disabled]) {
+        transform: none;
+    }
+}

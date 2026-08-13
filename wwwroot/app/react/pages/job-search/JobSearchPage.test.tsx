@@ -1,5 +1,5 @@
 import React, {act} from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
@@ -12,7 +12,8 @@ const mockPanel: {
     onClientReport?: () => void;
     onBackendFilter?: (column: string, direction: string) => void;
     updateParams: Record<string, jest.Mock>;
-} = {updateParams: {}};
+    onJobSelect: Record<string, (job: unknown) => void>;
+} = {updateParams: {}, onJobSelect: {}};
 
 jest.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', () => ({
     SearchCriteriaPanel: ({onSearch, onCriteriaChange, onDownload, onClientReport}: {
@@ -30,16 +31,23 @@ jest.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', (
 }));
 
 jest.mock('../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, setUpdateSearchParamsCallback, onBackendFilter}: {
+    JobListPanel: ({storagePrefix, setUpdateSearchParamsCallback, onBackendFilter, onJobSelect}: {
         storagePrefix: string;
         setUpdateSearchParamsCallback?: (cb: jest.Mock) => void;
         onBackendFilter?: (column: string, direction: string) => void;
+        onJobSelect?: (job: unknown) => void;
     }) => {
         const fn = mockPanel.updateParams[storagePrefix] ?? (mockPanel.updateParams[storagePrefix] = jest.fn());
         setUpdateSearchParamsCallback?.(fn);
         if (onBackendFilter) mockPanel.onBackendFilter = onBackendFilter;
+        if (onJobSelect) mockPanel.onJobSelect[storagePrefix] = onJobSelect;
         return <div data-testid={`mock-job-list-${storagePrefix}`} />;
     },
+}));
+
+jest.mock('../../services/dispatchExecutorApi', () => ({
+    ...jest.requireActual('../../services/dispatchExecutorApi'),
+    getDispatchJobDetail: jest.fn(() => new Promise(() => {})),
 }));
 
 jest.mock('../../components/common/task-history/TaskHistory', () => ({
@@ -85,6 +93,24 @@ describe('JobSearchPage', () => {
         mockPanel.onClientReport = undefined;
         mockPanel.onBackendFilter = undefined;
         mockPanel.updateParams = {};
+        mockPanel.onJobSelect = {};
+    });
+
+    it('anchors the job actions menu in the Job Detail panel header', () => {
+        renderPage();
+        act(() => {
+            mockPanel.onJobSelect.jobSearchJobList?.({id: 7, jobNo: 'J7'});
+        });
+
+        // Exactly one trigger, and it lives inside the Detail panel's own header —
+        // not floating over the shell where it reads as a Delivery Journey control.
+        const triggers = screen.getAllByRole('button', {name: 'Job actions'});
+        expect(triggers).toHaveLength(1);
+
+        const detailHeader = screen.getAllByTestId('panel-header')
+            .find(header => within(header).queryByText('Detail · J7'));
+        expect(detailHeader).toBeDefined();
+        expect(detailHeader).toContainElement(triggers[0]);
     });
 
     it('renders the default layout: panels, lists, map, box headers, and empty placeholders', () => {

@@ -20,15 +20,15 @@ import type React from 'react';
 import {headerOverlayColor} from '../../dialogs/shared/mantine/styles';
 
 /**
- * Control height on a card bar. `PanelHeader` is 48px built as a 32px icon badge
- * plus 2×8px padding, so 32 is the bar's existing grid line — controls line up
- * with the badge instead of each picking their own height.
+ * Control height on a card bar. `PanelHeader` is 48px built as a 32px control band
+ * plus 2×8px padding, so 32 is the bar's existing grid line — controls line up with
+ * each other instead of each picking their own height.
  */
 export const PANEL_CONTROL_HEIGHT = 32;
 
 /**
- * Glyph size inside the band, matching `headerChipSx`'s `size × 0.55` rule for the
- * 32px badge (17.6) so control glyphs and the badge glyph read as one set.
+ * Glyph size inside the band. A step under the header's own 20px `UI_ICON_SIZE`
+ * glyph, so a control reads as secondary to the title without looking mismatched.
  */
 export const PANEL_CONTROL_GLYPH_SIZE = 18;
 

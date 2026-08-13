@@ -1,6 +1,8 @@
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
+import zlib from "zlib";
+import {promisify} from "util";
 import {lessLoader} from "esbuild-plugin-less";
 
 // Every valid-identifier named export of the installed React, used to generate
@@ -461,6 +463,9 @@ const baseBuildOptions: esbuild.BuildOptions = {
     bundle: true,
     format: "iife",
     target: ["es2020"],
+    // Emit real UTF-8 rather than escaping every non-ASCII character to \uXXXX.
+    // The UI strings use ·, →, — and friends; the served files declare UTF-8.
+    charset: "utf8",
     mainFields: ["browser", "module", "main"],
     loader: {
         ".js": "js",
@@ -477,7 +482,7 @@ const baseBuildOptions: esbuild.BuildOptions = {
 };
 
 // Bundle types for different shim configurations
-type BundleType = "vendor-core" | "vendor-plugins" | "vendor-react" | "modules" | "react-modules";
+type BundleType = "vendor-core" | "vendor-plugins" | "vendor-react" | "app-modules";
 
 // Build configuration for a specific entry or set of entries
 function getBuildConfig(
@@ -495,17 +500,14 @@ function getBuildConfig(
     if (bundleType === "vendor-plugins") {
         // vendor-plugins uses Angular from vendor-core
         plugins.unshift(createGlobalShimPlugin(true));
-    } else if (bundleType === "modules") {
-        // Modules use dayjs/windows-iana from the vendor, no Angular shim needed.
-        // They also reach React (app.ts and the route modules pull in island
-        // entries), so they take the same React/Mantine/MUI shim as the islands —
-        // otherwise each of app/home/jobSearch/nationwide embeds its own copy of
-        // all three. _Layout.cshtml loads vendor-react.js ahead of app.js so the
-        // globals exist by the time these bundles evaluate.
-        plugins.unshift(createGlobalShimPlugin(false));
-        plugins.unshift(createReactGlobalShimPlugin());
-    } else if (bundleType === "react-modules") {
-        // React modules use React/ReactDOM from vendor-react + dayjs from vendor-core
+    } else if (bundleType === "app-modules") {
+        // Every non-vendor entry — the Angular route modules and the React islands
+        // alike — takes dayjs/windows-iana plus React/Mantine/MUI from the vendor
+        // bundles. The Angular modules need the React shim too because app.ts and
+        // the route modules pull in island entries; without it each of
+        // app/home/jobSearch/nationwide embeds its own copy of all three.
+        // _Layout.cshtml loads vendor-react.js ahead of app.js so the globals exist
+        // by the time any of these bundles evaluate.
         plugins.unshift(createGlobalShimPlugin(false));
         plugins.unshift(createReactGlobalShimPlugin());
     } else if (bundleType === "vendor-react") {
@@ -540,13 +542,17 @@ function getBuildConfig(
             entryNames: "[name].[hash]",
             assetNames: "[name].[hash]",
             minify: true,
-            treeShaking: true,
             metafile: true,
             legalComments: "none",
-            logLevel: "error",
-            drop: ["console", "debugger"],
-            keepNames: false,
-            ignoreAnnotations: false,
+            logLevel: "warning",
+            // No production sourcemaps: they added ~14 MB to the published image for a
+            // symbolication path nothing currently consumes. Dev builds still emit them.
+            // The islands narrate their mount/unmount lifecycle through console.log,
+            // which is what the old drop:["console"] was really targeting. `pure`
+            // strips exactly those while leaving console.error/warn intact — dropping
+            // the whole console object made production failures silent.
+            drop: ["debugger"],
+            pure: ["console.log", "console.debug", "console.info", "console.trace"],
         };
     }
 
@@ -600,6 +606,126 @@ function generateSimpleManifest(): Record<string, string> {
     return manifest;
 }
 
+// Size budgets, in bytes, for the production JS outputs worth guarding. Seeded from a
+// known-good build with ~10% headroom. These exist to catch the class of regression
+// where a bundle silently stops using a vendor shim and re-embeds React/Mantine/MUI —
+// historically worth megabytes, and invisible until someone looks at the dist folder.
+// Raise a number deliberately when a bundle legitimately grows; don't raise it to make
+// a build go green.
+const TOTAL_JS_BUDGET = 10_500_000;
+const bundleBudgets: Partial<Record<EntryPointName, number>> = {
+    "vendor-react": 1_930_000,
+    "vendor-core": 1_000_000,
+    app: 580_000,
+    home: 465_000,
+    dispatchReact: 445_000,
+    jobSearchReact: 430_000,
+    nationwide: 425_000,
+    recurringJobsReact: 415_000,
+    jobSearch: 410_000,
+    taskDashboardReact: 395_000,
+    jobDetailsReact: 350_000,
+    jobSearchJobListReact: 270_000,
+    nationwideJobListReact: 270_000,
+    currentWorkJobListReact: 270_000,
+    jobListReact: 270_000,
+};
+
+// Fails the build when an output exceeds its budget, so a size regression surfaces here
+// rather than in production.
+function checkBudgets(metafile: esbuild.Metafile): void {
+    const jsOutputs = Object.entries(metafile.outputs).filter(
+        ([name]) => name.endsWith(".js")
+    );
+
+    const breaches: string[] = [];
+
+    for (const [outputPath, output] of jsOutputs) {
+        const fileName = path.basename(outputPath);
+        for (const [entryName, budget] of Object.entries(bundleBudgets)) {
+            if (!fileName.match(new RegExp(`^${entryName}\\.[a-zA-Z0-9]+\\.js$`))) continue;
+            if (output.bytes > budget) {
+                const over = (((output.bytes - budget) / budget) * 100).toFixed(1);
+                breaches.push(
+                    `  ${entryName}: ${output.bytes} bytes exceeds budget ${budget} (+${over}%)`
+                );
+            }
+        }
+    }
+
+    const totalJs = jsOutputs.reduce((sum, [, output]) => sum + output.bytes, 0);
+    if (totalJs > TOTAL_JS_BUDGET) {
+        const over = (((totalJs - TOTAL_JS_BUDGET) / TOTAL_JS_BUDGET) * 100).toFixed(1);
+        breaches.push(
+            `  [total JS]: ${totalJs} bytes exceeds budget ${TOTAL_JS_BUDGET} (+${over}%)`
+        );
+    }
+
+    if (breaches.length > 0) {
+        console.error("\n[ERROR] Bundle size budget exceeded:");
+        breaches.forEach((b) => console.error(b));
+        console.error(
+            "\nRun `npm run build -- --analyze` to see what grew, or adjust the budget in build.ts if the growth is intended.\n"
+        );
+        process.exit(1);
+    }
+}
+
+const brotliCompress = promisify(zlib.brotliCompress);
+const gzipCompress = promisify(zlib.gzip);
+
+/**
+ * Pre-compresses the production bundles to .br and .gz siblings.
+ *
+ * Doing this at build time rather than through ASP.NET's response-compression
+ * middleware is a straight win here: dist filenames are content-hashed and therefore
+ * immutable, so the expensive maximum-quality pass happens once per build instead of
+ * once per request, and the runtime spends no CPU on it at all. Program.cs serves these
+ * when the client advertises the matching Accept-Encoding.
+ */
+async function compressDist(): Promise<void> {
+    const targets = fs
+        .readdirSync(distPath)
+        .filter((f) => f.endsWith(".js") || f.endsWith(".css"));
+
+    let rawTotal = 0;
+    let brTotal = 0;
+
+    await Promise.all(
+        targets.map(async (fileName) => {
+            const filePath = path.join(distPath, fileName);
+            const raw = await fs.promises.readFile(filePath);
+
+            const [br, gz] = await Promise.all([
+                brotliCompress(raw, {
+                    params: {
+                        [zlib.constants.BROTLI_PARAM_QUALITY]: zlib.constants.BROTLI_MAX_QUALITY,
+                        [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length,
+                    },
+                }),
+                gzipCompress(raw, {level: zlib.constants.Z_BEST_COMPRESSION}),
+            ]);
+
+            rawTotal += raw.length;
+            brTotal += br.length;
+
+            // A compressed copy that isn't smaller would only cost a round trip.
+            if (br.length < raw.length) {
+                await fs.promises.writeFile(`${filePath}.br`, br);
+            }
+            if (gz.length < raw.length) {
+                await fs.promises.writeFile(`${filePath}.gz`, gz);
+            }
+        })
+    );
+
+    const pct = ((1 - brTotal / rawTotal) * 100).toFixed(1);
+    console.log(
+        `[PROD] Pre-compressed ${targets.length} files: `
+        + `${(rawTotal / 1024 / 1024).toFixed(2)} MB -> ${(brTotal / 1024 / 1024).toFixed(2)} MB brotli (-${pct}%)`
+    );
+}
+
 // Bundle analyzer - shows what's in each bundle
 function analyzeBundle(metafile: esbuild.Metafile): void {
     console.log("\n[ANALYZE] Bundle breakdown:\n");
@@ -643,18 +769,14 @@ const vendorEntries = {
     "vendor-react": entryPoints["vendor-react"],
 };
 
-// Angular modules (not React-based)
-const moduleEntries = Object.fromEntries(
-    Object.entries(entryPoints).filter(([name]) =>
-        !name.startsWith("vendor") && !name.includes("React")
-    )
-) as Record<string, string>;
-
-// React modules (use React global shims)
-const reactModuleEntries = Object.fromEntries(
-    Object.entries(entryPoints).filter(([name]) =>
-        name.includes("React") && !name.startsWith("vendor")
-    )
+// Everything that isn't a vendor bundle: the Angular route modules and the React
+// islands. These used to be two separate esbuild invocations, but their configs are
+// identical (same shims, same options), so building them together lets esbuild parse
+// the shared module graph — the React shims, the icon packages, the common
+// components — once instead of twice. Output is byte-for-byte the same: iife entries
+// don't share code, and the content hashes are unchanged by the grouping.
+const appModuleEntries = Object.fromEntries(
+    Object.entries(entryPoints).filter(([name]) => !name.startsWith("vendor"))
 ) as Record<string, string>;
 
 // Build functions
@@ -666,10 +788,7 @@ async function buildDev(): Promise<void> {
         esbuild.context(getBuildConfig(false, { "vendor-core": vendorEntries["vendor-core"] }, "vendor-core")),
         esbuild.context(getBuildConfig(false, { "vendor-plugins": vendorEntries["vendor-plugins"] }, "vendor-plugins")),
         esbuild.context(getBuildConfig(false, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
-        esbuild.context(getBuildConfig(false, moduleEntries, "modules")),
-        ...(Object.keys(reactModuleEntries).length > 0
-            ? [await esbuild.context(getBuildConfig(false, reactModuleEntries, "react-modules"))]
-            : []),
+        esbuild.context(getBuildConfig(false, appModuleEntries, "app-modules")),
     ]);
 
     // Initial builds
@@ -704,21 +823,12 @@ async function buildProd(): Promise<void> {
     }
 
     // Build all bundle types in parallel
-    const buildPromises: Promise<esbuild.BuildResult>[] = [
+    const results = await Promise.all([
         esbuild.build(getBuildConfig(true, {"vendor-core": vendorEntries["vendor-core"]}, "vendor-core")),
         esbuild.build(getBuildConfig(true, {"vendor-plugins": vendorEntries["vendor-plugins"]}, "vendor-plugins")),
         esbuild.build(getBuildConfig(true, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
-        esbuild.build(getBuildConfig(true, moduleEntries, "modules")),
-    ];
-
-    // Add React modules build if there are any
-    if (Object.keys(reactModuleEntries).length > 0) {
-        buildPromises.push(
-            esbuild.build(getBuildConfig(true, reactModuleEntries, "react-modules"))
-        );
-    }
-
-    const results = await Promise.all(buildPromises);
+        esbuild.build(getBuildConfig(true, appModuleEntries, "app-modules")),
+    ]);
 
     // Verify all metafiles exist
     for (const result of results) {
@@ -733,10 +843,21 @@ async function buildProd(): Promise<void> {
         outputs: Object.assign({}, ...results.map(r => r.metafile!.outputs)),
     };
 
+    // Persist the metafile so a bundle can be analysed (or diffed against a previous
+    // build) without having to re-run with --analyze.
+    await fs.promises.writeFile(
+        path.join(distPath, "meta.json"),
+        JSON.stringify(mergedMetafile)
+    );
+
     // Show bundle analysis if requested
     if (isAnalyze) {
         analyzeBundle(mergedMetafile);
     }
+
+    checkBudgets(mergedMetafile);
+
+    await compressDist();
 
     // Generate manifest from merged metafile
     const manifest = generateManifestFromMetafile(mergedMetafile);

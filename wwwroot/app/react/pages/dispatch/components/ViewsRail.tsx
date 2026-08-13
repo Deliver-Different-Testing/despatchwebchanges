@@ -10,38 +10,23 @@
  */
 
 import React from 'react';
-import {Box, Button, Group, Skeleton, Text} from '@mantine/core';
+import {Box, Group, Skeleton, Text} from '@mantine/core';
 import {Layers, ListX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
-import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
-import {headerSurfaceAccent} from '../../../components/dialogs/shared/mantine/styles';
+import {ACTION_BUTTON_GLYPH_SIZE, ACTION_BUTTON_HEIGHT, ActionButton,} from '../../../components/common/action-button';
 import classes from './ViewsRail.module.css';
-
-export interface ViewsRailProps {
-    views: DfrntPageViewModel[];
-    selectedIds: number[];
-    /**
-     * Drives the empty-selection copy: with no view selected the server returns
-     * every job on US tenants but nothing at all on NZ tenants
-     * (`Repositories/BaseJobRepository.cs`).
-     */
-    isUsCustomer: boolean;
-    loading?: boolean;
-    onToggle: (viewId: number) => void;
-    onClearAll: () => void;
-}
+import {ViewsRailProps} from "./ViewsRailProps";
 
 // Matches the card's standard toolbar chrome (JobListToolbar) so the rail and
-// the category tabs below it read as one bar of controls.
+// the category tabs below it read as one bar of controls — same 48px band, same
+// chip material, since both are built from the shared raised-chip button. The
+// rail's own padding is 4px rather than 8: `.scroll` adds the other 4 to clear
+// the chips' shadow.
 const railStyle: React.CSSProperties = {
-    minHeight: 40,
+    minHeight: 48,
     borderBottom: '1px solid var(--mantine-color-default-border)',
     backgroundColor: 'var(--dd-surface-container)',
-    // The pills borrow SegmentedToggle's selection recipe (tonal fill + 1px
-    // accent border + Ink label) so multi-select speaks the same grammar as the
-    // single-select toggles, without an indicator it could not share.
-    '--vp-accent': headerSurfaceAccent,
-} as React.CSSProperties;
+};
 
 export const ViewsRail: React.FC<ViewsRailProps> = ({
     views,
@@ -53,10 +38,10 @@ export const ViewsRail: React.FC<ViewsRailProps> = ({
 }) => {
     if (loading) {
         return (
-            <Group align="center" gap="sm" px="md" py={6} wrap="nowrap" style={railStyle} data-testid="views-rail-loading">
+            <Group align="center" gap="sm" px="md" py={4} wrap="nowrap" style={railStyle} data-testid="views-rail-loading">
                 <Icon lucide={Layers} size={16} color="var(--mantine-color-dimmed)" aria-hidden/>
                 {[96, 78, 64].map(width => (
-                    <Skeleton key={width} width={width} height={28} radius="sm"/>
+                    <Skeleton key={width} width={width} height={ACTION_BUTTON_HEIGHT} radius={9999}/>
                 ))}
             </Group>
         );
@@ -65,7 +50,7 @@ export const ViewsRail: React.FC<ViewsRailProps> = ({
     if (views.length === 0) return null;
 
     return (
-        <Group align="center" gap="sm" px="md" py={6} wrap="nowrap" style={railStyle}>
+        <Group align="center" gap="sm" px="md" py={4} wrap="nowrap" style={railStyle}>
             <Icon lucide={Layers} size={16} color="var(--mantine-color-dimmed)" aria-hidden style={{flexShrink: 0}}/>
             <Box className={classes.scroll}>
                 {/*
@@ -73,36 +58,27 @@ export const ViewsRail: React.FC<ViewsRailProps> = ({
                   * rather than becoming a `Chip.Group` — Mantine chips are checkboxes,
                   * which reads wrong for a scope filter and loses the pressed state.
                   */}
-                <Group gap="xs" wrap="nowrap" role="group" aria-label="Job list views">
-                    {views.map(view => {
-                        const selected = selectedIds.includes(view.id);
-                        return (
-                            <Button
-                                key={view.id}
-                                size="compact-xs"
-                                variant="default"
-                                className={classes.viewPill}
-                                data-selected={selected || undefined}
-                                aria-pressed={selected}
-                                onClick={() => onToggle(view.id)}
-                                style={{whiteSpace: 'nowrap'}}
-                            >
-                                {view.name}
-                            </Button>
-                        );
-                    })}
+                <Group gap="xs" wrap="nowrap" className={classes.pills} role="group" aria-label="Job list views">
+                    {views.map(view => (
+                        <ActionButton
+                            key={view.id}
+                            selected={selectedIds.includes(view.id)}
+                            onClick={() => onToggle(view.id)}
+                            style={{whiteSpace: 'nowrap'}}
+                        >
+                            {view.name}
+                        </ActionButton>
+                    ))}
                 </Group>
             </Box>
             {selectedIds.length > 0 ? (
-                <Button
-                    size="compact-sm"
-                    variant="subtle"
-                    leftSection={<Icon lucide={ListX} size={16}/>}
+                <ActionButton
+                    leftSection={<Icon lucide={ListX} size={ACTION_BUTTON_GLYPH_SIZE}/>}
                     onClick={onClearAll}
                     style={{flexShrink: 0}}
                 >
                     Clear
-                </Button>
+                </ActionButton>
             ) : (
                 <Text size="xs" c="dimmed" style={{flexShrink: 0}}>
                     {isUsCustomer ? 'No view selected — showing all jobs.' : 'Select a view to load jobs.'}

@@ -84,6 +84,22 @@ describe('PanelHeader', () => {
         expect(bar).not.toHaveStyle({backgroundColor: 'var(--mantine-primary-color-filled)'});
     });
 
+    /**
+     * The leading glyph is bare — no badge, no wash behind it — and takes the bar's
+     * own on-colour, which is scheme-aware, so it inverts with the text in dark mode
+     * rather than staying a fixed brand accent.
+     */
+    it('renders the leading glyph bare, inheriting the bar colour', () => {
+        const {container} = renderPanel(<PanelHeader icon={tune} title="Filters" />);
+
+        expect(container.querySelector('.mantine-ThemeIcon-root')).toBeNull();
+
+        const glyphWrapper = screen.getByTestId('panel-header-icon');
+        expect(glyphWrapper).toHaveStyle({color: 'inherit'});
+        expect(glyphWrapper.style.backgroundColor).toBe('');
+        expect(glyphWrapper.querySelector('svg')).toBeInTheDocument();
+    });
+
     it('labels the badge chip in body text, not the low-contrast brand accent', () => {
         renderPanel(<PanelHeader icon={tune} title="Recurring Log" badge="RECURRING" />);
 

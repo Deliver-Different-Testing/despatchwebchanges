@@ -56,8 +56,6 @@ public static partial class PriceLineClassifier
         return n.Contains("surcharge")
             ? Bucket.Surcharge
             :
-            // Holiday, Stop Offs, Pallets, Dry Ice, Items, Manually Rated, Extra Stop, and anything
-            // else the engine emits that we don't have a dedicated bucket for.
             Bucket.Other;
     }
 

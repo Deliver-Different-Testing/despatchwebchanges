@@ -9,7 +9,7 @@ import {render, screen, waitFor, within, fireEvent} from '@testing-library/react
 import {MantineProvider} from '@mantine/core';
 import {createDfrntTheme} from '../../../theme/dfrntMantineTheme';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {StickyNotes} from './StickyNotes';
+import {StickyNotes, getNoteFill, NOTE_FILLS} from './StickyNotes';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
@@ -43,12 +43,14 @@ const renderWithProviders = (ui: React.ReactElement) => {
     );
 };
 
-// Sample note data
+// Sample note data. The type names deliberately mirror the multi-word strings
+// the backend actually serves from TucNoteTypes.NoteTypeName ("Internal Note",
+// not "Internal") — single-word fixtures previously masked a fill-matching bug.
 const createMockNotes = (): JobNote[] => [
     {
         noteId: 1,
         noteTypeId: 1,
-        noteTypeName: 'Internal',
+        noteTypeName: 'Internal Note',
         jobId: 123,
         noteText: 'This is an internal note',
         isImportant: false,
@@ -58,7 +60,7 @@ const createMockNotes = (): JobNote[] => [
     {
         noteId: 2,
         noteTypeId: 2,
-        noteTypeName: 'Client',
+        noteTypeName: 'Client Note',
         jobId: 123,
         noteText: 'This is a client note',
         isImportant: false,
@@ -68,7 +70,7 @@ const createMockNotes = (): JobNote[] => [
     {
         noteId: 3,
         noteTypeId: 1,
-        noteTypeName: 'Internal',
+        noteTypeName: 'Internal Note',
         jobId: 123,
         noteText: 'Important internal note',
         isImportant: true,
@@ -77,9 +79,9 @@ const createMockNotes = (): JobNote[] => [
 ];
 
 const createMockNoteTypes = (): NoteType[] => [
-    {id: 1, text: 'Internal', isPublic: false},
-    {id: 2, text: 'Client', isPublic: true},
-    {id: 3, text: 'Consignment', isPublic: true},
+    {id: 1, text: 'Internal Note', isPublic: false},
+    {id: 2, text: 'Client Note', isPublic: true},
+    {id: 3, text: 'Consignment Note', isPublic: true},
 ];
 
 const createDefaultProps = (overrides?: Partial<StickyNotesProps>): StickyNotesProps => {
@@ -115,10 +117,10 @@ describe('StickyNotes', () => {
             expect(screen.getByText('This is a client note')).toBeInTheDocument();
             expect(screen.getByText('Important internal note')).toBeInTheDocument();
 
-            // Note type names - Internal appears twice (2 internal notes)
-            const internalNotes = screen.getAllByText('Internal');
+            // Note type names - Internal Note appears twice (2 internal notes)
+            const internalNotes = screen.getAllByText('Internal Note');
             expect(internalNotes.length).toBe(2);
-            expect(screen.getByText('Client')).toBeInTheDocument();
+            expect(screen.getByText('Client Note')).toBeInTheDocument();
 
             // Note dates
             expect(screen.getByText('Jan 15, 2025 9:00 AM')).toBeInTheDocument();
@@ -139,7 +141,7 @@ describe('StickyNotes', () => {
             mockedNotesApi.getJobNotes.mockResolvedValue([{
                 noteId: 10,
                 noteTypeId: 1,
-                noteTypeName: 'Internal',
+                noteTypeName: 'Internal Note',
                 jobId: 123,
                 noteText: 'Note without author',
                 isImportant: false,
@@ -196,9 +198,9 @@ describe('StickyNotes', () => {
 
             // Check menu items
             const menu = screen.getByRole('menu');
-            expect(within(menu).getByText('Internal')).toBeInTheDocument();
-            expect(within(menu).getByText('Client')).toBeInTheDocument();
-            expect(within(menu).getByText('Consignment')).toBeInTheDocument();
+            expect(within(menu).getByText('Internal Note')).toBeInTheDocument();
+            expect(within(menu).getByText('Client Note')).toBeInTheDocument();
+            expect(within(menu).getByText('Consignment Note')).toBeInTheDocument();
         });
 
         it('does not produce Fragment children warning when category menu is open', async () => {
@@ -234,7 +236,7 @@ describe('StickyNotes', () => {
             expect(await screen.findByRole('menu')).toBeInTheDocument();
 
             const menu = screen.getByRole('menu');
-            const clientMenuItem = within(menu).getByText('Client');
+            const clientMenuItem = within(menu).getByText('Client Note');
             await user.click(clientMenuItem);
 
             // Should only show client note
@@ -256,10 +258,10 @@ describe('StickyNotes', () => {
             expect(await screen.findByRole('menu')).toBeInTheDocument();
 
             const menu = screen.getByRole('menu');
-            await user.click(within(menu).getByText('Client'));
+            await user.click(within(menu).getByText('Client Note'));
 
             // Should show filter indicator in header
-            expect(await screen.findByText('- Client')).toBeInTheDocument();
+            expect(await screen.findByText('- Client Note')).toBeInTheDocument();
         });
     });
 
@@ -297,7 +299,7 @@ describe('StickyNotes', () => {
             const newNote: JobNote = {
                 noteId: 99,
                 noteTypeId: 1,
-                noteTypeName: 'Internal',
+                noteTypeName: 'Internal Note',
                 jobId: 123,
                 noteText: 'Brand new note',
                 isImportant: false,
@@ -382,6 +384,76 @@ describe('StickyNotes', () => {
         });
     });
 
+    describe('Note type colours', () => {
+        const noteOfType = (noteTypeId: number, noteTypeName: string, isImportant = false): JobNote => ({
+            noteId: noteTypeId,
+            noteTypeId,
+            noteTypeName,
+            jobId: 123,
+            noteText: `note ${noteTypeId}`,
+            isImportant,
+        });
+
+        it.each([
+            [1, 'Internal Note', NOTE_FILLS.internal],
+            [2, 'Client Note', NOTE_FILLS.client],
+            [3, 'Flight Update', NOTE_FILLS.flightUpdate],
+            [4, 'Agent Update', NOTE_FILLS.agentUpdate],
+            [5, 'Consignment Note', NOTE_FILLS.consignment],
+            [9, 'Pickup Notes', NOTE_FILLS.pickup],
+            [10, 'Delivery Notes', NOTE_FILLS.delivery],
+            [1100, 'Pricing Update', NOTE_FILLS.pricingUpdate],
+            [1101, 'Address Update', NOTE_FILLS.addressUpdate],
+        ])('fills note type %i (%s) with its own colour', (noteTypeId, noteTypeName, expected) => {
+            expect(getNoteFill(noteOfType(noteTypeId, noteTypeName))).toBe(expected);
+        });
+
+        it('gives every canonical note type a distinct fill', () => {
+            const fills = [1, 2, 3, 4, 5, 9, 10, 1100, 1101].map(id => getNoteFill(noteOfType(id, '')));
+            expect(new Set(fills).size).toBe(fills.length);
+        });
+
+        it('lets importance win over the note type', () => {
+            expect(getNoteFill(noteOfType(1, 'Internal Note', true))).toBe(NOTE_FILLS.important);
+            expect(getNoteFill(noteOfType(1101, 'Address Update', true))).toBe(NOTE_FILLS.important);
+        });
+
+        it('falls back to a name-word match for tenant-added note types', () => {
+            // Tenants can add their own types via AddNewTucNoteTypeAsync, which get
+            // ids outside the canonical enum — the name still has to carry the colour.
+            expect(getNoteFill(noteOfType(5001, 'Internal Ops Note'))).toBe(NOTE_FILLS.internal);
+            expect(getNoteFill(noteOfType(5002, 'Urgent Client Note'))).toBe(NOTE_FILLS.client);
+            expect(getNoteFill(noteOfType(5003, 'Delivery Handover'))).toBe(NOTE_FILLS.delivery);
+        });
+
+        it('falls back to the default fill for an unrecognised type', () => {
+            expect(getNoteFill(noteOfType(9999, 'Something Else'))).toBe(NOTE_FILLS.default);
+            expect(getNoteFill(noteOfType(9999, ''))).toBe(NOTE_FILLS.default);
+        });
+
+        it('applies the type fill to the rendered note card', async () => {
+            mockedNotesApi.getJobNotes.mockResolvedValue([
+                ...createMockNotes(),
+                noteOfType(5, 'Consignment Note'),
+            ]);
+            renderWithProviders(<StickyNotes {...createDefaultProps()} />);
+
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
+
+            // CSS-module classes are mocked to {} in Jest, so the note card is located
+            // by the custom property it carries rather than by its class.
+            const fillOf = (text: string): string => {
+                const card = screen.getByText(text).closest('[style*="--note-fill"]');
+                return (card as HTMLElement).style.getPropertyValue('--note-fill');
+            };
+
+            expect(fillOf('This is an internal note')).toBe(NOTE_FILLS.internal);
+            expect(fillOf('This is a client note')).toBe(NOTE_FILLS.client);
+            expect(fillOf('note 5')).toBe(NOTE_FILLS.consignment);
+            expect(fillOf('Important internal note')).toBe(NOTE_FILLS.important);
+        });
+    });
+
     describe('Theme Support', () => {
         it('takes its brand accent from the provider rather than a hardcoded hue', async () => {
             const {unmount} = renderWithProviders(<StickyNotes {...createDefaultProps()} />);
@@ -408,7 +480,7 @@ describe('StickyNotes', () => {
                 {
                     noteId: 100,
                     noteTypeId: 10, // Delivery
-                    noteTypeName: 'Delivery',
+                    noteTypeName: 'Delivery Notes',
                     jobId: 123,
                     noteText: 'Drop at reception',
                     isImportant: false,
@@ -416,7 +488,7 @@ describe('StickyNotes', () => {
                 {
                     noteId: 101,
                     noteTypeId: 1, // Internal
-                    noteTypeName: 'Internal',
+                    noteTypeName: 'Internal Note',
                     jobId: 123,
                     noteText: 'Top-of-list other A',
                     isImportant: false,
@@ -424,7 +496,7 @@ describe('StickyNotes', () => {
                 {
                     noteId: 102,
                     noteTypeId: 9, // Pickup
-                    noteTypeName: 'Pickup',
+                    noteTypeName: 'Pickup Notes',
                     jobId: 123,
                     noteText: 'Gate code 1234',
                     isImportant: false,
@@ -432,7 +504,7 @@ describe('StickyNotes', () => {
                 {
                     noteId: 103,
                     noteTypeId: 2, // Client
-                    noteTypeName: 'Client',
+                    noteTypeName: 'Client Note',
                     jobId: 123,
                     noteText: 'Top-of-list other B',
                     isImportant: false,
