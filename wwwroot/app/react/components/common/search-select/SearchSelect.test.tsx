@@ -200,4 +200,23 @@ describe('SearchSelect', () => {
         // No crash, and the field falls back to the no-matches message.
         expect(await within(dropdownFor(input)).findByText(/no matches for/i)).toBeInTheDocument();
     });
+
+    it('takes focus on mount when asked, outside a focus trap as well as inside one', () => {
+        // `data-autofocus` alone only works where Mantine traps focus (modals),
+        // so an inline field — the job list's courier cell — never got focus.
+        renderWithMantine(
+            <SearchSelect<Courier>
+                aria-label="Courier"
+                placeholder="Search Courier..."
+                autoFocus
+                value={null}
+                onChange={jest.fn()}
+                search={mockSearch}
+                getOptionKey={(o) => o.id}
+                getOptionLabel={(o) => o.text}
+            />,
+        );
+
+        expect(screen.getByLabelText('Courier')).toHaveFocus();
+    });
 });

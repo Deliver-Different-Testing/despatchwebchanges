@@ -361,7 +361,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const [contextMenuPos, setContextMenuPos] = useState<{ mouseX: number; mouseY: number } | null>(null);
 
     const isJobSearchPage = appPage === 3; // AppPage.JobSearch
-    const allowDispatch = appPage === 1 || appPage === 3; // AppPage.Dispatch | AppPage.JobSearch
+    // Live-dispatching affordance: the dispatch job list only, not job search.
+    const showLoggedInSwitch = appPage === 1 && !hideLoggedInSwitch; // AppPage.Dispatch
+    // Forced off where the switch is hidden, so a stored `true` can't keep
+    // filtering the courier search with no UI to clear it.
+    const loggedInCouriersOnlyEffective = showLoggedInSwitch && loggedInCouriersOnly;
 
     // ── Register callbacks for AngularJS bridge (legacy mode) ────────
     const updateJobsRef = useRef<((jobs: DispatchJob[], total: number) => void) | null>(null);
@@ -495,7 +499,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             if (isCtrlOrCmd || isShift) {
                 // If starting multi-select from a plain-clicked job, include it
                 if (selectedJobId !== null && multiSelect.selectCount === 0) {
-                    multiSelect.toggle(selectedJobId, {ctrlKey: true, metaKey: false, shiftKey: false} as React.MouseEvent);
+                    multiSelect.toggle(selectedJobId, {
+                        ctrlKey: true,
+                        metaKey: false,
+                        shiftKey: false
+                    } as React.MouseEvent);
                 }
                 // Modifier click → multi-select, don't change detail panel
                 multiSelect.toggle(job.id, event);
@@ -548,7 +556,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         (query: string) => {
             setSearchQuery(query.toLowerCase());
             if (fetchConfig) {
-                hookDataRef.current.updateParams({ searchText: query || undefined });
+                hookDataRef.current.updateParams({searchText: query || undefined});
             }
             if (onSearchChange) onSearchChange(query);
         },
@@ -725,7 +733,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const handleBulkDispatchCourier = useCallback(async (
         type: 'Courier' | 'Agent' | 'NP',
-        destination: {id: number; text: string},
+        destination: { id: number; text: string },
     ) => {
         if (type !== 'Courier') {
             // Bulk Agent / NP allocation isn't wired server-side. The dialog still
@@ -821,7 +829,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             {fetchConfig && hookData.isFetching && (
                 <Progress.Root
                     size="xs"
-                   
+
                     style={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1}}
                 >
                     <Progress.Section value={100} animated aria-label="Loading jobs"/>
@@ -837,7 +845,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                         onResetColumns={handleResetColumns}
                         loggedInCouriersOnly={loggedInCouriersOnly}
                         onLoggedInCouriersOnlyChange={handleLoggedInCouriersOnlyChange}
-                        showLoggedInSwitch={allowDispatch && !hideLoggedInSwitch}
+                        showLoggedInSwitch={showLoggedInSwitch}
                         headerVariant
                     />
                 </HeaderSlotPortal>
@@ -859,7 +867,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onBulkRestore={handleBulkRestore}
                 onBulkMarkRead={handleBulkMarkRead}
                 onBulkMarkUnread={handleBulkMarkUnread}
-                hideLoggedInSwitch={hideLoggedInSwitch}
+                showLoggedInSwitch={showLoggedInSwitch}
                 renderViewOptions={!headerSlot}
             />
             {columnEditMode && (
@@ -891,7 +899,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 isUsCustomer={isUsCustomer}
                 appPage={appPage}
                 isJobSearchPage={isJobSearchPage}
-                loggedInCouriersOnly={loggedInCouriersOnly}
+                loggedInCouriersOnly={loggedInCouriersOnlyEffective}
                 onLoadMore={fetchConfig ? hookData.fetchNextPage : undefined}
                 hasMore={fetchConfig ? hookData.hasMore : false}
                 isFetchingMore={fetchConfig ? hookData.isFetchingNextPage : false}

@@ -77,7 +77,9 @@ import {
     getRestorePodImpact,
     addRestoreEvent,
 } from '../../services/jobListApi';
+import {searchActiveCouriersExtended} from '../../services/courierApi';
 import {queryClient} from '../../query/queryClient';
+const mockedSearchCouriers = searchActiveCouriersExtended as jest.Mock;
 const mockedAllocateJobs = allocateJobs as jest.Mock;
 const mockedUpdateJobReadStatus = updateJobReadStatus as jest.Mock;
 const mockedRestoreJobs = restoreJobs as jest.Mock;
@@ -660,6 +662,45 @@ describe('JobListPanel', () => {
 
             fireEvent.click(toggle);
             expect(toggle).not.toBeChecked();
+        });
+
+        it('is hidden outside the live dispatch list', () => {
+            // Job search: courier assignment is available, but the logged-in filter is not.
+            const {result} = renderAndPushJobs([], {appPage: AppPage.JobSearch});
+            expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
+            result.unmount();
+
+            // Current Work box on dispatch opts out explicitly.
+            const {result: currentWork} = renderAndPushJobs([], {hideLoggedInSwitch: true});
+            expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
+            currentWork.unmount();
+
+            renderAndPushJobs([], {appPage: AppPage.Domestic});
+            expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
+        });
+
+        it('ignores a stored preference where the switch is hidden', async () => {
+            // A stored `true` from before the switch was dispatch-only must not
+            // silently keep filtering the courier search with no UI to clear it.
+            localStorage.setItem('jobSearchJobList_loggedInCouriersOnly_42', 'true');
+            mockedSearchCouriers.mockClear();
+            const user = setupUser();
+
+            renderAndPushJobs([createMockDispatchJob()], {
+                appPage: AppPage.JobSearch,
+                storagePrefix: 'jobSearchJobList',
+            });
+
+            await user.click(screen.getByText('Assign'));
+            await user.click(screen.getByPlaceholderText('Search courier...'));
+            await user.paste('John');
+
+            await waitFor(() => {
+                expect(mockedSearchCouriers).toHaveBeenCalledWith(
+                    'John',
+                    expect.objectContaining({loggedInOnly: undefined}),
+                );
+            });
         });
     });
 

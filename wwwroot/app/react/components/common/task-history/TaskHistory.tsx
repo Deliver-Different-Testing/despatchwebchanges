@@ -6,19 +6,27 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {ActionIcon, Alert, Avatar, Badge, Box, Group, Paper, Progress, Stack, Text, Tooltip, UnstyledButton} from '@mantine/core';
+import {
+    ActionIcon,
+    Alert,
+    Badge,
+    Box,
+    Group,
+    Paper,
+    Progress,
+    Stack,
+    Text,
+    Timeline,
+    Tooltip,
+    UnstyledButton
+} from '@mantine/core';
 import {LayoutList, NotebookPen, RefreshCw, Rows2, Rows4, SquareDashedMousePointer} from 'lucide-react';
 import {IconPackage} from '@tabler/icons-react';
 import {Icon} from '../icon/Icon';
 import classes from './TaskHistory.module.css';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import {
-    DeliveryHistoryConfig,
-    DeliveryJourney,
-    DensityMode,
-    TaskHistoryProps,
-} from './TaskHistory.interfaces';
+import {DeliveryHistoryConfig, DeliveryJourney, DensityMode, TaskHistoryProps,} from './TaskHistory.interfaces';
 import {type EventColorTone, getEventColorTone, getEventIcon} from './eventIcons';
 import {DeliveryEventDetailsDialog} from './DeliveryEventDetailsDialog';
 import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
@@ -33,7 +41,6 @@ interface DensitySpec {
     cardPad: number;
     markerSize: number;
     iconFontSize: number;
-    railLeft: number;
     showNotes: boolean;
     tagLimit: number;
     /** Mantine font-size key for the row title. */
@@ -47,7 +54,6 @@ const DENSITY: Record<DensityMode, DensitySpec> = {
         cardPad: 12,
         markerSize: 36,
         iconFontSize: 20,
-        railLeft: 18,
         showNotes: true,
         tagLimit: 10,
         titleSize: 'sm',
@@ -58,7 +64,6 @@ const DENSITY: Record<DensityMode, DensitySpec> = {
         cardPad: 8,
         markerSize: 28,
         iconFontSize: 16,
-        railLeft: 14,
         showNotes: false,
         tagLimit: 4,
         titleSize: 'sm',
@@ -69,7 +74,6 @@ const DENSITY: Record<DensityMode, DensitySpec> = {
         cardPad: 6,
         markerSize: 22,
         iconFontSize: 13,
-        railLeft: 11,
         showNotes: false,
         tagLimit: 2,
         titleSize: 'xs',
@@ -84,23 +88,22 @@ const defaultConfig: DeliveryHistoryConfig = {
 const POLLING_INTERVAL_MS = 120_000; // 2 minutes
 
 /**
- * The event's accent, as Mantine colour tokens. The tone keys are MUI's semantic
- * names, so they map once here rather than at every use.
+ * The event's accent, as theme colour names. The tone keys are MUI's semantic
+ * names, so they map once here rather than at every use. `info` is `reflex`
+ * (the theme's declared info/links ramp) rather than Mantine's stock `blue`,
+ * which the theme does not register.
  */
 const TONE_COLOR: Record<EventColorTone, string> = {
     success: 'green',
-    info: 'blue',
+    info: 'reflex',
     warning: 'orange',
     error: 'red',
     secondary: 'gray',
 };
 
-function getEventColors(iconName: string | undefined | null): { main: string; contrast: string } {
-    const color = TONE_COLOR[getEventColorTone(iconName)];
-    return {
-        main: `var(--mantine-color-${color}-filled)`,
-        contrast: `var(--mantine-color-white)`,
-    };
+/** The same token Mantine resolves `Timeline.Item color` to, for the card's keyline. */
+function eventAccent(tone: EventColorTone): string {
+    return `var(--mantine-color-${TONE_COLOR[tone]}-filled)`;
 }
 
 /** The two empty states differ only by glyph and copy. */
@@ -116,7 +119,7 @@ const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    backgroundColor: 'var(--mantine-color-body)',
+    backgroundColor: 'var(--dd-surface-container)',
     borderRadius: 'var(--mantine-radius-md)',
     overflow: 'hidden',
 };
@@ -200,7 +203,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
 
     if (!jobId) {
         return (
-            <Box style={containerStyle}>
+            <Box data-testid="task-history-root" style={containerStyle}>
                 <EmptyState
                     icon={<Icon lucide={SquareDashedMousePointer} size={48}/>}
                     title="Select a Job"
@@ -211,7 +214,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
     }
 
     return (
-        <Box style={containerStyle}>
+        <Box data-testid="task-history-root" style={containerStyle}>
             {/* Header */}
             <Group justify="flex-end" px="sm" py={6}>
                 <Group gap={2}>
@@ -256,39 +259,58 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
 
                 {deliveryEvents.length > 0 ? (
                     <Box style={{flex: 1, overflowY: 'auto', padding: spec.contentPad}}>
-                        <Box
+                        <Timeline
+                            // A bullet is only filled with its own tone while active, and the
+                            // tone encodes what the event *is*, not how far the job has got —
+                            // so every item is active. That also marks every rail segment
+                            // active, which the stylesheet pins back to the neutral border.
+                            active={deliveryEvents.length}
+                            // The theme's autoContrast would derive the glyph colour from the
+                            // light brand primary and hand every bullet a black glyph; opting
+                            // out leaves Mantine's white, which all five tones are dark enough for.
+                            autoContrast={false}
+                            bulletSize={spec.markerSize}
+                            lineWidth={2}
+                            classNames={{item: classes.item}}
+                            style={{'--journey-row-gap': `${spec.rowGap}px`} as React.CSSProperties}
                             role="list"
                             aria-label="Delivery journey events"
-                            style={{position: 'relative'}}
                         >
-                            {/* Continuous timeline rail */}
-                            <Box
-                                aria-hidden
-                                style={{
-                                    position: 'absolute',
-                                    left: spec.railLeft,
-                                    top: spec.markerSize / 2,
-                                    bottom: spec.markerSize / 2,
-                                    width: 2,
-                                    backgroundColor: 'var(--mantine-color-default-border)',
-                                    borderRadius: 'var(--mantine-radius-sm)',
-                                }}
-                            />
-                            <Stack gap={spec.rowGap}>
-                                {deliveryEvents.map((event, index) => (
-                                    <EventRow
+                            {/* Timeline.Item has to be the direct child: Timeline clones its
+                                children to inject the private prop that fills a bullet, so a
+                                wrapper component would swallow it. */}
+                            {deliveryEvents.map((event, index) => {
+                                const tone = getEventColorTone(event.icon);
+                                // An MUI icon component — the glyph name comes from the backend,
+                                // so `eventIcons` waits for the icon phase (§8) like `SymbolIcon`.
+                                const EventIcon = getEventIcon(event.icon);
+                                return (
+                                    <Timeline.Item
                                         key={event.id}
-                                        event={event}
-                                        index={index}
-                                        spec={spec}
-                                        densityMode={densityMode}
-                                        timeZoneShort={timeZoneShort}
-                                        animated={shouldAnimate}
-                                        onClick={() => handleEventClick(event)}
-                                    />
-                                ))}
-                            </Stack>
-                        </Box>
+                                        color={TONE_COLOR[tone]}
+                                        bullet={<EventIcon sx={{fontSize: spec.iconFontSize}}/>}
+                                        role="listitem"
+                                        data-event-tone={tone}
+                                        style={{
+                                            opacity: shouldAnimate ? 1 : 0,
+                                            transform: shouldAnimate ? 'translateX(0)' : 'translateX(-12px)',
+                                            transition: 'opacity 300ms ease, transform 300ms ease',
+                                            // Staggered entrance, capped so a long journey still finishes promptly.
+                                            transitionDelay: `${Math.min(index * 0.06, 0.6)}s`,
+                                        }}
+                                    >
+                                        <EventCard
+                                            event={event}
+                                            accent={eventAccent(tone)}
+                                            spec={spec}
+                                            densityMode={densityMode}
+                                            timeZoneShort={timeZoneShort}
+                                            onClick={() => handleEventClick(event)}
+                                        />
+                                    </Timeline.Item>
+                                );
+                            })}
+                        </Timeline>
                     </Box>
                 ) : !loading ? (
                     <EmptyState
@@ -309,21 +331,17 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
     );
 };
 
-interface EventRowProps {
+interface EventCardProps {
     event: DeliveryJourney;
-    index: number;
+    /** The event's tone as a colour token, for the card's left keyline. */
+    accent: string;
     spec: DensitySpec;
     densityMode: DensityMode;
     timeZoneShort: string;
-    animated: boolean;
     onClick?: () => void;
 }
 
-const EventRow: React.FC<EventRowProps> = ({event, index, spec, densityMode, timeZoneShort, animated, onClick}) => {
-    const statusColor = getEventColors(event.icon);
-    // An MUI icon component — the glyph name comes from the backend, so `eventIcons`
-    // waits for the icon phase (§8) like `SymbolIcon`.
-    const EventIcon = getEventIcon(event.icon);
+const EventCard: React.FC<EventCardProps> = ({event, accent, spec, densityMode, timeZoneShort, onClick}) => {
     const ultraDense = densityMode === DensityMode.UltraDense;
 
     const tagsToShow = event.tags?.slice(0, spec.tagLimit) ?? [];
@@ -402,7 +420,7 @@ const EventRow: React.FC<EventRowProps> = ({event, index, spec, densityMode, tim
             {/* Notes */}
             {event.notes && spec.showNotes && (
                 <Alert
-                    color="blue"
+                    color="reflex"
                     variant="outline"
                     py={4}
                     px="xs"
@@ -415,60 +433,28 @@ const EventRow: React.FC<EventRowProps> = ({event, index, spec, densityMode, tim
         </Stack>
     );
 
+    // The left keyline carries the event's accent, so it is set with longhands — the
+    // hover rule in the stylesheet repaints the other three sides only.
     return (
-        <Box
-            role="listitem"
+        <Paper
+            withBorder
+            radius="md"
+            className={onClick ? classes.clickableCard : undefined}
             style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 12,
-                opacity: animated ? 1 : 0,
-                transform: animated ? 'translateX(0)' : 'translateX(-12px)',
-                transition: 'opacity 300ms ease, transform 300ms ease',
-                // Staggered entrance, capped so a long journey still finishes promptly.
-                transitionDelay: `${Math.min(index * 0.06, 0.6)}s`,
+                minWidth: 0,
+                borderLeftWidth: 3,
+                borderLeftStyle: 'solid',
+                borderLeftColor: accent,
             }}
         >
-            {/* Event marker (dot) */}
-            <Avatar
-                size={spec.markerSize}
-                radius="xl"
-                style={{
-                    backgroundColor: statusColor.main,
-                    color: statusColor.contrast,
-                    border: '2px solid var(--mantine-color-body)',
-                    boxShadow: 'var(--mantine-shadow-xs)',
-                    flexShrink: 0,
-                    zIndex: 1,
-                }}
-            >
-                <EventIcon sx={{fontSize: spec.iconFontSize}}/>
-            </Avatar>
-
-            {/* Event card. The left keyline carries the event's accent, so it is set
-                with longhands — the hover rule in the stylesheet repaints the other
-                three sides only. */}
-            <Paper
-                withBorder
-                radius="md"
-                className={onClick ? classes.clickableCard : undefined}
-                style={{
-                    flex: 1,
-                    minWidth: 0,
-                    borderLeftWidth: 3,
-                    borderLeftStyle: 'solid',
-                    borderLeftColor: statusColor.main,
-                }}
-            >
-                {onClick ? (
-                    <UnstyledButton onClick={onClick} display="block" w="100%">
-                        {cardBody}
-                    </UnstyledButton>
-                ) : (
-                    cardBody
-                )}
-            </Paper>
-        </Box>
+            {onClick ? (
+                <UnstyledButton onClick={onClick} display="block" w="100%">
+                    {cardBody}
+                </UnstyledButton>
+            ) : (
+                cardBody
+            )}
+        </Paper>
     );
 };
 

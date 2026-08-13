@@ -18,50 +18,84 @@ import {SectionHeader} from '../job-details/components/SectionHeader';
 import {Icon} from '../icon/Icon';
 import classes from './StickyNotes.module.css';
 
+// Mirrors backend Enums/NoteType.cs — keep in sync.
+const INTERNAL_NOTE_TYPE_ID = 1;
+const CLIENT_NOTE_TYPE_ID = 2;
+const FLIGHT_UPDATE_NOTE_TYPE_ID = 3;
+const AGENT_UPDATE_NOTE_TYPE_ID = 4;
+const CONSIGNMENT_NOTE_TYPE_ID = 5;
+const PICKUP_NOTE_TYPE_ID = 9;
+const DELIVERY_NOTE_TYPE_ID = 10;
+const PRICING_UPDATE_NOTE_TYPE_ID = 1100;
+const ADDRESS_UPDATE_NOTE_TYPE_ID = 1101;
+
 /**
  * The sticky-note fills. Deliberately literal pastels rather than theme tokens:
  * they mimic physical note paper and carry the note's category, and the ink on
- * them is fixed dark regardless of colour scheme.
+ * them is fixed dark regardless of colour scheme. All sit in the same luminance
+ * band so `noteInk` stays legible on every one of them.
  */
-const NOTE_FILLS = {
+export const NOTE_FILLS = {
     important: '#ffccbc', // Orange for important
     internal: '#fff9c4',  // Yellow
     consignment: '#bbdefb', // Blue
     client: '#c8e6c9',    // Green
+    flightUpdate: '#d1c4e9', // Lavender
+    agentUpdate: '#ffe0b2',  // Peach
+    pickup: '#b2dfdb',       // Mint
+    delivery: '#b2ebf2',     // Pale cyan
+    pricingUpdate: '#f8bbd0', // Pale pink
+    addressUpdate: '#eceff1', // Pale grey
     default: '#e1f5fe',   // Light blue default
 } as const;
 
-/**
- * Get note type color based on type name and importance
- */
-function getNoteTypeColor(noteTypeName?: string, isImportant?: boolean): string {
-    if (isImportant) return NOTE_FILLS.important;
+const FILL_BY_TYPE_ID: Record<number, string> = {
+    [INTERNAL_NOTE_TYPE_ID]: NOTE_FILLS.internal,
+    [CLIENT_NOTE_TYPE_ID]: NOTE_FILLS.client,
+    [FLIGHT_UPDATE_NOTE_TYPE_ID]: NOTE_FILLS.flightUpdate,
+    [AGENT_UPDATE_NOTE_TYPE_ID]: NOTE_FILLS.agentUpdate,
+    [CONSIGNMENT_NOTE_TYPE_ID]: NOTE_FILLS.consignment,
+    [PICKUP_NOTE_TYPE_ID]: NOTE_FILLS.pickup,
+    [DELIVERY_NOTE_TYPE_ID]: NOTE_FILLS.delivery,
+    [PRICING_UPDATE_NOTE_TYPE_ID]: NOTE_FILLS.pricingUpdate,
+    [ADDRESS_UPDATE_NOTE_TYPE_ID]: NOTE_FILLS.addressUpdate,
+};
 
-    const typeLower = noteTypeName?.toLowerCase() || '';
-    switch (typeLower) {
-        case 'internal':
-            return NOTE_FILLS.internal;
-        case 'consignment':
-            return NOTE_FILLS.consignment;
-        case 'client':
-            return NOTE_FILLS.client;
-        default:
-            return NOTE_FILLS.default;
-    }
+// Tenants can add their own note types, which get ids outside the canonical enum,
+// so a type whose id we don't know still gets its colour from a word in its name.
+const FILL_BY_NAME_WORD: ReadonlyArray<readonly [string, string]> = [
+    ['internal', NOTE_FILLS.internal],
+    ['client', NOTE_FILLS.client],
+    ['consignment', NOTE_FILLS.consignment],
+    ['flight', NOTE_FILLS.flightUpdate],
+    ['agent', NOTE_FILLS.agentUpdate],
+    ['pickup', NOTE_FILLS.pickup],
+    ['delivery', NOTE_FILLS.delivery],
+    ['pricing', NOTE_FILLS.pricingUpdate],
+    ['address', NOTE_FILLS.addressUpdate],
+];
+
+/** The paper colour for a note: importance first, then its type, then the default. */
+export function getNoteFill(note: JobNote): string {
+    if (note.isImportant) return NOTE_FILLS.important;
+
+    const byId = FILL_BY_TYPE_ID[note.noteTypeId];
+    if (byId) return byId;
+
+    const words = new Set((note.noteTypeName ?? '').toLowerCase().split(/\s+/));
+    return FILL_BY_NAME_WORD.find(([word]) => words.has(word))?.[1] ?? NOTE_FILLS.default;
 }
 
 /** Ink on the fixed pastel note paper, so these stay literal too. */
 const noteInk = {
     heading: 'rgba(0,0,0,0.7)',
     body: 'rgba(0,0,0,0.8)',
-    meta: 'rgba(0,0,0,0.54)',
+    // 0.62 rather than 0.54: this is xs text, and the lighter alpha fell short of
+    // the 4.5:1 contrast floor on the paler fills.
+    meta: 'rgba(0,0,0,0.62)',
     author: 'rgba(0,0,0,0.5)',
     glyph: 'rgba(0,0,0,0.6)',
 };
-
-// Mirrors backend Enums/NoteType.cs — keep in sync.
-const PICKUP_NOTE_TYPE_ID = 9;
-const DELIVERY_NOTE_TYPE_ID = 10;
 
 // Pickup + delivery notes anchor to the bottom of the panel so they sit
 // next to the address/journey area; everything else stays in date-desc order.
@@ -322,7 +356,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             minHeight: 120,
                             cursor: 'pointer',
                             '--note-rotate': `${-1 + (index % 3)}deg`,
-                            '--note-fill': getNoteTypeColor(note.noteTypeName, note.isImportant),
+                            '--note-fill': getNoteFill(note),
                         } as React.CSSProperties}
                     >
                         {/* Note Header */}

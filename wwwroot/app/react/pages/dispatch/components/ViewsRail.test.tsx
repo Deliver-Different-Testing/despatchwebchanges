@@ -4,6 +4,7 @@ import {setupUser} from '../../../__testUtils__/setupUser';
 import {ViewsRail} from './ViewsRail';
 import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
 import {MantineTestProvider} from '../../../__testUtils__';
+import {ACTION_BUTTON_HEIGHT} from '../../../components/common/action-button';
 
 const userEvent = setupUser();
 
@@ -46,6 +47,18 @@ describe('ViewsRail', () => {
 
         await userEvent.click(screen.getByRole('button', {name: 'Airport'}));
         expect(onToggle).toHaveBeenCalledWith(33);
+    });
+
+    it('builds every control from the shared chip button', () => {
+        renderRail();
+
+        // Class names are unassertable (CSS modules mock to `{}`), so the
+        // primitive is identified by the custom property it publishes.
+        const pill = screen.getByRole('button', {name: 'Auckland'});
+        expect(pill.style.getPropertyValue('--ab-height')).toBe(`${ACTION_BUTTON_HEIGHT}px`);
+
+        // Clear is an action, not a toggle — it must not announce a pressed state.
+        expect(screen.getByRole('button', {name: 'Clear'})).not.toHaveAttribute('aria-pressed');
     });
 
     it('offers Clear only while something is selected, and clears on click', async () => {

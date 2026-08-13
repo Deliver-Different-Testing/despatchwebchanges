@@ -9,6 +9,7 @@ import React from 'react';
 import {
     ActionIcon,
     Box,
+    Button,
     Divider,
     Group,
     Indicator,
@@ -170,6 +171,12 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                         style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
                         aria-label="Views"
                     >
+                        {/*
+                          * The Indicator carries no `c`: style props land on its root, which
+                          * wraps the glyph, so a colour there leaks onto the eye through
+                          * currentColor and puts it out of step with the rest of the bar. The
+                          * badge digits come from the theme's `autoContrast` against the pill.
+                          */}
                         {loading ? (
                             <Loader size={TOOLBAR_ICON_SIZE} color="currentColor" role="progressbar" aria-label="Loading views" />
                         ) : (
@@ -177,7 +184,6 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                                 label={selectedCount > 0 ? selectedCount : undefined}
                                 disabled={selectedCount === 0}
                                 color="gray.0"
-                                c="brand.7"
                                 size={16}
                                 offset={2}
                             >
@@ -195,14 +201,23 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                     </Box>
                 ) : (
                     <>
-                        <Menu.Item
-                            leftSection={<Icon lucide={ListX} size={16} />}
-                            closeMenuOnClick={false}
-                            onClick={onClearAll}
-                        >
-                            Clear Selection
-                        </Menu.Item>
-                        <Menu.Divider />
+                        {selectedCount > 0 && (
+                            <>
+                                <Group justify="space-between" align="center" px="sm" py={4} wrap="nowrap">
+                                    <Text fz="xs" c="dimmed">{selectedCount} selected</Text>
+                                    <Button
+                                        variant="subtle"
+                                        size="compact-xs"
+                                        leftSection={<Icon lucide={ListX} size={14} />}
+                                        onClick={onClearAll}
+                                        aria-label="Clear selected views"
+                                    >
+                                        Clear
+                                    </Button>
+                                </Group>
+                                <Menu.Divider />
+                            </>
+                        )}
                         {views.map((view) => (
                             <Menu.CheckboxItem
                                 key={view.id}

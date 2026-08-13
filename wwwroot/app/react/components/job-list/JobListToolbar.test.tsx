@@ -21,6 +21,7 @@ function createDefaultProps(overrides?: Partial<{
     onDensityModeChange: jest.Mock;
     onResetColumns: jest.Mock;
     appPage: number;
+    showLoggedInSwitch: boolean;
 }>) {
     return {
         selectedCategory: 'all' as JobCategory,
@@ -33,6 +34,7 @@ function createDefaultProps(overrides?: Partial<{
         onDensityModeChange: jest.fn(),
         onResetColumns: jest.fn(),
         appPage: AppPage.Dispatch,
+        showLoggedInSwitch: true,
         ...overrides,
     };
 }
@@ -60,9 +62,13 @@ describe('JobListToolbar', () => {
         expect(props.onCategoryChange).toHaveBeenCalledWith('needs-dispatch');
     });
 
-    it('shows logged-in only toggle when dispatching is enabled', () => {
-        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})}/>);
+    it('shows the logged-in only toggle only when the panel enables it', () => {
+        const {unmount} = renderWithMantine(<JobListToolbar {...createDefaultProps()}/>);
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();
+        unmount();
+
+        renderWithMantine(<JobListToolbar {...createDefaultProps({showLoggedInSwitch: false})}/>);
+        expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
     });
 
     it('omits the view options (density / logged-in) when they are relocated to the header', () => {
@@ -73,19 +79,28 @@ describe('JobListToolbar', () => {
         expect(screen.queryByLabelText('Row density')).not.toBeInTheDocument();
     });
 
-    it('shows logged-in only toggle on job search page', () => {
-        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})}/>);
-        expect(screen.getByText('Logged-in only')).toBeInTheDocument();
+    it('ranks Dispatch as the selection bar\'s only primary action', () => {
+        renderWithMantine(<JobListToolbar {...createDefaultProps()} selectedCount={3}/>);
+
+        // The gear is only reachable as an attribute — CSS modules mock to `{}`.
+        expect(screen.getByRole('button', {name: 'Dispatch'})).toHaveAttribute('data-ab-variant', 'filled');
+        for (const name of ['Restore', 'Mark Read', 'Mark Unread']) {
+            expect(screen.getByRole('button', {name})).toHaveAttribute('data-ab-variant', 'chip');
+        }
     });
 
-    it('hides logged-in only toggle when dispatching is not enabled', () => {
-        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.Domestic})}/>);
-        expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
-    });
+    it('gates the bulk Dispatch and Restore actions on the app page', () => {
+        const {unmount} = renderWithMantine(
+            <JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})} selectedCount={2}/>
+        );
+        expect(screen.getByRole('button', {name: 'Dispatch'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Restore'})).toBeInTheDocument();
+        unmount();
 
-    it('hides logged-in only toggle when hideLoggedInSwitch is true', () => {
-        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})} hideLoggedInSwitch/>);
-        expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
+        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.Domestic})} selectedCount={2}/>);
+        expect(screen.queryByRole('button', {name: 'Dispatch'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Restore'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Mark Read'})).toBeInTheDocument();
     });
 
     it('fires onResetColumns when reset button is clicked', async () => {

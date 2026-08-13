@@ -1,5 +1,6 @@
 /*
- * Side-nav rows — soft floating pills, mirroring Integration Manager's sidebar.
+ * Side-nav rows — full-bleed Material rows with a 4px accent rail, restoring the
+ * drawer this app shipped before the Mantine migration reinterpreted it as inset pills.
  *
  * Hover and active are pseudo-state work, so they belong in a stylesheet rather than
  * inline `--nl-*` overrides: an inline custom property outranks any rule here. Mantine
@@ -7,16 +8,20 @@
  * needing extra specificity.
  */
 .navLink {
-    /* Full pill, inset from the panel edge so rows float instead of fusing. */
-    border-radius: 9999px;
-    margin: 2px 8px;
-    /* `width: auto` (not Mantine's 100%) keeps the side margins from overflowing. */
-    width: auto;
-    min-height: 40px;
+    /* Edge to edge — the highlight claims the whole row rather than floating in it. */
+    border-radius: 0;
+    margin: 0;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    /* Held on the inactive row too, so the label never shifts when it activates.
+       4px rail + 16px padding puts the glyph 20px in from the panel edge. */
+    border-inline-start: 4px solid transparent;
     color: var(--mantine-color-dimmed);
     font-weight: 500;
     transition:
         background-color 150ms ease,
+        border-color 150ms ease,
         color 150ms ease;
 }
 
@@ -25,20 +30,36 @@
     color: var(--mantine-color-text);
 }
 
-/* Active: a faint cyan wash rather than a solid fill, so the label stays readable. */
+/*
+ * Active: a faint brand wash plus the rail. The label deliberately stays Ink — both
+ * tenant primaries are light enough that tinting it lands at 2.1:1 (cyan) / 3.9:1
+ * (gold), so weight carries the emphasis and the rail carries the brand. The wash
+ * alone is ~1.05:1 against the panel, well under WCAG 1.4.11's 3:1 for a state
+ * boundary, which is why the rail is load-bearing rather than decorative.
+ */
 .navLink[data-active] {
+    --accent: var(--sidenav-accent);
     background-color: color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent);
-    color: var(--mantine-color-brand-7);
+    border-inline-start-color: var(--accent);
+    color: var(--mantine-color-text);
     font-weight: 600;
+}
+
+.navLink[data-active] .section {
+    color: var(--accent);
 }
 
 .navLink[data-active]:hover {
     background-color: color-mix(in srgb, var(--mantine-color-brand-5) 16%, transparent);
 }
 
-/* Charcoal panel: brighten the active cyan to hold contrast. */
+/*
+ * Charcoal panel: brighten the rail. This redefines `--accent` rather than
+ * `--sidenav-accent`, which is set inline on the nav container — an inline custom
+ * property would outrank anything declared here.
+ */
 [data-mantine-color-scheme='dark'] .navLink[data-active] {
-    color: var(--mantine-color-brand-4);
+    --accent: var(--mantine-color-brand-4);
 }
 
 @media (prefers-reduced-motion: reduce) {

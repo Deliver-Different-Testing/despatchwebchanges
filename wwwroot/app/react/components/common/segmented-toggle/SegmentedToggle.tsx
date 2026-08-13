@@ -1,15 +1,16 @@
 /**
  * SegmentedToggle — the app's single-select control.
  *
- * One selection grammar for every "pick exactly one of a few" control: a tonal
- * indicator with a 1px accent border that **slides** between options. On the
- * dispatch board six panels change independently, so a moving indicator lets a
- * dispatcher track a scope change peripherally instead of re-reading labels.
+ * One selection grammar for every "pick exactly one of a few" control: an
+ * indicator that **slides** between options. On the dispatch board six panels
+ * change independently, so a moving indicator lets a dispatcher track a scope
+ * change peripherally instead of re-reading labels.
  *
- * Two orientations, same grammar:
- *   - `horizontal` — a segmented bar (MD3 segmented button). No radio dot.
- *   - `vertical` — option rows that keep their dot, indicator sliding down
- *     behind the selected row (MD3's active nav-drawer row).
+ * Two orientations, same grammar, different indicator surface:
+ *   - `horizontal` — a segmented bar (MD3 segmented button): an opaque chip
+ *     raised off a sunken track, per Mantine's own segmented look. No radio dot.
+ *   - `vertical` — option rows that keep their dot, a tonal accent indicator
+ *     sliding down behind the selected row (MD3's active nav-drawer row).
  *
  * **Single-select only.** `FloatingIndicator` marks exactly one target, so
  * multi-select stays `aria-pressed` buttons — see `ViewsRail`.

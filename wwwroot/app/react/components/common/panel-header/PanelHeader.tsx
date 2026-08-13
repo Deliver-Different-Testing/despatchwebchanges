@@ -2,26 +2,25 @@
  * PanelHeader — the header used at the top of every card panel on a workspace
  * page (Filters, Recurring Jobs, Job Details, Recurring Log…).
  *
- * A plain paper bar with a brand-tinted icon badge, title, an optional trailing
+ * A plain paper bar with a bare leading glyph, title, an optional trailing
  * count, an optional uppercase badge chip, and an optional right-aligned action
  * slot (e.g. a refresh button). It uses the `'surface'` header variant, so a
  * divider keyline — not a change of colour — separates it from the card body,
  * and the title reads as part of its card. This mirrors the approach in
  * `SectionHeader.tsx`, which is the in-card-section equivalent; PanelHeader is
- * the page/card-level header and additionally carries an icon badge, count, and
- * badge chip.
+ * the page/card-level header and additionally carries a count and badge chip.
  */
 
 import React from 'react';
-import {Badge, Box, Group, ThemeIcon, Text} from '@mantine/core';
-import {headerChromeStyle, headerChipProps} from '../../dialogs/shared/mantine/styles';
+import {Badge, Box, Group, Text} from '@mantine/core';
+import {headerChromeStyle} from '../../dialogs/shared/mantine/styles';
 
 interface PanelHeaderProps {
     /**
-     * The leading glyph, rendered inside the badge. Pass a rendered element —
-     * an `<Icon lucide={…}/>` or a `<SymbolIcon name="tune" />`. The badge sizes
-     * the box and supplies the header's accent colour, so callers don't colour it
-     * themselves.
+     * The leading glyph — bare, with no badge behind it. Pass a rendered element:
+     * an `<Icon lucide={…}/>` or a `<SymbolIcon name="tune" />`. It inherits the
+     * bar's own on-colour, which is colour-scheme aware, so callers must not
+     * colour it themselves.
      */
     icon: React.ReactNode;
     title: string;
@@ -37,7 +36,7 @@ interface PanelHeaderProps {
  * Shared header chrome, overridden for the panel's compact fixed-height bar.
  *
  * Fixed (not min) height so every panel header is identical regardless of which
- * action controls it carries — 48px is the natural height (32px icon badge +
+ * action controls it carries — 48px is the bar's grid line (a 32px control band +
  * 2×8px padding). Controls up to 44px centre within it without changing the box.
  */
 const rootStyle: React.CSSProperties = {
@@ -56,8 +55,12 @@ export const PanelHeader = React.memo(function PanelHeader({
 }: PanelHeaderProps) {
     return (
         <Group gap="sm" px="md" py="xs" wrap="nowrap" style={rootStyle} data-testid="panel-header">
-            {/* 32px chip (vs the 40px dialog default) to suit the compact panel bar. */}
-            <ThemeIcon {...headerChipProps('surface', 32)}>{icon}</ThemeIcon>
+            <Box
+                data-testid="panel-header-icon"
+                style={{display: 'flex', alignItems: 'center', flexShrink: 0, color: 'inherit'}}
+            >
+                {icon}
+            </Box>
             <Group gap="xs" wrap="nowrap" style={{flex: 1, minWidth: 0}}>
                 <Text
                     truncate
@@ -69,9 +72,8 @@ export const PanelHeader = React.memo(function PanelHeader({
                 </Text>
                 {badge && (
                     /*
-                     * The badge carries text, not a glyph: the accent's contrast on the
-                     * wash is fine for an icon but too low for a 10px label, so it
-                     * reverts to body text.
+                     * 10px bold needs the full body colour to clear AA, so the label
+                     * takes `variant="default"` rather than any brand tint.
                      */
                     <Badge
                         variant="default"

@@ -80,6 +80,21 @@ describe('SectionHeader', () => {
             expect(renderVariant('delivery').bar).toHaveStyle({backgroundColor: '#13b964'});
         });
 
+        /**
+         * The glyph follows the bar's own on-colour rather than a fixed brand accent:
+         * ink on the neutral bar (and near-white once dark mode lands), white on the
+         * two coloured fills. One `currentColor` rule covers all three.
+         */
+        it('inherits the bar colour for the glyph on every variant', () => {
+            const {unmount} = renderVariant('primary');
+            expect(document.querySelector('svg')).toHaveAttribute('stroke', 'currentColor');
+            unmount();
+
+            const {bar} = renderVariant('pickup');
+            expect(document.querySelector('svg')).toHaveAttribute('stroke', 'currentColor');
+            expect(bar).toHaveStyle({color: '#ffffff'});
+        });
+
         it('exposes the fills so a caller can match a section to its header', () => {
             expect(sectionHeaderColors.pickup).toEqual({bg: '#2a4eff', fg: '#ffffff'});
             expect(sectionHeaderColors.delivery).toEqual({bg: '#13b964', fg: '#ffffff'});

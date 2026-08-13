@@ -6,8 +6,9 @@
  * Mantine props over `var(--mantine-*)` tokens.
  *
  * Only the `primary` variant is tenant-dependent (Ink-Blue on US, gold elsewhere).
- * The semantic fills and the neutral `surface` bar are the same on both; on
- * `surface` it is just the glyph that follows the brand.
+ * The semantic fills and the neutral `surface` bar are the same on both — the
+ * neutral bar carries no brand colour at all, painting its glyph and its washes
+ * in the body text colour so both follow the colour scheme.
  */
 import type React from 'react';
 import {alpha} from '@mantine/core';
@@ -51,16 +52,18 @@ export function getHeaderColors(isUsCustomer: boolean): Record<PanelHeaderVarian
         warning: {bg: dfrntBrand.orange, fg: dfrntBrand.inkBlue},
         error: {bg: dfrntBrand.red, fg: '#ffffff'},
         // Page card/panel headers: the card's own surface, so a keyline rather than
-        // a colour change separates the bar from the body. Neutral on both tenants —
-        // only the glyph follows the brand. Both tokens are colour-scheme aware, so
-        // this follows dark mode for free.
+        // a colour change separates the bar from the body. Neutral on both tenants,
+        // and both tokens are colour-scheme aware, so this follows dark mode for free.
         surface: {bg: 'var(--dd-surface-container)', fg: 'var(--mantine-color-text)'},
     };
 }
 
 /**
- * The brand accent for glyphs on the neutral `'surface'` bar — a darker step of the
- * tenant's ramp, since neither the Cyan nor the gold 500 reads on paper.
+ * The tenant's brand accent for use on paper — a darker step of the ramp, since
+ * neither the Cyan nor the gold 500 reads there. Used by the controls that need to
+ * signal selection on a light surface (`ActionButton`, `SegmentedToggle`, the
+ * job-list view options tick), not by header chrome: the neutral bar is fully
+ * neutral so it can follow the colour scheme.
  */
 export function getHeaderSurfaceAccent(isUsCustomer: boolean): string {
     return isUsCustomer ? '#1590c0' : dfrntBrand.goldDeep;
@@ -77,14 +80,13 @@ export function headerOnColor(variant: PanelHeaderVariant = 'primary'): string {
 
 /**
  * A translucent wash of the header's on-colour, for hover scrims and chip fills
- * that have to read on any of the six brand fills. The `'surface'` bar's
- * on-colour is a CSS variable, which `alpha()` cannot decompose, so it washes
- * the brand accent instead.
+ * that have to read on any of the six brand fills — and on the neutral bar, whose
+ * on-colour is a CSS variable: `alpha()` emits a `color-mix` for those, so the
+ * wash stays a live reference to the scheme-aware text colour and follows dark
+ * mode rather than baking in a fixed accent.
  */
 export function headerOverlayColor(opacity: number, variant: PanelHeaderVariant = 'primary'): string {
-    return variant === 'surface'
-        ? alpha(headerSurfaceAccent, opacity)
-        : alpha(headerColors[variant].fg, opacity);
+    return alpha(headerColors[variant].fg, opacity);
 }
 
 /**
@@ -127,9 +129,7 @@ export function headerChipProps(variant: PanelHeaderVariant = 'primary', size = 
         // indexed by `--*`, which makes the vars unassertable in tests.
         style: {
             '--ti-bg': headerOverlayColor(0.18, variant),
-            // On the neutral bar the chip is the only brand colour, so the glyph
-            // takes the accent rather than the body text colour.
-            '--ti-color': variant === 'surface' ? headerSurfaceAccent : headerOnColor(variant),
+            '--ti-color': headerOnColor(variant),
         } as React.CSSProperties & Record<`--${string}`, string>,
     };
 }

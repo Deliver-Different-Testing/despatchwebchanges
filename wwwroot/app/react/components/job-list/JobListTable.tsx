@@ -13,11 +13,12 @@
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useVirtualizer} from '@tanstack/react-virtual';
-import {ActionIcon, Badge, Box, Button, Group, Text, Tooltip} from '@mantine/core';
+import {ActionIcon, Badge, Box, Group, Text, Tooltip} from '@mantine/core';
 import {useDisclosure, useInterval} from '@mantine/hooks';
 import {Briefcase, ChevronUp, Info, UserPlus, UserSearch, Zap} from 'lucide-react';
 
 import {Icon} from '../common/icon/Icon';
+import {ActionButton, ACTION_BUTTON_COMPACT_GLYPH_SIZE, ACTION_BUTTON_COMPACT_HEIGHT} from '../common/action-button';
 import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 import {SearchSelect} from '../common/search-select/SearchSelect';
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
@@ -190,6 +191,27 @@ function densityVars(densityMode: DensityMode): React.CSSProperties {
     return {'--jl-cell-py': py, '--jl-cell-fz': fz} as React.CSSProperties;
 }
 
+/**
+ * The Assign chip fills its cell instead of floating in it: it paints the whole
+ * row band — the compact control plus the cell padding above and below — and the
+ * whole column, then hands that padding straight back as a negative block margin.
+ * So the *painted* box grows with density while the *layout* box stays the
+ * compact band, and row height is unchanged in all three modes (the chip is what
+ * sets it — see `ACTION_BUTTON_COMPACT_HEIGHT`).
+ *
+ * Filling is the point rather than a side effect: this button is the empty state
+ * of the courier picker, and clicking it swaps a `SearchSelect` into the same
+ * cell. Matching that footprint means the swap is a fill, not a jump, and the
+ * hit target goes from a 22px chip to the row band the dispatcher is aiming at
+ * anyway.
+ */
+const ASSIGN_FILL_STYLE = {
+    '--ab-height': `calc(${ACTION_BUTTON_COMPACT_HEIGHT}px + 2 * var(--jl-cell-py))`,
+    marginBlock: 'calc(-1 * var(--jl-cell-py))',
+    display: 'block',
+    width: '100%',
+} as React.CSSProperties;
+
 function alignClass(align: ColumnDef['align'], right: string, center: string): string | undefined {
     if (align === 'right') return right;
     if (align === 'center') return center;
@@ -297,7 +319,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                                               columns,
                                                               isUsCustomer,
                                                               appPage,
-                                                              isJobSearchPage,
                                                               loggedInCouriersOnly,
                                                               onLoadMore,
                                                               hasMore,
@@ -559,7 +580,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
 
     const variant = useMemo(
         () => getRowVariant(job, isSelected, isRelated),
-        [job.direct, job.vehicle?.text, job.isParentOrSingle, job.parentId, job._groupChildren?.length, isSelected, isRelated],
+        [isSelected, isRelated, job],
     );
 
     return (
@@ -625,11 +646,21 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
                                                                 loggedInCouriersOnly
                                                             }) => {
     const [showSearch, {open: openSearch, close: closeSearch}] = useDisclosure(false);
+    const assignRef = useRef<HTMLButtonElement>(null);
+    const restoreFocusRef = useRef(false);
 
     const handleAssignClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation(); // Don't trigger row click
         openSearch();
     }, [openSearch]);
+
+    // Cancelling with the keyboard has to hand the keyboard back: the button
+    // only exists once the picker is gone, so the focus move waits for the swap.
+    useEffect(() => {
+        if (showSearch || !restoreFocusRef.current) return;
+        restoreFocusRef.current = false;
+        assignRef.current?.focus();
+    }, [showSearch]);
 
     /**
      * Numeric input is treated as a courier code, so results are narrowed to
@@ -654,6 +685,25 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
         }
         return filtered.map((r) => ({id: r.id, text: r.text}));
     }, [job.dgClass, loggedInCouriersOnly]);
+
+    /**
+     * Abandoning the picker puts the cell back to its Assign button. React's
+     * `onBlur` is `focusout`, so it catches a click anywhere else on the page;
+     * the containment check keeps focus moves *inside* the cell from closing it.
+     * Picking an option does not blur the input — Mantine's Combobox suppresses
+     * that so the click can land — so this never races the selection.
+     */
+    const handleSearchBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+        closeSearch();
+    }, [closeSearch]);
+
+    const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key !== 'Escape') return;
+        e.stopPropagation(); // The row and the page both listen for Escape.
+        restoreFocusRef.current = true;
+        closeSearch();
+    }, [closeSearch]);
 
     const handleSelect = useCallback((option: CourierOption | null) => {
         if (option && onDispatch) {
@@ -697,7 +747,7 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
     // State 2: Search active → object-valued picker
     if (showSearch) {
         return (
-            <Box onClick={(e) => e.stopPropagation()}>
+            <Box onClick={(e) => e.stopPropagation()} onBlur={handleSearchBlur} onKeyDown={handleSearchKeyDown}>
                 <SearchSelect<CourierOption>
                     aria-label="Search courier"
                     placeholder="Search courier..."
@@ -721,14 +771,16 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
 
     // State 3: No courier → "Assign" button
     return (
-        <Button
-            size="compact-xs"
-            variant="subtle"
-            leftSection={<Icon lucide={UserPlus} size={16}/>}
+        <ActionButton
+            ref={assignRef}
+            size="compact"
+            justify="start"
+            style={ASSIGN_FILL_STYLE}
+            leftSection={<Icon lucide={UserPlus} size={ACTION_BUTTON_COMPACT_GLYPH_SIZE}/>}
             onClick={handleAssignClick}
         >
             Assign
-        </Button>
+        </ActionButton>
     );
 });
 CourierCell.displayName = 'CourierCell';

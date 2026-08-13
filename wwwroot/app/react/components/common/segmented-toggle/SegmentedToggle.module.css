@@ -11,18 +11,32 @@
  * `segmentedToggleTokens.ts`); everything below is derived from them.
  */
 
+/*
+ * The horizontal track is sunken — a solid fill, no border — so the indicator
+ * reads as a surface raised above it rather than an outline drawn on it. The
+ * 2px padding (Mantine's own is 4px) is what keeps the bar on the 32px
+ * `PanelHeader` band.
+ */
 .root {
     position: relative; /* FloatingIndicator positions against this */
     display: inline-flex;
     align-items: stretch;
     gap: 2px;
     padding: 2px;
-    border: 1px solid var(--mantine-color-default-border);
+    border: none;
     border-radius: 9999px; /* lozenge, per the brand's Software-UI spec */
-    background-color: transparent;
+    background-color: var(--mantine-color-gray-1);
     min-width: 0;
 }
 
+[data-mantine-color-scheme='dark'] .root {
+    background-color: var(--mantine-color-dark-8);
+}
+
+/*
+ * The vertical variant is a radio-row list, not a segmented bar: the dot carries
+ * the state, so it keeps a bare track and the tonal-accent indicator below.
+ */
 .root[data-orientation='vertical'] {
     display: flex;
     flex-direction: column;
@@ -32,6 +46,7 @@
     padding: 0;
     gap: 2px;
     width: 100%;
+    background-color: transparent;
 }
 
 .option {
@@ -42,24 +57,29 @@
     justify-content: center;
     gap: 6px;
     min-width: 0;
-    height: calc(var(--st-height) - 6px);
+    height: calc(var(--st-height) - 4px); /* 2px track padding, no track border */
     border-radius: 9999px;
     cursor: pointer;
     user-select: none;
-    color: var(--mantine-color-text);
+    color: var(--mantine-color-gray-7);
     font-size: var(--mantine-font-size-xs);
     /*
-     * The brand book asks for a lighter weight on secondary copy rather than a
-     * greyed-out one, so weight — not colour — carries the selected emphasis.
-     * The label keeps the body colour in both states: tinting it brand-coloured
-     * fails AA on the tonal fill (cyan-6 2.1:1, gold-9 3.9:1).
+     * Weight stays constant and *colour* carries the selected emphasis. Two
+     * reasons: a weight shift changes the label's width after FloatingIndicator
+     * has measured it, so the chip settles mis-fitted; and a neutral grey→black
+     * step clears AA in both states, which a brand tint cannot on this fill
+     * (cyan-6 2.1:1, gold-9 3.9:1).
      */
-    font-weight: 400;
+    font-weight: 500;
     line-height: 1;
     white-space: nowrap;
     transition:
-        background-color 150ms ease,
-        font-weight 150ms ease;
+        color 150ms ease,
+        background-color 150ms ease;
+}
+
+[data-mantine-color-scheme='dark'] .option {
+    color: var(--mantine-color-dark-1);
 }
 
 .root[data-orientation='vertical'] .option {
@@ -72,11 +92,25 @@
     font-size: var(--mantine-font-size-sm);
 }
 
+/* Neutral on the bar — an 8% accent wash is invisible against the grey track. */
 .option:hover:not([data-active]):not([data-disabled]) {
+    background-color: var(--mantine-color-default-hover);
+}
+
+.root[data-orientation='vertical'] .option:hover:not([data-active]):not([data-disabled]) {
     background-color: color-mix(in srgb, var(--st-accent) 8%, transparent);
 }
 
 .option[data-active] {
+    color: var(--mantine-color-black);
+}
+
+[data-mantine-color-scheme='dark'] .option[data-active] {
+    color: var(--mantine-color-white);
+}
+
+/* The rows have no chip contrast to lean on, so weight still carries selection. */
+.root[data-orientation='vertical'] .option[data-active] {
     font-weight: 600;
 }
 
@@ -84,6 +118,11 @@
     cursor: not-allowed;
     color: var(--mantine-color-dimmed);
     opacity: 0.6;
+}
+
+/* Outranks the dark active rule, so a selected-then-disabled option stays dimmed. */
+[data-mantine-color-scheme='dark'] .option[data-disabled] {
+    color: var(--mantine-color-dimmed);
 }
 
 /* The input is the accessible control; the label carries the visuals. */
@@ -131,19 +170,32 @@
 }
 
 /*
- * The signature: one indicator that slides between options. A tonal fill plus a
- * 1px accent border — the fill alone is ~1.05:1 against a white card bar, so the
- * border is what satisfies WCAG 1.4.11's 3:1 for a state boundary.
+ * The signature: one opaque chip that slides between options, raised off the
+ * sunken track — Mantine's own segmented grammar, kept on the brand lozenge.
+ *
+ * The chip's own boundary is a hairline, so it is not what carries the state for
+ * WCAG 1.4.11: the label's grey→black step does (both ≥4.5:1 on their
+ * backgrounds), backed by the native `:checked` radio underneath.
  */
 .indicator {
-    background-color: color-mix(in srgb, var(--st-accent) 12%, transparent);
-    border: 1px solid var(--st-accent);
+    background-color: var(--mantine-color-white);
+    border: 1px solid var(--mantine-color-default-border);
     border-radius: 9999px;
-    box-shadow: none; /* elevation by tone, not shadow */
+    box-shadow: var(--mantine-shadow-sm);
 }
 
+[data-mantine-color-scheme='dark'] .indicator {
+    background-color: var(--mantine-color-dark-5);
+    border-color: var(--mantine-color-dark-4);
+    box-shadow: none; /* the charcoal ladder separates by tone, not shadow */
+}
+
+/* The rows keep the tonal accent: a white chip would swamp a full-width list. */
 .root[data-orientation='vertical'] .indicator {
+    background-color: color-mix(in srgb, var(--st-accent) 12%, transparent);
+    border-color: var(--st-accent);
     border-radius: var(--mantine-radius-sm);
+    box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

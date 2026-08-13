@@ -8,12 +8,23 @@
     min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-block: 2px;
+    /* Clears the chips' shadow, which `overflow-x: auto` would otherwise clip. */
+    padding-block: 4px;
     scrollbar-width: thin;
+    scrollbar-color: var(--mantine-color-gray-4) transparent;
+}
+
+[data-mantine-color-scheme='dark'] .scroll {
+    scrollbar-color: var(--mantine-color-dark-3) transparent;
 }
 
 .scroll::-webkit-scrollbar {
     height: 6px;
+}
+
+/* The track defaults to a light fill, which reads as a white gash on the dark bar. */
+.scroll::-webkit-scrollbar-track {
+    background-color: transparent;
 }
 
 .scroll::-webkit-scrollbar-thumb {
@@ -21,24 +32,20 @@
     background-color: var(--mantine-color-gray-4);
 }
 
+[data-mantine-color-scheme='dark'] .scroll::-webkit-scrollbar-thumb {
+    background-color: var(--mantine-color-dark-3);
+}
+
 /*
- * View pills. Multi-select, so they cannot carry a FloatingIndicator — but they
- * take SegmentedToggle's selection recipe so the card reads as one system: a
- * tonal fill plus a 1px accent border (the fill alone is ~1.05:1 on a white
- * bar), with the label staying Ink and weight carrying the emphasis. Unlayered,
- * so it wins over `@layer mantine`.
+ * The chip row is as wide as its chips, so a rail with more views than fit
+ * overflows (and scrolls) instead of squeezing every chip narrower. `flex: none`
+ * on the chips themselves is the belt to that braces: a flex item's automatic
+ * minimum size would otherwise let a long view name compress.
  */
-.viewPill {
-    border-radius: 9999px;
-    font-weight: 400;
+.pills {
+    width: max-content;
 }
 
-.viewPill[data-selected] {
-    background-color: color-mix(in srgb, var(--vp-accent) 12%, transparent);
-    border-color: var(--vp-accent);
-    font-weight: 600;
-}
-
-.viewPill[data-selected]:hover {
-    background-color: color-mix(in srgb, var(--vp-accent) 18%, transparent);
+.pills > * {
+    flex: none;
 }

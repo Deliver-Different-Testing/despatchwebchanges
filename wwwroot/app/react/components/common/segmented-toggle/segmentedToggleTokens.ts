@@ -25,7 +25,10 @@ export const SEGMENTED_TOGGLE_INLINE_HEIGHT = 36;
  */
 export const SEGMENTED_TOGGLE_GLYPH_SIZE = 18;
 
-/** Opacity of the indicator's tonal fill. The 1px accent border carries the contrast. */
+/**
+ * Opacity of the vertical variant's tonal indicator fill. The 1px accent border
+ * carries the contrast. The horizontal bar uses an opaque raised chip instead.
+ */
 export const SEGMENTED_TOGGLE_FILL_OPACITY = 12;
 
 export type SegmentedToggleVariant = 'header' | 'inline';

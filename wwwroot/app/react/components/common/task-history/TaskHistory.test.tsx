@@ -169,6 +169,10 @@ describe('TaskHistory', () => {
             // -- header actions: density toggle + refresh buttons present --
             const buttons = screen.getAllByRole('button');
             expect(buttons.length).toBeGreaterThan(0);
+
+            // -- panel fill matches the surrounding box card, not the page body --
+            expect(screen.getByTestId('task-history-root'))
+                .toHaveStyle({backgroundColor: 'var(--dd-surface-container)'});
         });
 
         it('renders empty state when no events', async () => {
@@ -424,6 +428,20 @@ describe('TaskHistory', () => {
             expect(container.querySelector('[data-testid="LocalShippingIcon"]')).toBeInTheDocument();
             expect(container.querySelector('[data-testid="DirectionsCarIcon"]')).toBeInTheDocument();
             expect(container.querySelector('[data-testid="CheckCircleIcon"]')).toBeInTheDocument();
+
+            // Each bullet carries the event's semantic tone, and Mantine fills it from the
+            // Timeline.Item colour — the tone is exposed as a data attribute so this does
+            // not have to assert on palette values.
+            const items = screen.getAllByRole('listitem');
+            expect(items.map(item => item.getAttribute('data-event-tone')))
+                .toEqual(['secondary', 'info', 'info', 'success']);
+            expect(items[1]).toHaveStyle({'--tli-color': 'var(--mantine-color-reflex-filled)'});
+            expect(items[3]).toHaveStyle({'--tli-color': 'var(--mantine-color-green-filled)'});
+            // data-active is what makes Mantine actually paint the bullet with --tli-color.
+            expect(items.every(item => item.hasAttribute('data-active'))).toBe(true);
+            // Glyphs must fall through to Mantine's white. Left to autoContrast they would be
+            // derived from the light brand primary and come out black on every tone.
+            expect(screen.getByRole('list').style.getPropertyValue('--tl-icon-color')).toBe('');
         });
 
         it('falls back to a generic dot when the icon name is unknown', async () => {

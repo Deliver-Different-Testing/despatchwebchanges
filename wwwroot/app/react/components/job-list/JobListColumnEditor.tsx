@@ -10,10 +10,11 @@
  */
 
 import React, {useRef} from 'react';
-import {ActionIcon, Box, Button, Group, NumberInput, Paper, Stack, Switch, Text, Tooltip} from '@mantine/core';
+import {ActionIcon, Box, Group, NumberInput, Paper, Stack, Switch, Text, Tooltip} from '@mantine/core';
 import {Check, GripVertical, RotateCcw} from 'lucide-react';
 
 import {Icon} from '../common/icon/Icon';
+import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../common/action-button';
 import type {ColumnDef} from './jobListColumns';
 import {MIN_COLUMN_WIDTH} from './useColumnResize';
 
@@ -87,12 +88,12 @@ export const JobListColumnEditor: React.FC<JobListColumnEditorProps> = ({
                     <Text size="sm" fw={600} style={{flex: 1}}>
                         Edit columns
                     </Text>
-                    <Button size="compact-sm" variant="subtle" leftSection={<Icon lucide={RotateCcw} size={16}/>} onClick={onReset}>
+                    <ActionButton leftSection={<Icon lucide={RotateCcw} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onReset}>
                         Reset to defaults
-                    </Button>
-                    <Button size="compact-sm" leftSection={<Icon lucide={Check} size={16}/>} onClick={onDone}>
+                    </ActionButton>
+                    <ActionButton variant="filled" leftSection={<Icon lucide={Check} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onDone}>
                         Done
-                    </Button>
+                    </ActionButton>
                 </Group>
 
                 <Box style={{maxHeight: 240, overflow: 'auto'}}>

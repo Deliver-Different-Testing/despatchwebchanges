@@ -328,6 +328,21 @@ describe('JobListTable', () => {
             expect(screen.queryByText('Assign')).not.toBeInTheDocument();
         });
 
+        it('fills its cell — paints the row band and the full column, without growing the row', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                jobs: [createMockDispatchJob()],
+                appPage: AppPage.Dispatch,
+            })}/>);
+
+            const assign = screen.getByRole('button', {name: 'Assign'});
+            expect(assign).toHaveAttribute('data-ab-size', 'compact');
+            // Paints the 22px band plus the cell padding above and below it...
+            expect(assign.style.getPropertyValue('--ab-height')).toBe('calc(22px + 2 * var(--jl-cell-py))');
+            // ...then gives that padding back, so the row height is unchanged.
+            expect(assign.style.marginBlock).toBe('calc(-1 * var(--jl-cell-py))');
+            expect(assign.style.width).toBe('100%');
+        });
+
         it('does not render Assign button for flight or agent assigned jobs', () => {
             const jobs = [
                 createMockDispatchJob({
@@ -387,6 +402,36 @@ describe('JobListTable', () => {
             await waitFor(() => {
                 expect(mockedSearch).toHaveBeenCalledWith('test', expect.objectContaining({dgOnly: true}));
             });
+        });
+
+        it('closes the search and restores Assign when the click lands outside the cell', async () => {
+            const user = setupUser();
+            mockedSearch.mockResolvedValue([]);
+
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+
+            await user.click(screen.getByRole('button', {name: 'Assign'}));
+            expect(screen.getByPlaceholderText('Search courier...')).toBeInTheDocument();
+
+            await user.click(document.body);
+
+            expect(screen.queryByPlaceholderText('Search courier...')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Assign'})).toBeInTheDocument();
+        });
+
+        it('cancels the search on Escape and puts focus back on Assign', async () => {
+            const user = setupUser();
+            mockedSearch.mockResolvedValue([]);
+
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+
+            await user.click(screen.getByRole('button', {name: 'Assign'}));
+            await user.keyboard('{Escape}');
+
+            const assign = screen.getByRole('button', {name: 'Assign'});
+            expect(screen.queryByPlaceholderText('Search courier...')).not.toBeInTheDocument();
+            // Escape is a keyboard gesture, so the keyboard must not be stranded.
+            expect(assign).toHaveFocus();
         });
 
         it('fires onJobDispatch when a courier is selected', async () => {
