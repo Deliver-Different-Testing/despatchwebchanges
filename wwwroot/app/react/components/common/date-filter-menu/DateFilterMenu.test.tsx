@@ -13,7 +13,10 @@ import {renderWithMantine} from '../../../__testUtils__';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const renderWithProviders = (ui: React.ReactElement) => renderWithMantine(ui);
+const renderWithProviders = (
+    ui: React.ReactElement,
+    options?: Parameters<typeof renderWithMantine>[1]
+) => renderWithMantine(ui, options);
 
 /** The dropdown is a `Popover`, so the trigger is the only button until it opens. */
 const openMenu = () => fireEvent.click(screen.getByRole('button', {name: 'Date Filter'}));
@@ -98,6 +101,55 @@ describe('DateFilterMenu', () => {
             const start = await screen.findByLabelText('Start Date');
             fireEvent.change(start, {target: {value: '15/06/2024'}});
             expect(start).toHaveValue('15/06/2024');
+        });
+
+        /**
+         * `DateInput` hangs its calendar off a nested `Popover`. Left portalled, that
+         * calendar lands outside the panel's own dropdown node, so the panel reads a day
+         * click as a click-outside and dismisses itself mid-pick. These render with
+         * `env: 'default'` because Mantine's test env skips portals altogether — the very
+         * thing under test. `Reset` stands in for "the panel is open": the header text
+         * doubles as the trigger's tooltip once focus returns to it.
+         */
+        describe('calendar dropdown does not dismiss the panel', () => {
+            const openStartCalendar = async () => {
+                openMenu();
+                await selectOption('Custom Dates');
+
+                const start = await screen.findByLabelText('Start Date');
+                fireEvent.click(start);
+                await waitFor(() => expect(document.querySelector('[data-dates-dropdown]')).toBeInTheDocument());
+
+                return start;
+            };
+
+            it('picking a day closes only the calendar', async () => {
+                renderWithProviders(<DateFilterMenu {...defaultProps} />, {env: 'default'});
+                const start = await openStartCalendar();
+
+                // `mousedown`, not `click`, is what a Mantine popover treats as a dismissal.
+                const day = screen.getByLabelText('15 January 2024');
+                fireEvent.mouseDown(day);
+                fireEvent.click(day);
+
+                await waitFor(() => expect(document.querySelector('[data-dates-dropdown]')).not.toBeInTheDocument());
+                expect(screen.getByText('Reset')).toBeInTheDocument();
+                expect(start).toHaveValue('01/15/2024');
+            });
+
+            it('escape closes the calendar first and the panel second', async () => {
+                renderWithProviders(<DateFilterMenu {...defaultProps} />, {env: 'default'});
+                const start = await openStartCalendar();
+
+                fireEvent.keyDown(start, {key: 'Escape'});
+
+                await waitFor(() => expect(document.querySelector('[data-dates-dropdown]')).not.toBeInTheDocument());
+                expect(screen.getByText('Reset')).toBeInTheDocument();
+
+                fireEvent.keyDown(start, {key: 'Escape'});
+
+                await waitFor(() => expect(screen.queryByText('Reset')).not.toBeInTheDocument());
+            });
         });
 
         it('should show duration dropdown when Time Range is selected', async () => {
