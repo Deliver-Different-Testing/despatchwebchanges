@@ -165,14 +165,19 @@ export const MantineTestProvider: React.FC<{children: React.ReactNode}> = ({chil
  * Render inside the DFRNT Mantine theme provider. The Mantine counterpart to
  * `renderWithTheme` — use it for components migrated off MUI. `forceColorScheme`
  * is unnecessary in tests (light is the default), so this stays minimal.
+ *
+ * `env` defaults to `'test'`, which strips Mantine's transitions *and its portals*
+ * — `OptionalPortal` renders inline in that env. Pass `env: 'default'` when the
+ * behaviour under test depends on real portalling (e.g. whether a nested dropdown
+ * lands outside its parent popover and trips click-outside).
  */
 export function renderWithMantine(
     ui: React.ReactElement,
-    options?: Omit<RenderOptions, 'wrapper'> & {theme?: MantineThemeOverride}
+    options?: Omit<RenderOptions, 'wrapper'> & {theme?: MantineThemeOverride; env?: 'default' | 'test'}
 ) {
-    const {theme = dfrntTheme, ...renderOptions} = options ?? {};
+    const {theme = dfrntTheme, env = 'test', ...renderOptions} = options ?? {};
     const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-        <MantineProvider theme={theme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+        <MantineProvider theme={theme} cssVariablesResolver={dfrntCssVariablesResolver} env={env}>
             {children}
         </MantineProvider>
     );

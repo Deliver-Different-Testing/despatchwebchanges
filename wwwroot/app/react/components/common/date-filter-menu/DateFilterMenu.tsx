@@ -31,6 +31,13 @@ import {toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
 /** The string form `DateInput` speaks. */
 const ISO_DATE = 'YYYY-MM-DD';
 
+/**
+ * Keep the calendar inside this panel's dropdown. Portalled — Mantine's default — it
+ * lands in `document.body`, outside the node the panel's click-outside check walks, so
+ * picking a day dismisses the whole panel instead of just the calendar.
+ */
+const calendarPopoverProps = {withinPortal: false} as const;
+
 // Types
 export interface DateFilterData {
     startDate: Dayjs;
@@ -207,6 +214,15 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         setOpened(false);
     };
 
+    // A `DateInput` calendar swallows the first Escape itself; the panel takes the next
+    // one. Mantine's own `closeOnEscape` runs in the capture phase, ahead of the field,
+    // so it has to be off for the calendar to get a look in — hence this handler.
+    const handleDropdownKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === 'Escape' && !event.currentTarget.querySelector('[data-dates-dropdown]')) {
+            handleClose();
+        }
+    };
+
     const stopMinsUpdate = useCallback(() => {
         if (minsUpdateIntervalRef.current) {
             clearInterval(minsUpdateIntervalRef.current);
@@ -367,6 +383,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
             width={320}
             shadow="md"
             withinPortal
+            closeOnEscape={false}
         >
             <Popover.Target>
                 <Tooltip label="Date Filter">
@@ -383,7 +400,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                     </ActionIcon>
                 </Tooltip>
             </Popover.Target>
-            <Popover.Dropdown p={0}>
+            <Popover.Dropdown p={0} onKeyDown={handleDropdownKeyDown}>
                 {/* Header */}
                 <Group
                     gap="sm"
@@ -422,6 +439,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                 valueFormat={inputFormat}
                                 placeholder={inputFormat}
                                 size="sm"
+                                popoverProps={calendarPopoverProps}
                             />
                             <DateInput
                                 label="End Date"
@@ -430,6 +448,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                 valueFormat={inputFormat}
                                 placeholder={inputFormat}
                                 size="sm"
+                                popoverProps={calendarPopoverProps}
                             />
                             <Text size="xs" c="dimmed" ta="center">{rangeSummary}</Text>
                         </Stack>
