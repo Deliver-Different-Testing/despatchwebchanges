@@ -7,6 +7,10 @@
  * padding (header/content/footer control their own), the theme's extra-large
  * (28px) radius, and a clipped, fixed-ish width.
  *
+ * The overlay is a light, unblurred scrim on purpose: dialogs open over the
+ * dispatch job list and users need to keep reading it while they edit. Dialogs
+ * that genuinely want a heavy surround (the POD photo viewer) pass `overlayProps`.
+ *
  * Compose with <DialogHeader>, a content region and <DialogFooter> as children.
  */
 import React from 'react';
@@ -54,7 +58,7 @@ export const DialogShell: React.FC<DialogShellProps> = ({
             ...styles,
         }}
     >
-        <Modal.Overlay backgroundOpacity={0.55} blur={2} {...overlayProps} />
+        <Modal.Overlay backgroundOpacity={0.25} {...overlayProps} />
         <Modal.Content aria-label={label}>
             <Modal.Body>{children}</Modal.Body>
         </Modal.Content>

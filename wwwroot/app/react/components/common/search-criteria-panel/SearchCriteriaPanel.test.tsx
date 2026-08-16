@@ -15,9 +15,23 @@ import { setupUser } from '../../../__testUtils__/setupUser';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-// Mock DateRangePicker to avoid LocalizationProvider/DatePicker complexity
+// The dates the stub picker reports when its buttons are clicked.
+const mockPickedFrom = dayjs('2026-08-12');
+const mockPickedTo = dayjs('2026-08-20');
+
+// Mock DateRangePicker to avoid LocalizationProvider/DatePicker complexity.
+// The stub still drives the panel's local date state, so tests can verify the
+// panel hands the dates the user just picked to whichever action they trigger.
 jest.mock('../date-range-picker/DateRangePicker', () => ({
-    DateRangePicker: () => <div data-testid="date-range-picker" />,
+    DateRangePicker: ({onFromDateChange, onToDateChange}: {
+        onFromDateChange: (d: unknown) => void;
+        onToDateChange: (d: unknown) => void;
+    }) => (
+        <div data-testid="date-range-picker">
+            <button type="button" onClick={() => onFromDateChange(mockPickedFrom)}>pick-from</button>
+            <button type="button" onClick={() => onToDateChange(mockPickedTo)}>pick-to</button>
+        </div>
+    ),
 }));
 
 function createDefaultProps(overrides?: Partial<SearchCriteriaPanelProps>): SearchCriteriaPanelProps {
@@ -190,6 +204,44 @@ describe('SearchCriteriaPanel', () => {
 
         await user.click(screen.getByRole('button', {name: 'Upload Prices'}));
         expect(props.onUpload).toHaveBeenCalledTimes(1);
+    });
+
+    // ── Dates are handed to the action, not left for the parent to read back ──
+    // The parent commits them with setState, which has not landed by the time the
+    // action runs — so the panel must pass them through or the first search uses
+    // the previous range.
+    it('passes the dates just picked to every date-driven action', async () => {
+        const props = createDefaultProps({
+            onClientSearch: jest.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
+        });
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
+
+        await user.click(screen.getByRole('button', {name: 'pick-from'}));
+        await user.click(screen.getByRole('button', {name: 'pick-to'}));
+
+        const pickedDates = {fromDate: mockPickedFrom, toDate: mockPickedTo};
+
+        await user.click(screen.getByRole('button', {name: 'Search'}));
+        expect(props.onSearch).toHaveBeenCalledWith(pickedDates);
+
+        await user.click(screen.getByRole('button', {name: 'Download'}));
+        expect(props.onDownload).toHaveBeenCalledWith(pickedDates);
+
+        await user.click(screen.getByRole('button', {name: 'Price Detail Report'}));
+        expect(props.onPriceDetailReport).toHaveBeenCalledWith(pickedDates);
+
+        // Client Report needs a selected client before it is enabled.
+        await user.type(screen.getByPlaceholderText('Search clients...'), 'ac');
+        await act(async () => {
+            jest.advanceTimersByTime(300);
+        });
+        await user.click(await screen.findByRole('option', {name: 'Acme Corp'}));
+        await user.click(getClientReportButton());
+        expect(props.onClientReport).toHaveBeenCalledWith(pickedDates);
+
+        // Every action also commits the dates upward so the parent stays in sync.
+        expect(props.onFromDateChange).toHaveBeenCalledWith(mockPickedFrom);
+        expect(props.onToDateChange).toHaveBeenCalledWith(mockPickedTo);
     });
 
     // ── Client Report: enabled when client selected, calls handler (single render) ─

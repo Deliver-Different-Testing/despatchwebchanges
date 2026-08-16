@@ -79,6 +79,25 @@ describe('Mantine dialog primitives', () => {
         expect(screen.getByRole('button', {name: 'Cancel'})).toBeDisabled();
         expect(screen.getByRole('button', {name: 'Save'})).toHaveAttribute('data-loading', 'true');
     });
+
+    it('scrims the page behind the dialog without blurring it', () => {
+        const {container} = renderDialog();
+        const overlay = container.querySelector('.mantine-Modal-overlay') as HTMLElement;
+        expect(overlay).toBeTruthy();
+        expect(overlay.style.getPropertyValue('--overlay-filter')).toBe('');
+        expect(overlay.style.getPropertyValue('--overlay-bg')).toContain('0.25');
+    });
+
+    it('lets a dialog override the overlay defaults', () => {
+        const {container} = renderWithMantine(
+            <DialogShell opened onClose={jest.fn()} overlayProps={{backgroundOpacity: 0.8, blur: 4}}>
+                <DialogHeader icon={<span/>} title="Photo" onClose={jest.fn()}/>
+            </DialogShell>,
+        );
+        const overlay = container.querySelector('.mantine-Modal-overlay') as HTMLElement;
+        expect(overlay.style.getPropertyValue('--overlay-filter')).toContain('blur(');
+        expect(overlay.style.getPropertyValue('--overlay-bg')).toContain('0.8');
+    });
 });
 
 describe('DialogFooter options', () => {

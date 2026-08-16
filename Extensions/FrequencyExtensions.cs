@@ -22,10 +22,11 @@ public static class FrequencyExtensions
             };
 
         private Frequency[] GetSelectedFrequencies() =>
-            Enum.GetValues<Frequency>()
+        [
+            .. Enum.GetValues<Frequency>()
                 .Where(f => f != Frequency.None)
                 .Where(f => frequency.HasFlag(f))
-                .ToArray();
+        ];
 
         private bool MatchesDate(DateTime date, DateTime referenceDate)
         {
