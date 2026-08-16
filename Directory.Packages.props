@@ -13,7 +13,7 @@
         <PackageVersion Include="coverlet.collector" Version="10.0.1"/>
         <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0"/>
         <PackageVersion Include="Magick.NET-Q8-AnyCPU" Version="14.16.0"/>
-        <PackageVersion Include="DeliverDifferentReporting" Version="2.0.44"/>
+        <PackageVersion Include="DeliverDifferentReporting" Version="2.0.45"/>
         <PackageVersion Include="PdfSharp" Version="6.2.4"/>
         <PackageVersion Include="ExcelDataReader" Version="$(ExcelDataReaderVersion)"/>
         <PackageVersion Include="ExcelDataReader.DataSet" Version="$(ExcelDataReaderVersion)"/>

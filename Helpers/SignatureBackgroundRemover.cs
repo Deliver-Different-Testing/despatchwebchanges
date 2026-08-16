@@ -51,7 +51,7 @@ public static class SignatureBackgroundRemover
 
             // Already keyed (a capture that kept its alpha) — re-deriving alpha from luminance would
             // throw away the transparency it already has.
-            if (image.HasAlpha && !image.IsOpaque)
+            if (image is { HasAlpha: true, IsOpaque: false })
             {
                 return imageBytes;
             }

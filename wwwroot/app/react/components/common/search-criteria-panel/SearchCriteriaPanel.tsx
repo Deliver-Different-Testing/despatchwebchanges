@@ -5,10 +5,11 @@
  * Composes DateRangePicker, ChipsAutocomplete inputs, text search fields,
  * and action buttons into a single panel.
  *
- * Date values are held locally and only flushed to AngularJS when the
- * user triggers a search (button click or Enter key).  This prevents
- * the AngularJS digest cycle from re-rendering the React tree and
- * resetting the MUI DatePicker field mid-typing.
+ * Date values are held locally and only flushed to the parent when the user
+ * triggers a date-driven action (search, download, or either report).  This
+ * prevents the AngularJS digest cycle from re-rendering the React tree and
+ * resetting the date field mid-typing.  Each action also receives the flushed
+ * dates directly — see `SearchActionDates`.
  */
 
 import React, {useState, useCallback, useEffect} from 'react';
@@ -30,6 +31,16 @@ import {DateRangePicker} from '../date-range-picker/DateRangePicker';
 import {ChipsAutocomplete} from './ChipsAutocomplete';
 import {ISuggestion} from '../../../../interfaces/job.interface';
 
+/**
+ * The dates a date-driven action was fired with. Handed to the action directly
+ * because the matching `onFromDateChange`/`onToDateChange` commit is a React
+ * state update in the same tick — the parent cannot read it back yet.
+ */
+export interface SearchActionDates {
+    fromDate?: Dayjs;
+    toDate?: Dayjs;
+}
+
 export interface SearchCriteriaPanelProps {
     // Controlled state (from AngularJS via bridge)
     dateSearchRange: string;
@@ -40,10 +51,10 @@ export interface SearchCriteriaPanelProps {
     onFromDateChange: (dateTime: Dayjs) => void;
     onToDateChange: (dateTime: Dayjs) => void;
     onCriteriaChange: (field: string, value: ISuggestion[] | string | number | undefined) => void;
-    onSearch: () => void;
-    onDownload: () => void;
-    onClientReport: () => void;
-    onPriceDetailReport: () => void;
+    onSearch: (dates?: SearchActionDates) => void;
+    onDownload: (dates?: SearchActionDates) => void;
+    onClientReport: (dates?: SearchActionDates) => void;
+    onPriceDetailReport: (dates?: SearchActionDates) => void;
     onUpload: (event: React.MouseEvent) => void;
     onClientSearch: (searchText: string) => Promise<ISuggestion[]>;
     onCourierSearch: (searchText: string) => Promise<ISuggestion[]>;
@@ -96,12 +107,31 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
 
     const isClientReportEnabled = clients.length > 0 && !!localFromDate && !!localToDate;
 
-    // Flush local dates to AngularJS and trigger search
+    // Commit the local dates upward and return them, so the action that follows
+    // in this same tick uses them without waiting for the commit to land.
+    const flushDates = useCallback((): SearchActionDates => {
+        const fromDate = localFromDate?.isValid() ? localFromDate : undefined;
+        const toDate = localToDate?.isValid() ? localToDate : undefined;
+        if (fromDate) onFromDateChange(fromDate);
+        if (toDate) onToDateChange(toDate);
+        return {fromDate, toDate};
+    }, [localFromDate, localToDate, onFromDateChange, onToDateChange]);
+
     const flushAndSearch = useCallback(() => {
-        if (localFromDate?.isValid()) onFromDateChange(localFromDate);
-        if (localToDate?.isValid()) onToDateChange(localToDate);
-        onSearch();
-    }, [localFromDate, localToDate, onFromDateChange, onToDateChange, onSearch]);
+        onSearch(flushDates());
+    }, [flushDates, onSearch]);
+
+    const flushAndDownload = useCallback(() => {
+        onDownload(flushDates());
+    }, [flushDates, onDownload]);
+
+    const flushAndClientReport = useCallback(() => {
+        onClientReport(flushDates());
+    }, [flushDates, onClientReport]);
+
+    const flushAndPriceDetailReport = useCallback(() => {
+        onPriceDetailReport(flushDates());
+    }, [flushDates, onPriceDetailReport]);
 
     // Chip change handlers — update local state + sync to AngularJS
     const handleClientsChange = useCallback((items: ISuggestion[]) => {
@@ -369,14 +399,14 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 </Button>
                 <Box sx={{display: 'flex', gap: 0.5}}>
                     <Tooltip title="Download">
-                        <IconButton onClick={onDownload} size="small" sx={{width: 36, height: 36}}>
+                        <IconButton onClick={flushAndDownload} size="small" sx={{width: 36, height: 36}}>
                             <DownloadIcon sx={{fontSize: 20, color: 'text.secondary'}} />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Client Report">
                         <span>
                             <IconButton
-                                onClick={onClientReport}
+                                onClick={flushAndClientReport}
                                 disabled={!isClientReportEnabled}
                                 size="small"
                                 sx={{width: 36, height: 36}}
@@ -386,7 +416,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                         </span>
                     </Tooltip>
                     <Tooltip title="Price Detail Report">
-                        <IconButton onClick={onPriceDetailReport} size="small" sx={{width: 36, height: 36}}>
+                        <IconButton onClick={flushAndPriceDetailReport} size="small" sx={{width: 36, height: 36}}>
                             <ReceiptLongIcon sx={{fontSize: 20, color: 'text.secondary'}} />
                         </IconButton>
                     </Tooltip>

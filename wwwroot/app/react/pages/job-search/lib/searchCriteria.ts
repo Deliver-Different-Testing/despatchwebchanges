@@ -31,6 +31,15 @@ export function filterCouriersForNumericSearch<T extends {text?: string}>(
     return exactMatches.length > 0 ? exactMatches : results;
 }
 
+/**
+ * The single form a search date takes once it reaches a request. Mirrors what
+ * `useSearchCriteria` stores, so a date handed straight to an action produces
+ * the same request as the same date read back from committed state.
+ */
+export function normalizeSearchDate(date: Dayjs | undefined): Dayjs | undefined {
+    return date?.isValid() ? date.startOf('day') : undefined;
+}
+
 export interface DateRangeResolution {
     from_date: Dayjs;
     to_date: Dayjs;

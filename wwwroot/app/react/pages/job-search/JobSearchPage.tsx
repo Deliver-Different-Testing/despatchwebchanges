@@ -37,7 +37,7 @@ import {Icon} from '../../components/common/icon/Icon';
 
 import {NoData} from '../../components/common/no-data/NoData';
 import {useDismissibleBanner} from '../../hooks/useDismissibleBanner';
-import {SearchCriteriaPanel} from '../../components/common/search-criteria-panel/SearchCriteriaPanel';
+import {SearchCriteriaPanel, SearchActionDates} from '../../components/common/search-criteria-panel/SearchCriteriaPanel';
 import {JobListPanel} from '../../components/job-list/JobListPanel';
 import {TaskHistory} from '../../components/common/task-history/TaskHistory';
 import {JobSearchShell} from './components/JobSearchShell';
@@ -46,7 +46,7 @@ import {ScanList} from './components/ScanList';
 import {useSearchCriteria} from './hooks/useSearchCriteria';
 import {useBoxLayout} from './hooks/useBoxLayout';
 import {useDeepLinkJob} from './hooks/useDeepLinkJob';
-import {filterCouriersForNumericSearch} from './lib/searchCriteria';
+import {filterCouriersForNumericSearch, normalizeSearchDate} from './lib/searchCriteria';
 import {getClientJobsReportDownloadUrl, getPodJobsDownloadUrl} from './lib/exportUrls';
 import {getPriceDetailReportDownloadUrl} from './lib/priceDetailExport';
 import {
@@ -256,7 +256,16 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.bulkJobId]);
 
-    const handleSearch = useCallback(() => {
+    // The panel hands us the dates it flushed in this same click, because the
+    // matching setState has not landed yet. Fall back to committed state for
+    // callers that pass nothing (the AngularJS V1 bridge, which commits its
+    // criteria synchronously).
+    const resolveDates = useCallback((dates?: SearchActionDates) => ({
+        from: normalizeSearchDate(dates?.fromDate) ?? searchCriteria.criteria.from_date,
+        to: normalizeSearchDate(dates?.toDate) ?? searchCriteria.criteria.to_date,
+    }), [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date]);
+
+    const handleSearch = useCallback((dates?: SearchActionDates) => {
         // Push the current criteria into each JobListPanel — they own their
         // own `params` state seeded from fetchConfig.initialParams and only
         // update via this callback (not by re-reading our `fetchConfig` prop).
@@ -267,10 +276,11 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         // query and stray results in the wrong box.
         const byJobId = searchCriteria.criteria.jobId != null;
         const byBulkJobId = searchCriteria.criteria.bulkJobId != null;
+        const {from, to} = resolveDates(dates);
 
         const mainParams: Partial<JobListSearchParams> = {
-            startDate: searchCriteria.criteria.from_date,
-            endDate: searchCriteria.criteria.to_date,
+            startDate: from,
+            endDate: to,
             courierIds: searchCriteria.selectedCourierIds,
             clientIds: searchCriteria.selectedClientIds,
             speedIds: searchCriteria.selectedSpeedIds,
@@ -284,8 +294,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         };
         updateMainParamsRef.current?.(mainParams);
         updateBulkParamsRef.current?.({
-            startDate: searchCriteria.criteria.from_date,
-            endDate: searchCriteria.criteria.to_date,
+            startDate: from,
+            endDate: to,
             courierIds: searchCriteria.selectedCourierIds,
             clientIds: searchCriteria.selectedClientIds,
             speedIds: searchCriteria.selectedSpeedIds,
@@ -295,7 +305,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             disabled: byJobId,
             page: 0,
         });
-    }, [sortColumn, sortDirection, searchCriteria.criteria.bulkJobId, searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
+    }, [sortColumn, sortDirection, resolveDates, searchCriteria.criteria.bulkJobId, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
     const handleRefreshBox = useCallback(async (boxName: string) => {
         switch (boxName) {
@@ -354,10 +364,11 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         [searchCriteria],
     );
 
-    const handleDownload = useCallback(() => {
+    const handleDownload = useCallback((dates?: SearchActionDates) => {
+        const {from, to} = resolveDates(dates);
         const url = getPodJobsDownloadUrl(
-            searchCriteria.criteria.from_date,
-            searchCriteria.criteria.to_date,
+            from,
+            to,
             searchCriteria.selectedCourierIds,
             searchCriteria.selectedClientIds,
             searchCriteria.selectedSpeedIds,
@@ -367,21 +378,23 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         );
         // Open in a new tab to trigger the browser's native download (matches V1).
         window.open(url, '_blank');
-    }, [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
+    }, [resolveDates, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
-    const handleClientReport = useCallback(() => {
+    const handleClientReport = useCallback((dates?: SearchActionDates) => {
+        const {from, to} = resolveDates(dates);
         const url = getClientJobsReportDownloadUrl(
-            searchCriteria.criteria.from_date,
-            searchCriteria.criteria.to_date,
+            from,
+            to,
             searchCriteria.selectedClientIds,
         );
         window.open(url, '_blank');
-    }, [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedClientIds]);
+    }, [resolveDates, searchCriteria.selectedClientIds]);
 
-    const handlePriceDetailReport = useCallback(() => {
+    const handlePriceDetailReport = useCallback((dates?: SearchActionDates) => {
+        const {from, to} = resolveDates(dates);
         const url = getPriceDetailReportDownloadUrl(
-            searchCriteria.criteria.from_date,
-            searchCriteria.criteria.to_date,
+            from,
+            to,
             searchCriteria.selectedCourierIds,
             searchCriteria.selectedClientIds,
             searchCriteria.selectedSpeedIds,
@@ -390,7 +403,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             searchCriteria.criteria.jobId,
         );
         window.open(url, '_blank');
-    }, [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
+    }, [resolveDates, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
     const handleUpload = useCallback(() => {
         const w = window as any;

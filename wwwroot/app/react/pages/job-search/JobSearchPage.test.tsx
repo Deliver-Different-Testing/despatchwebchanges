@@ -2,28 +2,36 @@ import React, {act} from 'react';
 import {render, screen, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
+import dayjs, {Dayjs} from 'dayjs';
+import type {SearchActionDates} from '../../components/common/search-criteria-panel/SearchCriteriaPanel';
 
 // Captures the panel callbacks so tests can drive the search flow. Names are
 // `mock`-prefixed so jest's hoisted factories may reference them.
 const mockPanel: {
-    onSearch?: () => void;
+    onSearch?: (dates?: SearchActionDates) => void;
     onCriteriaChange?: (field: string, value: unknown) => void;
-    onDownload?: () => void;
-    onClientReport?: () => void;
+    onFromDateChange?: (date: Dayjs) => void;
+    onToDateChange?: (date: Dayjs) => void;
+    onDownload?: (dates?: SearchActionDates) => void;
+    onClientReport?: (dates?: SearchActionDates) => void;
     onBackendFilter?: (column: string, direction: string) => void;
     updateParams: Record<string, jest.Mock>;
     onJobSelect: Record<string, (job: unknown) => void>;
 } = {updateParams: {}, onJobSelect: {}};
 
 jest.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', () => ({
-    SearchCriteriaPanel: ({onSearch, onCriteriaChange, onDownload, onClientReport}: {
-        onSearch: () => void;
+    SearchCriteriaPanel: ({onSearch, onCriteriaChange, onFromDateChange, onToDateChange, onDownload, onClientReport}: {
+        onSearch: (dates?: SearchActionDates) => void;
         onCriteriaChange: (f: string, v: unknown) => void;
-        onDownload: () => void;
-        onClientReport: () => void;
+        onFromDateChange: (d: Dayjs) => void;
+        onToDateChange: (d: Dayjs) => void;
+        onDownload: (dates?: SearchActionDates) => void;
+        onClientReport: (dates?: SearchActionDates) => void;
     }) => {
         mockPanel.onSearch = onSearch;
         mockPanel.onCriteriaChange = onCriteriaChange;
+        mockPanel.onFromDateChange = onFromDateChange;
+        mockPanel.onToDateChange = onToDateChange;
         mockPanel.onDownload = onDownload;
         mockPanel.onClientReport = onClientReport;
         return <div data-testid="mock-search-panel" />;
@@ -89,6 +97,8 @@ describe('JobSearchPage', () => {
     beforeEach(() => {
         mockPanel.onSearch = undefined;
         mockPanel.onCriteriaChange = undefined;
+        mockPanel.onFromDateChange = undefined;
+        mockPanel.onToDateChange = undefined;
         mockPanel.onDownload = undefined;
         mockPanel.onClientReport = undefined;
         mockPanel.onBackendFilter = undefined;
@@ -187,6 +197,51 @@ describe('JobSearchPage', () => {
         const url = openSpy.mock.calls.at(-1)?.[0] as string;
         expect(url).toMatch(/^\/Job\/ClientJobsReportDownload\?/);
         openSpy.mockRestore();
+    });
+
+    // The panel keeps the custom From/To locally and flushes them in the same click
+    // that fires the search, so a handler reading committed state sees the previous
+    // range — the "first search ignores my dates, the second one works" report.
+    describe('dates flushed in the same tick as the action', () => {
+        const from = dayjs('2026-08-12');
+        const to = dayjs('2026-08-20');
+
+        function flushDatesAnd(action: (dates: {fromDate: Dayjs; toDate: Dayjs}) => void) {
+            act(() => {
+                mockPanel.onFromDateChange?.(from);
+                mockPanel.onToDateChange?.(to);
+                action({fromDate: from, toDate: to});
+            });
+        }
+
+        it('searches both lists with the just-flushed dates, not the previous range', () => {
+            renderPage();
+            flushDatesAnd(dates => mockPanel.onSearch?.(dates));
+
+            const mainCall = mockPanel.updateParams.jobSearchJobList.mock.calls.at(-1)?.[0];
+            const bulkCall = mockPanel.updateParams.jobSearchBulkList.mock.calls.at(-1)?.[0];
+            for (const call of [mainCall, bulkCall]) {
+                expect(call.startDate.format('YYYY-MM-DD')).toBe('2026-08-12');
+                expect(call.endDate.format('YYYY-MM-DD')).toBe('2026-08-20');
+            }
+        });
+
+        it('exports the just-flushed dates on download and client report', () => {
+            const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+            renderPage();
+
+            flushDatesAnd(dates => mockPanel.onDownload?.(dates));
+            const downloadUrl = openSpy.mock.calls.at(-1)?.[0] as string;
+            expect(downloadUrl).toContain('2026-08-12');
+            expect(downloadUrl).toContain('2026-08-20');
+
+            flushDatesAnd(dates => mockPanel.onClientReport?.(dates));
+            const reportUrl = openSpy.mock.calls.at(-1)?.[0] as string;
+            expect(reportUrl).toContain('2026-08-12');
+            expect(reportUrl).toContain('2026-08-20');
+
+            openSpy.mockRestore();
+        });
     });
 
     it('re-pushes the active sort to the main list on search', () => {
