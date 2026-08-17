@@ -130,6 +130,7 @@ export interface DispatchJob {
     client?: string;
     clientId?: number;
     clientName?: string;
+    refA?: string;
     jobType?: number;
     minutes?: number;
     pickupTime?: number;

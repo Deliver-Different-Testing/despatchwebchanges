@@ -32,6 +32,7 @@ export const ALL_COLUMNS: ColumnDef[] = [
     {key: 'vehicle', label: 'Vehicle', sortable: true, width: 100},
     {key: 'jobNo', label: 'Job No', sortable: true, width: 130},
     {key: 'client', label: 'Client', sortable: true, width: 85, hideForUs: true},
+    {key: 'refA', label: 'Ref A', sortable: true, width: 110},
     {key: 'pickup', label: 'Pickup', sortable: true, width: 120},
     {key: 'delivery', label: 'Delivery', sortable: true, width: 380},
     {key: 'courier', label: 'Courier', sortable: true, width: 150},
@@ -55,9 +56,10 @@ export function availableColumns(isUsCustomer?: boolean, isJobSearchPage?: boole
 /**
  * Apply the user's saved order and hidden set to the available columns.
  * Unknown keys in `order` are ignored and available columns missing from it are
- * appended in catalogue order, so adding a column in code surfaces it for users
- * who already have preferences saved. Locked columns are always kept, and always
- * lead.
+ * slotted in after the last saved column that precedes them in the catalogue, so
+ * a column added in code lands next to its intended neighbours rather than at the
+ * far right for users who already have preferences saved. Locked columns are
+ * always kept, and always lead.
  */
 export function orderColumns(
     available: ColumnDef[],
@@ -75,8 +77,13 @@ export function orderColumns(
         ordered.push(col);
         seen.add(key);
     }
+    const catalogueIndex = new Map(available.map((col, index) => [col.key, index]));
     for (const col of available) {
-        if (!seen.has(col.key)) ordered.push(col);
+        if (seen.has(col.key)) continue;
+        let at = ordered.length;
+        while (at > 0 && catalogueIndex.get(ordered[at - 1].key)! > catalogueIndex.get(col.key)!) at--;
+        ordered.splice(at, 0, col);
+        seen.add(col.key);
     }
 
     const locked = ordered.filter(col => col.locked);

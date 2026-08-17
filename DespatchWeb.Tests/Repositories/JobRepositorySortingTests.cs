@@ -1,3 +1,4 @@
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
@@ -15,6 +16,7 @@ public class JobRepositorySortingTests
             Time = new DateTime(2024, 1, 10, 8, 0, 0),
             JobNo = "A001",
             Client = "Alpha Corp",
+            RefA = "PO-100",
             Status = "Pending",
             Speed = "Express",
             Courier = "Alice",
@@ -29,6 +31,7 @@ public class JobRepositorySortingTests
             Time = new DateTime(2024, 1, 12, 10, 0, 0),
             JobNo = "C003",
             Client = "Charlie Ltd",
+            RefA = "PO-300",
             Status = "Active",
             Speed = "Standard",
             Courier = "Carol",
@@ -43,6 +46,7 @@ public class JobRepositorySortingTests
             Time = new DateTime(2024, 1, 11, 9, 0, 0),
             JobNo = "B002",
             Client = "Bravo Inc",
+            RefA = "PO-200",
             Status = "Completed",
             Speed = "Economy",
             Courier = "Bob",
@@ -61,6 +65,8 @@ public class JobRepositorySortingTests
     [InlineData("jobno", true, 2, 1)]
     [InlineData("client", false, 1, 2)]
     [InlineData("client", true, 2, 1)]
+    [InlineData("refa", false, 1, 2)]
+    [InlineData("refa", true, 2, 1)]
     [InlineData("status", false, 2, 1)]
     [InlineData("status", true, 1, 2)]
     [InlineData("speed", false, 3, 2)]
@@ -96,6 +102,42 @@ public class JobRepositorySortingTests
 
         Assert.Equal(1, result.First().Id);
         Assert.Equal(2, result.Last().Id);
+    }
+
+    [Theory]
+    [InlineData(false, 1, 2)]
+    [InlineData(true, 2, 1)]
+    public void ApplyLiveJobSorting_SortsByRefA(bool descending, int expectedFirstId, int expectedLastId)
+    {
+        var jobs = new List<TucJob>
+        {
+            new() { UcjbId = 2, UcjbClientRefa = "PO-300" },
+            new() { UcjbId = 1, UcjbClientRefa = "PO-100" },
+            new() { UcjbId = 3, UcjbClientRefa = "PO-200" }
+        }.AsQueryable();
+
+        var result = JobRepository.ApplyLiveJobSorting(jobs, "refa", descending).ToList();
+
+        Assert.Equal(expectedFirstId, result.First().UcjbId);
+        Assert.Equal(expectedLastId, result.Last().UcjbId);
+    }
+
+    [Theory]
+    [InlineData(false, 1, 2)]
+    [InlineData(true, 2, 1)]
+    public void ApplyArchivedJobSorting_SortsByRefA(bool descending, int expectedFirstId, int expectedLastId)
+    {
+        var jobs = new List<TucJobArchive>
+        {
+            new() { UcjbId = 2, UcjbClientRefa = "PO-300" },
+            new() { UcjbId = 1, UcjbClientRefa = "PO-100" },
+            new() { UcjbId = 3, UcjbClientRefa = "PO-200" }
+        }.AsQueryable();
+
+        var result = JobRepository.ApplyArchivedJobSorting(jobs, "refa", descending).ToList();
+
+        Assert.Equal(expectedFirstId, result.First().UcjbId);
+        Assert.Equal(expectedLastId, result.Last().UcjbId);
     }
 
     [Fact]

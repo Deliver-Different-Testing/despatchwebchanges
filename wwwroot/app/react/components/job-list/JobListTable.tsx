@@ -839,6 +839,8 @@ const CellContent: React.FC<{
             );
         case 'client':
             return <>{job.client || ''}</>;
+        case 'refA':
+            return <>{job.refA || ''}</>;
         case 'pickup':
             if (isUsCustomer) {
                 return (

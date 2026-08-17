@@ -74,6 +74,7 @@ function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
         speed: 'Standard',
         vehicle: {id: 1, text: 'Car'},
         client: 'Test Client',
+        refA: 'PO-4471',
         pickUpTimeZone: {id: 1, text: 'NZST'},
         deliveryTimeZone: {id: 1, text: 'NZST'},
         ...overrides,
@@ -126,9 +127,11 @@ describe('JobListTable', () => {
             expect(screen.getByText('Courier')).toBeInTheDocument();
             expect(screen.getByText('Status')).toBeInTheDocument();
             expect(screen.getByText('Client')).toBeInTheDocument(); // NZ customer
+            expect(screen.getByText('Ref A')).toBeInTheDocument();
 
             // Job data
             expect(screen.getByText('J001')).toBeInTheDocument();
+            expect(screen.getByText('PO-4471')).toBeInTheDocument();
             expect(screen.getByText('New')).toBeInTheDocument();
             expect(screen.getByText('Standard')).toBeInTheDocument();
 
@@ -241,6 +244,9 @@ describe('JobListTable', () => {
 
             await user.click(screen.getByText('Job No'));
             expect(props.onSortChange).toHaveBeenCalledWith('jobNo');
+
+            await user.click(screen.getByText('Ref A'));
+            expect(props.onSortChange).toHaveBeenCalledWith('refA');
         });
     });
 

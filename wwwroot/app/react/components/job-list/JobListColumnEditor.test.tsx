@@ -27,6 +27,7 @@ describe('JobListColumnEditor', () => {
 
         expect(screen.getByLabelText('Show Status')).toBeInTheDocument();
         expect(screen.getByLabelText('Show Delivery')).toBeInTheDocument();
+        expect(screen.getByLabelText('Show Ref A')).toBeInTheDocument();
         expect(screen.queryByLabelText(/Show priority/i)).not.toBeInTheDocument();
     });
 
