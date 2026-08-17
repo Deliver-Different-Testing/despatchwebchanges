@@ -19,6 +19,8 @@ export {
     sectionLabelProps,
     dialogContentBg,
     dialogFooterBorder,
+    dialogShellStyles,
+    dialogStickyChromeStyle,
 } from './styles';
 export type {HeaderVariant} from './styles';
 export {PriceDelta} from './PriceDelta';

@@ -485,7 +485,6 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             onClose={handleClose}
             size={childJobs && childJobs.length > 0 ? 480 : 420}
             label="Edit Price"
-            styles={{content: {overflow: 'hidden', maxHeight: '90vh'}}}
         >
             {/* Header */}
             <DialogHeader
@@ -495,12 +494,9 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 onClose={onClose}
                 closeDisabled={isLoading}
             />
-            {/* Content — scrollable so action buttons remain visible */}
-            <Box style={{overflowY: 'auto', flex: 1}}>
-                {isLoading && renderLoadingState()}
-                {showResult && !isLoading && renderSuccessState()}
-                {!showResult && !isLoading && renderEditState()}
-            </Box>
+            {isLoading && renderLoadingState()}
+            {showResult && !isLoading && renderSuccessState()}
+            {!showResult && !isLoading && renderEditState()}
             {/* Actions for result state */}
             {showResult && !isLoading && (
                 <DialogFooter

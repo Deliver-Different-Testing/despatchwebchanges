@@ -161,3 +161,26 @@ export const dialogContentBg = 'var(--mantine-color-gray-1)';
 
 /** Footer keyline (top border) colour. */
 export const dialogFooterBorder = '1px solid var(--mantine-color-gray-3)';
+
+/**
+ * The modal shell's Mantine `styles`.
+ *
+ * `Modal.Content` is the only scroll container the modal has — Mantine caps it at
+ * ~90dvh and scrolls it — so `overflow-y` must stay `auto`. Clipping it instead
+ * strands everything past the cap (typically the footer's confirm button) with no
+ * scrollbar, no wheel scroll and no scroll-into-view on focus. The corners still
+ * clip to the shell's radius: any non-`visible` overflow does that.
+ */
+export const dialogShellStyles = {
+    content: {overflowY: 'auto'},
+    body: {padding: 0},
+} satisfies Record<'content' | 'body', React.CSSProperties>;
+
+/**
+ * Pins dialog chrome against {@link dialogShellStyles}'s scroll container, so the
+ * title and the actions stay on screen while the body scrolls under them. Both
+ * bars paint an opaque fill of their own, so nothing shows through.
+ */
+export function dialogStickyChromeStyle(edge: 'top' | 'bottom'): React.CSSProperties {
+    return {position: 'sticky', [edge]: 0, zIndex: 2};
+}

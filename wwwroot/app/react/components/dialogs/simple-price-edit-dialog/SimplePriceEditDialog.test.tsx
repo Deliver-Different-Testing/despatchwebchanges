@@ -63,6 +63,12 @@ describe('SimplePriceEditDialog', () => {
             expect(screen.getByRole('dialog')).toBeInTheDocument();
         });
 
+        it('leaves the shell to scroll, rather than clipping its own content', () => {
+            const props = createDefaultProps();
+            renderWithProviders(props);
+            expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'auto'});
+        });
+
         it('displays "Edit Price" title', () => {
             const props = createDefaultProps();
             renderWithProviders(props);

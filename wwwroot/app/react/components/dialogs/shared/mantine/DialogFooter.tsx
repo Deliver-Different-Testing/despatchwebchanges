@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import {Button, Group} from '@mantine/core';
-import {dialogFooterBorder} from './styles';
+import {dialogFooterBorder, dialogStickyChromeStyle} from './styles';
 import {DialogFooterProps} from "./DialogFooterProps";
 
 export const DialogFooter: React.FC<DialogFooterProps> = ({
@@ -29,7 +29,11 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
         gap="sm"
         px="lg"
         py="md"
-        style={{borderTop: dialogFooterBorder, backgroundColor: 'var(--mantine-color-white)'}}
+        style={{
+            borderTop: dialogFooterBorder,
+            backgroundColor: 'var(--mantine-color-white)',
+            ...dialogStickyChromeStyle('bottom'),
+        }}
     >
         {!hideCancel && (
             <Button variant="default" onClick={onCancel} disabled={submitting} miw={100}>
