@@ -12,6 +12,8 @@ import {
     headerColors,
     headerOnColor,
     headerOverlayColor,
+    dialogShellStyles,
+    dialogStickyChromeStyle,
     PriceDelta,
 } from './index';
 import {alpha} from '@mantine/core';
@@ -97,6 +99,44 @@ describe('Mantine dialog primitives', () => {
         const overlay = container.querySelector('.mantine-Modal-overlay') as HTMLElement;
         expect(overlay.style.getPropertyValue('--overlay-filter')).toContain('blur(');
         expect(overlay.style.getPropertyValue('--overlay-bg')).toContain('0.8');
+    });
+});
+
+/**
+ * `Modal.Content` is the modal's only scroll container — Mantine caps it at ~90dvh
+ * and scrolls it. A shell that clips it instead strands everything past the cap,
+ * the footer's confirm button included.
+ */
+describe('DialogShell scrolling', () => {
+    it('keeps the modal content scrollable', () => {
+        renderDialog();
+        // `Modal.Content` is the role="dialog" node.
+        expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'auto'});
+        expect(screen.getByRole('dialog')).not.toHaveStyle({overflow: 'hidden'});
+    });
+
+    it('still lets a caller override the shell styles', () => {
+        renderWithMantine(
+            <DialogShell opened onClose={jest.fn()} styles={{content: {overflowY: 'scroll'}}}>
+                <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+            </DialogShell>,
+        );
+        expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'scroll'});
+    });
+
+    it('pins the header and the footer so the actions stay on screen while the body scrolls', () => {
+        renderDialog();
+        expect(screen.getByRole('button', {name: 'Close dialog'}).parentElement)
+            .toHaveStyle({position: 'sticky', top: '0px'});
+        expect(screen.getByRole('button', {name: 'Cancel'}).parentElement)
+            .toHaveStyle({position: 'sticky', bottom: '0px'});
+    });
+
+    it('exposes the shell and chrome styles as plain objects', () => {
+        expect(dialogShellStyles.content.overflowY).toBe('auto');
+        expect(dialogShellStyles.body.padding).toBe(0);
+        expect(dialogStickyChromeStyle('top')).toMatchObject({position: 'sticky', top: 0});
+        expect(dialogStickyChromeStyle('bottom')).toMatchObject({position: 'sticky', bottom: 0});
     });
 });
 

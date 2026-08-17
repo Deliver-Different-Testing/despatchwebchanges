@@ -11,7 +11,7 @@
  */
 import React from 'react';
 import {Box, CloseButton, Group, Text, ThemeIcon} from '@mantine/core';
-import {headerChipProps, headerColors, headerOnColor} from './styles';
+import {dialogStickyChromeStyle, headerChipProps, headerColors, headerOnColor} from './styles';
 import {DialogHeaderProps} from "./DialogHeaderProps";
 
 export const DialogHeader: React.FC<DialogHeaderProps> = ({
@@ -25,7 +25,17 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
 }) => {
     const fg = headerOnColor(variant);
     return (
-        <Group wrap="nowrap" gap="md" px="lg" py="sm" style={{backgroundColor: headerColors[variant].bg, color: fg}}>
+        <Group
+            wrap="nowrap"
+            gap="md"
+            px="lg"
+            py="sm"
+            style={{
+                backgroundColor: headerColors[variant].bg,
+                color: fg,
+                ...dialogStickyChromeStyle('top'),
+            }}
+        >
             <ThemeIcon {...headerChipProps(variant)}>
                 {icon}
             </ThemeIcon>

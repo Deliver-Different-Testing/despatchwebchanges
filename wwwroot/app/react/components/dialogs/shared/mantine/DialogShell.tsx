@@ -5,7 +5,8 @@
  * counterpart to the MUI `shared/DialogShell`. Wraps `<Modal>` with the design
  * defaults: centered, no built-in close button (the header owns it), zero body
  * padding (header/content/footer control their own), the theme's extra-large
- * (28px) radius, and a clipped, fixed-ish width.
+ * (28px) radius, a scrollable content box (see {@link dialogShellStyles}) and a
+ * fixed-ish width.
  *
  * The overlay is a light, unblurred scrim on purpose: dialogs open over the
  * dispatch job list and users need to keep reading it while they edit. Dialogs
@@ -15,6 +16,7 @@
  */
 import React from 'react';
 import {Modal} from '@mantine/core';
+import {dialogShellStyles} from './styles';
 import {DialogShellProps} from "./DialogShellProps";
 
 /**
@@ -53,8 +55,7 @@ export const DialogShell: React.FC<DialogShellProps> = ({
         radius="xl"
         {...rest}
         styles={{
-            content: {overflow: 'hidden'},
-            body: {padding: 0},
+            ...dialogShellStyles,
             ...styles,
         }}
     >

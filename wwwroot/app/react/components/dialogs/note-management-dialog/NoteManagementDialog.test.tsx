@@ -195,6 +195,29 @@ describe('NoteManagementDialog', () => {
         });
     });
 
+    // ── Tall content must not strand the footer (the shell's scroll container) ─
+    it('keeps Save Note reachable once the note-type creator expands the dialog', async () => {
+        const props = createMockProps();
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
+        });
+
+        await waitFor(() => {
+            expect(props.onLoadNoteTypes).toHaveBeenCalled();
+        });
+
+        await act(async () => {
+            await userEvent.click(screen.getByRole('button', {name: 'Add note type'}));
+        });
+        expect(await screen.findByText('Create New Note Type')).toBeInTheDocument();
+
+        // jsdom does no layout, so this asserts the wiring rather than the pixels:
+        // the modal keeps its scroll container and the footer pins to it.
+        expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'auto'});
+        expect(screen.getByRole('button', {name: 'Save Note'}).parentElement)
+            .toHaveStyle({position: 'sticky', bottom: '0px'});
+    });
+
     // ── Note content: type text, toggle important, save enabled (single render) ─
     it('updates note text, toggles important flag, and enables save', async () => {
         const props = createMockProps();
