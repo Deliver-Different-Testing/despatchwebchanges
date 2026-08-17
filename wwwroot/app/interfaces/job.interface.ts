@@ -812,6 +812,7 @@ export interface IDispatchJob {
     client?: string;
     clientId?: number;
     clientName?: string;
+    refA?: string;
 
     jobType?: number;
     minutes?: number;
@@ -944,6 +945,7 @@ export interface IDispatchJobDto {
     client?: string;
     clientId?: number;
     clientName?: string;
+    refA?: string;
 
     jobType?: number;
     minutes?: number;

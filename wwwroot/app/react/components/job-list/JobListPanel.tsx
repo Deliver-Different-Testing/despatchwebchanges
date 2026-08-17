@@ -102,6 +102,7 @@ function matchesSearch(job: DispatchJob, query: string): boolean {
     return (
         safeIncludes(job.jobNo, query) ||
         safeIncludes(job.client, query) ||
+        safeIncludes(job.refA, query) ||
         safeIncludes(job.statusName, query) ||
         safeIncludes(job.assignedCourier?.text, query) ||
         safeIncludes(job.pickupContact, query) ||
@@ -163,6 +164,8 @@ function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean):
             return job.jobNo || '';
         case 'client':
             return job.client || '';
+        case 'refA':
+            return job.refA || '';
         case 'pickup':
             return getPickupAddressStr(job);
         case 'delivery':

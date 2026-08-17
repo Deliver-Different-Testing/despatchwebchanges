@@ -12,6 +12,7 @@ describe('DEFAULT_COLUMN_WIDTHS', () => {
         expect(Object.keys(DEFAULT_COLUMN_WIDTHS)).toEqual(keys(ALL_COLUMNS));
         expect(DEFAULT_COLUMN_WIDTHS.delivery).toBe(380);
         expect(DEFAULT_COLUMN_WIDTHS.priority).toBe(50);
+        expect(DEFAULT_COLUMN_WIDTHS.refA).toBe(110);
     });
 });
 
@@ -20,6 +21,11 @@ describe('availableColumns', () => {
         expect(keys(availableColumns(true, true))).not.toContain('client');
         expect(keys(availableColumns(false, false))).not.toContain('isArchived');
         expect(keys(availableColumns(false, true))).toEqual(expect.arrayContaining(['client', 'isArchived']));
+    });
+
+    it('offers Ref A between Client and Pickup on every list', () => {
+        expect(keys(availableColumns(false, false)).join()).toContain('jobNo,client,refA,pickup');
+        expect(keys(availableColumns(true, true)).join()).toContain('jobNo,refA,pickup');
     });
 });
 
@@ -35,12 +41,19 @@ describe('orderColumns', () => {
         expect(keys(result).slice(0, 4)).toEqual(['priority', 'status', 'courier', 'date']);
     });
 
-    it('appends columns missing from the saved order in catalogue order', () => {
-        const result = orderColumns(available, ['status']);
-        expect(keys(result)[1]).toBe('status');
-        expect(keys(result).slice(2)).toEqual(
-            keys(available).filter(k => k !== 'priority' && k !== 'status'),
-        );
+    it('slots columns missing from the saved order beside their catalogue neighbours', () => {
+        const result = orderColumns(available, ['status', 'jobNo']);
+        expect(keys(result)).toEqual([
+            'priority', 'date', 'time', 'speed', 'isArchived', 'vehicle',
+            'status', 'jobNo', 'client', 'refA', 'pickup', 'delivery', 'courier', 'remaining',
+        ]);
+    });
+
+    it('keeps a newly added column at its catalogue position for users with a saved order', () => {
+        const savedBeforeRefA = keys(available).filter(k => k !== 'refA');
+        const result = keys(orderColumns(available, savedBeforeRefA));
+        expect(result.indexOf('refA')).toBe(result.indexOf('pickup') - 1);
+        expect(result.indexOf('refA')).toBe(result.indexOf('client') + 1);
     });
 
     it('ignores stale and duplicate keys in the saved order', () => {

@@ -5191,7 +5191,7 @@ public partial class JobRepository(
         return string.Join(", ", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
     }
 
-    private static IOrderedQueryable<TucJob> ApplyLiveJobSorting(
+    internal static IOrderedQueryable<TucJob> ApplyLiveJobSorting(
         IQueryable<TucJob> query,
         string sortColumn,
         bool descending) =>
@@ -5211,6 +5211,9 @@ public partial class JobRepository(
             "client" => descending
                 ? query.OrderByDescending(j => j.UcjbClientCode).ThenByDescending(j => j.UcjbId)
                 : query.OrderBy(j => j.UcjbClientCode).ThenBy(j => j.UcjbId),
+            "refa" => descending
+                ? query.OrderByDescending(j => j.UcjbClientRefa).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbClientRefa).ThenBy(j => j.UcjbId),
             "status" => descending
                 ? query.OrderByDescending(j => j.UcjbStatus).ThenByDescending(j => j.UcjbId)
                 : query.OrderBy(j => j.UcjbStatus).ThenBy(j => j.UcjbId),
@@ -5223,7 +5226,7 @@ public partial class JobRepository(
             _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
         };
 
-    private static IOrderedQueryable<TucJobArchive> ApplyArchivedJobSorting(
+    internal static IOrderedQueryable<TucJobArchive> ApplyArchivedJobSorting(
         IQueryable<TucJobArchive> query,
         string sortColumn,
         bool descending) =>
@@ -5243,6 +5246,9 @@ public partial class JobRepository(
             "client" => descending
                 ? query.OrderByDescending(j => j.UcjbClientCode).ThenByDescending(j => j.UcjbId)
                 : query.OrderBy(j => j.UcjbClientCode).ThenBy(j => j.UcjbId),
+            "refa" => descending
+                ? query.OrderByDescending(j => j.UcjbClientRefa).ThenByDescending(j => j.UcjbId)
+                : query.OrderBy(j => j.UcjbClientRefa).ThenBy(j => j.UcjbId),
             "status" => descending
                 ? query.OrderByDescending(j => j.UcjbStatus).ThenByDescending(j => j.UcjbId)
                 : query.OrderBy(j => j.UcjbStatus).ThenBy(j => j.UcjbId),
@@ -5274,6 +5280,9 @@ public partial class JobRepository(
             "client" => descending
                 ? jobs.OrderByDescending(j => j.Client).ThenByDescending(j => j.Id)
                 : jobs.OrderBy(j => j.Client).ThenBy(j => j.Id),
+            "refa" => descending
+                ? jobs.OrderByDescending(j => j.RefA).ThenByDescending(j => j.Id)
+                : jobs.OrderBy(j => j.RefA).ThenBy(j => j.Id),
             "status" => descending
                 ? jobs.OrderByDescending(j => j.Status).ThenByDescending(j => j.Id)
                 : jobs.OrderBy(j => j.Status).ThenBy(j => j.Id),

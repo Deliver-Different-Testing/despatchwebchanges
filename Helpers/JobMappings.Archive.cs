@@ -398,6 +398,7 @@ public static partial class JobMappings
             ClientId = j.UcjbClientId,
             Client = j.UcjbClientCode,
             ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
+            RefA = j.UcjbClientRefa,
 
             From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
             ToSuburbId = j.UcjbTo,

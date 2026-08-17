@@ -308,7 +308,7 @@ describe('JobListPanel', () => {
                     id: 1, jobNo: 'ALPHA-001', client: 'Widget Co',
                     assignedCourier: {id: 10, text: '10 - Mike Runner'},
                 }),
-                createMockDispatchJob({id: 2, jobNo: 'BETA-002', client: 'Gadget Inc'}),
+                createMockDispatchJob({id: 2, jobNo: 'BETA-002', client: 'Gadget Inc', refA: 'PO-9912'}),
             ];
             renderAndPushJobs(jobs, {onSearchChange});
 
@@ -329,6 +329,11 @@ describe('JobListPanel', () => {
             await typeAndFlush(searchInput, 'Mike');
             expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
             expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
+
+            // Clear and filter by Ref A
+            await typeAndFlush(searchInput, 'po-9912');
+            expect(screen.getByText('BETA-002')).toBeInTheDocument();
+            expect(screen.queryByText('ALPHA-001')).not.toBeInTheDocument();
         });
 
         it('filters by address fields', async () => {
@@ -522,6 +527,20 @@ describe('JobListPanel', () => {
 
             const rows = screen.getAllByText(/^[A-C]-00\d$/);
             expect(rows.map(el => el.textContent)).toEqual(['A-001', 'B-002', 'C-003']);
+        });
+
+        it('sorts jobs correctly by Ref A column', () => {
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'J1', refA: 'PO-300'}),
+                createMockDispatchJob({id: 2, jobNo: 'J2', refA: 'PO-100'}),
+                createMockDispatchJob({id: 3, jobNo: 'J3', refA: 'PO-200'}),
+            ];
+            renderAndPushJobs(jobs);
+
+            fireEvent.click(screen.getByText('Ref A'));
+
+            const rows = screen.getAllByText(/^PO-\d00$/);
+            expect(rows.map(el => el.textContent)).toEqual(['PO-100', 'PO-200', 'PO-300']);
         });
 
         it('sorts jobs correctly by delivery address column', () => {

@@ -938,6 +938,29 @@ public class JobMappingsTests
     }
 
     [Fact]
+    public void JobListMappings_MapClientRefAOntoRefA()
+    {
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB-1",
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbClientRefa = "PO-4471"
+        };
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB-1",
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbClientRefa = "PO-4471"
+        };
+
+        Assert.Equal("PO-4471", JobMappings.JobDispatchMapping(isUsCustomer: false).Compile()(liveJob).RefA);
+        Assert.Equal("PO-4471", JobMappings.PodSearchMapping(isUsCustomer: false).Compile()(liveJob).RefA);
+        Assert.Equal("PO-4471", JobMappings.PodSearchArchivedMapping(isUsCustomer: false).Compile()(archivedJob).RefA);
+    }
+
+    [Fact]
     public void JobArchiveMapping_MapsBasicFieldsCorrectly()
     {
         // Arrange
