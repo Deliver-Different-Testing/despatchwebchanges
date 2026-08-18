@@ -25,6 +25,7 @@ import {
     Send,
     Split,
     UserMinus,
+    UserPlus,
 } from 'lucide-react';
 import {IconPinned, IconPlaneOff, IconTruck} from '@tabler/icons-react';
 
@@ -33,12 +34,13 @@ import {Icon} from '../common/icon/Icon';
 import type {AppPage, DispatchJob} from '../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../services/toastService';
 import * as api from '../../services/jobListApi';
-import {assignAgentToJob, canAssignAgentToJob} from '../../services/dispatchExecutorApi';
+import {executeDispatchConfirmation} from '../dialogs/dispatch-dialog/executeDispatch';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
-import {DispatchDialog, type DispatchType} from '../dialogs/dispatch-dialog';
+import {DispatchDialog, type DispatchConfirmation, type DispatchType} from '../dialogs/dispatch-dialog';
+import {isNetworkPartnerSession, stopJobCountFor} from '../dialogs/dispatch-dialog/dispatchSession';
 import {SendToLiveConfirmationDialog} from '../dialogs/send-to-live-confirmation-dialog';
 import {RestoreConfirmationDialog} from '../dialogs/restore-confirmation-dialog';
 import type {RestorePodImpactSummary} from '../dialogs/restore-confirmation-dialog';
@@ -282,60 +284,20 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
     // Assign an agent from the dispatch dialog: gate on a flight being assigned, then
     // assign and report whether the agent was emailed the inbound-agent link.
-    const assignAgentFromDialog = async (
-        targetJob: DispatchJob,
-        destination: {id: number; text: string},
-        emailSubject?: string,
-        emailBody?: string,
-    ) => {
-        const canAssign = await canAssignAgentToJob(targetJob.id);
-        if (!canAssign) {
-            throw new Error(
-                'A flight must be assigned to the flight portion before an agent can be assigned.',
-            );
-        }
-        const result = await assignAgentToJob(targetJob.id, destination.id, false, emailSubject, emailBody);
-        setDispatchDialog((s) => ({...s, open: false}));
-        await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
-        const base = `Job ${targetJob.jobNo} assigned to ${destination.text}`;
-        if (result.willEmail) {
-            showToast(`${base} — inbound link emailed to ${result.agentEmail}`, 'success');
-        } else if (result.status === 'NoAgentEmail') {
-            showToast(`${base} — agent has no email on file, no link sent`, 'warning');
-        } else if (result.status === 'NoInboundUrl') {
-            showToast(`${base} — inbound portal URL not configured, no link sent`, 'warning');
-        } else {
-            showToast(`${base} — inbound link could not be sent`, 'warning');
-        }
-        refresh();
-    };
-
-    const handleDispatchDialogConfirmCourier = async (
-        type: 'Courier' | 'Agent' | 'NP',
-        destination: {id: number; text: string},
-        emailSubject?: string,
-        emailBody?: string,
-    ) => {
-        // Single-job dispatch from the context menu. If the job already has a
-        // courier assigned, treat the action as a re-dispatch so the server
-        // releases the previous courier; otherwise allocate fresh.
+    const handleDispatchDialogConfirmCourier = async (confirmation: DispatchConfirmation) => {
+        // Single-job dispatch from the context menu. The shared executor routes each
+        // target to its own endpoint and re-allocates when a courier already exists.
         const targetJob = activeJob;
-        if (type === 'Agent') {
-            await assignAgentFromDialog(targetJob, destination, emailSubject, emailBody);
-            return;
-        }
-        if (type !== 'Courier') {
-            // NP from the context menu isn't wired server-side for ad-hoc
-            // dispatch yet — surface that clearly instead of failing silently.
-            throw new Error(`${type} dispatch is not yet wired from the job list — use the job-details panel.`);
-        }
         try {
-            if (targetJob.assignedCourier?.id) {
-                await api.reAllocateJobs(destination.id, [targetJob.id]);
-            } else {
-                await api.allocateJobs(destination.id, [targetJob.id]);
-            }
-            showToast(`Job ${targetJob.jobNo} dispatched to ${destination.text}`, 'success');
+            const {message, severity} = await executeDispatchConfirmation(
+                {
+                    id: targetJob.id,
+                    jobNo: targetJob.jobNo,
+                    assignedCourierId: targetJob.assignedCourier?.id,
+                },
+                confirmation,
+            );
+            showToast(message, severity);
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             setDispatchDialog((s) => ({...s, open: false}));
             refresh();
@@ -696,9 +658,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         onClick: handleSendToLive,
                     })}
 
-                    {/* Send to DFRNT Partner (dispatch/jobsearch only) — opens the
-                        universal dispatch dialog with the DFRNT Partner radio pre-selected. */}
-                    {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && menuItem('send-to-partner', {
+                    {/* Send to DFRNT Partner — opens the universal dispatch dialog with
+                        the DFRNT Partner radio pre-selected. */}
+                    {menuItem('send-to-partner', {
                         icon: <Icon lucide={Send} size={16}/>,
                         label: 'Send to Partner',
                         onClick: () => openDispatchDialog('DfrntPartner'),
@@ -738,6 +700,15 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         icon: <Icon lucide={ChevronFirst} size={16}/>,
                         label: 'Set First Job',
                         onClick: handleSetFirstJob,
+                    })}
+
+                    {/* Assign… — the unbiased way into the shared modal. Re-Dispatch below
+                        only appears once a courier exists, so without this a job that has
+                        never been assigned has no route to the dialog from the row. */}
+                    {!isOutboundPartnerJob && menuItem('assign', {
+                        icon: <Icon lucide={UserPlus} size={16}/>,
+                        label: 'Assign…',
+                        onClick: () => openDispatchDialog('Courier'),
                     })}
 
                     {/* Re-Dispatch */}
@@ -875,6 +846,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     }}
                     initialType={dispatchDialog.initialType}
                     existingDestination={activeJob.assignedCourier}
+                    stopJobCount={stopJobCountFor(activeJob.jobNo, activeJob.relatedJobs)}
+                    existingConNote={activeJob.conNote}
+                    isNetworkPartner={isNetworkPartnerSession()}
                     onClose={() => setDispatchDialog((s) => ({...s, open: false}))}
                     onDispatchCourier={handleDispatchDialogConfirmCourier}
                     onSendToPartner={handleDispatchDialogConfirmPartner}

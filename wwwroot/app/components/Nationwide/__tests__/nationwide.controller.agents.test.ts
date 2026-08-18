@@ -57,6 +57,7 @@ describe('addSelectedAgentToJob', () => {
     function setup(overrides = {}) {
         const ctrl = createController(overrides);
         ctrl.addSelectedAgentToJob = ControllerClass.prototype.addSelectedAgentToJob;
+        ctrl.openDispatchDialogForJob = ControllerClass.prototype.openDispatchDialogForJob;
         return ctrl;
     }
 
@@ -67,39 +68,58 @@ describe('addSelectedAgentToJob', () => {
         await ctrl.addSelectedAgentToJob({} as MouseEvent, {id: 1, text: 'Agent'}, makeDeliveryJob(10));
 
         expect(ctrl.$mdDialog.show).toHaveBeenCalled();
-        expect(ctrl.nationwideService.assignAgentToJob).not.toHaveBeenCalled();
+        expect(ctrl.dispatchDialogService.openDispatchDialog).not.toHaveBeenCalled();
     });
 
-    it('returns early when dialog cancelled', async () => {
+    it('opens the shared dispatch modal with the agent pre-filled, not the agent-email dialog', async () => {
+        // The agent-only confirmation dialog led with the inbound-agent email, which is
+        // what made this action read as "send the app email" instead of an assignment.
         const ctrl = setup();
-        ctrl.flightAgentConfirmationDialogService.agentConfirmationDialog.mockResolvedValue({shouldAssign: false});
+        const job = makeDeliveryJob(10);
+
+        await ctrl.addSelectedAgentToJob({} as MouseEvent, {id: 1, text: 'Agent'}, job);
+
+        expect(ctrl.dispatchDialogService.openDispatchDialog)
+            .toHaveBeenCalledWith(job, 'Agent', {id: 1, text: 'Agent'});
+        expect(ctrl.flightAgentConfirmationDialogService.agentConfirmationDialog).not.toHaveBeenCalled();
+    });
+
+    it('returns early when the modal is cancelled', async () => {
+        const ctrl = setup();
+        ctrl.dispatchDialogService.openDispatchDialog.mockResolvedValue(null);
 
         await ctrl.addSelectedAgentToJob({} as MouseEvent, {id: 1, text: 'Agent'}, makeDeliveryJob(10));
 
-        expect(ctrl.nationwideService.assignAgentToJob).not.toHaveBeenCalled();
+        expect(ctrl.getJobList).not.toHaveBeenCalled();
+        expect(ctrl.selectJob).not.toHaveBeenCalled();
     });
 
-    it('assigns agent, updates AWB, refreshes lists, re-selects job', async () => {
+    it('refreshes lists, re-selects the job, and reports the modal\'s outcome', async () => {
         const freshJob = makeDeliveryJob(10, {assignedAgent: {agentId: 1}});
         const ctrl = setup();
-        ctrl.flightAgentConfirmationDialogService.agentConfirmationDialog.mockResolvedValue({
-            shouldAssign: true, shouldAssignToStopJobs: true, awb: 'AWB123',
+        ctrl.dispatchDialogService.openDispatchDialog.mockResolvedValue({
+            type: 'Agent',
+            destinationId: 1,
+            destinationText: 'Agent',
+            message: 'Job J10 assigned to Agent — inbound link emailed to a@b.c',
         });
         ctrl.DispatchData.getDispatchJobDetail.mockResolvedValue(freshJob);
 
         await ctrl.addSelectedAgentToJob({} as MouseEvent, {id: 1, text: 'Agent'}, makeDeliveryJob(10));
 
-        expect(ctrl.nationwideService.assignAgentToJob).toHaveBeenCalledWith(10, 1, true, undefined, undefined);
-        expect(ctrl.DispatchData.updateJobDetail).toHaveBeenCalled();
         expect(ctrl.getJobList).toHaveBeenCalled();
         expect(ctrl.selectJob).toHaveBeenCalledWith(freshJob);
-        expect(ctrl.toastrService.showSuccessToast).toHaveBeenCalledWith(expect.stringContaining('Agent'));
+        expect(ctrl.isDataLoading).toBe(false);
+        expect(ctrl.toastrService.showSuccessToast)
+            .toHaveBeenCalledWith('Job J10 assigned to Agent — inbound link emailed to a@b.c');
     });
 
     it('sets isDataLoading false on error', async () => {
         const ctrl = setup();
-        ctrl.flightAgentConfirmationDialogService.agentConfirmationDialog.mockResolvedValue({shouldAssign: true});
-        ctrl.nationwideService.assignAgentToJob.mockRejectedValue(new Error('fail'));
+        ctrl.dispatchDialogService.openDispatchDialog.mockResolvedValue({
+            type: 'Agent', destinationId: 1, destinationText: 'A', message: 'ok',
+        });
+        ctrl.DispatchData.getDispatchJobDetail.mockRejectedValue(new Error('fail'));
 
         await ctrl.addSelectedAgentToJob({} as MouseEvent, {id: 1, text: 'A'}, makeDeliveryJob(10));
 

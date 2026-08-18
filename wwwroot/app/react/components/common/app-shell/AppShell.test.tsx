@@ -49,6 +49,12 @@ describe('AppShell', () => {
             expect(screen.getByTestId('custom-content')).toBeInTheDocument();
         });
 
+        it('forwards the network-partner flag to the drawer', () => {
+            renderWithMantine(<AppShell {...defaultProps} isNetworkPartner={true} />);
+            act(() => openSideNav());
+            expect(screen.getByTestId('sidenav-np-chip')).toBeInTheDocument();
+        });
+
         it('should use custom logo URL when provided', () => {
             renderWithMantine(
                 <AppShell {...defaultProps} logoUrl="custom/logo.png" />

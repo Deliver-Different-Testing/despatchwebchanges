@@ -35,13 +35,25 @@ jest.mock('../dialogs/dispatch-dialog', () => ({
     DispatchDialog: jest.fn(({open, initialType, onDispatchCourier, onSendToPartner}: {
         open: boolean;
         initialType: string;
-        onDispatchCourier: (type: 'Courier' | 'Agent' | 'NP', destination: {id: number; text: string}) => Promise<void>;
+        onDispatchCourier: (confirmation: {
+            type: 'Courier' | 'Agent' | 'NP';
+            destination: {id: number; text: string};
+        }) => Promise<void>;
         onSendToPartner: (partner: {id: number; text: string}, rate: number) => Promise<void>;
     }) =>
         open ? (
             <div data-testid="dispatch-dialog" data-initial-type={initialType}>
-                <button onClick={() => onDispatchCourier('Courier', {id: 99, text: 'Stub Courier'})}>
+                <button onClick={() => onDispatchCourier({
+                    type: 'Courier',
+                    destination: {id: 99, text: 'Stub Courier'},
+                })}>
                     Stub Dispatch Courier
+                </button>
+                <button onClick={() => onDispatchCourier({
+                    type: 'NP',
+                    destination: {id: 55, text: 'Stub Partner'},
+                })}>
+                    Stub Dispatch NP
                 </button>
                 <button onClick={() => onSendToPartner({id: 7, text: 'PartnerCo'}, 100)}>
                     Stub Send To Partner
@@ -49,6 +61,11 @@ jest.mock('../dialogs/dispatch-dialog', () => ({
             </div>
         ) : null,
     ),
+}));
+jest.mock('../../services/dispatchExecutorApi', () => ({
+    canAssignAgentToJob: jest.fn().mockResolvedValue(true),
+    assignAgentToJob: jest.fn().mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true}),
+    assignNpAgentToJob: jest.fn().mockResolvedValue({success: true}),
 }));
 jest.mock('../../services/navigationService', () => ({
     openJobInSearch: jest.fn(),
@@ -1162,6 +1179,53 @@ describe('JobListContextMenu', () => {
                 expect(mockedApi.allocateJobs).toHaveBeenCalledWith(99, [22]);
             });
             expect(mockedApi.reAllocateJobs).not.toHaveBeenCalled();
+        });
+
+        it('offers Assign… on every page, with no courier required, opening an unbiased dialog', async () => {
+            // Re-Dispatch only appears once a courier exists, so before this item a
+            // nationwide job with no courier had no route to the shared modal at all.
+            for (const appPage of [AppPageEnum.Domestic, AppPageEnum.Dispatch, AppPageEnum.JobSearch]) {
+                const props = createDefaultProps({
+                    appPage,
+                    job: createMockJob({id: 44, jobNo: 'J044', assignedCourier: undefined}),
+                });
+                const {unmount} = renderWithMantine(<JobListContextMenu {...props} />);
+
+                expect(screen.queryByText('Re-Dispatch')).not.toBeInTheDocument();
+                fireEvent.click(screen.getByText('Assign…'));
+
+                const dialog = await screen.findByTestId('dispatch-dialog');
+                expect(dialog).toHaveAttribute('data-initial-type', 'Courier');
+                unmount();
+            }
+        });
+
+        it('offers Send to Partner on Nationwide as well as dispatch and job search', () => {
+            for (const appPage of [AppPageEnum.Domestic, AppPageEnum.Dispatch, AppPageEnum.JobSearch]) {
+                const {unmount} = renderWithMantine(
+                    <JobListContextMenu {...createDefaultProps({appPage})} />
+                );
+                expect(screen.getByText('Send to Partner')).toBeInTheDocument();
+                unmount();
+            }
+        });
+
+        it('hands a network partner pick to the dedicated endpoint instead of erroring', async () => {
+            // This path used to throw "not yet wired from the job list — use the
+            // job-details panel", which was a dead end because the panel's field
+            // write was rejected by the server too.
+            const {assignNpAgentToJob} = require('../../services/dispatchExecutorApi');
+            const props = createDefaultProps({
+                job: createMockJob({id: 33, jobNo: 'J033'}),
+            });
+            renderWithMantine(<JobListContextMenu {...props} />);
+
+            fireEvent.click(screen.getByText('Send to Partner'));
+            fireEvent.click(screen.getByText('Stub Dispatch NP'));
+
+            await waitFor(() => {
+                expect(assignNpAgentToJob).toHaveBeenCalledWith(33, 55);
+            });
         });
     });
 

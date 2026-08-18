@@ -44,6 +44,8 @@ import NationwideBoxes from "./enums/NationwideBoxes";
 import JobAddStopService from "../../services/job-add-stop.service";
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
+import DispatchDialogService from "../dialogs/dispatch-dialog/dispatch-dialog.service";
+import type {DispatchType} from "../../react/components/dialogs/dispatch-dialog/types";
 import {openAgentInfoDialog} from "../../react/components/dialogs/agent-info-dialog";
 import {openRecoveryAgentManagementDialog} from "../../react/components/dialogs/recovery-agent-management-dialog";
 import dayjs, {Dayjs} from "dayjs";
@@ -91,6 +93,7 @@ class NationwideControl extends BaseController {
         'jobAddStopService',
         '$stateParams',
         'flightAgentConfirmationDialogService',
+        'dispatchDialogService',
         'messagingDialogService',
         'tasksService',
         'dashboardSettingsDialogService',
@@ -246,6 +249,7 @@ class NationwideControl extends BaseController {
         private jobAddStopService: JobAddStopService,
         private $stateParams: angular.ui.IStateParamsService,
         private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
+        private dispatchDialogService: DispatchDialogService,
         private messagingDialogService: MessagingDialogService,
         private tasksService: TasksService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
@@ -1403,9 +1407,15 @@ class NationwideControl extends BaseController {
         await this.addSelectedAgentToJob($event, selectedAgent, job)
     }
 
+    /**
+     * Opens the shared dispatch modal with the picked agent pre-filled. The modal
+     * covers Courier / Agent / NP / DFRNT Partner and performs the assignment itself,
+     * so this only has to refresh afterwards. The flight pre-check stays here to give
+     * the operator the explanatory alert before the modal opens rather than an inline
+     * error after they have filled it in.
+     */
     async addSelectedAgentToJob($event: MouseEvent, agent: ISuggestion, job: IDispatchJob): Promise<void> {
         try {
-            // Check flight is assigned first
             const isAllowedToAssignAgent = await this.DispatchData.canAssignAgentToJob(job.id);
             if (!isAllowedToAssignAgent) {
                 await this.$mdDialog.show(
@@ -1421,44 +1431,48 @@ class NationwideControl extends BaseController {
                 return;
             }
 
-
-            const result = await this.flightAgentConfirmationDialogService.agentConfirmationDialog($event, job, agent)
-            if (!result.shouldAssign) return;
-
-            this.isDataLoading = true;
-
-            this.agentOptions = [];
-            this.showJobHasAssignedAgentMessage = true;
-            this.showAgentList = false;
-            this.updateUIState(job);
-
-            this.applyScope();
-
-            await this.nationwideService.assignAgentToJob(job.id, agent.id, result.shouldAssignToStopJobs ?? false,
-                result.emailSubject, result.emailBody);
-
-            if (result.awb) {
-                await this.DispatchData.updateJobDetail(job.id, JobProperty.ConNote, result.awb, false);
-            }
-
-            await this.getJobList([JobDataType.NEW, JobDataType.POD]);
-
-            // Clear current job and fetch fresh data to ensure agent info is loaded
-            this.currentJob = undefined;
-            this.flightAgentWidgetJob = undefined;
-            const freshJobData = await this.DispatchData.getDispatchJobDetail(job.id);
-            await this.selectJob(freshJobData);
-
-            this.isDataLoading = false;
-
-            const successMessage = (`Successfully assigned agent ${agent.text} to job ${job.jobNo}`)
-            this.toastrService.showSuccessToast(successMessage);
+            await this.openDispatchDialogForJob(job, 'Agent', agent);
         } catch (error) {
             this.handleError(error);
             this.isDataLoading = false;
         } finally {
             this.applyScope();
         }
+    }
+
+    /**
+     * Shared tail for any assignment made through the modal: refresh the lists and
+     * reload the selected job so the widgets pick up the new agent/courier.
+     */
+    async openDispatchDialogForJob(
+        job: IDispatchJob,
+        initialType: DispatchType = 'Courier',
+        preselected?: ISuggestion,
+    ): Promise<void> {
+        const outcome = await this.dispatchDialogService.openDispatchDialog(job, initialType, preselected);
+        if (!outcome) return;
+
+        this.isDataLoading = true;
+
+        if (outcome.type === 'Agent') {
+            this.agentOptions = [];
+            this.showJobHasAssignedAgentMessage = true;
+            this.showAgentList = false;
+            this.updateUIState(job);
+        }
+
+        this.applyScope();
+
+        await this.getJobList([JobDataType.NEW, JobDataType.POD]);
+
+        // Clear current job and fetch fresh data so the widgets reload the assignment.
+        this.currentJob = undefined;
+        this.flightAgentWidgetJob = undefined;
+        const freshJobData = await this.DispatchData.getDispatchJobDetail(job.id);
+        await this.selectJob(freshJobData);
+
+        this.isDataLoading = false;
+        this.toastrService.showSuccessToast(outcome.message);
     }
 
     private updateDateFilters(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL): void {

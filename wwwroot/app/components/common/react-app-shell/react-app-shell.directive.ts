@@ -368,6 +368,7 @@ function reactAppShellDirective(
                         firstName,
                         fullName,
                         isUsCustomer: APP_CONFIG.US_Customer,
+                        isNetworkPartner: !!(window as any).IsNetworkPartner,
                         currentState: $state.current.name || '',
                         onLogoClick: () => openHubUrl(),
                         onNavigate: (state: string) => {

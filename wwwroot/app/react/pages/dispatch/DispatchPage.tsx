@@ -32,7 +32,12 @@ import {getDispatchJobDetail} from '../../services/dispatchExecutorApi';
 import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 import {JobListPanel} from '../../components/job-list/JobListPanel';
 import {loadJobListCategory, toStatusFilter} from '../../components/job-list/jobListPreferences';
-import {DispatchDialog} from '../../components/dialogs/dispatch-dialog';
+import {DispatchDialog, type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
+import {
+    isNetworkPartnerSession,
+    stopJobCountFor,
+} from '../../components/dialogs/dispatch-dialog/dispatchSession';
+import {executeDispatchConfirmation} from '../../components/dialogs/dispatch-dialog/executeDispatch';
 import {openInterCourierChargeDialog} from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
 import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {DispatchJobActionsMenu, DispatchJobActionId} from './components/DispatchJobActionsMenu';
@@ -509,20 +514,19 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         ]);
     }, []);
 
-    const handleDispatchCourier = useCallback(async (
-        type: 'Courier' | 'Agent' | 'NP',
-        destination: ISuggestion,
-    ) => {
+    const handleDispatchCourier = useCallback(async (confirmation: DispatchConfirmation) => {
         if (!currentJob) return;
-        if (type !== 'Courier') {
-            throw new Error(`${type} dispatch isn't wired from the dispatch page yet — use the job-list context menu.`);
-        }
-        if (currentJob.assignedCourier?.id) {
-            await reAllocateJobs(destination.id, [currentJob.id]);
-        } else {
-            await allocateJobs(destination.id, [currentJob.id]);
-        }
-        showToast(`Job ${currentJob.jobNo} dispatched to ${destination.text}`, 'success');
+
+        const {message, severity} = await executeDispatchConfirmation(
+            {
+                id: currentJob.id,
+                jobNo: currentJob.jobNo,
+                assignedCourierId: currentJob.assignedCourier?.id,
+            },
+            confirmation,
+        );
+
+        showToast(message, severity);
         await invalidateAfterDispatch(currentJob);
         closeDispatchDialog();
     }, [currentJob, showToast, invalidateAfterDispatch, closeDispatchDialog]);
@@ -881,6 +885,9 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         },
                     }}
                     existingDestination={currentJob.assignedCourier}
+                    stopJobCount={stopJobCountFor(currentJob.jobNo, currentJob.relatedJobs)}
+                    existingConNote={currentJob.conNote}
+                    isNetworkPartner={isNetworkPartnerSession()}
                     onClose={closeDispatchDialog}
                     onDispatchCourier={handleDispatchCourier}
                     onSendToPartner={handleSendToPartner}

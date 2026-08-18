@@ -7,6 +7,8 @@ export interface AppShellProps {
     firstName: string;
     fullName: string;
     isUsCustomer: boolean;
+    /** Marks the signed-in user as a network partner, badging the drawer's account header. */
+    isNetworkPartner?: boolean;
     currentState: string;
     logoUrl?: string;
     companyName?: string;

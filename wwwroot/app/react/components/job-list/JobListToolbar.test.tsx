@@ -89,18 +89,18 @@ describe('JobListToolbar', () => {
         }
     });
 
-    it('gates the bulk Dispatch and Restore actions on the app page', () => {
-        const {unmount} = renderWithMantine(
-            <JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})} selectedCount={2}/>
-        );
-        expect(screen.getByRole('button', {name: 'Dispatch'})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Restore'})).toBeInTheDocument();
-        unmount();
-
-        renderWithMantine(<JobListToolbar {...createDefaultProps({appPage: AppPage.Domestic})} selectedCount={2}/>);
-        expect(screen.queryByRole('button', {name: 'Dispatch'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'Restore'})).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Mark Read'})).toBeInTheDocument();
+    it('offers the bulk Dispatch and Restore actions on every operational page', () => {
+        // Nationwide (Domestic) used to be excluded, which left the page with no bulk
+        // assignment affordance at all.
+        for (const appPage of [AppPage.JobSearch, AppPage.Dispatch, AppPage.Domestic]) {
+            const {unmount} = renderWithMantine(
+                <JobListToolbar {...createDefaultProps({appPage})} selectedCount={2}/>
+            );
+            expect(screen.getByRole('button', {name: 'Dispatch'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Restore'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Mark Read'})).toBeInTheDocument();
+            unmount();
+        }
     });
 
     it('fires onResetColumns when reset button is clicked', async () => {

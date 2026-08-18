@@ -15,11 +15,9 @@ import {searchActiveClients} from '../../services/jobApi';
 import {searchActiveCouriers} from '../../services/courierApi';
 import {
     addRestoreEvent,
-    allocateJobs,
     getActivePartnerOptions,
     getPartnerRateForJob,
     getRestorePodImpact,
-    reAllocateJobs,
     restoreJobs,
     restoreSplitJobs,
     sendToPartner,
@@ -55,7 +53,12 @@ import {
 import type {LayoutStorageKeys} from './lib/layoutPersistence';
 import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/SaveLayoutDialog';
 import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
-import {DispatchDialog} from '../../components/dialogs/dispatch-dialog';
+import {DispatchDialog, type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
+import {
+    isNetworkPartnerSession,
+    stopJobCountFor,
+} from '../../components/dialogs/dispatch-dialog/dispatchSession';
+import {executeDispatchConfirmation} from '../../components/dialogs/dispatch-dialog/executeDispatch';
 import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {JobSearchPageProps} from "./JobSearchPageProps";
 
@@ -563,20 +566,19 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     // Single-job dispatch from the job-detail actions menu. Courier path allocates (or
     // re-allocates if a courier is already assigned); partner path sends to a
     // DFRNT partner. Mirrors JobListContextMenu's handlers.
-    const handleDispatchCourier = useCallback(async (
-        type: 'Courier' | 'Agent' | 'NP',
-        destination: ISuggestion,
-    ) => {
+    const handleDispatchCourier = useCallback(async (confirmation: DispatchConfirmation) => {
         if (!currentJob) return;
-        if (type !== 'Courier') {
-            throw new Error(`${type} dispatch isn't wired from Job Search yet — use the job-list context menu.`);
-        }
-        if (currentJob.assignedCourier?.id) {
-            await reAllocateJobs(destination.id, [currentJob.id]);
-        } else {
-            await allocateJobs(destination.id, [currentJob.id]);
-        }
-        showToast(`Job ${currentJob.jobNo} dispatched to ${destination.text}`, 'success');
+
+        const {message, severity} = await executeDispatchConfirmation(
+            {
+                id: currentJob.id,
+                jobNo: currentJob.jobNo,
+                assignedCourierId: currentJob.assignedCourier?.id,
+            },
+            confirmation,
+        );
+
+        showToast(message, severity);
         await Promise.all([
             queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all}),
             queryClient.invalidateQueries({
@@ -870,6 +872,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         },
                     }}
                     existingDestination={currentJob.assignedCourier}
+                    stopJobCount={stopJobCountFor(currentJob.jobNo, currentJob.relatedJobs)}
+                    existingConNote={currentJob.conNote}
+                    isNetworkPartner={isNetworkPartnerSession()}
                     onClose={() => setDispatchDialogOpen(false)}
                     onDispatchCourier={handleDispatchCourier}
                     onSendToPartner={handleSendToPartner}

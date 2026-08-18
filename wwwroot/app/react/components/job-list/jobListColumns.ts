@@ -32,7 +32,7 @@ export const ALL_COLUMNS: ColumnDef[] = [
     {key: 'vehicle', label: 'Vehicle', sortable: true, width: 100},
     {key: 'jobNo', label: 'Job No', sortable: true, width: 130},
     {key: 'client', label: 'Client', sortable: true, width: 85, hideForUs: true},
-    {key: 'refA', label: 'Ref A', sortable: true, width: 110},
+    {key: 'refA', label: 'Ref A', sortable: true, width: 110, showOnlyJobSearch: true},
     {key: 'pickup', label: 'Pickup', sortable: true, width: 120},
     {key: 'delivery', label: 'Delivery', sortable: true, width: 380},
     {key: 'courier', label: 'Courier', sortable: true, width: 150},

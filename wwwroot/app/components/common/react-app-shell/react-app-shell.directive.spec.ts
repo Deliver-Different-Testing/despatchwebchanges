@@ -46,9 +46,10 @@ async function linkDirective(scope: MockScope, deps: {
     messagingDialogService: any;
 }) {
     const setToolbarActions = jest.fn();
+    const mount = jest.fn();
     (window as any).React = {};
     (window as any).ReactAppShell = {
-        mount: jest.fn(),
+        mount,
         setToolbarActions,
         updateState: jest.fn(),
         updateBreadcrumbs: jest.fn(),
@@ -80,8 +81,39 @@ async function linkDirective(scope: MockScope, deps: {
     await flush();
 
     const lastActions = setToolbarActions.mock.calls.at(-1)?.[0];
-    return {setToolbarActions, lastActions};
+    return {setToolbarActions, lastActions, mount};
 }
+
+describe('reactAppShellDirective — network partner flag', () => {
+    let $interval: any;
+    let messagingDialogService: any;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        $interval = jest.fn(() => 'poll-token');
+        $interval.cancel = jest.fn();
+        messagingDialogService = {
+            getUnreadMessageCount: jest.fn(() => Promise.resolve(0)),
+            openMessagingDialog: jest.fn(() => Promise.resolve()),
+        };
+    });
+
+    afterEach(() => {
+        delete (window as any).IsNetworkPartner;
+    });
+
+    it('passes the network-partner global through to the shell, defaulting to false', async () => {
+        (window as any).IsNetworkPartner = true;
+        const partner = await linkDirective(makeScope(), {$interval, messagingDialogService});
+        expect(partner.mount.mock.calls.at(-1)?.[1]).toMatchObject({isNetworkPartner: true});
+
+        // Absent global must land as a real `false`, not `undefined` — the drawer and
+        // the dispatch dialog both branch on it.
+        delete (window as any).IsNetworkPartner;
+        const staff = await linkDirective(makeScope(), {$interval, messagingDialogService});
+        expect(staff.mount.mock.calls.at(-1)?.[1]).toMatchObject({isNetworkPartner: false});
+    });
+});
 
 describe('reactAppShellDirective — messages button', () => {
     let $interval: any;

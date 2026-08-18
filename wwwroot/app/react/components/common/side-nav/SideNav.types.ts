@@ -16,6 +16,8 @@ export interface SideNavProps {
     userName: string;
     companyName?: string;
     isUsCustomer: boolean;
+    /** Marks the signed-in user as a network partner, badging the account header. */
+    isNetworkPartner?: boolean;
     currentState: string;
     onClose: () => void;
     onNavigate: (state: string) => void;

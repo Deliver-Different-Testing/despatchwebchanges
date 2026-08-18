@@ -37,10 +37,10 @@ import type {OverlayDocument} from '../../../../services/jobDetailApi';
 import {
     sendToPartner,
 } from '../../../../services/jobListApi';
-import type {DispatchType} from '../../../dialogs/dispatch-dialog';
+import type {DispatchConfirmation, DispatchType} from '../../../dialogs/dispatch-dialog';
 import type {ISuggestion} from '../../../../../interfaces/job.interface';
 import {toastService} from '../../../../services/toastService';
-import {assignAgentToJob, canAssignAgentToJob} from '../../../../services/dispatchExecutorApi';
+import {executeDispatchConfirmation} from '../../../dialogs/dispatch-dialog/executeDispatch';
 
 interface TextDialogState {
     open: boolean;
@@ -818,40 +818,30 @@ export function useJobActions({
     // write to the right server path:
     //   - Recurring tucJobBooking → updateField on CourierID / AgentId / NpAgentId
     //   - Non-recurring tucJob, type=Courier → dispatchJob (allocateJobs API)
-    //   - Non-recurring tucJob, type=Agent/NP → updateField (server decides whether
-    //     it's wired; errors surface in the dialog's submitError).
+    //   - Non-recurring tucJob, type=Agent → assignAgentToJob (flight gate + email)
+    //   - Non-recurring tucJob, type=NP → assignNpAgentToJob (stamps NpAgentId)
     const dispatchDialogConfirmCourier = useCallback(async (
-        type: 'Courier' | 'Agent' | 'NP',
-        destination: ISuggestion,
-        emailSubject?: string,
-        emailBody?: string,
+        {type, destination, emailSubject, emailBody, includeStopJobs, awb}: DispatchConfirmation,
     ) => {
         const j = jobRef.current;
         if (!j) return;
 
-        // Non-recurring agent assignment goes through the dedicated assign flow (flight
-        // gate + inbound-agent link email), not a bare AgentId field write (which the
-        // server rejects for standard jobs). Recurring jobs still update the booking field.
-        if (type === 'Agent' && !isRecurringJob) {
+        // Live jobs take the dedicated endpoints via the shared executor — neither
+        // JobProperty.AgentId nor JobProperty.NpAgentId is accepted for a tucJob, so a
+        // field write here is exactly what used to make job-detail assignment fail.
+        // Recurring bookings genuinely do support both fields and keep the field write.
+        if ((type === 'Agent' || type === 'NP') && !isRecurringJob) {
             try {
-                const canAssign = await canAssignAgentToJob(j.id);
-                if (!canAssign) {
-                    throw new Error(
-                        'A flight must be assigned to the flight portion before an agent can be assigned.',
-                    );
-                }
-                const result = await assignAgentToJob(j.id, destination.id, false, emailSubject, emailBody);
+                const {message, severity} = await executeDispatchConfirmation(
+                    {id: j.id, jobNo: j.jobNo, assignedCourierId: j.assignedCourier?.id},
+                    {type, destination, emailSubject, emailBody, includeStopJobs, awb},
+                );
                 await refreshAndNotify();
                 setDispatchDialog((s) => ({...s, open: false}));
-                const base = `Assigned agent ${destination.text} to job ${j.jobNo}`;
-                if (result.willEmail) {
-                    toastService.showSuccessToast(`${base} — inbound link emailed to ${result.agentEmail}`);
-                } else if (result.status === 'NoAgentEmail') {
-                    toastService.showWarningToast(`${base} — agent has no email on file, no link sent`);
-                } else if (result.status === 'NoInboundUrl') {
-                    toastService.showWarningToast(`${base} — inbound portal URL not configured, no link sent`);
+                if (severity === 'warning') {
+                    toastService.showWarningToast(message);
                 } else {
-                    toastService.showWarningToast(`${base} — inbound link could not be sent`);
+                    toastService.showSuccessToast(message);
                 }
             } catch (err) {
                 const message = err instanceof Error ? err.message : 'Dispatch failed';

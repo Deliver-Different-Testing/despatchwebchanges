@@ -64,6 +64,43 @@ describe('SideNav', () => {
             });
         });
 
+        it('badges a network partner beside their name, and leaves everyone else unbadged', () => {
+            const {unmount} = renderWithMantine(<SideNav {...defaultProps} isNetworkPartner={true} />);
+
+            // Beside the name, not floating elsewhere in the header — the chip
+            // qualifies who is signed in, so it has to read as part of that line.
+            const chip = screen.getByTestId('sidenav-np-chip');
+            expect(chip).toHaveTextContent('Network Partner');
+            expect(screen.getByText('John Doe').parentElement).toContainElement(chip);
+            unmount();
+
+            renderWithMantine(<SideNav {...defaultProps} />);
+            expect(screen.queryByTestId('sidenav-np-chip')).not.toBeInTheDocument();
+        });
+
+        it('paints the chip in the account header\'s own on-colour for either tenant', () => {
+            // The header is a fixed shell surface (Ink on US, gold on NZ) and both brand
+            // primaries are too light to read on it, so the chip borrows the avatar's
+            // scrim treatment rather than a brand variant.
+            const {unmount} = renderWithMantine(
+                <SideNav {...defaultProps} isNetworkPartner={true} isUsCustomer={true} />
+            );
+            expect(screen.getByTestId('sidenav-np-chip')).toHaveStyle({
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                color: 'rgba(255, 255, 255, 0.95)',
+            });
+            unmount();
+
+            renderWithMantine(
+                <SideNav {...defaultProps} isNetworkPartner={true} isUsCustomer={false} />,
+                {theme: createDfrntTheme(false)}
+            );
+            expect(screen.getByTestId('sidenav-np-chip')).toHaveStyle({
+                backgroundColor: 'rgba(13, 12, 44, 0.2)',
+                color: 'rgba(13, 12, 44, 0.95)',
+            });
+        });
+
         it('keeps the panel styling on the drawer content and off the full-screen inner wrapper', () => {
             renderWithMantine(<SideNav {...defaultProps} />);
 

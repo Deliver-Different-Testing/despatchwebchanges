@@ -106,7 +106,11 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     showLoggedInSwitch,
     renderViewOptions = true,
 }) => {
-    const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
+    // Every operational page can bulk-dispatch; Nationwide was previously excluded,
+    // which left it with no bulk assignment affordance at all.
+    const allowDispatch = appPage === AppPage.Dispatch
+        || appPage === AppPage.JobSearch
+        || appPage === AppPage.Domestic;
     const localInputRef = useRef(searchQuery);
 
     // useDebouncedCallback owns the timer and clears it on unmount.

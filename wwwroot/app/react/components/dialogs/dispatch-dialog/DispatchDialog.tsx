@@ -12,7 +12,7 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Alert, Box, Button, Paper, Select, Stack, Text} from '@mantine/core';
+import {Alert, Box, Button, Checkbox, Paper, Select, Stack, Text, TextInput} from '@mantine/core';
 import {useDebouncedValue} from '@mantine/hooks';
 import {SegmentedToggle} from '../../common/segmented-toggle';
 import {Handshake, Headset, Network, UserMinus} from 'lucide-react';
@@ -96,6 +96,9 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     mode,
     initialType = 'Courier',
     existingDestination,
+    stopJobCount = 0,
+    existingConNote,
+    isNetworkPartner = false,
     onClose,
     onDispatchCourier,
     onUnassignCourier,
@@ -118,6 +121,10 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     // Editable agent-email template (Agent option, single job). Fed by AgentEmailFields.
     const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: ''});
 
+    // Agent extras carried over from the Nationwide flight/agent dialog.
+    const [includeStopJobs, setIncludeStopJobs] = useState(false);
+    const [awb, setAwb] = useState('');
+
     // DFRNT Partner state
     const [partnerOptions, setPartnerOptions] = useState<EventGroupItem[]>([]);
     const [partnerOptionsLoading, setPartnerOptionsLoading] = useState(false);
@@ -129,10 +136,13 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     // Reset when (re)opening — guarantees a fresh state if the dialog is reused.
     useEffect(() => {
         if (!open) return;
-        // If the caller asked for DFRNT Partner but it's disabled, fall back to Courier.
-        const startType = initialType === 'DfrntPartner' && dfrntState.disabled
+        // A network partner only has the Courier lane; anything else the caller asked
+        // for collapses to it. Otherwise fall back from a disabled DFRNT Partner radio.
+        const startType = isNetworkPartner
             ? 'Courier'
-            : initialType;
+            : initialType === 'DfrntPartner' && dfrntState.disabled
+                ? 'Courier'
+                : initialType;
         setSelectedType(startType);
         setSubmitting(false);
         setSubmitError('');
@@ -140,10 +150,12 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setInputValue(existingDestination?.text ?? '');
         setOptions([]);
         setAgentEmail({willEmail: false, subject: '', body: ''});
+        setIncludeStopJobs(false);
+        setAwb('');
         setSelectedPartnerId('');
         setAgreedRate(0);
         setAgreedRateValid(false);
-    }, [open, initialType, dfrntState.disabled, existingDestination]);
+    }, [open, initialType, dfrntState.disabled, existingDestination, isNetworkPartner]);
 
     // Lazy-load the partner list the first time DFRNT Partner is selected.
     useEffect(() => {
@@ -193,6 +205,8 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setInputValue('');
         setOptions([]);
         setAgentEmail({willEmail: false, subject: '', body: ''});
+        setIncludeStopJobs(false);
+        setAwb('');
         setSubmitError('');
     }, []);
 
@@ -209,6 +223,11 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         return destination !== null;
     }, [submitting, selectedType, selectedPartnerId, agreedRateValid, destination]);
 
+    // Agent extras only make sense for a single job with a chosen agent. The cascade
+    // additionally needs the job to actually have stop jobs to cascade onto.
+    const showAgentExtras = selectedType === 'Agent' && destination !== null && mode.kind === 'single';
+    const showStopJobCascade = showAgentExtras && stopJobCount > 0;
+
     const handleConfirm = useCallback(async () => {
         setSubmitError('');
         setSubmitting(true);
@@ -222,13 +241,19 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                 await onSendToPartner({id: partner.id, text: partner.text}, agreedRate);
             } else {
                 if (!destination) return;
-                // Only the Agent path (with an email actually going out) carries the edited
-                // template; Courier/NP keep the bare two-arg call.
-                if (selectedType === 'Agent' && agentEmail.willEmail) {
-                    await onDispatchCourier(selectedType, destination, agentEmail.subject, agentEmail.body);
-                } else {
-                    await onDispatchCourier(selectedType, destination);
-                }
+                // Optional keys are only sent when they apply, so a plain courier
+                // dispatch stays `{type, destination}` and callers can destructure
+                // without guarding against meaningless defaults.
+                const isAgent = selectedType === 'Agent';
+                await onDispatchCourier({
+                    type: selectedType,
+                    destination,
+                    ...(isAgent && agentEmail.willEmail
+                        ? {emailSubject: agentEmail.subject, emailBody: agentEmail.body}
+                        : {}),
+                    ...(isAgent && showStopJobCascade && includeStopJobs ? {includeStopJobs: true} : {}),
+                    ...(isAgent && showAgentExtras && awb.trim() ? {awb: awb.trim()} : {}),
+                });
             }
         } catch (err) {
             const message = err instanceof Error && err.message ? err.message : 'Dispatch failed.';
@@ -236,7 +261,8 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         } finally {
             setSubmitting(false);
         }
-    }, [selectedType, partnerOptions, selectedPartnerId, agreedRate, destination, agentEmail, onSendToPartner, onDispatchCourier]);
+    }, [selectedType, partnerOptions, selectedPartnerId, agreedRate, destination, agentEmail,
+        showAgentExtras, showStopJobCascade, includeStopJobs, awb, onSendToPartner, onDispatchCourier]);
 
     const handleUnassign = useCallback(async () => {
         if (!onUnassignCourier) return;
@@ -311,7 +337,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                                 variant="inline"
                                 value={selectedType}
                                 onChange={handleTypeChange}
-                                data={[
+                                data={isNetworkPartner ? [{value: 'Courier', label: 'Courier'}] : [
                                     {value: 'Courier', label: 'Courier'},
                                     {
                                         value: 'DfrntPartner',
@@ -359,6 +385,37 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                             jobId={mode.jobId}
                             onChange={setAgentEmail}
                         />
+                    )}
+
+                    {/* Agent extras — the AWB and stop-job cascade carried over from the
+                        Nationwide flight/agent dialog so the shared modal is a full
+                        replacement for it. */}
+                    {showAgentExtras && (
+                        <Box>
+                            <Text {...sectionLabelProps}>Agent details</Text>
+                            <Paper {...sectionPaperProps}>
+                                <Stack gap="sm">
+                                    <TextInput
+                                        label="AWB Number"
+                                        placeholder="AWB Number..."
+                                        value={existingConNote ?? awb}
+                                        onChange={(event) => setAwb(event.currentTarget.value)}
+                                        disabled={submitting || Boolean(existingConNote)}
+                                        description={existingConNote
+                                            ? 'This job already has a ConNote.'
+                                            : undefined}
+                                    />
+                                    {showStopJobCascade && (
+                                        <Checkbox
+                                            label={`Assign to ${stopJobCount} stop job${stopJobCount === 1 ? '' : 's'}`}
+                                            checked={includeStopJobs}
+                                            onChange={(event) => setIncludeStopJobs(event.currentTarget.checked)}
+                                            disabled={submitting}
+                                        />
+                                    )}
+                                </Stack>
+                            </Paper>
+                        </Box>
                     )}
 
                     {/* DFRNT Partner panel */}

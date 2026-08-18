@@ -895,7 +895,9 @@ const CellContent: React.FC<{
                 );
             }
             // Courier assignment / inline dispatch
-            const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
+            const allowDispatch = appPage === AppPage.Dispatch
+                || appPage === AppPage.JobSearch
+                || appPage === AppPage.Domestic;
             return (
                 <CourierCell
                     job={job}
