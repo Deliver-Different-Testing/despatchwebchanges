@@ -3023,6 +3023,231 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         Assert.Equal(45, result.CargoClosingTime.Minute);
     }
 
+    [Fact]
+    public async Task AssignNpAgentToJobAsync_WithNetworkPartnerAgent_SetsNpAgentIdAndWritesAudit()
+    {
+        // Arrange
+        const int jobId = 700;
+        const int npAgentId = 70;
+        var job = CreateJob(jobId, "JOB700");
+        job.UcjbStatus = (int)JobStatus.Dispatched;
+        job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+        _context.TucJobs.Add(job);
+
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignNpAgentToJobAsync(npAgentId, jobId);
+
+        // Assert
+        var saved = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(npAgentId, saved.NpAgentId);
+
+        // Handing a job to a network partner is a visibility change, not a dispatch —
+        // the courier-facing status and the disp stamps must be left exactly as found.
+        Assert.Null(saved.AgentId);
+        Assert.Equal((int)JobStatus.Dispatched, saved.UcjbStatus);
+        Assert.Equal((int)InternalJobStatus.AwaitingPod, saved.InternalStatus);
+        Assert.Null(saved.UcjbDispDate);
+
+        var note = await _context.TucNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(jobId, note.JobId);
+        Assert.Equal((int)NoteType.AgentUpdate, note.NoteTypeId);
+        Assert.Contains("Partner Co", note.NoteText);
+
+        var journey = await _context.JobDeliveryJourneys.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment), journey.ChangeType);
+        Assert.Equal(npAgentId, journey.NewAgentId);
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobAsync_WithNonNetworkPartnerAgent_ThrowsAndLeavesJobUntouched()
+    {
+        // Arrange — a plain agent must not be assignable down the NP lane, otherwise
+        // the Agent and NP pickers become interchangeable on a crafted request.
+        const int jobId = 701;
+        const int agentId = 71;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB701"));
+        _context.TucAgents.Add(CreateAgent(agentId, "Plain Agent"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            repository.AssignNpAgentToJobAsync(agentId, jobId));
+
+        var saved = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId,
+            TestContext.Current.CancellationToken);
+        Assert.Null(saved.NpAgentId);
+        Assert.Empty(await _context.JobDeliveryJourneys.ToListAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobAsync_WithUnknownJob_Throws()
+    {
+        // Arrange
+        const int npAgentId = 72;
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            repository.AssignNpAgentToJobAsync(npAgentId, 999));
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobsAsync_AssignsEveryJobAndReportsPerJob()
+    {
+        // Arrange
+        const int npAgentId = 80;
+        _context.TucJobs.AddRange(CreateJob(800, "JOB800"), CreateJob(801, "JOB801"));
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var results = await repository.AssignNpAgentToJobsAsync(npAgentId, [800, 801]);
+
+        // Assert
+        Assert.Equal(2, results.Count);
+        Assert.All(results, r => Assert.True(r.Succeeded));
+        var jobs = await _context.TucJobs.ToListAsync(TestContext.Current.CancellationToken);
+        Assert.All(jobs, j => Assert.Equal(npAgentId, j.NpAgentId));
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobsAsync_OneBadJobDoesNotAbortTheRest()
+    {
+        // Arrange — a missing job id must be reported, not thrown, or a single stale
+        // row in the operator's selection loses the whole batch.
+        const int npAgentId = 81;
+        _context.TucJobs.Add(CreateJob(810, "JOB810"));
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var results = await repository.AssignNpAgentToJobsAsync(npAgentId, [999, 810]);
+
+        // Assert
+        Assert.Equal(2, results.Count);
+        var failed = Assert.Single(results, r => !r.Succeeded);
+        Assert.Equal(999, failed.JobId);
+        Assert.False(string.IsNullOrWhiteSpace(failed.FailureReason));
+
+        var succeeded = Assert.Single(results, r => r.Succeeded);
+        Assert.Equal(810, succeeded.JobId);
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == 810,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(npAgentId, job.NpAgentId);
+    }
+
+    [Fact]
+    public async Task AssignAgentToJobsAsync_AssignsEachJobAndCarriesTheEmailStatus()
+    {
+        // Arrange
+        const int agentId = 82;
+        _context.TucJobs.AddRange(CreateJob(820, "JOB820"), CreateJob(821, "JOB821"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock.BuildJobLinkAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN");
+
+        var repository = CreateRepository();
+
+        // Act
+        var results = await repository.AssignAgentToJobsAsync(agentId, [820, 821], false, null, null);
+
+        // Assert
+        Assert.Equal(2, results.Count);
+        Assert.All(results, r =>
+        {
+            Assert.True(r.Succeeded);
+            Assert.Equal(AgentInboundEmailStatus.Queued, r.EmailStatus);
+        });
+
+        var jobs = await _context.TucJobs.ToListAsync(TestContext.Current.CancellationToken);
+        Assert.All(jobs, j => Assert.Equal(agentId, j.AgentId));
+
+        // One inbound-link email per job, not one for the batch.
+        var messages = await _context.TucManualMessages.ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(2, messages.Count);
+    }
+
+    [Fact]
+    public async Task AssignAgentToJobsAsync_JobFailingTheFlightGateIsReportedAndTheRestProceed()
+    {
+        // Arrange — job 831 has a flight-speed sibling with no flight booked, so it
+        // fails the same gate the single-job UI enforces before assigning.
+        const int agentId = 83;
+        var parent = CreateJobWithParent(8300, "JOB830");
+        _context.TucJobs.Add(parent);
+        _context.TucJobs.Add(CreateJob(830, "JOB830a"));
+
+        var gatedParent = CreateJobWithParent(8310, "JOB831");
+        _context.TucJobs.Add(gatedParent);
+        var gated = CreateJob(831, "JOB831a");
+        gated.ParentId = 8310;
+        _context.TucJobs.Add(gated);
+
+        var flightSibling = CreateJob(8311, "JOB831b");
+        flightSibling.ParentId = 8310;
+        flightSibling.UcjbSpeed = 1;
+        _context.TucJobs.Add(flightSibling);
+        _context.TucJobTypes.Add(new TucJobType
+        {
+            UcjtId = 1,
+            UcjtName = "Flight",
+            ShortName = "FLT",
+            UcjtDescription = "Flight",
+            UcjtCode = "FLT",
+            JobLetter = "F",
+            GroupingId = (int)SpeedGrouping.Flight,
+            CreatedBy = "Test",
+            LastModifiedBy = "Test"
+        });
+
+        _context.TucAgents.Add(CreateAgent(agentId, "Test Agent"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var results = await repository.AssignAgentToJobsAsync(agentId, [830, 831], false, null, null);
+
+        // Assert
+        Assert.Equal(2, results.Count);
+        Assert.True(Assert.Single(results, r => r.JobId == 830).Succeeded);
+
+        var gatedResult = Assert.Single(results, r => r.JobId == 831);
+        Assert.False(gatedResult.Succeeded);
+        Assert.Contains("flight", gatedResult.FailureReason!, StringComparison.OrdinalIgnoreCase);
+
+        var untouched = await _context.TucJobs.SingleAsync(j => j.UcjbId == 831,
+            TestContext.Current.CancellationToken);
+        Assert.Null(untouched.AgentId);
+    }
+
     private static FlightCarrier CreateFlightCarrier(int id, string code, string name, bool isActive) => new()
     {
         FlightCarrierId = id,

@@ -97,6 +97,7 @@ interface AppShellState {
     firstName: string;
     fullName: string;
     isUsCustomer: boolean;
+    isNetworkPartner?: boolean;
     currentState: string;
     logoUrl?: string;
     companyName?: string;
@@ -273,6 +274,7 @@ function renderShell(): void {
             firstName={shellState.firstName}
             fullName={shellState.fullName}
             isUsCustomer={shellState.isUsCustomer}
+            isNetworkPartner={shellState.isNetworkPartner}
             currentState={shellState.currentState}
             logoUrl={shellState.logoUrl}
             companyName={shellState.companyName}
@@ -296,6 +298,7 @@ export function mountAppShell(
         firstName: string;
         fullName: string;
         isUsCustomer: boolean;
+        isNetworkPartner?: boolean;
         currentState: string;
         logoUrl?: string;
         companyName?: string;

@@ -132,6 +132,57 @@ export async function assignAgentToJob(
 }
 
 /**
+ * Hand a job to a network partner. Stamps tucJob.NpAgentId, which is what the
+ * partner's row-level visibility keys off — it does not dispatch the job or email
+ * anyone, so the courier-facing status is left alone.
+ */
+export async function assignNpAgentToJob(jobId: number, npAgentId: number): Promise<{success: boolean}> {
+    return apiClient.post<{success: boolean}>(
+        'nationwideJob/AssignNpAgentToJob',
+        {jobId, npAgentId},
+    );
+}
+
+/** Per-job outcome of a bulk assignment; a failed job never aborts the batch. */
+export interface BulkAssignmentResult {
+    jobId: number;
+    succeeded: boolean;
+    failureReason: string | null;
+    emailStatus: AgentInboundEmailStatus | null;
+}
+
+export interface BulkAssignmentResponse {
+    assigned: number;
+    failed: number;
+    results: BulkAssignmentResult[];
+}
+
+/** Assign one agent across many jobs; each job is gated and reported independently. */
+export async function assignAgentToJobs(
+    jobIds: number[],
+    agentId: number,
+    includeStopJobs = false,
+    emailSubject?: string,
+    emailBody?: string,
+): Promise<BulkAssignmentResponse> {
+    return apiClient.post<BulkAssignmentResponse>(
+        'nationwideJob/AssignAgentToJobs',
+        {jobIds, agentId, includeStopJobs, emailSubject, emailBody},
+    );
+}
+
+/** Assign one network partner across many jobs. */
+export async function assignNpAgentToJobs(
+    jobIds: number[],
+    npAgentId: number,
+): Promise<BulkAssignmentResponse> {
+    return apiClient.post<BulkAssignmentResponse>(
+        'nationwideJob/AssignNpAgentToJobs',
+        {jobIds, npAgentId},
+    );
+}
+
+/**
  * Pre-flight (no side effects): would assigning this agent email them the inbound-agent
  * link, and to what address? Used to warn the dispatcher before they confirm.
  */

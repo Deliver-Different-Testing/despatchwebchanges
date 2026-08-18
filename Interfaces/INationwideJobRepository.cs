@@ -25,6 +25,23 @@ public interface INationwideJobRepository
         string? emailSubject = null, string? emailBody = null);
 
     /// <summary>
+    /// Hands <paramref name="jobId"/> to a network partner by stamping
+    /// <c>tucJob.NpAgentId</c>, which is what the partner's row-level query filter
+    /// keys off. Leaves the job status and dispatch stamps alone and sends no email.
+    /// </summary>
+    Task AssignNpAgentToJobAsync(int npAgentId, int jobId);
+
+    /// <summary>
+    /// Assigns one agent across many jobs. A job that fails its flight gate (or any
+    /// other error) is reported in the result rather than aborting the batch.
+    /// </summary>
+    Task<IReadOnlyList<BulkAssignmentResult>> AssignAgentToJobsAsync(int agentId, IReadOnlyList<int> jobIds,
+        bool includeStopJobs = false, string? emailSubject = null, string? emailBody = null);
+
+    /// <summary>Assigns one network partner across many jobs, reporting per job.</summary>
+    Task<IReadOnlyList<BulkAssignmentResult>> AssignNpAgentToJobsAsync(int npAgentId, IReadOnlyList<int> jobIds);
+
+    /// <summary>
     /// Pre-flight check (no side effects): would assigning <paramref name="agentId"/> to
     /// <paramref name="jobId"/> email the agent the inbound-agent link, and to what address?
     /// </summary>

@@ -324,7 +324,10 @@ describe('DispatchDialog', () => {
             await pickCourierAndConfirm();
 
             await waitFor(() => {
-                expect(onDispatchCourier).toHaveBeenCalledWith('Courier', {id: 101, text: 'ABC Couriers'});
+                expect(onDispatchCourier).toHaveBeenCalledWith({
+                    type: 'Courier',
+                    destination: {id: 101, text: 'ABC Couriers'},
+                });
             });
         });
 
@@ -549,12 +552,12 @@ describe('DispatchDialog', () => {
             fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
 
             await waitFor(() => {
-                expect(onDispatchCourier).toHaveBeenCalledWith(
-                    'Agent',
-                    {id: 201, text: 'AgentOne'},
-                    DEFAULT_SUBJECT,
-                    'Edited body for the agent',
-                );
+                expect(onDispatchCourier).toHaveBeenCalledWith({
+                    type: 'Agent',
+                    destination: {id: 201, text: 'AgentOne'},
+                    emailSubject: DEFAULT_SUBJECT,
+                    emailBody: 'Edited body for the agent',
+                });
             });
         });
 
@@ -572,8 +575,93 @@ describe('DispatchDialog', () => {
             fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
 
             await waitFor(() => {
-                expect(onDispatchCourier).toHaveBeenCalledWith('Agent', {id: 201, text: 'AgentOne'});
+                expect(onDispatchCourier).toHaveBeenCalledWith({
+                    type: 'Agent',
+                    destination: {id: 201, text: 'AgentOne'},
+                });
             });
+        });
+
+        it('offers the stop-job cascade only when the job actually has stop jobs, and forwards the choice', async () => {
+            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+
+            const {unmount} = renderWithMantineProviders(
+                <DispatchDialog {...makeProps({onDispatchCourier, stopJobCount: 0})} />
+            );
+            await pickAgent();
+            expect(screen.queryByRole('checkbox', {name: /stop job/i})).not.toBeInTheDocument();
+            unmount();
+
+            renderWithMantineProviders(
+                <DispatchDialog {...makeProps({onDispatchCourier, stopJobCount: 3})} />
+            );
+            await pickAgent();
+
+            const cascade = screen.getByRole('checkbox', {name: /3 stop job/i});
+            expect(cascade).not.toBeChecked();
+            fireEvent.click(cascade);
+
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
+
+            await waitFor(() => {
+                expect(onDispatchCourier).toHaveBeenCalledWith({
+                    type: 'Agent',
+                    destination: {id: 201, text: 'AgentOne'},
+                    includeStopJobs: true,
+                });
+            });
+        });
+
+        it('captures an AWB alongside the assignment, and locks it when the job already has one', async () => {
+            const user = setupUser();
+            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+
+            const {unmount} = renderWithMantineProviders(
+                <DispatchDialog {...makeProps({onDispatchCourier, existingConNote: 'AWB-EXISTING'})} />
+            );
+            await pickAgent();
+            expect(screen.getByLabelText(/AWB Number/i)).toBeDisabled();
+            unmount();
+
+            renderWithMantineProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+            await pickAgent();
+
+            const awb = screen.getByLabelText(/AWB Number/i);
+            expect(awb).toBeEnabled();
+            await user.click(awb);
+            await user.paste('123-45678901');
+
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
+
+            await waitFor(() => {
+                expect(onDispatchCourier).toHaveBeenCalledWith({
+                    type: 'Agent',
+                    destination: {id: 201, text: 'AgentOne'},
+                    awb: '123-45678901',
+                });
+            });
+        });
+    });
+
+    describe('network partner sessions', () => {
+        it('offers a network partner nothing but their own couriers', () => {
+            renderWithMantine(<DispatchDialog {...makeProps({isNetworkPartner: true})} />);
+
+            // A network partner dispatches within their own fleet; handing a job on to
+            // an agent, another partner, or a DFRNT tenant is a tenant-staff action.
+            expect(screen.getByRole('radio', {name: /Courier/})).toBeInTheDocument();
+            expect(screen.queryByRole('radio', {name: /^Agent$/})).not.toBeInTheDocument();
+            expect(screen.queryByRole('radio', {name: /^NP$/})).not.toBeInTheDocument();
+            expect(screen.queryByRole('radio', {name: /DFRNT Partner/})).not.toBeInTheDocument();
+        });
+
+        it('still opens on Courier when a caller asks for a type the partner cannot use', () => {
+            renderWithMantine(
+                <DispatchDialog {...makeProps({isNetworkPartner: true, initialType: 'Agent'})} />
+            );
+
+            expect(screen.getByPlaceholderText(/Search courier/)).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /^Dispatch$/})).toBeInTheDocument();
         });
     });
     describe('unserviceable partner lane', () => {

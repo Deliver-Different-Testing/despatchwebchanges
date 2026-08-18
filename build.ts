@@ -78,7 +78,8 @@ type EntryPointName =
     | 'jobSearchJobListReact'
     | 'jobDetailsReact'
     | 'jobSearchReact'
-    | 'dispatchReact';
+    | 'dispatchReact'
+    | 'dispatchDialogReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -109,6 +110,7 @@ const entryPoints: EntryPoints = {
     editAddressDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-address-dialog/edit-address-dialog-react.module.tsx"),
     editDateTimeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-date-time-dialog/edit-date-time-dialog-react.module.tsx"),
     flightAgentConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module.tsx"),
+    dispatchDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/dispatch-dialog/dispatch-dialog-react.module.tsx"),
     flightDetailsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/flight-details-dialog/flight-details-dialog-react.module.tsx"),
     appShellReact: path.join(rootDir, "wwwroot/app/react/components/common/app-shell/app-shell-react.module.tsx"),
     errorPageReact: path.join(rootDir, "wwwroot/app/react/pages/error-page/error-page-react.module.tsx"),

@@ -416,6 +416,112 @@ public class NationwideJobRepository(
     public Task<AgentInboundEmailResult> GetAgentInboundEmailPreviewAsync(int agentId, int jobId) =>
         EvaluateAgentInboundEmailAsync(agentId, jobId);
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<BulkAssignmentResult>> AssignAgentToJobsAsync(int agentId,
+        IReadOnlyList<int> jobIds, bool includeStopJobs = false,
+        string? emailSubject = null, string? emailBody = null)
+    {
+        var results = new List<BulkAssignmentResult>(jobIds.Count);
+
+        foreach (var jobId in jobIds)
+        {
+            try
+            {
+                // Same gate the single-job UI enforces before assigning — a job whose
+                // flight leg has no flight booked cannot take an agent yet.
+                if (!await CanAssignAgentToJobAsync(jobId))
+                {
+                    results.Add(new BulkAssignmentResult(jobId, false,
+                        "A flight must be assigned to the flight portion before an agent can be assigned.",
+                        null));
+                    continue;
+                }
+
+                var email = await AddAgentToJobAsync(agentId, jobId, includeStopJobs, emailSubject, emailBody);
+                results.Add(new BulkAssignmentResult(jobId, true, null, email.Status));
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Bulk agent assignment: job {JobId} failed, continuing with the batch", jobId);
+                results.Add(new BulkAssignmentResult(jobId, false, ex.Message, null));
+            }
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<BulkAssignmentResult>> AssignNpAgentToJobsAsync(int npAgentId,
+        IReadOnlyList<int> jobIds)
+    {
+        var results = new List<BulkAssignmentResult>(jobIds.Count);
+
+        foreach (var jobId in jobIds)
+        {
+            try
+            {
+                await AssignNpAgentToJobAsync(npAgentId, jobId);
+                results.Add(new BulkAssignmentResult(jobId, true, null, null));
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Bulk network partner assignment: job {JobId} failed, continuing with the batch",
+                    jobId);
+                results.Add(new BulkAssignmentResult(jobId, false, ex.Message, null));
+            }
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    public async Task AssignNpAgentToJobAsync(int npAgentId, int jobId)
+    {
+        var agent = await Context.TucAgents
+            .FirstOrDefaultAsync(a => a.UcagId == npAgentId);
+        ArgumentNullException.ThrowIfNull(agent);
+
+        if (!agent.IsNetworkPartner)
+        {
+            throw new ArgumentException(
+                $"Agent {npAgentId} is not a network partner.", nameof(npAgentId));
+        }
+
+        var job = await Context.TucJobs
+            .AsTracking()
+            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        ArgumentNullException.ThrowIfNull(job);
+
+        // Deliberately narrow: NpAgentId drives the network partner's row-level
+        // visibility (see the tucJob query filter), so the courier-facing status
+        // and dispatch stamps stay exactly as they were.
+        job.NpAgentId = npAgentId;
+
+        var staffId = _infoService.GetStaffIdOrNull();
+
+        await Context.TucNotes.AddAsync(new TucNote
+        {
+            JobId = jobId,
+            NoteTypeId = (int)NoteType.AgentUpdate,
+            NoteText = $"Network partner {agent.UcagName} assigned",
+            CreatedBy = _infoService.GetStaffId(),
+            CreatedDate = _clock.TenantNow,
+            CreatedDateUtc = _clock.UtcNow
+        });
+
+        await Context.AddAsync(new JobDeliveryJourney
+        {
+            JobId = jobId,
+            NewAgentId = npAgentId,
+            UpdatedAt = DateTime.UtcNow,
+            ChangeType = nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment),
+            StaffId = staffId,
+            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId)
+        });
+
+        await Context.SaveChangesAsync();
+    }
+
     public async Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant,
         string clientIds, NationwideWidget windowPane,

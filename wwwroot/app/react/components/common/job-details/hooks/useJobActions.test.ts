@@ -54,6 +54,21 @@ jest.mock('../../../../services/jobDetailApi', () => ({
     getFamilyForDateChange: jest.fn().mockResolvedValue({relationshipTypeId: null, members: []}),
 }));
 
+jest.mock('../../../../services/toastService', () => ({
+    toastService: {
+        showSuccessToast: jest.fn(),
+        showWarningToast: jest.fn(),
+        showErrorToast: jest.fn(),
+        showLoadingToast: jest.fn(() => ({update: jest.fn()})),
+    },
+}));
+
+jest.mock('../../../../services/dispatchExecutorApi', () => ({
+    canAssignAgentToJob: jest.fn().mockResolvedValue(true),
+    assignAgentToJob: jest.fn().mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true}),
+    assignNpAgentToJob: jest.fn().mockResolvedValue({success: true}),
+}));
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function createMockJob(overrides?: Record<string, unknown>) {
@@ -73,6 +88,7 @@ function createMockJob(overrides?: Record<string, unknown>) {
 
 interface SetupOptions {
     job?: ReturnType<typeof createMockJob>;
+    isRecurringJob?: boolean;
 }
 
 function setup(opts: SetupOptions = {}) {
@@ -89,7 +105,7 @@ function setup(opts: SetupOptions = {}) {
     const {result} = renderHook(() =>
         useJobActions({
             job: opts.job ?? createMockJob(),
-            isRecurringJob: false,
+            isRecurringJob: opts.isRecurringJob ?? false,
             isUsCustomer: false,
             showToast: mockShowToast,
             updateField: mockUpdateField,
@@ -1389,6 +1405,124 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
 
         delete (window as any).ReactEditParcelDimensionsDialog;
+    });
+
+    describe('dispatchDialogConfirmCourier — network partner', () => {
+        const {assignNpAgentToJob} = require('../../../../services/dispatchExecutorApi');
+
+        beforeEach(() => {
+            (assignNpAgentToJob as jest.Mock).mockClear();
+        });
+
+        it('sends a live job down the dedicated NP endpoint, not a field write', async () => {
+            // JobProperty.NpAgentId is rejected outright for live tucJobs, so routing
+            // this through updateField is what used to make job-detail NP assignment fail.
+            const job = createMockJob();
+            const {result, mockUpdateField, mockRefreshAndNotify} = setup({job});
+
+            await act(async () => {
+                await result.current.dispatchDialogConfirmCourier({
+                    type: 'NP',
+                    destination: {id: 55, text: 'PartnerCo'},
+                });
+            });
+
+            expect(assignNpAgentToJob).toHaveBeenCalledWith(job.id, 55);
+            expect(mockUpdateField).not.toHaveBeenCalled();
+            expect(mockRefreshAndNotify).toHaveBeenCalled();
+            expect(result.current.dispatchDialog.open).toBe(false);
+        });
+
+        it('still writes the booking field for a recurring job, which does support it', async () => {
+            const job = createMockJob({preBook: true});
+            const {result, mockUpdateField} = setup({job, isRecurringJob: true});
+
+            await act(async () => {
+                await result.current.dispatchDialogConfirmCourier({
+                    type: 'NP',
+                    destination: {id: 55, text: 'PartnerCo'},
+                });
+            });
+
+            expect(assignNpAgentToJob).not.toHaveBeenCalled();
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    field: JobProperty.NpAgentId,
+                    value: 55,
+                    isRecurring: true,
+                }),
+            );
+        });
+    });
+
+    describe('dispatchDialogConfirmCourier — agent extras', () => {
+        const {assignAgentToJob} = require('../../../../services/dispatchExecutorApi');
+        const {updateJobDetail} = require('../../../../services/jobDetailApi');
+
+        const {toastService} = require('../../../../services/toastService');
+
+        beforeEach(() => {
+            (assignAgentToJob as jest.Mock).mockClear();
+            (assignAgentToJob as jest.Mock).mockResolvedValue({
+                status: 'Queued', agentEmail: 'a@b.c', willEmail: true,
+            });
+            (updateJobDetail as jest.Mock).mockClear();
+            toastService.showSuccessToast.mockClear();
+            toastService.showWarningToast.mockClear();
+        });
+
+        it('forwards the stop-job cascade and writes the AWB after the assignment lands', async () => {
+            const job = createMockJob();
+            const {result} = setup({job});
+
+            await act(async () => {
+                await result.current.dispatchDialogConfirmCourier({
+                    type: 'Agent',
+                    destination: {id: 201, text: 'AgentOne'},
+                    includeStopJobs: true,
+                    awb: '123-45678901',
+                });
+            });
+
+            expect(assignAgentToJob).toHaveBeenCalledWith(job.id, 201, true, undefined, undefined);
+            expect(updateJobDetail).toHaveBeenCalledWith(
+                job.id, JobProperty.ConNote, '123-45678901', false,
+            );
+        });
+
+        it('warns rather than reports success when the agent could not be emailed the link', async () => {
+            // The assignment landed but the agent has no way into the job, so this must
+            // not read as a clean success.
+            (assignAgentToJob as jest.Mock).mockResolvedValue({
+                status: 'NoAgentEmail', agentEmail: null, willEmail: false,
+            });
+            const {result} = setup({job: createMockJob()});
+
+            await act(async () => {
+                await result.current.dispatchDialogConfirmCourier({
+                    type: 'Agent',
+                    destination: {id: 201, text: 'AgentOne'},
+                });
+            });
+
+            expect(toastService.showWarningToast).toHaveBeenCalledWith(
+                expect.stringContaining('no email on file'),
+            );
+            expect(toastService.showSuccessToast).not.toHaveBeenCalled();
+        });
+
+        it('skips the ConNote write when no AWB was entered', async () => {
+            const {result} = setup({job: createMockJob()});
+
+            await act(async () => {
+                await result.current.dispatchDialogConfirmCourier({
+                    type: 'Agent',
+                    destination: {id: 201, text: 'AgentOne'},
+                });
+            });
+
+            expect(updateJobDetail).not.toHaveBeenCalled();
+        });
     });
 
     describe('dispatchDialogUnassignCourier', () => {

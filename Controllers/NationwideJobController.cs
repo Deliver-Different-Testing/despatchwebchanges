@@ -4,6 +4,7 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -19,9 +20,17 @@ public class NationwideJobController(
     ITenantInfoService infoService,
     IFlightRateService flightRateService,
     IClientRepository clientRepository,
-    IAddAgentRecoveryJobService recoveryJobService)
+    IAddAgentRecoveryJobService recoveryJobService,
+    IScopeProvider scopeProvider)
     : Controller
 {
+    /// <summary>
+    /// A network-partner-scoped session may only dispatch to its own couriers, so the
+    /// agent and network-partner lanes are closed to it. The dialog hides those options,
+    /// but that is presentation — the endpoint has to refuse a crafted request too.
+    /// </summary>
+    private bool CallerIsNetworkPartner => scopeProvider.Scope?.IsNetworkPartner ?? false;
+
     public async Task<IActionResult> NationwideJobListNew([FromQuery] NationwideJobsRequestModel data)
     {
         try
@@ -343,6 +352,11 @@ public class NationwideJobController(
     {
         try
         {
+            if (CallerIsNetworkPartner)
+            {
+                return Forbid();
+            }
+
             if (jobRequestModel?.AgentId == null || jobRequestModel.JobId == null)
             {
                 return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
@@ -367,6 +381,106 @@ public class NationwideJobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
+
+    [HttpPost]
+    public async Task<IActionResult> AssignNpAgentToJob([FromBody] AssignNpAgentRequest request)
+    {
+        try
+        {
+            if (CallerIsNetworkPartner)
+            {
+                return Forbid();
+            }
+
+            if (request?.NpAgentId == null || request.JobId == null)
+            {
+                return BadRequest("Oops, no network partner data was provided. Unable to assign to job.");
+            }
+
+            await repository.AssignNpAgentToJobAsync(request.NpAgentId.Value, request.JobId.Value);
+            return Ok(new { success = true });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
+                    nameof(AssignNpAgentToJob)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AssignAgentToJobs([FromBody] AssignAgentToJobsRequest request)
+    {
+        try
+        {
+            if (CallerIsNetworkPartner)
+            {
+                return Forbid();
+            }
+
+            if (request?.AgentId == null || request.JobIds is not {Count: > 0})
+            {
+                return BadRequest("Oops, no agent or jobs were provided. Unable to assign.");
+            }
+
+            var results = await repository.AssignAgentToJobsAsync(request.AgentId.Value, request.JobIds,
+                request.IncludeStopJobs ?? false, request.EmailSubject, request.EmailBody);
+
+            return Ok(BulkAssignmentResponse(results));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
+                    nameof(AssignAgentToJobs)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AssignNpAgentToJobs([FromBody] AssignNpAgentToJobsRequest request)
+    {
+        try
+        {
+            if (CallerIsNetworkPartner)
+            {
+                return Forbid();
+            }
+
+            if (request?.NpAgentId == null || request.JobIds is not {Count: > 0})
+            {
+                return BadRequest("Oops, no network partner or jobs were provided. Unable to assign.");
+            }
+
+            var results = await repository.AssignNpAgentToJobsAsync(request.NpAgentId.Value, request.JobIds);
+            return Ok(BulkAssignmentResponse(results));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
+                    nameof(AssignNpAgentToJobs)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    private static object BulkAssignmentResponse(IReadOnlyList<BulkAssignmentResult> results) => new
+    {
+        assigned = results.Count(r => r.Succeeded),
+        failed = results.Count(r => !r.Succeeded),
+        results = results.Select(r => new
+        {
+            jobId = r.JobId,
+            succeeded = r.Succeeded,
+            failureReason = r.FailureReason,
+            emailStatus = r.EmailStatus?.ToString()
+        })
+    };
 
     public async Task<IActionResult> GetActiveAirlines()
     {

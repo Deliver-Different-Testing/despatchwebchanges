@@ -18,6 +18,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     firstName,
     fullName,
     isUsCustomer,
+    isNetworkPartner,
     currentState,
     logoUrl,
     companyName,
@@ -78,6 +79,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 userName={fullName}
                 companyName={companyName}
                 isUsCustomer={isUsCustomer}
+                isNetworkPartner={isNetworkPartner}
                 currentState={currentState}
                 onClose={handleSidenavClose}
                 onNavigate={onNavigate}

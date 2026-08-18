@@ -24,6 +24,10 @@ import type {ToastService} from '../app/react/services/toastService';
 
 // Dialog option/result types from dedicated types.ts files
 import type {FlightViewModel, AgentSuggestion, FlightAgentDialogResult} from '../app/react/components/dialogs/flight-agent-confirmation-dialog/types';
+import type {
+    OpenDispatchDialogOptions,
+    DispatchDialogOutcome,
+} from '../app/react/components/dialogs/dispatch-dialog/dispatch-dialog-react.module';
 import type {EditDateTimeDialogOptions, EditDateTimeDialogResult} from '../app/react/components/dialogs/edit-date-time-dialog/types';
 import type {OpenBulkPriceUploadDialogOptions} from '../app/react/components/dialogs/bulk-price-upload-dialog/types';
 import type {OpenAccessorialChargesDialogOptions} from '../app/react/components/dialogs/accessorial-charges-dialog/types';
@@ -194,6 +198,10 @@ declare global {
         };
         ReactVoidJobConfirmationDialog?: {
             open: (job: VoidJobDialogJob, toastService?: ToastService) => Promise<VoidJobResult | null>;
+        };
+        /** Universal dispatch dialog (Courier / Agent / NP / DFRNT Partner), opened from AngularJS. */
+        ReactDispatchDialog?: {
+            open: (options: OpenDispatchDialogOptions) => Promise<DispatchDialogOutcome | null>;
         };
         ReactFlightAgentConfirmationDialog?: {
             openFlightDialog: (options: {

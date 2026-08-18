@@ -42,6 +42,30 @@ jest.mock('../dialogs/event-group-dialog', () => ({
     openEventGroupDialog: jest.fn().mockResolvedValue(true),
 }));
 
+// Stub the dispatch dialog so the bulk wiring can be driven without going through
+// the dialog's radio/search flow (its own behaviour is covered by DispatchDialog.test.tsx).
+jest.mock('../dialogs/dispatch-dialog', () => ({
+    DispatchDialog: ({open, onDispatchCourier}: {
+        open: boolean;
+        onDispatchCourier: (c: {type: string; destination: {id: number; text: string}}) => Promise<void>;
+    }) =>
+        open ? (
+            <div data-testid="bulk-dispatch-dialog">
+                <button onClick={() => onDispatchCourier({type: 'Agent', destination: {id: 201, text: 'AgentOne'}})}>
+                    Stub Bulk Agent
+                </button>
+                <button onClick={() => onDispatchCourier({type: 'NP', destination: {id: 301, text: 'PartnerCo'}})}>
+                    Stub Bulk NP
+                </button>
+            </div>
+        ) : null,
+}));
+
+jest.mock('../../services/dispatchExecutorApi', () => ({
+    assignAgentToJobs: jest.fn(),
+    assignNpAgentToJobs: jest.fn(),
+}));
+
 // Mock child components' heavy dependencies
 jest.mock('../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn().mockResolvedValue([]),
@@ -535,7 +559,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 2, jobNo: 'J2', refA: 'PO-100'}),
                 createMockDispatchJob({id: 3, jobNo: 'J3', refA: 'PO-200'}),
             ];
-            renderAndPushJobs(jobs);
+            renderAndPushJobs(jobs, {appPage: AppPage.JobSearch});
 
             fireEvent.click(screen.getByText('Ref A'));
 
@@ -1091,6 +1115,74 @@ describe('JobListPanel', () => {
             await user.keyboard('{/Control}');
 
             expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Bulk agent / network partner dispatch', () => {
+        const {assignAgentToJobs, assignNpAgentToJobs} = require('../../services/dispatchExecutorApi');
+
+        beforeEach(() => {
+            (assignAgentToJobs as jest.Mock).mockReset();
+            (assignNpAgentToJobs as jest.Mock).mockReset();
+        });
+
+        /** Selects two jobs and opens the bulk dispatch dialog from the toolbar. */
+        async function selectTwoAndOpenDispatch() {
+            const user = setupUser();
+            renderAndPushJobs([
+                createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
+            ]);
+
+            await user.click(screen.getByText('JOB-A'));
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-B'));
+            await user.keyboard('{/Control}');
+
+            await user.click(screen.getByRole('button', {name: 'Dispatch'}));
+            return user;
+        }
+
+        it('sends the whole selection to the agent batch endpoint', async () => {
+            (assignAgentToJobs as jest.Mock).mockResolvedValue({assigned: 2, failed: 0, results: []});
+            const user = await selectTwoAndOpenDispatch();
+
+            await user.click(screen.getByText('Stub Bulk Agent'));
+
+            await waitFor(() => {
+                expect(assignAgentToJobs).toHaveBeenCalledWith([1, 2], 201, false, undefined, undefined);
+            });
+        });
+
+        it('reports partial failures as a warning rather than a clean success', async () => {
+            // A job failing its flight gate must not silently vanish from the report.
+            (assignNpAgentToJobs as jest.Mock).mockResolvedValue({
+                assigned: 1,
+                failed: 1,
+                results: [
+                    {jobId: 1, succeeded: true, failureReason: null, emailStatus: null},
+                    {jobId: 2, succeeded: false, failureReason: 'Job not found', emailStatus: null},
+                ],
+            });
+            const {props} = renderAndPushJobs([
+                createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
+            ]);
+            const user = setupUser();
+
+            await user.click(screen.getByText('JOB-A'));
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-B'));
+            await user.keyboard('{/Control}');
+            await user.click(screen.getByRole('button', {name: 'Dispatch'}));
+            await user.click(screen.getByText('Stub Bulk NP'));
+
+            await waitFor(() => {
+                expect(props.showToast).toHaveBeenCalledWith(
+                    expect.stringContaining('1 failed: Job not found'),
+                    'warning',
+                );
+            });
         });
     });
 

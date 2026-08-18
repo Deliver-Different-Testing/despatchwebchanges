@@ -127,16 +127,16 @@ describe('JobListTable', () => {
             expect(screen.getByText('Courier')).toBeInTheDocument();
             expect(screen.getByText('Status')).toBeInTheDocument();
             expect(screen.getByText('Client')).toBeInTheDocument(); // NZ customer
-            expect(screen.getByText('Ref A')).toBeInTheDocument();
 
             // Job data
             expect(screen.getByText('J001')).toBeInTheDocument();
-            expect(screen.getByText('PO-4471')).toBeInTheDocument();
             expect(screen.getByText('New')).toBeInTheDocument();
             expect(screen.getByText('Standard')).toBeInTheDocument();
 
-            // No Archived column when not job search page
+            // No Archived or Ref A columns when not job search page
             expect(screen.queryByText('Archived')).not.toBeInTheDocument();
+            expect(screen.queryByText('Ref A')).not.toBeInTheDocument();
+            expect(screen.queryByText('PO-4471')).not.toBeInTheDocument();
 
             // Resize handles
             expect(screen.getByTestId('resize-handle-priority')).toBeInTheDocument();
@@ -147,11 +147,13 @@ describe('JobListTable', () => {
             expect(screen.queryByTestId('resize-handle-status')).not.toBeInTheDocument();
         });
 
-        it('hides Client column for US customers and shows Archived on search page', () => {
+        it('hides Client column for US customers and shows Archived and Ref A on search page', () => {
             renderWithMantine(<JobListTable {...createDefaultProps({isUsCustomer: true, isJobSearchPage: true})}/>);
 
             expect(screen.queryByText('Client')).not.toBeInTheDocument();
             expect(screen.getByText('Archived')).toBeInTheDocument();
+            expect(screen.getByText('Ref A')).toBeInTheDocument();
+            expect(screen.getByText('PO-4471')).toBeInTheDocument();
         });
 
         it('renders the partner-job icon in the priority column when isPartnerJob is true', async () => {
@@ -239,7 +241,7 @@ describe('JobListTable', () => {
 
         it('fires onSortChange when column header is clicked', async () => {
             const user = setupUser();
-            const props = createDefaultProps();
+            const props = createDefaultProps({isJobSearchPage: true});
             renderWithMantine(<JobListTable {...props}/>);
 
             await user.click(screen.getByText('Job No'));
@@ -310,28 +312,18 @@ describe('JobListTable', () => {
 
     // ── CourierCell Assign Button ────────────────────────────────────
     describe('CourierCell — Assign Button', () => {
-        it('renders Assign button on Dispatch and JobSearch pages but not Domestic', () => {
+        it('renders the inline courier Assign button on every operational page', () => {
+            // Nationwide (Domestic) used to be excluded, leaving its rows with no
+            // assignment affordance at all.
             const job = createMockDispatchJob();
 
-            // Dispatch page
-            const {unmount: u1} = renderWithMantine(<JobListTable {...createDefaultProps({
-                jobs: [job],
-                appPage: AppPage.Dispatch
-            })}/>);
-            expect(screen.getByText('Assign')).toBeInTheDocument();
-            u1();
-
-            // JobSearch page
-            const {unmount: u2} = renderWithMantine(<JobListTable {...createDefaultProps({
-                jobs: [job],
-                appPage: AppPage.JobSearch
-            })}/>);
-            expect(screen.getByText('Assign')).toBeInTheDocument();
-            u2();
-
-            // Domestic page
-            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job], appPage: AppPage.Domestic})}/>);
-            expect(screen.queryByText('Assign')).not.toBeInTheDocument();
+            for (const appPage of [AppPage.Dispatch, AppPage.JobSearch, AppPage.Domestic]) {
+                const {unmount} = renderWithMantine(
+                    <JobListTable {...createDefaultProps({jobs: [job], appPage})}/>
+                );
+                expect(screen.getByText('Assign')).toBeInTheDocument();
+                unmount();
+            }
         });
 
         it('fills its cell — paints the row band and the full column, without growing the row', () => {

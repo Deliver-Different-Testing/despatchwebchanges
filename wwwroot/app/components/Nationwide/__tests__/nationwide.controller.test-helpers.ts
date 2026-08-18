@@ -148,6 +148,9 @@ export function createController(overrides: Partial<Ctrl> = {}): Ctrl {
         saveEventTypeFilter: jest.fn(),
     };
     ctrl.jobAddStopService = {addNewStop: jest.fn().mockResolvedValue(undefined)};
+    ctrl.dispatchDialogService = {
+        openDispatchDialog: jest.fn().mockResolvedValue(null),
+    };
     ctrl.flightAgentConfirmationDialogService = {
         flightConfirmationDialog: jest.fn().mockResolvedValue({shouldAssign: false}),
         agentConfirmationDialog: jest.fn().mockResolvedValue({shouldAssign: false}),

@@ -1,6 +1,9 @@
 ﻿using DespatchWeb.Controllers;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -20,6 +23,8 @@ public class NationwideJobControllerTests
     private readonly IClientRepository _clientRepositoryMock = Substitute.For<IClientRepository>();
     private readonly IAddAgentRecoveryJobService _recoveryJobServiceMock = Substitute.For<IAddAgentRecoveryJobService>();
 
+    private readonly IScopeProvider _scopeProviderMock = Substitute.For<IScopeProvider>();
+
     private NationwideJobController CreateController() =>
         new(
             _repositoryMock,
@@ -29,7 +34,93 @@ public class NationwideJobControllerTests
             _tenantInfoServiceMock,
             _flightRateServiceMock,
             _clientRepositoryMock,
-            _recoveryJobServiceMock);
+            _recoveryJobServiceMock,
+            _scopeProviderMock);
+
+    /// <summary>ClientTypeId 3 — a network-partner-scoped session.</summary>
+    private void GivenNetworkPartnerSession() =>
+        _scopeProviderMock.Scope.Returns(new ScopeContext(ClientTypeId: 3, ClientId: null, NpAgentId: 42));
+
+    private void GivenTenantStaffSession() =>
+        _scopeProviderMock.Scope.Returns(new ScopeContext(ClientTypeId: 1, ClientId: 7, NpAgentId: null));
+
+    [Fact]
+    public async Task AssignNpAgentToJob_ValidRequestAsTenantStaff_AssignsAndReturnsOk()
+    {
+        // Arrange
+        GivenTenantStaffSession();
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.AssignNpAgentToJob(new AssignNpAgentRequest {NpAgentId = 5, JobId = 10});
+
+        // Assert
+        Assert.IsType<OkObjectResult>(result);
+        await _repositoryMock.Received(1).AssignNpAgentToJobAsync(5, 10);
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJob_MissingIds_ReturnsBadRequestWithoutTouchingTheRepository()
+    {
+        // Arrange
+        GivenTenantStaffSession();
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.AssignNpAgentToJob(new AssignNpAgentRequest {NpAgentId = null, JobId = 10});
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().AssignNpAgentToJobAsync(0, 0);
+    }
+
+    [Fact]
+    public async Task AssignEndpoints_RejectNetworkPartnerScopedCallers()
+    {
+        // A network partner may only dispatch to their own couriers. The dialog hides
+        // the Agent/NP options for them, but that is presentation — the endpoints have
+        // to refuse a hand-crafted request as well.
+        GivenNetworkPartnerSession();
+        var controller = CreateController();
+
+        Assert.IsType<ForbidResult>(
+            await controller.AssignNpAgentToJob(new AssignNpAgentRequest {NpAgentId = 5, JobId = 10}));
+        Assert.IsType<ForbidResult>(
+            await controller.AssignAgentToJob(new AgentJobRequestModel {AgentId = 5, JobId = 10}));
+        Assert.IsType<ForbidResult>(
+            await controller.AssignNpAgentToJobs(new AssignNpAgentToJobsRequest {NpAgentId = 5, JobIds = [10]}));
+        Assert.IsType<ForbidResult>(
+            await controller.AssignAgentToJobs(new AssignAgentToJobsRequest {AgentId = 5, JobIds = [10]}));
+
+        await _repositoryMock.DidNotReceiveWithAnyArgs().AssignNpAgentToJobAsync(0, 0);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().AddAgentToJobAsync(0, 0);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().AssignNpAgentToJobsAsync(0, null!);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().AssignAgentToJobsAsync(0, null!);
+    }
+
+    [Fact]
+    public async Task AssignAgentToJobs_AsTenantStaff_ReturnsPerJobOutcomes()
+    {
+        // Arrange
+        GivenTenantStaffSession();
+        _repositoryMock.AssignAgentToJobsAsync(5, Arg.Any<IReadOnlyList<int>>(), false, null, null)
+            .Returns([
+                new BulkAssignmentResult(10, true, null, AgentInboundEmailStatus.Queued),
+                new BulkAssignmentResult(11, false, "no flight", null)
+            ]);
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.AssignAgentToJobs(
+            new AssignAgentToJobsRequest {AgentId = 5, JobIds = [10, 11]});
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(ok.Value);
+        var payload = ok.Value.GetType();
+        Assert.Equal(1, payload.GetProperty("assigned")!.GetValue(ok.Value));
+        Assert.Equal(1, payload.GetProperty("failed")!.GetValue(ok.Value));
+    }
 
     [Fact]
     public async Task GetScheduledFlightOptions_ValidRequest_ReturnsFlights()

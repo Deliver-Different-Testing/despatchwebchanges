@@ -4,7 +4,6 @@
 <script>
      @{
          var contactId = ViewBag.ContactID;
-         var clientInternal = ViewBag.ClientInternal;
          var firstName = ViewBag.FirstName;
          var fullName = ViewBag.FullName;
          var dispatcher = ViewBag.DispatcherName;
@@ -12,7 +11,7 @@
      }
 
      var ContactID = '@contactId';
-     var ClientInternal = '@clientInternal';
+     var ClientInternal = @Json.Serialize(ViewBag.ClientInternal ?? false);
      var IsNetworkPartner = @Json.Serialize(ViewBag.IsNetworkPartner ?? false);
      var FirstName = '@firstName';
      var FullName = '@fullName';

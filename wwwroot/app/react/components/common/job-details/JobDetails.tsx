@@ -44,6 +44,7 @@ import {ToggleProperties} from './components/ToggleProperties';
 import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
 import {DispatchDialog, type DispatchMode} from '../../dialogs/dispatch-dialog';
+import {isNetworkPartnerSession, stopJobCountFor} from '../../dialogs/dispatch-dialog/dispatchSession';
 import {getActivePartnerOptions, getPartnerRateForJob} from '../../../services/jobListApi';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
 import {JobChangeRequestsForJob} from '../../job-change-requests/JobChangeRequestsForJob';
@@ -779,6 +780,9 @@ export function JobDetails({config}: JobDetailsProps) {
                     }) satisfies DispatchMode}
                 initialType={actions.dispatchDialog.initialType}
                 existingDestination={job.assignedCourier}
+                stopJobCount={stopJobCountFor(job.jobNo, job.relatedJobs)}
+                existingConNote={job.conNote}
+                isNetworkPartner={isNetworkPartnerSession()}
                 onClose={actions.closeDispatchDialog}
                 onDispatchCourier={actions.dispatchDialogConfirmCourier}
                 onUnassignCourier={actions.dispatchDialogUnassignCourier}

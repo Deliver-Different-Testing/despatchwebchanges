@@ -98,10 +98,16 @@ jest.mock('../../components/dialogs/edit-address-dialog/edit-address-dialog-reac
 // Stub the DispatchDialog: when open, expose a button that fires the courier
 // dispatch callback so we can assert the page's allocate wiring.
 jest.mock('../../components/dialogs/dispatch-dialog', () => ({
-    DispatchDialog: ({open, onDispatchCourier}: {open: boolean; onDispatchCourier: (t: string, d: {id: number; text: string}) => void}) =>
+    DispatchDialog: ({open, onDispatchCourier}: {
+        open: boolean;
+        onDispatchCourier: (c: {type: string; destination: {id: number; text: string}}) => void;
+    }) =>
         open ? (
             <div data-testid="mock-dispatch-dialog">
-                <button onClick={() => onDispatchCourier('Courier', {id: 9, text: 'Courier 9'})}>
+                <button onClick={() => onDispatchCourier({
+                    type: 'Courier',
+                    destination: {id: 9, text: 'Courier 9'},
+                })}>
                     confirm-dispatch
                 </button>
             </div>

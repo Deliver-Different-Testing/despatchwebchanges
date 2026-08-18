@@ -44,7 +44,9 @@ import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './j
 import {jobListStorageKey, loadJobListCategory, persistJobListCategory, toStatusFilter} from './jobListPreferences';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
-import {DispatchDialog} from '../dialogs/dispatch-dialog';
+import {DispatchDialog, type DispatchConfirmation} from '../dialogs/dispatch-dialog';
+import {isNetworkPartnerSession} from '../dialogs/dispatch-dialog/dispatchSession';
+import {assignAgentToJobs, assignNpAgentToJobs} from '../../services/dispatchExecutorApi';
 import {RestoreConfirmationDialog} from '../dialogs/restore-confirmation-dialog';
 import type {RestorePodImpactSummary} from '../dialogs/restore-confirmation-dialog';
 import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
@@ -735,19 +737,36 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     }, [multiSelect.selectCount, openBulkDispatch]);
 
     const handleBulkDispatchCourier = useCallback(async (
-        type: 'Courier' | 'Agent' | 'NP',
-        destination: { id: number; text: string },
+        {type, destination, emailSubject, emailBody}: DispatchConfirmation,
     ) => {
-        if (type !== 'Courier') {
-            // Bulk Agent / NP allocation isn't wired server-side. The dialog still
-            // allows the radio (it's a single dialog for all modes) but submission
-            // surfaces an error rather than silently failing.
-            throw new Error(`${type} dispatch is not yet supported for bulk selections.`);
-        }
         const ids = [...multiSelect.selectedIds];
         try {
-            await allocateJobs(destination.id, ids);
-            showToast(`${ids.length} job(s) dispatched to ${destination.text}`, 'success');
+            let message: string;
+            let severity: 'success' | 'warning' = 'success';
+
+            if (type === 'Agent' || type === 'NP') {
+                // Server-side batches so one job failing its flight gate reports rather
+                // than aborting the rest — and so the agent email fires once per job.
+                const result = type === 'Agent'
+                    ? await assignAgentToJobs(ids, destination.id, false, emailSubject, emailBody)
+                    : await assignNpAgentToJobs(ids, destination.id);
+
+                const noun = type === 'Agent' ? 'agent' : 'network partner';
+                message = `${result.assigned} job(s) assigned to ${noun} ${destination.text}`;
+
+                if (result.failed > 0) {
+                    const reasons = [...new Set(
+                        result.results.filter((r) => !r.succeeded && r.failureReason).map((r) => r.failureReason),
+                    )].join('; ');
+                    message = `${message} — ${result.failed} failed: ${reasons}`;
+                    severity = 'warning';
+                }
+            } else {
+                await allocateJobs(destination.id, ids);
+                message = `${ids.length} job(s) dispatched to ${destination.text}`;
+            }
+
+            showToast(message, severity);
             closeBulkDispatch();
             multiSelect.clear();
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
@@ -934,6 +953,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                         .map(j => ({id: j.id, jobNo: j.jobNo})),
                 }}
                 initialType="Courier"
+                isNetworkPartner={isNetworkPartnerSession()}
                 onClose={closeBulkDispatch}
                 onDispatchCourier={handleBulkDispatchCourier}
                 onSendToPartner={handleBulkSendToPartner}

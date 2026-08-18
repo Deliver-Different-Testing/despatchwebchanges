@@ -5,7 +5,7 @@
  */
 
 import React, {useMemo, useCallback} from 'react';
-import {Avatar, Box, Drawer, em, Group, NavLink, ScrollArea, Stack, Text, useMantineTheme} from '@mantine/core';
+import {Avatar, Badge, Box, Drawer, em, Group, NavLink, ScrollArea, Stack, Text, useMantineTheme} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
 import {
     CalendarDays,
@@ -53,6 +53,7 @@ export const SideNav: React.FC<SideNavProps> = ({
     userName,
     companyName = 'DFRNT',
     isUsCustomer,
+    isNetworkPartner = false,
     currentState,
     onClose,
     onNavigate,
@@ -213,9 +214,28 @@ export const SideNav: React.FC<SideNavProps> = ({
                     <Text fz="0.6875rem" fw={700} lts="0.08em" tt="uppercase" lh={1.4} c={shell.textSecondary}>
                         {companyName}
                     </Text>
-                    <Text fz="1rem" fw={600} lh={1.3} truncate c={shell.textPrimary}>
-                        {userName}
-                    </Text>
+                    <Group justify="center" gap={6} wrap="nowrap">
+                        <Text fz="1rem" fw={600} lh={1.3} truncate c={shell.textPrimary}>
+                            {userName}
+                        </Text>
+                        {/* Both brand primaries are too light to read on this bar, so the
+                            chip borrows the avatar's scrim rather than a brand variant. */}
+                        {isNetworkPartner && (
+                            <Badge
+                                data-testid="sidenav-np-chip"
+                                size="sm"
+                                radius="sm"
+                                variant="filled"
+                                style={{
+                                    backgroundColor: scrim.fillStrong,
+                                    color: shell.textPrimary,
+                                    flexShrink: 0,
+                                }}
+                            >
+                                Network Partner
+                            </Badge>
+                        )}
+                    </Group>
                     {/* `textSecondary`, not `textMuted` — 0.38 white on Ink is unreadable
                         at 0.7rem, and the old drawer set this line at the same 0.60 as
                         the company eyebrow above it. */}

@@ -23,8 +23,9 @@ describe('availableColumns', () => {
         expect(keys(availableColumns(false, true))).toEqual(expect.arrayContaining(['client', 'isArchived']));
     });
 
-    it('offers Ref A between Client and Pickup on every list', () => {
-        expect(keys(availableColumns(false, false)).join()).toContain('jobNo,client,refA,pickup');
+    it('offers Ref A on job search only, between Client and Pickup', () => {
+        expect(keys(availableColumns(false, false))).not.toContain('refA');
+        expect(keys(availableColumns(false, true)).join()).toContain('jobNo,client,refA,pickup');
         expect(keys(availableColumns(true, true)).join()).toContain('jobNo,refA,pickup');
     });
 });
