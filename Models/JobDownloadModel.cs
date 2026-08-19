@@ -50,5 +50,6 @@ public sealed class JobDownloadModel
     public bool Void { get; init; }
     public string OurReference { get; init; }
     public string Speed { get; init; }
+    public string NotifiedSpeed { get; init; }
     public string Notes { get; init; }
 }
