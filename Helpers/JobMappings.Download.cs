@@ -66,6 +66,8 @@ public static partial class JobMappings
             CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
             OurReference = j.UcjbOurRef,
             Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.UcjtName : null,
+            NotifiedSpeed = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName
+                : j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.UcjtName : null,
             Notes = j.UcjbNotes
         };
 
@@ -128,6 +130,8 @@ public static partial class JobMappings
             CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
             OurReference = j.UcjbOurRef,
             Speed = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
+            NotifiedSpeed = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName
+                : j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
             Notes = j.UcjbNotes
         };
 }

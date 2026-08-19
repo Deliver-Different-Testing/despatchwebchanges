@@ -140,6 +140,7 @@ public sealed class JobReportService(
         ["ClientReferenceC"] = x => FormatCsvField(x.ClientReferenceC),
         ["OurReference"] = x => FormatCsvField(x.OurReference),
         ["Speed"] = x => x.Speed?.ToString(),
+        ["NotifiedSpeed"] = x => x.NotifiedSpeed?.ToString(),
         ["Notes"] = x => FormatCsvField(x.Notes),
         ["InvoiceNumber"] = x => x.InvoiceNumber?.ToString(),
         ["InvoiceDate"] = x => ((DateTime?)x.InvoiceDate)?.ToString("yyyy-MM-dd HH:mm:ss"),
