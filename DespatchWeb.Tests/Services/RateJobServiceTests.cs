@@ -7,6 +7,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
+using DespatchWeb.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
 
@@ -27,6 +28,8 @@ public class RateJobServiceTests : IDisposable
 
     private readonly IPricingPermissionService _pricingPermissionServiceMock =
         Substitute.For<IPricingPermissionService>();
+
+    private readonly ITenantClock _clock = new FakeTenantClock(TestDates.Now);
 
     public RateJobServiceTests()
     {
@@ -54,7 +57,8 @@ public class RateJobServiceTests : IDisposable
         _tenantInfoServiceMock,
         _httpContextAccessorMock,
         _jobReportServiceMock,
-        _pricingPermissionServiceMock
+        _pricingPermissionServiceMock,
+        _clock
     );
 
     private static HttpClient CreateMockHttpClient(HttpStatusCode statusCode, string content)
