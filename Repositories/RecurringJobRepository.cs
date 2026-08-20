@@ -324,12 +324,6 @@ public class RecurringJobRepository(
             })
             .ToDictionaryAsync(b => b.UcbkId);
 
-        var clientId = parentMeta.Values.Select(m => m.UcbkClientId).FirstOrDefault(id => id.HasValue);
-        var recalcFuel = clientId == null || await Context.TucClients
-            .Where(c => c.UcclId == clientId.Value)
-            .Select(c => c.RecalcRecurringFuel)
-            .FirstOrDefaultAsync();
-
         foreach (var parentBookingId in parentBookingIds)
         {
             if (!parentMeta.TryGetValue(parentBookingId, out var meta))
@@ -364,41 +358,39 @@ public class RecurringJobRepository(
                 b.BookingParentId,
                 b.RawBaseAmount,
                 b.UcbkAmount,
-                b.FuelSurchargeAmount))
+                b.FuelSurchargeAmount,
+                b.RatedManually))
             .ToDictionaryAsync(b => b.UcbkId);
 
         var plan = BuildRepricePlan(
             newJobs.Select(j => (j.UcjbId, j.BookingParentId)),
             allTemplatePricing);
 
-        if (recalcFuel)
+        // Self-heal each affected template's RawBaseAmount once — only the
+        // templates whose raw base had to be derived from the fuel formula.
+        // BuildRepricePlan already excludes manually-rated templates (their
+        // pricing flows through untouched, same gate as the SQL cron path —
+        // tucJobBooking.RatedManually replaced the old per-client
+        // RecalcRecurringFuel toggle on 2026-07-28).
+        foreach (var (templateId, rawBaseAmount) in plan.SelfHealTemplateRawBases)
         {
-            // Self-heal each affected template's RawBaseAmount once — only the
-            // templates whose raw base had to be derived from the fuel formula.
-            foreach (var (templateId, rawBaseAmount) in plan.SelfHealTemplateRawBases)
-            {
-                await Context.TucJobBookings
-                    .Where(b => b.UcbkId == templateId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(b => b.RawBaseAmount, rawBaseAmount));
-            }
+            await Context.TucJobBookings
+                .Where(b => b.UcbkId == templateId)
+                .ExecuteUpdateAsync(s => s.SetProperty(b => b.RawBaseAmount, rawBaseAmount));
+        }
 
-            // Reprice the new jobs with one set-based UPDATE per distinct raw-base
-            // value instead of a query + update per job. UcjbAmount is recomputed
-            // per row by the pricing UDF; fuel is that total minus the raw base. A
-            // null UDF result coalesces to 0 to match the previous per-row path.
-            foreach (var group in plan.Groups)
+        // Reprice each new job via the shared proc — it updates tucJob AND
+        // replaces the PricingBreakdown "Fuel" line, so the breakdown sum
+        // never drifts from UcjbAmount the way a direct column update would.
+        // Per-job EXEC rather than a set-based ExecuteUpdateAsync; this path
+        // is the manual "Insert to Live" button, not the nightly cron, so the
+        // batch sizes don't need bulk-update performance.
+        foreach (var group in plan.Groups)
+        {
+            foreach (var jobId in group.JobIds)
             {
-                var rawBaseAmount = group.RawBaseAmount;
-                var jobIds = group.JobIds;
-                await Context.TucJobs
-                    .Where(t => jobIds.Contains(t.UcjbId))
-                    .ExecuteUpdateAsync(s => s
-                        .SetProperty(t => t.RawBaseAmount, rawBaseAmount)
-                        .SetProperty(t => t.UcjbAmount,
-                            t => DespatchContext.UTL_fncJob_RawBaseToAmount(t.UcjbId, rawBaseAmount) ?? 0m)
-                        .SetProperty(t => t.FuelSurchargeAmount,
-                            t => (DespatchContext.UTL_fncJob_RawBaseToAmount(t.UcjbId, rawBaseAmount) ?? 0m) -
-                                 rawBaseAmount));
+                await Context.Database.ExecuteSqlInterpolatedAsync(
+                    $"EXEC dbo.UTL_stpJob_ApplyRecurringFuelReprice @JobID = {jobId}, @RawBaseAmount = {group.RawBaseAmount}");
             }
         }
 
@@ -796,6 +788,13 @@ public class RecurringJobRepository(
             }
 
             var templateId = bookingParentId.Value;
+            if (templatePricing.TryGetValue(templateId, out var template) && template.RatedManually)
+            {
+                // Manually-rated templates keep their copied pricing untouched —
+                // same gate the SQL cron path uses (tucJobBooking.RatedManually).
+                continue;
+            }
+
             var resolved = ResolveRawBase(templateId, templatePricing, out var computedFromFormula);
             if (!resolved.HasValue)
             {
@@ -2025,7 +2024,8 @@ public class RecurringJobRepository(
         int? BookingParentId,
         decimal? RawBaseAmount,
         decimal? UcbkAmount,
-        decimal? FuelSurchargeAmount);
+        decimal? FuelSurchargeAmount,
+        bool RatedManually);
 
     internal sealed record RepriceGroup(decimal RawBaseAmount, IReadOnlyList<int> JobIds);
 

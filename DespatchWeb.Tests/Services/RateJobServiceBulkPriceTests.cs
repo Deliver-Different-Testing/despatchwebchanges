@@ -5,6 +5,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
+using DespatchWeb.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
 
@@ -22,6 +23,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
     private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
     private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
     private readonly IPricingPermissionService _pricingPermissionServiceMock = Substitute.For<IPricingPermissionService>();
+    private readonly ITenantClock _clock = new FakeTenantClock(TestDates.Now);
     private static readonly int[] Expected = [1, 2, 3];
 
     public RateJobServiceBulkPriceTests()
@@ -46,7 +48,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _tenantInfoServiceMock,
         _httpContextAccessorMock,
         _jobReportServiceMock,
-        _pricingPermissionServiceMock
+        _pricingPermissionServiceMock,
+        _clock
     );
 
     [Fact]

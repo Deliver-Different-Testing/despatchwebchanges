@@ -21,7 +21,8 @@ public sealed class RateJobService(
     ITenantInfoService infoService,
     IHttpContextAccessor contextAccessor,
     IJobReportService jobReportService,
-    IPricingPermissionService pricingPermissionService)
+    IPricingPermissionService pricingPermissionService,
+    ITenantClock clock)
     : IRateJobService
 {
     private const string HereMapsApiBaseUrl = "https://router.hereapi.com/v8";
@@ -782,7 +783,7 @@ public sealed class RateJobService(
             request.Headers.Add("Authorization", $"Bearer {requestToken}");
 
             // Map Job Object
-            var jobObject = MapToUrgentRerateObject(jobDetails);
+            var jobObject = MapToUrgentRerateObject(jobDetails, clock.TenantNow);
             request.Content = JsonContent.Create(jobObject);
 
             var response = await httpClient.SendAsync(request);
@@ -811,8 +812,17 @@ public sealed class RateJobService(
     /// Maps job rating details DTO to the DFRNT API request object format.
     /// </summary>
     /// <param name="dto">The job rating details DTO.</param>
+    /// <param name="tenantNow">
+    /// Current tenant-local time. For bulk-schedule jobs this is sent instead of the job's own
+    /// booked/created date, because the schedule-availability lookup on the rates side
+    /// (<c>UTL_fncJob_GetClientAvailableBulkRunSchedule</c>) filters out any schedule whose cutoff
+    /// has passed relative to the current time — which is always true for a historical date once a
+    /// completed job is repriced later. The schedule match itself is date-of-week based and finds
+    /// the next matching occurrence from whatever date it's given, so passing "now" lets an
+    /// already-completed bulk-schedule job still resolve a valid rate instead of getting rejected.
+    /// </param>
     /// <returns>An UrgentRerateObject ready for the DFRNT API.</returns>
-    private static UrgentRerateObject MapToUrgentRerateObject(JobRatingDetailsDtoNz dto)
+    private static UrgentRerateObject MapToUrgentRerateObject(JobRatingDetailsDtoNz dto, DateTime tenantNow)
     {
         ArgumentNullException.ThrowIfNull(dto);
 
@@ -855,7 +865,7 @@ public sealed class RateJobService(
             Quantity = dto.Quantity,
             IsDangerousGoods = dto.DangerousGoods,
             IsPrebook = dto.IsPrebook,
-            DateTime = dto.BulkScheduleId.HasValue && dto.CreatedTime.HasValue ? dto.CreatedTime : dto.BookedDate,
+            DateTime = dto.BulkScheduleId.HasValue ? tenantNow : dto.BookedDate,
             Van = dto.IsVan,
             Bike = dto.IsPedal,
             Truck = dto.IsTruck ? CreateTruckObject(dto) : null,

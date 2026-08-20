@@ -16,7 +16,7 @@ public class RecurringJobRepositoryRepricePlanTests
     [Fact]
     public void UsesTemplateRawBaseDirectly_NoSelfHeal()
     {
-        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, 42m, 99m, 5m));
+        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, 42m, 99m, 5m, false));
 
         var plan = RecurringJobRepository.BuildRepricePlan([(1, 10)], pricing);
 
@@ -31,8 +31,8 @@ public class RecurringJobRepositoryRepricePlanTests
     public void WalksUpToParentRawBase_WhenTemplateRawBaseNull_NoSelfHeal()
     {
         var pricing = Pricing(
-            new RecurringJobRepository.TemplatePricing(10, null, 100m, null, null),
-            new RecurringJobRepository.TemplatePricing(11, 10, null, null, null));
+            new RecurringJobRepository.TemplatePricing(10, null, 100m, null, null, false),
+            new RecurringJobRepository.TemplatePricing(11, 10, null, null, null, false));
 
         var plan = RecurringJobRepository.BuildRepricePlan([(1, 11)], pricing);
 
@@ -45,7 +45,7 @@ public class RecurringJobRepositoryRepricePlanTests
     public void FallsBackToFormula_RecordsSelfHeal()
     {
         // No raw base anywhere; derive headline (80) - fuel (5) = 75.
-        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, null, 80m, 5m));
+        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, null, 80m, 5m, false));
 
         var plan = RecurringJobRepository.BuildRepricePlan([(1, 10)], pricing);
 
@@ -56,7 +56,7 @@ public class RecurringJobRepositoryRepricePlanTests
     [Fact]
     public void FormulaFallback_ClampsNegativeToZero()
     {
-        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, null, 5m, 20m));
+        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, null, 5m, 20m, false));
 
         var plan = RecurringJobRepository.BuildRepricePlan([(1, 10)], pricing);
 
@@ -67,7 +67,7 @@ public class RecurringJobRepositoryRepricePlanTests
     [Fact]
     public void SkipsJob_WhenNoRawBaseAndNoFormulaInputs()
     {
-        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, null, null, null));
+        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, null, null, null, false));
 
         var plan = RecurringJobRepository.BuildRepricePlan([(1, 10)], pricing);
 
@@ -79,7 +79,7 @@ public class RecurringJobRepositoryRepricePlanTests
     [Fact]
     public void SkipsJob_WithNullBookingParent()
     {
-        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, 42m, null, null));
+        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, 42m, null, null, false));
 
         var plan = RecurringJobRepository.BuildRepricePlan([(1, null)], pricing);
 
@@ -103,9 +103,9 @@ public class RecurringJobRepositoryRepricePlanTests
     {
         // Two templates that both resolve to raw base 50 → one group, both jobs.
         var pricing = Pricing(
-            new RecurringJobRepository.TemplatePricing(10, null, 50m, null, null),
-            new RecurringJobRepository.TemplatePricing(20, null, 50m, null, null),
-            new RecurringJobRepository.TemplatePricing(30, null, 60m, null, null));
+            new RecurringJobRepository.TemplatePricing(10, null, 50m, null, null, false),
+            new RecurringJobRepository.TemplatePricing(20, null, 50m, null, null, false),
+            new RecurringJobRepository.TemplatePricing(30, null, 60m, null, null, false));
 
         var plan = RecurringJobRepository.BuildRepricePlan(
             [(1, 10), (2, 20), (3, 30)], pricing);
@@ -123,12 +123,41 @@ public class RecurringJobRepositoryRepricePlanTests
     public void SelfHealRecordedOncePerTemplate_AcrossMultipleJobs()
     {
         // Two jobs off the same formula-derived template.
-        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, null, 80m, 5m));
+        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, null, 80m, 5m, false));
 
         var plan = RecurringJobRepository.BuildRepricePlan([(1, 10), (2, 10)], pricing);
 
         Assert.Equal(2, plan.RepricedJobCount);
         Assert.Equal(75m, Assert.Single(plan.SelfHealTemplateRawBases).Value);
         Assert.Equal([1, 2], Assert.Single(plan.Groups).JobIds.OrderBy(x => x));
+    }
+
+    [Fact]
+    public void SkipsJob_WhenTemplateRatedManually()
+    {
+        // Manually-rated templates keep their copied pricing untouched — same
+        // gate the SQL cron path uses (tucJobBooking.RatedManually), replacing
+        // the old per-client RecalcRecurringFuel toggle.
+        var pricing = Pricing(new RecurringJobRepository.TemplatePricing(10, null, 42m, 99m, 5m, true));
+
+        var plan = RecurringJobRepository.BuildRepricePlan([(1, 10)], pricing);
+
+        Assert.Empty(plan.Groups);
+        Assert.Empty(plan.SelfHealTemplateRawBases);
+        Assert.Equal(0, plan.RepricedJobCount);
+    }
+
+    [Fact]
+    public void RepricesOnlyDynamicJobs_WhenBatchMixesRatedManuallyTemplates()
+    {
+        var pricing = Pricing(
+            new RecurringJobRepository.TemplatePricing(10, null, 50m, null, null, false),
+            new RecurringJobRepository.TemplatePricing(20, null, 50m, null, null, true));
+
+        var plan = RecurringJobRepository.BuildRepricePlan([(1, 10), (2, 20)], pricing);
+
+        Assert.Equal(1, plan.RepricedJobCount);
+        var group = Assert.Single(plan.Groups);
+        Assert.Equal([1], group.JobIds);
     }
 }
