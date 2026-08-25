@@ -48,7 +48,7 @@ public partial class HomeController(
                     "Could not find a environment variable string named 'SQLCredentials'.");
             }
 
-            await connectionStringManager.SetConnectionStringAsync($"{tenantId}-ClientManager-Connection",
+            await connectionStringManager.SetConnectionStringAsync(TenantConnectionCache.Key(tenantId),
                 connectionString + credentials);
 
             var maskedConnectionString = MaskSensitiveInfo(connectionString + credentials);
