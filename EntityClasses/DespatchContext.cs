@@ -635,11 +635,11 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcjbCbd).HasColumnName("ucjbCBD");
             entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
             entity.Property(e => e.UcjbClientRefa)
-                .HasMaxLength(20)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucjbClientRefa");
             entity.Property(e => e.UcjbClientRefb)
-                .HasMaxLength(15)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucjbClientRefb");
             entity.Property(e => e.UcjbComplTime)
@@ -1561,8 +1561,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClientCode).HasMaxLength(5);
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.ClientItemIds).HasMaxLength(100);
-            entity.Property(e => e.ClientRefa).HasMaxLength(20);
-            entity.Property(e => e.ClientRefb).HasMaxLength(15);
+            entity.Property(e => e.ClientRefa).HasMaxLength(100);
+            entity.Property(e => e.ClientRefb).HasMaxLength(100);
             entity.Property(e => e.Contact).HasMaxLength(50);
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
@@ -3198,12 +3198,12 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.ClientNotes).HasMaxLength(4000);
             entity.Property(e => e.ClientReferenceA)
-                .HasMaxLength(20)
+                .HasMaxLength(100)
                 .IsUnicode(false);
             entity.Property(e => e.ClientReferenceB)
-                .HasMaxLength(15)
+                .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.ClientReferenceC).HasMaxLength(50);
+            entity.Property(e => e.ClientReferenceC).HasMaxLength(100);
             entity.Property(e => e.CompletedTime).HasColumnType("datetime");
             entity.Property(e => e.Contact).HasMaxLength(30);
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
@@ -3609,14 +3609,14 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50);
             entity.Property(e => e.Name)
                 .IsRequired()
-                .HasMaxLength(20)
+                .HasMaxLength(100)
                 .IsUnicode(false);
             entity.Property(e => e.ReferenceId).HasColumnName("ReferenceID");
             entity.Property(e => e.UcrfClientId).HasColumnName("ucrfClientID");
             entity.Property(e => e.UcrfId).HasColumnName("ucrfID");
             entity.Property(e => e.UcrfName)
                 .IsRequired()
-                .HasMaxLength(20)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucrfName");
         });
@@ -5697,15 +5697,15 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucjbClientCode");
             entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
             entity.Property(e => e.UcjbClientRefa)
-                .HasMaxLength(20)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucjbClientRefa");
             entity.Property(e => e.UcjbClientRefb)
-                .HasMaxLength(15)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucjbClientRefb");
             entity.Property(e => e.UcjbClientRefc)
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .HasColumnName("ucjbClientRefc");
             entity.Property(e => e.UcjbComplTime)
                 .HasColumnType("datetime")
@@ -6256,15 +6256,15 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucjbClientCode");
             entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
             entity.Property(e => e.UcjbClientRefa)
-                .HasMaxLength(20)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucjbClientRefa");
             entity.Property(e => e.UcjbClientRefb)
-                .HasMaxLength(15)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucjbClientRefb");
             entity.Property(e => e.UcjbClientRefc)
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .HasColumnName("ucjbClientRefc");
             entity.Property(e => e.UcjbComplTime)
                 .HasColumnType("datetime")
@@ -6612,15 +6612,15 @@ public partial class DespatchContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("ucbkClientRef");
             entity.Property(e => e.UcbkClientRefa)
-                .HasMaxLength(20)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucbkClientRefa");
             entity.Property(e => e.UcbkClientRefb)
-                .HasMaxLength(15)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("ucbkClientRefb");
             entity.Property(e => e.UcbkClientRefc)
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .HasColumnName("ucbkClientRefc");
             entity.Property(e => e.UcbkContact)
                 .HasMaxLength(30)
