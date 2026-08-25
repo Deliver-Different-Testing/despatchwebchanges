@@ -1,6 +1,7 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
+import {createTestQueryClient} from '../../../__testUtils__';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverDetailsTab} from './DriverDetailsTab';
@@ -16,8 +17,6 @@ const mockUseDriverSearch = useDriverSearch as jest.MockedFunction<typeof useDri
 const mockUseCourierDetails = useCourierDetails as jest.MockedFunction<typeof useCourierDetails>;
 
 const theme = createTheme();
-const createTestQueryClient = () => new QueryClient({defaultOptions: {queries: {retry: false}}});
-
 const renderWithProviders = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(

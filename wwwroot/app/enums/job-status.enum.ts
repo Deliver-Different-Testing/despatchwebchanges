@@ -18,5 +18,9 @@ export enum JobStatus {
     AwaitingProcessing = 16,
     OutForDelivery = 17,
     Preassigned = 18,
+    OutboundAgentAssigned = 103,
+    InboundAgentAssigned = 104,
+    GroundAgentAssigned = 105,
+    Void = 1000,
     Missing = 1001
 }

@@ -7,17 +7,15 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {EditAddressDialog} from './EditAddressDialog';
 import {EditAddressDialogViewModel} from '../../../interfaces';
-import type {ShowToastFn, ToastService} from '../../../services/toastService';
+import type {ToastService} from '../../../services/toastService';
 import {AddressType} from '../../../../enums/address-type.enum';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-// State management for the dialog
-interface DialogState {
-    open: boolean;
+interface EditAddressPayload {
     addressDetails: EditAddressDialogViewModel | null;
     title: string;
     submitLabel: string;
@@ -25,85 +23,28 @@ interface DialogState {
     isUsTenant: boolean;
     addressType?: AddressType;
     readOnly: boolean;
-    toastService: ToastService | null;
-    resolve?: (value: EditAddressDialogViewModel | null) => void;
 }
 
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    addressDetails: null,
-    title: 'Edit Address',
-    submitLabel: 'Save',
-    showContactInfo: false,
-    isUsTenant: false,
-    readOnly: false,
-    toastService: null,
-};
-
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSave = (address: EditAddressDialogViewModel) => {
-        dialogState.open = false;
-        dialogState.resolve?.(address);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleShowToast: ShowToastFn = (message, type) => {
-        if (!dialogState.toastService) {
-            // Fallback to console if toast service not available
-            console.log(`[Toast ${type}]: ${message}`);
-            return;
-        }
-        dialogState.toastService.showToast(message, type);
-    };
-
-    // Get theme dynamically based on customer region
-    dialogRoot.render(islandTree(
+const host = createDialogHost<EditAddressPayload, EditAddressDialogViewModel | null>({
+    containerId: 'react-edit-address-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
         <MuiThemeIsland>
-        <EditAddressDialog
-            open={dialogState.open}
-            addressDetails={dialogState.addressDetails}
-            title={dialogState.title}
-            submitLabel={dialogState.submitLabel}
-            showContactInfo={dialogState.showContactInfo}
-            isUsTenant={dialogState.isUsTenant}
-            addressType={dialogState.addressType}
-            readOnly={dialogState.readOnly}
-            onClose={handleClose}
-            onSave={handleSave}
-            showToast={handleShowToast}
-        />
-
+            <EditAddressDialog
+                open={open}
+                addressDetails={payload.addressDetails}
+                title={payload.title}
+                submitLabel={payload.submitLabel}
+                showContactInfo={payload.showContactInfo}
+                isUsTenant={payload.isUsTenant}
+                addressType={payload.addressType}
+                readOnly={payload.readOnly}
+                onClose={() => close(null)}
+                onSave={close}
+                showToast={showToast}
+            />
         </MuiThemeIsland>
-
-    ));
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-edit-address-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+    ),
+});
 
 /**
  * Opens the edit address dialog
@@ -127,23 +68,10 @@ export function openEditAddressDialog(
     addressType?: AddressType,
     readOnly: boolean = false,
 ): Promise<EditAddressDialogViewModel | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            addressDetails,
-            title,
-            submitLabel,
-            showContactInfo,
-            isUsTenant,
-            addressType,
-            readOnly,
-            toastService: toastService ?? null,
-            resolve,
-        };
-        renderDialog();
-    });
+    return host.open(
+        {addressDetails, title, submitLabel, showContactInfo, isUsTenant, addressType, readOnly},
+        toastService,
+    );
 }
 
 // Expose globally for AngularJS access

@@ -15,7 +15,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useVirtualizer} from '@tanstack/react-virtual';
 import {ActionIcon, Badge, Box, Group, Text, Tooltip} from '@mantine/core';
 import {useDisclosure, useInterval} from '@mantine/hooks';
-import {Briefcase, ChevronUp, Info, UserPlus, UserSearch, Zap} from 'lucide-react';
+import {Briefcase, ChevronUp, Info, TriangleAlert, UserPlus, UserSearch, Zap} from 'lucide-react';
 
 import {Icon} from '../common/icon/Icon';
 import {ActionButton, ACTION_BUTTON_COMPACT_GLYPH_SIZE, ACTION_BUTTON_COMPACT_HEIGHT} from '../common/action-button';
@@ -25,6 +25,15 @@ import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispa
 import {AppPage} from '../../interfaces/dispatchJob';
 import type {CourierSuggestion} from '../../interfaces/afterhours';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
+import {addressesDisagree, staleAddressSummary} from '../../utils/addressAgreement';
+import {
+    getDeliveryAddressNz,
+    getDeliveryAddressUs,
+    getDeliveryCityState,
+    getPickupAddressNz,
+    getPickupAddressUs,
+    getPickupCityState,
+} from './jobAddressFormat';
 import dayjs from 'dayjs';
 import {
     formatMins,
@@ -40,51 +49,28 @@ import {JobListLegendDialog} from './JobListLegendDialog';
 import {FLIGHT_INDICATORS, INDICATORS, renderLegendMarker, renderTableIndicator} from './jobListIndicators';
 import {NoData} from '../common/no-data/NoData';
 import classes from './JobListTable.module.css';
+import {resolvedStatusId, resolvedStatusLabel} from '../../utils/jobStatus';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-// Pickup address — NZ: suburb only; US: full address lines 2-8
-function getPickupAddressNz(job: DispatchJob): string {
-    return job.pickupAddress?.addressLine5 || '';
-}
+// A job carries its delivery address twice - the free-text copy the driver app reads and the
+// structured lines this grid composes. An upstream edit that only lands on the free-text copy
+// leaves this column showing the previous destination, so mark the cell rather than show it plain.
+function StaleDeliveryAddressMarker({job}: {job: DispatchJob}) {
+    if (!addressesDisagree(job.toAddress, job.deliveryAddress?.fullAddress)) return null;
 
-function getPickupAddressUs(job: DispatchJob): string {
-    if (job.pickupAddress) {
-        const addr = job.pickupAddress;
-        return [addr.addressLine2, addr.addressLine3, addr.addressLine4, addr.addressLine5, addr.addressLine6, addr.addressLine7, addr.addressLine8]
-            .filter((l) => l && l.trim())
-            .join(', ');
-    }
-    return (job.from || '').split(',').map((l) => l.trim()).join(', ');
-}
-
-function getPickupCityState(job: DispatchJob): string {
-    return job.pickupAddress?.addressLine1 || '';
-}
-
-// Delivery address — NZ: suburb-first ordering; US: lines 2-5,8
-function getDeliveryAddressNz(job: DispatchJob): string {
-    if (job.deliveryAddress) {
-        const addr = job.deliveryAddress;
-        return [addr.addressLine5, addr.addressLine2, addr.addressLine3, addr.addressLine4, addr.addressLine8]
-            .filter((l) => l && l.trim())
-            .join(', ');
-    }
-    return (job.toAddress || '').split(',').map((l) => l.trim()).join(', ');
-}
-
-function getDeliveryAddressUs(job: DispatchJob): string {
-    if (job.deliveryAddress) {
-        const addr = job.deliveryAddress;
-        return [addr.addressLine2, addr.addressLine3, addr.addressLine4, addr.addressLine5, addr.addressLine8]
-            .filter((l) => l && l.trim())
-            .join(', ');
-    }
-    return (job.toAddress || '').split(',').map((l) => l.trim()).join(', ');
-}
-
-function getDeliveryCityState(job: DispatchJob): string {
-    return job.deliveryAddress?.addressLine1 || '';
+    return (
+        <Tooltip
+            withArrow
+            multiline
+            w={320}
+            label={staleAddressSummary(job.toAddress)}
+        >
+            <Box component="span" data-testid="stale-delivery-address" style={{display: 'inline-flex', verticalAlign: 'text-bottom', marginRight: 4}}>
+                <Icon lucide={TriangleAlert} size={13} color="var(--mantine-color-orange-6)" aria-label="Delivery address may be out of date"/>
+            </Box>
+        </Tooltip>
+    );
 }
 
 function getCourierName(job: DispatchJob): string {
@@ -257,7 +243,11 @@ function getPriorityIndicator(job: DispatchJob): React.ReactNode {
 }
 
 function getStatusBadgeColor(job: DispatchJob): string {
-    switch (job.statusId) {
+    // Keyed off the resolved status so the badge colour can never contradict its label — a voided
+    // row whose statusId was moved back to New used to render as a live job.
+    switch (resolvedStatusId(job)) {
+        case JOB_STATUS.Void:
+            return 'red';
         case JOB_STATUS.Completed:
             return 'green';
         case JOB_STATUS.Warning:
@@ -859,7 +849,10 @@ const CellContent: React.FC<{
             if (isUsCustomer) {
                 return (
                     <>
-                        <Text fz="inherit" truncate>{getDeliveryAddressUs(job)}</Text>
+                        <Text fz="inherit" truncate>
+                            <StaleDeliveryAddressMarker job={job}/>
+                            {getDeliveryAddressUs(job)}
+                        </Text>
                         {getDeliveryCityState(job) && (
                             <Text size="xs" c="dimmed" lh={1.2} truncate>
                                 {getDeliveryCityState(job)}
@@ -868,7 +861,12 @@ const CellContent: React.FC<{
                     </>
                 );
             }
-            return <>{getDeliveryAddressNz(job)}</>;
+            return (
+                <>
+                    <StaleDeliveryAddressMarker job={job}/>
+                    {getDeliveryAddressNz(job)}
+                </>
+            );
         case 'courier': {
             // Flight assignment — show flight number, no Assign button
             if (job.assignedFlight) {
@@ -939,7 +937,7 @@ const CellContent: React.FC<{
             );
         }
         case 'status': {
-            const statusText = job.status || job.statusName || '';
+            const statusText = resolvedStatusLabel(job);
             if (isUltraDense) {
                 return <>{statusText.charAt(0).toUpperCase()}</>;
             }

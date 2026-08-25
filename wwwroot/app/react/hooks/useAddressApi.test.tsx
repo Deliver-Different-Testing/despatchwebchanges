@@ -4,10 +4,10 @@
 
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useAddressSearch, useLocationDetails, useHereMapsApiKey} from './useAddressApi';
 import {addressApi} from '../services/addressApi';
 import {HereMapsLocationResult, HereMapsLookupResponse} from '../interfaces';
+import {createQueryWrapper} from '../__testUtils__';
 
 // Mock the addressApi
 jest.mock('../services/addressApi', () => ({
@@ -19,25 +19,6 @@ jest.mock('../services/addressApi', () => ({
 }));
 
 const mockAddressApi = addressApi as jest.Mocked<typeof addressApi>;
-
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-                gcTime: 0,
-            },
-        },
-    });
-
-// Wrapper component for providing QueryClient
-const createWrapper = () => {
-    const queryClient = createTestQueryClient();
-    return ({children}: {children: React.ReactNode}) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-};
 
 describe('useAddressSearch', () => {
     const mockAddressResults: HereMapsLocationResult[] = [
@@ -72,7 +53,7 @@ describe('useAddressSearch', () => {
     ];
 
     it('should not fetch when search text is less than 3 characters', async () => {
-        renderHook(() => useAddressSearch('ab'), {wrapper: createWrapper()});
+        renderHook(() => useAddressSearch('ab'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockAddressApi.autocompleteSearch).not.toHaveBeenCalled();
@@ -82,7 +63,7 @@ describe('useAddressSearch', () => {
     it('should fetch addresses when search text is 3 or more characters', async () => {
         mockAddressApi.autocompleteSearch.mockResolvedValueOnce(mockAddressResults);
 
-        const {result} = renderHook(() => useAddressSearch('main'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useAddressSearch('main'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -93,7 +74,7 @@ describe('useAddressSearch', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useAddressSearch('main street', {enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useAddressSearch('main street', {enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockAddressApi.autocompleteSearch).not.toHaveBeenCalled();
@@ -104,7 +85,7 @@ describe('useAddressSearch', () => {
         const error = new Error('API Error');
         mockAddressApi.autocompleteSearch.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useAddressSearch('test'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useAddressSearch('test'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);
@@ -134,7 +115,7 @@ describe('useLocationDetails', () => {
     };
 
     it('should not fetch when addressId is null', async () => {
-        renderHook(() => useLocationDetails(null), {wrapper: createWrapper()});
+        renderHook(() => useLocationDetails(null), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockAddressApi.getLocationDetailsById).not.toHaveBeenCalled();
@@ -144,7 +125,7 @@ describe('useLocationDetails', () => {
     it('should fetch location details when addressId is provided', async () => {
         mockAddressApi.getLocationDetailsById.mockResolvedValueOnce(mockLocationDetails);
 
-        const {result} = renderHook(() => useLocationDetails('addr1'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useLocationDetails('addr1'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -155,7 +136,7 @@ describe('useLocationDetails', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useLocationDetails('addr1', {enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useLocationDetails('addr1', {enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockAddressApi.getLocationDetailsById).not.toHaveBeenCalled();
@@ -166,7 +147,7 @@ describe('useLocationDetails', () => {
         const error = new Error('Location not found');
         mockAddressApi.getLocationDetailsById.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useLocationDetails('invalid'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useLocationDetails('invalid'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);
@@ -180,7 +161,7 @@ describe('useHereMapsApiKey', () => {
     it('should fetch API key by default', async () => {
         mockAddressApi.getHereMapsKey.mockResolvedValueOnce('test-api-key-123');
 
-        const {result} = renderHook(() => useHereMapsApiKey(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useHereMapsApiKey(), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -191,7 +172,7 @@ describe('useHereMapsApiKey', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useHereMapsApiKey({enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useHereMapsApiKey({enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockAddressApi.getHereMapsKey).not.toHaveBeenCalled();
@@ -202,7 +183,7 @@ describe('useHereMapsApiKey', () => {
         const error = new Error('Failed to get API key');
         mockAddressApi.getHereMapsKey.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useHereMapsApiKey(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useHereMapsApiKey(), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);

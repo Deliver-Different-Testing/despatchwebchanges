@@ -759,3 +759,76 @@ export function getAllVisiblePoints(
 
     return points;
 }
+
+/**
+ * Build the marker tooltip element and attach it to the map container.
+ *
+ * Every marker manager needs the same bubble — the styling deliberately mimics the Google
+ * Maps InfoWindow the maps were migrated from, so it must stay identical between them.
+ * Hidden until a marker is hovered; the caller fills `.gm-style-iw-content`.
+ */
+export function createMapTooltipElement(map: {getElement(): HTMLElement | null}): HTMLDivElement {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'gm-style-iw-wrapper';
+    tooltip.style.cssText = `
+        position: absolute;
+        display: none;
+        z-index: 1000;
+        pointer-events: none;
+        transform: translate(-50%, -100%);
+    `;
+    tooltip.innerHTML = `
+        <div class="gm-style-iw" style="
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 7px 1px rgba(0,0,0,0.3);
+            padding: 12px;
+            font-family: Roboto, Arial, sans-serif;
+            font-size: 13px;
+            min-width: 120px;
+        ">
+            <div class="gm-style-iw-content"></div>
+        </div>
+        <div class="gm-style-iw-tail" style="
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 11px solid transparent;
+            border-right: 11px solid transparent;
+            border-top: 11px solid white;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+        "></div>
+    `;
+
+    map.getElement()?.appendChild(tooltip);
+
+    return tooltip;
+}
+
+/**
+ * Drop the markers whose ids are no longer in the incoming set, in one batched removal.
+ *
+ * Removing them one at a time makes HERE re-render per marker, which is what the managers
+ * were each avoiding with their own copy of this loop.
+ */
+export function removeStaleMarkers<K>(
+    markers: Map<K, {marker?: unknown} | undefined>,
+    currentIds: Set<K>,
+    markerGroup: any,
+): void {
+    const stale: unknown[] = [];
+
+    for (const id of [...markers.keys()]) {
+        if (currentIds.has(id)) continue;
+
+        const marker = markers.get(id)?.marker;
+        if (marker) stale.push(marker);
+        markers.delete(id);
+    }
+
+    if (stale.length > 0) {
+        safeRemoveObjects(markerGroup, stale);
+    }
+}

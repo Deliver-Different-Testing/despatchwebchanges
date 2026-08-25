@@ -25,6 +25,7 @@ import {JobListColumnEditor} from './JobListColumnEditor';
 import {availableColumns, DEFAULT_COLUMN_WIDTHS, orderColumns} from './jobListColumns';
 import {HeaderSlotPortal} from '../common/header-slot/HeaderSlotPortal';
 import {JobListTable} from './JobListTable';
+import {getDeliveryAddressUs, getPickupAddressUs} from './jobAddressFormat';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
@@ -119,33 +120,6 @@ function matchesSearch(job: DispatchJob, query: string): boolean {
     );
 }
 
-function formatAddressOrFallback(
-    address: AddressViewModel | undefined,
-    pickLines: (a: AddressViewModel) => Array<string | undefined>,
-    fallback: string | undefined,
-): string {
-    if (address) {
-        return pickLines(address).filter((l): l is string => Boolean(l && l.trim())).join(', ');
-    }
-    return (fallback || '').split(',').map((l) => l.trim()).join(', ');
-}
-
-function getPickupAddressStr(job: DispatchJob): string {
-    return formatAddressOrFallback(
-        job.pickupAddress,
-        (a) => [a.addressLine2, a.addressLine3, a.addressLine4, a.addressLine5, a.addressLine6, a.addressLine7, a.addressLine8],
-        job.from,
-    );
-}
-
-function getDeliveryAddressStr(job: DispatchJob): string {
-    return formatAddressOrFallback(
-        job.deliveryAddress,
-        (a) => [a.addressLine2, a.addressLine3, a.addressLine4, a.addressLine5, a.addressLine8],
-        job.toAddress,
-    );
-}
-
 function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean): string | number {
     switch (column) {
         case 'date':
@@ -169,9 +143,9 @@ function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean):
         case 'refA':
             return job.refA || '';
         case 'pickup':
-            return getPickupAddressStr(job);
+            return getPickupAddressUs(job);
         case 'delivery':
-            return getDeliveryAddressStr(job);
+            return getDeliveryAddressUs(job);
         case 'courier':
             return isUsCustomer
                 ? (job.courierData?.courierName || job.assignedCourier?.text || '')

@@ -7,170 +7,90 @@
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
-import { AddEventDialog, AddEventJob, EventType, JobEventData } from './AddEventDialog';
+import { AddEventDialog, AddEventJob, JobEventData } from './AddEventDialog';
 import { getIanaTimezone, formatDateForApi, getTenantTimezone } from '../../../utils/dateUtils';
 import { EventType as EventTypeEnum } from '../../../../enums/event-type';
 import { JobNoteType } from '../../../../enums/job-note-type.enum';
 import { eventApi } from '../../../services/eventApi';
 import { notesApi } from '../../../services/notesApi';
 import { openVoidJobConfirmationDialog } from '../void-job-confirmation-dialog/void-job-confirmation-dialog-react.module';
-import type { ShowToastFn, ToastService } from '../../../services/toastService';
+import type { ToastService } from '../../../services/toastService';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-
-interface DialogState {
-    open: boolean;
-    job: AddEventJob | null;
-    toastService: ToastService | null;
-    resolve?: (value: boolean) => void;
-}
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 export interface OpenAddEventDialogOptions {
     job: AddEventJob;
     toastService?: ToastService;
 }
 
-/**
- * Add Event Dialog Manager Class
- * Manages the lifecycle and state of the Add Event Dialog.
- */
-class AddEventDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private dialogState: DialogState = {
-        open: false,
-        job: null,
-        toastService: null,
-    };
+const NOTE_WORTHY_EVENTS = new Set<number>([
+    EventTypeEnum.Closed,
+    EventTypeEnum.AddressIncorrect,
+    EventTypeEnum.FlightDetails,
+    EventTypeEnum.WaitingForJob,
+    EventTypeEnum.CancelJob,
+]);
 
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
+async function submitEvent(
+    job: AddEventJob,
+    toastService: ToastService | undefined,
+    eventData: JobEventData,
+): Promise<void> {
+    const eventTypes = await eventApi.getEventTypes();
+    const eventName = eventTypes.find(et => et.id === eventData.eventTypeId)?.text ?? '';
 
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-add-event-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
+    if (eventData.eventTypeId === EventTypeEnum.Compliment || eventData.eventTypeId === EventTypeEnum.Complaint) {
+        await eventApi.exsalerateActivity(eventName, eventData.notes, job.clientId ?? 0, job.jobNo);
     }
 
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(false);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleLoadEventTypes = async (): Promise<EventType[]> => {
-            const eventTypes = await eventApi.getEventTypes();
-            return eventTypes.map(et => ({ id: et.id, text: et.text }));
-        };
-
-        const handleSubmit = async (eventData: JobEventData): Promise<void> => {
-            const { job, toastService } = this.dialogState;
-            if (!job) {
-                throw new Error('Job not available');
-            }
-
-            const eventTypes = await eventApi.getEventTypes();
-            const selectedEventType = eventTypes.find(et => et.id === eventData.eventTypeId);
-            const eventName = selectedEventType?.text ?? '';
-
-            if (eventData.eventTypeId === EventTypeEnum.Compliment || eventData.eventTypeId === EventTypeEnum.Complaint) {
-                await eventApi.exsalerateActivity(
-                    eventName,
-                    eventData.notes,
-                    job.clientId ?? 0,
-                    job.jobNo
-                );
-            }
-
-            if (
-                eventData.eventTypeId === EventTypeEnum.Closed ||
-                eventData.eventTypeId === EventTypeEnum.AddressIncorrect ||
-                eventData.eventTypeId === EventTypeEnum.FlightDetails ||
-                eventData.eventTypeId === EventTypeEnum.WaitingForJob ||
-                eventData.eventTypeId === EventTypeEnum.CancelJob
-            ) {
-                const newNote = eventName + ':' + eventData.notes;
-                await notesApi.createNote({
-                    jobId: job.id,
-                    isImportant: false,
-                    noteTypeId: JobNoteType.InternalNote,
-                    noteText: newNote,
-                });
-            }
-
-            const formattedEventData: JobEventData = {
-                ...eventData,
-                eventDueDate: formatDateForApi(eventData.eventDueDate),
-            };
-
-            await eventApi.addEvent(formattedEventData);
-
-            if (eventData.eventTypeId === EventTypeEnum.CancelJob) {
-                const jobDetail = await eventApi.getDispatchJobDetail(job.id) as { id: number; jobNo: string; isArchived: boolean };
-                await openVoidJobConfirmationDialog(
-                    {
-                        id: jobDetail.id,
-                        jobNo: jobDetail.jobNo,
-                        isBulkJob: false,
-                        isArchived: jobDetail.isArchived,
-                    },
-                    toastService ?? undefined
-                );
-            }
-
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(true);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleShowToast: ShowToastFn = (message, type) => {
-            if (!this.dialogState.toastService) {
-                console.log(`[Toast ${type}]: ${message}`);
-                return;
-            }
-            this.dialogState.toastService.showToast(message, type);
-        };
-        const timezone = getIanaTimezone(getTenantTimezone());
-
-        this.dialogRoot.render(islandTree(
-                <AddEventDialog
-                    open={this.dialogState.open}
-                    job={this.dialogState.job}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    onLoadEventTypes={handleLoadEventTypes}
-                    showToast={handleShowToast}
-                    timezone={timezone}
-                />
-
-
-        ));
-    }
-
-    open(options: OpenAddEventDialogOptions): Promise<boolean> {
-        this.initializeDialogRoot();
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                job: options.job,
-                toastService: options.toastService ?? null,
-                resolve,
-            };
-            this.renderDialog();
+    if (NOTE_WORTHY_EVENTS.has(eventData.eventTypeId)) {
+        await notesApi.createNote({
+            jobId: job.id,
+            isImportant: false,
+            noteTypeId: JobNoteType.InternalNote,
+            noteText: eventName + ':' + eventData.notes,
         });
+    }
+
+    await eventApi.addEvent({...eventData, eventDueDate: formatDateForApi(eventData.eventDueDate)});
+
+    if (eventData.eventTypeId === EventTypeEnum.CancelJob) {
+        const jobDetail = await eventApi.getDispatchJobDetail(job.id) as { id: number; jobNo: string; isArchived: boolean };
+        await openVoidJobConfirmationDialog(
+            {
+                id: jobDetail.id,
+                jobNo: jobDetail.jobNo,
+                isBulkJob: false,
+                isArchived: jobDetail.isArchived,
+            },
+            toastService,
+        );
     }
 }
 
-const addEventDialogManager = new AddEventDialogManager();
+const host = createDialogHost<{job: AddEventJob; toastService?: ToastService}, boolean>({
+    containerId: 'react-add-event-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <AddEventDialog
+            open={open}
+            job={payload.job}
+            onClose={() => close(false)}
+            onSubmit={async (eventData: JobEventData) => {
+                await submitEvent(payload.job, payload.toastService, eventData);
+                close(true);
+            }}
+            onLoadEventTypes={async () => {
+                const eventTypes = await eventApi.getEventTypes();
+                return eventTypes.map(et => ({ id: et.id, text: et.text }));
+            }}
+            showToast={showToast}
+            timezone={getIanaTimezone(getTenantTimezone())}
+        />
+    ),
+});
 
 export function openAddEventDialog(options: OpenAddEventDialogOptions): Promise<boolean> {
-    return addEventDialogManager.open(options);
+    return host.open({job: options.job, toastService: options.toastService}, options.toastService);
 }
 
 // Expose to window for AngularJS access

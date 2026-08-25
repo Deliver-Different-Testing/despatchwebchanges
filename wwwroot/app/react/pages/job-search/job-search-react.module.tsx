@@ -9,7 +9,6 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {islandTree} from '../../theme/DfrntMantineProvider';
 import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
@@ -17,43 +16,17 @@ import {JobSearchPage} from './JobSearchPage';
 import type {ImportLayoutsResult} from './lib/layoutPersistence';
 import {JobSearchPageProps} from "./JobSearchPageProps";
 import {JobSearchLayoutBridge} from "./JobSearchLayoutBridge";
+import {createPageHost} from '../../utils/reactPageHost';
 
 export interface MountJobSearchPageConfig extends JobSearchPageProps {}
 
-let jobSearchRoot: Root | null = null;
-let jobSearchContainer: HTMLElement | null = null;
 let layoutBridge: JobSearchLayoutBridge | null = null;
 
-export function mountJobSearchPage(
-    containerId: string,
-    config: MountJobSearchPageConfig,
-): void {
-    console.log('[JobSearchReact] Mounting to container:', containerId);
-
-    if (jobSearchRoot && jobSearchContainer && jobSearchContainer.id !== containerId) {
-        console.log('[JobSearchReact] Unmounting previous page from:', jobSearchContainer.id);
-        jobSearchRoot.unmount();
-        jobSearchRoot = null;
-        jobSearchContainer = null;
-    }
-
-    let container = document.getElementById(containerId);
-    if (!container) {
-        console.error('[JobSearchReact] Container not found:', containerId);
-        container = document.createElement('div');
-        container.id = containerId;
-        document.body.appendChild(container);
-    }
-
-    jobSearchContainer = container;
-
-    if (!jobSearchRoot) {
-        jobSearchRoot = createRoot(container);
-    }
-
-    // The page itself is still MUI; Mantine wraps it so the already-migrated
-    // JobListPanel it renders finds a provider.
-    jobSearchRoot.render(islandTree(
+// The page itself is still MUI; Mantine wraps it so the already-migrated
+// JobListPanel it renders finds a provider.
+const host = createPageHost<MountJobSearchPageConfig>({
+    logName: 'JobSearchReact',
+    render: (config) => islandTree(
         <MuiThemeIsland>
             <ErrorBoundary>
                 <JobSearchPage
@@ -65,18 +38,18 @@ export function mountJobSearchPage(
                 />
             </ErrorBoundary>
         </MuiThemeIsland>
-    ));
+    ),
+});
 
-    console.log('[JobSearchReact] Page rendered');
+export function mountJobSearchPage(
+    containerId: string,
+    config: MountJobSearchPageConfig,
+): void {
+    host.mount(containerId, config);
 }
 
 export function unmountJobSearchPage(): void {
-    console.log('[JobSearchReact] Unmounting job-search page');
-    if (jobSearchRoot) {
-        jobSearchRoot.unmount();
-        jobSearchRoot = null;
-    }
-    jobSearchContainer = null;
+    host.unmount();
     layoutBridge = null;
 }
 

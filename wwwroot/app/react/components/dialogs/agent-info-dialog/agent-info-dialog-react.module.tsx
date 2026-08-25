@@ -7,99 +7,40 @@
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
 import { AgentInfoDialog } from './AgentInfoDialog';
 import { AgentInfo } from '../../../interfaces';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import { agentApi } from '../../../services/agentApi';
-
-interface DialogState {
-    open: boolean;
-    agent: AgentInfo | null;
-    isLoading: boolean;
-}
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 export interface OpenAgentInfoDialogOptions {
     agentId: number;
 }
 
-/**
- * Agent Info Dialog Manager Class
- * Manages the lifecycle and state of the Agent Info Dialog.
- */
-class AgentInfoDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private dialogState: DialogState = {
-        open: false,
-        agent: null,
-        isLoading: false,
-    };
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-agent-info-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.agent = null;
-            this.dialogState.isLoading = false;
-            this.renderDialog();
-        };
-
-        this.dialogRoot.render(islandTree(
-            <AgentInfoDialog
-                open={this.dialogState.open}
-                agent={this.dialogState.agent}
-                isLoading={this.dialogState.isLoading}
-                onClose={handleClose}
-            />
-        ));
-    }
-
-    async open(options: OpenAgentInfoDialogOptions): Promise<void> {
-        this.initializeDialogRoot();
-
-        this.dialogState = {
-            open: true,
-            agent: null,
-            isLoading: true,
-        };
-        this.renderDialog();
-
-        try {
-            const agent = await agentApi.getAgentInfo(options.agentId);
-
-            this.dialogState = {
-                ...this.dialogState,
-                agent,
-                isLoading: false,
-            };
-            this.renderDialog();
-        } catch (error) {
-            console.error('Error loading agent info:', error);
-            this.dialogState = {
-                open: false,
-                agent: null,
-                isLoading: false,
-            };
-            this.renderDialog();
-        }
-    }
-}
-
-const agentInfoDialogManager = new AgentInfoDialogManager();
+const host = createDialogHost<{agent: AgentInfo | null; isLoading: boolean}, void>({
+    containerId: 'react-agent-info-dialog-root',
+    render: ({open, payload, close}) => islandTree(
+        <AgentInfoDialog
+            open={open}
+            agent={payload.agent}
+            isLoading={payload.isLoading}
+            onClose={() => close()}
+        />
+    ),
+});
 
 export async function openAgentInfoDialog(options: OpenAgentInfoDialogOptions): Promise<void> {
-    return agentInfoDialogManager.open(options);
+    // The dialog opens on its loading state and is filled in when the agent arrives, so the
+    // promise the caller awaits is this function, not the host one.
+    void host.open({agent: null, isLoading: true});
+
+    try {
+        const agent = await agentApi.getAgentInfo(options.agentId);
+        host.update({agent, isLoading: false});
+    } catch (error) {
+        console.error('Error loading agent info:', error);
+        host.close();
+    }
 }
 
 // Expose to window for AngularJS access

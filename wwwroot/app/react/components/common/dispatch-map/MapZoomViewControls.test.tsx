@@ -1,14 +1,8 @@
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {MapZoomViewControls} from './MapZoomViewControls';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithTheme} from '../../../__testUtils__';
 
 function createMockMap() {
     return {

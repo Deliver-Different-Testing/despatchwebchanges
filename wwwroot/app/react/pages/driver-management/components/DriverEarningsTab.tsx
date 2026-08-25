@@ -14,6 +14,7 @@ import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarIconButtonSx} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import {formatCurrency} from '../../../utils/currencyUtils';
+import {dataTablePagingProps} from './dataTablePaging';
 
 interface DriverEarningsTabProps {
     showToast: ShowToastFn;
@@ -98,10 +99,7 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
-                page={query.page || 1}
-                pageSize={query.pageSize}
-                onPageChange={(p) => setQuery(q => ({...q, page: p}))}
-                onPageSizeChange={(ps) => setQuery(q => ({...q, pageSize: ps, page: 1}))}
+                {...dataTablePagingProps(query, setQuery)}
                 emptyIcon={<MoneyIcon />}
                 emptyTitle="No Earnings Data"
                 emptyMessage="No earnings data matches your criteria."

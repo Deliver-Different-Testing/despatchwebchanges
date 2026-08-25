@@ -274,6 +274,63 @@ public class JobRepositoryVoidStatusGuardTests : IAsyncDisposable
         Assert.Equal(5, live.UcjbCourierId);
     }
 
+    [Fact]
+    public async Task UpdateBulkJobAsync_VoidingBulkJob_AlsoWritesVoidStatus()
+    {
+        // Arrange
+        await using (var context = _db.CreateContext())
+        {
+            context.TblBulkJobs.Add(CreateBulkJob(1, (int)JobStatus.New));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateBulkJobAsync(1, JobProperty.Void, "true");
+
+        // Assert - the flag and the status must move together, as VoidBulkJobAsync already does
+        await using var assertContext = _db.CreateContext();
+        var bulkJob = await assertContext.TblBulkJobs
+            .FirstAsync(j => j.BulkJobId == 1, TestContext.Current.CancellationToken);
+        Assert.True(bulkJob.Void);
+        Assert.Equal((int)JobStatus.Void, bulkJob.JobStatus);
+    }
+
+    [Fact]
+    public async Task UpdateBulkJobAsync_UnVoidingBulkJob_ClearsFlagAndStatusTogether()
+    {
+        // Arrange
+        await using (var context = _db.CreateContext())
+        {
+            context.TblBulkJobs.Add(CreateBulkJob(1, (int)JobStatus.Void, isVoid: true));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateBulkJobAsync(1, JobProperty.Void, "false");
+
+        // Assert - mirrors the live-job un-void path, which also returns the status to New
+        await using var assertContext = _db.CreateContext();
+        var bulkJob = await assertContext.TblBulkJobs
+            .FirstAsync(j => j.BulkJobId == 1, TestContext.Current.CancellationToken);
+        Assert.False(bulkJob.Void);
+        Assert.Equal((int)JobStatus.New, bulkJob.JobStatus);
+    }
+
+    private static TblBulkJob CreateBulkJob(int id, int status, bool isVoid = false) =>
+        new()
+        {
+            BulkJobId = id,
+            JobNumber = $"BULK-{id:D3}",
+            BookDate = TestDates.Now.Date,
+            BookTime = TestDates.Now.Date.AddHours(9),
+            JobStatus = status,
+            Void = isVoid
+        };
+
     private static TucJob CreateVoidedJob(int id)
     {
         var job = CreateJob(id, (int)JobStatus.Void);

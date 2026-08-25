@@ -12,9 +12,9 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {AutoCompleteDialog, AssignTypeOption, Suggestion} from './AutoCompleteDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 // Result interface for the dialog
 export interface AutoCompleteResult {
@@ -24,88 +24,37 @@ export interface AutoCompleteResult {
     selectedType?: string;
 }
 
-// State management for the dialog
-interface DialogState {
-    open: boolean;
+interface AutoCompletePayload {
     title: string;
     placeholder: string;
     itemIcon: string;
     existingItem?: Suggestion;
     showRerateOption: boolean;
     minInputLength: number;
-    searchFn: ((searchTerm: string) => Promise<Suggestion[]>) | null;
+    searchFn: (searchTerm: string) => Promise<Suggestion[]>;
     typeOptions?: AssignTypeOption[];
     initialTypeValue?: string;
-    resolve?: (value: AutoCompleteResult | null) => void;
 }
 
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    title: '',
-    placeholder: '',
-    itemIcon: 'topic',
-    showRerateOption: false,
-    minInputLength: 2,
-    searchFn: null,
-};
-
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSubmit = (item: Suggestion, shouldRerate: boolean, selectedType?: string) => {
-        dialogState.open = false;
-        dialogState.resolve?.({item, shouldRerate, selectedType});
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSearch = async (searchTerm: string): Promise<Suggestion[]> => {
-        if (!dialogState.searchFn) return [];
-        return dialogState.searchFn(searchTerm);
-    };
-
-    // Get theme dynamically based on customer region
-    dialogRoot.render(islandTree(
+const host = createDialogHost<AutoCompletePayload, AutoCompleteResult | null>({
+    containerId: 'react-auto-complete-dialog-root',
+    render: ({open, payload, close}) => islandTree(
         <AutoCompleteDialog
-            open={dialogState.open}
-            title={dialogState.title}
-            placeholder={dialogState.placeholder}
-            itemIcon={dialogState.itemIcon}
-            existingItem={dialogState.existingItem}
-            showRerateOption={dialogState.showRerateOption}
-            minInputLength={dialogState.minInputLength}
-            typeOptions={dialogState.typeOptions}
-            initialTypeValue={dialogState.initialTypeValue}
-            onClose={handleClose}
-            onSubmit={handleSubmit}
-            onSearch={handleSearch}
+            open={open}
+            title={payload.title}
+            placeholder={payload.placeholder}
+            itemIcon={payload.itemIcon}
+            existingItem={payload.existingItem}
+            showRerateOption={payload.showRerateOption}
+            minInputLength={payload.minInputLength}
+            typeOptions={payload.typeOptions}
+            initialTypeValue={payload.initialTypeValue}
+            onClose={() => close(null)}
+            onSubmit={(item, shouldRerate, selectedType) => close({item, shouldRerate, selectedType})}
+            onSearch={(searchTerm) => payload.searchFn(searchTerm)}
         />
-    ));
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-auto-complete-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+    ),
+});
 
 /**
  * Opens the auto complete dialog
@@ -128,23 +77,16 @@ export function openAutoCompleteDialog(
     itemIcon: string = 'topic',
     minInputLength: number = 2
 ): Promise<AutoCompleteResult | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            title,
-            placeholder,
-            itemIcon,
-            existingItem,
-            showRerateOption,
-            minInputLength,
-            searchFn,
-            typeOptions: undefined,
-            initialTypeValue: undefined,
-            resolve,
-        };
-        renderDialog();
+    return host.open({
+        title,
+        placeholder,
+        itemIcon,
+        existingItem,
+        showRerateOption,
+        minInputLength,
+        searchFn,
+        typeOptions: undefined,
+        initialTypeValue: undefined,
     });
 }
 
@@ -170,30 +112,23 @@ export function openAutoCompleteDialogWithTypes(
         itemIcon?: string;
     }
 ): Promise<AutoCompleteResult | null> {
-    initializeDialogRoot();
-
     if (!typeOptions || typeOptions.length === 0) {
         throw new Error('openAutoCompleteDialogWithTypes requires at least one typeOption.');
     }
 
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            title,
-            // Placeholder is per-type — the dialog reads it from the active
-            // AssignTypeOption. Pass empty string as the dialog-level default.
-            placeholder: '',
-            itemIcon: options?.itemIcon ?? 'topic',
-            existingItem: options?.existingItem,
-            showRerateOption: options?.showRerateOption ?? false,
-            minInputLength: options?.minInputLength ?? 2,
-            // Fallback when no AssignTypeOption matches — returns empty list.
-            searchFn: async () => [],
-            typeOptions,
-            initialTypeValue: options?.initialTypeValue ?? typeOptions[0].value,
-            resolve,
-        };
-        renderDialog();
+    return host.open({
+        title,
+        // Placeholder is per-type — the dialog reads it from the active
+        // AssignTypeOption. Pass empty string as the dialog-level default.
+        placeholder: '',
+        itemIcon: options?.itemIcon ?? 'topic',
+        existingItem: options?.existingItem,
+        showRerateOption: options?.showRerateOption ?? false,
+        minInputLength: options?.minInputLength ?? 2,
+        // Fallback when no AssignTypeOption matches — returns empty list.
+        searchFn: async () => [],
+        typeOptions,
+        initialTypeValue: options?.initialTypeValue ?? typeOptions[0].value,
     });
 }
 

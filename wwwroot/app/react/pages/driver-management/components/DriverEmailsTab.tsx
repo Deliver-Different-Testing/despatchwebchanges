@@ -22,6 +22,7 @@ import {
     toolbarIconButtonSx
 } from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
+import {dataTablePagingProps} from './dataTablePaging';
 
 interface DriverEmailsTabProps {
     showToast: ShowToastFn;
@@ -159,10 +160,7 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
-                page={query.page || 1}
-                pageSize={query.pageSize}
-                onPageChange={(p) => setQuery(q => ({...q, page: p}))}
-                onPageSizeChange={(ps) => setQuery(q => ({...q, pageSize: ps, page: 1}))}
+                {...dataTablePagingProps(query, setQuery)}
                 checkboxSelection
                 allSelected={allSelected}
                 someSelected={someSelected}

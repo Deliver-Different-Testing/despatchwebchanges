@@ -4,21 +4,14 @@
  */
 
 import React from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {screen, within} from '@testing-library/react';
 import {fireEvent} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import {FlightDetailsDialog} from './FlightDetailsDialog';
 import {FlightData, FlightSegmentData} from './types';
+import {renderWithTheme} from '../../../__testUtils__';
 
 // Create a theme for testing
-const theme = createTheme();
-
-// Helper to render component with theme
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
-
 // Create sample single-segment flight
 function createSingleSegmentFlight(overrides?: Partial<FlightData>): FlightData {
     return {

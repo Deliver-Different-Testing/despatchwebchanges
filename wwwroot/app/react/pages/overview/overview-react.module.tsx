@@ -6,52 +6,18 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {OverviewPage} from './OverviewPage';
 import {MountOverviewConfig} from './OverviewPage.interfaces';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {islandTree} from '../../theme/DfrntMantineProvider';
 import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
+import {createPageHost} from '../../utils/reactPageHost';
 
-let overviewRoot: Root | null = null;
-let overviewContainer: HTMLElement | null = null;
 let refreshCallback: (() => void) | null = null;
 
-/**
- * Mounts the overview page component into a container element
- */
-export function mountOverviewPage(
-    containerId: string,
-    config: MountOverviewConfig,
-): void {
-    console.log('[OverviewReact] Mounting to container:', containerId);
-
-    // If there's an existing root for a different container, unmount it first
-    if (overviewRoot && overviewContainer && overviewContainer.id !== containerId) {
-        console.log('[OverviewReact] Unmounting previous page from:', overviewContainer.id);
-        overviewRoot.unmount();
-        overviewRoot = null;
-        overviewContainer = null;
-    }
-
-    // Find the container
-    let container = document.getElementById(containerId);
-    if (!container) {
-        console.error('[OverviewReact] Container not found:', containerId);
-        container = document.createElement('div');
-        container.id = containerId;
-        document.body.appendChild(container);
-        console.log('[OverviewReact] Created fallback container');
-    }
-
-    overviewContainer = container;
-
-    // Create new root if needed
-    if (!overviewRoot) {
-        console.log('[OverviewReact] Creating new React root');
-        overviewRoot = createRoot(container);
-    }
-    overviewRoot.render(islandTree(
+const host = createPageHost<MountOverviewConfig>({
+    logName: 'OverviewReact',
+    render: (config) => islandTree(
         <MuiThemeIsland>
             <ErrorBoundary>
                 <OverviewPage
@@ -64,32 +30,28 @@ export function mountOverviewPage(
                 />
             </ErrorBoundary>
         </MuiThemeIsland>
-    ));
+    ),
+});
 
-    console.log('[OverviewReact] Overview page rendered');
+/**
+ * Mounts the overview page component into a container element
+ */
+export function mountOverviewPage(containerId: string, config: MountOverviewConfig): void {
+    host.mount(containerId, config);
 }
 
 /**
  * Triggers a data refresh in the React component
  */
 export function refreshOverview(): void {
-    if (refreshCallback) {
-        refreshCallback();
-    }
+    refreshCallback?.();
 }
 
 /**
  * Unmounts the overview page
  */
 export function unmountOverviewPage(): void {
-    console.log('[OverviewReact] Unmounting overview page');
-
-    if (overviewRoot) {
-        overviewRoot.unmount();
-        overviewRoot = null;
-    }
-
-    overviewContainer = null;
+    host.unmount();
     refreshCallback = null;
 }
 

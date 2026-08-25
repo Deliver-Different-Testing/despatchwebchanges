@@ -6,19 +6,11 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
 import type {ToastService} from '../../../services/toastService';
-
-const defaultToastService: ToastService = {
-    showToast: (message, type) => {
-        console.log(`[${type.toUpperCase()}] ${message}`);
-    },
-};
-
-let toastService: ToastService = defaultToastService;
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 // API interface for making requests
 interface ApiService {
@@ -28,110 +20,43 @@ interface ApiService {
     getSuggestedFuelCharge: (jobId: number, chargeAmount: number, isPrebook: boolean, isArchived: boolean) => Promise<{ fuelChargeAmount: number; fuelCostAmount: number }>;
 }
 
-// State management for the dialog
-interface DialogState {
-    open: boolean;
+interface PriceBreakdownPayload {
     priceBreakdowns: PriceBreakdown[];
     jobId: number;
     isPrebook: boolean;
     isArchived: boolean;
     isUsCustomer: boolean;
     readOnly: boolean;
-    apiService: ApiService | null;
-    resolve?: (value: number | null) => void;
+    apiService: ApiService;
 }
 
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    priceBreakdowns: [],
-    jobId: 0,
-    isPrebook: false,
-    isArchived: false,
-    isUsCustomer: false,
-    readOnly: false,
-    apiService: null,
-};
-
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSave = (totalAmount: number) => {
-        dialogState.open = false;
-        dialogState.resolve?.(totalAmount);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleAddItem = async (item: Omit<PriceBreakdown, 'chargeId'>): Promise<number> => {
-        if (!dialogState.apiService) throw new Error('API service not available');
-        return dialogState.apiService.addPriceBreakdown(item);
-    };
-
-    const handleUpdateItem = async (item: PriceBreakdown): Promise<void> => {
-        if (!dialogState.apiService) throw new Error('API service not available');
-        return dialogState.apiService.updatePriceBreakdown(item);
-    };
-
-    const handleDeleteItem = async (chargeId: number, jobId: number, isArchived: boolean): Promise<void> => {
-        if (!dialogState.apiService) throw new Error('API service not available');
-        return dialogState.apiService.deletePriceBreakdown(chargeId, jobId, isArchived);
-    };
-
-    const handleGetSuggestedFuelCharge = async (chargeAmount: number) => {
-        if (!dialogState.apiService) throw new Error('API service not available');
-        return dialogState.apiService.getSuggestedFuelCharge(
-            dialogState.jobId, chargeAmount, dialogState.isPrebook, dialogState.isArchived
-        );
-    };
-
-    // Get theme dynamically based on customer region
-
-    dialogRoot.render(islandTree(
+const host = createDialogHost<PriceBreakdownPayload, number | null>({
+    containerId: 'react-price-breakdown-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
         <PriceBreakdownDialog
-            open={dialogState.open}
-            priceBreakdowns={dialogState.priceBreakdowns}
-            jobId={dialogState.jobId}
-            isPrebook={dialogState.isPrebook}
-            isArchived={dialogState.isArchived}
-            isUsCustomer={dialogState.isUsCustomer}
-            readOnly={dialogState.readOnly}
-            onClose={handleClose}
-            onSave={handleSave}
-            onAddItem={handleAddItem}
-            onUpdateItem={handleUpdateItem}
-            onDeleteItem={handleDeleteItem}
-            onGetSuggestedFuelCharge={handleGetSuggestedFuelCharge}
-            showToast={toastService.showToast}
+            open={open}
+            priceBreakdowns={payload.priceBreakdowns}
+            jobId={payload.jobId}
+            isPrebook={payload.isPrebook}
+            isArchived={payload.isArchived}
+            isUsCustomer={payload.isUsCustomer}
+            readOnly={payload.readOnly}
+            onClose={() => close(null)}
+            onSave={close}
+            onAddItem={(item) => payload.apiService.addPriceBreakdown(item)}
+            onUpdateItem={(item) => payload.apiService.updatePriceBreakdown(item)}
+            onDeleteItem={(chargeId, jobId, isArchived) =>
+                payload.apiService.deletePriceBreakdown(chargeId, jobId, isArchived)}
+            onGetSuggestedFuelCharge={(chargeAmount) => payload.apiService.getSuggestedFuelCharge(
+                payload.jobId, chargeAmount, payload.isPrebook, payload.isArchived
+            )}
+            showToast={showToast}
         />
-    ));
-}
+    ),
+});
 
 export function setToastService(service: ToastService): void {
-    toastService = service;
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-price-breakdown-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
+    host.setToastService(service);
 }
 
 /**
@@ -160,21 +85,14 @@ export function openPriceBreakdownDialog(
     readOnly: boolean = false,
     apiService?: ApiService
 ): Promise<number | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            priceBreakdowns: [...priceBreakdowns], // Clone the array
-            jobId,
-            isPrebook,
-            isArchived,
-            isUsCustomer,
-            readOnly,
-            apiService: apiService ?? createDefaultApiService(),
-            resolve,
-        };
-        renderDialog();
+    return host.open({
+        priceBreakdowns: [...priceBreakdowns], // Clone the array
+        jobId,
+        isPrebook,
+        isArchived,
+        isUsCustomer,
+        readOnly,
+        apiService: apiService ?? createDefaultApiService(),
     });
 }
 

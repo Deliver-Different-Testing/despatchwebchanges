@@ -128,4 +128,20 @@ public class TaskRepositoryAddTests : IAsyncDisposable
         Assert.Equal("Christopher And", created.UcevDespatcher);
         Assert.True(created.UcevDespatcher!.Length <= DespatcherMax);
     }
+
+    [Fact]
+    public async Task AddEventAsync_LeavesTaskUnassigned_ButRecordsTheCreator()
+    {
+        _infoServiceMock.GetStaffId().Returns(7);
+        _infoServiceMock.GetStaffInfoAsync()
+            .Returns(new Suggestion { Id = 7, Text = "Christopher Anderson" });
+        await SeedAsync(Job(558, contact: "Front desk"));
+
+        await CreateRepository().AddEventAsync(558, notes: "Chase POD", eventType: 3);
+
+        var created = await SingleEventAsync();
+        Assert.Null(created.UcevStaffIdin);
+        Assert.Equal(7, created.UcevOriginator);
+        Assert.Equal("Christopher And", created.UcevDespatcher);
+    }
 }

@@ -344,6 +344,29 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SplitJobAsync_CompletedParent_StartsBothLegsFresh()
+    {
+        // A new leg is born not-done, so inheriting a finished status would make it read as
+        // "complete" on the grid and "not delivered" in job properties from the moment it exists.
+        SeedJob(configure: j => j.UcjbStatus = (int)JobStatus.Completed);
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal((int)JobStatus.New, pickup.UcjbStatus);
+        Assert.Equal((int)JobStatus.New, delivery.UcjbStatus);
+        Assert.False(pickup.UcjbJobDone);
+        Assert.False(delivery.UcjbJobDone);
+    }
+
+    [Fact]
     public async Task SplitJobAsync_ValidJob_ReturnsBothJobIds()
     {
         SeedJob();

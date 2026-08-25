@@ -5,13 +5,13 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import {rejectWithoutCsrf} from './requestGuards';
 
 export const splitJobHandlers = [
     // Split a job
     http.post('*/job/splitJob', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -28,9 +28,8 @@ export const splitJobHandlers = [
 
     // Preview how the price divides across the legs (read-only)
     http.post('*/job/PreviewSplitPricing', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         const { jobId, meetingPointAddress } = (body ?? {}) as {
@@ -88,9 +87,8 @@ export const splitJobHandlers = [
 
     // Restore split jobs (uses repeated query params, null body)
     http.post('*/job/RestoreSplitJobs', ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const url = new URL(request.url);
         const jobIds = url.searchParams.getAll('jobIds');
@@ -104,9 +102,8 @@ export const splitJobHandlers = [
 
     // Un-split a job (query param, null body)
     http.post('*/job/UnSplitJob', ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const url = new URL(request.url);
         const jobId = url.searchParams.get('jobId');

@@ -7,8 +7,8 @@
  */
 
 import React from 'react';
-import {ActionIcon, Badge, Box, Flex, Group, Text, Tooltip, UnstyledButton} from '@mantine/core';
-import {ArrowDown, ArrowRight, Phone, PhoneCall, User} from 'lucide-react';
+import {ActionIcon, Alert, Badge, Box, Flex, Group, Text, Tooltip, UnstyledButton} from '@mantine/core';
+import {ArrowDown, ArrowRight, Phone, PhoneCall, TriangleAlert, User} from 'lucide-react';
 import {IconMapPin, IconPlaneDeparture} from '@tabler/icons-react';
 import {Icon, type LucideIcon, type TablerIcon} from '../../icon/Icon';
 import type {IJob} from '../JobDetails.types';
@@ -16,6 +16,7 @@ import {usePendingChangeForField} from '../../../job-change-requests/useJobChang
 import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
 import {AddressType} from '../../../../../enums/address-type.enum';
 import {SectionHeader} from './SectionHeader';
+import {addressesDisagree, STALE_ADDRESS_DETAIL, STALE_ADDRESS_LEAD} from '../../../../utils/addressAgreement';
 import type {JobChangeRequestDto} from '../../../../interfaces/jobChangeRequest';
 import classes from './AddressSection.module.css';
 
@@ -36,6 +37,8 @@ interface AddressBlockProps {
     /** Passed straight to `SectionHeader`'s Tabler slot (place / flight). */
     icon: TablerIcon;
     address?: { fullAddress?: string };
+    /** The free-text copy of this address (ucjbToAddr) that the driver app and tracking page read. */
+    deviceAddress?: string;
     contactName?: string;
     contactPhone?: string;
     phoneSource?: string;
@@ -137,6 +140,7 @@ function AddressBlock({
     variant,
     icon: IconComponent,
     address,
+    deviceAddress,
     contactName,
     contactPhone,
     phoneSource,
@@ -150,6 +154,12 @@ function AddressBlock({
     pendingPhone,
 }: AddressBlockProps) {
     const isPu = variant === AddressType.Pickup;
+
+    // The two copies of the address are written by different code paths, and an upstream
+    // edit that only reaches the free-text one leaves this pane, the grid and the map pin
+    // pointing at the previous destination. Say so, and show what the driver is actually
+    // working from - re-saving through the address dialog writes both copies.
+    const staleAddress = addressesDisagree(deviceAddress, address?.fullAddress);
 
     return (
         <Box className={classes.block} style={blockStyle}>
@@ -174,6 +184,25 @@ function AddressBlock({
                     {pendingAddress && <PendingChangeBadge request={pendingAddress} variant="inline"/>}
                 </Box>
             </UnstyledButton>
+
+            {staleAddress && (
+                <Alert
+                    role="alert"
+                    color="orange"
+                    variant="light"
+                    icon={<Icon lucide={TriangleAlert} size={16}/>}
+                    mx={dense ? 8 : 12}
+                    mb={dense ? 4 : 8}
+                    p={dense ? 6 : 10}
+                    styles={{message: {fontSize: '0.75rem'}}}
+                >
+                    <Text span fw={600} style={{fontSize: 'inherit'}}>{STALE_ADDRESS_LEAD}{' '}</Text>
+                    <Text span style={{fontSize: 'inherit'}}>{deviceAddress}</Text>
+                    <Text style={{fontSize: 'inherit', marginTop: 4}}>
+                        {STALE_ADDRESS_DETAIL} Open the address to re-enter it.
+                    </Text>
+                </Alert>
+            )}
 
             {/* Contact cards */}
             <Box
@@ -305,6 +334,7 @@ export const AddressSection = React.memo(({
                 variant={AddressType.Delivery}
                 icon={addressIcon}
                 address={job.deliveryAddress}
+                deviceAddress={job.toAddress}
                 contactName={job.deliverToContact}
                 contactPhone={job.toContactPhone}
                 onEditAddress={onEditDeliveryAddress}

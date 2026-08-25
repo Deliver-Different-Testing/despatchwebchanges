@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import {rejectWithoutCsrf} from './requestGuards';
 import type { TaskApiResponse, StaffSuggestion, EventTypeSuggestion } from '../../../interfaces';
 import type { DeliveryJourneyDto } from '../../../components/common/task-history/TaskHistory.interfaces';
 
@@ -121,9 +122,8 @@ export const taskHandlers = [
 
     // Mark task as closed/reopened
     http.post('*/task/MarkTaskAsClosed', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -140,9 +140,8 @@ export const taskHandlers = [
 
     // Update task date
     http.post('*/task/UpdateTaskDate', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -159,9 +158,8 @@ export const taskHandlers = [
 
     // Update task time
     http.post('*/task/UpdateTaskTime', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -178,9 +176,8 @@ export const taskHandlers = [
 
     // Reassign task to staff
     http.post('*/task/ReassignTask', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {

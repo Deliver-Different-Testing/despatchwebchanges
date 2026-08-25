@@ -97,6 +97,13 @@ export interface DispatchJob {
     internalStatusId?: number;
     statusName?: string;
     status?: string;
+    /** The server's single resolved status. Render from this, never from statusId + done + void. */
+    resolvedStatusId?: number;
+    resolvedIsVoid?: boolean;
+    resolvedIsComplete?: boolean;
+    void?: boolean;
+    /** Bulk rows only: pushed to live dispatch. Distinct from `done`, which means delivered. */
+    released?: boolean;
     time?: Dayjs;
     booked: Dayjs;
     remain?: number;

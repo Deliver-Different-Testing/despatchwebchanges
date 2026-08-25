@@ -10,7 +10,6 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {islandTree} from '../../theme/DfrntMantineProvider';
 import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
@@ -18,11 +17,10 @@ import {DispatchPage, DispatchPageProps, DispatchLayoutBridge} from './DispatchP
 import type {DispatchFilters, DispatchRefreshIntervals} from './lib/dispatchFilters';
 import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import type {ImportLayoutsResult} from '../job-search/lib/layoutPersistence';
+import {createPageHost} from '../../utils/reactPageHost';
 
 export interface MountDispatchPageConfig extends DispatchPageProps {}
 
-let dispatchRoot: Root | null = null;
-let dispatchContainer: HTMLElement | null = null;
 let layoutBridge: DispatchLayoutBridge | null = null;
 // Filters pushed by the AngularJS toolbar before the React bridge is ready
 // (e.g. the route controller resolves page views right after mount). Held here
@@ -34,35 +32,10 @@ let pendingFilters: Partial<DispatchFilters> | null = null;
 let pendingViewsListener: ((views: DfrntPageViewModel[]) => void) | null = null;
 let unregisterViewsListener: (() => void) | null = null;
 
-export function mountDispatchPage(
-    containerId: string,
-    config: MountDispatchPageConfig,
-): void {
-    console.log('[DispatchReact] Mounting to container:', containerId);
-
-    if (dispatchRoot && dispatchContainer && dispatchContainer.id !== containerId) {
-        console.log('[DispatchReact] Unmounting previous page from:', dispatchContainer.id);
-        dispatchRoot.unmount();
-        dispatchRoot = null;
-        dispatchContainer = null;
-    }
-
-    let container = document.getElementById(containerId);
-    if (!container) {
-        console.error('[DispatchReact] Container not found:', containerId);
-        container = document.createElement('div');
-        container.id = containerId;
-        document.body.appendChild(container);
-    }
-
-    dispatchContainer = container;
-
-    if (!dispatchRoot) {
-        dispatchRoot = createRoot(container);
-    }
-
-    // ErrorBoundary is a shared MUI leaf still used by unmigrated islands.
-    dispatchRoot.render(islandTree(
+// ErrorBoundary is a shared MUI leaf still used by unmigrated islands.
+const host = createPageHost<MountDispatchPageConfig>({
+    logName: 'DispatchReact',
+    render: (config) => islandTree(
         <MuiThemeIsland>
             <ErrorBoundary>
                 <DispatchPage
@@ -81,18 +54,18 @@ export function mountDispatchPage(
                 />
             </ErrorBoundary>
         </MuiThemeIsland>
-    ));
+    ),
+});
 
-    console.log('[DispatchReact] Page rendered');
+export function mountDispatchPage(
+    containerId: string,
+    config: MountDispatchPageConfig,
+): void {
+    host.mount(containerId, config);
 }
 
 export function unmountDispatchPage(): void {
-    console.log('[DispatchReact] Unmounting dispatch page');
-    if (dispatchRoot) {
-        dispatchRoot.unmount();
-        dispatchRoot = null;
-    }
-    dispatchContainer = null;
+    host.unmount();
     layoutBridge = null;
     pendingFilters = null;
     pendingViewsListener = null;

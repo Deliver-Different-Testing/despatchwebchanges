@@ -42,6 +42,7 @@ import {
 } from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
+import {dataTablePagingProps} from './dataTablePaging';
 
 interface DriverComplianceTabProps {
     showToast: ShowToastFn;
@@ -241,10 +242,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
-                page={query.page || 1}
-                pageSize={query.pageSize}
-                onPageChange={(p) => setQuery(q => ({...q, page: p}))}
-                onPageSizeChange={(ps) => setQuery(q => ({...q, pageSize: ps, page: 1}))}
+                {...dataTablePagingProps(query, setQuery)}
                 emptyIcon={<VerifiedIcon />}
                 emptyTitle="No Compliance Records"
                 emptyMessage="No compliance records match your criteria."

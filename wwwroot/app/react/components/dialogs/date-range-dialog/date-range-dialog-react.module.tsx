@@ -6,65 +6,23 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {DateRangeDialog, DateRange} from './DateRangeDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-// State management for the dialog
-interface DialogState {
-    open: boolean;
-    initialRange?: { start?: Date; end?: Date };
-    resolve?: (value: DateRange | null) => void;
-}
+type InitialRange = { start?: Date; end?: Date } | undefined;
 
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = { open: false };
-
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleApply = (range: DateRange) => {
-        dialogState.open = false;
-        dialogState.resolve?.(range);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    // Get theme dynamically based on customer region (US = blue, non-US = yellow)
-    dialogRoot.render(islandTree(
+const host = createDialogHost<{initialRange: InitialRange}, DateRange | null>({
+    containerId: 'react-date-range-dialog-root',
+    render: ({open, payload, close}) => islandTree(
         <DateRangeDialog
-            open={dialogState.open}
-            initialRange={dialogState.initialRange}
-            onClose={handleClose}
-            onApply={handleApply}
+            open={open}
+            initialRange={payload.initialRange}
+            onClose={() => close(null)}
+            onApply={close}
         />
-
-
-    ));
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-date-range-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+    ),
+});
 
 /**
  * Opens the date range dialog
@@ -72,19 +30,8 @@ function initializeDialogRoot(): void {
  * @param initialRange - Optional initial date range
  * @returns Promise that resolves with the selected range, or null if cancelled
  */
-export function openDateRangeDialog(
-    initialRange?: { start?: Date; end?: Date }
-): Promise<DateRange | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            initialRange,
-            resolve,
-        };
-        renderDialog();
-    });
+export function openDateRangeDialog(initialRange?: InitialRange): Promise<DateRange | null> {
+    return host.open({initialRange});
 }
 
 // Expose globally for AngularJS access

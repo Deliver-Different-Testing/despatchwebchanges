@@ -14,6 +14,7 @@ import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispa
 import {AppPage} from '../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
+import {createMockDispatchJob, STALE_ADDRESS_DEVICE, STALE_ADDRESS_LINES} from '../../__testUtils__/mockData';
 
 jest.mock('../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn(),
@@ -38,48 +39,6 @@ jest.mock('../../utils/dateUtils', () =>
     require('../../../tests/mocks/dateUtilsMock').nzDateUtilsMock());
 
 const mockedSearch = searchActiveCouriersExtended as jest.Mock;
-
-function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
-    return {
-        angularId: 'job-1',
-        id: 1,
-        jobNo: 'J001',
-        hasBeenRead: true,
-        showCourierSearch: false,
-        isParentOrSingle: true,
-        parentId: 0,
-        isFlightJob: false,
-        isAgentJob: false,
-        isBulkJob: false,
-        isArchived: false,
-        statusId: 0,
-        statusName: 'New',
-        status: 'New',
-        booked: dayjs('2025-03-15T09:00:00'),
-        time: dayjs('2025-03-15T17:00:00'),
-        remain: 120,
-        courierSearchLoading: false,
-        pickupAddress: {
-            addressLine1: '', addressLine2: '', addressLine3: '10',
-            addressLine4: 'Queen St', addressLine5: 'Auckland CBD',
-            addressLine6: 'Auckland', addressLine7: '1010', addressLine8: '',
-            fullAddress: '10 Queen St, Auckland',
-        } as any,
-        deliveryAddress: {
-            addressLine1: '', addressLine2: '', addressLine3: '20',
-            addressLine4: 'High St', addressLine5: 'Newmarket',
-            addressLine6: 'Auckland', addressLine7: '1023', addressLine8: '',
-            fullAddress: '20 High St, Auckland',
-        } as any,
-        speed: 'Standard',
-        vehicle: {id: 1, text: 'Car'},
-        client: 'Test Client',
-        refA: 'PO-4471',
-        pickUpTimeZone: {id: 1, text: 'NZST'},
-        deliveryTimeZone: {id: 1, text: 'NZST'},
-        ...overrides,
-    } as DispatchJob;
-}
 
 function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobListTable>>) {
     const resolved = {isUsCustomer: false, isJobSearchPage: false, ...overrides};
@@ -112,6 +71,31 @@ describe('JobListTable', () => {
     it('renders "No jobs to display" when jobs array is empty', () => {
         renderWithMantine(<JobListTable {...createDefaultProps({jobs: []})}/>);
         expect(screen.getByText('No jobs to display')).toBeInTheDocument();
+    });
+
+    // ── Stale delivery address ──────────────────────────────────────
+    describe('stale delivery address', () => {
+        // UC30028239 - the address was changed upstream on the free-text copy only, so the
+        // grid kept showing the previous destination while the driver had the new one.
+        it('marks the delivery cell when the free-text address disagrees with the address lines', () => {
+            const job = createMockDispatchJob({
+                toAddress: STALE_ADDRESS_DEVICE,
+                deliveryAddress: {
+                    addressLine1: 'ALLEVIA HOSPITAL EPSOM', addressLine2: '15-17', addressLine3: 'GILGIT ROAD',
+                    addressLine4: 'GATE 4 - LOADING DOCK', addressLine5: 'Newmarket',
+                    addressLine6: 'Auckland', addressLine7: '1050', addressLine8: 'New Zealand',
+                    fullAddress: STALE_ADDRESS_LINES,
+                } as any,
+            });
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+            expect(container.querySelector('[data-testid="stale-delivery-address"]')).toBeInTheDocument();
+        });
+
+        it('leaves the cell unmarked when the two copies agree', () => {
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+            expect(container.querySelector('[data-testid="stale-delivery-address"]')).not.toBeInTheDocument();
+        });
     });
 
     // ── Table Rendering (single render) ─────────────────────────────

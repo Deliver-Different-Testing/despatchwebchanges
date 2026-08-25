@@ -1,4 +1,5 @@
 #nullable enable
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
@@ -614,7 +615,12 @@ public class SplitJobService(
             // proportionally before the split transaction commits. Initialising at the parent
             // amount would silently double-charge if re-rate failed.
             UcjbAmount = 0m,
-            UcjbStatus = parent.UcjbStatus,
+            // A finished parent status does not carry over: the leg is created not-done, so
+            // inheriting Completed or Undeliverable would make it read as finished on the grid and
+            // undelivered in job properties from the moment it exists.
+            UcjbStatus = JobStatusGroups.Completed.Contains(parent.UcjbStatus ?? (int)JobStatus.New)
+                ? (int)JobStatus.New
+                : parent.UcjbStatus,
             UcjbOpId = parent.UcjbOpId,
             UcjbReturn = parent.UcjbReturn,
             UcjbPickUpFrom = parent.UcjbPickUpFrom,

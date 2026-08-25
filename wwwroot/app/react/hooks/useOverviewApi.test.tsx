@@ -1,6 +1,5 @@
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
     useOverviewJobs,
     useOverviewRegions,
@@ -10,6 +9,7 @@ import {
     useCourierSearch,
 } from './useOverviewApi';
 import {overviewApi} from '../services/overviewApi';
+import {createQueryWrapper} from '../__testUtils__';
 
 jest.mock('../services/overviewApi', () => ({
     overviewApi: {
@@ -25,20 +25,6 @@ jest.mock('../services/overviewApi', () => ({
 
 const mockOverviewApi = overviewApi as jest.Mocked<typeof overviewApi>;
 
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {retry: false, gcTime: 0},
-        },
-    });
-
-const createWrapper = () => {
-    const queryClient = createTestQueryClient();
-    return ({children}: {children: React.ReactNode}) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-};
-
 describe('useOverviewApi hooks', () => {
     describe('useOverviewJobs', () => {
         it('fetches jobs with correct params', async () => {
@@ -46,7 +32,7 @@ describe('useOverviewApi hooks', () => {
             mockOverviewApi.getAllJobs.mockResolvedValueOnce(mockData as any);
 
             const params = {statusGroup: 1, page: 1, limit: 20};
-            const {result} = renderHook(() => useOverviewJobs(params), {wrapper: createWrapper()});
+            const {result} = renderHook(() => useOverviewJobs(params), {wrapper: createQueryWrapper()});
 
             await waitFor(() => {
                 expect(result.current.isSuccess).toBe(true);
@@ -60,7 +46,7 @@ describe('useOverviewApi hooks', () => {
             mockOverviewApi.getAllJobs.mockRejectedValueOnce(new Error('Failed'));
 
             const {result} = renderHook(() => useOverviewJobs({page: 1, limit: 20}), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -76,7 +62,7 @@ describe('useOverviewApi hooks', () => {
             const mockRegions = [{id: 1, text: 'London'}, {id: 2, text: 'Manchester'}];
             mockOverviewApi.getAllRegions.mockResolvedValueOnce(mockRegions);
 
-            const {result} = renderHook(() => useOverviewRegions(), {wrapper: createWrapper()});
+            const {result} = renderHook(() => useOverviewRegions(), {wrapper: createQueryWrapper()});
 
             await waitFor(() => {
                 expect(result.current.isSuccess).toBe(true);
@@ -89,10 +75,7 @@ describe('useOverviewApi hooks', () => {
             const mockRegions = [{id: 1, text: 'London'}];
             mockOverviewApi.getAllRegions.mockResolvedValueOnce(mockRegions);
 
-            const queryClient = createTestQueryClient();
-            const wrapper = ({children}: {children: React.ReactNode}) => (
-                <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-            );
+            const wrapper = createQueryWrapper();
 
             const {result: result1} = renderHook(() => useOverviewRegions(), {wrapper});
             await waitFor(() => expect(result1.current.isSuccess).toBe(true));
@@ -110,7 +93,7 @@ describe('useOverviewApi hooks', () => {
             const mockSpeeds = [{id: 1, text: 'Same Day'}];
             mockOverviewApi.getAllSpeeds.mockResolvedValueOnce(mockSpeeds);
 
-            const {result} = renderHook(() => useOverviewSpeeds(), {wrapper: createWrapper()});
+            const {result} = renderHook(() => useOverviewSpeeds(), {wrapper: createQueryWrapper()});
 
             await waitFor(() => {
                 expect(result.current.isSuccess).toBe(true);
@@ -125,7 +108,7 @@ describe('useOverviewApi hooks', () => {
             const mockStats = {active: 10, inactive: 3, completed: 42};
             mockOverviewApi.getStats.mockResolvedValueOnce(mockStats);
 
-            const {result} = renderHook(() => useOverviewStats(), {wrapper: createWrapper()});
+            const {result} = renderHook(() => useOverviewStats(), {wrapper: createQueryWrapper()});
 
             await waitFor(() => {
                 expect(result.current.isSuccess).toBe(true);
@@ -141,7 +124,7 @@ describe('useOverviewApi hooks', () => {
             mockOverviewApi.getOpenJobs.mockResolvedValueOnce(mockJobs as any);
 
             const {result} = renderHook(() => useOverviewOpenJobs({}), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -155,7 +138,7 @@ describe('useOverviewApi hooks', () => {
             mockOverviewApi.getOpenJobs.mockResolvedValueOnce([]);
 
             const {result} = renderHook(() => useOverviewOpenJobs({}, 60000), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -173,7 +156,7 @@ describe('useOverviewApi hooks', () => {
             mockOverviewApi.searchCouriers.mockResolvedValueOnce(mockResults);
 
             const {result} = renderHook(() => useCourierSearch('Courier'), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -186,7 +169,7 @@ describe('useOverviewApi hooks', () => {
 
         it('does not fetch when search text is empty', async () => {
             const {result} = renderHook(() => useCourierSearch(''), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             // Should remain in idle/disabled state
@@ -200,7 +183,7 @@ describe('useOverviewApi hooks', () => {
             const {result, rerender} = renderHook(
                 ({text}: {text: string}) => useCourierSearch(text),
                 {
-                    wrapper: createWrapper(),
+                    wrapper: createQueryWrapper(),
                     initialProps: {text: 'A'},
                 },
             );

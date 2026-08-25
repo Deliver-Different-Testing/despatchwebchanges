@@ -72,7 +72,9 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         [data],
     );
 
-    const totalCount = data?.pages[data.pages.length - 1]?.totalCount ?? 0;
+    // The first page's count, not the last: the server re-counts on every page fetch, so
+    // reading the newest one made the footer total jitter mid-scroll.
+    const totalCount = data?.pages[0]?.totalCount ?? 0;
 
     const refresh = useCallback(() => {
         if (!fetchConfig) return;

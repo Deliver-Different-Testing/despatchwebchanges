@@ -6,27 +6,12 @@
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
-import { Dayjs } from 'dayjs';
 
 import { EditDateTimeDialog } from './EditDateTimeDialog';
 import { EditDateTimeDialogResult, EditDateTimeDialogOptions } from './types';
 import type { ToastService } from '../../../services/toastService';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-
-interface DialogState {
-    open: boolean;
-    title: string;
-    fieldName: string;
-    dateTime?: Dayjs;
-    defaultTimeZone?: string;
-    showDate: boolean;
-    showTime: boolean;
-    isUSCustomer: boolean;
-    readOnly: boolean;
-    allowClear: boolean;
-    resolve?: (result: EditDateTimeDialogResult | null) => void;
-}
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 /**
  * Get the US customer flag from server config
@@ -35,156 +20,66 @@ function getIsUSCustomer(): boolean {
     return window.serverConfig?.isUSCustomer ?? false;
 }
 
-// Default toast service that logs to console
-const defaultToastService: ToastService = {
-    showToast: (message: string, type: string) => {
-        console.log(`[${type.toUpperCase()}] ${message}`);
-    },
-};
+type EditDateTimePayload = Required<Pick<EditDateTimeDialogOptions, 'title' | 'fieldName'>>
+    & Pick<EditDateTimeDialogOptions, 'dateTime' | 'defaultTimeZone'>
+    & {showDate: boolean; showTime: boolean; isUSCustomer: boolean; readOnly: boolean; allowClear: boolean};
 
-/**
- * Edit Date Time Dialog Manager
- * Manages the lifecycle and state of the dialog.
- */
-class EditDateTimeDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private toastService: ToastService = defaultToastService;
-    private dialogState: DialogState = {
-        open: false,
-        title: '',
-        fieldName: '',
-        dateTime: undefined,
-        defaultTimeZone: undefined,
-        showDate: true,
-        showTime: true,
-        isUSCustomer: false,
-        readOnly: false,
-        allowClear: false,
-    };
+const host = createDialogHost<EditDateTimePayload, EditDateTimeDialogResult | null>({
+    containerId: 'react-edit-date-time-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <EditDateTimeDialog
+            open={open}
+            title={payload.title}
+            fieldName={payload.fieldName}
+            dateTime={payload.dateTime}
+            defaultTimeZone={payload.defaultTimeZone}
+            showDate={payload.showDate}
+            showTime={payload.showTime}
+            isUSCustomer={payload.isUSCustomer}
+            readOnly={payload.readOnly}
+            allowClear={payload.allowClear}
+            onClose={() => close(null)}
+            onSubmit={close}
+            showToast={showToast}
+        />
+    ),
+});
 
-    setToastService(service: ToastService): void {
-        this.toastService = service;
-    }
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-edit-date-time-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(null);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleSubmit = (result: EditDateTimeDialogResult) => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(result);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-        this.dialogRoot.render(islandTree(
-                <EditDateTimeDialog
-                    open={this.dialogState.open}
-                    title={this.dialogState.title}
-                    fieldName={this.dialogState.fieldName}
-                    dateTime={this.dialogState.dateTime}
-                    defaultTimeZone={this.dialogState.defaultTimeZone}
-                    showDate={this.dialogState.showDate}
-                    showTime={this.dialogState.showTime}
-                    isUSCustomer={this.dialogState.isUSCustomer}
-                    readOnly={this.dialogState.readOnly}
-                    allowClear={this.dialogState.allowClear}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    showToast={this.toastService.showToast}
-                />
-
-
-        ));
-    }
-
-    /**
-     * Show edit time dialog (time only)
-     */
-    showEditTimeDialog(options: EditDateTimeDialogOptions): Promise<EditDateTimeDialogResult | null> {
-        return this.openDialog({
-            ...options,
-            showDate: false,
-            showTime: true,
-        });
-    }
-
-    /**
-     * Show edit date dialog (date only)
-     */
-    showEditDateDialog(options: EditDateTimeDialogOptions): Promise<EditDateTimeDialogResult | null> {
-        return this.openDialog({
-            ...options,
-            showDate: true,
-            showTime: false,
-        });
-    }
-
-    /**
-     * Show edit date and time dialog
-     */
-    showEditDateAndTimeDialog(options: EditDateTimeDialogOptions): Promise<EditDateTimeDialogResult | null> {
-        return this.openDialog({
-            ...options,
-            showDate: true,
-            showTime: true,
-        });
-    }
-
-    private openDialog(options: EditDateTimeDialogOptions): Promise<EditDateTimeDialogResult | null> {
-        this.initializeDialogRoot();
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                title: options.title,
-                fieldName: options.fieldName,
-                dateTime: options.dateTime,
-                defaultTimeZone: options.defaultTimeZone,
-                showDate: options.showDate ?? true,
-                showTime: options.showTime ?? true,
-                isUSCustomer: options.isUSCustomer ?? getIsUSCustomer(),
-                readOnly: options.readOnly ?? false,
-                allowClear: options.allowClear ?? false,
-                resolve,
-            };
-            this.renderDialog();
-        });
-    }
+function openDialog(
+    options: EditDateTimeDialogOptions,
+    showDate: boolean,
+    showTime: boolean,
+): Promise<EditDateTimeDialogResult | null> {
+    return host.open({
+        title: options.title,
+        fieldName: options.fieldName,
+        dateTime: options.dateTime,
+        defaultTimeZone: options.defaultTimeZone,
+        showDate,
+        showTime,
+        isUSCustomer: options.isUSCustomer ?? getIsUSCustomer(),
+        readOnly: options.readOnly ?? false,
+        allowClear: options.allowClear ?? false,
+    });
 }
 
-const dialogManager = new EditDateTimeDialogManager();
-
-// Export functions for external use
+/** Show edit time dialog (time only) */
 export function showEditTimeDialog(options: EditDateTimeDialogOptions): Promise<EditDateTimeDialogResult | null> {
-    return dialogManager.showEditTimeDialog(options);
+    return openDialog(options, false, true);
 }
 
+/** Show edit date dialog (date only) */
 export function showEditDateDialog(options: EditDateTimeDialogOptions): Promise<EditDateTimeDialogResult | null> {
-    return dialogManager.showEditDateDialog(options);
+    return openDialog(options, true, false);
 }
 
+/** Show edit date and time dialog */
 export function showEditDateAndTimeDialog(options: EditDateTimeDialogOptions): Promise<EditDateTimeDialogResult | null> {
-    return dialogManager.showEditDateAndTimeDialog(options);
+    return openDialog(options, true, true);
 }
 
 export function setToastService(service: ToastService): void {
-    dialogManager.setToastService(service);
+    host.setToastService(service);
 }
 
 // Expose to window for AngularJS access

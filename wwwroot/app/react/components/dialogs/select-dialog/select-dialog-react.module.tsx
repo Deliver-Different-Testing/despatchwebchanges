@@ -6,134 +6,43 @@
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
 
 import { SelectDialog } from './SelectDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import { SelectDialogResult, SelectDialogOptions, SelectDialogItem } from './types';
+import { SelectDialogResult, SelectDialogOptions } from './types';
 import type { ToastService } from '../../../services/toastService';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 /** Warning message displayed when changing a job's Status field */
 const STATUS_WARNING_MESSAGE =
     'Warning: You are about to change the status of a job. Different statuses trigger different notifications and automated workflows. ' +
     'While this change can be reversed, it may impact multiple systems and stakeholders. Please ensure you\'re selecting the correct status.';
 
-interface DialogState {
-    open: boolean;
-    title: string;
-    fieldName: string;
-    items: SelectDialogItem[];
-    initialValue?: string | number | null;
-    warningMessage?: string;
-    showCheckbox: boolean;
-    checkboxLabel: string;
-    resolve?: (result: SelectDialogResult | null) => void;
-}
-
-// Default toast service that logs to console
-const defaultToastService: ToastService = {
-    showToast: (message: string, type: string) => {
-        console.log(`[${type.toUpperCase()}] ${message}`);
-    },
-};
-
-/**
- * Select Dialog Manager
- * Manages the lifecycle and state of the dialog.
- */
-class SelectDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private toastService: ToastService = defaultToastService;
-    private dialogState: DialogState = {
-        open: false,
-        title: '',
-        fieldName: '',
-        items: [],
-        initialValue: null,
-        warningMessage: undefined,
-        showCheckbox: false,
-        checkboxLabel: '',
-    };
-
-    setToastService(service: ToastService): void {
-        this.toastService = service;
-    }
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-select-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(null);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleSubmit = (result: SelectDialogResult) => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(result);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        this.dialogRoot.render(islandTree(
-            <SelectDialog
-                open={this.dialogState.open}
-                title={this.dialogState.title}
-                fieldName={this.dialogState.fieldName}
-                items={this.dialogState.items}
-                initialValue={this.dialogState.initialValue}
-                warningMessage={this.dialogState.warningMessage}
-                showCheckbox={this.dialogState.showCheckbox}
-                checkboxLabel={this.dialogState.checkboxLabel}
-                onClose={handleClose}
-                onSubmit={handleSubmit}
-                showToast={this.toastService.showToast}
-            />
-        ));
-    }
-
-    showSelectDialog(options: SelectDialogOptions): Promise<SelectDialogResult | null> {
-        this.initializeDialogRoot();
-
-        // Determine warning message based on field name
-        const warningMessage = options.fieldName === 'Status' ? STATUS_WARNING_MESSAGE : undefined;
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                title: options.title,
-                fieldName: options.fieldName,
-                items: options.items,
-                initialValue: options.initialValue,
-                warningMessage,
-                showCheckbox: options.showCheckbox ?? false,
-                checkboxLabel: options.checkboxLabel ?? '',
-                resolve,
-            };
-            this.renderDialog();
-        });
-    }
-}
-
-const dialogManager = new SelectDialogManager();
+const host = createDialogHost<SelectDialogOptions, SelectDialogResult | null>({
+    containerId: 'react-select-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <SelectDialog
+            open={open}
+            title={payload.title}
+            fieldName={payload.fieldName}
+            items={payload.items}
+            initialValue={payload.initialValue}
+            warningMessage={payload.fieldName === 'Status' ? STATUS_WARNING_MESSAGE : undefined}
+            showCheckbox={payload.showCheckbox ?? false}
+            checkboxLabel={payload.checkboxLabel ?? ''}
+            onClose={() => close(null)}
+            onSubmit={close}
+            showToast={showToast}
+        />
+    ),
+});
 
 export function showSelectDialog(options: SelectDialogOptions): Promise<SelectDialogResult | null> {
-    return dialogManager.showSelectDialog(options);
+    return host.open(options);
 }
 
 export function setToastService(service: ToastService): void {
-    dialogManager.setToastService(service);
+    host.setToastService(service);
 }
 
 // Expose to window for AngularJS access

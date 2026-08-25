@@ -5,7 +5,7 @@
  */
 
 import React, {useState, useMemo} from 'react';
-import {alpha} from '@mui/material/styles';
+import {alpha, type Theme} from '@mui/material/styles';
 import DialogContent from '@mui/material/DialogContent';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
@@ -95,6 +95,75 @@ export interface DashboardSettingsDialogProps {
     dispatchBetaEnabled?: boolean;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
+}
+
+/** The 36px tinted square each settings section leads with. */
+const sectionIconSx = (palette: 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error') =>
+    (theme: Theme) => ({
+        width: 36,
+        height: 36,
+        borderRadius: 1.5,
+        bgcolor: alpha(theme.palette[palette].main, 0.1),
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    });
+
+/** The bordered card every settings row sits in. */
+const settingsCardSx = (theme: Theme) => ({
+    p: 2,
+    borderRadius: 2,
+    border: `1px solid ${theme.palette.divider}`,
+    bgcolor: 'background.paper',
+});
+
+
+/** One "how often does X refresh" row: a label, an explanation and an interval picker. */
+function RefreshIntervalSetting({title, description, value, options, onChange}: {
+    title: string;
+    description: string;
+    value: RefreshOption;
+    options: RefreshOption[];
+    onChange: (option: RefreshOption) => void;
+}) {
+    return (
+        <Paper elevation={0} sx={settingsCardSx}>
+            <Stack
+                direction="row"
+                sx={{
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                }}>
+                <Box>
+                    <Typography variant="subtitle2" sx={{
+                        fontWeight: 600
+                    }}>
+                        {title}
+                    </Typography>
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
+                        {description}
+                    </Typography>
+                </Box>
+                <FormControl size="small" sx={{minWidth: 140}}>
+                    <Select
+                        value={value.id}
+                        onChange={(e) => {
+                            const option = options.find((o) => o.id === e.target.value);
+                            if (option) onChange(option);
+                        }}
+                    >
+                        {options.map((option) => (
+                            <MenuItem key={option.id} value={option.id}>
+                                {option.text}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            </Stack>
+        </Paper>
+    );
 }
 
 export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = ({
@@ -200,15 +269,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 mb: 2
                             }}>
                             <Box
-                                sx={(theme) => ({
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                })}
+                                sx={sectionIconSx('primary')}
                             >
                                 <ScheduleIcon color="primary" />
                             </Box>
@@ -221,151 +282,34 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
 
                         <Stack spacing={2}>
                             {/* Job List Refresh */}
-                            <Paper
-                                elevation={0}
-                                sx={(theme) => ({
-                                    p: 2,
-                                    borderRadius: 2,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    bgcolor: 'background.paper',
-                                })}
-                            >
-                                <Stack
-                                    direction="row"
-                                    sx={{
-                                        alignItems: "center",
-                                        justifyContent: "space-between"
-                                    }}>
-                                    <Box>
-                                        <Typography variant="subtitle2" sx={{
-                                            fontWeight: 600
-                                        }}>
-                                            Job list
-                                        </Typography>
-                                        <Typography variant="body2" sx={{
-                                            color: "text.secondary"
-                                        }}>
-                                            How often the job list checks for new and updated jobs
-                                        </Typography>
-                                    </Box>
-                                    <FormControl size="small" sx={{minWidth: 140}}>
-                                        <Select
-                                            value={refreshInterval.id}
-                                            onChange={(e) => {
-                                                const option = refreshOptions.find(
-                                                    (o) => o.id === e.target.value
-                                                );
-                                                if (option) setRefreshInterval(option);
-                                            }}
-                                        >
-                                            {refreshOptions.map((option) => (
-                                                <MenuItem key={option.id} value={option.id}>
-                                                    {option.text}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Stack>
-                            </Paper>
+                            <RefreshIntervalSetting
+                                title="Job list"
+                                description="How often the job list checks for new and updated jobs"
+                                value={refreshInterval}
+                                options={refreshOptions}
+                                onChange={setRefreshInterval}
+                            />
 
                             {/* Tasks Refresh — independent of the Job list cadence */}
                             {config.showTaskRefresh && (
-                                <Paper
-                                    elevation={0}
-                                    sx={(theme) => ({
-                                        p: 2,
-                                        borderRadius: 2,
-                                        border: `1px solid ${theme.palette.divider}`,
-                                        bgcolor: 'background.paper',
-                                    })}
-                                >
-                                    <Stack
-                                        direction="row"
-                                        sx={{
-                                            alignItems: "center",
-                                            justifyContent: "space-between"
-                                        }}>
-                                        <Box>
-                                            <Typography variant="subtitle2" sx={{
-                                                fontWeight: 600
-                                            }}>
-                                                Tasks
-                                            </Typography>
-                                            <Typography variant="body2" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                How often the Tasks panel checks for new and updated tasks
-                                            </Typography>
-                                        </Box>
-                                        <FormControl size="small" sx={{minWidth: 140}}>
-                                            <Select
-                                                value={taskInterval.id}
-                                                onChange={(e) => {
-                                                    const option = refreshOptions.find(
-                                                        (o) => o.id === e.target.value
-                                                    );
-                                                    if (option) setTaskInterval(option);
-                                                }}
-                                            >
-                                                {refreshOptions.map((option) => (
-                                                    <MenuItem key={option.id} value={option.id}>
-                                                        {option.text}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    </Stack>
-                                </Paper>
+                                <RefreshIntervalSetting
+                                    title="Tasks"
+                                    description="How often the Tasks panel checks for new and updated tasks"
+                                    value={taskInterval}
+                                    options={refreshOptions}
+                                    onChange={setTaskInterval}
+                                />
                             )}
 
                             {/* Driver Location Refresh */}
                             {config.showDriverLocationRefresh && (
-                                <Paper
-                                    elevation={0}
-                                    sx={(theme) => ({
-                                        p: 2,
-                                        borderRadius: 2,
-                                        border: `1px solid ${theme.palette.divider}`,
-                                        bgcolor: 'background.paper',
-                                    })}
-                                >
-                                    <Stack
-                                        direction="row"
-                                        sx={{
-                                            alignItems: "center",
-                                            justifyContent: "space-between"
-                                        }}>
-                                        <Box>
-                                            <Typography variant="subtitle2" sx={{
-                                                fontWeight: 600
-                                            }}>
-                                                Driver locations
-                                            </Typography>
-                                            <Typography variant="body2" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                How often driver positions update on the map
-                                            </Typography>
-                                        </Box>
-                                        <FormControl size="small" sx={{minWidth: 140}}>
-                                            <Select
-                                                value={driverLocationInterval.id}
-                                                onChange={(e) => {
-                                                    const option = refreshOptions.find(
-                                                        (o) => o.id === e.target.value
-                                                    );
-                                                    if (option) setDriverLocationInterval(option);
-                                                }}
-                                            >
-                                                {refreshOptions.map((option) => (
-                                                    <MenuItem key={option.id} value={option.id}>
-                                                        {option.text}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    </Stack>
-                                </Paper>
+                                <RefreshIntervalSetting
+                                    title="Driver locations"
+                                    description="How often driver positions update on the map"
+                                    value={driverLocationInterval}
+                                    options={refreshOptions}
+                                    onChange={setDriverLocationInterval}
+                                />
                             )}
                         </Stack>
                     </Box>
@@ -408,10 +352,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 elevation={0}
                                 onClick={() => setAiEnabled((prev) => !prev)}
                                 sx={(theme) => ({
-                                    p: 2,
-                                    borderRadius: 2,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    bgcolor: 'background.paper',
+                                    ...settingsCardSx(theme),
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease',
                                     '&:hover': {
@@ -476,10 +417,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 elevation={0}
                                 onClick={aiEnabled ? () => setAiAutoOpen((prev) => !prev) : undefined}
                                 sx={(theme) => ({
-                                    p: 2,
-                                    borderRadius: 2,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    bgcolor: 'background.paper',
+                                    ...settingsCardSx(theme),
                                     cursor: aiEnabled ? 'pointer' : 'default',
                                     opacity: aiEnabled ? 1 : 0.5,
                                     transition: 'all 0.2s ease',
@@ -541,15 +479,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                     <Box sx={{p: 3}}>
                         <Stack direction="row" spacing={1.5} sx={{alignItems: 'center', mb: 2}}>
                             <Box
-                                sx={(theme) => ({
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                })}
+                                sx={sectionIconSx('primary')}
                             >
                                 <AutoAwesomeIcon color="primary" />
                             </Box>
@@ -562,10 +492,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             elevation={0}
                             onClick={() => setJobSearchBetaEnabled((prev) => !prev)}
                             sx={(theme) => ({
-                                p: 2,
-                                borderRadius: 2,
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'background.paper',
+                                ...settingsCardSx(theme),
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
@@ -606,15 +533,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                     <Box sx={{p: 3}}>
                         <Stack direction="row" spacing={1.5} sx={{alignItems: 'center', mb: 2}}>
                             <Box
-                                sx={(theme) => ({
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                })}
+                                sx={sectionIconSx('primary')}
                             >
                                 <AutoAwesomeIcon color="primary" />
                             </Box>
@@ -627,10 +546,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             elevation={0}
                             onClick={() => setDispatchBetaEnabled((prev) => !prev)}
                             sx={(theme) => ({
-                                p: 2,
-                                borderRadius: 2,
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'background.paper',
+                                ...settingsCardSx(theme),
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
@@ -674,15 +590,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             mb: 1
                         }}>
                         <Box
-                            sx={(theme) => ({
-                                width: 36,
-                                height: 36,
-                                borderRadius: 1.5,
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            })}
+                            sx={sectionIconSx('primary')}
                         >
                             <DashboardIcon color="primary" />
                         </Box>
@@ -717,10 +625,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                         elevation={0}
                                         onClick={() => handleToggleBox(box.key)}
                                         sx={(theme) => ({
-                                            p: 2,
-                                            borderRadius: 2,
-                                            border: `1px solid ${theme.palette.divider}`,
-                                            bgcolor: 'background.paper',
+                                            ...settingsCardSx(theme),
                                             cursor: 'pointer',
                                             transition: 'all 0.2s ease',
                                             '&:hover': {

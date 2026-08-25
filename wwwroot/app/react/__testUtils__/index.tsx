@@ -81,11 +81,14 @@ export function createWrapper(options: WrapperOptions = {}) {
         queryClient,
     } = options;
 
+    // One client per wrapper, not one per render — a fresh client on every render drops
+    // the cache between re-renders, which is exactly what renderHook assertions read.
+    const client = withQueryClient ? queryClient ?? createTestQueryClient() : undefined;
+
     const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         let result = <>{children}</>;
 
-        if (withQueryClient) {
-            const client = queryClient ?? createTestQueryClient();
+        if (client) {
             result = (
                 <QueryClientProvider client={client}>
                     {result}
@@ -105,6 +108,13 @@ export function createWrapper(options: WrapperOptions = {}) {
     };
 
     return Wrapper;
+}
+
+/**
+ * Wrapper with only a QueryClient — what a `renderHook` on a data hook needs.
+ */
+export function createQueryWrapper(queryClient?: QueryClient) {
+    return createWrapper({withTheme: false, withQueryClient: true, queryClient});
 }
 
 /**

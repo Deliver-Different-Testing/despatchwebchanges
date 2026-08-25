@@ -104,9 +104,9 @@ function setup(opts: SetupOptions = {}) {
 
     const {result} = renderHook(() =>
         useJobActions({
+            ...jobActionsDefaults(),
             job: opts.job ?? createMockJob(),
             isRecurringJob: opts.isRecurringJob ?? false,
-            isUsCustomer: false,
             showToast: mockShowToast,
             updateField: mockUpdateField,
             updateAddress: mockUpdateAddress,
@@ -115,10 +115,7 @@ function setup(opts: SetupOptions = {}) {
             refreshAndNotify: mockRefreshAndNotify,
             invalidateJobLists: mockInvalidateJobLists,
             invalidatePhotos: mockInvalidatePhotos,
-            checkForRateChange: jest.fn().mockResolvedValue(undefined),
             checkForRateChanges: mockCheckForRateChanges,
-            invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
-            relatedJobs: [],
         }),
     );
 
@@ -167,6 +164,26 @@ async function flushDialogChain() {
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
+
+/** The collaborators useJobActions needs; a test names only the ones it asserts on. */
+function jobActionsDefaults(): Omit<Parameters<typeof useJobActions>[0], 'job'> {
+    return {
+        isRecurringJob: false,
+        isUsCustomer: false,
+        showToast: jest.fn(),
+        updateField: jest.fn().mockResolvedValue(undefined),
+        updateAddress: jest.fn().mockResolvedValue(undefined),
+        updatePod: jest.fn().mockResolvedValue(undefined),
+        dispatchJob: jest.fn().mockResolvedValue(undefined),
+        refreshAndNotify: jest.fn().mockResolvedValue(undefined),
+        invalidateJobLists: jest.fn().mockResolvedValue([]),
+        invalidatePhotos: jest.fn().mockResolvedValue(undefined),
+        checkForRateChange: jest.fn().mockResolvedValue(undefined),
+        checkForRateChanges: jest.fn().mockResolvedValue(undefined),
+        invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
+        relatedJobs: [],
+    };
+}
 
 describe('useJobActions — markJobAsDone / handleDoneClick', () => {
     afterEach(() => {
@@ -464,21 +481,10 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             const mockUpdatePod = jest.fn();
             const {result} = renderHook(() =>
                 useJobActions({
+                    ...jobActionsDefaults(),
                     job: undefined,
-                    isRecurringJob: false,
-                    isUsCustomer: false,
                     showToast: mockShowToast,
-                    updateField: jest.fn().mockResolvedValue(undefined),
-                    updateAddress: jest.fn().mockResolvedValue(undefined),
                     updatePod: mockUpdatePod,
-                    dispatchJob: jest.fn().mockResolvedValue(undefined),
-                    refreshAndNotify: jest.fn().mockResolvedValue(undefined),
-                    invalidateJobLists: jest.fn().mockResolvedValue([]),
-                    invalidatePhotos: jest.fn().mockResolvedValue(undefined),
-                    checkForRateChange: jest.fn().mockResolvedValue(undefined),
-                    checkForRateChanges: jest.fn().mockResolvedValue(undefined),
-                    invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
-                    relatedJobs: [],
                 }),
             );
 
@@ -814,21 +820,10 @@ describe('useJobActions — handleVoidClick', () => {
         const mockInvalidateJobLists = jest.fn().mockResolvedValue([]);
         const {result} = renderHook(() =>
             useJobActions({
+                ...jobActionsDefaults(),
                 job: undefined,
-                isRecurringJob: false,
-                isUsCustomer: false,
-                showToast: jest.fn(),
-                updateField: jest.fn().mockResolvedValue(undefined),
-                updateAddress: jest.fn().mockResolvedValue(undefined),
-                updatePod: jest.fn().mockResolvedValue(undefined),
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
                 refreshAndNotify: mockRefreshAndNotify,
                 invalidateJobLists: mockInvalidateJobLists,
-                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
-                checkForRateChange: jest.fn().mockResolvedValue(undefined),
-                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
-                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
-                relatedJobs: [],
             }),
         );
 
@@ -850,21 +845,9 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
 
         const {result} = renderHook(() =>
             useJobActions({
+                ...jobActionsDefaults(),
                 job,
-                isRecurringJob: false,
-                isUsCustomer: false,
                 showToast: mockShowToast,
-                updateField: jest.fn().mockResolvedValue(undefined),
-                updateAddress: jest.fn().mockResolvedValue(undefined),
-                updatePod: jest.fn().mockResolvedValue(undefined),
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
-                refreshAndNotify: jest.fn().mockResolvedValue(undefined),
-                invalidateJobLists: jest.fn().mockResolvedValue([]),
-                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
-                checkForRateChange: jest.fn().mockResolvedValue(undefined),
-                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
-                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
-                relatedJobs: [],
                 onRequestPartnerChange: mockOnRequestPartnerChange,
             }),
         );
@@ -898,21 +881,9 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
 
         const {result} = renderHook(() =>
             useJobActions({
+                ...jobActionsDefaults(),
                 job,
-                isRecurringJob: false,
-                isUsCustomer: false,
                 showToast: mockShowToast,
-                updateField: jest.fn().mockResolvedValue(undefined),
-                updateAddress: jest.fn().mockResolvedValue(undefined),
-                updatePod: jest.fn().mockResolvedValue(undefined),
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
-                refreshAndNotify: jest.fn().mockResolvedValue(undefined),
-                invalidateJobLists: jest.fn().mockResolvedValue([]),
-                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
-                checkForRateChange: jest.fn().mockResolvedValue(undefined),
-                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
-                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
-                relatedJobs: [],
                 onRequestPartnerChange: mockOnRequestPartnerChange,
             }),
         );
@@ -936,21 +907,9 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
 
         const {result} = renderHook(() =>
             useJobActions({
+                ...jobActionsDefaults(),
                 job,
-                isRecurringJob: false,
-                isUsCustomer: false,
                 showToast: mockShowToast,
-                updateField: jest.fn().mockResolvedValue(undefined),
-                updateAddress: jest.fn().mockResolvedValue(undefined),
-                updatePod: jest.fn().mockResolvedValue(undefined),
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
-                refreshAndNotify: jest.fn().mockResolvedValue(undefined),
-                invalidateJobLists: jest.fn().mockResolvedValue([]),
-                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
-                checkForRateChange: jest.fn().mockResolvedValue(undefined),
-                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
-                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
-                relatedJobs: [],
             }),
         );
 
@@ -976,21 +935,12 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
         const {result} = renderHook(() =>
             useJobActions({
+                ...jobActionsDefaults(),
                 job,
-                isRecurringJob: false,
-                isUsCustomer: false,
                 showToast: mockShowToast,
                 updateField: mockUpdateField,
                 updateAddress: mockUpdateAddress,
-                updatePod: jest.fn().mockResolvedValue(undefined),
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
                 refreshAndNotify: mockRefreshAndNotify,
-                invalidateJobLists: jest.fn().mockResolvedValue([]),
-                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
-                checkForRateChange: jest.fn().mockResolvedValue(undefined),
-                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
-                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
-                relatedJobs: [],
                 onRequestPartnerChange: mockOnRequestPartnerChange,
             }),
         );
@@ -1718,21 +1668,8 @@ describe('useJobActions — date cascade', () => {
         const onRequestPartnerChange = jest.fn();
         const {result} = renderHook(() =>
             useJobActions({
+                ...jobActionsDefaults(),
                 job: createMockJob({isPartnerJob: true}),
-                isRecurringJob: false,
-                isUsCustomer: false,
-                showToast: jest.fn(),
-                updateField: jest.fn().mockResolvedValue(undefined),
-                updateAddress: jest.fn().mockResolvedValue(undefined),
-                updatePod: jest.fn().mockResolvedValue(undefined),
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
-                refreshAndNotify: jest.fn().mockResolvedValue(undefined),
-                invalidateJobLists: jest.fn().mockResolvedValue([]),
-                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
-                checkForRateChange: jest.fn().mockResolvedValue(undefined),
-                checkForRateChanges: jest.fn().mockResolvedValue(undefined),
-                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
-                relatedJobs: [],
                 onRequestPartnerChange,
             }),
         );

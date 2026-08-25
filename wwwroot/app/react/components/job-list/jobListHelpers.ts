@@ -2,22 +2,15 @@
  * Shared helpers used by both JobListPanel and JobListTable.
  */
 import dayjs from 'dayjs';
+import {JobStatus} from '../../../enums/job-status.enum';
 import type {DispatchJob} from '../../interfaces/dispatchJob';
+import {resolvedStatusId} from '../../utils/jobStatus';
 
-export const JOB_STATUS = {
-    New: 0,
-    Dispatched: 1,
-    Accepted: 2,
-    Rejected: 3,
-    LatePickup: 4,
-    PickedUp: 5,
-    Completed: 6,
-    Warning: 7,
-    LateDelivery: 8,
-    Undeliverable: 10,
-    InTransit: 11,
-    Missing: 1001,
-} as const;
+/**
+ * Re-exported rather than re-declared. The local copy had drifted — it was missing Void, so a voided
+ * job had no name here and fell through every status check as an unrecognised id.
+ */
+export const JOB_STATUS = JobStatus;
 
 // Cached "now" timestamp — refreshed at most once per second to avoid
 // creating a new dayjs instance for every job in every helper call.
@@ -41,7 +34,7 @@ export function isUrgent(job: DispatchJob): boolean {
 }
 
 export function isDelivered(job: DispatchJob): boolean {
-    return job.statusId === JOB_STATUS.Completed;
+    return resolvedStatusId(job) === JOB_STATUS.Completed;
 }
 
 // "In transit" = assigned and being worked (dispatched through to in-transit),
@@ -54,11 +47,12 @@ const IN_TRANSIT_STATUSES: number[] = [
 ];
 
 export function isInTransit(job: DispatchJob): boolean {
-    return IN_TRANSIT_STATUSES.includes(job.statusId as number);
+    return IN_TRANSIT_STATUSES.includes(resolvedStatusId(job));
 }
 
 export function needsDispatch(job: DispatchJob): boolean {
     if (job.assignedCourier) return false;
     if (isDelivered(job)) return false;
+    if (resolvedStatusId(job) === JOB_STATUS.Void) return false;
     return !isInTransit(job);
 }

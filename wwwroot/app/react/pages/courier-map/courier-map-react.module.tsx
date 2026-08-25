@@ -6,11 +6,11 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {CourierMapPage} from './CourierMapPage';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {islandTree} from '../../theme/DfrntMantineProvider';
 import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
+import {createPageHost} from '../../utils/reactPageHost';
 
 export interface MountCourierMapConfig {
     isUsCustomer: boolean;
@@ -18,72 +18,33 @@ export interface MountCourierMapConfig {
     apiKey: string | null;
 }
 
-let courierMapRoot: Root | null = null;
-let courierMapContainer: HTMLElement | null = null;
+const host = createPageHost<MountCourierMapConfig>({
+    logName: 'CourierMapReact',
+    render: (config) => islandTree(
+        <MuiThemeIsland>
+            <ErrorBoundary>
+                <CourierMapPage
+                    isUsCustomer={config.isUsCustomer}
+                    mapCenter={config.mapCenter}
+                    apiKey={config.apiKey}
+                />
+            </ErrorBoundary>
+        </MuiThemeIsland>
+    ),
+});
 
 /**
  * Mounts the courier map page component into a container element
  */
-export function mountCourierMapPage(
-    containerId: string,
-    config: MountCourierMapConfig
-): void {
-    console.log('[CourierMapReact] Mounting to container:', containerId);
-
-    // If there's an existing root for a different container, unmount it first
-    if (courierMapRoot && courierMapContainer && courierMapContainer.id !== containerId) {
-        console.log('[CourierMapReact] Unmounting previous page from:', courierMapContainer.id);
-        courierMapRoot.unmount();
-        courierMapRoot = null;
-        courierMapContainer = null;
-    }
-
-    // Find the container
-    let container = document.getElementById(containerId);
-    if (!container) {
-        console.error('[CourierMapReact] Container not found:', containerId);
-        container = document.createElement('div');
-        container.id = containerId;
-        document.body.appendChild(container);
-        console.log('[CourierMapReact] Created fallback container');
-    }
-
-    courierMapContainer = container;
-
-    // Create new root if needed
-    if (!courierMapRoot) {
-        console.log('[CourierMapReact] Creating new React root');
-        courierMapRoot = createRoot(container);
-    }
-    courierMapRoot.render(islandTree(
-        <MuiThemeIsland>
-        <ErrorBoundary>
-            <CourierMapPage
-                isUsCustomer={config.isUsCustomer}
-                mapCenter={config.mapCenter}
-                apiKey={config.apiKey}
-            />
-        </ErrorBoundary>
-
-        </MuiThemeIsland>
-
-    ));
-
-    console.log('[CourierMapReact] Courier map page rendered');
+export function mountCourierMapPage(containerId: string, config: MountCourierMapConfig): void {
+    host.mount(containerId, config);
 }
 
 /**
  * Unmounts the courier map page
  */
 export function unmountCourierMapPage(): void {
-    console.log('[CourierMapReact] Unmounting courier map page');
-
-    if (courierMapRoot) {
-        courierMapRoot.unmount();
-        courierMapRoot = null;
-    }
-
-    courierMapContainer = null;
+    host.unmount();
 }
 
 // Expose globally for AngularJS access (typed via global.d.ts)

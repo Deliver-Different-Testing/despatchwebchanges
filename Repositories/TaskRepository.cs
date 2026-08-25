@@ -488,7 +488,9 @@ public class TaskRepository(
             type: eventType,
             lateTime: lateTime,
             etaTime: etaTime,
-            staffIdIn: staffInfo.Id,
+            // staffIdIn is the assignee, not an audit field: tasks are triaged by a dedicated
+            // person, so they must arrive unassigned. The creator is kept in originator/despatcher.
+            staffIdIn: null,
             staffIdOut: null,
             responseTime: null,
             notes: notes,

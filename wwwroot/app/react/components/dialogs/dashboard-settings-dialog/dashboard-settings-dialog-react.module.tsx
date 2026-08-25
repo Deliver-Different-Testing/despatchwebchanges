@@ -6,7 +6,6 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {
     DashboardSettingsDialog,
     DashboardSettingsConfig,
@@ -18,31 +17,22 @@ import {CustomizePanelsDialog} from '../customize-panels-dialog/CustomizePanelsD
 import {isAiAutoOpenEnabled, setAiAutoOpenEnabled} from '../../../../functions/aiSettings';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-// State management for the dialogue
-interface DialogState {
-    open: boolean;
+interface DashboardSettingsPayload {
     config: DashboardSettingsConfig;
     boxes: Record<string, DashboardBox>;
-    selectedRefreshInterval?: RefreshOption;
-    selectedDriverLocationRefreshInterval?: RefreshOption;
-    selectedTaskRefreshInterval?: RefreshOption;
+    selectedRefreshInterval: RefreshOption;
+    selectedDriverLocationRefreshInterval: RefreshOption;
+    selectedTaskRefreshInterval: RefreshOption;
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
     aiAutoOpen?: boolean;
     jobSearchBetaEnabled?: boolean;
     dispatchBetaEnabled?: boolean;
-    resolve?: (value: DashboardSettingsResult | null) => void;
 }
 
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    config: {title: 'Dashboard Settings'},
-    boxes: {},
-    refreshOptions: [],
-};
+const DISABLED_REFRESH: RefreshOption = {id: 0, text: 'Disabled'};
 
 /**
  * Generate refresh interval options
@@ -80,67 +70,36 @@ function formatDuration(seconds: number): string {
     }
 }
 
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSave = (result: DashboardSettingsResult) => {
-        // The "Open automatically" preference is owned by this bridge: seeded
-        // from localStorage and persisted here so the AngularJS callers don't
-        // need to know about it.
-        if (result.aiAutoOpen !== undefined) {
-            setAiAutoOpenEnabled(result.aiAutoOpen);
-        }
-        dialogState.open = false;
-        dialogState.resolve?.(result);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    // Get theme dynamically based on customer region
-    dialogRoot.render(islandTree(
+const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSettingsResult | null>({
+    containerId: 'react-dashboard-settings-dialog-root',
+    render: ({open, payload, close}) => islandTree(
         <MuiThemeIsland>
-        <DashboardSettingsDialog
-            open={dialogState.open}
-            config={dialogState.config}
-            boxes={dialogState.boxes}
-            selectedRefreshInterval={dialogState.selectedRefreshInterval}
-            selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
-            selectedTaskRefreshInterval={dialogState.selectedTaskRefreshInterval}
-            refreshOptions={dialogState.refreshOptions}
-            aiEnabled={dialogState.aiEnabled}
-            aiAutoOpen={dialogState.aiAutoOpen}
-            jobSearchBetaEnabled={dialogState.jobSearchBetaEnabled}
-            dispatchBetaEnabled={dialogState.dispatchBetaEnabled}
-            onClose={handleClose}
-            onSave={handleSave}
-        />
-
+            <DashboardSettingsDialog
+                open={open}
+                config={payload.config}
+                boxes={payload.boxes}
+                selectedRefreshInterval={payload.selectedRefreshInterval}
+                selectedDriverLocationRefreshInterval={payload.selectedDriverLocationRefreshInterval}
+                selectedTaskRefreshInterval={payload.selectedTaskRefreshInterval}
+                refreshOptions={payload.refreshOptions}
+                aiEnabled={payload.aiEnabled}
+                aiAutoOpen={payload.aiAutoOpen}
+                jobSearchBetaEnabled={payload.jobSearchBetaEnabled}
+                dispatchBetaEnabled={payload.dispatchBetaEnabled}
+                onClose={() => close(null)}
+                onSave={(result: DashboardSettingsResult) => {
+                    // The "Open automatically" preference is owned by this bridge: seeded
+                    // from localStorage and persisted here so the AngularJS callers don't
+                    // need to know about it.
+                    if (result.aiAutoOpen !== undefined) {
+                        setAiAutoOpenEnabled(result.aiAutoOpen);
+                    }
+                    close(result);
+                }}
+            />
         </MuiThemeIsland>
-
-    ));
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-dashboard-settings-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+    ),
+});
 
 export function openDashboardSettingsDialog(
     config: DashboardSettingsConfig,
@@ -152,30 +111,17 @@ export function openDashboardSettingsDialog(
     jobSearchBetaEnabled?: boolean,
     dispatchBetaEnabled?: boolean,
 ): Promise<DashboardSettingsResult | null> {
-    initializeDialogRoot();
-
-    // Generate refresh options (disabled + time intervals)
-    const refreshOptions: RefreshOption[] = [
-        {id: 0, text: 'Disabled'},
-        ...getMinsSelectionOptions(),
-    ];
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            config,
-            boxes: {...boxes}, // Clone the boxes
-            selectedRefreshInterval: selectedRefreshInterval ?? {id: 0, text: 'Disabled'},
-            selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? {id: 0, text: 'Disabled'},
-            selectedTaskRefreshInterval: selectedTaskRefreshInterval ?? {id: 0, text: 'Disabled'},
-            refreshOptions,
-            aiEnabled,
-            aiAutoOpen: isAiAutoOpenEnabled(),
-            jobSearchBetaEnabled,
-            dispatchBetaEnabled,
-            resolve,
-        };
-        renderDialog();
+    return settingsHost.open({
+        config,
+        boxes: {...boxes}, // Clone the boxes
+        selectedRefreshInterval: selectedRefreshInterval ?? DISABLED_REFRESH,
+        selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? DISABLED_REFRESH,
+        selectedTaskRefreshInterval: selectedTaskRefreshInterval ?? DISABLED_REFRESH,
+        refreshOptions: [DISABLED_REFRESH, ...getMinsSelectionOptions()],
+        aiEnabled,
+        aiAutoOpen: isAiAutoOpenEnabled(),
+        jobSearchBetaEnabled,
+        dispatchBetaEnabled,
     });
 }
 
@@ -184,66 +130,31 @@ window.ReactDashboardSettingsDialog = {
     open: openDashboardSettingsDialog,
 };
 
-interface CustomizePanelsState {
-    open: boolean;
-    title?: string;
-    boxes: Record<string, DashboardBox>;
-    layoutEditable?: boolean;
-    resolve?: (value: Record<string, DashboardBox> | null) => void;
-}
-
-let panelsRoot: Root | null = null;
-let panelsContainer: HTMLDivElement | null = null;
-let panelsState: CustomizePanelsState = {open: false, boxes: {}};
-
-function renderPanelsDialog(): void {
-    if (!panelsRoot) return;
-
-    const handleClose = () => {
-        panelsState.open = false;
-        panelsState.resolve?.(null);
-        panelsState.resolve = undefined;
-        renderPanelsDialog();
-    };
-
-    const handleSave = (boxes: Record<string, DashboardBox>) => {
-        panelsState.open = false;
-        panelsState.resolve?.(boxes);
-        panelsState.resolve = undefined;
-        renderPanelsDialog();
-    };
-    panelsRoot.render(islandTree(
+const panelsHost = createDialogHost<
+    {title?: string; boxes: Record<string, DashboardBox>; layoutEditable: boolean},
+    Record<string, DashboardBox> | null
+>({
+    containerId: 'react-customize-panels-dialog-root',
+    render: ({open, payload, close}) => islandTree(
         <MuiThemeIsland>
             <CustomizePanelsDialog
-                open={panelsState.open}
-                title={panelsState.title}
-                boxes={panelsState.boxes}
-                layoutEditable={panelsState.layoutEditable ?? true}
-                onClose={handleClose}
-                onSave={handleSave}
+                open={open}
+                title={payload.title}
+                boxes={payload.boxes}
+                layoutEditable={payload.layoutEditable}
+                onClose={() => close(null)}
+                onSave={close}
             />
         </MuiThemeIsland>
-    ));
-}
-
-function initializePanelsRoot(): void {
-    if (panelsRoot) return;
-    panelsContainer = document.createElement('div');
-    panelsContainer.id = 'react-customize-panels-dialog-root';
-    document.body.appendChild(panelsContainer);
-    panelsRoot = createRoot(panelsContainer);
-}
+    ),
+});
 
 export function openCustomizePanelsDialog(
     boxes: Record<string, DashboardBox>,
     title?: string,
     layoutEditable = true,
 ): Promise<Record<string, DashboardBox> | null> {
-    initializePanelsRoot();
-    return new Promise((resolve) => {
-        panelsState = {open: true, title, boxes: {...boxes}, layoutEditable, resolve};
-        renderPanelsDialog();
-    });
+    return panelsHost.open({title, boxes: {...boxes}, layoutEditable});
 }
 
 window.ReactCustomizePanelsDialog = {
