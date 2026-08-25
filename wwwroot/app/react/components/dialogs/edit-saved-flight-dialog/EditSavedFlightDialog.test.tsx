@@ -3,13 +3,12 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor, within} from '@testing-library/react';
-import {ThemeProvider} from '@mui/material/styles';
+import {screen, fireEvent, waitFor, within} from '@testing-library/react';
 import dayjs from 'dayjs';
 import {EditSavedFlightDialog} from './EditSavedFlightDialog';
-import { testTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {nationwideApi} from '../../../services/nationwideApi';
+import {renderWithTheme} from '../../../__testUtils__';
 
 jest.mock('../../../services/nationwideApi', () => ({
     nationwideApi: {getRecurringFlightOptions: jest.fn(), getAllActiveAirportSuggestions: jest.fn()},
@@ -27,10 +26,6 @@ function flight(carrier: string, number: string, dep: string, arr: string, time:
         arrivalAirport: arr,
         flightSegments: [{carrierFsCode: carrier, flightNumber: number}],
     } as any;
-}
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={testTheme}>{ui}</ThemeProvider>);
 }
 
 function defaultProps(overrides?: Record<string, any>) {

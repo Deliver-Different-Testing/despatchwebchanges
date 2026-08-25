@@ -71,6 +71,12 @@ export interface IJob {
     alertLateDelivery?: number;
     minutes?: number;
     statusId?: number;
+    /** The server's single resolved status. Render from this, not from statusId + done + void. */
+    resolvedStatusId?: number;
+    resolvedIsVoid?: boolean;
+    resolvedIsComplete?: boolean;
+    /** Bulk rows only: pushed to live dispatch. Distinct from `done`, which means delivered. */
+    released?: boolean;
     status: string;
     statusName: string;
     lp?: number;
@@ -290,6 +296,12 @@ export interface IJobDto {
     alertLateDelivery?: number;
     minutes?: number;
     statusId?: number;
+    /** The server's single resolved status. Render from this, not from statusId + done + void. */
+    resolvedStatusId?: number;
+    resolvedIsVoid?: boolean;
+    resolvedIsComplete?: boolean;
+    /** Bulk rows only: pushed to live dispatch. Distinct from `done`, which means delivered. */
+    released?: boolean;
     status: string;
     statusName: string;
     lp?: number;

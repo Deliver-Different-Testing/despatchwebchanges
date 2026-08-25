@@ -12,7 +12,6 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 
 import {DispatchDialog} from './DispatchDialog';
 import {executeDispatchConfirmation} from './executeDispatch';
@@ -20,6 +19,7 @@ import {isNetworkPartnerSession} from './dispatchSession';
 import type {DispatchJobFlags, DispatchType} from './types';
 import {getActivePartnerOptions, getPartnerRateForJob, sendToPartner} from '../../../services/jobListApi';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 export interface OpenDispatchDialogOptions {
     jobId: number;
@@ -40,41 +40,14 @@ export interface DispatchDialogOutcome {
     message: string;
 }
 
-interface DialogState extends OpenDispatchDialogOptions {
-    open: boolean;
-    resolve?: (value: DispatchDialogOutcome | null) => void;
-}
+const host = createDialogHost<OpenDispatchDialogOptions, DispatchDialogOutcome | null>({
+    containerId: 'react-dispatch-dialog-root',
+    render: ({open, payload, close}) => {
+        const {jobId, jobNo, flags, initialType, existingCourier, stopJobCount, existingConNote} = payload;
 
-class DispatchDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private dialogState: DialogState = {open: false, jobId: 0, jobNo: ''};
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-dispatch-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private settle(outcome: DispatchDialogOutcome | null): void {
-        this.dialogState.open = false;
-        this.dialogState.resolve?.(outcome);
-        this.dialogState.resolve = undefined;
-        this.renderDialog();
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const {jobId, jobNo, flags, initialType, existingCourier, stopJobCount, existingConNote} =
-            this.dialogState;
-
-        this.dialogRoot.render(islandTree(
+        return islandTree(
             <DispatchDialog
-                open={this.dialogState.open}
+                open={open}
                 mode={{
                     kind: 'single',
                     jobId,
@@ -90,13 +63,13 @@ class DispatchDialogManager {
                 stopJobCount={stopJobCount}
                 existingConNote={existingConNote}
                 isNetworkPartner={isNetworkPartnerSession()}
-                onClose={() => this.settle(null)}
+                onClose={() => close(null)}
                 onDispatchCourier={async (confirmation) => {
                     const {message} = await executeDispatchConfirmation(
                         {id: jobId, jobNo, assignedCourierId: existingCourier?.id},
                         confirmation,
                     );
-                    this.settle({
+                    close({
                         type: confirmation.type,
                         destinationId: confirmation.destination.id,
                         destinationText: confirmation.destination.text,
@@ -108,7 +81,7 @@ class DispatchDialogManager {
                     if (!result.success) {
                         throw new Error(result.message || 'Failed to send job to partner');
                     }
-                    this.settle({
+                    close({
                         type: 'DfrntPartner',
                         destinationId: partner.id,
                         destinationText: partner.text,
@@ -118,23 +91,12 @@ class DispatchDialogManager {
                 fetchRate={getPartnerRateForJob}
                 getPartnerOptions={getActivePartnerOptions}
             />
-        ));
-    }
-
-    open(options: OpenDispatchDialogOptions): Promise<DispatchDialogOutcome | null> {
-        this.initializeDialogRoot();
-
-        return new Promise((resolve) => {
-            this.dialogState = {...options, open: true, resolve};
-            this.renderDialog();
-        });
-    }
-}
-
-const manager = new DispatchDialogManager();
+        );
+    },
+});
 
 window.ReactDispatchDialog = {
-    open: (options: OpenDispatchDialogOptions) => manager.open(options),
+    open: (options: OpenDispatchDialogOptions) => host.open(options),
 };
 
-export default manager;
+export default host;

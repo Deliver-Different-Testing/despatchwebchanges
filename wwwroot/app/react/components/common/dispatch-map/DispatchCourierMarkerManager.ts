@@ -6,7 +6,7 @@
 
 import type {CourierMarkerData, IAvailableCourierPosition} from './DispatchMap.types';
 import {COURIER_LABEL_COLORS, ICON_CACHE_LIMIT, MARKER_COLORS, POSITION_THRESHOLD,} from './DispatchMap.types';
-import {safeRemoveObject, safeRemoveObjects} from '../here-map/hereMapUtils';
+import {createMapTooltipElement, removeStaleMarkers, safeRemoveObject} from '../here-map/hereMapUtils';
 
 declare const H: any;
 
@@ -67,45 +67,7 @@ export class DispatchCourierMarkerManager {
      * Create the tooltip DOM element (matches Google Maps InfoWindow style)
      */
     private createTooltipElement(): void {
-        this.tooltipElement = document.createElement('div');
-        this.tooltipElement.className = 'gm-style-iw-wrapper';
-        this.tooltipElement.style.cssText = `
-            position: absolute;
-            display: none;
-            z-index: 1000;
-            pointer-events: none;
-            transform: translate(-50%, -100%);
-        `;
-        this.tooltipElement.innerHTML = `
-            <div class="gm-style-iw" style="
-                background: white;
-                border-radius: 8px;
-                box-shadow: 0 2px 7px 1px rgba(0,0,0,0.3);
-                padding: 12px;
-                font-family: Roboto, Arial, sans-serif;
-                font-size: 13px;
-                min-width: 120px;
-            ">
-                <div class="gm-style-iw-content"></div>
-            </div>
-            <div class="gm-style-iw-tail" style="
-                position: absolute;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 0;
-                height: 0;
-                border-left: 11px solid transparent;
-                border-right: 11px solid transparent;
-                border-top: 11px solid white;
-                filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
-            "></div>
-        `;
-
-        // Append to map container
-        const mapContainer = this.map.getElement();
-        if (mapContainer) {
-            mapContainer.appendChild(this.tooltipElement);
-        }
+        this.tooltipElement = createMapTooltipElement(this.map);
     }
 
     /**
@@ -124,29 +86,7 @@ export class DispatchCourierMarkerManager {
             : couriers;
 
         const currentIds = new Set(filteredCouriers.map((c) => c.courierId));
-        const existingIds = new Set(this.courierMarkers.keys());
-
-        // Remove markers for couriers no longer present
-        const toRemove: number[] = [];
-        existingIds.forEach((id) => {
-            if (!currentIds.has(id)) {
-                toRemove.push(id);
-            }
-        });
-
-        if (toRemove.length > 0) {
-            const markersToRemove: any[] = [];
-            toRemove.forEach((id) => {
-                const cm = this.courierMarkers.get(id);
-                if (cm?.marker) {
-                    markersToRemove.push(cm.marker);
-                }
-                this.courierMarkers.delete(id);
-            });
-            if (markersToRemove.length > 0) {
-                safeRemoveObjects(this.markerGroup, markersToRemove);
-            }
-        }
+        removeStaleMarkers(this.courierMarkers, currentIds, this.markerGroup);
 
         // Update existing or add new markers
         const markersToAdd: any[] = [];

@@ -1,6 +1,7 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
+import {createTestQueryClient} from '../../../__testUtils__';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {TodayActiveTab} from './TodayActiveTab';
@@ -20,8 +21,6 @@ jest.mock('../../../services/driverManagementApi', () => ({
 const mockUseTodayActiveDrivers = useTodayActiveDrivers as jest.MockedFunction<typeof useTodayActiveDrivers>;
 
 const theme = createTheme();
-const createTestQueryClient = () => new QueryClient({defaultOptions: {queries: {retry: false}}});
-
 const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text: 'Fleet A'}]) => {
     const queryClient = createTestQueryClient();
     return render(

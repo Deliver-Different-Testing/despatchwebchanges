@@ -44,8 +44,8 @@ import {DispatchJobActionsMenu, DispatchJobActionId} from './components/Dispatch
 import {JobSearchShell} from '../job-search/components/JobSearchShell';
 import {useBoxLayout} from '../job-search/hooks/useBoxLayout';
 import type {ImportLayoutsResult, LayoutStorageKeys} from '../job-search/lib/layoutPersistence';
-import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/SaveLayoutDialog';
-import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
+import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
+import {useLayoutPrompts} from '../../components/layout-prompts/useLayoutPrompts';
 import DispatchBoxes from '../../../components/home/enums/DispatchBoxes';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './lib/boxDefinitions';
 import {computeMapJobs, selectedCourierId} from './lib/mapJobs';
@@ -383,54 +383,10 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         [filters.despatchViewIds],
     );
 
-    // ── Save / delete layout dialogs, driven imperatively by the toolbar ──
-    const [saveDialogOpen, {open: openSaveDialog, close: closeSaveDialog}] = useDisclosure(false);
-    const saveLayoutResolverRef = useRef<((name: string | null) => void) | null>(null);
-
-    const promptSaveLayout = useCallback((): Promise<string | null> => {
-        return new Promise<string | null>(resolve => {
-            saveLayoutResolverRef.current = resolve;
-            openSaveDialog();
-        });
-    }, [openSaveDialog]);
-
-    const resolveSaveLayout = useCallback((name: string | null) => {
-        closeSaveDialog();
-        saveLayoutResolverRef.current?.(name);
-        saveLayoutResolverRef.current = null;
-    }, [closeSaveDialog]);
-
-    const [deleteDialogName, setDeleteDialogName] = useState<string | null>(null);
-    const deleteLayoutResolverRef = useRef<((confirmed: boolean) => void) | null>(null);
-
-    const promptDeleteLayout = useCallback((layoutName: string): Promise<boolean> => {
-        return new Promise<boolean>(resolve => {
-            deleteLayoutResolverRef.current = resolve;
-            setDeleteDialogName(layoutName);
-        });
-    }, []);
-
-    const resolveDeleteLayout = useCallback((confirmed: boolean) => {
-        setDeleteDialogName(null);
-        deleteLayoutResolverRef.current?.(confirmed);
-        deleteLayoutResolverRef.current = null;
-    }, []);
-
-    const [renameDialogName, setRenameDialogName] = useState<string | null>(null);
-    const renameLayoutResolverRef = useRef<((name: string | null) => void) | null>(null);
-
-    const promptRenameLayout = useCallback((layoutName: string): Promise<string | null> => {
-        return new Promise<string | null>(resolve => {
-            renameLayoutResolverRef.current = resolve;
-            setRenameDialogName(layoutName);
-        });
-    }, []);
-
-    const resolveRenameLayout = useCallback((name: string | null) => {
-        setRenameDialogName(null);
-        renameLayoutResolverRef.current?.(name);
-        renameLayoutResolverRef.current = null;
-    }, []);
+    // Save / rename / delete layout prompts, opened imperatively via the layout bridge
+    // from the AngularJS toolbar so `routes.ts` keeps owning persistence.
+    const layoutPrompts = useLayoutPrompts();
+    const {promptSaveLayout, promptDeleteLayout, promptRenameLayout} = layoutPrompts;
 
     useEffect(() => {
         onLayoutBridgeReady?.({
@@ -849,27 +805,9 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     onRemoveColumn={boxLayout.removeColumn}
                 />
             </Box>
-            <SaveLayoutDialog
-                open={saveDialogOpen}
-                existingNames={boxLayout.layouts.map(l => l.name)}
-                onClose={() => resolveSaveLayout(null)}
-                onConfirm={name => resolveSaveLayout(name)}
-            />
-            <SaveLayoutDialog
-                open={renameDialogName !== null}
-                initialName={renameDialogName ?? ''}
-                title="Rename Layout"
-                subtitle="Give this layout a new name"
-                confirmLabel="Rename"
-                existingNames={boxLayout.layouts.map(l => l.name).filter(n => n !== renameDialogName)}
-                onClose={() => resolveRenameLayout(null)}
-                onConfirm={name => resolveRenameLayout(name)}
-            />
-            <DeleteLayoutDialog
-                open={deleteDialogName !== null}
-                layoutName={deleteDialogName ?? ''}
-                onClose={() => resolveDeleteLayout(false)}
-                onConfirm={() => resolveDeleteLayout(true)}
+            <LayoutPromptDialogs
+                prompts={layoutPrompts}
+                layoutNames={boxLayout.layouts.map(l => l.name)}
             />
             {currentJob && (
                 <DispatchDialog

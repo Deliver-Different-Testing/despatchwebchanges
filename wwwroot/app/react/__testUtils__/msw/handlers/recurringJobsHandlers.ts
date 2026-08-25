@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import {rejectWithoutCsrf} from './requestGuards';
 import type { PaginatedRecurringJobsResponseDto, SpeedOption } from '../../../interfaces';
 
 // Mock data
@@ -59,9 +60,8 @@ export const mockPaginatedRecurringJobsResponse: PaginatedRecurringJobsResponseD
 export const recurringJobsHandlers = [
     // Get paginated prebook jobs
     http.post('*/job/PreBookJobs', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -78,9 +78,8 @@ export const recurringJobsHandlers = [
 
     // Export recurring jobs to CSV
     http.post('*/job/RecurringJobsExportCsv', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const csvContent = 'JobNo,Client,Speed\nPRE-001,ABC Ltd,1 Hour\n';
         return new HttpResponse(csvContent, {

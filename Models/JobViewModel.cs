@@ -4,7 +4,6 @@ public class JobViewModel : DispatchJobViewModel
 {
     public new bool Van { get; set; }
     public bool? VanOk { get; set; }
-    public bool? Void { get; set; }
     public new bool? Truck { get; set; }
     public bool? Reprice { get; set; }
     public bool? Attention { get; set; }
@@ -46,7 +45,6 @@ public class JobViewModel : DispatchJobViewModel
     public bool? DgDocumentation { get; set; }
 
     public bool? PrivateRes { get; set; }
-    public DateTime? CompletedTime { get; set; }
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
     public string FromContactNumberSource { get; set; }

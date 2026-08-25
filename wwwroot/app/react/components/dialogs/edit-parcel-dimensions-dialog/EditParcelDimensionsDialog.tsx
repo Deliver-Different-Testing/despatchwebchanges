@@ -172,6 +172,31 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
     });
 }
 
+/** One numeric cell of the dimensions grid — same field, different measurement. */
+function DimensionCell({value, disabled, htmlInput, onChange}: {
+    value: string | number;
+    disabled?: boolean;
+    htmlInput: Record<string, unknown>;
+    onChange: (value: string) => void;
+}) {
+    return (
+        <TableCell>
+            <TextField
+                size="small"
+                type="number"
+                fullWidth
+                disabled={disabled}
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                onWheel={e => e.currentTarget.blur()}
+                placeholder="—"
+                slotProps={{htmlInput}}
+                sx={noSpinnerSx}
+            />
+        </TableCell>
+    );
+}
+
 export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProps> = ({
     open,
     parcels: initialParcels,
@@ -503,76 +528,36 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             </Box>
                                         )}
                                     </TableCell>
-                                    <TableCell>
-                                        <TextField
-                                            size="small"
-                                            type="number"
-                                            fullWidth
-                                            disabled={readOnly}
-                                            value={g.length}
-                                            onChange={e => updateGroup(g.id, 'length', e.target.value)}
-                                            onWheel={e => e.currentTarget.blur()}
-                                            placeholder="—"
-                                            slotProps={{htmlInput: numInput}}
-                                            sx={noSpinnerSx}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <TextField
-                                            size="small"
-                                            type="number"
-                                            fullWidth
-                                            disabled={readOnly}
-                                            value={g.depth}
-                                            onChange={e => updateGroup(g.id, 'depth', e.target.value)}
-                                            onWheel={e => e.currentTarget.blur()}
-                                            placeholder="—"
-                                            slotProps={{htmlInput: numInput}}
-                                            sx={noSpinnerSx}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <TextField
-                                            size="small"
-                                            type="number"
-                                            fullWidth
-                                            disabled={readOnly}
-                                            value={g.height}
-                                            onChange={e => updateGroup(g.id, 'height', e.target.value)}
-                                            onWheel={e => e.currentTarget.blur()}
-                                            placeholder="—"
-                                            slotProps={{htmlInput: numInput}}
-                                            sx={noSpinnerSx}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <TextField
-                                            size="small"
-                                            type="number"
-                                            fullWidth
-                                            disabled={readOnly}
-                                            value={g.weight}
-                                            onChange={e => updateGroup(g.id, 'weight', e.target.value)}
-                                            onWheel={e => e.currentTarget.blur()}
-                                            placeholder="—"
-                                            slotProps={{htmlInput: {min: 0, step: 0.001, 'aria-label': 'Weight'}}}
-                                            sx={noSpinnerSx}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <TextField
-                                            size="small"
-                                            type="number"
-                                            fullWidth
-                                            disabled={readOnly}
-                                            value={g.cubic}
-                                            onChange={e => updateGroup(g.id, 'cubic', e.target.value)}
-                                            onWheel={e => e.currentTarget.blur()}
-                                            placeholder="—"
-                                            slotProps={{htmlInput: {min: 0, step: 0.001, 'aria-label': 'Volume'}}}
-                                            sx={noSpinnerSx}
-                                        />
-                                    </TableCell>
+                                    <DimensionCell
+                                        value={g.length}
+                                        disabled={readOnly}
+                                        htmlInput={numInput}
+                                        onChange={value => updateGroup(g.id, 'length', value)}
+                                    />
+                                    <DimensionCell
+                                        value={g.depth}
+                                        disabled={readOnly}
+                                        htmlInput={numInput}
+                                        onChange={value => updateGroup(g.id, 'depth', value)}
+                                    />
+                                    <DimensionCell
+                                        value={g.height}
+                                        disabled={readOnly}
+                                        htmlInput={numInput}
+                                        onChange={value => updateGroup(g.id, 'height', value)}
+                                    />
+                                    <DimensionCell
+                                        value={g.weight}
+                                        disabled={readOnly}
+                                        htmlInput={{min: 0, step: 0.001, 'aria-label': 'Weight'}}
+                                        onChange={value => updateGroup(g.id, 'weight', value)}
+                                    />
+                                    <DimensionCell
+                                        value={g.cubic}
+                                        disabled={readOnly}
+                                        htmlInput={{min: 0, step: 0.001, 'aria-label': 'Volume'}}
+                                        onChange={value => updateGroup(g.id, 'cubic', value)}
+                                    />
                                     <TableCell>
                                         <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5}}>
                                             <IconButton size="small" aria-label="Decrease quantity" onClick={() => adjustQty(g.id, -1)} disabled={readOnly || g.barcodes.length <= 1}>

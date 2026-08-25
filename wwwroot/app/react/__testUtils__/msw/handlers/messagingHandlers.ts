@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import {rejectWithoutCsrf} from './requestGuards';
 import type { RecentConversation, ChatMessage, QuickResponse, MessageContactOption } from '../../../components/dialogs/messaging-dialog/types';
 import { OtherMessagePartyType } from '../../../components/dialogs/messaging-dialog/types';
 
@@ -111,10 +112,8 @@ export const messagingHandlers = [
 
     // Send a message
     http.post('*/messages/SendMessage', async ({ request }) => {
-        // Verify CSRF header
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -126,10 +125,8 @@ export const messagingHandlers = [
 
     // Send message to multiple recipients
     http.post('*/messages/SendMultiMessage', async ({ request }) => {
-        // Verify CSRF header
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -141,10 +138,8 @@ export const messagingHandlers = [
 
     // Mark messages as read
     http.post('*/messages/MarkMessagesAsRead', ({ request }) => {
-        // Verify CSRF header
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const url = new URL(request.url);
         const otherPartyId = url.searchParams.get('otherPartyId');
@@ -179,10 +174,8 @@ export const messagingHandlers = [
 
     // Add quick response
     http.post('*/messages/AddQuickResponse', async ({ request }) => {
-        // Verify CSRF header
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object' || !('message' in (body as object))) {
@@ -195,10 +188,8 @@ export const messagingHandlers = [
 
     // Delete quick response
     http.delete('*/messages/DeleteQuickResponse', ({ request }) => {
-        // Verify CSRF header
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const url = new URL(request.url);
         const responseId = url.searchParams.get('responseId');

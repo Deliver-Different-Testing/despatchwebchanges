@@ -1,33 +1,15 @@
 /**
  * Task Item Interfaces
  *
- * Type definitions for the React TaskItem component.
+ * Type definitions for the React TaskItem component. The task shapes themselves are the
+ * API ones — re-exported here so the component keeps its own import path.
  */
 
 import {Dayjs} from 'dayjs';
+import type Task from '../../../interfaces/tasks';
 
-export interface TaskAssignee {
-    id: number;
-    text: string;
-}
-
-export interface Task {
-    id: number;
-    title: string;
-    description: string;
-    dueDate: Dayjs;
-    closed: boolean;
-    assignee: TaskAssignee;
-    jobId: number;
-    eventType: string;
-    jobNumber: string;
-    courierCode?: string;
-    courierName?: string;
-    clientCode?: string;
-    priority?: 'high' | 'medium' | 'low';
-    _dueDateString?: string;
-    _dueTimeString?: string;
-}
+export type {TaskAssignee} from '../../../interfaces/tasks';
+export type {default as Task} from '../../../interfaces/tasks';
 
 export interface TaskItemConfig {
     showJobId?: boolean;

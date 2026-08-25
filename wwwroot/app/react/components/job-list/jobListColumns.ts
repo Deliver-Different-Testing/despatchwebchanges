@@ -36,7 +36,9 @@ export const ALL_COLUMNS: ColumnDef[] = [
     {key: 'pickup', label: 'Pickup', sortable: true, width: 120},
     {key: 'delivery', label: 'Delivery', sortable: true, width: 380},
     {key: 'courier', label: 'Courier', sortable: true, width: 150},
-    {key: 'remaining', label: 'Remaining', sortable: true, width: 110, align: 'right'},
+    // Derived from the tenant clock and the eco-settings row, so it is not a column the
+    // database can order by — the header would advertise a sort that does nothing.
+    {key: 'remaining', label: 'Remaining', sortable: false, width: 110, align: 'right'},
     {key: 'status', label: 'Status', sortable: true, width: 100},
 ];
 

@@ -1,4 +1,4 @@
-import {safeRemoveObject, safeRemoveObjects} from './hereMapUtils';
+import {createMapTooltipElement, removeStaleMarkers, safeRemoveObject, safeRemoveObjects} from './hereMapUtils';
 
 describe('safeRemoveObject', () => {
     it('does nothing when target is null', () => {
@@ -100,5 +100,60 @@ describe('safeRemoveObjects', () => {
 
         expect(removeObject).toHaveBeenCalledTimes(3);
         warnSpy.mockRestore();
+    });
+});
+
+describe('createMapTooltipElement', () => {
+    it('attaches a hidden InfoWindow-style bubble to the map container', () => {
+        const element = document.createElement('div');
+
+        const tooltip = createMapTooltipElement({getElement: () => element});
+
+        expect(element.firstElementChild).toBe(tooltip);
+        expect(tooltip.className).toBe('gm-style-iw-wrapper');
+        expect(tooltip.style.display).toBe('none');
+        expect(tooltip.querySelector('.gm-style-iw-content')).not.toBeNull();
+        expect(tooltip.querySelector('.gm-style-iw-tail')).not.toBeNull();
+    });
+
+    it('still returns the bubble when the map has no container yet', () => {
+        expect(() => createMapTooltipElement({getElement: () => null})).not.toThrow();
+    });
+});
+
+describe('removeStaleMarkers', () => {
+    it('removes the markers whose ids are gone, in one batch, and keeps the rest', () => {
+        const group = {removeObjects: jest.fn()};
+        const markers = new Map<number, {marker?: unknown}>([
+            [1, {marker: 'one'}],
+            [2, {marker: 'two'}],
+            [3, {marker: 'three'}],
+        ]);
+
+        removeStaleMarkers(markers, new Set([2]), group);
+
+        expect(group.removeObjects).toHaveBeenCalledTimes(1);
+        expect(group.removeObjects).toHaveBeenCalledWith(['one', 'three']);
+        expect([...markers.keys()]).toEqual([2]);
+    });
+
+    it('forgets an entry that never got a marker without asking the map to remove it', () => {
+        const group = {removeObjects: jest.fn()};
+        const markers = new Map<number, {marker?: unknown}>([[1, {}]]);
+
+        removeStaleMarkers(markers, new Set<number>(), group);
+
+        expect(group.removeObjects).not.toHaveBeenCalled();
+        expect(markers.size).toBe(0);
+    });
+
+    it('leaves the map alone when nothing is stale', () => {
+        const group = {removeObjects: jest.fn()};
+        const markers = new Map<number, {marker?: unknown}>([[1, {marker: 'one'}]]);
+
+        removeStaleMarkers(markers, new Set([1]), group);
+
+        expect(group.removeObjects).not.toHaveBeenCalled();
+        expect(markers.size).toBe(1);
     });
 });

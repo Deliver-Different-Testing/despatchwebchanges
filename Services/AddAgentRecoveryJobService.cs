@@ -1,3 +1,4 @@
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -139,7 +140,10 @@ public sealed class AddAgentRecoveryJobService(
         newStopJob.UcjbKm = 0;
         newStopJob.UcjbFlightDetails = null;
         newStopJob.UcjbWeight = job.UcjbWeight;
-        newStopJob.UcjbStatus = job.UcjbStatus;
+        // A finished parent status does not carry over onto a leg created not-done.
+        newStopJob.UcjbStatus = JobStatusGroups.Completed.Contains(job.UcjbStatus ?? (int)JobStatus.New)
+            ? (int)JobStatus.New
+            : job.UcjbStatus;
         newStopJob.UcjbCourierId = null;
         newStopJob.UcjbJobDone = false;
         newStopJob.UcjbClientRefa = job.UcjbClientRefa;

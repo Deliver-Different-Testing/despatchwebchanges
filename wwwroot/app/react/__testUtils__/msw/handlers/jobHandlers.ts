@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import {rejectWithoutCsrf} from './requestGuards';
 import type { RelatedJobDto, Suggestion } from '../../../interfaces';
 
 // Mock data
@@ -52,10 +53,8 @@ export const jobHandlers = [
 
     // Void a single job
     http.post('*/job/Void', async ({ request }) => {
-        // Verify CSRF header
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -72,10 +71,8 @@ export const jobHandlers = [
 
     // Void a bulk job
     http.post('*/job/VoidBulkJob', async ({ request }) => {
-        // Verify CSRF header
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -92,9 +89,8 @@ export const jobHandlers = [
 
     // Quick create job
     http.post('*/job/QuickCreateJob', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -132,9 +128,8 @@ export const jobHandlers = [
 
     // Allocate job to courier
     http.post('*/job/Allocate', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -168,9 +163,8 @@ export const jobHandlers = [
 
     // Swap the POD between two jobs
     http.post('*/Job/SwapPod', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {

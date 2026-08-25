@@ -136,6 +136,9 @@ public sealed partial class DeliveryJourneyService(
             {
                 j.UcjbId,
                 j.UcjbNumber,
+                j.UcjbStatus,
+                j.UcjbJobDone,
+                j.UcjbVoid,
                 ParentJobId = j.ParentId.Value
             })
             .TagWith("RecurringJourney - Child legs")
@@ -151,7 +154,9 @@ public sealed partial class DeliveryJourneyService(
                         .Select(c => new RecurringJourneyChildDto
                         {
                             JobId = c.UcjbId,
-                            JobNumber = c.UcjbNumber
+                            JobNumber = c.UcjbNumber,
+                            Status = MapStatusBucket(
+                                JobStatusResolver.Resolve(c.UcjbStatus, c.UcjbJobDone, c.UcjbVoid).StatusId)
                         })
                 ]);
 

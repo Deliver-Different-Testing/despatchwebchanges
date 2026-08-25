@@ -70,6 +70,21 @@ const groupLabelSx: SxProps<Theme> = {
     lineHeight: 2.5,
 };
 
+/** The compact outlined field the panel uses for every criterion. */
+const criteriaFieldSx = {
+    '& .MuiOutlinedInput-root': {
+        height: 34,
+        fontSize: '0.8125rem',
+        bgcolor: 'background.paper',
+        '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'divider',
+        },
+        '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'text.disabled',
+        },
+    },
+} satisfies SxProps<Theme>;
+
 export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
     dateSearchRange,
     fromDate,
@@ -252,19 +267,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                     value={jobNumber}
                     onChange={handleJobNumberChange}
                     onKeyUp={handleKeyUp}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            height: 34,
-                            fontSize: '0.8125rem',
-                            bgcolor: 'background.paper',
-                            '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'divider',
-                            },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'text.disabled',
-                            },
-                        },
-                    }}
+                    sx={criteriaFieldSx}
                 />
             </Box>
 
@@ -277,19 +280,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                     value={generalSearch}
                     onChange={handleGeneralSearchChange}
                     onKeyUp={handleKeyUp}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            height: 34,
-                            fontSize: '0.8125rem',
-                            bgcolor: 'background.paper',
-                            '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'divider',
-                            },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'text.disabled',
-                            },
-                        },
-                    }}
+                    sx={criteriaFieldSx}
                 />
             </Box>
 
@@ -329,19 +320,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                                 disabled={!!bulkJobId}
                                 onChange={handleJobIdChange}
                                 onKeyUp={handleKeyUp}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        height: 34,
-                                        fontSize: '0.8125rem',
-                                        bgcolor: 'background.paper',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: 'divider',
-                                        },
-                                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: 'text.disabled',
-                                        },
-                                    },
-                                }}
+                                sx={criteriaFieldSx}
                             />
                         </Box>
                         <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75}}>
@@ -354,19 +333,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                                 disabled={!!jobId}
                                 onChange={handleBulkJobIdChange}
                                 onKeyUp={handleKeyUp}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        height: 34,
-                                        fontSize: '0.8125rem',
-                                        bgcolor: 'background.paper',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: 'divider',
-                                        },
-                                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: 'text.disabled',
-                                        },
-                                    },
-                                }}
+                                sx={criteriaFieldSx}
                             />
                         </Box>
                     </Box>

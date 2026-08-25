@@ -16,6 +16,16 @@ describe('DEFAULT_COLUMN_WIDTHS', () => {
     });
 });
 
+describe('ALL_COLUMNS sortable flags', () => {
+    it('marks only the columns the server can order by as sortable', () => {
+        // Remaining is computed from the tenant clock, so it has no server-side sort key.
+        expect(ALL_COLUMNS.find(c => c.key === 'remaining')?.sortable).toBe(false);
+        expect(ALL_COLUMNS.find(c => c.key === 'isArchived')?.sortable).toBe(true);
+        expect(ALL_COLUMNS.find(c => c.key === 'pickup')?.sortable).toBe(true);
+        expect(ALL_COLUMNS.find(c => c.key === 'delivery')?.sortable).toBe(true);
+    });
+});
+
 describe('availableColumns', () => {
     it('hides Client for US tenants and Archived outside job search', () => {
         expect(keys(availableColumns(true, true))).not.toContain('client');

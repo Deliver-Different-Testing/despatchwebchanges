@@ -51,8 +51,8 @@ import {
     openInterCourierChargeDialog
 } from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
 import type {LayoutStorageKeys} from './lib/layoutPersistence';
-import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/SaveLayoutDialog';
-import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
+import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
+import {useLayoutPrompts} from '../../components/layout-prompts/useLayoutPrompts';
 import {DispatchDialog, type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
 import {
     isNetworkPartnerSession,
@@ -104,58 +104,10 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const [restoreConfirm, setRestoreConfirm] =
         useState<{job: DispatchJob; summary: RestorePodImpactSummary} | null>(null);
 
-    // Save-layout dialogue — opened imperatively via the layout bridge from the
-    // AngularJS toolbar. Resolves the pending promise with the entered name (or
-    // null on cancel) so `routes.ts` keeps owning persistence.
-    const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-    const saveLayoutResolverRef = useRef<((name: string | null) => void) | null>(null);
-
-    const promptSaveLayout = useCallback((): Promise<string | null> => {
-        return new Promise<string | null>(resolve => {
-            saveLayoutResolverRef.current = resolve;
-            setSaveDialogOpen(true);
-        });
-    }, []);
-
-    const resolveSaveLayout = useCallback((name: string | null) => {
-        setSaveDialogOpen(false);
-        saveLayoutResolverRef.current?.(name);
-        saveLayoutResolverRef.current = null;
-    }, []);
-
-    // Delete-layout confirmation — same imperative bridge pattern as safe.
-    const [deleteDialogName, setDeleteDialogName] = useState<string | null>(null);
-    const deleteLayoutResolverRef = useRef<((confirmed: boolean) => void) | null>(null);
-
-    const promptDeleteLayout = useCallback((layoutName: string): Promise<boolean> => {
-        return new Promise<boolean>(resolve => {
-            deleteLayoutResolverRef.current = resolve;
-            setDeleteDialogName(layoutName);
-        });
-    }, []);
-
-    const resolveDeleteLayout = useCallback((confirmed: boolean) => {
-        setDeleteDialogName(null);
-        deleteLayoutResolverRef.current?.(confirmed);
-        deleteLayoutResolverRef.current = null;
-    }, []);
-
-    // Rename-layout prompt — same imperative bridge pattern as save/delete.
-    const [renameDialogName, setRenameDialogName] = useState<string | null>(null);
-    const renameLayoutResolverRef = useRef<((name: string | null) => void) | null>(null);
-
-    const promptRenameLayout = useCallback((layoutName: string): Promise<string | null> => {
-        return new Promise<string | null>(resolve => {
-            renameLayoutResolverRef.current = resolve;
-            setRenameDialogName(layoutName);
-        });
-    }, []);
-
-    const resolveRenameLayout = useCallback((name: string | null) => {
-        setRenameDialogName(null);
-        renameLayoutResolverRef.current?.(name);
-        renameLayoutResolverRef.current = null;
-    }, []);
+    // Save / rename / delete layout prompts, opened imperatively via the layout bridge
+    // from the AngularJS toolbar so `routes.ts` keeps owning persistence.
+    const layoutPrompts = useLayoutPrompts();
+    const {promptSaveLayout, promptDeleteLayout, promptRenameLayout} = layoutPrompts;
 
     // Callbacks each JobListPanel hands back via `setUpdateSearchParamsCallback`.
     // We invoke these whenever the user clicks Search so the panel's
@@ -820,27 +772,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     onRemoveColumn={boxLayout.removeColumn}
                 />
             </Box>
-            <SaveLayoutDialog
-                open={saveDialogOpen}
-                existingNames={boxLayout.layouts.map(l => l.name)}
-                onClose={() => resolveSaveLayout(null)}
-                onConfirm={name => resolveSaveLayout(name)}
-            />
-            <SaveLayoutDialog
-                open={renameDialogName !== null}
-                initialName={renameDialogName ?? ''}
-                title="Rename Layout"
-                subtitle="Give this layout a new name"
-                confirmLabel="Rename"
-                existingNames={boxLayout.layouts.map(l => l.name).filter(n => n !== renameDialogName)}
-                onClose={() => resolveRenameLayout(null)}
-                onConfirm={name => resolveRenameLayout(name)}
-            />
-            <DeleteLayoutDialog
-                open={deleteDialogName !== null}
-                layoutName={deleteDialogName ?? ''}
-                onClose={() => resolveDeleteLayout(false)}
-                onConfirm={() => resolveDeleteLayout(true)}
+            <LayoutPromptDialogs
+                prompts={layoutPrompts}
+                layoutNames={boxLayout.layouts.map(l => l.name)}
             />
             <RestoreConfirmationDialog
                 open={restoreConfirm !== null}

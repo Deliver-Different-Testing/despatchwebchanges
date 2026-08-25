@@ -13,6 +13,7 @@ import {EditAddressDialogViewModel, HereMapsLocationResult, HereMapsLookupRespon
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../services/addressApi';
 import {suppressConsoleError} from '../../../__testUtils__';
+import {HERE_US_ADDRESS_FIELDS} from '../../../__testUtils__/mockData';
 
 // Mock the React Query hooks
 jest.mock('../../../hooks/useAddressApi', () => ({
@@ -93,17 +94,7 @@ const sampleAddressResults: HereMapsLocationResult[] = [
         title: '123 Main Street, New York, NY 10001',
         id: 'here:af:address:123',
         resultType: 'houseNumber',
-        address: {
-            label: '123 Main Street, New York, NY 10001',
-            countryCode: 'USA',
-            countryName: 'United States',
-            stateCode: 'NY',
-            state: 'New York',
-            city: 'New York',
-            street: 'Main Street',
-            postalCode: '10001',
-            houseNumber: '123',
-        },
+        address: {...HERE_US_ADDRESS_FIELDS},
         position: {lat: 40.7128, lng: -74.006},
         access: [{lat: 40.7128, lng: -74.006}],
     },
@@ -194,17 +185,7 @@ const usLookupResponse: HereMapsLookupResponse = {
     title: '123 Main Street',
     id: 'here:af:address:123',
     resultType: 'houseNumber',
-    address: {
-        label: '123 Main Street, New York, NY 10001',
-        countryCode: 'USA',
-        countryName: 'United States',
-        stateCode: 'NY',
-        state: 'New York',
-        city: 'New York',
-        street: 'Main Street',
-        postalCode: '10001',
-        houseNumber: '123',
-    },
+    address: {...HERE_US_ADDRESS_FIELDS},
     position: {lat: 40.7128, lng: -74.006},
 };
 
@@ -234,6 +215,14 @@ const nzLookupResponse: HereMapsLookupResponse = {
     },
     position: {lat: -36.8485, lng: 174.7633},
 };
+
+/** Focus the search box and type — the first two steps of every suggestion test. */
+function typeAddressSearch(value: string) {
+    const searchInput = screen.getByLabelText(/Search Address/);
+    fireEvent.focus(searchInput);
+    fireEvent.change(searchInput, {target: {value}});
+    return searchInput;
+}
 
 describe('EditAddressDialog', () => {
     beforeEach(() => {
@@ -431,9 +420,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: '123 Main'}});
+            typeAddressSearch('123 Main');
 
             expect(await screen.findByText('123 Main Street, New York, NY 10001')).toBeInTheDocument();
         });
@@ -455,9 +442,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: 'ab'}});
+            typeAddressSearch('ab');
 
             expect(screen.getByPlaceholderText(/Type at least 3 characters/)).toBeInTheDocument();
         });
@@ -484,9 +469,7 @@ describe('EditAddressDialog', () => {
             expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('Suite 200');
 
             // Select address
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: '123'}});
+            typeAddressSearch('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             fireEvent.click(option);
@@ -587,17 +570,7 @@ describe('EditAddressDialog', () => {
                 title: 'Starbucks Coffee',
                 id: 'here:af:place:abc',
                 resultType: 'place',
-                address: {
-                    label: '123 Main Street, New York, NY 10001',
-                    countryCode: 'USA',
-                    countryName: 'United States',
-                    stateCode: 'NY',
-                    state: 'New York',
-                    city: 'New York',
-                    street: 'Main Street',
-                    postalCode: '10001',
-                    houseNumber: '123',
-                },
+                address: {...HERE_US_ADDRESS_FIELDS},
                 position: {lat: 40.7128, lng: -74.006},
             };
             mockUseAddressSearch.mockReturnValue({
@@ -610,9 +583,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: '123'}});
+            typeAddressSearch('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             fireEvent.click(option);
@@ -627,17 +598,7 @@ describe('EditAddressDialog', () => {
                 title: 'Starbucks Coffee',
                 id: 'here:af:place:abc',
                 resultType: 'place',
-                address: {
-                    label: '123 Main Street, New York, NY 10001',
-                    countryCode: 'USA',
-                    countryName: 'United States',
-                    stateCode: 'NY',
-                    state: 'New York',
-                    city: 'New York',
-                    street: 'Main Street',
-                    postalCode: '10001',
-                    houseNumber: '123',
-                },
+                address: {...HERE_US_ADDRESS_FIELDS},
                 position: {lat: 40.7128, lng: -74.006},
                 mapReferences: {
                     pointAddress: {
@@ -656,9 +617,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: '123'}});
+            typeAddressSearch('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             fireEvent.click(option);
@@ -679,9 +638,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: false});
             renderWithProviders(props);
 
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: '10 Queen'}});
+            typeAddressSearch('10 Queen');
 
             const option = await screen.findByRole('option', {
                 name: /10 Queen Street, Auckland/,
@@ -709,9 +666,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: '123'}});
+            typeAddressSearch('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             fireEvent.click(option);
@@ -733,9 +688,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({showToast});
             renderWithProviders(props);
 
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: '123'}});
+            typeAddressSearch('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             fireEvent.click(option);
@@ -756,9 +709,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
-            const searchInput = screen.getByLabelText(/Search Address/);
-            fireEvent.focus(searchInput);
-            fireEvent.change(searchInput, {target: {value: '123'}});
+            typeAddressSearch('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             fireEvent.click(option);

@@ -1,3 +1,5 @@
+using DespatchWeb.Helpers;
+
 namespace DespatchWeb.Models;
 
 public class DispatchJobViewModel
@@ -22,6 +24,29 @@ public class DispatchJobViewModel
     public int? StatusId { get; set; }
     public string StatusName { get; set; }
     public string Status { get; set; }
+    public bool? Void { get; set; }
+    public DateTime? CompletedTime { get; set; }
+
+    /// <summary>
+    /// Whether a bulk row has been pushed to live dispatch. Distinct from <see cref="Done"/>, which
+    /// means the freight was delivered — <c>tblBulkJob.Done</c> records the former, so projecting it
+    /// as the latter made a released bulk row read as delivered.
+    /// </summary>
+    public bool? Released { get; set; }
+
+    /// <summary>
+    /// The one status every surface should render and every eligibility check should test. Resolved
+    /// from the competing status fields by <see cref="JobStatusResolver"/> rather than re-derived per
+    /// screen, so the grid and the detail dialog can never disagree.
+    /// </summary>
+    public int ResolvedStatusId => Resolved.StatusId;
+
+    public bool ResolvedIsVoid => Resolved.IsVoid;
+
+    public bool ResolvedIsComplete => Resolved.IsComplete;
+
+    private ResolvedJobStatus Resolved => JobStatusResolver.Resolve(StatusId, Done, Void, CompletedTime);
+
     public DateTime? Time { get; set; }
     public DateTime? Booked { get; set; }
     public double? Remain { get; set; }

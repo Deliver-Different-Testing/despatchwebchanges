@@ -105,6 +105,18 @@ const defaultProps = {
     showToast: jest.fn(),
 };
 
+/** The flight-mode render every cargo-time test starts from. */
+function renderFlightWithCargoTimes(onCalculateCargoTimes: jest.Mock) {
+    return renderWithTheme(
+        <FlightAgentConfirmationDialog
+            {...defaultProps}
+            mode="flight"
+            flight={createFlight()}
+            onCalculateCargoTimes={onCalculateCargoTimes}
+        />
+    );
+}
+
 describe('FlightAgentConfirmationDialog', () => {
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
@@ -168,14 +180,7 @@ describe('FlightAgentConfirmationDialog', () => {
         it('calls onCalculateCargoTimes when flight is provided', async () => {
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(createCargoProcessing());
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             await waitFor(() => {
                 expect(onCalculateCargoTimes).toHaveBeenCalledWith(
@@ -496,14 +501,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             expect(await screen.findByText(/Package Available After Cargo Hours/)).toBeInTheDocument();
         });
@@ -517,14 +515,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             expect(await screen.findByText(/Set to.*Cargo Opens/)).toBeInTheDocument();
         });
@@ -538,14 +529,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             expect(await screen.findByText('Baggage Carousel')).toBeInTheDocument();
         });
@@ -759,14 +743,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(invalidCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             // Should display fallback text instead of "Invalid Date"
             expect(await screen.findByText('--:-- - --:--')).toBeInTheDocument();
@@ -780,14 +757,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(validCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             // Should display properly formatted times
             expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
@@ -804,14 +774,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoWithTimezone);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             expect(await screen.findByText('07:00 - 23:00')).toBeInTheDocument();
         });

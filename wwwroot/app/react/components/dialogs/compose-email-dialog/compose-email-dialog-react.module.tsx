@@ -1,71 +1,25 @@
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {ComposeEmailDialog} from './ComposeEmailDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-interface DialogState {
-    open: boolean;
-    selectedCouriers: DriverEmail[];
-    resolve?: (value: GroupEmailData | null) => void;
-}
-
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    selectedCouriers: [],
-};
-
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSend = (data: GroupEmailData) => {
-        dialogState.open = false;
-        dialogState.resolve?.(data);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    dialogRoot.render(islandTree(
+const host = createDialogHost<{selectedCouriers: DriverEmail[]}, GroupEmailData | null>({
+    containerId: 'react-compose-email-dialog-root',
+    render: ({open, payload, close}) => islandTree(
         <ComposeEmailDialog
-            open={dialogState.open}
-            selectedCouriers={dialogState.selectedCouriers}
-            onClose={handleClose}
-            onSend={handleSend}
+            open={open}
+            selectedCouriers={payload.selectedCouriers}
+            onClose={() => close(null)}
+            onSend={close}
         />
-    ));
-}
-
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-compose-email-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+    ),
+});
 
 export function openComposeEmailDialog(
     selectedCouriers: DriverEmail[]
 ): Promise<GroupEmailData | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            selectedCouriers,
-            resolve,
-        };
-        renderDialog();
-    });
+    return host.open({selectedCouriers});
 }
 
 window.ReactComposeEmailDialog = {

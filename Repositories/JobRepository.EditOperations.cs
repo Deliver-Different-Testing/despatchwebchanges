@@ -1,4 +1,5 @@
 using System.Globalization;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -509,6 +510,15 @@ public partial class JobRepository
                     job.PickUpTime = _infoService.GetCurrentTimeFromTimeZone(job.PickupTimeZone);
                 }
 
+                // Keep the completion flag and timestamp with the status, the way the
+                // UndeliverableLocationID branch below already does. Setting the status alone left a
+                // job reading Completed on the grid and not-delivered in job properties.
+                var closesTheJob = JobStatusGroups.Completed.Contains(newStatus);
+                job.UcjbJobDone = closesTheJob;
+                job.UcjbComplTime = closesTheJob
+                    ? job.UcjbComplTime ?? _infoService.GetCurrentTimeFromTimeZone(job.DeliverByTimeZone)
+                    : null;
+
                 break;
             case JobProperty.UndeliverableLocationID:
                 job.UndeliverableLocationId = int.Parse(value);
@@ -527,6 +537,18 @@ public partial class JobRepository
                 {
                     job.UcjbStatus = (int)JobStatus.Completed;
                     job.UcjbComplTime = _infoService.GetCurrentTimeFromTimeZone(job.DeliverByTimeZone);
+                }
+                else if (JobStatusGroups.Completed.Contains(job.UcjbStatus ?? (int)JobStatus.New))
+                {
+                    // Un-ticking Delivered used to leave the status on Completed with its completion
+                    // time still set, which every surface then read as delivered. A voided job keeps
+                    // its Void status — that is the void flag's to own, not this edit's.
+                    if (!job.UcjbVoid)
+                    {
+                        job.UcjbStatus = (int)JobStatus.New;
+                    }
+
+                    job.UcjbComplTime = null;
                 }
 
                 break;
@@ -1102,7 +1124,9 @@ public partial class JobRepository
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
                 rowsAffected = voidJob
-                    ? await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Void, true))
+                    ? await baseQuery.ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.Void, true)
+                        .SetProperty(j => j.JobStatus, (int)JobStatus.Void))
                     : await baseQuery.ExecuteUpdateAsync(s => s
                         .SetProperty(j => j.Void, false)
                         .SetProperty(j => j.JobStatus, (int)JobStatus.New));

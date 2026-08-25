@@ -14,7 +14,7 @@ import {
     MAX_JOBS_TO_DISPLAY,
 } from './DispatchMap.types';
 import {AddressType} from '../../../../enums/address-type.enum';
-import {safeRemoveObject} from '../here-map/hereMapUtils';
+import {createMapTooltipElement, safeRemoveObject} from '../here-map/hereMapUtils';
 
 declare const H: any;
 
@@ -83,45 +83,7 @@ export class JobMarkerManager {
      * Create the tooltip DOM element (matches Google Maps InfoWindow style)
      */
     private createTooltipElement(): void {
-        this.tooltipElement = document.createElement('div');
-        this.tooltipElement.className = 'gm-style-iw-wrapper';
-        this.tooltipElement.style.cssText = `
-            position: absolute;
-            display: none;
-            z-index: 1000;
-            pointer-events: none;
-            transform: translate(-50%, -100%);
-        `;
-        this.tooltipElement.innerHTML = `
-            <div class="gm-style-iw" style="
-                background: white;
-                border-radius: 8px;
-                box-shadow: 0 2px 7px 1px rgba(0,0,0,0.3);
-                padding: 12px;
-                font-family: Roboto, Arial, sans-serif;
-                font-size: 13px;
-                min-width: 120px;
-            ">
-                <div class="gm-style-iw-content"></div>
-            </div>
-            <div class="gm-style-iw-tail" style="
-                position: absolute;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 0;
-                height: 0;
-                border-left: 11px solid transparent;
-                border-right: 11px solid transparent;
-                border-top: 11px solid white;
-                filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
-            "></div>
-        `;
-
-        // Append to map container
-        const mapContainer = this.map.getElement();
-        if (mapContainer) {
-            mapContainer.appendChild(this.tooltipElement);
-        }
+        this.tooltipElement = createMapTooltipElement(this.map);
     }
 
     /**

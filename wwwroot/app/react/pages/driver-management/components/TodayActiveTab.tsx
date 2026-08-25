@@ -18,6 +18,7 @@ import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarIconButtonSx, getFleetChipSx} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
+import {dataTablePagingProps} from './dataTablePaging';
 
 interface TodayActiveTabProps {
     showToast: ShowToastFn;
@@ -130,10 +131,7 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
-                page={query.page || 1}
-                pageSize={query.pageSize}
-                onPageChange={(p) => setQuery(q => ({...q, page: p}))}
-                onPageSizeChange={(ps) => setQuery(q => ({...q, pageSize: ps, page: 1}))}
+                {...dataTablePagingProps(query, setQuery)}
                 emptyIcon={<CarIcon />}
                 emptyTitle="No Active Drivers"
                 emptyMessage="No active drivers match your criteria."

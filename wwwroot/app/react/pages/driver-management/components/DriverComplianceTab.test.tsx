@@ -3,6 +3,7 @@
  */
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
+import {createTestQueryClient} from '../../../__testUtils__';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -28,8 +29,6 @@ const mockUseSendComplianceReminder = useSendComplianceReminder as jest.MockedFu
 const mockUseSendBulkComplianceReminders = useSendBulkComplianceReminders as jest.MockedFunction<typeof useSendBulkComplianceReminders>;
 
 const theme = createTheme();
-const createTestQueryClient = () => new QueryClient({defaultOptions: {queries: {retry: false}}});
-
 const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text: 'Fleet A'}]) => {
     const queryClient = createTestQueryClient();
     return render(

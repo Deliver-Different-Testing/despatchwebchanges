@@ -15,6 +15,20 @@ const mockDrivers: IDriverWorkOverview[] = [
     { courierId: 3, name: 'Bob Driver', vehicleType: 'Bike', jobCount: 0, driverStatusText: 'Available' },
 ];
 
+/** The default render, plus the search box every filtering test types into. */
+function renderDriverSearch() {
+    const user = setupUser();
+
+    renderWithMantine(
+        <CurrentWorkAllDrivers
+            drivers={mockDrivers}
+            onDriverSelect={jest.fn()}
+        />
+    );
+
+    return {user, searchInput: screen.getByPlaceholderText('Search courier...')};
+}
+
 describe('CurrentWorkAllDrivers', () => {
     describe('rendering', () => {
         it('should render driver list', () => {
@@ -156,16 +170,7 @@ describe('CurrentWorkAllDrivers', () => {
 
     describe('search', () => {
         it('should filter drivers by search text', async () => {
-            const user = setupUser();
-
-            renderWithMantine(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('Alice');
 
@@ -175,16 +180,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should be case insensitive', async () => {
-            const user = setupUser();
-
-            renderWithMantine(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('alice');
 
@@ -192,16 +188,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should show count of filtered results', async () => {
-            const user = setupUser();
-
-            renderWithMantine(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('Driver');
 
@@ -209,16 +196,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should show no results message when search has no matches', async () => {
-            const user = setupUser();
-
-            renderWithMantine(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('NonExistent');
 
@@ -227,16 +205,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should clear search when clear button is clicked', async () => {
-            const user = setupUser();
-
-            renderWithMantine(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('Alice');
 
@@ -404,16 +373,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should handle partial name matches in search', async () => {
-            const user = setupUser();
-
-            renderWithMantine(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('Char');
 
@@ -446,16 +406,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should handle whitespace in search', async () => {
-            const user = setupUser();
-
-            renderWithMantine(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('  Alice  ');
 

@@ -652,7 +652,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     <Menu.Divider/>
 
                     {/* Send to Live (bulk jobs not done) */}
-                    {activeJob.isBulkJob && !activeJob.done && menuItem('send-to-live', {
+                    {activeJob.isBulkJob && !activeJob.released && menuItem('send-to-live', {
                         icon: <Icon lucide={Send} size={16}/>,
                         label: 'Send to Live',
                         onClick: handleSendToLive,

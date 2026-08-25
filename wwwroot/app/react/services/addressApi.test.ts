@@ -6,6 +6,7 @@
 import {addressApi} from './addressApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
+import {HERE_US_ADDRESS_FIELDS} from '../__testUtils__/mockData';
 
 // Mock the apiClient
 jest.mock('./apiClient', () => ({
@@ -63,17 +64,7 @@ describe('addressApi', () => {
             const mockResponse = {
                 title: '123 Main Street',
                 id: 'here:af:address:123',
-                address: {
-                    label: '123 Main Street, New York, NY 10001',
-                    countryCode: 'USA',
-                    countryName: 'United States',
-                    stateCode: 'NY',
-                    state: 'New York',
-                    city: 'New York',
-                    street: 'Main Street',
-                    postalCode: '10001',
-                    houseNumber: '123',
-                },
+                address: {...HERE_US_ADDRESS_FIELDS},
                 position: {lat: 40.7128, lng: -74.006},
                 streetInfo: [
                     {

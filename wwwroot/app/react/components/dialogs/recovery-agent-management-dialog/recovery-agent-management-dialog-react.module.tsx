@@ -7,98 +7,45 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {RecoveryAgentManagementDialog} from './RecoveryAgentManagementDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {nationwideApi} from '../../../services/nationwideApi';
 import {toastService} from '../../../services/toastService';
 import type {RecoveryAgentJobViewModel} from '../../../interfaces/nationwideJobs';
-
-interface DialogState {
-    open: boolean;
-    job: RecoveryAgentJobViewModel | null;
-}
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 export interface OpenRecoveryAgentManagementDialogOptions {
     jobId: number;
 }
 
-class RecoveryAgentManagementDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private dialogState: DialogState = {
-        open: false,
-        job: null,
-    };
-    private resolveCurrent?: () => void;
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-recovery-agent-management-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState = {open: false, job: null};
-            this.renderDialog();
-            this.resolveCurrent?.();
-            this.resolveCurrent = undefined;
-        };
-
-
-        this.dialogRoot.render(islandTree(
-            <RecoveryAgentManagementDialog
-                open={this.dialogState.open}
-                job={this.dialogState.job}
-                onClose={handleClose}
-                onLoadAirports={() => nationwideApi.getAllActiveAirports()}
-                onLoadAgentsForAirport={(airportId) =>
-                    nationwideApi.getAgentOptionsByAirport(airportId)
-                }
-                onAddAgent={(request) => nationwideApi.addAgentRecoveryJob(request)}
-                onUpdateAgent={(request) => nationwideApi.updateAgentRecoveryJob(request)}
-                onRemoveAgent={(recoveryId) => nationwideApi.removeAgentRecoveryJob(recoveryId)}
-                onRefresh={async () => {
-                    if (!this.dialogState.job) {
-                        throw new Error('No job loaded');
-                    }
-                    return nationwideApi.getAgentRecoveryJobs(this.dialogState.job.jobId);
-                }}
-                showToast={(message, type) => toastService.showToast(message, type)}
-            />
-        ));
-    }
-
-    async open(options: OpenRecoveryAgentManagementDialogOptions): Promise<void> {
-        this.initializeDialogRoot();
-
-        try {
-            const job = await nationwideApi.getAgentRecoveryJobs(options.jobId);
-
-            return new Promise<void>((resolve) => {
-                this.resolveCurrent = resolve;
-                this.dialogState = {open: true, job};
-                this.renderDialog();
-            });
-        } catch (error) {
-            console.error('Error loading recovery agent job:', error);
-            toastService.showToast('Failed to load recovery agent details', 'error');
-        }
-    }
-}
-
-const recoveryAgentManagementDialogManager = new RecoveryAgentManagementDialogManager();
+const host = createDialogHost<{job: RecoveryAgentJobViewModel}, void>({
+    containerId: 'react-recovery-agent-management-dialog-root',
+    render: ({open, payload, close}) => islandTree(
+        <RecoveryAgentManagementDialog
+            open={open}
+            job={payload.job}
+            onClose={() => close()}
+            onLoadAirports={() => nationwideApi.getAllActiveAirports()}
+            onLoadAgentsForAirport={(airportId) => nationwideApi.getAgentOptionsByAirport(airportId)}
+            onAddAgent={(request) => nationwideApi.addAgentRecoveryJob(request)}
+            onUpdateAgent={(request) => nationwideApi.updateAgentRecoveryJob(request)}
+            onRemoveAgent={(recoveryId) => nationwideApi.removeAgentRecoveryJob(recoveryId)}
+            onRefresh={() => nationwideApi.getAgentRecoveryJobs(payload.job.jobId)}
+            showToast={(message, type) => toastService.showToast(message, type)}
+        />
+    ),
+});
 
 export async function openRecoveryAgentManagementDialog(
     options: OpenRecoveryAgentManagementDialogOptions
 ): Promise<void> {
-    return recoveryAgentManagementDialogManager.open(options);
+    try {
+        const job = await nationwideApi.getAgentRecoveryJobs(options.jobId);
+        return host.open({job});
+    } catch (error) {
+        console.error('Error loading recovery agent job:', error);
+        toastService.showToast('Failed to load recovery agent details', 'error');
+    }
 }
 
 // Expose to window for AngularJS access

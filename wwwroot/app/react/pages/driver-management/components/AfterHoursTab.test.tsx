@@ -6,6 +6,7 @@
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
+import {createTestQueryClient} from '../../../__testUtils__';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {AfterHoursTab} from './AfterHoursTab';
@@ -31,8 +32,6 @@ const mockUseUpdateAfterHoursSchedule = useUpdateAfterHoursSchedule as jest.Mock
 const mockUseDeleteAfterHoursSchedule = useDeleteAfterHoursSchedule as jest.MockedFunction<typeof useDeleteAfterHoursSchedule>;
 
 const theme = createTheme();
-const createTestQueryClient = () => new QueryClient({defaultOptions: {queries: {retry: false}}});
-
 const renderWithProviders = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(

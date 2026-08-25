@@ -1,10 +1,5 @@
 import React from 'react';
-import {Menu} from '@mantine/core';
-import {EllipsisVertical} from 'lucide-react';
-import {Icon} from '../../../components/common/icon/Icon';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
-import {SymbolIcon} from '../../../components/common/symbol-icon';
-import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
+import {JobActionsMenu, type JobAction} from '../../../components/common/job-actions-menu/JobActionsMenu';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
 
 /**
@@ -34,14 +29,7 @@ export interface DispatchJobActionsMenuProps {
     onAction?: (actionId: DispatchJobActionId, job: DispatchJob) => void;
 }
 
-interface JobAction {
-    id: DispatchJobActionId;
-    label: string;
-    icon: string;
-    available: (job: DispatchJob) => boolean;
-}
-
-const ACTIONS: JobAction[] = [
+const ACTIONS: JobAction<DispatchJobActionId>[] = [
     {id: 'dispatch', label: 'Dispatch to Courier', icon: 'send_to_mobile',
         available: job => !job.bulkJob && !job.preBook},
     {id: 'addStop', label: 'Add Stop', icon: 'pin_drop',
@@ -62,36 +50,6 @@ const ACTIONS: JobAction[] = [
         available: job => !!job.done && !job.bulkJob && !job.preBook},
 ];
 
-export const DispatchJobActionsMenu: React.FC<DispatchJobActionsMenuProps> = ({currentJob, onAction}) => {
-    if (!currentJob) return null;
-
-    const visibleActions = ACTIONS.filter(a => a.available(currentJob));
-
-    return (
-        <Menu position="bottom-end" shadow="md" withinPortal>
-            <Menu.Target>
-                <HeaderActionIcon label="Job actions">
-                    <Icon lucide={EllipsisVertical} size={PANEL_CONTROL_GLYPH_SIZE}/>
-                </HeaderActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-                {/*
-                  * `SymbolIcon` is a shared MUI leaf (11 importers) that moves with its
-                  * other hosts, not here. `MuiThemeIsland` renders no DOM of its own, so
-                  * the menu items stay direct children of the dropdown.
-                  */}
-                <MuiThemeIsland>
-                    {visibleActions.map(action => (
-                        <Menu.Item
-                            key={action.id}
-                            onClick={() => onAction?.(action.id, currentJob)}
-                            leftSection={<SymbolIcon name={action.icon} sx={{fontSize: 20}} aria-hidden/>}
-                        >
-                            {action.label}
-                        </Menu.Item>
-                    ))}
-                </MuiThemeIsland>
-            </Menu.Dropdown>
-        </Menu>
-    );
-};
+export const DispatchJobActionsMenu: React.FC<DispatchJobActionsMenuProps> = ({currentJob, onAction}) => (
+    <JobActionsMenu actions={ACTIONS} currentJob={currentJob} onAction={onAction}/>
+);

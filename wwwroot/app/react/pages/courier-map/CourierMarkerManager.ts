@@ -20,7 +20,7 @@ import {
     MARKER_LABEL_MAX_LENGTH,
     POSITION_THRESHOLD,
 } from './CourierMapPage.types';
-import {safeRemoveObject, safeRemoveObjects} from '../../components/common/here-map/hereMapUtils';
+import {removeStaleMarkers, safeRemoveObject} from '../../components/common/here-map/hereMapUtils';
 
 declare const H: any;
 
@@ -49,29 +49,7 @@ export class CourierMarkerManager {
      */
     updateMarkers(couriers: IAvailableCourierPosition[]): void {
         const currentIds = new Set(couriers.map((c) => c.courierId));
-        const existingIds = new Set(this.courierMarkers.keys());
-
-        // Remove markers for couriers no longer present
-        const toRemove: number[] = [];
-        existingIds.forEach((id) => {
-            if (!currentIds.has(id)) {
-                toRemove.push(id);
-            }
-        });
-
-        if (toRemove.length > 0) {
-            const markersToRemove: any[] = [];
-            toRemove.forEach((id) => {
-                const cm = this.courierMarkers.get(id);
-                if (cm?.marker) {
-                    markersToRemove.push(cm.marker);
-                }
-                this.courierMarkers.delete(id);
-            });
-            if (markersToRemove.length > 0) {
-                safeRemoveObjects(this.markerGroup, markersToRemove);
-            }
-        }
+        removeStaleMarkers(this.courierMarkers, currentIds, this.markerGroup);
 
         // Update existing or add new markers
         const markersToAdd: any[] = [];

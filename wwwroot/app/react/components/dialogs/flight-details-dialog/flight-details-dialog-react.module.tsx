@@ -6,19 +6,13 @@
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
 
 import { FlightDetailsDialog } from './FlightDetailsDialog';
 import { FlightData } from './types';
 import { IFlightViewModel } from '../../../../components/Nationwide/nationwide.interfaces';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
-
-interface DialogState {
-    open: boolean;
-    flight: FlightData | null;
-    resolve?: () => void;
-}
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 /**
  * Convert IFlightViewModel to FlightData for the React component
@@ -66,69 +60,21 @@ function convertFlightViewModelToFlightData(viewModel: IFlightViewModel): Flight
     };
 }
 
-/**
- * Flight Details Dialog Manager
- * Manages the lifecycle and state of the dialog.
- */
-class FlightDetailsDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private dialogState: DialogState = {
-        open: false,
-        flight: null,
-    };
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-flight-details-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.();
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-        this.dialogRoot.render(islandTree(
-                <MuiThemeIsland>
-                {this.dialogState.flight && (
-                    <FlightDetailsDialog
-                        open={this.dialogState.open}
-                        flight={this.dialogState.flight}
-                        onClose={handleClose}
-                    />
-                )}
-
-            </MuiThemeIsland>
-
-        ));
-    }
-
-    openFlightDetailsDialog(flightData: IFlightViewModel): Promise<void> {
-        this.initializeDialogRoot();
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                flight: convertFlightViewModelToFlightData(flightData),
-                resolve,
-            };
-            this.renderDialog();
-        });
-    }
-}
-
-const dialogManager = new FlightDetailsDialogManager();
+const host = createDialogHost<{flight: FlightData}, void>({
+    containerId: 'react-flight-details-dialog-root',
+    render: ({open, payload, close}) => islandTree(
+        <MuiThemeIsland>
+            <FlightDetailsDialog
+                open={open}
+                flight={payload.flight}
+                onClose={() => close()}
+            />
+        </MuiThemeIsland>
+    ),
+});
 
 export function openFlightDetailsDialog(flightData: IFlightViewModel): Promise<void> {
-    return dialogManager.openFlightDetailsDialog(flightData);
+    return host.open({flight: convertFlightViewModelToFlightData(flightData)});
 }
 
 // Expose to window for AngularJS access

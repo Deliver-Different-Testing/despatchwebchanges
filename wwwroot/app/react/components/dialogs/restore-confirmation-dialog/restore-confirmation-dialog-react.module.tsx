@@ -7,12 +7,12 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
 import {RestoreConfirmationDialog} from './RestoreConfirmationDialog';
 import type {RestorePodImpactSummary} from './RestoreConfirmationDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {getRestorePodImpact} from '../../../services/jobListApi';
 import {needsRestoreConfirmation, summarisePodImpact} from '../../../services/restorePodImpact';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 export interface RestoreConfirmRequest {
     jobId: number;
@@ -24,51 +24,19 @@ export type RestoreConfirmResult =
     | {action: 'restore'; removeCapturedImages: boolean}
     | {action: 'swapPod'};
 
-interface DialogState {
-    open: boolean;
-    done: boolean;
-    summary: RestorePodImpactSummary;
-    resolve?: (value: RestoreConfirmResult | null) => void;
-}
-
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    done: false,
-    summary: {jobsWithPodName: 0, imageCount: 0},
-};
-
-function settle(value: RestoreConfirmResult | null): void {
-    dialogState.open = false;
-    dialogState.resolve?.(value);
-    dialogState.resolve = undefined;
-    renderDialog();
-}
-
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    dialogRoot.render(islandTree(
+const host = createDialogHost<{done: boolean; summary: RestorePodImpactSummary}, RestoreConfirmResult | null>({
+    containerId: 'react-restore-confirm-dialog-root',
+    render: ({open, payload, close}) => islandTree(
         <RestoreConfirmationDialog
-            open={dialogState.open}
-            count={dialogState.done ? 1 : 0}
-            podImpact={dialogState.summary}
-            onClose={() => settle(null)}
-            onSwapPod={() => settle({action: 'swapPod'})}
-            onConfirm={(removeCapturedImages) => settle({action: 'restore', removeCapturedImages})}
+            open={open}
+            count={payload.done ? 1 : 0}
+            podImpact={payload.summary}
+            onClose={() => close(null)}
+            onSwapPod={() => close({action: 'swapPod'})}
+            onConfirm={(removeCapturedImages) => close({action: 'restore', removeCapturedImages})}
         />
-    ));
-}
-
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-restore-confirm-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+    ),
+});
 
 /**
  * Checks what the restore would destroy and, when that's worth stopping for, asks the operator.
@@ -89,12 +57,7 @@ export async function openRestoreConfirmDialog(
         return {action: 'restore', removeCapturedImages: false};
     }
 
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {open: true, done: !!request.done, summary, resolve};
-        renderDialog();
-    });
+    return host.open({done: !!request.done, summary});
 }
 
 window.ReactRestoreConfirmDialog = {

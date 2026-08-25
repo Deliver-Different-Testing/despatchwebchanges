@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor, within} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {screen, waitFor, within} from '@testing-library/react';
 import {MessagingDialog, isNearBottom} from './MessagingDialog';
 import {dayjs} from '../../../utils/dateUtils';
 import {messagingApi} from '../../../services/messagingApi';
 import { suppressConsoleError } from '../../../__testUtils__';
+import {renderWithTheme} from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
 
@@ -34,12 +34,6 @@ jest.mock('../../../services/messagingApi', () => {
 });
 
 const mockApi = messagingApi as jest.Mocked<typeof messagingApi>;
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
-
 const defaultProps = {
     open: true,
     onClose: jest.fn(),

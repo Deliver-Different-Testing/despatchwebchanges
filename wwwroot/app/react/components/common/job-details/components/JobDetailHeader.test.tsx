@@ -7,7 +7,7 @@ import {screen, fireEvent} from '@testing-library/react';
 import {JobDetailHeader} from './JobDetailHeader';
 import {createMockJob} from '../__testUtils__/mockJob';
 import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
-import dayjs from 'dayjs';
+import {JobStatus} from '../../../../../enums/job-status.enum';
 
 function createDefaultProps(overrides?: Record<string, any>) {
     return {
@@ -316,28 +316,23 @@ describe('JobDetailHeader', () => {
         });
     });
 
-    it('applies correct status color variants', () => {
-        // Done → success
-        const doneJob = createMockJob({done: true});
-        const {unmount: u1} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job: doneJob})} />);
-        expect(screen.getByText('Dispatched').closest('[data-status-tone]')).toHaveAttribute('data-status-tone', 'done');
-        u1();
+    it('takes both its label and its colour from the resolved status', () => {
+        // The label used to come from statusName while the colour came from done/void/dispatchTime,
+        // so one pill could read "New" in green. Both now follow the server's resolved status.
+        const cases = [
+            {statusId: JobStatus.Dispatched, statusName: 'Dispatched', resolved: JobStatus.Dispatched, label: 'Dispatched', tone: 'dispatched'},
+            {statusId: JobStatus.Completed, statusName: 'Completed', resolved: JobStatus.Completed, label: 'Completed', tone: 'done'},
+            {statusId: JobStatus.New, statusName: 'New', resolved: JobStatus.New, label: 'New', tone: 'pending'},
+            // Voided, but the status id was moved back off Void afterwards
+            {statusId: JobStatus.New, statusName: 'New', resolved: JobStatus.Void, label: 'Void', tone: 'void'},
+        ];
 
-        // Void → error
-        const voidJob = createMockJob({void: true});
-        const {unmount: u2} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job: voidJob})} />);
-        expect(screen.getByText('Dispatched').closest('[data-status-tone]')).toHaveAttribute('data-status-tone', 'void');
-        u2();
+        for (const {statusId, statusName, resolved, label, tone} of cases) {
+            const job = createMockJob({statusId, statusName, resolvedStatusId: resolved});
+            const {unmount} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
 
-        // Undispatched → warning
-        const undispatchedJob = createMockJob({dispatchTime: undefined, done: false, void: false});
-        const {unmount: u3} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job: undispatchedJob})} />);
-        expect(screen.getByText('Dispatched').closest('[data-status-tone]')).toHaveAttribute('data-status-tone', 'pending');
-        u3();
-
-        // Dispatched → primary
-        const dispatchedJob = createMockJob({dispatchTime: dayjs(), done: false, void: false});
-        renderWithTheme(<JobDetailHeader {...createDefaultProps({job: dispatchedJob})} />);
-        expect(screen.getByText('Dispatched').closest('[data-status-tone]')).toHaveAttribute('data-status-tone', 'dispatched');
+            expect(screen.getByText(label).closest('[data-status-tone]')).toHaveAttribute('data-status-tone', tone);
+            unmount();
+        }
     });
 });

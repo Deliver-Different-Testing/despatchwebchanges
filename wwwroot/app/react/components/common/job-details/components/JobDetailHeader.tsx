@@ -9,6 +9,7 @@ import {
     EllipsisVertical, Rows2, Rows4, Columns3,
 } from 'lucide-react';
 import {Icon} from '../../icon/Icon';
+import {resolvedStatusLabel, resolvedStatusTone, type StatusTone} from '../../../../utils/jobStatus';
 import type {IJob} from '../JobDetails.types';
 import type {RouteOption} from '../../../../interfaces/recurringJobs';
 import type {OverlayDocument} from '../../../../services/jobDetailApi';
@@ -42,14 +43,7 @@ interface JobDetailHeaderProps {
  * The status pill's meaning, exposed as `data-status-tone` so it can be asserted
  * without reaching into the palette (the colour may be re-tuned; the tone won't).
  */
-type StatusTone = 'void' | 'done' | 'dispatched' | 'pending';
 
-function getStatusTone(job: IJob): StatusTone {
-    if (job.void) return 'void';
-    if (job.done) return 'done';
-    if (job.dispatchTime) return 'dispatched';
-    return 'pending';
-}
 
 const statusColors: Record<StatusTone, string> = {
     void: 'red',
@@ -109,7 +103,7 @@ export function JobDetailHeader({
     onDownloadOverlay,
 }: JobDetailHeaderProps) {
     const isDense = viewDensityLabel === 'Dense';
-    const statusTone = getStatusTone(job);
+    const statusTone = resolvedStatusTone(job);
 
     // POD report/email options require a completed, non-recurring job. The menu is
     // always shown so PDF-overlay documents are reachable at any stage; these three
@@ -173,7 +167,7 @@ export function JobDetailHeader({
                         onClick={onStatusClick}
                         style={{...pillStyle, cursor: 'pointer'}}
                     >
-                        {job.statusName}
+                        {resolvedStatusLabel(job)}
                     </Badge>
                 )}
                 {/* Recurring Route assignment (US medical-courier tenants).

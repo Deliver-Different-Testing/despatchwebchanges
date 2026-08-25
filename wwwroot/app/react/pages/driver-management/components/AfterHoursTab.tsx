@@ -26,6 +26,7 @@ import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarButtonSx, toolbarIconButtonSx, getDayChipColor} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
+import {dataTablePagingProps} from './dataTablePaging';
 
 interface WindowWithAfterhoursDialog {
     ReactEditAfterhoursDialog?: {
@@ -262,10 +263,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
-                page={query.page || 1}
-                pageSize={query.pageSize}
-                onPageChange={(p) => setQuery(q => ({...q, page: p}))}
-                onPageSizeChange={(ps) => setQuery(q => ({...q, pageSize: ps, page: 1}))}
+                {...dataTablePagingProps(query, setQuery)}
                 emptyIcon={<NightsStayIcon />}
                 emptyTitle="No After Hours Schedules"
                 emptyMessage="No after hours schedules match your criteria."
