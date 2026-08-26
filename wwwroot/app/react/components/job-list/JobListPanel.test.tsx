@@ -14,6 +14,7 @@ import {JobListPanel} from './JobListPanel';
 import type {DispatchJob, FetchConfig, JobListPanelProps, JobListSearchParams, JobSearchResult} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
+import {JobStatus} from '../../../enums/job-status.enum';
 
 // Mock @tanstack/react-virtual so rows render in jsdom (zero-height containers)
 jest.mock('@tanstack/react-virtual', () => ({
@@ -580,6 +581,42 @@ describe('JobListPanel', () => {
 
             const rows = screen.getAllByText(/^(Alpha City|Middle Park|Zebra Town)$/);
             expect(rows.map(el => el.textContent)).toEqual(['Alpha City', 'Middle Park', 'Zebra Town']);
+        });
+
+        it('sorts by minutes remaining, most overdue first, with unknowns last in both directions', () => {
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'R-1', remain: 20}),
+                createMockDispatchJob({id: 2, jobNo: 'R-2', remain: undefined}),
+                createMockDispatchJob({id: 3, jobNo: 'R-3', remain: -45}),
+                createMockDispatchJob({id: 4, jobNo: 'R-4', remain: 120}),
+            ];
+            renderAndPushJobs(jobs);
+            const header = screen.getByText('Remaining');
+
+            fireEvent.click(header);
+            expect(screen.getAllByText(/^R-\d$/).map(el => el.textContent))
+                .toEqual(['R-3', 'R-1', 'R-4', 'R-2']);
+
+            // An unknown is not "the largest remaining" — it stays at the bottom when reversed.
+            fireEvent.click(header);
+            expect(screen.getAllByText(/^R-\d$/).map(el => el.textContent))
+                .toEqual(['R-4', 'R-1', 'R-3', 'R-2']);
+        });
+
+        it('sorts by priority in the same order the row indicators are shown', () => {
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'P-1', statusId: JobStatus.Void, booked: dayjs().add(8, 'hours')}),
+                createMockDispatchJob({id: 2, jobNo: 'P-2', statusId: JobStatus.LateDelivery, booked: dayjs().add(8, 'hours')}),
+                createMockDispatchJob({id: 3, jobNo: 'P-3', toAirportId: 12, booked: dayjs().add(8, 'hours')}),
+                createMockDispatchJob({id: 4, jobNo: 'P-4', booked: dayjs().add(10, 'minutes')}),
+            ];
+            renderAndPushJobs(jobs);
+
+            fireEvent.click(screen.getByRole('button', {name: 'Sort by priority'}));
+
+            // flight → late delivery → urgent → no marker
+            expect(screen.getAllByText(/^P-\d$/).map(el => el.textContent))
+                .toEqual(['P-3', 'P-2', 'P-4', 'P-1']);
         });
     });
 

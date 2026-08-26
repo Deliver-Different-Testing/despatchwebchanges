@@ -11,18 +11,16 @@ describe('DEFAULT_COLUMN_WIDTHS', () => {
     it('mirrors the catalogue widths', () => {
         expect(Object.keys(DEFAULT_COLUMN_WIDTHS)).toEqual(keys(ALL_COLUMNS));
         expect(DEFAULT_COLUMN_WIDTHS.delivery).toBe(380);
-        expect(DEFAULT_COLUMN_WIDTHS.priority).toBe(50);
+        expect(DEFAULT_COLUMN_WIDTHS.priority).toBe(64);
         expect(DEFAULT_COLUMN_WIDTHS.refA).toBe(110);
     });
 });
 
 describe('ALL_COLUMNS sortable flags', () => {
-    it('marks only the columns the server can order by as sortable', () => {
-        // Remaining is computed from the tenant clock, so it has no server-side sort key.
-        expect(ALL_COLUMNS.find(c => c.key === 'remaining')?.sortable).toBe(false);
-        expect(ALL_COLUMNS.find(c => c.key === 'isArchived')?.sortable).toBe(true);
-        expect(ALL_COLUMNS.find(c => c.key === 'pickup')?.sortable).toBe(true);
-        expect(ALL_COLUMNS.find(c => c.key === 'delivery')?.sortable).toBe(true);
+    it('marks every column sortable, including the derived and unlabelled ones', () => {
+        expect(ALL_COLUMNS.filter(c => !c.sortable)).toEqual([]);
+        expect(ALL_COLUMNS.find(c => c.key === 'priority')?.sortable).toBe(true);
+        expect(ALL_COLUMNS.find(c => c.key === 'remaining')?.sortable).toBe(true);
     });
 });
 

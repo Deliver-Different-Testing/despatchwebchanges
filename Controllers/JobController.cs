@@ -1569,7 +1569,6 @@ public class JobController(
                     .ToList());
             }
 
-            using var throttle = new SemaphoreSlim(RestorePodImageProbeConcurrency);
             var impacts = await Task.WhenAll(details.Select(async detail =>
             {
                 if (detail.CompletedTime is not { } completed)
@@ -1579,6 +1578,8 @@ public class JobController(
                         JobId = detail.JobId, PodName = detail.PodName, ImageCountKnown = true
                     };
                 }
+
+                using var throttle = new SemaphoreSlim(RestorePodImageProbeConcurrency);
 
                 await throttle.WaitAsync();
                 try
@@ -1608,7 +1609,7 @@ public class JobController(
                 }
             }));
 
-            return Json((IReadOnlyList<RestorePodImpact>)impacts);
+            return Json(impacts);
         }
         catch (Exception ex)
         {
@@ -2154,7 +2155,7 @@ public class JobController(
         }
     }
 
-    internal static bool IsDateCascadeField(JobProperty property) =>
+    private static bool IsDateCascadeField(JobProperty property) =>
         property is JobProperty.Date or JobProperty.BookedTime;
 
     internal static bool ShouldRecalculateRate(JobProperty property) =>

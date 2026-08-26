@@ -190,14 +190,11 @@ describe('JobListTable', () => {
         });
     });
 
-    // ── Priority-column header legend ────────────────────────────────
+    // ── Priority-column header: legend and sort side by side ─────────
     describe('Priority column header', () => {
-        it('is not sortable and opens the legend dialog from its info button', async () => {
+        it('opens the legend dialog from its info button without sorting', async () => {
             const props = createDefaultProps();
             renderWithMantine(<JobListTable {...props}/>);
-
-            // No sort label on the priority column
-            expect(document.querySelector('th[data-column-key="priority"] button[data-sort-column]')).toBeNull();
 
             await setupUser().click(screen.getByRole('button', {name: 'Column legend'}));
 
@@ -205,6 +202,17 @@ describe('JobListTable', () => {
             expect(props.onSortChange).not.toHaveBeenCalled();
             expect(await screen.findByText('Job type')).toBeInTheDocument();
             expect(screen.getByText('Needs attention')).toBeInTheDocument();
+        });
+
+        it('sorts from its own control, which is named even though the column has no label', async () => {
+            const props = createDefaultProps();
+            renderWithMantine(<JobListTable {...props}/>);
+
+            const sortButton = screen.getByRole('button', {name: 'Sort by priority'});
+            expect(document.querySelector('th[data-column-key="priority"]')).toContainElement(sortButton);
+
+            await setupUser().click(sortButton);
+            expect(props.onSortChange).toHaveBeenCalledWith('priority');
         });
     });
 
@@ -233,6 +241,9 @@ describe('JobListTable', () => {
 
             await user.click(screen.getByText('Ref A'));
             expect(props.onSortChange).toHaveBeenCalledWith('refA');
+
+            await user.click(screen.getByText('Remaining'));
+            expect(props.onSortChange).toHaveBeenCalledWith('remaining');
         });
     });
 
