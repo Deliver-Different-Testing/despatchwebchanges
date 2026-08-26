@@ -438,7 +438,7 @@ public partial class JobRepository
 
     // Chunks a Contains(...) list into 2000-id slices to stay under SQL Server's ~2100 parameter
     // limit. queryFn is invoked per chunk; results are concatenated. No-op on empty input.
-    public static async Task<List<T>> InIdChunksAsync<T>(
+    private static async Task<List<T>> InIdChunksAsync<T>(
         IReadOnlyList<int> ids, Func<IReadOnlyList<int>, Task<List<T>>> queryFn)
     {
         switch (ids.Count)

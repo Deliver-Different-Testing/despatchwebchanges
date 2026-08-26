@@ -44,7 +44,14 @@ import {
 } from '../../utils/dateUtils';
 import {useColumnResize} from './useColumnResize';
 import type {ColumnDef} from './jobListColumns';
-import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
+import {
+    isChilledJob,
+    isLateForDelivery,
+    isLateForPickup,
+    isMultiPartJob,
+    JOB_STATUS,
+    priorityKey,
+} from './jobListHelpers';
 import {JobListLegendDialog} from './JobListLegendDialog';
 import {FLIGHT_INDICATORS, INDICATORS, renderLegendMarker, renderTableIndicator} from './jobListIndicators';
 import {NoData} from '../common/no-data/NoData';
@@ -95,26 +102,6 @@ function getTimeZoneShort(): string {
         _cachedTimezoneShort = getTimezoneAbbreviation(iana);
     }
     return _cachedTimezoneShort;
-}
-
-// ── Late Detection (flags computed server-side) ─────────────────────
-
-function isLateForPickup(job: DispatchJob): boolean {
-    return job.statusId === JOB_STATUS.LatePickup;
-}
-
-function isLateForDelivery(job: DispatchJob): boolean {
-    return job.statusId === JOB_STATUS.LateDelivery;
-}
-
-function isChilledJob(job: DispatchJob): boolean {
-    if (!job.vehicle?.text) return false;
-    const vehicleName = job.vehicle.text.toLowerCase();
-    return vehicleName.includes('chilled') || vehicleName.includes('frozen');
-}
-
-function isMultiPartJob(job: DispatchJob): boolean {
-    return !!(job.isParentOrSingle && job._groupChildren && job._groupChildren.length > 0);
 }
 
 function getFlightIcon(job: DispatchJob): React.ReactNode {
@@ -204,42 +191,16 @@ function alignClass(align: ColumnDef['align'], right: string, center: string): s
     return undefined;
 }
 
-// The branch order below IS the precedence — the first match is the marker shown
-// for a row. Job-type/attribute icons win over the status dots. The dots mirror
-// the top stats-header categories: red = Urgent, amber = In Transit, green =
-// Done, blue = Active. Keep in sync with the legend via ./jobListIndicators.
+// The marker and the column's sort order come from the same branch chain
+// (`priorityKey` in ./jobListHelpers), so the icons an operator sees grouped are
+// exactly what a priority sort groups. The dots mirror the top stats-header
+// categories: red = Urgent, amber = In Transit, green = Done, blue = Active.
+// Keep the labels in sync with the legend via ./jobListIndicators.
 function getPriorityIndicator(job: DispatchJob): React.ReactNode {
-    if (job.toAirportId || job.fromAirportId) {
-        return getFlightIcon(job);
-    }
-    if (isChilledJob(job)) {
-        return renderTableIndicator(INDICATORS.chilled);
-    }
-    if (isMultiPartJob(job)) {
-        return renderTableIndicator(INDICATORS.multiPart);
-    }
-    if (job.isPartnerJob) {
-        return renderTableIndicator(INDICATORS.partner);
-    }
-    if (isLateForPickup(job)) {
-        return renderTableIndicator(INDICATORS.latePickup);
-    }
-    if (isLateForDelivery(job)) {
-        return renderTableIndicator(INDICATORS.lateDelivery);
-    }
-    if (isUrgent(job)) {
-        return renderTableIndicator(INDICATORS.urgent);
-    }
-    if (isInTransit(job)) {
-        return renderTableIndicator(INDICATORS.inTransit);
-    }
-    if (isDelivered(job)) {
-        return renderTableIndicator(INDICATORS.done);
-    }
-    if (needsDispatch(job)) {
-        return renderTableIndicator(INDICATORS.active);
-    }
-    return null;
+    const key = priorityKey(job);
+    if (key === 'flight') return getFlightIcon(job);
+    if (key === 'none') return null;
+    return renderTableIndicator(INDICATORS[key]);
 }
 
 function getStatusBadgeColor(job: DispatchJob): string {
@@ -331,6 +292,38 @@ export const JobListTable: React.FC<JobListTableProps> = ({
             if (column) onSortChange(column);
         },
         [onSortChange],
+    );
+
+    // The label-less priority column needs an explicit accessible name; every
+    // other column's own label is its name.
+    const renderSortButton = useCallback(
+        (col: ColumnDef, ariaLabel?: string) => {
+            const active = sortState.column === col.key;
+            return (
+                <button
+                    type="button"
+                    className={[classes.sortButton, col.label ? '' : classes.sortButtonIconOnly]
+                        .filter(Boolean).join(' ')}
+                    onClick={handleSort}
+                    data-sort-column={col.key}
+                    aria-label={ariaLabel}
+                    aria-sort={active ? (sortState.direction === 'desc' ? 'descending' : 'ascending') : undefined}
+                >
+                    {col.label}
+                    <span
+                        className={[
+                            classes.sortIcon,
+                            active ? classes.sortIconActive : '',
+                            active && sortState.direction === 'desc' ? classes.sortIconDesc : '',
+                        ].filter(Boolean).join(' ')}
+                        aria-hidden="true"
+                    >
+                        <Icon lucide={ChevronUp} size={12}/>
+                    </span>
+                </button>
+            );
+        },
+        [handleSort, sortState.column, sortState.direction],
     );
 
     const tableRef = useRef<HTMLDivElement>(null);
@@ -434,40 +427,25 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                 ].filter(Boolean).join(' ')}
                                 style={{width: columnWidths[col.key] ?? col.width, position: 'relative'}}
                             >
-                                {col.sortable ? (
-                                    <button
-                                        type="button"
-                                        className={classes.sortButton}
-                                        onClick={handleSort}
-                                        data-sort-column={col.key}
-                                        aria-sort={sortState.column === col.key
-                                            ? (sortState.direction === 'desc' ? 'descending' : 'ascending')
-                                            : undefined}
-                                    >
-                                        {col.label}
-                                        <span
-                                            className={[
-                                                classes.sortIcon,
-                                                sortState.column === col.key ? classes.sortIconActive : '',
-                                                sortState.column === col.key && sortState.direction === 'desc' ? classes.sortIconDesc : '',
-                                            ].filter(Boolean).join(' ')}
-                                            aria-hidden="true"
-                                        >
-                                            <Icon lucide={ChevronUp} size={12}/>
-                                        </span>
-                                    </button>
-                                ) : col.key === 'priority' ? (
-                                    <Tooltip label="What do these icons mean?" withArrow>
-                                        <ActionIcon
-                                            size="sm"
-                                            variant="subtle"
-                                            color="gray"
-                                            onClick={openLegend}
-                                            aria-label="Column legend"
-                                        >
-                                            <Icon lucide={Info} size={16}/>
-                                        </ActionIcon>
-                                    </Tooltip>
+                                {col.key === 'priority' ? (
+                                    // The gutter carries two controls in ~50px: the legend and its
+                                    // own sort. Siblings, so a click on one can never be the other.
+                                    <Group gap={2} wrap="nowrap" justify="center">
+                                        <Tooltip label="What do these icons mean?" withArrow>
+                                            <ActionIcon
+                                                size="sm"
+                                                variant="subtle"
+                                                color="gray"
+                                                onClick={openLegend}
+                                                aria-label="Column legend"
+                                            >
+                                                <Icon lucide={Info} size={16}/>
+                                            </ActionIcon>
+                                        </Tooltip>
+                                        {renderSortButton(col, 'Sort by priority')}
+                                    </Group>
+                                ) : col.sortable ? (
+                                    renderSortButton(col)
                                 ) : (
                                     col.label
                                 )}

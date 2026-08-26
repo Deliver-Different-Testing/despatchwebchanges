@@ -41,7 +41,7 @@ import {
 } from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
-import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
+import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch, priorityRank} from './jobListHelpers';
 import {jobListStorageKey, loadJobListCategory, persistJobListCategory, toStatusFilter} from './jobListPreferences';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
@@ -58,12 +58,6 @@ import {needsRestoreConfirmation, summarisePodImpact} from '../../services/resto
 const DEFAULT_STORAGE_PREFIX = 'jobListReact';
 
 // ── Filter / Sort Helpers ────────────────────────────────────────────
-
-function hasIssues(job: DispatchJob): boolean {
-    return [JOB_STATUS.Rejected, JOB_STATUS.LatePickup, JOB_STATUS.Warning, JOB_STATUS.LateDelivery, JOB_STATUS.Undeliverable].includes(
-        job.statusId as any,
-    );
-}
 
 function matchesCategory(job: DispatchJob, category: JobCategory): boolean {
     switch (category) {
@@ -120,7 +114,8 @@ function matchesSearch(job: DispatchJob, query: string): boolean {
     );
 }
 
-function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean): string | number {
+/** `null` means "no value to order by" — those rows sink to the bottom whichever way the sort runs. */
+function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean): string | number | null {
     switch (column) {
         case 'date':
             return job.booked ? dayjs(job.booked).startOf('day').valueOf() : 0;
@@ -150,22 +145,14 @@ function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean):
             return isUsCustomer
                 ? (job.courierData?.courierName || job.assignedCourier?.text || '')
                 : String(job.courierData?.courierNumber || job.assignedCourier?.id || '');
-        case 'remaining': {
-            const hasNoCourier = !job.assignedCourier && !job.courier;
-            const remainValue = job.remain !== undefined && job.remain !== null ? job.remain : Number.MAX_SAFE_INTEGER;
-            return hasNoCourier ? remainValue - 1000000 : remainValue;
-        }
+        case 'remaining':
+            return job.remain ?? null;
         case 'status':
             return job.status || job.statusName || '';
         case 'isArchived':
             return job.isArchived ? 1 : 0;
         case 'priority':
-            if (isUrgent(job)) return 0;
-            if (hasIssues(job)) return 1;
-            if (needsDispatch(job)) return 2;
-            if (isInTransit(job)) return 3;
-            if (isDelivered(job)) return 4;
-            return 5;
+            return priorityRank(job);
         default:
             return '';
     }
@@ -192,7 +179,7 @@ function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: bo
 
     // Pre-compute sort values once (O(n)) instead of recomputing in every comparison (O(n log n))
     const col = sortState.column!;
-    const sortCache = new Map<number, string | number>();
+    const sortCache = new Map<number, string | number | null>();
     for (const job of sorted) {
         sortCache.set(job.id, getSortValue(job, col, isUsCustomer));
     }
@@ -200,6 +187,12 @@ function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: bo
     return sorted.sort((a, b) => {
         const aValue = sortCache.get(a.id)!;
         const bValue = sortCache.get(b.id)!;
+
+        // Ahead of the direction flip, so a value-less row stays last both ways.
+        if (aValue === null || bValue === null) {
+            if (aValue === bValue) return 0;
+            return aValue === null ? 1 : -1;
+        }
 
         let comparison: number;
         if (typeof aValue === 'string' && typeof bValue === 'string') {

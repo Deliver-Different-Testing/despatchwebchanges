@@ -24,7 +24,7 @@ export interface ColumnDef {
 }
 
 export const ALL_COLUMNS: ColumnDef[] = [
-    {key: 'priority', label: '', sortable: false, width: 50, align: 'center', locked: true},
+    {key: 'priority', label: '', sortable: true, width: 64, align: 'center', locked: true},
     {key: 'date', label: 'Date', sortable: true, width: 80},
     {key: 'time', label: 'Time', sortable: true, width: 80},
     {key: 'speed', label: 'Speed', sortable: true, width: 80},
@@ -36,9 +36,9 @@ export const ALL_COLUMNS: ColumnDef[] = [
     {key: 'pickup', label: 'Pickup', sortable: true, width: 120},
     {key: 'delivery', label: 'Delivery', sortable: true, width: 380},
     {key: 'courier', label: 'Courier', sortable: true, width: 150},
-    // Derived from the tenant clock and the eco-settings row, so it is not a column the
-    // database can order by — the header would advertise a sort that does nothing.
-    {key: 'remaining', label: 'Remaining', sortable: false, width: 110, align: 'right'},
+    // `priority` and `remaining` are derived client-side, so they have no branch in the
+    // POD search's server-side sort — on Job Search they order the loaded pages only.
+    {key: 'remaining', label: 'Remaining', sortable: true, width: 110, align: 'right'},
     {key: 'status', label: 'Status', sortable: true, width: 100},
 ];
 
