@@ -13,7 +13,7 @@ import {
     DashboardSettingsDialogProps,
     RefreshOption,
 } from './DashboardSettingsDialog';
-import { createProps, renderWithTheme } from '../../../__testUtils__';
+import { createProps, renderWithMantineOverMui as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 
 const mockRefreshOptions: RefreshOption[] = [

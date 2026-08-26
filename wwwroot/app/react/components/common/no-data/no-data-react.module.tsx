@@ -11,7 +11,6 @@ import { NoData } from './NoData';
 import {IAppConfig} from "../../../../interfaces/app-config.interface";
 import angular from 'angular';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React NoData
@@ -71,18 +70,16 @@ class NoDataReactController implements angular.IController {
         }
 
         this.root.render(islandTree(
-            <MuiThemeIsland>
-            <NoData
-                title={this.title}
-                message={this.message}
-                icon={this.icon}
-                showAction={showActionBool}
-                actionText={this.actionText}
-                onAction={handleAction}
-                isUsCustomer={this.isUsCustomer}
-            />
+        <NoData
+            title={this.title}
+            message={this.message}
+            icon={this.icon}
+            showAction={showActionBool}
+            actionText={this.actionText}
+            onAction={handleAction}
+            isUsCustomer={this.isUsCustomer}
+        />
 
-            </MuiThemeIsland>
         ));
     }
 }

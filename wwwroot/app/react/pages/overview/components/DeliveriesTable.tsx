@@ -213,7 +213,7 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                                                 onClick={() => onToggleExpand(delivery.jobId)}
                                                 aria-label={delivery.expanded ? 'Collapse child jobs' : 'Expand child jobs'}
                                             >
-                                                <SymbolIcon name={delivery.expanded ? 'expand_more' : 'chevron_right'} sx={{fontSize: 20}} />
+                                                <SymbolIcon name={delivery.expanded ? 'expand_more' : 'chevron_right'} size={20} />
                                             </IconButton>
                                         )}
                                     </TableCell>
@@ -231,12 +231,12 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                                     <TableCell sx={{py: 1, whiteSpace: 'nowrap'}}>
                                         <Tooltip title="Open Map">
                                             <IconButton size="small" onClick={() => onShowMap(delivery)} aria-label="Open map">
-                                                <SymbolIcon name="map" sx={{fontSize: 20}} />
+                                                <SymbolIcon name="map" size={20} />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="View Job Details">
                                             <IconButton size="small" onClick={() => onOpenJobDetail(delivery)} aria-label="View job details">
-                                                <SymbolIcon name="visibility" sx={{fontSize: 20}} />
+                                                <SymbolIcon name="visibility" size={20} />
                                             </IconButton>
                                         </Tooltip>
                                     </TableCell>
@@ -269,7 +269,7 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
             {/* Empty state */}
             {deliveries.length === 0 && !isLoading && (
                 <Box sx={{textAlign: 'center', py: 6, color: 'text.disabled'}}>
-                    <SymbolIcon name="local_shipping" sx={{fontSize: 48}} />
+                    <SymbolIcon name="local_shipping" size={48} />
                     <Typography
                         variant="body1"
                         sx={{

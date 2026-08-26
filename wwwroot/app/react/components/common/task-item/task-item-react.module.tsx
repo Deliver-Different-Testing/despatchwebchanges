@@ -12,7 +12,6 @@ import {Task, TaskItemConfig, TasksServiceInterface, DispatchServiceInterface} f
 import {toastService} from '../../../services/toastService';
 import angular from 'angular';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React TaskItem
@@ -64,19 +63,17 @@ class TaskItemReactController implements angular.IController {
         };
 
         this.root.render(islandTree(
-            <MuiThemeIsland>
-            <TaskItem
-                task={this.task}
-                config={this.config}
-                onTaskUpdated={this.onTaskUpdated}
-                onTaskClick={handleTaskClick}
-                tasksService={this.tasksService}
-                dispatchService={this.dispatchService}
-                showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
-                showErrorToast={(msg) => toastService.showErrorToast(msg)}
-            />
+        <TaskItem
+            task={this.task}
+            config={this.config}
+            onTaskUpdated={this.onTaskUpdated}
+            onTaskClick={handleTaskClick}
+            tasksService={this.tasksService}
+            dispatchService={this.dispatchService}
+            showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
+            showErrorToast={(msg) => toastService.showErrorToast(msg)}
+        />
 
-            </MuiThemeIsland>
         ));
     }
 }

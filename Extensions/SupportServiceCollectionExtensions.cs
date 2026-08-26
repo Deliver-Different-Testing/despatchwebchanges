@@ -10,6 +10,7 @@ public static class SupportServiceCollectionExtensions
         services.AddScoped<IAddressLookupService, AddressLookupService>();
         services.AddScoped<IMessageHelperService, MessageHelperService>();
         services.AddScoped<IJobPhotoService, JobPhotoService>();
+        services.AddScoped<IPodMediaService, PodMediaService>();
         services.AddScoped<IAccessorialChargeService, AccessorialChargeService>();
 
         return services;

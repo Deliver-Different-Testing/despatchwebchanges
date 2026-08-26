@@ -7,7 +7,7 @@
 
 import React from 'react';
 import {render} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantine} from '../../../__testUtils__';
 import {HereMap} from './HereMap';
 import type {
     CourierLocation,
@@ -20,11 +20,8 @@ import type {
 import {DEFAULT_MAP_CONFIG, getDefaultMapCenter, NZ_MAP_CENTER, US_MAP_CENTER, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES} from './HereMap.types';
 import {createCurvedPath, getAllVisiblePoints,} from './hereMapUtils';
 
-const theme = createTheme();
 
-const renderWithProviders = (ui: React.ReactElement) => {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-};
+const renderWithProviders = renderWithMantine;
 
 // Sample data factories
 const createMockCredentials = (): HereMapCredentials => ({

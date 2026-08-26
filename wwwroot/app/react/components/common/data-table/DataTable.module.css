@@ -1,0 +1,52 @@
+/*
+ * Rules that props cannot express: the sort glyph that only appears on
+ * hover/focus of its header, and the row hover/selected fills (which have to sit
+ * next to each other so the selected-row hover wins over the plain row hover).
+ *
+ * The selection tint is dynamic only in strength, so both shades come from the
+ * theme's primary rather than an inline value.
+ */
+
+.sortButton {
+    width: 100%;
+    font: inherit;
+    color: inherit;
+}
+
+/* The neutral up/down chevron is a hint, not chrome — it stays faint until the
+   column is sorted or the header is hovered/focused. */
+.sortIcon {
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.sortIcon[data-active='true'] {
+    opacity: 1;
+}
+
+.sortButton:hover .sortIcon,
+.sortButton:focus-visible .sortIcon {
+    opacity: 0.6;
+}
+
+.sortButton:hover .sortIcon[data-active='true'],
+.sortButton:focus-visible .sortIcon[data-active='true'] {
+    opacity: 1;
+}
+
+/* Rows */
+.row[data-clickable='true'] {
+    cursor: pointer;
+}
+
+.row:hover > td {
+    background-color: var(--mantine-color-gray-0);
+}
+
+.row[data-selected='true'] > td {
+    background-color: var(--mantine-primary-color-light);
+}
+
+.row[data-selected='true']:hover > td {
+    background-color: var(--mantine-primary-color-light-hover);
+}

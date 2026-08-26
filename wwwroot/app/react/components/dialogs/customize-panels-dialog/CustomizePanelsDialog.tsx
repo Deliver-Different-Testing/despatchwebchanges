@@ -140,7 +140,7 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
                                                         <SymbolIcon
                                                             name={box.icon}
                                                             aria-hidden
-                                                            sx={{fontSize: 22, color: 'primary.main'}}
+                                                            size={22} color="var(--mantine-primary-color-filled)"
                                                         />
                                                     ) : (
                                                         <DashboardIcon sx={{fontSize: 22, color: 'primary.main'}} />

@@ -119,6 +119,7 @@ class JobDetailBridgeController implements angular.IController {
                 this.manifest = {
                     'vendor-react.js': 'vendor-react.js',
                     'jobDetailsReact.js': 'jobDetailsReact.js',
+                    'jobDetailsReact.css': 'jobDetailsReact.css',
                 };
             }
         }
@@ -132,9 +133,17 @@ class JobDetailBridgeController implements angular.IController {
             await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
         }
 
-        // Load the job details React module
+        // Load the job details React module *with its stylesheet*. This bridge is
+        // how Nationwide and the classic pages mount job details, and it used to
+        // load only the .js — so every CSS module in the island (section chrome,
+        // the AI panel's header hover, …) was silently missing on those pages.
+        // routes.ts pairs them via islandFiles(); this loader has to do the same.
         console.log('[JobDetailBridge] Loading jobDetailsReact...');
-        await this.$ocLazyLoad.load(getAssetPath('jobDetailsReact.js'));
+        const jobDetailFiles = [getAssetPath('jobDetailsReact.js')];
+        if (this.manifest!['jobDetailsReact.css']) {
+            jobDetailFiles.push(getAssetPath('jobDetailsReact.css'));
+        }
+        await this.$ocLazyLoad.load({name: 'uDispatch.jobDetailsReact', files: jobDetailFiles});
 
         console.log('[JobDetailBridge] React job details loaded, ReactJobDetails available:', !!window.ReactJobDetails);
 

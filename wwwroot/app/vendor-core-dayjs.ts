@@ -1,5 +1,7 @@
-// Side-effect-only module: registers every dayjs plugin that vendor-core (and
-// the @mui/x-date-pickers AdapterDayjs it serves) requires at runtime.
+// Side-effect-only module: registers every dayjs plugin the app requires at
+// runtime — the wall-clock date path (utc, timezone), @mantine/dates (isoWeek)
+// and explicit-format parsing (customParseFormat), plus five more kept
+// registered deliberately. See tests/vendor-core-dayjs.test.ts for the contract.
 //
 // Imported by wwwroot/app/index.ts (vendor-core bundle) and by
 // wwwroot/app/tests/vendor-core-dayjs.test.ts so both code paths share one

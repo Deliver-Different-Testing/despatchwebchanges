@@ -12,7 +12,7 @@ import {Alert, Badge, Box, Group, Paper, Stack, Text} from '@mantine/core';
 import {NotebookPen} from 'lucide-react';
 
 import {DeliveryJourney} from './TaskHistory.interfaces';
-import {getEventIcon} from './eventIcons';
+import {EventIcon} from './eventIcons';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import {Icon} from '../icon/Icon';
 import {
@@ -53,9 +53,6 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
                                                                                       }) => {
     if (!event) return null;
 
-    // Still an MUI icon component: the glyph names come from the backend, so the map
-    // in `eventIcons.ts` waits for the icon phase (§8) like `SymbolIcon`.
-    const EventIcon = getEventIcon(event.icon);
     // event.status is on the TS interface but the backend ViewModel does not
     // populate it — only render the chip if a real label resolves.
     const statusLabel = event.status ? STATUS_LABEL[event.status] : undefined;
@@ -69,7 +66,7 @@ export const DeliveryEventDetailsDialog: React.FC<DeliveryEventDetailsDialogProp
     return (
         <DialogShell opened={open} onClose={onClose} label={event.title}>
             <DialogHeader
-                icon={<EventIcon/>}
+                icon={<EventIcon name={event.icon}/>}
                 title={event.title}
                 subtitle={
                     <>

@@ -2,7 +2,7 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import { ClearListDebugButton } from './ClearListDebugDialog';
-import { renderWithTheme } from '../../../__testUtils__';
+import { renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import type { IClearListDebugViewModel, IPolygonAreaMapping } from '../../../../interfaces/job.interface';
 import { apiClient } from '../../../services/apiClient';
@@ -310,11 +310,9 @@ describe('ClearListDebugButton', () => {
             await user.click(screen.getByRole('button'));
             await screen.findByText('Clear List Debug');
 
-            const closeButton = screen.getAllByRole('button').find(
-                btn => btn.querySelector('[data-testid="CloseIcon"]')
-            );
-            expect(closeButton).toBeDefined();
-            await user.click(closeButton!);
+            // The shared <DialogHeader> names its close button, so this no longer
+            // has to hunt for an icon's generated test id.
+            await user.click(screen.getByRole('button', {name: 'Close dialog'}));
 
             await waitFor(() => {
                 expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

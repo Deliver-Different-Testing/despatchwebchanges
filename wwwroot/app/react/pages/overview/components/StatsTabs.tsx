@@ -54,7 +54,7 @@ export const StatsTabs: React.FC<StatsTabsProps> = React.memo(({statistics, acti
                             <Typography variant="h6" sx={{fontWeight: 700, lineHeight: 1}}>
                                 {value}
                             </Typography>
-                            <SymbolIcon name={tab.icon} sx={{fontSize: 20, mt: '2px'}} />
+                            <SymbolIcon name={tab.icon} size={20} style={{marginTop: 2}} />
                         </Box>
                         <Typography
                             variant="body2"

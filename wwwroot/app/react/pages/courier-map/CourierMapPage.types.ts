@@ -6,7 +6,7 @@
 
 // Re-export from courier interface for convenience
 import React from "react";
-import type { Theme } from '@mui/material/styles';
+import type { MantineTheme } from '@mantine/core';
 
 export type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 
@@ -34,7 +34,7 @@ export interface MarkerColor {
 /**
  * Fallback color definitions for status-based map markers.
  *
- * The live map derives its colors from the active MUI theme via
+ * The live map derives its colors from the active Mantine theme via
  * {@link getMarkerColors} so the markers stay in step with the driver list
  * (which colors rows from the same palette). This constant is only the
  * default used when no theme-derived palette is supplied.
@@ -49,12 +49,24 @@ export const MARKER_COLORS: Record<DriverStatus, MarkerColor> = {
  * Builds the status → marker-color map from the active theme palette so that
  * map markers and the driver-list rows use identical colors:
  *   - overdue → error, active → primary, idle → success
+ *
+ * Reads concrete hex values off the ramps rather than `var(--mantine-color-*)`:
+ * these strings are interpolated into the SVG that HERE renders for each marker,
+ * where a CSS custom property has no guaranteed cascade to resolve against.
+ *
+ * Ramp indices mirror the theme: index 5 is the named colour (`primaryShade.light`)
+ * and 7 is the darker edge — the equivalents of MUI's `.main` / `.dark`.
  */
-export function getMarkerColors(theme: Theme): Record<DriverStatus, MarkerColor> {
+const MAIN_SHADE = 5;
+const DARK_SHADE = 7;
+
+export function getMarkerColors(theme: MantineTheme): Record<DriverStatus, MarkerColor> {
+    const ramp = (name: string) => theme.colors[name] ?? theme.colors.gray;
+    const brand = ramp(theme.primaryColor);
     return {
-        overdue: { bg: theme.palette.error.main,   border: theme.palette.error.dark,   text: '#ffffff' },
-        active:  { bg: theme.palette.primary.main, border: theme.palette.primary.dark, text: '#ffffff' },
-        idle:    { bg: theme.palette.success.main, border: theme.palette.success.dark, text: '#ffffff' },
+        overdue: { bg: ramp('red')[MAIN_SHADE],   border: ramp('red')[DARK_SHADE],   text: '#ffffff' },
+        active:  { bg: brand[MAIN_SHADE],         border: brand[DARK_SHADE],         text: '#ffffff' },
+        idle:    { bg: ramp('green')[MAIN_SHADE], border: ramp('green')[DARK_SHADE], text: '#ffffff' },
     };
 }
 

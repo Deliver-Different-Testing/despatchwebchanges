@@ -70,7 +70,8 @@ function processPhotoData(
 
 export function usePodPhotos({job, isRecurringJob}: UsePodPhotosOptions) {
     const completedTime = job?.completedTime;
-    const jobId = job?.id ?? 0;
+    // A bulk row's own id is a BulkJobId; S3 keys POD media by the live job id, so prefer the link.
+    const jobId = job?.linkedJobId ?? job?.id ?? 0;
 
     // Delivery photos are proof-of-delivery, so they only exist once the job is
     // completed. Pickup photos are uploaded at pickup, so they're available from

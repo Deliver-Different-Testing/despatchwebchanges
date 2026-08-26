@@ -14,7 +14,6 @@ import { saveTasks } from './saveTasks';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
 import type { ToastService } from '../../../services/toastService';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
 export interface OpenEventGroupDialogOptions {
@@ -30,23 +29,21 @@ function openAdminManager(): void {
 const host = createDialogHost<{events: EventGroupViewModel[]; users: StaffSuggestion[]; jobId: number}, boolean>({
     containerId: 'react-event-group-dialog-root',
     render: ({open, payload, close, showToast}) => islandTree(
-        <MuiThemeIsland>
-            <EventGroupDialog
-                open={open}
-                events={payload.events}
-                users={payload.users}
-                onClose={() => close(false)}
-                onSave={async (events: EventGroupViewModel[]) => {
-                    await saveTasks(payload.jobId, events);
-                    const taskCount = events.length;
-                    showToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`, 'success');
-                    close(true);
-                }}
-                onOpenAdminManager={openAdminManager}
-                showToast={showToast}
-                timezone={getIanaTimezone(getTenantTimezone())}
-            />
-        </MuiThemeIsland>
+        <EventGroupDialog
+            open={open}
+            events={payload.events}
+            users={payload.users}
+            onClose={() => close(false)}
+            onSave={async (events: EventGroupViewModel[]) => {
+                await saveTasks(payload.jobId, events);
+                const taskCount = events.length;
+                showToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`, 'success');
+                close(true);
+            }}
+            onOpenAdminManager={openAdminManager}
+            showToast={showToast}
+            timezone={getIanaTimezone(getTenantTimezone())}
+        />
     ),
 });
 

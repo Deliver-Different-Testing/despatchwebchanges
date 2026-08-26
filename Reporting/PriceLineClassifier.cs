@@ -38,25 +38,61 @@ public static partial class PriceLineClassifier
         var n = (chargeName ?? string.Empty).Trim().ToLowerInvariant();
 
         // Fuel is always a separate " Fuel"-suffixed row - bucket to Fuel regardless of parent.
-        if (n.Contains("fuel")) return Bucket.Fuel;
+        if (n.Contains("fuel"))
+        {
+            return Bucket.Fuel;
+        }
 
-        if (n.StartsWith("base") || n.StartsWith("distance")) return Bucket.BaseDistance;
+        if (n.StartsWith("base") || n.StartsWith("distance"))
+        {
+            return Bucket.BaseDistance;
+        }
+
         // Flight / agent / recovery legs carry their own base-like miles - keep them out of
         // BaseDistance to avoid double-counting.
         if (n.StartsWith("pickup (") || n.StartsWith("delivery (") || n.Contains("flight"))
+        {
             return Bucket.Other;
+        }
 
-        if (n.Contains("weight")) return Bucket.Weight;
-        if (n.Contains("cubic") || n == "cube") return Bucket.Cubic;
-        if (n.Contains("congestion")) return Bucket.Congestion;
-        if (n.Contains("after hours") || n.StartsWith("after")) return Bucket.AfterHours;
-        if (n.Contains("wait")) return Bucket.WaitTime;
-        if (n.Contains("toll")) return Bucket.Tolls;
-        if (n.Contains("dangerous goods") || n.Contains("hazmat") || n == "dg") return Bucket.HazmatDg;
+        if (n.Contains("weight"))
+        {
+            return Bucket.Weight;
+        }
+
+        if (n.Contains("cubic") || n == "cube")
+        {
+            return Bucket.Cubic;
+        }
+
+        if (n.Contains("congestion"))
+        {
+            return Bucket.Congestion;
+        }
+
+        if (n.Contains("after hours") || n.StartsWith("after"))
+        {
+            return Bucket.AfterHours;
+        }
+
+        if (n.Contains("wait"))
+        {
+            return Bucket.WaitTime;
+        }
+
+        if (n.Contains("toll"))
+        {
+            return Bucket.Tolls;
+        }
+
+        if (n.Contains("dangerous goods") || n.Contains("hazmat") || n == "dg")
+        {
+            return Bucket.HazmatDg;
+        }
+
         return n.Contains("surcharge")
             ? Bucket.Surcharge
-            :
-            Bucket.Other;
+            : Bucket.Other;
     }
 
     // Parses miles from a distance-line name.
@@ -66,7 +102,10 @@ public static partial class PriceLineClassifier
     // Returns null when the name carries no mileage.
     public static (decimal Included, decimal Charged)? ParseMiles(string chargeName)
     {
-        if (string.IsNullOrWhiteSpace(chargeName)) return null;
+        if (string.IsNullOrWhiteSpace(chargeName))
+        {
+            return null;
+        }
 
         var incl = IncRegex().Match(chargeName);
         var chg = ChgRegex().Match(chargeName);
@@ -76,7 +115,10 @@ public static partial class PriceLineClassifier
         }
 
         var plain = PlainRegex().Match(chargeName);
-        if (plain.Success) return (0m, ParseDec(plain.Groups[1].Value));
+        if (plain.Success)
+        {
+            return (0m, ParseDec(plain.Groups[1].Value));
+        }
 
         return null;
     }
@@ -87,7 +129,10 @@ public static partial class PriceLineClassifier
         foreach (var name in chargeNames)
         {
             var m = ParseMiles(name);
-            if (m is { } v) return v.Included + v.Charged;
+            if (m is { } v)
+            {
+                return v.Included + v.Charged;
+            }
         }
 
         return null;

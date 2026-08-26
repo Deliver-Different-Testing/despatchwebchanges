@@ -6,7 +6,7 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useTheme } from '@mui/material/styles';
+import { useMantineTheme } from '@mantine/core';
 import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 import type { UseCourierMapReturn } from './CourierMapPage.types';
 import { DEFAULT_ZOOM, OVERVIEW_ZOOM, getMarkerColors } from './CourierMapPage.types';
@@ -24,7 +24,7 @@ export function useCourierMap({
     isUsCustomer,
     mapCenter,
 }: UseCourierMapOptions): UseCourierMapReturn {
-    const theme = useTheme();
+    const theme = useMantineTheme();
     const themeRef = useRef(theme);
     themeRef.current = theme;
     const mapContainerRef = useRef<HTMLDivElement>(null);

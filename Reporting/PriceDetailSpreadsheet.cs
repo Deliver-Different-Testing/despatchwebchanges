@@ -92,7 +92,11 @@ public sealed class PriceDetailSpreadsheet(PriceDetailReportData data, ReportBra
             var gapCell = ws.Cell(r, c++);
             gapCell.Value = j.HeaderVsLinesGap;
             gapCell.Style.NumberFormat.Format = "$#,##0.00";
-            if (Math.Abs(j.HeaderVsLinesGap) > 0.02m) gapCell.Style.Font.FontColor = XLColor.FromHtml("#C00000");
+            if (Math.Abs(j.HeaderVsLinesGap) > 0.02m)
+            {
+                gapCell.Style.Font.FontColor = XLColor.FromHtml("#C00000");
+            }
+
             MoneyCol(j.IsManual ? null : j.CurrentLinesTotal - j.Booked.Sum(l => l.Amount));
 
             Set(j.Header.Void ? "Y" : "");
@@ -166,7 +170,11 @@ public sealed class PriceDetailSpreadsheet(PriceDetailReportData data, ReportBra
         var r = 2;
         foreach (var j in data.Jobs)
         {
-            if (j.Booked.Count == 0) continue;
+            if (j.Booked.Count == 0)
+            {
+                continue;
+            }
+
             var booked = j.Booked.GroupBy(b => b.ChargeName).ToDictionary(g => g.Key, g => g.Sum(x => x.Amount));
             var cur = j.Current.GroupBy(c => c.ChargeName).ToDictionary(g => g.Key, g => g.Sum(x => x.ChargeAmount));
             foreach (var name in booked.Keys.Union(cur.Keys))
@@ -176,11 +184,22 @@ public sealed class PriceDetailSpreadsheet(PriceDetailReportData data, ReportBra
                 ws.Cell(r, 1).Value = j.Header.ClientName;
                 ws.Cell(r, 2).Value = j.Header.JobNo;
                 ws.Cell(r, 3).Value = name;
-                if (booked.ContainsKey(name)) Money(ws.Cell(r, 4), b);
-                if (cur.ContainsKey(name)) Money(ws.Cell(r, 5), cv);
+                if (booked.ContainsKey(name))
+                {
+                    Money(ws.Cell(r, 4), b);
+                }
+
+                if (cur.ContainsKey(name))
+                {
+                    Money(ws.Cell(r, 5), cv);
+                }
+
                 Money(ws.Cell(r, 6), cv - b);
                 if (!booked.ContainsKey(name) || !cur.ContainsKey(name) || Math.Abs(b - cv) > 0.011m)
+                {
                     ws.Range(r, 1, r, 6).Style.Fill.BackgroundColor = XLColor.FromHtml("#FFF2CC");
+                }
+
                 r++;
             }
         }
@@ -441,7 +460,10 @@ public sealed class PriceDetailSpreadsheet(PriceDetailReportData data, ReportBra
             : j.IsManual ? "#E2EFDA"
             : j.ChangeSummary.Count > 0 ? "#FFF2CC"
             : null;
-        if (hex is not null) ws.Range(row, 1, row, cols).Style.Fill.BackgroundColor = XLColor.FromHtml(hex);
+        if (hex is not null)
+        {
+            ws.Range(row, 1, row, cols).Style.Fill.BackgroundColor = XLColor.FromHtml(hex);
+        }
     }
 
     // Boxed nullable value types with a value come through as their underlying type; nulls hit

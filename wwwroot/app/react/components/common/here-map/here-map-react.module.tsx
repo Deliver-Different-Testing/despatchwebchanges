@@ -11,7 +11,6 @@ import {HereMap} from './HereMap';
 import type {HereMapConfig, HereMapCredentials,} from './HereMap.types';
 import angular from 'angular';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React HereMap
@@ -61,15 +60,13 @@ class HereMapReactController implements angular.IController {
             : undefined;
 
         this.root.render(islandTree(
-            <MuiThemeIsland>
-            <HereMap
-                mapId={this.mapId || 'here-map'}
-                credentials={this.credentials}
-                config={this.config}
-                onMapReady={handleMapReady}
-            />
+        <HereMap
+            mapId={this.mapId || 'here-map'}
+            credentials={this.credentials}
+            config={this.config}
+            onMapReady={handleMapReady}
+        />
 
-            </MuiThemeIsland>
         ));
     }
 }

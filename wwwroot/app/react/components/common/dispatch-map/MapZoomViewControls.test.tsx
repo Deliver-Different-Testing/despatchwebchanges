@@ -2,7 +2,7 @@
 import React from 'react';
 import {screen, fireEvent} from '@testing-library/react';
 import {MapZoomViewControls} from './MapZoomViewControls';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 function createMockMap() {
     return {

@@ -7,21 +7,12 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
-import Collapse from '@mui/material/Collapse';
-import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
-import Skeleton from '@mui/material/Skeleton';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import StopIcon from '@mui/icons-material/Stop';
+import {
+    ActionIcon, alpha, Badge, Box, Card, Collapse, Group, Loader, Skeleton, Text, Tooltip,
+} from '@mantine/core';
+import {ChevronDown, ChevronUp, Copy, Square} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import classes from './AiSummaryPanel.module.css';
 import {aiAccentColor} from '../../../theme/designTokens';
 import {formatRelativeTime} from '../../../utils/dateUtils';
 import {AiMarkdownRenderer} from './AiMarkdownRenderer';
@@ -135,9 +126,10 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
 
     return (
         <Card
-            sx={{
-                borderRadius: 3,
-                boxShadow: 1,
+            radius="lg"
+            shadow="xs"
+            data-testid="ai-summary-card"
+            style={{
                 overflow: 'hidden',
                 borderLeft: `4px solid ${accentColor}`,
             }}
@@ -145,126 +137,102 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             {/* Header */}
             <Box
                 onClick={handleToggle}
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    px: 2,
-                    py: 1.25,
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    bgcolor: alpha(accentColor, 0.04),
-                    '&:hover': {bgcolor: alpha(accentColor, 0.08)},
-                }}
+                className={classes.header}
+                style={{
+                    '--accent-tint': alpha(accentColor, 0.04),
+                    '--accent-tint-hover': alpha(accentColor, 0.08),
+                } as React.CSSProperties & Record<`--${string}`, string>}
             >
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1
-                    }}>
+                <Group gap={8} wrap="nowrap">
                     <AutoMateLogo size={24} />
-                    <Typography
-                        variant="subtitle2"
-                        sx={{
-                            fontWeight: 600,
-                            color: "text.primary"
-                        }}>
+                    <Text fz="sm" fw={600}>
                         {title}
-                    </Typography>
-                    <Chip
-                        label="BETA"
-                        size="small"
-                        sx={{
-                            height: 18,
-                            fontSize: '0.625rem',
-                            fontWeight: 700,
-                            bgcolor: accentColor,
-                            color: '#fff',
-                        }}
-                    />
-                </Box>
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5
-                    }}>
+                    </Text>
+                    <Badge
+                        h={18}
+                        fz="0.625rem"
+                        fw={700}
+                        style={{backgroundColor: accentColor, color: '#fff'}}
+                    >
+                        BETA
+                    </Badge>
+                </Group>
+                <Group gap={4} wrap="nowrap">
                     {generatedAt && !loading && (
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.disabled",
-                                mr: 0.5
-                            }}>
+                        <Text fz="xs" c="dimmed" mr={4}>
                             {relativeTime}
-                        </Typography>
+                        </Text>
                     )}
                     {loading && (
-                        <CircularProgress size={16} sx={{mr: 0.5}} />
+                        <Loader size={16} mr={4} role="progressbar" aria-label="Generating summary" />
                     )}
                     {loading && (
-                        <Tooltip title="Stop generating">
-                            <IconButton
-                                size="small"
+                        <Tooltip label="Stop generating">
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                size="sm"
+                                aria-label="Stop generating"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     handleStop();
                                 }}
-                                sx={{p: 0.5}}
                             >
-                                <StopIcon sx={{fontSize: 18}} />
-                            </IconButton>
+                                <Icon lucide={Square} size={18} />
+                            </ActionIcon>
                         </Tooltip>
                     )}
                     {summary && !loading && (
-                        <Tooltip title={copyTooltip}>
-                            <IconButton size="small" onClick={handleCopy} sx={{p: 0.5}}>
-                                <ContentCopyIcon sx={{fontSize: 16}} />
-                            </IconButton>
+                        // Hand-rolled rather than Mantine's <CopyButton>: this reports a
+                        // *failure* ("Copy failed") too, which CopyButton's copied-flag
+                        // render prop cannot express.
+                        <Tooltip label={copyTooltip}>
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                size="sm"
+                                aria-label="Copy to clipboard"
+                                onClick={handleCopy}
+                            >
+                                <Icon lucide={Copy} size={16} />
+                            </ActionIcon>
                         </Tooltip>
                     )}
-                    {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </Box>
+                    <Icon lucide={expanded ? ChevronUp : ChevronDown} />
+                </Group>
             </Box>
+
             {/* Content */}
-            <Collapse in={expanded}>
-                <CardContent sx={{pt: 1, pb: 2, px: 2}}>
+            <Collapse expanded={expanded}>
+                <Box pt={8} pb={16} px={16}>
                     {loading && !summary && (
-                        <Box sx={{
-                            py: 1
-                        }}>
-                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+                        <Box py={8}>
+                            <Group gap={8} mb={8} wrap="nowrap">
                                 <AutoMateLogo size={32} animated />
-                                <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                                <Text fz="sm" c="dimmed">
                                     Auto-mate is thinking…
-                                </Typography>
-                            </Box>
-                            <Skeleton variant="text" width="90%" />
-                            <Skeleton variant="text" width="75%" />
-                            <Skeleton variant="text" width="60%" />
-                            <Skeleton variant="text" width="80%" />
+                                </Text>
+                            </Group>
+                            {['90%', '75%', '60%', '80%'].map((w) => (
+                                <Skeleton key={w} height={8} width={w} my={6} data-testid="ai-summary-skeleton" />
+                            ))}
                         </Box>
                     )}
 
                     {error && (
-                        <Typography variant="body2" color="error">
+                        <Text fz="sm" c="var(--mantine-color-red-6)">
                             {error}
-                        </Typography>
+                        </Text>
                     )}
 
-                    {summary && (
-                        <AiMarkdownRenderer content={summary} />
-                    )}
+                    {summary && <AiMarkdownRenderer content={summary} />}
 
                     {!loading && !error && !summary && (
-                        <Typography variant="body2" sx={{
-                            color: "text.disabled"
-                        }}>
+                        <Text fz="sm" c="dimmed">
                             Click to generate an Auto-mate summary.
-                        </Typography>
+                        </Text>
                     )}
-                </CardContent>
+                </Box>
             </Collapse>
         </Card>
     );

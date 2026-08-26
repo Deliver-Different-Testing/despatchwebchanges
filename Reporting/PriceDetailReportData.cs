@@ -73,10 +73,15 @@ public sealed class PriceDetailReportData
             foreach (var row in batch)
             {
                 if (TryParseNamed(row.NewValue!, out var name, out var amount))
+                {
                     lines.Add(new AsBookedLine(name, amount));
+                }
             }
 
-            if (lines.Count > 0) return lines;
+            if (lines.Count > 0)
+            {
+                return lines;
+            }
         }
 
         // Fallback: current minus sum of each line's value deltas.
@@ -99,7 +104,11 @@ public sealed class PriceDetailReportData
     {
         var created = history.FirstOrDefault(h => h.FieldName == "CreatedBySp");
         var sp = created?.NewValue?.ToLowerInvariant() ?? string.Empty;
-        if (sp.Contains("prebook")) return AsBookedSource.NightlySp;
+        if (sp.Contains("prebook"))
+        {
+            return AsBookedSource.NightlySp;
+        }
+
         return string.IsNullOrEmpty(sp) ? AsBookedSource.Manual : AsBookedSource.Engine;
     }
 
@@ -127,27 +136,42 @@ public sealed class PriceDetailReportData
                 if (r.OldValue is null && r.NewValue is not null)
                 {
                     // Skip the initial booking batch - that's "as booked", not a change.
-                    if (t0 is { } start && r.AtUtc - start <= AsBookedWindow) continue;
+                    if (t0 is { } start && r.AtUtc - start <= AsBookedWindow)
+                    {
+                        continue;
+                    }
+
                     line = TryParseNamed(r.NewValue, out var nm, out var amt)
                         ? $"line added: {nm} {amt:C}"
                         : $"line added: {r.NewValue}";
                 }
                 else if (r.OldValue is not null && r.NewValue is null)
+                {
                     line = $"line DELETED: {r.OldValue}";
+                }
                 else
+                {
                     line = $"line renamed: {r.OldValue} -> {r.NewValue}";
+                }
             }
             else if (r.FieldName.StartsWith("Pricing: ", StringComparison.Ordinal))
+            {
                 line = $"{r.FieldName[9..].Trim()}: {ParseDec(r.OldValue):C} -> {ParseDec(r.NewValue):C}";
+            }
             else
+            {
                 line = r.FieldName switch
                 {
                     "ucjbVoid" when Truthy(r.NewValue) => "VOIDED",
                     "ucjbAmount" or "FuelSurchargeAmount" => $"{r.FieldName}: {r.OldValue} -> {r.NewValue}",
                     _ => line
                 };
+            }
 
-            if (line is not null) summary.Add($"{stamp} [{r.ActorName}] {line}");
+            if (line is not null)
+            {
+                summary.Add($"{stamp} [{r.ActorName}] {line}");
+            }
         }
 
         return (summary, log);
@@ -159,7 +183,11 @@ public sealed class PriceDetailReportData
         name = string.Empty;
         amount = 0m;
         var idx = raw.LastIndexOf(": $", StringComparison.Ordinal);
-        if (idx < 0) return false;
+        if (idx < 0)
+        {
+            return false;
+        }
+
         name = raw[..idx].Trim().TrimEnd(':').Trim();
         return decimal.TryParse(raw[(idx + 3)..].Replace(",", string.Empty), NumberStyles.Any,
             CultureInfo.InvariantCulture, out amount);
@@ -234,7 +262,11 @@ public sealed class PriceDetailJob(
 
     private static int? Minutes(DateTime? arrive, DateTime? depart)
     {
-        if (arrive is null || depart is null) return null;
+        if (arrive is null || depart is null)
+        {
+            return null;
+        }
+
         var m = (depart.Value - arrive.Value).TotalMinutes;
         return m is >= 0 and <= 600 ? (int)Math.Round(m) : null;
     }

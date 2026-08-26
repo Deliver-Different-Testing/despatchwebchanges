@@ -1,67 +1,60 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import Box from '@mui/material/Box';
-import Divider from '@mui/material/Divider';
-import Typography from '@mui/material/Typography';
+import {Box, Divider, Text} from '@mantine/core';
 import type {Components} from 'react-markdown';
+import classes from './AiMarkdownRenderer.module.css';
 
 interface AiMarkdownRendererProps {
     content: string;
 }
 
+const Heading = ({children, mt}: {children: React.ReactNode; mt: number}) => (
+    <Text fz="sm" fw={600} mt={mt} mb={4}>
+        {children}
+    </Text>
+);
+
 const components: Components = {
-    h1: ({children}) => (
-        <Typography variant="subtitle2" sx={{fontWeight: 600, color: 'text.primary', mt: 1.5, mb: 0.5}}>
-            {children}
-        </Typography>
-    ),
-    h2: ({children}) => (
-        <Typography variant="subtitle2" sx={{fontWeight: 600, color: 'text.primary', mt: 1.5, mb: 0.5}}>
-            {children}
-        </Typography>
-    ),
-    h3: ({children}) => (
-        <Typography variant="subtitle2" sx={{fontWeight: 600, color: 'text.primary', mt: 1, mb: 0.5}}>
-            {children}
-        </Typography>
-    ),
+    h1: ({children}) => <Heading mt={12}>{children}</Heading>,
+    h2: ({children}) => <Heading mt={12}>{children}</Heading>,
+    h3: ({children}) => <Heading mt={8}>{children}</Heading>,
     p: ({children}) => (
-        <Typography variant="body2" sx={{color: 'text.secondary', lineHeight: 1.7, mb: 1}}>
+        <Text fz="sm" c="dimmed" mb={8} style={{lineHeight: 1.7}}>
             {children}
-        </Typography>
+        </Text>
     ),
     strong: ({children}) => (
-        <Box component="span" sx={{fontWeight: 600, color: 'text.primary'}}>
+        <Text component="span" fw={600}>
             {children}
-        </Box>
+        </Text>
     ),
     ul: ({children}) => (
-        <Box component="ul" sx={{pl: 2.5, my: 0.5, '& li': {mb: 0.25}}}>
+        <Box component="ul" className={classes.list}>
             {children}
         </Box>
     ),
     ol: ({children}) => (
-        <Box component="ol" sx={{pl: 2.5, my: 0.5, '& li': {mb: 0.25}}}>
+        <Box component="ol" className={classes.list}>
             {children}
         </Box>
     ),
     li: ({children}) => (
-        <Typography component="li" variant="body2" sx={{color: 'text.secondary', lineHeight: 1.7}}>
+        <Text component="li" fz="sm" c="dimmed" style={{lineHeight: 1.7}}>
             {children}
-        </Typography>
+        </Text>
     ),
-    hr: () => <Divider sx={{my: 1.5}} />,
+    hr: () => <Divider my={12} />,
     code: ({children}) => (
         <Box
             component="code"
-            sx={{
-                px: 0.75,
-                py: 0.25,
-                borderRadius: 1,
-                bgcolor: 'action.hover',
+            px={6}
+            py={2}
+            ff="monospace"
+            style={{
+                borderRadius: 'var(--mantine-radius-sm)',
+                backgroundColor: 'var(--mantine-color-gray-1)',
                 fontSize: '0.8125rem',
-                fontFamily: 'monospace',
             }}
         >
             {children}

@@ -59,7 +59,7 @@ const ToolbarHeader: React.FC<{icon: string; title: string; actions?: React.Reac
             minHeight: 36,
         }}
     >
-        <SymbolIcon name={icon} sx={{fontSize: 18}} />
+        <SymbolIcon name={icon} size={18} />
         <Typography variant="caption" sx={{ml: 1, flex: 1, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em'}}>
             {title}
         </Typography>
@@ -146,7 +146,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     endIcon={
                         hasDateFilter ? (
                             <IconButton size="small" onClick={handleClearDateRange} sx={{color: 'inherit', p: 0}}>
-                                <SymbolIcon name="close" sx={{fontSize: 18}} />
+                                <SymbolIcon name="close" size={18} />
                             </IconButton>
                         ) : undefined
                     }
@@ -184,7 +184,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 <Box sx={{p: 2}}>
                     {regions.length === 0 ? (
                         <Box sx={{textAlign: 'center', py: 2, color: 'text.secondary'}}>
-                            <SymbolIcon name="public_off" sx={{fontSize: 36}} />
+                            <SymbolIcon name="public_off" size={36} />
                             <Typography variant="body2">No regions found</Typography>
                         </Box>
                     ) : (
@@ -237,7 +237,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 <Box sx={{p: 2}}>
                     {speeds.length === 0 ? (
                         <Box sx={{textAlign: 'center', py: 2, color: 'text.secondary'}}>
-                            <SymbolIcon name="speed" sx={{fontSize: 36}} />
+                            <SymbolIcon name="speed" size={36} />
                             <Typography variant="body2">No speeds found</Typography>
                         </Box>
                     ) : (

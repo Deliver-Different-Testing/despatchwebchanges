@@ -13,7 +13,6 @@ import angular from 'angular';
 import {Dayjs} from 'dayjs';
 import {ISuggestion} from '../../../../interfaces/job.interface';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 class SearchCriteriaPanelReactController implements angular.IController {
     static $inject = ['$element', '$scope'];
@@ -116,26 +115,24 @@ class SearchCriteriaPanelReactController implements angular.IController {
             this.onSpeedSearch!({searchText});
 
         this.root.render(islandTree(
-            <MuiThemeIsland>
-            <SearchCriteriaPanel
-                dateSearchRange={this.dateSearchRange ?? 'fortnight'}
-                fromDate={this.fromDate!}
-                toDate={this.toDate!}
-                onSearchRangeChange={handleSearchRangeChange}
-                onFromDateChange={handleFromDateChange}
-                onToDateChange={handleToDateChange}
-                onCriteriaChange={handleCriteriaChange}
-                onSearch={handleSearch}
-                onDownload={handleDownload}
-                onClientReport={handleClientReport}
-                onPriceDetailReport={handlePriceDetailReport}
-                onUpload={handleUpload}
-                onClientSearch={handleClientSearch}
-                onCourierSearch={handleCourierSearch}
-                onSpeedSearch={handleSpeedSearch}
-            />
+        <SearchCriteriaPanel
+            dateSearchRange={this.dateSearchRange ?? 'fortnight'}
+            fromDate={this.fromDate!}
+            toDate={this.toDate!}
+            onSearchRangeChange={handleSearchRangeChange}
+            onFromDateChange={handleFromDateChange}
+            onToDateChange={handleToDateChange}
+            onCriteriaChange={handleCriteriaChange}
+            onSearch={handleSearch}
+            onDownload={handleDownload}
+            onClientReport={handleClientReport}
+            onPriceDetailReport={handlePriceDetailReport}
+            onUpload={handleUpload}
+            onClientSearch={handleClientSearch}
+            onCourierSearch={handleCourierSearch}
+            onSpeedSearch={handleSpeedSearch}
+        />
 
-            </MuiThemeIsland>
         ));
     }
 }

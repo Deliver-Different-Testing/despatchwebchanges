@@ -16,10 +16,6 @@ interface AiDraftButtonProps {
  * "Draft with Auto-Mate" button (Mantine). Renders nothing when the user hasn't
  * opted into AI, so callers can drop it in unconditionally. Shows a spinner
  * while drafting.
- *
- * Sibling of the MUI `../AiDraftButton`, which stays until its remaining caller
- * (`job-change-requests/ChangeRequestTriage.tsx`, inside the still-MUI
- * job-details island) migrates. Collapse the two in Phase 9.
  */
 export const AiDraftButton: React.FC<AiDraftButtonProps> = ({
     onClick,

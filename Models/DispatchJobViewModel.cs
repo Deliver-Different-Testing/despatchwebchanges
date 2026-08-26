@@ -18,6 +18,12 @@ public class DispatchJobViewModel
     public bool IsParentOrSingle { get; set; }
     public int? ParentId { get; set; }
 
+    /// <summary>
+    /// The live tucJob id behind this row when <see cref="Id"/> is not one — a bulk row carries a
+    /// BulkJobId, which matches nothing in S3, where POD media is keyed by the job id.
+    /// </summary>
+    public int? LinkedJobId { get; set; }
+
     // Status and timing information
     public int? InternalStatusId { get; set; }
     public int? SpeedId { get; set; }

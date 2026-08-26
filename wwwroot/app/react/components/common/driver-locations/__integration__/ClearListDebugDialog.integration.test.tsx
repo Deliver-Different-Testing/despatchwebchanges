@@ -6,7 +6,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '../../../../__testUtils__/msw/setupIntegration';
 import { mockClearListDebug } from '../../../../__testUtils__/msw/handlers';
 import { ClearListDebugButton } from '../ClearListDebugDialog';
-import { renderWithTheme } from '../../../../__testUtils__';
+import { renderWithMantine as renderWithTheme } from '../../../../__testUtils__';
 import { setupUser } from '../../../../__testUtils__/setupUser';
 
 describe('ClearListDebugDialog integration', () => {

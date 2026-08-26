@@ -20,7 +20,7 @@ public sealed class PodReportService(
     ITenantBrandingService tenantBrandingService,
     IJobQueryRepository jobRepository,
     INoteRepository noteRepository,
-    IJobPhotoService jobPhotoService,
+    IPodMediaService podMediaService,
     IDbContextFactory<DespatchContext> contextFactory
 ) : IPodReportService
 {
@@ -118,19 +118,16 @@ public sealed class PodReportService(
         return PdfImageAppender.Append(pdfBytes, ExtractDeliveryImages(s3Photos));
     }
 
-    // Delivery photos/signatures live in S3 keyed by the completion month, so they
-    // only exist once the job is completed.
-    private async Task<IReadOnlyList<S3PhotoInfo>> GetDeliveryPhotosForJobAsync(JobViewModel job, int jobId)
-    {
-        if (!job.CompletedTime.HasValue)
-        {
-            return [];
-        }
-
-        var year = job.CompletedTime.Value.Year;
-        var month = job.CompletedTime.Value.Month;
-        return await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
-    }
+    // Delivery photos/signatures live in S3 keyed by the completion month and by the id of the leg
+    // the courier completed — never the parent's. The parent is the number on the POD the client
+    // downloads, so the lookup sweeps the family. Its own completion time is only a fallback for a
+    // leg that carries none: a family whose parent roll-up never ran still has to render its DEL
+    // leg's POD.
+    private Task<IReadOnlyList<S3PhotoInfo>> GetDeliveryPhotosForJobAsync(JobViewModel job, int jobId) =>
+        podMediaService.GetDeliveryMediaAsync(
+            jobId,
+            job.CompletedTime?.Year ?? 0,
+            job.CompletedTime?.Month ?? 0);
 
     // Decodes the delivery photos then the signature(s) into raw image bytes.
     // Non-image entries (e.g. PDFs) carry no Data and are skipped.

@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
+import {QueryClient} from '@tanstack/react-query';
 import {CourierMapPage} from './CourierMapPage';
 import type {CourierMapPageProps} from './CourierMapPage.types';
 import * as courierApi from '../../services/courierApi';
+import {renderWithMantineOverMui} from '../../__testUtils__';
 
 // Mock the courier API
 jest.mock('../../services/courierApi', () => ({
@@ -32,7 +32,6 @@ jest.mock('./useCourierMap', () => ({
     })),
 }));
 
-const theme = createTheme();
 
 function createTestQueryClient(): QueryClient {
     return new QueryClient({
@@ -46,14 +45,8 @@ function createTestQueryClient(): QueryClient {
     });
 }
 
-const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) => {
-    const client = queryClient ?? createTestQueryClient();
-    return render(
-        <QueryClientProvider client={client}>
-            <ThemeProvider theme={theme}>{ui}</ThemeProvider>
-        </QueryClientProvider>
-    );
-};
+const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) =>
+    renderWithMantineOverMui(ui, {queryClient: queryClient ?? createTestQueryClient()});
 
 interface CourierMapPageInternalProps extends CourierMapPageProps {
     apiKey: string | null;
@@ -368,12 +361,14 @@ describe('CourierMapPage Component', () => {
             const props = createDefaultProps({isUsCustomer: false});
             renderWithProviders(<CourierMapPage {...props} />);
 
-            // Wait for the panel to render and fleet options to load
-            const fleetInput = await screen.findByLabelText('Filter by fleet');
+            // Wait for the panel to render and fleet options to load. Query by role:
+            // Mantine's MultiSelect pairs the visible combobox with a hidden input, so
+            // the label matches two elements.
+            const fleetInput = await screen.findByRole('combobox', {name: 'Filter by fleet'});
 
-            // Open the dropdown (Autocomplete opens on ArrowDown) and pick "UA Wellington"
+            // Open the dropdown and pick "UA Wellington"
             fleetInput.focus();
-            fireEvent.keyDown(fleetInput, {key: 'ArrowDown'});
+            fireEvent.click(fleetInput);
             const option = await screen.findByRole('option', {name: 'UA Wellington'});
             fireEvent.click(option);
 

@@ -17,16 +17,16 @@ namespace DespatchWeb.Tests.Middleware;
 /// </summary>
 public class PrecompressedStaticFilesMiddlewareTests : IDisposable
 {
+    private readonly string _distDir;
+    private readonly byte[] _jsBrotli = [.. "pretend-brotli-js"u8];
+    private readonly byte[] _jsGzip = [.. "pretend-gzip-js"u8];
+
+    private readonly byte[] _jsRaw = [.. "console.error('raw js');"u8];
+
     // Mirrors the real layout: dist is a subfolder of the web root, which is why a
     // catch-all static-file handler over the web root can also serve /dist.
     private readonly string _webRoot =
         Path.Combine(Path.GetTempPath(), $"webroot-test-{Guid.NewGuid():N}");
-
-    private readonly string _distDir;
-
-    private readonly byte[] _jsRaw = [.. "console.error('raw js');"u8];
-    private readonly byte[] _jsBrotli = [.. "pretend-brotli-js"u8];
-    private readonly byte[] _jsGzip = [.. "pretend-gzip-js"u8];
 
     public PrecompressedStaticFilesMiddlewareTests()
     {
@@ -66,7 +66,7 @@ public class PrecompressedStaticFilesMiddlewareTests : IDisposable
                         RequestPath = "/dist",
                         PhysicalPath = _distDir,
                         ServeSourceMaps = serveSourceMaps,
-                        ImmutableCaching = immutableCaching,
+                        ImmutableCaching = immutableCaching
                     };
 
                     app.UsePrecompressedStaticFiles(options);
@@ -88,6 +88,7 @@ public class PrecompressedStaticFilesMiddlewareTests : IDisposable
         {
             request.Headers.TryAddWithoutValidation("Accept-Encoding", acceptEncoding);
         }
+
         return request;
     }
 
@@ -228,7 +229,7 @@ public class PrecompressedStaticFilesMiddlewareTests : IDisposable
         // UseStaticFiles can serve /dist itself. If it is registered first it answers
         // with the uncompressed bundle and negotiation never runs — which is exactly
         // what happened the first time this was wired up.
-        using var host = new HostBuilder()
+        using var host = await new HostBuilder()
             .ConfigureWebHost(webBuilder =>
             {
                 webBuilder.UseTestServer();
@@ -238,7 +239,7 @@ public class PrecompressedStaticFilesMiddlewareTests : IDisposable
                     {
                         RequestPath = "/dist",
                         PhysicalPath = _distDir,
-                        ImmutableCaching = true,
+                        ImmutableCaching = true
                     };
 
                     app.UsePrecompressedStaticFiles(options);
@@ -248,11 +249,11 @@ public class PrecompressedStaticFilesMiddlewareTests : IDisposable
                     app.UseStaticFiles(new StaticFileOptions
                     {
                         FileProvider = new PhysicalFileProvider(_webRoot),
-                        RequestPath = "",
+                        RequestPath = ""
                     });
                 });
             })
-            .Start();
+            .StartAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         var response = await host.GetTestClient().SendAsync(
             Get("/dist/app.ABC123.js", "br"), TestContext.Current.CancellationToken);

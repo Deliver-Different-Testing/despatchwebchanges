@@ -5,11 +5,11 @@
  */
 
 import React from 'react';
-import {screen, act} from '@testing-library/react';
+import {screen, act, waitFor} from '@testing-library/react';
 import {UserEvent} from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import {SearchCriteriaPanel, SearchCriteriaPanelProps} from './SearchCriteriaPanel';
-import { renderWithTheme } from '../../../__testUtils__';
+import { renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 
 // Shared fast userEvent instance (see setupUser).
@@ -67,10 +67,10 @@ describe('SearchCriteriaPanel', () => {
         jest.useRealTimers();
     });
 
-    // Helper: MUI Tooltip wraps disabled IconButtons in a <span>, so the button
-    // loses its accessible name. Find the button via its icon's data-testid instead.
+    // The button carries an explicit aria-label, so it keeps its accessible name
+    // even while disabled inside the tooltip's <span> wrapper.
     const getClientReportButton = () =>
-        screen.getByTestId('DescriptionIcon').closest('button')!;
+        screen.getByRole('button', {name: 'Client Report'});
 
     // ── Rendering: all labels, inputs, buttons, DateRangePicker (single render) ─
     it('renders all section labels, inputs, buttons, and DateRangePicker', () => {
@@ -314,8 +314,11 @@ describe('SearchCriteriaPanel', () => {
         // Click Advanced to expand
         await user.click(screen.getByRole('button', {name: /Advanced/}));
 
-        // Fields now visible
-        expect(screen.getByPlaceholderText('Enter job ID')).toBeVisible();
+        // Fields now visible. Mantine's Collapse settles its height one tick after
+        // the state change, so this waits rather than asserting synchronously.
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText('Enter job ID')).toBeVisible();
+        });
         expect(screen.getByPlaceholderText('Enter bulk job ID')).toBeVisible();
         expect(screen.getByText('Job ID')).toBeVisible();
         expect(screen.getByText('Bulk Job ID')).toBeVisible();

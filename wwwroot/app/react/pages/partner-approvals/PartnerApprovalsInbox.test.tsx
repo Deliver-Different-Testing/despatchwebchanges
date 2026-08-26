@@ -5,7 +5,7 @@
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
-import { renderWithProviders } from '../../__testUtils__';
+import { renderWithMantineProviders } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
 import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
@@ -52,7 +52,7 @@ describe('PartnerApprovalsInbox', () => {
 
     it('renders the inbox-zero empty state when no items are pending', async () => {
         mockApi.pendingForApproval.mockResolvedValueOnce([]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
         expect(await screen.findByText(/Inbox zero/i)).toBeInTheDocument();
         expect(screen.getByText(/No partner change requests are awaiting/i)).toBeInTheDocument();
     });
@@ -63,7 +63,7 @@ describe('PartnerApprovalsInbox', () => {
             makeItem({request: {...makeItem().request, id: 2}, clientName: 'Acme Logistics'}),
             makeItem({request: {...makeItem().request, id: 3}, clientName: 'Beta Couriers'}),
         ]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
         expect(await screen.findByText('Acme Logistics')).toBeInTheDocument();
         expect(screen.getByText('Beta Couriers')).toBeInTheDocument();
         expect(screen.getByText(/2 requests/)).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe('PartnerApprovalsInbox', () => {
             clientName: 'Beta Couriers',
         });
         mockApi.pendingForApproval.mockResolvedValueOnce([fresh, overdue]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
 
         expect(await screen.findByText('Acme Logistics')).toBeInTheDocument();
         const overdueChips = screen.getAllByText('Overdue');
@@ -103,7 +103,7 @@ describe('PartnerApprovalsInbox', () => {
             .mockResolvedValueOnce([]);
         mockApi.approve.mockResolvedValueOnce({success: true});
 
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
         expect(await screen.findByRole('button', {name: /Approve/})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /Approve/}));
@@ -120,7 +120,7 @@ describe('PartnerApprovalsInbox', () => {
             .mockResolvedValueOnce([]);
         mockApi.reject.mockResolvedValueOnce({success: true});
 
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
         expect(await screen.findByRole('button', {name: /^Reject$/})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /^Reject$/}));
@@ -144,7 +144,7 @@ describe('PartnerApprovalsInbox', () => {
         const onOpenJob = jest.fn();
         mockApi.pendingForApproval.mockResolvedValueOnce([makeItem()]);
 
-        renderWithProviders(<PartnerApprovalsInbox onOpenJob={onOpenJob}/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox onOpenJob={onOpenJob}/>);
         expect(await screen.findByRole('button', {name: /J100/})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /J100/}));
@@ -153,7 +153,7 @@ describe('PartnerApprovalsInbox', () => {
 
     it('shows "re-rates" chip on commercial-refresh requests', async () => {
         mockApi.pendingForApproval.mockResolvedValueOnce([makeItem()]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
         expect(await screen.findByText('re-rates')).toBeInTheDocument();
     });
 
@@ -168,7 +168,7 @@ describe('PartnerApprovalsInbox', () => {
             },
         });
         mockApi.pendingForApproval.mockResolvedValueOnce([addressItem]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
 
         expect(await screen.findByText('Pickup Address')).toBeInTheDocument();
         expect(screen.getByText(/7 Lambton Quay, Wellington/)).toBeInTheDocument();

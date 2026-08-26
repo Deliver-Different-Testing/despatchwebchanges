@@ -6,12 +6,11 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import ClearIcon from '@mui/icons-material/Clear';
-import PersonPinCircleOutlinedIcon from '@mui/icons-material/PersonPinCircleOutlined';
+import {ActionIcon, Box, Progress, Tooltip} from '@mantine/core';
+import {X} from 'lucide-react';
+import {IconUserPin} from '@tabler/icons-react';
+import {Icon} from '../icon/Icon';
+import classes from './DriverLocations.module.css';
 import { NoData } from '../no-data/NoData';
 import { driverLocationColors } from '../../../theme/designTokens';
 import { ClearListDebugButton } from './ClearListDebugDialog';
@@ -89,7 +88,7 @@ const DriverRow = React.memo(function DriverRow({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             data-courier={section.courierNumber}
-            sx={{
+            style={{
                 display: 'flex',
                 alignItems: 'center',
                 backgroundColor: getRowBackgroundColor(variant, isActive, isHovered),
@@ -102,7 +101,7 @@ const DriverRow = React.memo(function DriverRow({
         >
             <Box
                 component="td"
-                sx={{
+                style={{
                     padding: '4px 8px',
                     minWidth: '33px',
                     backgroundColor: getNumberBackgroundColor(variant, isActive),
@@ -113,18 +112,18 @@ const DriverRow = React.memo(function DriverRow({
             >
                 {section.courierNumber}
             </Box>
-            <Box component="td" sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                <Box sx={{ flex: 1 }}>
+            <Box component="td" style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <Box style={{ flex: 1 }}>
                     {section.destinations?.map((destination, idx) => (
                         <Box
                             key={destination.id || idx}
-                            sx={{
+                            style={{
                                 padding: '2px 4px',
                                 display: 'inline-block',
                                 backgroundColor: C.destination.bg,
                                 border: `1px solid ${C.destination.border}`,
                                 margin: '2px 0 2px 4px',
-                                borderRadius: 1,
+                                borderRadius: 4,
                                 fontSize: '0.75rem',
                             }}
                         >
@@ -186,13 +185,13 @@ const AreaSection = React.memo(function AreaSection({
 
     return (
         <Box
-            sx={{
+            style={{
                 height: `${area.percentHeight}%`,
                 marginBottom: '10px',
                 backgroundColor: C.area,
-                borderRadius: 1,
+                borderRadius: 4,
                 overflow: 'hidden',
-                boxShadow: 1,
+                boxShadow: 'var(--mantine-shadow-xs)',
                 display: 'flex',
                 flexDirection: 'column',
             }}
@@ -202,7 +201,7 @@ const AreaSection = React.memo(function AreaSection({
                 onClick={handleTitleClick}
                 onMouseEnter={handleTitleMouseEnter}
                 onMouseLeave={handleTitleMouseLeave}
-                sx={{
+                style={{
                     backgroundColor: titleBgColor,
                     color: isActive ? '#000' : '#fff',
                     padding: '8px 16px',
@@ -220,7 +219,8 @@ const AreaSection = React.memo(function AreaSection({
 
             {/* Driver Rows */}
             <Box
-                sx={{
+                className={classes.hiddenScrollbar}
+                style={{
                     position: 'relative',
                     overflow: 'auto',
                     flex: 1,
@@ -228,13 +228,9 @@ const AreaSection = React.memo(function AreaSection({
                     paddingTop: '22px',
                     display: 'flex',
                     flexDirection: 'column',
-                    // Hide scrollbar
-                    '&::-webkit-scrollbar': { display: 'none' },
-                    msOverflowStyle: 'none',
-                    scrollbarWidth: 'none',
                 }}
             >
-                <Box component="table" sx={{ width: '100%' }}>
+                <Box component="table" style={{ width: '100%' }}>
                     <tbody>
                         {filteredTop.map((section) => (
                             <DriverRow
@@ -290,17 +286,17 @@ export const DriverLocations = React.memo(function DriverLocations({
     const columns = driverLocations?.columns || [];
 
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Loading indicator */}
             {loading && (
-                <LinearProgress
-                    sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: 10,
-                    }}
+                // Mantine has no indeterminate bar; an animated full-width track is
+                // the busy affordance, named for assistive tech.
+                <Progress
+                    value={100}
+                    animated
+                    size="xs"
+                    aria-label="Loading driver locations"
+                    style={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10}}
                 />
             )}
 
@@ -309,14 +305,14 @@ export const DriverLocations = React.memo(function DriverLocations({
                 <NoData
                     title="No Driver Locations"
                     message="Please configure driver locations in Admin Manager to continue."
-                    icon={<PersonPinCircleOutlinedIcon/>}
+                    icon={<Icon tabler={IconUserPin}/>}
                 />
             )}
 
             {/* Data display */}
             {showData && (
                 <Box
-                    sx={{
+                    style={{
                         flex: 1,
                         overflow: 'auto',
                         padding: '4px',
@@ -324,18 +320,17 @@ export const DriverLocations = React.memo(function DriverLocations({
                 >
                     {/* Clear filter button - shown when an area is active */}
                     {activeAreaId && (
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                            <Tooltip title="Clear driver location filter">
-                                <IconButton
-                                    size="small"
+                        <Box style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                            <Tooltip label="Clear driver location filter">
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="md"
                                     onClick={handleClearFilter}
-                                    sx={{
-                                        backgroundColor: 'action.hover',
-                                        '&:hover': { backgroundColor: 'action.selected' },
-                                    }}
+                                    aria-label="Clear driver location filter"
                                 >
-                                    <ClearIcon fontSize="small" />
-                                </IconButton>
+                                    <Icon lucide={X} size={16} />
+                                </ActionIcon>
                             </Tooltip>
                         </Box>
                     )}
@@ -343,7 +338,7 @@ export const DriverLocations = React.memo(function DriverLocations({
                     {/* Three column layout */}
                     <Box
                         id="driverLocations"
-                        sx={{
+                        style={{
                             display: 'flex',
                             gap: '8px',
                             height: activeAreaId ? 'calc(100% - 40px)' : '100%',
@@ -352,7 +347,7 @@ export const DriverLocations = React.memo(function DriverLocations({
                         {columns.map((column, colIdx) => (
                             <Box
                                 key={colIdx}
-                                sx={{
+                                style={{
                                     flex: 1,
                                     minWidth: 0,
                                     display: 'flex',

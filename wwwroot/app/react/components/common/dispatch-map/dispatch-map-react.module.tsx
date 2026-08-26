@@ -11,7 +11,6 @@ import { DispatchMap } from './DispatchMap';
 import type { IDispatchMapItem, ClearListEnvelopeData } from './DispatchMap.types';
 import angular from 'angular';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React DispatchMap
@@ -74,19 +73,17 @@ class DispatchMapReactController implements angular.IController {
             : undefined;
 
         this.root.render(islandTree(
-            <MuiThemeIsland>
-                <DispatchMap
-                    jobs={this.jobs}
-                    currentJob={this.currentJob}
-                    mapCenter={this.mapCenter}
-                    mapZoom={this.mapZoom}
-                    onMarkerClick={handleMarkerClick}
-                    showAvailableCouriers={this.showAvailableCouriers}
-                    clearListId={this.clearListId}
-                    onEnvelopeUpdate={handleEnvelopeUpdate}
-                />
+            <DispatchMap
+                jobs={this.jobs}
+                currentJob={this.currentJob}
+                mapCenter={this.mapCenter}
+                mapZoom={this.mapZoom}
+                onMarkerClick={handleMarkerClick}
+                showAvailableCouriers={this.showAvailableCouriers}
+                clearListId={this.clearListId}
+                onEnvelopeUpdate={handleEnvelopeUpdate}
+            />
 
-            </MuiThemeIsland>
         ));
     }
 }

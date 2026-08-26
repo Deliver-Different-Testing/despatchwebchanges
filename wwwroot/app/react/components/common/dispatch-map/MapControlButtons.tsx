@@ -6,18 +6,10 @@
  */
 
 import React from 'react';
-import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
-import Divider from '@mui/material/Divider';
-import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap';
-import FitScreenIcon from '@mui/icons-material/FitScreen';
-import MapIcon from '@mui/icons-material/Map';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import EmergencyIcon from '@mui/icons-material/Emergency';
-import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import {ActionIcon, Divider, Paper, Tooltip} from '@mantine/core';
+import {Expand, EyeOff, Maximize, Minimize, Scan, Siren} from 'lucide-react';
+import {IconMap, IconTruck} from '@tabler/icons-react';
+import {Icon} from '../icon/Icon';
 import type { MapControlButtonsProps } from './DispatchMap.types';
 
 const ICON_SIZE = 20;
@@ -47,19 +39,27 @@ function ControlButton({
     const displayTooltip = active && activeTooltip ? activeTooltip : tooltip;
 
     return (
-        <Tooltip title={displayTooltip} placement="right">
+        // The <span> is load-bearing: a disabled button fires no pointer events, so
+        // without a wrapper the tooltip disappears exactly when the user most needs
+        // to know why the control is unavailable. Two of these disable together.
+        <Tooltip label={displayTooltip} position="right">
             <span>
-                <IconButton
-                    size="small"
+                <ActionIcon
+                    variant="subtle"
+                    color={active ? 'brand' : 'gray'}
+                    // 32px, matching the rail's original density.
+                    size="md"
+                    // The theme makes every ActionIcon a pill (radius 9999). These
+                    // are stacked flush in a rail with dividers between them, so
+                    // they must be square or the rail reads as detached lozenges.
+                    radius={0}
                     onClick={onClick}
                     disabled={disabled}
-                    color={active ? 'primary' : 'default'}
                     aria-label={ariaLabel}
                     data-active={active}
-                    sx={{borderRadius: 0, p: 0.75}}
                 >
                     {displayIcon}
-                </IconButton>
+                </ActionIcon>
             </span>
         </Tooltip>
     );
@@ -77,8 +77,9 @@ export function MapControlButtons({
 
     return (
         <Paper
-            elevation={3}
-            sx={{
+            shadow="md"
+            radius="sm"
+            style={{
                 position: 'absolute',
                 bottom: 20,
                 left: 10,
@@ -86,16 +87,20 @@ export function MapControlButtons({
                 pointerEvents: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
-                borderRadius: 1,
                 overflow: 'hidden',
-                bgcolor: 'background.paper',
             }}
         >
             <ControlButton
                 active={autoZoomEnabled}
                 onClick={onToggleAutoZoom}
-                icon={<ZoomOutMapIcon sx={{fontSize: ICON_SIZE}}/>}
-                activeIcon={<FitScreenIcon sx={{fontSize: ICON_SIZE}}/>}
+                // Expand/Scan rather than the dictionary's Maximize for ZoomOutMap:
+                // the large-view toggle below already owns Maximize, and two buttons
+                // in the same rail carrying the same glyph is unreadable.
+                // `data-control-icon` names each affordance — Lucide/Tabler emit no
+                // test hook where MUI auto-generated one (same reason
+                // `jobListIndicators` carries a `testId` per marker).
+                icon={<Icon lucide={Expand} size={ICON_SIZE} data-control-icon="auto-zoom-off"/>}
+                activeIcon={<Icon lucide={Scan} size={ICON_SIZE} data-control-icon="auto-zoom-on"/>}
                 tooltip="Auto Zoom Disabled"
                 activeTooltip="Auto Zoom Enabled"
                 ariaLabel="Toggle Auto Zoom"
@@ -105,8 +110,8 @@ export function MapControlButtons({
                 active={couriersOnlyEnabled}
                 disabled={couriersLargeViewEnabled}
                 onClick={onToggleCouriersOnly}
-                icon={<MapIcon sx={{fontSize: ICON_SIZE}}/>}
-                activeIcon={<LocalShippingIcon sx={{fontSize: ICON_SIZE}}/>}
+                icon={<Icon tabler={IconMap} size={ICON_SIZE} data-control-icon="pins-and-couriers"/>}
+                activeIcon={<Icon tabler={IconTruck} size={ICON_SIZE} data-control-icon="couriers-only"/>}
                 tooltip="Pins and Couriers"
                 activeTooltip="Couriers Only"
                 ariaLabel="Toggle Couriers Only"
@@ -116,8 +121,8 @@ export function MapControlButtons({
                 active={urgentArmyOnlyEnabled}
                 disabled={couriersLargeViewEnabled}
                 onClick={onToggleUrgentArmyOnly}
-                icon={<VisibilityOffIcon sx={{fontSize: ICON_SIZE}}/>}
-                activeIcon={<EmergencyIcon sx={{fontSize: ICON_SIZE}}/>}
+                icon={<Icon lucide={EyeOff} size={ICON_SIZE} data-control-icon="all-couriers"/>}
+                activeIcon={<Icon lucide={Siren} size={ICON_SIZE} data-control-icon="fleet-only"/>}
                 tooltip="Show All Couriers"
                 activeTooltip="Show Fleet Only"
                 ariaLabel="Toggle Urgent Army Filter"
@@ -126,8 +131,8 @@ export function MapControlButtons({
             <ControlButton
                 active={couriersLargeViewEnabled}
                 onClick={onToggleCouriersLargeView}
-                icon={<FullscreenExitIcon sx={{fontSize: ICON_SIZE}}/>}
-                activeIcon={<FullscreenIcon sx={{fontSize: ICON_SIZE}}/>}
+                icon={<Icon lucide={Minimize} size={ICON_SIZE} data-control-icon="normal-view"/>}
+                activeIcon={<Icon lucide={Maximize} size={ICON_SIZE} data-control-icon="large-view"/>}
                 tooltip="Normal View"
                 activeTooltip="Couriers Large View"
                 ariaLabel="Toggle Couriers Large View"

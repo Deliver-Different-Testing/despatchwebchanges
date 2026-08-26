@@ -21,7 +21,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     private readonly ITenantBrandingService _tenantBrandingServiceMock = Substitute.For<ITenantBrandingService>();
     private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
-    private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
+    private readonly IPodMediaService _podMediaServiceMock = Substitute.For<IPodMediaService>();
 
     public async ValueTask DisposeAsync()
     {
@@ -34,7 +34,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         _tenantBrandingServiceMock,
         _jobRepositoryMock,
         _noteRepositoryMock,
-        _jobPhotoServiceMock,
+        _podMediaServiceMock,
         _db.CreateFactoryMock()
     );
 
@@ -86,6 +86,25 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.GeneratePodSpreadsheetAsync(999));
         Assert.Contains("999", ex.Message);
+    }
+
+    [Fact]
+    public async Task GeneratePodReportAsync_ResolvesMediaForTheRequestedJobUsingItsCompletionMonth()
+    {
+        // POD-E4672MD.pdf came out with an empty signature box because the images were written
+        // against the DEL leg. The report has to ask for the family, keyed off the job the client
+        // downloaded — the media service owns the per-leg month from there.
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>()).Returns(new ReportBranding());
+        _jobRepositoryMock.GetSingleJobById(11).Returns(new JobViewModel
+        {
+            JobNo = "E4672MD",
+            CompletedTime = new DateTime(2026, 8, 7, 8, 35, 0)
+        });
+
+        await CreateService().GeneratePodReportAsync(11);
+
+        await _podMediaServiceMock.Received(1).GetDeliveryMediaAsync(11, 2026, 8);
     }
 
     [Fact]
@@ -303,7 +322,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task AppendDeliveryPhotosAsync_JobNotCompleted_ReturnsOriginalAndSkipsS3()
+    public async Task AppendDeliveryPhotosAsync_NoMediaAnywhereInTheFamily_ReturnsOriginalUnchanged()
     {
         _jobRepositoryMock.GetSingleJobById(5).Returns(new JobViewModel { CompletedTime = null });
         var pdf = CreateSamplePdf();
@@ -311,7 +330,25 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         var result = await CreateService().AppendDeliveryPhotosAsync(pdf, 5);
 
         Assert.Same(pdf, result);
-        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().GetDeliveryPhotosAsync(0, 0, 0);
+    }
+
+    [Fact]
+    public async Task AppendDeliveryPhotosAsync_ParentWithNoCompletionTime_StillSweepsTheFamily()
+    {
+        // The parent roll-up copies POD name and time off the completing leg, but it can be missing
+        // while the leg that captured the media is delivered. Bailing on the parent's own
+        // CompletedTime lost the POD entirely.
+        _jobRepositoryMock.GetSingleJobById(5).Returns(new JobViewModel { CompletedTime = null });
+
+        var png = Convert.ToBase64String(SamplePng());
+        _podMediaServiceMock.GetDeliveryMediaAsync(5, 0, 0).Returns(new List<S3PhotoInfo>
+        {
+            new() { S3Key = "DeliverySignatures/2026/03/7-s.png", Data = png, FileName = "7-s.png" }
+        });
+
+        var result = await CreateService().AppendDeliveryPhotosAsync(CreateSamplePdf(), 5);
+
+        Assert.Equal(2, PageCount(result));
     }
 
     [Fact]
@@ -321,7 +358,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
             .Returns(new JobViewModel { CompletedTime = new DateTime(2026, 3, 10) });
 
         var png = Convert.ToBase64String(SamplePng());
-        _jobPhotoServiceMock.GetDeliveryPhotosAsync(5, 2026, 3).Returns(new List<S3PhotoInfo>
+        _podMediaServiceMock.GetDeliveryMediaAsync(5, 2026, 3).Returns(new List<S3PhotoInfo>
         {
             new() { S3Key = "DeliveryPhotos/2026/03/5-a.png", Data = png, FileName = "5-a.png" },
             new() { S3Key = "DeliverySignatures/2026/03/5-s.png", Data = png, FileName = "5-s.png" }

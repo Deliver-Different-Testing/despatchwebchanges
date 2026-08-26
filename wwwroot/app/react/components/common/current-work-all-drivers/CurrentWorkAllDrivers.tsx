@@ -20,7 +20,6 @@ import {
 } from '@mantine/core';
 import { ArrowDownAZ, Search, X } from 'lucide-react';
 import { Icon } from '../icon/Icon';
-import { MuiThemeIsland } from '../mui-interop/MuiThemeIsland';
 import { NoData } from '../no-data';
 import { IDriverWorkOverview, SortOrder, CurrentWorkAllDriversProps } from './CurrentWorkAllDrivers.types';
 import classes from './CurrentWorkAllDrivers.module.css';
@@ -151,17 +150,14 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
             {/* Driver List */}
             <Box style={{ flex: 1, overflow: 'auto' }}>
                 {filteredAndSortedDrivers.length === 0 ? (
-                    // NoData is a shared MUI leaf that moves with its other hosts.
-                    <MuiThemeIsland>
-                        <NoData
-                            title={searchText ? 'No Drivers Found' : 'No Drivers Available'}
-                            message={
-                                searchText
-                                    ? `No drivers match "${searchText}"`
-                                    : 'No active drivers found'
-                            }
-                        />
-                    </MuiThemeIsland>
+                    <NoData
+                        title={searchText ? 'No Drivers Found' : 'No Drivers Available'}
+                        message={
+                            searchText
+                                ? `No drivers match "${searchText}"`
+                                : 'No active drivers found'
+                        }
+                    />
                 ) : (
                     <Box component="ul" className={classes.list}>
                         {filteredAndSortedDrivers.map((driver, index) => {

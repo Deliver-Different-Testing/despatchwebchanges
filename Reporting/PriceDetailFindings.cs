@@ -25,13 +25,17 @@ public static class PriceDetailFindings
                 var hasFuelLine =
                     job.Current.Any(l => l.ChargeName.Contains("Fuel", StringComparison.OrdinalIgnoreCase));
                 if (!hasFuelLine && Within(job.Header.HeaderAmount ?? 0m, implied))
+                {
                     findings.Add(new PriceFinding(no, "Header fuel, no fuel line",
                         $"Header {job.Header.HeaderAmount ?? 0m:C} = lines {job.CurrentLinesTotal:C} x1.25 but no fuel breakdown line (+{gap:C}).",
                         "High"));
+                }
                 else
+                {
                     findings.Add(new PriceFinding(no, "Header <> lines",
                         $"Header {job.Header.HeaderAmount ?? 0m:C} vs sum of lines {job.CurrentLinesTotal:C} (gap {gap:C}).",
                         "Medium"));
+                }
             }
 
             // 2. Duplicate near-identical lines (double-charge, e.g. "Milage to CT" twice).
@@ -50,8 +54,10 @@ public static class PriceDetailFindings
 
             // 4. Zone <-> Mileage restructure.
             if (!job.IsManual && job.RateBasis(booked: true) != job.RateBasis(booked: false))
+            {
                 findings.Add(new PriceFinding(no, "Rate basis changed",
                     $"{job.RateBasis(true)} -> {job.RateBasis(false)} since booking.", "Medium"));
+            }
         }
 
         // 5. Staff pricing-edit counts (summary block).
@@ -73,12 +79,16 @@ public static class PriceDetailFindings
         {
             if (Math.Abs(job.HeaderVsLinesGap) > AbsTolerance &&
                 !data.Findings.Any(f => f.JobNo == job.Header.JobNo && f.Type.StartsWith("Header")))
+            {
                 data.Findings.Add(new PriceFinding(job.Header.JobNo, "Invariant: lines<>header",
                     $"Unexplained {job.HeaderVsLinesGap:C} gap.", "Medium"));
+            }
 
             if (!job.IsManual && job.Booked.Count == 0)
+            {
                 data.Findings.Add(new PriceFinding(job.Header.JobNo, "Invariant: as-booked unrecoverable",
                     "No early journey rows to reconstruct as-booked pricing.", "Low"));
+            }
         }
     }
 

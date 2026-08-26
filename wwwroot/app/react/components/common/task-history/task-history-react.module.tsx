@@ -12,7 +12,6 @@ import {DeliveryJourney, DeliveryHistoryConfig} from './TaskHistory.interfaces';
 import {toastService} from '../../../services/toastService';
 import angular from 'angular';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React TaskHistory
@@ -56,18 +55,16 @@ class TaskHistoryReactController implements angular.IController {
             : undefined;
 
         this.root.render(islandTree(
-            <MuiThemeIsland>
-                <TaskHistory
-                    jobId={this.jobId}
-                    config={this.config}
-                    onDeliveryEventClick={handleDeliveryEventClick}
-                    showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
-                    showErrorToast={(msg) => toastService.showErrorToast(msg)}
-                    showInfoToast={(msg) => toastService.showInfoToast(msg)}
-                    isUsCustomer={this.appConfig.US_Customer}
-                />
+            <TaskHistory
+                jobId={this.jobId}
+                config={this.config}
+                onDeliveryEventClick={handleDeliveryEventClick}
+                showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
+                showErrorToast={(msg) => toastService.showErrorToast(msg)}
+                showInfoToast={(msg) => toastService.showInfoToast(msg)}
+                isUsCustomer={this.appConfig.US_Customer}
+            />
 
-            </MuiThemeIsland>
         ));
     }
 }

@@ -27,7 +27,7 @@ import classes from './TaskHistory.module.css';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {DeliveryHistoryConfig, DeliveryJourney, DensityMode, TaskHistoryProps,} from './TaskHistory.interfaces';
-import {type EventColorTone, getEventColorTone, getEventIcon} from './eventIcons';
+import {type EventColorTone, EventIcon, getEventColorTone} from './eventIcons';
 import {DeliveryEventDetailsDialog} from './DeliveryEventDetailsDialog';
 import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {formatCurrency} from '../../../utils/currencyUtils';
@@ -281,14 +281,11 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                 wrapper component would swallow it. */}
                             {deliveryEvents.map((event, index) => {
                                 const tone = getEventColorTone(event.icon);
-                                // An MUI icon component — the glyph name comes from the backend,
-                                // so `eventIcons` waits for the icon phase (§8) like `SymbolIcon`.
-                                const EventIcon = getEventIcon(event.icon);
                                 return (
                                     <Timeline.Item
                                         key={event.id}
                                         color={TONE_COLOR[tone]}
-                                        bullet={<EventIcon sx={{fontSize: spec.iconFontSize}}/>}
+                                        bullet={<EventIcon name={event.icon} size={spec.iconFontSize}/>}
                                         role="listitem"
                                         data-event-tone={tone}
                                         style={{

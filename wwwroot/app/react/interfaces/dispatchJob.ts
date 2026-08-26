@@ -168,6 +168,8 @@ export interface DispatchJob {
     childNotes?: string;
     pickupFrom?: number;
     rootParentId?: number;
+    /** The live job id behind a bulk row, whose own `id` is a BulkJobId. */
+    linkedJobId?: number;
     displaySplitJobDetail?: boolean;
     jobRelationshipTypeId?: number;
 

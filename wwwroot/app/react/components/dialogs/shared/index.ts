@@ -8,7 +8,5 @@ export type {DialogHeaderProps} from './DialogHeader';
 export {DialogFooter} from './DialogFooter';
 export type {DialogFooterProps} from './DialogFooter';
 export {sectionPaperSx, sectionLabelSx, dialogFieldSx} from './styles';
-export {PriceDelta} from './PriceDelta';
-export type {PriceDeltaProps} from './PriceDelta';
 export {AgentEmailFields} from './AgentEmailFields';
 export type {AgentEmailState} from './AgentEmailFields';

@@ -3,7 +3,7 @@
  * color, so a regression here would silently turn all events grey.
  */
 
-import {getEventColorTone, getEventIcon} from './eventIcons';
+import {EVENT_ICONS, getEventColorTone, getEventIconEntry} from './eventIcons';
 
 describe('getEventColorTone', () => {
     it('maps money / completion icons to success', () => {
@@ -61,12 +61,27 @@ describe('getEventColorTone', () => {
     });
 });
 
-describe('getEventIcon', () => {
-    it('returns the mapped component for known icon names', () => {
-        // Smoke-check that the lookup returns *something* (a function/component)
-        // for a representative known name and falls back for unknowns.
-        expect(typeof getEventIcon('local_shipping')).toBe('object');
-        expect(typeof getEventIcon('unknown_icon')).toBe('object');
-        expect(typeof getEventIcon(undefined)).toBe('object');
+describe('getEventIconEntry', () => {
+    it('every EVENT_ICONS entry carries a real component and a valid lib', () => {
+        const broken = Object.entries(EVENT_ICONS)
+            .filter(([, e]) => !e?.component || (e.lib !== 'lucide' && e.lib !== 'tabler'))
+            .map(([name]) => name);
+        expect(broken).toEqual([]);
+    });
+
+    it('returns a usable entry for known names, unknowns and nullish input', () => {
+        for (const input of ['local_shipping', 'unknown_icon', undefined, null]) {
+            const entry = getEventIconEntry(input);
+            expect(['lucide', 'tabler']).toContain(entry.lib);
+            expect(entry.component).toBeDefined();
+        }
+    });
+
+    it('falls back to the same entry for an unknown name and for nullish input', () => {
+        const fallback = getEventIconEntry('unknown_icon');
+        expect(getEventIconEntry(undefined)).toBe(fallback);
+        expect(getEventIconEntry(null)).toBe(fallback);
+        // and it is not one of the mapped glyphs
+        expect(Object.values(EVENT_ICONS)).not.toContain(fallback);
     });
 });
