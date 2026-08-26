@@ -7,24 +7,13 @@
  */
 
 import React, { useMemo } from 'react';
-import {alpha, useTheme} from '@mui/material/styles';
-import Autocomplete from '@mui/material/Autocomplete';
-import Box from '@mui/material/Box';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import List from '@mui/material/List';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import CheckBoxOutlineBlank from '@mui/icons-material/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import Close from '@mui/icons-material/Close';
-import Search from '@mui/icons-material/Search';
-import PersonOffOutlined from '@mui/icons-material/PersonOffOutlined';
-import SearchOffOutlined from '@mui/icons-material/SearchOffOutlined';
+import {
+    alpha, Box, CloseButton, Group, Loader, MultiSelect, Stack, Text, TextInput,
+    UnstyledButton, useMantineTheme,
+} from '@mantine/core';
+import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
+import classes from './DriversPanel.module.css';
 import { NoData } from '../../../components/common/no-data';
 import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
@@ -45,52 +34,33 @@ function StatCard({
     palette: 'primary' | 'info' | 'error';
     highlight?: boolean;
 }) {
-    const theme = useTheme();
-    const color = theme.palette[palette].main;
+    const theme = useMantineTheme();
+    // 'info' was MUI's Reflex Blue (#2a4eff) — the `reflex` ramp here, not the
+    // brand primary, so the three cards stay visually distinct.
+    const rampName = palette === 'primary' ? theme.primaryColor : palette === 'info' ? 'reflex' : 'red';
+    const color = (theme.colors[rampName] ?? theme.colors.gray)[5];
 
     return (
         <Box
-            sx={{
+            ta="center"
+            py={6}
+            px={4}
+            style={{
                 flex: 1,
-                textAlign: 'center',
-                py: 0.75,
-                px: 0.5,
-                borderRadius: 2,
-                bgcolor: highlight
-                    ? alpha(color, 0.1)
-                    : alpha(color, 0.05),
+                borderRadius: 'var(--mantine-radius-md)',
+                backgroundColor: alpha(color, highlight ? 0.1 : 0.05),
                 transition: 'background-color 200ms ease',
             }}
         >
-            <Typography
-                sx={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'text.secondary',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    lineHeight: 1.4,
-                }}
-            >
+            <Text fz={10} fw={600} c="dimmed" tt="uppercase" lh={1.4} style={{letterSpacing: '0.06em'}}>
                 {label}
-            </Typography>
-            <Typography
-                sx={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color,
-                    lineHeight: 1.2,
-                    fontVariantNumeric: 'tabular-nums',
-                }}
-            >
+            </Text>
+            <Text fz={18} fw={700} lh={1.2} style={{color, fontVariantNumeric: 'tabular-nums'}}>
                 {value}
-            </Typography>
+            </Text>
         </Box>
     );
 }
-
-const FLEET_CHECKBOX_BLANK = <CheckBoxOutlineBlank fontSize="small" />;
-const FLEET_CHECKBOX_CHECKED = <CheckBoxIcon fontSize="small" />;
 
 export function DriversPanel({
     drivers,
@@ -133,302 +103,166 @@ export function DriversPanel({
         });
     }, [drivers, searchTerm]);
 
+    // MultiSelect speaks strings; the fleet ids are numbers.
+    const fleetData = useMemo(
+        () => fleetOptions.map((f) => ({value: String(f.id), label: f.text})),
+        [fleetOptions],
+    );
+    const selectedFleetValues = useMemo(() => selectedFleetIds.map(String), [selectedFleetIds]);
+
     return (
         <Box
-            sx={{
+            w={PANEL_WIDTH}
+            style={{
                 position: 'absolute',
                 top: 16,
                 right: 16,
-                width: PANEL_WIDTH,
                 maxHeight: 'calc(100% - 32px)',
-                borderRadius: 2,
+                borderRadius: 'var(--mantine-radius-md)',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'visible',
                 zIndex: 50,
-                // Opaque surface + theme elevation to match the rest of the app;
-                // the shadow doubles as MD3 "busy background" protection over the map.
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-                boxShadow: 8,
-                transform: isPanelHidden
-                    ? 'translateX(calc(100% + 4px))'
-                    : 'translateX(0)',
+                // Opaque surface + elevation to match the rest of the app; the shadow
+                // doubles as MD3 "busy background" protection over the map.
+                backgroundColor: 'var(--mantine-color-body)',
+                border: '1px solid var(--mantine-color-default-border)',
+                boxShadow: 'var(--mantine-shadow-lg)',
+                transform: isPanelHidden ? 'translateX(calc(100% + 4px))' : 'translateX(0)',
                 transition: `transform ${ANIMATION_DURATION} ${ANIMATION_EASING}, box-shadow ${ANIMATION_DURATION} ${ANIMATION_EASING}`,
             }}
         >
             {/* Panel inner wrapper for overflow clipping */}
             <Box
-                sx={{
+                style={{
                     display: 'flex',
                     flexDirection: 'column',
                     minWidth: 0,
                     overflow: 'hidden',
-                    borderRadius: 2,
+                    borderRadius: 'var(--mantine-radius-md)',
                 }}
             >
                 {/* ── Header ────────────────────────── */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        px: 2.5,
-                        pt: 2,
-                        pb: 1.5,
-                        flexShrink: 0,
-                    }}
-                >
-                    <Typography
-                        variant="subtitle2"
-                        sx={{
-                            fontWeight: 700,
-                            fontSize: 14,
-                            letterSpacing: '-0.01em',
-                        }}
-                    >
+                <Group px={20} pt={16} pb={12} style={{flexShrink: 0}}>
+                    <Text fz={14} fw={700} style={{letterSpacing: '-0.01em'}}>
                         Drivers
-                    </Typography>
-                </Box>
+                    </Text>
+                </Group>
 
                 {/* ── Stats summary ─────────────────── */}
-                <Box sx={{ display: 'flex', gap: 0.75, px: 2, pb: 1.5, flexShrink: 0 }}>
-                    <StatCard
-                        label="Active"
-                        value={totalActiveDrivers}
-                        palette="primary"
-                    />
-                    <StatCard
-                        label="Jobs"
-                        value={stats.totalJobs}
-                        palette="info"
-                    />
+                <Group gap={6} px={16} pb={12} grow style={{flexShrink: 0}}>
+                    <StatCard label="Active" value={totalActiveDrivers} palette="primary" />
+                    <StatCard label="Jobs" value={stats.totalJobs} palette="info" />
                     <StatCard
                         label="Overdue"
                         value={stats.overdueCount}
                         palette="error"
                         highlight={stats.overdueCount > 0}
                     />
-                </Box>
+                </Group>
 
                 {/* ── Fleet filter ──────────────────── */}
-                <Box sx={{ px: 2, pb: 1, flexShrink: 0 }}>
-                    <Autocomplete
-                        multiple
-                        disableCloseOnSelect
-                        size="small"
-                        options={fleetOptions}
-                        loading={isFleetOptionsLoading}
-                        value={selectedFleets}
-                        getOptionLabel={(option) => option.text}
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                        onChange={(_, value) => onSelectedFleetIdsChange(value.map((v) => v.id))}
-                        renderOption={(props, option, { selected }) => {
-                            const {key, ...optionProps} = props as React.HTMLAttributes<HTMLLIElement> & { key: React.Key };
-                            return (
-                                <li key={key} {...optionProps}>
-                                    <Checkbox
-                                        icon={FLEET_CHECKBOX_BLANK}
-                                        checkedIcon={FLEET_CHECKBOX_CHECKED}
-                                        sx={{ mr: 1, p: 0.5 }}
-                                        checked={selected}
-                                    />
-                                    {option.text}
-                                </li>
-                            );
-                        }}
-                        renderValue={(value, getItemProps) =>
-                            value.map((option, index) => {
-                                const {key, ...itemProps} = getItemProps({ index });
-                                return (
-                                    <Chip
-                                        key={key}
-                                        label={option.text}
-                                        size="small"
-                                        {...itemProps}
-                                        sx={{ height: 22, fontSize: 11 }}
-                                    />
-                                );
-                            })
+                <Box px={16} pb={8} style={{flexShrink: 0}}>
+                    <MultiSelect
+                        size="xs"
+                        data={fleetData}
+                        value={selectedFleetValues}
+                        onChange={(values) => onSelectedFleetIdsChange(values.map(Number))}
+                        placeholder={selectedFleetIds.length === 0 ? 'All fleets' : ''}
+                        aria-label="Filter by fleet"
+                        searchable
+                        clearable
+                        // MultiSelect keeps its dropdown open across picks and renders the
+                        // selection as pills natively, so the MUI original's
+                        // disableCloseOnSelect, renderOption checkbox and renderValue Chip
+                        // all fall away. The check mark is the selected affordance.
+                        rightSection={
+                            isFleetOptionsLoading ? <Loader size={14} aria-label="Loading fleets" /> : undefined
                         }
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                placeholder={selectedFleets.length === 0 ? 'All fleets' : ''}
-                                aria-label="Filter by fleet"
-                            />
-                        )}
-                        sx={{ '& .MuiOutlinedInput-root': { fontSize: 13 } }}
+                        nothingFoundMessage="No fleets"
                     />
                 </Box>
 
                 {/* ── Search ────────────────────────── */}
-                <Box sx={{ px: 2, pb: 1, flexShrink: 0 }}>
-                    <TextField
-                        fullWidth
-                        size="small"
+                <Box px={16} pb={8} style={{flexShrink: 0}}>
+                    <TextInput
+                        size="xs"
                         placeholder="Search by name or code..."
                         value={searchInputValue}
-                        onChange={(e) => onSearchChange(e.target.value)}
+                        onChange={(e) => onSearchChange(e.currentTarget.value)}
                         aria-label="Search drivers"
-                        slotProps={{
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <Search
-                                            sx={{
-                                                fontSize: 18,
-                                                color: 'text.disabled',
-                                            }}
-                                        />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: searchInputValue ? (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => onSearchChange('')}
-                                            aria-label="Clear search"
-                                            edge="end"
-                                            sx={{ mr: -0.5 }}
-                                        >
-                                            <Close sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ) : null,
-                            },
-                        }}
-                        sx={{ '& .MuiOutlinedInput-root': { fontSize: 13 } }}
+                        leftSection={<Icon lucide={Search} size={16} />}
+                        rightSection={
+                            searchInputValue ? (
+                                <CloseButton
+                                    size="sm"
+                                    onClick={() => onSearchChange('')}
+                                    aria-label="Clear search"
+                                />
+                            ) : undefined
+                        }
                     />
                 </Box>
 
                 {/* ── List area ─────────────────────── */}
-                <Box
-                    sx={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        minHeight: 0,
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'rgba(0,0,0,0.12) transparent',
-                        '&::-webkit-scrollbar': { width: 5 },
-                        '&::-webkit-scrollbar-track': { background: 'transparent' },
-                        '&::-webkit-scrollbar-thumb': {
-                            background: 'rgba(0,0,0,0.12)',
-                            borderRadius: 3,
-                        },
-                        '&::-webkit-scrollbar-thumb:hover': {
-                            background: 'rgba(0,0,0,0.2)',
-                        },
-                    }}
-                >
-                    {/* Loading state */}
+                <Box className={classes.listArea} style={{flex: 1, overflowY: 'auto', minHeight: 0}}>
                     {isLoading && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                py: 5,
-                                gap: 1.5,
-                            }}
-                        >
-                            <CircularProgress
-                                size={32}
-                                thickness={4}
-                            />
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: "text.secondary",
-                                    fontSize: 13
-                                }}>
+                        <Stack align="center" gap={12} py={40}>
+                            <Loader size={32} aria-label="Loading drivers" />
+                            <Text fz={13} c="dimmed">
                                 Loading drivers...
-                            </Typography>
-                        </Box>
+                            </Text>
+                        </Stack>
                     )}
 
                     {/* Empty: no drivers at all */}
                     {!isLoading && drivers.length === 0 && (
                         <NoData
-                            icon={<PersonOffOutlined/>}
+                            icon={<Icon lucide={UserX} />}
                             title="No active drivers"
                             message="Drivers will appear when they log in"
                         />
                     )}
 
                     {/* Empty: search has no results */}
-                    {!isLoading &&
-                        drivers.length > 0 &&
-                        filteredDrivers.length === 0 && (
-                            <NoData
-                                icon={<SearchOffOutlined/>}
-                                title="No matches found"
-                                message="Try a different name or code"
-                            />
-                        )}
+                    {!isLoading && drivers.length > 0 && filteredDrivers.length === 0 && (
+                        <NoData
+                            icon={<Icon lucide={SearchX} />}
+                            title="No matches found"
+                            message="Try a different name or code"
+                        />
+                    )}
 
                     {/* Driver list */}
                     {!isLoading && filteredDrivers.length > 0 && (
-                        <List disablePadding sx={{ py: 0.5 }}>
+                        <Box component="ul" py={4} m={0} style={{listStyle: 'none', paddingInline: 0}}>
                             {filteredDrivers.map((driver) => (
-                                <DriverListItem
-                                    key={driver.courierId}
-                                    driver={driver}
-                                    onClick={() => onDriverClick(driver)}
-                                />
+                                <Box component="li" key={driver.courierId}>
+                                    <DriverListItem
+                                        driver={driver}
+                                        onClick={() => onDriverClick(driver)}
+                                    />
+                                </Box>
                             ))}
-                        </List>
+                        </Box>
                     )}
                 </Box>
             </Box>
+
             {/* ── Toggle handle ─────────────────── */}
-            <IconButton
+            <UnstyledButton
                 onClick={onTogglePanel}
                 aria-label="Toggle drivers panel"
-                size="small"
-                sx={{
-                    position: 'absolute',
-                    left: -22,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 22,
-                    height: 52,
-                    borderRadius: '10px 0 0 10px',
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRight: 'none',
-                    boxShadow: 4,
-                    zIndex: 51,
-                    // Keep the visual sliver narrow but extend the touch target to
-                    // ≥44px in both axes (Material's accessibility minimum).
-                    '&::after': {
-                        content: '""',
-                        position: 'absolute',
-                        top: -4,
-                        bottom: -4,
-                        left: -14,
-                        right: -8,
-                    },
-                    '&:hover': {
-                        bgcolor: 'background.surfaceContainer',
-                    },
-                    '&:active': {
-                        transform: 'translateY(-50%) scale(0.95)',
-                    },
-                }}
+                className={classes.toggleHandle}
+                data-hidden={isPanelHidden}
             >
-                <ChevronRight
-                    sx={{
-                        fontSize: 16,
-                        color: 'text.secondary',
-                        transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                        transform: isPanelHidden
-                            ? 'rotate(180deg)'
-                            : 'rotate(0deg)',
-                    }}
+                <Icon
+                    lucide={ChevronRight}
+                    size={16}
+                    className={classes.toggleChevron}
+                    color="var(--mantine-color-dimmed)"
                 />
-            </IconButton>
+            </UnstyledButton>
         </Box>
     );
 }

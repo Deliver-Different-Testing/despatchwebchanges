@@ -23,6 +23,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
     private readonly HttpClient _httpClient = new();
     private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
+    private readonly IPodMediaService _podMediaServiceMock = Substitute.For<IPodMediaService>();
     private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
     private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
@@ -72,6 +73,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
         _addStopJobServiceMock,
         _jobReportServiceMock,
         _jobPhotoServiceMock,
+        _podMediaServiceMock,
         _dispatchJobServiceMock,
         _deliveryJourneyServiceMock,
         _pricingPermissionServiceMock,

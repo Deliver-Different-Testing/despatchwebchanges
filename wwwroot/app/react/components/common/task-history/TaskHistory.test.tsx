@@ -422,12 +422,14 @@ describe('TaskHistory', () => {
             // Wait for events to load
             expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
-            // MUI icon components set data-testid to the PascalCase component name.
+            // EventIcon stamps the backend-supplied name it resolved. That is a
+            // stronger assertion than the old MUI `data-testid` (which named the
+            // component): it proves the backend string reached the DOM.
             // Mock events use: shopping_cart, local_shipping, directions_car, check_circle
-            expect(container.querySelector('[data-testid="ShoppingCartIcon"]')).toBeInTheDocument();
-            expect(container.querySelector('[data-testid="LocalShippingIcon"]')).toBeInTheDocument();
-            expect(container.querySelector('[data-testid="DirectionsCarIcon"]')).toBeInTheDocument();
-            expect(container.querySelector('[data-testid="CheckCircleIcon"]')).toBeInTheDocument();
+            expect(container.querySelector('[data-event-icon="shopping_cart"]')).toBeInTheDocument();
+            expect(container.querySelector('[data-event-icon="local_shipping"]')).toBeInTheDocument();
+            expect(container.querySelector('[data-event-icon="directions_car"]')).toBeInTheDocument();
+            expect(container.querySelector('[data-event-icon="check_circle"]')).toBeInTheDocument();
 
             // Each bullet carries the event's semantic tone, and Mantine fills it from the
             // Timeline.Item colour — the tone is exposed as a data attribute so this does
@@ -461,7 +463,12 @@ describe('TaskHistory', () => {
             const {container} = renderWithProviders(<TaskHistory {...props} />);
 
             expect(await screen.findByText('Unknown event')).toBeInTheDocument();
-            expect(container.querySelector('[data-testid="CircleIcon"]')).toBeInTheDocument();
+            // An unrecognised name still renders a bullet, stamped with what the
+            // backend sent. That the fallback glyph is specifically Circle is
+            // asserted in eventIcons.test.ts, next to the resolver.
+            const bullet = container.querySelector('[data-event-icon="not_a_real_icon_name"]');
+            expect(bullet).toBeInTheDocument();
+            expect(bullet?.tagName.toLowerCase()).toBe('svg');
         });
     });
 

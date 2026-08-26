@@ -13,7 +13,6 @@ import {ActionIcon, Drawer, Indicator, Tooltip} from '@mantine/core';
 import {useDisclosure} from '@mantine/hooks';
 import {Handshake} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {badgeOverflowStyle, toolbarIconButtonStyle} from '../../components/common/app-toolbar/ToolbarActions';
 import {useApproverInbox} from './useApproverInbox';
 import {useHasActivePartners} from './useHasActivePartners';
@@ -106,15 +105,12 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
                     body: {flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'},
                 }}
             >
-                {/* The inbox itself is still MUI — migration Phase 8. */}
-                <MuiThemeIsland>
-                    <PartnerApprovalsInbox
-                        onOpenJob={(jobId, jobNo) => {
-                            onOpenJob?.(jobId, jobNo);
-                            close();
-                        }}
-                    />
-                </MuiThemeIsland>
+                <PartnerApprovalsInbox
+                    onOpenJob={(jobId, jobNo) => {
+                        onOpenJob?.(jobId, jobNo);
+                        close();
+                    }}
+                />
             </Drawer>
         </>
     );

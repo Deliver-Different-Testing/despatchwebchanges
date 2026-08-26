@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
+import {Box} from '@mantine/core';
 
 /** Static brand mark, served from wwwroot/images. Used in headers/badges. */
 export const AUTO_MATE_LOGO_SRC = 'images/auto-mate.png';
@@ -34,7 +34,12 @@ export const AutoMateLogo: React.FC<AutoMateLogoProps> = ({size = 24, animated =
         component="img"
         src={animated ? AUTO_MATE_LOGO_ANIMATED_SRC : AUTO_MATE_LOGO_SRC}
         alt="Auto-mate"
-        sx={{
+        // width/height in `style`, not Mantine's `w`/`h` props: a numeric style
+        // prop is emitted as `calc(Xrem * var(--mantine-scale))`, so the logo
+        // would rescale with the user's rem while the `Icon` glyphs beside it —
+        // sized by a literal-px SVG attribute — would not. `size` is px by
+        // contract, so keep it literal.
+        style={{
             width: size,
             height: size,
             objectFit: 'contain',

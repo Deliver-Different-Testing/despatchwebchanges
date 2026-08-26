@@ -136,6 +136,21 @@ describe('usePodPhotos', () => {
         expect(result.current.pickupPhotos).toHaveLength(1);
     });
 
+    it('uses linkedJobId for the S3 lookup when the panel is showing a bulk job', async () => {
+        // A bulk row's `id` is a BulkJobId, which never matches the `{jobId}-` S3 key prefix. The
+        // linked live job id is the only one the courier device wrote media against.
+        const job = createMockJob({id: 5001, linkedJobId: 100});
+        mockGetDeliveryPhotos.mockResolvedValueOnce([createMockPhotoData()] as any);
+        mockGetPickupPhotos.mockResolvedValueOnce([] as any);
+
+        const {result} = renderUsePodPhotos({job, isRecurringJob: false});
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(mockGetDeliveryPhotos).toHaveBeenCalledWith(100, 2024, 6, expect.anything());
+        expect(mockGetPickupPhotos).toHaveBeenCalledWith(100, 2024, 6, expect.anything());
+    });
+
     it('processes photo data correctly with base64 to data URL conversion', async () => {
         const job = createMockJob();
         mockGetDeliveryPhotos.mockResolvedValueOnce([createMockPhotoData({data: 'abc123'})] as any);

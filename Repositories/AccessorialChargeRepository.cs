@@ -40,7 +40,8 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             Created = jac.Created
         };
 
-    public async Task<IReadOnlyList<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId, int jobId) =>
+    public async Task<IReadOnlyList<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId,
+        int jobId) =>
         await Context.AccessorialChargeGroupMembers
             .Where(acgm => acgm.AccessorialChargeGroupId == accessorialChargeGroupId)
             .Select(acgm => acgm.AccessorialCharge)
@@ -80,26 +81,7 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             .ToListAsync();
 
         var alwaysApplyIds = await GetAlwaysApplyChargeIdsAsync(jobId);
-        return charges.Select(c => c with { AlwaysApply = alwaysApplyIds.Contains(c.AccessorialChargeId) }).ToList();
-    }
-
-    // Which AccessorialChargeIds are AlwaysApply members of this job's current
-    // AccessorialChargeGroupId - used to lock the "remove" action in the dialog.
-    private async Task<HashSet<int>> GetAlwaysApplyChargeIdsAsync(int jobId)
-    {
-        var groupId = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => j.AccessorialChargeGroupId)
-            .FirstOrDefaultAsync();
-
-        if (groupId == null)
-            return new HashSet<int>();
-
-        return (await Context.AccessorialChargeGroupMembers
-            .Where(m => m.AccessorialChargeGroupId == groupId.Value && m.AlwaysApply)
-            .Select(m => m.AccessorialChargeId)
-            .ToListAsync())
-            .ToHashSet();
+        return [.. charges.Select(c => c with { AlwaysApply = alwaysApplyIds.Contains(c.AccessorialChargeId) })];
     }
 
     public async Task AddChargeAsync(int jobId, JobAccessorialChargeCreateRequest request, string userName)
@@ -164,6 +146,29 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
                     Label = i < labels.Length ? labels[i] : $"Portion {i + 1}",
                     AccessorialChargeGroupId = j.AccessorialChargeGroupId
                 })
+        ];
+    }
+
+    // Which AccessorialChargeIds are AlwaysApply members of this job's current
+    // AccessorialChargeGroupId - used to lock the "remove" action in the dialog.
+    private async Task<HashSet<int>> GetAlwaysApplyChargeIdsAsync(int jobId)
+    {
+        var groupId = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.AccessorialChargeGroupId)
+            .FirstOrDefaultAsync();
+
+        if (groupId == null)
+        {
+            return [];
+        }
+
+        return
+        [
+            .. await Context.AccessorialChargeGroupMembers
+                .Where(m => m.AccessorialChargeGroupId == groupId.Value && m.AlwaysApply)
+                .Select(m => m.AccessorialChargeId)
+                .ToListAsync()
         ];
     }
 }

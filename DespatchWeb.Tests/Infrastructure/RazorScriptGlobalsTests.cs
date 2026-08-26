@@ -59,7 +59,10 @@ public class RazorScriptGlobalsTests
         foreach (var line in IndexViewLines)
         {
             var match = pattern.Match(line);
-            if (match.Success) return match.Groups["value"].Value;
+            if (match.Success)
+            {
+                return match.Groups["value"].Value;
+            }
         }
 
         throw new InvalidOperationException(

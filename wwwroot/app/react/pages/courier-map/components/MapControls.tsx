@@ -8,60 +8,61 @@
  */
 
 import React from 'react';
-import Paper from '@mui/material/Paper';
-import IconButton from '@mui/material/IconButton';
-import Divider from '@mui/material/Divider';
-import Tooltip from '@mui/material/Tooltip';
-import CircularProgress from '@mui/material/CircularProgress';
-import FitScreenIcon from '@mui/icons-material/FitScreen';
-import SyncIcon from '@mui/icons-material/Sync';
+import {ActionIcon, Divider, Loader, Paper, Tooltip} from '@mantine/core';
+import {RefreshCw, Scan} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
 import type { MapControlsProps } from '../CourierMapPage.types';
 
 const ICON_SIZE = 20;
-const buttonSx = { borderRadius: 0, p: 0.75 } as const;
+
+/**
+ * Square (the theme's pill radius would break a flush-stacked rail into detached
+ * lozenges) and 32px, matching the dispatch rail's density.
+ */
+const railButtonProps = {
+    variant: 'subtle',
+    color: 'gray',
+    size: 'md',
+    radius: 0,
+} as const;
 
 export function MapControls({ onFitAll, onRefresh, isLoading }: MapControlsProps) {
     return (
         <Paper
-            elevation={3}
-            sx={{
+            shadow="md"
+            radius="sm"
+            style={{
                 position: 'absolute',
                 top: 16,
                 left: 10,
                 zIndex: 10,
                 display: 'flex',
                 flexDirection: 'column',
-                borderRadius: 1,
                 overflow: 'hidden',
-                bgcolor: 'background.paper',
             }}
         >
-            <Tooltip title="Fit all drivers in view" placement="right">
-                <IconButton
-                    size="small"
-                    onClick={onFitAll}
-                    aria-label="Return to overview"
-                    sx={buttonSx}
-                >
-                    <FitScreenIcon sx={{ fontSize: ICON_SIZE }} />
-                </IconButton>
+            <Tooltip label="Fit all drivers in view" position="right">
+                <ActionIcon {...railButtonProps} onClick={onFitAll} aria-label="Return to overview">
+                    <Icon lucide={Scan} size={ICON_SIZE} />
+                </ActionIcon>
             </Tooltip>
             <Divider />
-            <Tooltip title="Refresh locations" placement="right">
+            {/* The <span> is load-bearing: a disabled button fires no pointer events,
+                so without a wrapper the tooltip vanishes while a refresh is in flight. */}
+            <Tooltip label="Refresh locations" position="right">
                 <span>
-                    <IconButton
-                        size="small"
+                    <ActionIcon
+                        {...railButtonProps}
                         onClick={onRefresh}
                         disabled={isLoading}
                         aria-label="Refresh data"
-                        sx={buttonSx}
                     >
                         {isLoading ? (
-                            <CircularProgress size={ICON_SIZE} color="inherit" />
+                            <Loader size={ICON_SIZE} color="currentColor" aria-label="Refreshing locations" />
                         ) : (
-                            <SyncIcon sx={{ fontSize: ICON_SIZE }} />
+                            <Icon lucide={RefreshCw} size={ICON_SIZE} />
                         )}
-                    </IconButton>
+                    </ActionIcon>
                 </span>
             </Tooltip>
         </Paper>

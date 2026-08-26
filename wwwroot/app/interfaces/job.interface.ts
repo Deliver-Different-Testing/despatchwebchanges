@@ -153,6 +153,8 @@ export interface IJob {
     oneOff?: boolean;
     preBook: boolean;
     isBulkJob: boolean;
+    /** The live job id behind a bulk row, whose own `id` is a BulkJobId. */
+    linkedJobId?: number;
     runName: string;
     scheduleName: string;
     conNote: string;
@@ -378,6 +380,8 @@ export interface IJobDto {
     oneOff?: boolean;
     preBook: boolean;
     isBulkJob: boolean;
+    /** The live job id behind a bulk row, whose own `id` is a BulkJobId. */
+    linkedJobId?: number;
     runName: string;
     scheduleName: string;
     conNote: string;

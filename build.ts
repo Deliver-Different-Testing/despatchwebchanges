@@ -400,8 +400,8 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
 
             // ── MUI: redirect to the vendor-react globals so module bundles don't
             // each embed their own copy of MUI + Emotion. vendor-react exposes
-            // window.MUI (@mui/material barrel), window.MUIStyles
-            // (@mui/material/styles) and window.MUIXDatePickers.
+            // window.MUI (@mui/material barrel) and window.MUIStyles
+            // (@mui/material/styles).
 
             // @mui/material/styles — named utilities (register before the general
             // component handler so it wins the resolve for this exact specifier).
@@ -440,21 +440,6 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                     };
                 }
                 return {contents: `export default window.MUI.${name};`, loader: "js"};
-            });
-
-            // @mui/x-date-pickers/<Export> — named import matching the last segment
-            // (LocalizationProvider, AdapterDayjs, DatePicker, DateCalendar, ...).
-            build.onResolve({filter: /^@mui\/x-date-pickers\/[^/]+$/}, (args) => ({
-                path: args.path,
-                namespace: "muix-shim",
-            }));
-
-            build.onLoad({filter: /.*/, namespace: "muix-shim"}, (args) => {
-                const name = args.path.slice("@mui/x-date-pickers/".length);
-                return {
-                    contents: pureExport(name, `window.MUIXDatePickers.${name}`),
-                    loader: "js",
-                };
             });
         },
     };
@@ -513,10 +498,10 @@ function getBuildConfig(
         plugins.unshift(createGlobalShimPlugin(false));
         plugins.unshift(createReactGlobalShimPlugin());
     } else if (bundleType === "vendor-react") {
-        // vendor-react bundles MUI (incl. x-date-pickers' AdapterDayjs); redirect
-        // dayjs to the single window.dayjs configured in vendor-core so the date
-        // pickers share the app's dayjs plugins/timezone setup rather than a
-        // second, unconfigured dayjs instance.
+        // vendor-react bundles MUI and Mantine; redirect dayjs to the single
+        // window.dayjs configured in vendor-core so @mantine/dates shares the
+        // app's dayjs plugins/timezone setup rather than a second, unconfigured
+        // dayjs instance.
         plugins.unshift(createGlobalShimPlugin(false));
     }
     // vendor-core doesn't need shims - it bundles its own dependencies
@@ -616,7 +601,7 @@ function generateSimpleManifest(): Record<string, string> {
 // a build go green.
 const TOTAL_JS_BUDGET = 10_500_000;
 const bundleBudgets: Partial<Record<EntryPointName, number>> = {
-    "vendor-react": 1_930_000,
+    "vendor-react": 1_700_000,
     "vendor-core": 1_000_000,
     app: 580_000,
     home: 465_000,

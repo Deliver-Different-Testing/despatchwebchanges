@@ -1,14 +1,7 @@
 import React from 'react';
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Collapse from '@mui/material/Collapse';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import {Alert, Box, Button, Collapse, Group, Paper, Stack, Text, Title} from '@mantine/core';
+import {CircleAlert, RefreshCw} from 'lucide-react';
+import {Icon} from '../icon/Icon';
 
 interface ErrorBoundaryProps {
     children: React.ReactNode;
@@ -94,73 +87,61 @@ function FallbackPanel({error, componentStack, onReset}: FallbackPanelProps) {
 
     return (
         <Box
-            sx={{
+            p={24}
+            w="100%"
+            h="100%"
+            bg="var(--mantine-color-gray-0)"
+            style={{
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'center',
-                p: 3,
-                width: '100%',
-                height: '100%',
-                bgcolor: 'grey.50',
                 overflow: 'auto',
             }}
         >
-            <Paper
-                elevation={2}
-                sx={{
-                    p: 3,
-                    borderRadius: 2,
-                    maxWidth: 720,
-                    width: '100%',
-                }}
-            >
-                <Stack spacing={2}>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-                        <ErrorOutlineIcon color="error" sx={{fontSize: 32}}/>
+            <Paper shadow="sm" p={24} maw={720} w="100%">
+                <Stack gap={16}>
+                    <Group gap={12} align="center" wrap="nowrap">
+                        <Icon lucide={CircleAlert} size={32} color="var(--mantine-color-red-6)"/>
                         <Box>
-                            <Typography variant="h6" component="h2" sx={{
-                                fontWeight: 600
-                            }}>
+                            <Title order={2} size="h6">
                                 Something Went Wrong
-                            </Typography>
-                            <Typography variant="body2" sx={{
-                                color: "text.secondary"
-                            }}>
+                            </Title>
+                            <Text size="sm" c="dimmed">
                                 An unexpected error occurred in this page. Please try refreshing.
-                            </Typography>
+                            </Text>
                         </Box>
-                    </Box>
+                    </Group>
 
-                    <Alert severity="error" variant="outlined">
-                        <AlertTitle>Error</AlertTitle>
+                    {/* role="alert" is correct here — this genuinely is an error announcement. */}
+                    <Alert color="red" variant="outline" title="Error">
                         {errorMessage}
                     </Alert>
 
                     <Box>
-                        <Button
-                            size="small"
-                            onClick={() => setShowDetails((v) => !v)}
-                            sx={{textTransform: 'none'}}
-                        >
+                        <Button variant="subtle" size="xs" onClick={() => setShowDetails((v) => !v)}>
                             {showDetails ? 'Hide details' : 'Show details'}
                         </Button>
-                        <Collapse in={showDetails} unmountOnExit>
+                        <Collapse expanded={showDetails}>
                             <Box
                                 component="pre"
-                                sx={{
-                                    mt: 1,
-                                    p: 1.5,
-                                    bgcolor: 'grey.100',
-                                    border: 1,
-                                    borderColor: 'grey.300',
-                                    borderRadius: 1,
-                                    fontSize: '0.75rem',
-                                    fontFamily: 'monospace',
+                                p={12}
+                                m={0}
+                                fz="xs"
+                                ff="monospace"
+                                bg="var(--mantine-color-gray-1)"
+                                // marginTop lives in `style`, not an `mt` prop: `m={0}`
+                                // kills the browser's default <pre> margin and the two
+                                // style props emit inline styles in no guaranteed order.
+                                // (The MUI original had the same pair, where `m: 0` came
+                                // last in the sx object and silently ate its `mt: 1`.)
+                                style={{
+                                    marginTop: 8,
+                                    border: '1px solid var(--mantine-color-gray-3)',
+                                    borderRadius: 'var(--mantine-radius-sm)',
                                     whiteSpace: 'pre-wrap',
                                     wordBreak: 'break-word',
                                     maxHeight: 320,
                                     overflow: 'auto',
-                                    m: 0,
                                 }}
                             >
                                 {errorStack}
@@ -169,17 +150,15 @@ function FallbackPanel({error, componentStack, onReset}: FallbackPanelProps) {
                         </Collapse>
                     </Box>
 
-                    <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 1}}>
+                    <Group justify="flex-end" gap={8}>
                         <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<RefreshIcon/>}
+                            leftSection={<Icon lucide={RefreshCw}/>}
                             onClick={onReset}
-                            sx={{minWidth: 120, textTransform: 'none'}}
+                            miw={120}
                         >
                             Try again
                         </Button>
-                    </Box>
+                    </Group>
                 </Stack>
             </Paper>
         </Box>

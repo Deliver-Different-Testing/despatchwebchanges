@@ -135,7 +135,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                             }}
                         >
                             <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 1}}>
-                                <SymbolIcon name="timeline" sx={{fontSize: 16}} />
+                                <SymbolIcon name="timeline" size={16} />
                                 <Typography variant="caption" sx={{fontWeight: 600}}>
                                     Delivery Route
                                 </Typography>
@@ -224,7 +224,7 @@ const TimelineNode: React.FC<{
             }}
         >
             {icon ? (
-                <SymbolIcon name={icon} sx={{fontSize: 18}} />
+                <SymbolIcon name={icon} size={18} />
             ) : (
                 number
             )}
@@ -259,7 +259,7 @@ const TimelineNode: React.FC<{
 const TimelineConnection: React.FC = () => (
     <Box sx={{display: 'flex', alignItems: 'center', mx: 0.25}}>
         <Box sx={{width: 16, height: 2, bgcolor: 'grey.300'}} />
-        <SymbolIcon name="chevron_right" sx={{fontSize: 14, color: 'rgba(0,0,0,0.26)'}} />
+        <SymbolIcon name="chevron_right" size={14} color="rgba(0,0,0,0.26)" />
     </Box>
 );
 

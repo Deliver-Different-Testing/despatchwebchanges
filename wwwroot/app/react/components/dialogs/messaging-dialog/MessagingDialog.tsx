@@ -58,7 +58,7 @@ import {
 } from './types';
 import {messagingApi} from '../../../services/messagingApi';
 import {dayjs, parseDateFromApi} from '../../../utils/dateUtils';
-import {AiDraftButton} from '../../common/ai-draft-button/AiDraftButton';
+import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
 import {useAiDraft} from '../../../hooks/useAiDraft';
 import {draftCourierMessage} from '../../../services/aiAssistantApi';
 import {

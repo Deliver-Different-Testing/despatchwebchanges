@@ -8,7 +8,6 @@ import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {AppShell} from './AppShell';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../mui-interop/MuiThemeIsland';
 import type {BreadcrumbItem} from '../app-toolbar/AppToolbar';
 import {
     MessagesButton,
@@ -25,8 +24,6 @@ import {
 import {ToolbarActionsBar, ToolbarActionItem} from '../app-toolbar/ToolbarActionsBar';
 import {MessageSquare, RefreshCw, Settings as SettingsGlyph} from 'lucide-react';
 import {Icon} from '../icon/Icon';
-import angular from 'angular';
-import {openHubUrl} from '../../../services/navigationService';
 import {PartnerApprovalsBadge} from '../../../pages/partner-approvals/PartnerApprovalsBadge';
 
 // Toolbar Actions Configuration
@@ -169,16 +166,13 @@ function buildToolbarChildren(): React.ReactNode {
         items.push({
             key: 'dateFilter',
             node: (
-                // Still MUI — migration Phase 5.
-                <MuiThemeIsland>
-                    <DateFilterMenu
-                        dateFilterData={toolbarActions.dateFilter.data}
-                        appPage={toolbarActions.dateFilter.appPage}
-                        timeZone={toolbarActions.dateFilter.timeZone}
-                        onRefreshData={toolbarActions.dateFilter.onRefreshData}
-                        onShowToast={toolbarActions.dateFilter.onShowToast}
-                    />
-                </MuiThemeIsland>
+                <DateFilterMenu
+                    dateFilterData={toolbarActions.dateFilter.data}
+                    appPage={toolbarActions.dateFilter.appPage}
+                    timeZone={toolbarActions.dateFilter.timeZone}
+                    onRefreshData={toolbarActions.dateFilter.onRefreshData}
+                    onShowToast={toolbarActions.dateFilter.onShowToast}
+                />
             ),
         });
     }

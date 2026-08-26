@@ -78,6 +78,13 @@ public interface IJobQueryRepository
 
     Task<JobGroupViewModel> GetJobByIdAsync(int jobId);
     Task<JobViewModel?> GetSingleJobById(int jobId);
+
+    /// <summary>
+    /// Every job whose id may key this job's POD media in S3 — itself, plus its non-void legs when
+    /// it is the family root.
+    /// </summary>
+    Task<IReadOnlyList<PodMediaLeg>> GetPodMediaLegsAsync(int jobId);
+
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
     Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(

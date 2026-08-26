@@ -1,0 +1,23 @@
+/*
+ * The Advanced toggle: a text button whose chevron flips when the section opens.
+ * The chevron's resting rotation lives here so the transition has something to
+ * animate from, and its open state is driven by a data attribute — both are
+ * descendant/state rules a prop on the button cannot express.
+ */
+.advancedToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0;
+    min-width: 0;
+    background: transparent;
+}
+
+.advancedChevron {
+    transform: rotate(0deg);
+    transition: transform 200ms ease;
+}
+
+.advancedChevron[data-open='true'] {
+    transform: rotate(180deg);
+}

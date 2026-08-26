@@ -191,6 +191,50 @@ describe('RouterConfig', () => {
         });
     });
 
+    describe('Angular Material containers on React-only states', () => {
+        beforeEach(() => {
+            new RouterConfig(
+                mockUrlRouterProvider as any,
+                mockStateProvider as any
+            );
+        });
+
+        // The React-rendered states used to wrap their island in
+        // <md-content class="md-dense">, which pulled Angular Material's
+        // container styles (and its md-dense density scale) onto pages that
+        // render no Angular Material components at all. The classic AngularJS
+        // states (home, jobSearch, nw) keep their own templates.
+        const reactOnlyStates = [
+            'dispatchV2',
+            'jobSearchV2',
+            'recurringJobs',
+            'overview',
+            'taskDashboard',
+            'driverManagement',
+            'courierMap',
+        ];
+
+        it.each(reactOnlyStates)('%s renders no md-content wrapper', (stateName) => {
+            const state = registeredStates.get(stateName);
+            expect(state.template).not.toContain('md-content');
+            expect(state.template).not.toContain('md-dense');
+        });
+
+        it('recurringJobs drops the md-card margin override', () => {
+            // The override targeted Angular Material cards; the panel is a
+            // React island, so there is no md-card left to reset.
+            const state = registeredStates.get('recurringJobs');
+            expect(state.template).not.toContain('md-card');
+        });
+
+        it('keeps the full-height sizing the wrapper used to provide', () => {
+            for (const stateName of ['dispatchV2', 'jobSearchV2', 'overview', 'driverManagement']) {
+                const state = registeredStates.get(stateName);
+                expect(state.template).toContain('height: 100%');
+            }
+        });
+    });
+
     describe('Nationwide State Configuration', () => {
         beforeEach(() => {
             new RouterConfig(

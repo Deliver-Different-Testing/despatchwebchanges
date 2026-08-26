@@ -389,6 +389,56 @@ public class JobPhotoServiceTests
         Assert.Contains(result, p => p.S3Key == decKey);
     }
 
+    [Fact]
+    public async Task GetDeliveryPhotosAsync_SignatureInTheCompletionMonthAndPhotoInTheNext_ReturnsBoth()
+    {
+        // Signatures are searched before photos, so an early exit that tested the shared accumulator
+        // let the first signature hit stop the photo folder before its adjacent months were tried.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string signatureKey = "DeliverySignatures/2026/08/1-20260807083500.jpg";
+        const string photoKey = "DeliveryPhotos/2026/09/1-20260901000200.jpg";
+        StubObjectsByPrefix(
+            ("DeliverySignatures/2026/08/1-", signatureKey),
+            ("DeliveryPhotos/2026/09/1-", photoKey));
+
+        // Act
+        var result = await service.GetDeliveryPhotosAsync(1, 2026, 8);
+
+        // Assert
+        Assert.Contains(result, p => p.S3Key == signatureKey);
+        Assert.Contains(result, p => p.S3Key == photoKey);
+    }
+
+    // Places one object under each given prefix, so media can be spread across folders and months.
+    private void StubObjectsByPrefix(params (string Prefix, string Key)[] placements)
+    {
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                var objects = placements
+                    .Where(p => p.Prefix == req!.Prefix)
+                    .Select(p => new S3Object { Key = p.Key, Size = 3 })
+                    .ToList();
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+
+        _s3ClientMock.GetObjectAsync(Arg.Any<GetObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<GetObjectRequest>();
+                var response = new GetObjectResponse
+                {
+                    Key = req!.Key,
+                    ResponseStream = new MemoryStream([1, 2, 3])
+                };
+                response.Metadata.Add("FileName", Path.GetFileName(req.Key));
+                return response;
+            });
+    }
+
     // Returns the given object only for the matching prefix (and downloads a small image body
     // for it), so a photo can be placed in exactly one month folder.
     private void StubSingleObjectForPrefix(string prefix, string key)

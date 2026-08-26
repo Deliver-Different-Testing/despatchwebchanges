@@ -1,39 +1,40 @@
 echo "Running tests before push..."
 
+# husky runs this hook via `sh -e`, so a bare failing command aborts the script
+# immediately. Every check below is therefore written as `if ! cmd; then ... fi`
+# -- a command in an `if` condition is exempt from `set -e`, which is what lets
+# the integration step stay advisory and lets the blocking steps print their
+# own message before exiting.
+
 # Run ESLint
 echo "Running ESLint..."
-npm run lint
-if [ $? -ne 0 ]; then
+if ! npm run lint; then
     echo "ESLint failed. Push aborted."
     exit 1
 fi
 
 # Run TypeScript type-check
 echo "Running TypeScript type-check..."
-npm run type-check
-if [ $? -ne 0 ]; then
+if ! npm run type-check; then
     echo "TypeScript type-check failed. Push aborted."
     exit 1
 fi
 
 # Run .NET tests
-dotnet test --no-build --verbosity minimal
-if [ $? -ne 0 ]; then
+if ! dotnet test --no-build --verbosity minimal; then
     echo ".NET tests failed. Push aborted."
     exit 1
 fi
 
 # Run Jest unit tests
-npx jest --silent
-if [ $? -ne 0 ]; then
+if ! npx jest --silent; then
     echo "Jest unit tests failed. Push aborted."
     exit 1
 fi
 
 # Run Jest integration tests using dedicated integration config
 echo "Running integration tests..."
-npx jest --silent --config jest.integration.config.js
-if [ $? -ne 0 ]; then
+if ! npx jest --silent --config jest.integration.config.js; then
     echo "⚠ Some integration tests failed (non-blocking). Review output above."
 fi
 

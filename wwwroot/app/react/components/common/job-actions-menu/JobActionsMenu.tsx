@@ -51,7 +51,7 @@ export function JobActionsMenu<TActionId extends string>({actions, currentJob, o
                         <Menu.Item
                             key={action.id}
                             onClick={() => onAction?.(action.id, currentJob)}
-                            leftSection={<SymbolIcon name={action.icon} sx={{fontSize: 20}} aria-hidden/>}
+                            leftSection={<SymbolIcon name={action.icon} size={20} aria-hidden/>}
                         >
                             {action.label}
                         </Menu.Item>

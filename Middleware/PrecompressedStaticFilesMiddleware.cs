@@ -19,7 +19,7 @@ public class PrecompressedStaticFilesMiddleware(
     private static readonly (string Token, string Extension)[] EncodingsByPreference =
     [
         ("br", ".br"),
-        ("gzip", ".gz"),
+        ("gzip", ".gz")
     ];
 
     private readonly string _root = Path.GetFullPath(options.PhysicalPath);
@@ -76,9 +76,15 @@ public class PrecompressedStaticFilesMiddleware(
 
     private (string Token, string Extension)? Negotiate(StringValues acceptEncoding, string relative)
     {
-        if (StringValues.IsNullOrEmpty(acceptEncoding)) return null;
+        if (StringValues.IsNullOrEmpty(acceptEncoding))
+        {
+            return null;
+        }
 
-        if (!StringWithQualityHeaderValue.TryParseList(acceptEncoding, out var accepted)) return null;
+        if (!StringWithQualityHeaderValue.TryParseList(acceptEncoding, out var accepted))
+        {
+            return null;
+        }
 
         foreach (var candidate in EncodingsByPreference)
         {
@@ -113,6 +119,7 @@ public class PrecompressedStaticFilesMiddleware(
             return false;
         }
 
-        return resolved.StartsWith(_root + Path.DirectorySeparatorChar, StringComparison.Ordinal) && File.Exists(resolved);
+        return resolved.StartsWith(_root + Path.DirectorySeparatorChar, StringComparison.Ordinal) &&
+               File.Exists(resolved);
     }
 }

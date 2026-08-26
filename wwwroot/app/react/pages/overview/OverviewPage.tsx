@@ -377,7 +377,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                                         input: {
                                             startAdornment: (
                                                 <InputAdornment position="start">
-                                                    <SymbolIcon name="search" sx={{fontSize: 20}} />
+                                                    <SymbolIcon name="search" size={20} />
                                                 </InputAdornment>
                                             ),
                                         },

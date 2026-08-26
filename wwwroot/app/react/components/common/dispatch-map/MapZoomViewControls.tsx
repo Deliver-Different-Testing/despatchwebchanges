@@ -2,30 +2,48 @@
  * MapZoomViewControls
  *
  * Top-right map overlay providing zoom in/out and a base-map view picker
- * (roadmap / satellite / terrain). Rendered as MUI components so the
- * controls match the rest of the app instead of HERE Maps' native chrome.
+ * (roadmap / satellite / terrain). Rendered as app components so the controls
+ * match the rest of the app instead of HERE Maps' native chrome.
  */
 
 import React, {useRef, useState} from 'react';
-import Paper from '@mui/material/Paper';
-import IconButton from '@mui/material/IconButton';
-import Divider from '@mui/material/Divider';
-import Tooltip from '@mui/material/Tooltip';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import LayersIcon from '@mui/icons-material/Layers';
-import MapIcon from '@mui/icons-material/Map';
-import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
-import TerrainIcon from '@mui/icons-material/Terrain';
-import TrafficIcon from '@mui/icons-material/Traffic';
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import CheckIcon from '@mui/icons-material/Check';
+import {ActionIcon, Divider, Menu, Paper, Tooltip} from '@mantine/core';
+import {Check, Layers, Minus, Mountain, Plus, Satellite, TrafficCone, TriangleAlert} from 'lucide-react';
+import {IconMap} from '@tabler/icons-react';
+import {Icon} from '../icon/Icon';
 
 const ICON_SIZE = 20;
+
+/**
+ * One button in the vertical rail. Square (the theme's pill radius would break a
+ * flush-stacked rail into detached lozenges) and 32px, matching the original
+ * density. Kept local because the rail is the only thing that wants this shape.
+ */
+function RailButton({
+    label,
+    onClick,
+    active,
+    children,
+}: {
+    label: string;
+    onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+    active?: boolean;
+    children: React.ReactNode;
+}) {
+    return (
+        <ActionIcon
+            variant="subtle"
+            color={active ? 'brand' : 'gray'}
+            size="md"
+            radius={0}
+            onClick={onClick}
+            aria-label={label}
+            {...(active === undefined ? {} : {'data-active': active})}
+        >
+            {children}
+        </ActionIcon>
+    );
+}
 
 type ViewType = 'roadmap' | 'satellite' | 'terrain';
 
@@ -41,9 +59,9 @@ interface MapZoomViewControlsProps {
 }
 
 const VIEW_OPTIONS: ReadonlyArray<{value: ViewType; label: string; icon: React.ReactNode}> = [
-    {value: 'roadmap', label: 'Roadmap', icon: <MapIcon fontSize="small"/>},
-    {value: 'satellite', label: 'Satellite', icon: <SatelliteAltIcon fontSize="small"/>},
-    {value: 'terrain', label: 'Terrain', icon: <TerrainIcon fontSize="small"/>},
+    {value: 'roadmap', label: 'Roadmap', icon: <Icon tabler={IconMap} size={16}/>},
+    {value: 'satellite', label: 'Satellite', icon: <Icon lucide={Satellite} size={16}/>},
+    {value: 'terrain', label: 'Terrain', icon: <Icon lucide={Mountain} size={16}/>},
 ];
 
 function getLayer(defaultLayers: any, view: ViewType): any | null {
@@ -103,7 +121,6 @@ export function MapZoomViewControls({
 }: MapZoomViewControlsProps) {
     const isLeft = placement === 'left';
     const tooltipPlacement = isLeft ? 'right' : 'left';
-    const [viewMenuAnchor, setViewMenuAnchor] = useState<HTMLElement | null>(null);
     const [activeView, setActiveView] = useState<ViewType>('roadmap');
     const [trafficEnabled, setTrafficEnabled] = useState(false);
     const trafficLayerRef = useRef<any>(null);
@@ -126,7 +143,6 @@ export function MapZoomViewControls({
             map.setBaseLayer(layer);
             setActiveView(view);
         }
-        setViewMenuAnchor(null);
     };
 
     const handleToggleTraffic = () => {
@@ -160,112 +176,96 @@ export function MapZoomViewControls({
     };
 
     return (
-        <>
-            <Paper
-                elevation={3}
-                sx={{
-                    position: 'absolute',
-                    bottom: 20,
-                    ...(isLeft ? { left: 10 } : { right: 10 }),
-                    zIndex: 10,
-                    pointerEvents: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    bgcolor: 'background.paper',
-                }}
-            >
-                <Tooltip title="Zoom in" placement={tooltipPlacement}>
-                    <IconButton
-                        size="small"
-                        onClick={handleZoomIn}
-                        aria-label="Zoom in"
-                        sx={{borderRadius: 0, p: 0.75}}
+        <Paper
+            shadow="md"
+            radius="sm"
+            style={{
+                position: 'absolute',
+                bottom: 20,
+                ...(isLeft ? {left: 10} : {right: 10}),
+                zIndex: 10,
+                pointerEvents: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+            }}
+        >
+            <Tooltip label="Zoom in" position={tooltipPlacement}>
+                <RailButton label="Zoom in" onClick={handleZoomIn}>
+                    <Icon lucide={Plus} size={ICON_SIZE}/>
+                </RailButton>
+            </Tooltip>
+            <Divider/>
+            <Tooltip label="Zoom out" position={tooltipPlacement}>
+                <RailButton label="Zoom out" onClick={handleZoomOut}>
+                    <Icon lucide={Minus} size={ICON_SIZE}/>
+                </RailButton>
+            </Tooltip>
+            {showTraffic && (
+                <>
+                    <Divider/>
+                    <Tooltip
+                        label={trafficEnabled ? 'Hide traffic conditions' : 'Show traffic conditions'}
+                        position={tooltipPlacement}
                     >
-                        <AddIcon sx={{fontSize: ICON_SIZE}}/>
-                    </IconButton>
-                </Tooltip>
-                <Divider/>
-                <Tooltip title="Zoom out" placement={tooltipPlacement}>
-                    <IconButton
-                        size="small"
-                        onClick={handleZoomOut}
-                        aria-label="Zoom out"
-                        sx={{borderRadius: 0, p: 0.75}}
+                        <RailButton
+                            label="Toggle traffic conditions"
+                            onClick={handleToggleTraffic}
+                            active={trafficEnabled}
+                        >
+                            <Icon lucide={TrafficCone} size={ICON_SIZE}/>
+                        </RailButton>
+                    </Tooltip>
+                </>
+            )}
+            {showIncidents && (
+                <>
+                    <Divider/>
+                    <Tooltip
+                        label={incidentsEnabled ? 'Hide traffic incidents' : 'Show traffic incidents'}
+                        position={tooltipPlacement}
                     >
-                        <RemoveIcon sx={{fontSize: ICON_SIZE}}/>
-                    </IconButton>
-                </Tooltip>
-                {showTraffic && (
-                    <>
-                        <Divider/>
-                        <Tooltip title={trafficEnabled ? 'Hide traffic conditions' : 'Show traffic conditions'} placement={tooltipPlacement}>
-                            <IconButton
-                                size="small"
-                                onClick={handleToggleTraffic}
-                                color={trafficEnabled ? 'primary' : 'default'}
-                                aria-label="Toggle traffic conditions"
-                                data-active={trafficEnabled}
-                                sx={{borderRadius: 0, p: 0.75}}
-                            >
-                                <TrafficIcon sx={{fontSize: ICON_SIZE}}/>
-                            </IconButton>
-                        </Tooltip>
-                    </>
-                )}
-                {showIncidents && (
-                    <>
-                        <Divider/>
-                        <Tooltip title={incidentsEnabled ? 'Hide traffic incidents' : 'Show traffic incidents'} placement={tooltipPlacement}>
-                            <IconButton
-                                size="small"
-                                onClick={handleToggleIncidents}
-                                color={incidentsEnabled ? 'primary' : 'default'}
-                                aria-label="Toggle traffic incidents"
-                                data-active={incidentsEnabled}
-                                sx={{borderRadius: 0, p: 0.75}}
-                            >
-                                <ReportProblemIcon sx={{fontSize: ICON_SIZE}}/>
-                            </IconButton>
-                        </Tooltip>
-                    </>
-                )}
-                {showViewPicker && (
-                    <>
-                        <Divider/>
-                        <Tooltip title="Choose view" placement={tooltipPlacement}>
-                            <IconButton
-                                size="small"
-                                onClick={(e) => setViewMenuAnchor(e.currentTarget)}
-                                aria-label="Choose view"
-                                sx={{borderRadius: 0, p: 0.75}}
-                            >
-                                <LayersIcon sx={{fontSize: ICON_SIZE}}/>
-                            </IconButton>
-                        </Tooltip>
-                    </>
-                )}
-            </Paper>
-            <Menu
-                anchorEl={viewMenuAnchor}
-                open={Boolean(viewMenuAnchor)}
-                onClose={() => setViewMenuAnchor(null)}
-                anchorOrigin={{vertical: 'top', horizontal: isLeft ? 'left' : 'right'}}
-                transformOrigin={{vertical: 'bottom', horizontal: isLeft ? 'left' : 'right'}}
-            >
-                {VIEW_OPTIONS.map((opt) => (
-                    <MenuItem
-                        key={opt.value}
-                        selected={activeView === opt.value}
-                        onClick={() => handleViewSelect(opt.value)}
-                    >
-                        <ListItemIcon>{opt.icon}</ListItemIcon>
-                        <ListItemText>{opt.label}</ListItemText>
-                        {activeView === opt.value && <CheckIcon fontSize="small" sx={{ml: 2}}/>}
-                    </MenuItem>
-                ))}
-            </Menu>
-        </>
+                        <RailButton
+                            label="Toggle traffic incidents"
+                            onClick={handleToggleIncidents}
+                            active={incidentsEnabled}
+                        >
+                            <Icon lucide={TriangleAlert} size={ICON_SIZE}/>
+                        </RailButton>
+                    </Tooltip>
+                </>
+            )}
+            {showViewPicker && (
+                <>
+                    <Divider/>
+                    {/* Mantine's Menu anchors to its own Target, so the rail no longer
+                        has to carry an anchorEl in state the way MUI's Menu required. */}
+                    <Menu position={isLeft ? 'right-end' : 'left-end'} withinPortal>
+                        <Menu.Target>
+                            <Tooltip label="Choose view" position={tooltipPlacement}>
+                                <RailButton label="Choose view">
+                                    <Icon lucide={Layers} size={ICON_SIZE}/>
+                                </RailButton>
+                            </Tooltip>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                            {VIEW_OPTIONS.map((opt) => (
+                                <Menu.Item
+                                    key={opt.value}
+                                    leftSection={opt.icon}
+                                    rightSection={
+                                        activeView === opt.value ? <Icon lucide={Check} size={16}/> : undefined
+                                    }
+                                    onClick={() => handleViewSelect(opt.value)}
+                                    data-selected={activeView === opt.value}
+                                >
+                                    {opt.label}
+                                </Menu.Item>
+                            ))}
+                        </Menu.Dropdown>
+                    </Menu>
+                </>
+            )}
+        </Paper>
     );
 }

@@ -5,7 +5,8 @@
  * Tests for the type definitions and constants used by the CourierMapPage component.
  */
 
-import { createTheme } from '@mui/material/styles';
+import { DEFAULT_THEME, mergeMantineTheme } from '@mantine/core';
+import { dfrntTheme } from '../../theme/dfrntMantineTheme';
 import {
     US_BOUNDS,
     NZ_BOUNDS,
@@ -184,28 +185,32 @@ describe('CourierMapPage Constants', () => {
     });
 
     describe('getMarkerColors', () => {
-        it('sources marker colors from the theme palette so map and list agree', () => {
-            const theme = createTheme({
-                palette: {
-                    error: { main: '#aa0000', dark: '#660000' },
-                    primary: { main: '#0000aa', dark: '#000066' },
-                    success: { main: '#00aa00', dark: '#006600' },
-                },
-            });
+        // The real app theme, so the assertion is about the shipped palette rather
+        // than a fixture. index 5 is the named colour, 7 the darker edge.
+        const theme = mergeMantineTheme(DEFAULT_THEME, dfrntTheme);
 
+        it('sources marker colors from the theme ramps so map and list agree', () => {
             const colors = getMarkerColors(theme);
 
-            // overdue → error, active → primary, idle → success
-            expect(colors.overdue.bg).toBe(theme.palette.error.main);
-            expect(colors.overdue.border).toBe(theme.palette.error.dark);
-            expect(colors.active.bg).toBe(theme.palette.primary.main);
-            expect(colors.active.border).toBe(theme.palette.primary.dark);
-            expect(colors.idle.bg).toBe(theme.palette.success.main);
-            expect(colors.idle.border).toBe(theme.palette.success.dark);
+            // overdue → error(red), active → primary(brand), idle → success(green)
+            expect(colors.overdue.bg).toBe(theme.colors.red[5]);
+            expect(colors.overdue.border).toBe(theme.colors.red[7]);
+            expect(colors.active.bg).toBe(theme.colors[theme.primaryColor][5]);
+            expect(colors.active.border).toBe(theme.colors[theme.primaryColor][7]);
+            expect(colors.idle.bg).toBe(theme.colors.green[5]);
+            expect(colors.idle.border).toBe(theme.colors.green[7]);
+        });
+
+        it('resolves to concrete hex, not CSS variables (HERE renders these into an SVG)', () => {
+            const colors = getMarkerColors(theme);
+            for (const {bg, border} of Object.values(colors)) {
+                expect(bg).toMatch(/^#[0-9a-f]{3,8}$/i);
+                expect(border).toMatch(/^#[0-9a-f]{3,8}$/i);
+            }
         });
 
         it('uses white label text for every status for contrast on the pill', () => {
-            const colors = getMarkerColors(createTheme());
+            const colors = getMarkerColors(theme);
             expect(colors.overdue.text).toBe('#ffffff');
             expect(colors.active.text).toBe('#ffffff');
             expect(colors.idle.text).toBe('#ffffff');

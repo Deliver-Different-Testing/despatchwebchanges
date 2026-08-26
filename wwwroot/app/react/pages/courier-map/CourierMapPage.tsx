@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import Box from '@mui/material/Box';
+import {Box} from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 import type { CourierMapPageProps } from './CourierMapPage.types';
@@ -141,8 +141,8 @@ export function CourierMapPage({
     }, []);
 
     return (
-        <Box sx={{ position: 'relative', width: '100%', height: BELOW_APP_BAR_HEIGHT, overflow: 'hidden' }}>
-            <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+        <Box w="100%" h={BELOW_APP_BAR_HEIGHT} style={{position: 'relative', overflow: 'hidden'}}>
+            <Box w="100%" h="100%" style={{position: 'relative'}}>
                 {/* Map Container — isolate the stacking context so HERE Maps' info
                     bubbles / tooltips (rendered inside at z-index ~1001) stay below the
                     sibling map controls (zIndex 10) and drivers panel (zIndex 50)
@@ -150,7 +150,11 @@ export function CourierMapPage({
                 <Box
                     ref={mapContainerRef}
                     data-testid="courier-map-container"
-                    sx={{ width: '100%', height: '100%', isolation: 'isolate' }}
+                    w="100%"
+                    h="100%"
+                    // Inline, not a CSS module: the test asserts it with toHaveStyle,
+                    // which cannot see CSS-module classes (mocked to {} in Jest).
+                    style={{isolation: 'isolate'}}
                 />
 
                 {/* Drivers Panel */}

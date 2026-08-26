@@ -13,19 +13,12 @@
  */
 
 import React, {useState, useCallback, useEffect} from 'react';
-import type {SxProps, Theme} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import Collapse from '@mui/material/Collapse';
-import DownloadIcon from '@mui/icons-material/Download';
-import DescriptionIcon from '@mui/icons-material/Description';
-import UploadIcon from '@mui/icons-material/Upload';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {
+    ActionIcon, Box, Button, Collapse, Group, Stack, Text, TextInput, Tooltip, UnstyledButton,
+} from '@mantine/core';
+import {ChevronDown, Download, FileText, ReceiptText, Upload} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import classes from './SearchCriteriaPanel.module.css';
 import {Dayjs} from 'dayjs';
 import {DateRangePicker} from '../date-range-picker/DateRangePicker';
 import {ChipsAutocomplete} from './ChipsAutocomplete';
@@ -61,29 +54,34 @@ export interface SearchCriteriaPanelProps {
     onSpeedSearch: (searchText: string) => Promise<ISuggestion[]>;
 }
 
-const groupLabelSx: SxProps<Theme> = {
-    fontSize: '0.625rem',
-    fontWeight: 500,
-    color: 'text.secondary',
-    textTransform: 'uppercase',
-    letterSpacing: '0.08333em',
-    lineHeight: 2.5,
-};
+/** The quiet caption above each criterion group. */
+const groupLabelProps = {
+    fz: '0.625rem',
+    fw: 500,
+    c: 'dimmed',
+    tt: 'uppercase',
+    lh: 2.5,
+    style: {letterSpacing: '0.08333em'},
+} as const;
 
-/** The compact outlined field the panel uses for every criterion. */
-const criteriaFieldSx = {
-    '& .MuiOutlinedInput-root': {
-        height: 34,
-        fontSize: '0.8125rem',
-        bgcolor: 'background.paper',
-        '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'divider',
-        },
-        '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'text.disabled',
-        },
-    },
-} satisfies SxProps<Theme>;
+/**
+ * The compact field every criterion uses. The MUI original reached into
+ * `.MuiOutlinedInput-*` to set the height, font and border; Mantine's `xs` size
+ * and the theme's input styling already give all three, so only the exact 34px
+ * height (which the panel's density depends on) has to be stated.
+ */
+const criteriaFieldProps = {
+    size: 'xs',
+    styles: {input: {height: 34, minHeight: 34, fontSize: '0.8125rem'}},
+} as const;
+
+/** The four square icon actions in the footer. */
+const actionProps = {
+    variant: 'subtle',
+    color: 'gray',
+    w: 36,
+    h: 36,
+} as const;
 
 export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
     dateSearchRange,
@@ -197,18 +195,10 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
     }, [flushAndSearch]);
 
     return (
-        <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            p: 2,
-            height: '100%',
-            boxSizing: 'border-box',
-            overflowY: 'auto',
-        }}>
+        <Stack gap={16} p={16} h="100%" style={{boxSizing: 'border-box', overflowY: 'auto'}}>
             {/* Date Range */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
-                <Typography sx={groupLabelSx}>Date Range</Typography>
+            <Stack gap={6} miw={0}>
+                <Text {...groupLabelProps}>Date Range</Text>
                 <DateRangePicker
                     dateSearchRange={dateSearchRange}
                     fromDate={localFromDate}
@@ -217,11 +207,11 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                     onFromDateChange={setLocalFromDate}
                     onToDateChange={setLocalToDate}
                 />
-            </Box>
+            </Stack>
 
             {/* Clients */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
-                <Typography sx={groupLabelSx}>Clients</Typography>
+            <Stack gap={6} miw={0}>
+                <Text {...groupLabelProps}>Clients</Text>
                 <ChipsAutocomplete
                     label="Clients"
                     placeholder="Search clients..."
@@ -230,11 +220,11 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                     onSearch={onClientSearch}
                     onChange={handleClientsChange}
                 />
-            </Box>
+            </Stack>
 
             {/* Couriers */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
-                <Typography sx={groupLabelSx}>Couriers</Typography>
+            <Stack gap={6} miw={0}>
+                <Text {...groupLabelProps}>Couriers</Text>
                 <ChipsAutocomplete
                     label="Couriers"
                     placeholder="Search couriers..."
@@ -243,11 +233,11 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                     onSearch={onCourierSearch}
                     onChange={handleCouriersChange}
                 />
-            </Box>
+            </Stack>
 
             {/* Speeds */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
-                <Typography sx={groupLabelSx}>Speeds</Typography>
+            <Stack gap={6} miw={0}>
+                <Text {...groupLabelProps}>Speeds</Text>
                 <ChipsAutocomplete
                     label="Speeds"
                     placeholder="Search speeds..."
@@ -256,145 +246,120 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                     onSearch={onSpeedSearch}
                     onChange={handleSpeedsChange}
                 />
-            </Box>
+            </Stack>
 
             {/* Job Number */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
-                <Typography sx={groupLabelSx}>Job Number</Typography>
-                <TextField
-                    size="small"
+            <Stack gap={6} miw={0}>
+                <Text {...groupLabelProps}>Job Number</Text>
+                <TextInput
+                    {...criteriaFieldProps}
                     placeholder="Enter job number"
                     value={jobNumber}
                     onChange={handleJobNumberChange}
                     onKeyUp={handleKeyUp}
-                    sx={criteriaFieldSx}
                 />
-            </Box>
+            </Stack>
 
             {/* General Search */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
-                <Typography sx={groupLabelSx}>General Search</Typography>
-                <TextField
-                    size="small"
+            <Stack gap={6} miw={0}>
+                <Text {...groupLabelProps}>General Search</Text>
+                <TextInput
+                    {...criteriaFieldProps}
                     placeholder="Address, name, reference..."
                     value={generalSearch}
                     onChange={handleGeneralSearchChange}
                     onKeyUp={handleKeyUp}
-                    sx={criteriaFieldSx}
                 />
-            </Box>
+            </Stack>
 
             {/* Advanced Options */}
             <Box>
-                <Button
-                    size="small"
+                <UnstyledButton
                     onClick={() => setAdvancedOpen(prev => !prev)}
-                    endIcon={
-                        <ExpandMoreIcon
-                            sx={{
-                                transform: advancedOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                                transition: 'transform 0.2s',
-                            }}
-                        />
-                    }
-                    sx={{
-                        textTransform: 'none',
-                        fontSize: '0.75rem',
-                        color: 'text.secondary',
-                        p: 0,
-                        minWidth: 0,
-                        '&:hover': {bgcolor: 'transparent'},
-                    }}
+                    className={classes.advancedToggle}
                 >
-                    Advanced
-                </Button>
-                <Collapse in={advancedOpen}>
-                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1}}>
-                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75}}>
-                            <Typography sx={groupLabelSx}>Job ID</Typography>
-                            <TextField
+                    <Text component="span" fz="xs" c="dimmed">Advanced</Text>
+                    <Icon
+                        lucide={ChevronDown}
+                        size={18}
+                        className={classes.advancedChevron}
+                        data-open={advancedOpen}
+                    />
+                </UnstyledButton>
+                <Collapse expanded={advancedOpen}>
+                    <Stack gap={12} mt={8}>
+                        <Stack gap={6}>
+                            <Text {...groupLabelProps}>Job ID</Text>
+                            <TextInput
+                                {...criteriaFieldProps}
                                 type="number"
-                                size="small"
                                 placeholder="Enter job ID"
                                 value={jobId}
                                 disabled={!!bulkJobId}
                                 onChange={handleJobIdChange}
                                 onKeyUp={handleKeyUp}
-                                sx={criteriaFieldSx}
                             />
-                        </Box>
-                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75}}>
-                            <Typography sx={groupLabelSx}>Bulk Job ID</Typography>
-                            <TextField
+                        </Stack>
+                        <Stack gap={6}>
+                            <Text {...groupLabelProps}>Bulk Job ID</Text>
+                            <TextInput
+                                {...criteriaFieldProps}
                                 type="number"
-                                size="small"
                                 placeholder="Enter bulk job ID"
                                 value={bulkJobId}
                                 disabled={!!jobId}
                                 onChange={handleBulkJobIdChange}
                                 onKeyUp={handleKeyUp}
-                                sx={criteriaFieldSx}
                             />
-                        </Box>
-                    </Box>
+                        </Stack>
+                    </Stack>
                 </Collapse>
             </Box>
 
             {/* Actions */}
-            <Box sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                gap: 1,
-                mt: 'auto',
-                pt: 2,
-                borderTop: 1,
-                borderColor: 'divider',
-            }}>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={flushAndSearch}
-                    sx={{
-                        flex: '1 1 auto',
-                        minWidth: 100,
-                        height: 36,
-                        textTransform: 'none',
-                    }}
-                >
+            <Group
+                gap={8}
+                wrap="wrap"
+                mt="auto"
+                pt={16}
+                style={{borderTop: '1px solid var(--mantine-color-default-border)'}}
+            >
+                <Button onClick={flushAndSearch} h={36} miw={100} style={{flex: '1 1 auto'}}>
                     Search
                 </Button>
-                <Box sx={{display: 'flex', gap: 0.5}}>
-                    <Tooltip title="Download">
-                        <IconButton onClick={flushAndDownload} size="small" sx={{width: 36, height: 36}}>
-                            <DownloadIcon sx={{fontSize: 20, color: 'text.secondary'}} />
-                        </IconButton>
+                <Group gap={4} wrap="nowrap">
+                    <Tooltip label="Download">
+                        <ActionIcon {...actionProps} onClick={flushAndDownload} aria-label="Download">
+                            <Icon lucide={Download} size={20} />
+                        </ActionIcon>
                     </Tooltip>
-                    <Tooltip title="Client Report">
+                    {/* The <span> keeps the tooltip reachable while the button is
+                        disabled — a disabled button fires no pointer events. */}
+                    <Tooltip label="Client Report">
                         <span>
-                            <IconButton
+                            <ActionIcon
+                                {...actionProps}
                                 onClick={flushAndClientReport}
                                 disabled={!isClientReportEnabled}
-                                size="small"
-                                sx={{width: 36, height: 36}}
+                                aria-label="Client Report"
                             >
-                                <DescriptionIcon sx={{fontSize: 20, color: isClientReportEnabled ? 'text.secondary' : 'text.disabled'}} />
-                            </IconButton>
+                                <Icon lucide={FileText} size={20} />
+                            </ActionIcon>
                         </span>
                     </Tooltip>
-                    <Tooltip title="Price Detail Report">
-                        <IconButton onClick={flushAndPriceDetailReport} size="small" sx={{width: 36, height: 36}}>
-                            <ReceiptLongIcon sx={{fontSize: 20, color: 'text.secondary'}} />
-                        </IconButton>
+                    <Tooltip label="Price Detail Report">
+                        <ActionIcon {...actionProps} onClick={flushAndPriceDetailReport} aria-label="Price Detail Report">
+                            <Icon lucide={ReceiptText} size={20} />
+                        </ActionIcon>
                     </Tooltip>
-                    <Tooltip title="Upload Prices">
-                        <IconButton onClick={onUpload} size="small" sx={{width: 36, height: 36}}>
-                            <UploadIcon sx={{fontSize: 20, color: 'text.secondary'}} />
-                        </IconButton>
+                    <Tooltip label="Upload Prices">
+                        <ActionIcon {...actionProps} onClick={onUpload} aria-label="Upload Prices">
+                            <Icon lucide={Upload} size={20} />
+                        </ActionIcon>
                     </Tooltip>
-                </Box>
-            </Box>
-        </Box>
+                </Group>
+            </Group>
+        </Stack>
     );
 };
 

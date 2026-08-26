@@ -216,7 +216,7 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                             <Box sx={{display: 'flex', alignItems: 'center'}}>
                                 <SymbolIcon
                                     name={isTableView ? 'dashboard' : 'view_list'}
-                                    sx={{fontSize: 18, mr: 0.5}}
+                                    size={18} style={{marginRight: 4}}
                                 />
                                 <Switch
                                     checked={isTableView}
@@ -242,7 +242,7 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                     {/* Empty state */}
                     {viewJobs.length === 0 && !isLoading && (
                         <Box sx={{textAlign: 'center', py: 4, color: 'text.disabled'}}>
-                            <SymbolIcon name="inventory_2" sx={{fontSize: 48}} />
+                            <SymbolIcon name="inventory_2" size={48} />
                             <Typography
                                 variant="body1"
                                 sx={{
@@ -420,7 +420,7 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = React.memo(({driver: ini
                     minHeight: 44,
                 }}
             >
-                <SymbolIcon name={expanded ? 'expand_less' : 'expand_more'} sx={{fontSize: 20}} />
+                <SymbolIcon name={expanded ? 'expand_less' : 'expand_more'} size={20} />
                 <Typography variant="subtitle2" sx={{ml: 1, fontWeight: 600}}>
                     {initialDriver.name || 'Unassigned'}
                 </Typography>
@@ -431,7 +431,7 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = React.memo(({driver: ini
 
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, color: initialDriver.completedToday > 0 ? 'success.main' : 'error.main'}}>
-                        <SymbolIcon name="check_circle" sx={{fontSize: 18}} />
+                        <SymbolIcon name="check_circle" size={18} />
                         <Typography variant="caption">{initialDriver.completedToday} completed today</Typography>
                     </Box>
 
@@ -487,7 +487,7 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
                     <Typography variant="body2">{job.reference}</Typography>
                 </Box>
                 <Chip
-                    icon={<SymbolIcon name="package_2" sx={{fontSize: 16}} />}
+                    icon={<SymbolIcon name="package_2" size={16} />}
                     label={job.status}
                     size="small"
                     sx={{fontSize: '0.75rem'}}
@@ -500,7 +500,7 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
             <Box sx={{display: 'flex', gap: 2}}>
                 <Box sx={{flex: 1}}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: 'primary.main'}}>
-                        <SymbolIcon name="pin_drop" sx={{fontSize: 16}} />
+                        <SymbolIcon name="pin_drop" size={16} />
                         <Typography variant="body2" sx={{fontWeight: 500, color: 'text.primary'}}>
                             Pickup: {job.pickup.timeString}
                         </Typography>
@@ -519,7 +519,7 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
                 </Box>
                 <Box sx={{flex: 1}}>
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: 'primary.main'}}>
-                        <SymbolIcon name="pin_drop" sx={{fontSize: 16}} />
+                        <SymbolIcon name="pin_drop" size={16} />
                         <Typography variant="body2" sx={{fontWeight: 500, color: 'text.primary'}}>
                             Delivery: {job.delivery.timeString}
                         </Typography>
@@ -543,11 +543,11 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
             {/* Footer */}
             <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                    <SymbolIcon name="directions_car" sx={{fontSize: 16}} />
+                    <SymbolIcon name="directions_car" size={16} />
                     <Typography variant="caption">Mileage: {job.mileage}</Typography>
                 </Box>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                    <SymbolIcon name="inventory_2" sx={{fontSize: 16}} />
+                    <SymbolIcon name="inventory_2" size={16} />
                     <Typography variant="caption">
                         {job.quantity} {job.packageType}
                     </Typography>

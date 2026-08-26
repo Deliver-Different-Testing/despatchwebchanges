@@ -95,6 +95,11 @@ public class JobRepositoryBulkJobDetailStatusTests : IAsyncDisposable
         Assert.True(result.Job.Done);
         Assert.Equal((int)JobStatus.Completed, result.Job.ResolvedStatusId);
         Assert.True(result.Job.ResolvedIsComplete);
+
+        // Id is a BulkJobId, which matches no S3 key — POD media is keyed by the live job id, so the
+        // link has to reach the client or the panel looks up a prefix that cannot exist.
+        Assert.Equal(1, result.Job.Id);
+        Assert.Equal(100, result.Job.LinkedJobId);
     }
 
     [Fact]

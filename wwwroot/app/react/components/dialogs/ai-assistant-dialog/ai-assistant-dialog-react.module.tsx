@@ -11,7 +11,6 @@ import { createRoot, Root } from 'react-dom/client';
 import { AiSummaryCard } from '../../common/ai-summary-card/AiSummaryCard';
 import { summarizeJob, summarizeOperations } from '../../../services/aiAssistantApi';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 const panelRoots = new Map<HTMLElement, Root>();
 
@@ -22,13 +21,11 @@ function renderSummaryPanel(container: HTMLElement, jobId: number): void {
         panelRoots.set(container, root);
     }
     root.render(islandTree(
-        <MuiThemeIsland>
-        <AiSummaryCard
-            title="Auto-mate Job Briefing"
-            fetchSummary={(signal) => summarizeJob(jobId, {signal})}
-        />
+    <AiSummaryCard
+        title="Auto-mate Job Briefing"
+        fetchSummary={(signal) => summarizeJob(jobId, {signal})}
+    />
 
-            </MuiThemeIsland>
     ));
 }
 
@@ -39,12 +36,10 @@ function renderOperationsInsightsPanel(container: HTMLElement): void {
         panelRoots.set(container, root);
     }
     root.render(islandTree(
-        <MuiThemeIsland>
-            <AiSummaryCard
-                title="Auto-mate Operations Insights"
-                fetchSummary={(signal) => summarizeOperations({signal})}
-            />
-        </MuiThemeIsland>
+        <AiSummaryCard
+            title="Auto-mate Operations Insights"
+            fetchSummary={(signal) => summarizeOperations({signal})}
+        />
     ));
 }
 

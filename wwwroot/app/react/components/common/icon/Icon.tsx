@@ -51,6 +51,13 @@ export interface IconProps {
     style?: React.CSSProperties;
     'aria-label'?: string;
     'aria-hidden'?: boolean;
+    /**
+     * `data-*` attributes pass through to the `<svg>`. Icon libraries do not
+     * generate a stable hook of their own (MUI's auto `data-testid` is gone), so
+     * this is how a data-driven glyph stays addressable — see `SymbolIcon` and
+     * `EventIcon`, which stamp the name they resolved.
+     */
+    [dataAttr: `data-${string}`]: unknown;
 }
 
 export const Icon: React.FC<IconProps> = ({

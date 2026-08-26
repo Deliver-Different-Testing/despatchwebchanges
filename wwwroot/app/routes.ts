@@ -161,7 +161,7 @@ class RouterConfig {
                 jobId: {value: null, squash: true}
             },
             template: `
-                <md-content class="md-dense dispatch-view" style="height: 100%;">
+                <div class="dispatch-view" style="height: 100%; position: relative;">
                     <react-app-shell
                             section="Dashboards"
                             title="Dispatch"
@@ -193,7 +193,7 @@ class RouterConfig {
                     <div style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: hidden;">
                         <div id="react-dispatch-v2" style="height: 100%; overflow: hidden;"></div>
                     </div>
-                </md-content>
+                </div>
             `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
@@ -758,7 +758,7 @@ class RouterConfig {
                 jobId: {value: null, squash: true}
             },
             template: `
-                <md-content class="md-dense job-search-view" style="height: 100%;">
+                <div class="job-search-view" style="height: 100%; position: relative;">
                     <react-app-shell
                             section="Dashboards"
                             title="Search"
@@ -783,7 +783,7 @@ class RouterConfig {
                     <div style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: hidden;">
                         <div id="react-job-search-v2" style="height: 100%; overflow: hidden;"></div>
                     </div>
-                </md-content>
+                </div>
             `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
@@ -1168,13 +1168,12 @@ class RouterConfig {
         this.$stateProvider.state("recurringJobs", {
             url: "/recurringJobs",
             template: `
-                <md-content class="md-dense prebook-view">
-                    <style>.prebook-view md-card { margin: 0; }</style>
+                <div class="prebook-view" style="position: relative;">
                     <react-app-shell section="Dashboards" title="Recurring Jobs"></react-app-shell>
                     <div style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: hidden;">
                         <div id="react-recurring-jobs-list" style="height: 100%; overflow: hidden;"></div>
                     </div>
-                </md-content>
+                </div>
             `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
@@ -1252,12 +1251,12 @@ class RouterConfig {
         this.$stateProvider.state("overview", {
             url: "/overview",
             template: `
-                <md-content class="md-dense" style="height: 100%;">
+                <div style="height: 100%; position: relative;">
                     <react-app-shell section="Dashboards" title="Overview"></react-app-shell>
                     <div class="scrollable-container" style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: auto;">
                         <div id="react-overview"></div>
                     </div>
-                </md-content>
+                </div>
             `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
@@ -1320,7 +1319,7 @@ class RouterConfig {
         this.$stateProvider.state("taskDashboard", {
             url: "/taskDashboard",
             template: `
-                <md-content class="md-dense task-dashboard-view">
+                <div class="task-dashboard-view" style="position: relative;">
                     <react-app-shell
                         section="Dashboards"
                         title="Task Dashboard">
@@ -1328,7 +1327,7 @@ class RouterConfig {
                     <div style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: hidden;">
                         <div id="react-task-dashboard" style="height: 100%; overflow: hidden;"></div>
                     </div>
-                </md-content>
+                </div>
             `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
@@ -1400,10 +1399,10 @@ class RouterConfig {
         this.$stateProvider.state("driverManagement", {
             url: "/driverManagement",
             template: `
-                <md-content class="md-dense" style="height: 100%;">
+                <div style="height: 100%; position: relative;">
                     <react-app-shell section="Operations" title="Drivers"></react-app-shell>
                     <div id="react-driver-management" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
-                </md-content>
+                </div>
             `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {

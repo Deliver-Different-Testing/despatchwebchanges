@@ -32,6 +32,7 @@ public class JobControllerTests : IDisposable
     private readonly HttpClient _httpClient = new();
     private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
+    private readonly IPodMediaService _podMediaServiceMock = Substitute.For<IPodMediaService>();
     private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
     private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
@@ -95,6 +96,7 @@ public class JobControllerTests : IDisposable
             _addStopJobServiceMock,
             _jobReportServiceMock,
             _jobPhotoServiceMock,
+            _podMediaServiceMock,
             _dispatchJobServiceMock,
             _deliveryJourneyServiceMock,
             _pricingPermissionServiceMock,
@@ -920,7 +922,9 @@ public class JobControllerTests : IDisposable
             new() { FileName = "photo2.png", S3Key = "jobs/1/photo2.png" }
         };
 
-        _jobPhotoServiceMock.GetDeliveryPhotosAsync(jobId, year, month)
+        // The media service owns the family sweep, so the endpoint returns whatever it resolves --
+        // including a leg's images when the parent's own id keys nothing.
+        _podMediaServiceMock.GetDeliveryMediaAsync(jobId, year, month)
             .Returns(expectedPhotos);
 
         var controller = CreateController();
@@ -929,12 +933,9 @@ public class JobControllerTests : IDisposable
         var result = await controller.GetJobDeliveryPhotosAndSignature(jobId, year, month);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<S3PhotoInfo> photos)
-        {
-            Assert.Equal(2, photos.Count);
-        }
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        var photos = Assert.IsAssignableFrom<IReadOnlyList<S3PhotoInfo>>(jsonResult.Value);
+        Assert.Equal(2, photos.Count);
     }
 
     [Fact]
@@ -949,7 +950,7 @@ public class JobControllerTests : IDisposable
             new() { FileName = "pickup1.png", S3Key = "jobs/1/pickup1.png" }
         };
 
-        _jobPhotoServiceMock.GetPickupPhotosAsync(jobId, year, month)
+        _podMediaServiceMock.GetPickupMediaAsync(jobId, year, month)
             .Returns(expectedPhotos);
 
         var controller = CreateController();
@@ -958,12 +959,9 @@ public class JobControllerTests : IDisposable
         var result = await controller.GetJobPickupPhotos(jobId, year, month);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<S3PhotoInfo> photos)
-        {
-            Assert.Single(photos);
-        }
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        var photos = Assert.IsAssignableFrom<IReadOnlyList<S3PhotoInfo>>(jsonResult.Value);
+        Assert.Single(photos);
     }
 
     [Fact]

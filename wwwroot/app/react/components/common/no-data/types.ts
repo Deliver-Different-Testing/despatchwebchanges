@@ -10,7 +10,7 @@ export interface NoDataProps {
     /** Message text to display below the title */
     message?: string;
     /**
-     * Icon to display. Prefer an `@mui/icons-material` element (e.g. `<WorkOutlineIcon/>`)
+     * Icon to display. Prefer an `<Icon lucide={…}/>` / `<Icon tabler={…}/>` element
      * — NoData controls its size and colour. A string is accepted for the AngularJS
      * `no-data-react` bridge and rendered via the Material Symbols font.
      */

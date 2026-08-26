@@ -9,7 +9,6 @@ import React from 'react';
 import {ErrorPage, ErrorType} from './ErrorPage';
 import angular from 'angular';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {createPageHost} from '../../utils/reactPageHost';
 
 export interface MountErrorPageConfig {
@@ -24,15 +23,13 @@ const host = createPageHost<MountErrorPageConfig>({
     logName: 'ErrorPageReact',
     removeContainerOnUnmount: true,
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorPage
-                errorType={config.errorType}
-                customTitle={config.customTitle}
-                customMessage={config.customMessage}
-                onGoHome={config.onGoHome}
-                onGoBack={config.onGoBack}
-            />
-        </MuiThemeIsland>
+        <ErrorPage
+            errorType={config.errorType}
+            customTitle={config.customTitle}
+            customMessage={config.customMessage}
+            onGoHome={config.onGoHome}
+            onGoBack={config.onGoBack}
+        />
     ),
 });
 

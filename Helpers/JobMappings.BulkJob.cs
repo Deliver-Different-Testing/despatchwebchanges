@@ -12,6 +12,7 @@ public static partial class JobMappings
         AngularId = Guid.NewGuid(),
         ClientId = j.ClientId,
         Id = j.BulkJobId,
+        LinkedJobId = j.JobId,
         JobNo = j.JobNumber,
         Time = j.BookTime,
         ParentId = j.ParentId,

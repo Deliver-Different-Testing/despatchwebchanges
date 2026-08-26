@@ -9,7 +9,6 @@ import React from 'react';
 import {CourierMapPage} from './CourierMapPage';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {createPageHost} from '../../utils/reactPageHost';
 
 export interface MountCourierMapConfig {
@@ -21,15 +20,13 @@ export interface MountCourierMapConfig {
 const host = createPageHost<MountCourierMapConfig>({
     logName: 'CourierMapReact',
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorBoundary>
-                <CourierMapPage
-                    isUsCustomer={config.isUsCustomer}
-                    mapCenter={config.mapCenter}
-                    apiKey={config.apiKey}
-                />
-            </ErrorBoundary>
-        </MuiThemeIsland>
+        <ErrorBoundary>
+            <CourierMapPage
+                isUsCustomer={config.isUsCustomer}
+                mapCenter={config.mapCenter}
+                apiKey={config.apiKey}
+            />
+        </ErrorBoundary>
     ),
 });
 

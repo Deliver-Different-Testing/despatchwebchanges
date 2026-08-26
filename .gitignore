@@ -355,7 +355,6 @@ healthchecksdb
 /logs-insights-results.csv
 /logs/
 /.claude/settings.local.json
-/.husky
 .jest-cache
 .tsbuildinfo
 nul

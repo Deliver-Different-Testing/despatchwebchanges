@@ -8,8 +8,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {useQuery} from '@tanstack/react-query';
-import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
+import {Box, Progress} from '@mantine/core';
 import type {DispatchMapProps} from './DispatchMap.types';
 import {COURIER_REFRESH_INTERVAL_MS} from './DispatchMap.types';
 import {useHereMap} from './useHereMap';
@@ -258,7 +257,18 @@ export function DispatchMap({
 
     return (
         <Box className={styles.dispatchMapComponent}>
-            {isLoading && <LinearProgress className={styles.loadingBar} />}
+            {isLoading && (
+                // Mantine has no indeterminate bar; an animated full-width track is
+                // the busy affordance, named for assistive tech. Positioning stays in
+                // the CSS module (.loadingBar) — it was already there.
+                <Progress
+                    value={100}
+                    animated
+                    size="xs"
+                    aria-label="Loading map data"
+                    className={styles.loadingBar}
+                />
+            )}
             <Box className={styles.dispatchMapContainer}>
                 {/* HERE Maps renders info bubbles / tooltips inside this container at a
                     high z-index (~1001). Isolate its stacking context so those overlays
@@ -270,7 +280,10 @@ export function DispatchMap({
                     ref={mapContainerRef}
                     className={styles.mapContainer}
                     data-testid="dispatch-map-wrapper"
-                    sx={{isolation: 'isolate', position: 'relative'}}
+                    // Inline, not the CSS module: HERE's bubbles need this stacking
+                    // context and the test asserts it with toHaveStyle, which cannot
+                    // see CSS-module classes (mocked to {} in Jest).
+                    style={{isolation: 'isolate', position: 'relative'}}
                 />
                 {controlsHost &&
                     createPortal(

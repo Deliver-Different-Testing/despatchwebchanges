@@ -222,10 +222,15 @@ public partial class JobRepository
 
         foreach (var h in liveHeaders)
             if (dimsByJob.TryGetValue(h.JobId, out var d))
+            {
                 h.Dims = d;
+            }
+
         foreach (var h in archiveHeaders)
             if (dimsByJob.TryGetValue(h.JobId, out var d))
+            {
                 h.Dims = d;
+            }
 
         // ---- Current lines ------------------------------------------------------------------
 
@@ -365,7 +370,11 @@ public partial class JobRepository
 
         foreach (var child in childrenNeedingParent)
         {
-            if (!parentLinesByJob.TryGetValue(child.BookingParentId!.Value, out var pls)) continue;
+            if (!parentLinesByJob.TryGetValue(child.BookingParentId!.Value, out var pls))
+            {
+                continue;
+            }
+
             lines.AddRange(pls.Select(pl => new PriceDetailLineRow
             {
                 JobId = child.JobId,

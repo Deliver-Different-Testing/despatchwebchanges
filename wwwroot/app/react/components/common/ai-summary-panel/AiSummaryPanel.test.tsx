@@ -15,14 +15,13 @@
 
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantineOverMui} from '../../../__testUtils__';
 import {AiSummaryPanel} from './AiSummaryPanel';
 import type {AiSummaryResponse} from '../../../interfaces/ai';
 
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+// AiSummaryPanel is still MUI but renders the Mantine <AutoMateLogo>, so it needs
+// Mantine outside and MUI inside — the island coexistence order.
+const renderWithTheme = renderWithMantineOverMui;
 
 // Helper to create a mock fetchSummary that resolves with a summary
 const createMockFetch = (summary = 'Test summary content', delay = 0) => {
@@ -126,9 +125,9 @@ describe('AiSummaryPanel', () => {
             );
 
             await waitFor(() => {
-                // MUI Skeleton components render with role="progressbar" or class MuiSkeleton
-                const skeletons = document.querySelectorAll('.MuiSkeleton-root');
-                expect(skeletons.length).toBeGreaterThanOrEqual(3);
+                // Mantine's Skeleton carries no role or stable hook, so each one
+                // names itself (same convention as jobListIndicators).
+                expect(screen.getAllByTestId('ai-summary-skeleton').length).toBeGreaterThanOrEqual(3);
             });
 
             expect(screen.getByLabelText('Stop generating')).toBeInTheDocument();
@@ -221,10 +220,11 @@ describe('AiSummaryPanel', () => {
                 />
             );
 
-            // querySelector is used here because MUI Card renders a plain <div> with no
-            // implicit ARIA role, and there is no text content unique to the card wrapper.
-            const card = container.querySelector('.MuiCard-root') as HTMLElement;
+            // The card is a plain <div> with no implicit role, so it names itself.
+            // Assert the accent actually lands — that is what this test is named for.
+            const card = screen.getByTestId('ai-summary-card');
             expect(card).toBeInTheDocument();
+            expect(card).toHaveStyle({borderLeft: '4px solid #ff5722'});
         });
     });
 

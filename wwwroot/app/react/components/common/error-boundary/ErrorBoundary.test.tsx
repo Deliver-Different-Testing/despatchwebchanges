@@ -1,16 +1,12 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {ErrorBoundary} from './ErrorBoundary';
 
-const theme = createTheme();
-
+// Built inline rather than via `renderWithMantine` because two cases below need
+// `rerender` with the provider in the tree.
 const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
+    return render(<MantineTestProvider>{ui}</MantineTestProvider>);
 };
 
 const ThrowingComponent = ({shouldThrow, message = 'Test error'}: {shouldThrow: boolean; message?: string}) => {
@@ -79,11 +75,11 @@ describe('ErrorBoundary', () => {
         // The child stops throwing after the click — clicking "Try again" should
         // clear the boundary and the new render shows the child content.
         rerender(
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <ErrorBoundary>
                     <ThrowingComponent shouldThrow={false} />
                 </ErrorBoundary>
-            </ThemeProvider>
+            </MantineTestProvider>
         );
 
         fireEvent.click(screen.getByRole('button', {name: /try again/i}));
@@ -115,11 +111,11 @@ describe('ErrorBoundary', () => {
         expect(screen.getByText('Something Went Wrong')).toBeInTheDocument();
 
         rerender(
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <ErrorBoundary resetKey={2}>
                     <ThrowingComponent shouldThrow={false} />
                 </ErrorBoundary>
-            </ThemeProvider>
+            </MantineTestProvider>
         );
 
         expect(screen.getByText('Child content')).toBeInTheDocument();

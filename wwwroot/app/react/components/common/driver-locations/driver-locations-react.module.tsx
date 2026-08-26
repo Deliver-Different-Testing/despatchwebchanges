@@ -16,7 +16,6 @@ import type {
 } from './DriverLocations.types';
 import angular from 'angular';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React DriverLocations
@@ -76,21 +75,19 @@ class DriverLocationsReactController implements angular.IController {
             : undefined;
 
         this.root.render(islandTree(
-            <MuiThemeIsland>
-            <DriverLocations
-                driverLocations={this.driverLocations}
-                loading={this.loading}
-                showNoData={this.showNoData}
-                showData={this.showData}
-                truckMode={this.truckMode}
-                activeAreaId={this.activeAreaId}
-                onAreaClick={handleAreaClick}
-                onCourierClick={handleCourierClick}
-                onClearFilter={handleClearFilter}
-                isUsCustomer={this.isUsCustomer}
-            />
+        <DriverLocations
+            driverLocations={this.driverLocations}
+            loading={this.loading}
+            showNoData={this.showNoData}
+            showData={this.showData}
+            truckMode={this.truckMode}
+            activeAreaId={this.activeAreaId}
+            onAreaClick={handleAreaClick}
+            onCourierClick={handleCourierClick}
+            onClearFilter={handleClearFilter}
+            isUsCustomer={this.isUsCustomer}
+        />
 
-            </MuiThemeIsland>
         ));
     }
 }

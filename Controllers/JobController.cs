@@ -33,6 +33,7 @@ public class JobController(
     IAddStopJobService addStopJobService,
     IJobReportService jobReportService,
     IJobPhotoService jobPhotoService,
+    IPodMediaService podMediaService,
     IDispatchJobService dispatchJobService,
     IDeliveryJourneyService deliveryJourneyService,
     IPricingPermissionService pricingPermissionService,
@@ -604,7 +605,7 @@ public class JobController(
 
         try
         {
-            var allPodPhotos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
+            var allPodPhotos = await podMediaService.GetDeliveryMediaAsync(jobId, year, month);
             return Json(allPodPhotos);
         }
         catch (Exception e)
@@ -620,7 +621,7 @@ public class JobController(
     {
         try
         {
-            var allPickupPhotos = await jobPhotoService.GetPickupPhotosAsync(jobId, year, month);
+            var allPickupPhotos = await podMediaService.GetPickupMediaAsync(jobId, year, month);
             return Json(allPickupPhotos);
         }
         catch (Exception e)

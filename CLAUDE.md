@@ -62,78 +62,109 @@ If a use case genuinely needs a unique or filtered index, stop and ask first.
 
 HERE Maps renders its own info bubbles and marker tooltips **inside the map container DOM at a high z-index (~1001)**. Any React control overlay rendered as a **sibling** of the map container (the zoom/layer rails, fit-all/refresh buttons, drivers panel, etc. — typically `zIndex: 10`–`50`) will be painted over and become unclickable unless the **map container establishes its own stacking context**.
 
-So: whenever you mount a HERE map, put `isolation: 'isolate'` (via `sx`) on the element that directly wraps the map container. This traps HERE's internal z-index below the sibling overlays. Apply it via `sx` (not a `.module.css` rule) so it is unit-testable with `toHaveStyle({isolation: 'isolate'})` — CSS-module classes are mocked to `{}` in Jest.
+So: whenever you mount a HERE map, put `isolation: 'isolate'` on the element that directly wraps the map container. This traps HERE's internal z-index below the sibling overlays. Apply it **inline** — the `style` prop on a Mantine component, or `sx` on one of the map files still awaiting conversion — and never as a `.module.css` rule, so it stays unit-testable with `toHaveStyle({isolation: 'isolate'})`; CSS-module classes are mocked to `{}` in Jest.
+
+Mantine overlays default to a *lower* z-index than MUI's (200–300 vs HERE's ~1001), so re-verify every map wrapper as it converts — and check that the island's stylesheet is actually loaded by its route or lazy-load service. An orphaned `.module.css` has already silently dropped this rule once.
 
 **Reference implementations:** `dispatch-map/DispatchMap.tsx`, `here-map/HereMap.tsx`, `pages/courier-map/CourierMapPage.tsx`.
 
 ## Dialog design language
 
-All React dialogs in `wwwroot/app/react/components/dialogs/` should follow the visual language established by the job-detail edit dialogs — `EditDateTimeDialog.tsx` and `EditParcelDimensionsDialog.tsx` are the canonical references. New dialogs default to this style; existing dialogs are migrated opportunistically. Do not invent a new dialog style without asking.
+All React dialogs in `wwwroot/app/react/components/dialogs/` are **Mantine**. Compose them from the shared primitives in `dialogs/shared/mantine/` — `<DialogShell>` + `<DialogHeader>` + `<DialogFooter>` — which are the single source of truth for the DFRNT dialog language and are already WCAG-correct. Do not invent a new dialog style without asking.
 
 **Reference implementations:**
-- `wwwroot/app/react/components/dialogs/edit-date-time-dialog/EditDateTimeDialog.tsx`
-- `wwwroot/app/react/components/dialogs/edit-parcel-dimensions-dialog/EditParcelDimensionsDialog.tsx`
+- `wwwroot/app/react/components/dialogs/edit-date-time-dialog/EditDateTimeDialog.tsx` — the compact canonical shape (276 lines)
+- `wwwroot/app/react/components/dialogs/accessorial-charges-dialog/AccessorialChargesDialog.tsx` — sections, a table, and the header `actions` slot
 
-The previously-flagged legacy holdouts (`SendPodDialog`, `SimplePriceEditDialog`) have since been migrated to this pattern, so there are no remaining "do not copy" dialogs.
+> **The MUI set in `dialogs/shared/` is legacy and shrinking.** A handful of dialogs still import it while they await conversion. Never point a new or converted dialog at it, and never add `sx` — see *Migrating a dialog off MUI* below.
 
-**Dialog wrapper**
+**Shell**
 
-- `maxWidth="sm"`, `fullWidth`.
-- `slotProps.paper`: `elevation: 24` and `sx: { overflow: 'hidden', minWidth: 480, maxWidth: 600 }`. The corner radius is the theme's MD3 extra-large (28px) `MuiDialog` default — don't re-set it per dialog (`<DialogShell>` already omits it).
+```tsx
+<DialogShell opened={opened} onClose={onClose} size={dialogSize.md} label="Edit charges">
+    <DialogHeader icon={<Icon lucide={Receipt} />} title="…" subtitle="…" onClose={onClose} />
+    {/* content */}
+    <DialogFooter onCancel={onClose} onConfirm={save} submitting={saving} />
+</DialogShell>
+```
 
-**Header — prefer the shared `<DialogHeader>` primitive**
+- `size` takes a **number**, not a breakpoint. Use `dialogSize.sm | md | lg` (560 / 760 / 1000) — a dialog converted from MUI's `maxWidth="md"` without one silently collapses to the 560 default.
+- The shell is centered, `padding={0}` (header/content/footer own their padding), `radius="xl"` (the theme's 28px), and scrolls its content region via `dialogShellStyles`.
+- The overlay is a **light, unblurred scrim on purpose** (`backgroundOpacity={0.25}`) — dialogs open over the dispatch job list and operators need to keep reading it. Pass `overlayProps` only where a heavy surround is the point (the POD photo viewer).
+- `label` sets the accessible name on the `role="dialog"` node.
 
-New dialogs should render `<DialogHeader icon={…} title={…} subtitle={…} onClose={…} variant="primary|error" />` rather than hand-rolling the header — it is the single source of truth and is already WCAG-correct. When a header genuinely needs bespoke content (extra actions, tabs), build it from the shared helpers in `dialogs/shared/styles.ts`: `headerChromeSx` (container), `headerChipSx` (icon chip), plus `headerAccentColor` / `headerOnColor` / `headerOverlayColor`.
+**Header — always `<DialogHeader>`**
 
-The header is a **solid brand/semantic fill** (the variant's `main`) with its own on-colour (`contrastText`) for text and icons — white-on-blue for the US tenant, dark-on-gold for the amber tenant, white-on-red for error, etc. A bold, flat bar with **no gradient** (the master look, minus the gradient) and no divider — the colour change is the separator. The fill + on-colour and the bar height/chip size are **centralized** in `headerSurfaceSx`/`headerChromeSx`/`headerChipSx` — tune them there, not per-dialog.
+`<DialogHeader icon title subtitle onClose variant actions closeDisabled />`. A solid brand/semantic fill with its own on-colour, no gradient and no divider — the colour change is the separator. Pass `variant="error"` for destructive dialogs, `"warning"` for cautionary; the fill carries the semantic colour and the shape is unchanged.
 
-- Container: spread `headerChromeSx(theme, variant)` — the solid fill + `contrastText` text plus the standard `px`, `py`, flex layout and `gap`. Append per-header extras (`flexShrink: 0`) or override `px`/`py` only for a bespoke compact header (e.g. the panel bar, the messaging header).
-- Icon badge: spread `headerChipSx(theme, variant)` on a `<Box>` (default 40×40, a translucent `contrastText` scrim + `contrastText` glyph, glyph auto-sized) and drop a bare `{icon}` inside — no per-icon `fontSize`. Pass a third `size` arg for a compact chip (e.g. `headerChipSx(theme, 'primary', 32)`). A **bare** header icon (no badge) instead takes `color: headerAccentColor(theme, variant)` (= the on-colour).
-- Title block uses `sx={{flex: 1}}` so the close button anchors to the right.
-- Title: `<Typography variant="h6" fontWeight={600}>` (inherits the header's `contrastText`).
-- Optional subtitle: `<Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>` — inherits the header colour at reduced opacity. Use `&middot;` (`·`) as the separator between identifiers.
-- Close button: plain `<IconButton>` with `sx={(t) => ({color: headerOnColor(t), '&:hover': {bgcolor: headerOverlayColor(t, 0.1)}})}` and `aria-label="Close dialog"`. No fixed size — the theme gives icon buttons a 44px hit target.
-- Error/destructive dialogs pass `variant="error"`, caution dialogs `variant="warning"` — the solid fill carries the semantic colour. Same shape either way.
+Only when a header genuinely needs bespoke content, build it from the helpers in `dialogs/shared/mantine/styles.ts`: `headerChromeStyle(variant)`, `headerChipProps(variant, size)`, `headerOnColor(variant)`, `headerOverlayColor(opacity, variant)`, `headerColors`, `headerSurfaceAccent`. Extra controls belong in the `actions` slot, styled with `headerOnColor`/`headerOverlayColor` so they read on the fill. Tune the bar height and chip size in `styles.ts`, never per dialog.
 
 **Content**
 
-- `<DialogContent sx={{p: 0, bgcolor: 'background.default'}}>` with an inner `<Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>` that holds the actual content. The content area's `background.default` separates it visually from the white `<Paper>` sections inside.
-- Each logical section is a `<Paper elevation={0} sx={{bgcolor: 'background.paper', borderRadius: 1.5, p: 2.5, border: '1px solid', borderColor: 'divider'}}>` — prefer spreading the shared `sectionPaperSx` constant rather than re-typing it. `borderRadius: 1.5` is the MD3 medium (12px) card corner; use theme tokens (`background.paper`, `divider`), not literal `'white'`/`'grey.200'`. Optional field label above the paper: `<Typography variant="body2" sx={{color: 'text.secondary', fontWeight: 500, mb: 1}}>` (the `sectionLabelSx` constant).
-- Status/info/error messaging uses MUI's `<Alert severity="info|success|warning|error">` directly — do not roll a custom callout `<Box>`.
-- Status chips: stock MUI `<Chip size="small" color="primary" variant="outlined">`.
-- Selectable rows (radio/checkbox lists): use MUI defaults inside a `<Paper>` — the radio/checkbox already signals selection; no custom border on each row.
-- TextField: `size="small"`, `fullWidth`, and `sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}` (the `dialogFieldSx` constant) so it stands out against the `background.default` content area.
+- Content sits directly inside the shell. Background comes from `dialogContentBg`; each logical section is a `<Paper {...sectionPaperProps}>` with an optional `<Text {...sectionLabelProps}>` label above it.
+- Sticky header/footer chrome inside a scrolling content region uses `dialogStickyChromeStyle('top' | 'bottom')`.
+- Status/info messaging is Mantine `<Alert color=… icon=… title=…>`. Note it renders `role="alert"` (an assertive live region) — wrong for a persistent contextual banner, which wants `role="region"` and its own markup.
+- Display pills are `<Badge variant="light">`; selectable ones are `<Chip>`. Use `variant="light"` rather than hand-mixing `alpha()` for fill/border/text.
+- Selectable rows: `<Radio.Group>` / `<Checkbox.Group>` (one tab stop, arrow keys), or `Radio.Card` / `Checkbox.Card` when the whole card is the control. No custom border per row.
+- Numbers use `<NumberInput>` (`decimalScale`, `min`/`max`, `clampBehavior`), with a currency marker in `leftSection` — never `prefix`. Currency *display* goes through `utils/currencyUtils.formatCurrency`, which is the tenant-aware path.
+- Truncation is `<Text truncate>` / `lineClamp={n}`, not a three-property CSS incantation.
 
-**Footer — `<DialogActions>`**
+**Footer — `<DialogFooter>`**
 
-- `sx={(theme) => ({px: 3, py: 2, bgcolor: 'background.paper', borderTop: `1px solid ${theme.palette.divider}`, gap: 1})}`.
-- Cancel button (left): `variant="outlined"`, `sx={{minWidth: 100}}`.
-- Primary action (right): `variant="contained" color="primary"`, `sx={{minWidth: 100}}`. Use `startIcon` for the action glyph, swap for `<CircularProgress size={16} color="inherit" />` while submitting.
+`onCancel` / `onConfirm` / `confirmLabel` / `cancelLabel` / `confirmIcon` / `confirmColor` / `confirmDisabled` / `submitting` / `hideConfirm` / `hideCancel` / `secondaryAction`. `submitting` swaps the confirm icon for a loader and disables both buttons. Its keyline comes from `dialogFooterBorder`.
 
-**General**
+**Styling — native Mantine first**
 
-- Style with the MUI `sx` prop using theme palette + `alpha()` where needed — do not introduce CSS Modules or stylesheets for new dialogs.
-- Animations: rely on MUI defaults; don't add bespoke transitions unless the design genuinely needs them.
-- Tests should query by visible text, `getByLabelText`, or `getByRole` — not by class names — so styling refactors don't break them.
+There is no `sx` in this codebase. Reach for, in order, and only fall past a step when the one above genuinely cannot express the design:
 
-**Spacing — use the spacing scale**
+1. **A native component** — `Divider` between rows, `CloseButton`, `CopyButton`, `ThemeIcon` for a tinted tile, `Alert`, `Avatar`, `NumberInput`, `Select` with grouped `data`.
+2. **A native prop or style prop** — `tt`, `fw`, `fz`, `c`, `bg`, `maw`, `h`, `visibleFrom`/`hiddenFrom`, `Flex direction={{base, sm}}`, `Group grow`. These cover most of what `sx` did, responsive cases included.
+3. **The component's own CSS variables** — `--ai-bg`/`--ai-hover` on `ActionIcon`, `--button-hover` on `Button`. A hover on a Mantine control is a variable, not a stylesheet. Do **not** use `styles={{root: {'&:hover': …}}}` — it lands as an inline style and the pseudo-selector is silently dropped.
+4. **The Styles API** — `styles={{label: {whiteSpace: 'normal'}}}` for a property on an inner slot.
+5. **A co-located `*.module.css`** — last resort, only for what CSS alone can do: `:hover`/`:focus-within` repainting a *descendant*, `::before`/`::after`, `@keyframes`, `[data-*]` state selectors.
 
-Dialog chrome uses the regular spacing scale (`px: 3, py: 2, gap: 2`, `gap: 1.5`, `mt: 0.25` etc.), matching the rest of the codebase. Avoid pixel string literals like `p: '20px'` or `gap: '14px'` — a previous-generation convention that has since been removed from the dialogs.
+**If a stylesheet contains no pseudo-class, pseudo-element, keyframe or descendant selector, it should not exist** — those rules belong on the component as props. When you do write one, keep the **resting** value in the stylesheet next to the pseudo-state rule: inline styles outrank class rules, so an inline resting colour makes its own hover rule unreachable.
 
-**Style constant typing**
+**Units:** Mantine's numeric `gap`/`p`/`m` are **pixels**; MUI's were 8px units. A density spec carried over as `gap: 2` silently becomes 2px — re-express it explicitly.
 
-When extracting an `sx` object into a named constant, validate it against MUI's types with `satisfies SxProps<Theme>`:
+**Prefer a `@mantine/hooks` hook over a hand-written effect:** `useDebouncedValue`/`useDebouncedCallback`, `useDisclosure` (for discrete open/close handlers — not for a controlled boolean-setter prop), `useLocalStorage` (pass `getInitialValueInEffect: false`, and explicit `serialize`/`deserialize` for any key already stored in a bare format), `useInterval`/`useTimeout`, `useHotkeys` (binds to `document`; use `useWindowEvent` for events dispatched on `window`), `useListState`, `useClipboard`.
 
-```ts
-import type {SxProps, Theme} from '@mui/material';
+**Migrating a dialog off MUI**
 
-const sectionPaperSx = {
-    bgcolor: 'background.paper',
-    borderRadius: 1.5,
-    p: 2.5,
-    border: '1px solid',
-    borderColor: 'divider',
-} satisfies SxProps<Theme>;
-```
+- Swap `dialogs/shared` → `dialogs/shared/mantine`, delete every `sx`, and drop the `MuiThemeIsland` wrapper from the island entry **only** once the subtree is provably MUI-free — then re-run `theme/islandProviders.spec.ts`.
+- Islands mount through `islandTree()` / `mountReactIsland()` in `theme/DfrntMantineProvider.tsx`. **Mantine must be outermost, MUI nested inside:** Mantine's `useStyles` throws without a provider, MUI silently falls back. A still-MUI host whose leaf has converted needs `renderWithMantineOverMui` in its tests.
+- When you add a `.module.css`, confirm its loader — a `routes.ts` entry *or* a lazy-load service — pairs script and stylesheet, and pin it with a test. Three islands have shipped a stylesheet nothing loaded, one of which silently dropped a map's `isolation: isolate`.
 
-`satisfies` catches typos in theme paths (`'grey.250'`, `'primary.medium'`) while preserving the inferred literal shape, so the constant remains spread-friendly: `<Paper sx={{...sectionPaperSx, p: 2}}>` still type-checks. Prefer this over a bare `SxProps<Theme>` annotation (which widens the type and breaks spreading) and over `as const` alone (which gives no validation against MUI's schema).
+**Icons**
+
+One wrapper, one stroke: `<Icon lucide={Search}/>` for generic UI chrome,
+`<Icon tabler={IconTruck}/>` for transport/logistics. Import the Lucide/Tabler
+component **directly** at the call site.
+
+`components/common/icon/iconMap.ts` maps every `@mui/icons-material` name the app
+used to its replacement — use it as a **lookup table while converting**, never as
+a runtime import. It is one object literal over ~209 components indexed
+dynamically, so esbuild cannot tree-shake it and a single runtime importer bundles
+every glyph (+178 KB, measured). `iconMap.spec.tsx` fails the build's test run if
+any non-test file imports it without `import type`.
+
+A registry that must resolve a **data-supplied string** to a component keeps its
+own local table of direct imports — see `symbol-icon/SymbolIcon.tsx` and
+`task-history/eventIcons.tsx`. Both stamp the name they resolved
+(`data-symbol-icon` / `data-event-icon`) because Lucide and Tabler emit no test
+hook of their own, where MUI auto-generated `data-testid="FooIcon"`. Assert on
+that stamp — it proves the data reached the DOM — and put glyph-identity
+assertions in the resolver's unit test.
+
+**Testing dialogs**
+
+Query by visible text, `getByLabelText` or `getByRole` — never class names. Use `renderWithMantine` / `renderWithMantineProviders` / `renderWithMantineOverMui` from `react/__testUtils__`. Mantine specifics that bite:
+
+- `required` appends an asterisk to a label — `getByLabelText('X')` breaks; match `/X/`.
+- `Select`'s input is `role="combobox"` and pairs with a hidden input, so a label matches two elements.
+- `DateTimePicker`/`DatePickerInput` render a `<button>`, not an input. An inline calendar is a `<table>` of day `<button>`s labelled `"20 January 2025"` — no `grid`/`gridcell` roles.
+- **Pass `defaultDate` on every inline calendar.** A Mantine calendar opens on the *current* month, not on its `value`.
+- `SegmentedControl` renders radios, not buttons. A disabled `Menu.Item` gets `data-disabled`, not `aria-disabled`.
+- `Loader` has no implicit role — give it an `aria-label`. `Tooltip` adds no `title` attribute.
+- `MantineProvider` injects a `<style>` element, so `container.firstChild` is never `null` — assert absence of `role="dialog"` instead.
+- Animations are zeroed globally in `wwwroot/app/tests/setup.ts`; don't use `waitForElementToBeRemoved` for a closing dialog.

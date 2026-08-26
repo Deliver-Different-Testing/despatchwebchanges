@@ -1,22 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { alpha } from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import PersonIcon from '@mui/icons-material/Person';
-import GpsFixedIcon from '@mui/icons-material/GpsFixed';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import MapIcon from '@mui/icons-material/Map';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import Paper from '@mui/material/Paper';
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import Tooltip from '@mui/material/Tooltip';
+import {
+    ActionIcon, Alert, Badge, Box, Group, Loader, Paper, Stack, Text, Tooltip, alpha, useMantineTheme,
+} from '@mantine/core';
+import { Bug, ClipboardList, Info, LocateFixed, User } from 'lucide-react';
+import { IconMap } from '@tabler/icons-react';
+import { Icon } from '../icon/Icon';
+import { DialogHeader, DialogShell } from '../../dialogs/shared/mantine';
+import { dialogContentBg } from '../../dialogs/shared/mantine/styles';
 import type { IClearListDebugViewModel } from '../../../../interfaces/job.interface';
 import { apiClient } from '../../../services/apiClient';
 
@@ -26,30 +16,26 @@ async function fetchClearListDebug(courierId: number): Promise<IClearListDebugVi
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
     return (
-        <Box sx={{ display: 'flex', gap: 1, py: 0.5 }}>
-            <Typography
-                variant="caption"
-                sx={{
-                    color: 'text.secondary',
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.5,
-                    fontWeight: 500,
-                    minWidth: 160,
-                    pt: 0.25,
-                }}
+        <Group gap={8} py={4} align="flex-start" wrap="nowrap">
+            <Text
+                fz="xs"
+                c="dimmed"
+                tt="uppercase"
+                fw={500}
+                miw={160}
+                pt={2}
+                style={{ letterSpacing: 0.5 }}
             >
                 {label}
-            </Typography>
-            <Typography variant="body2" component="div" sx={{ flex: 1 }}>
+            </Text>
+            <Box style={{ flex: 1 }}>
                 {value ?? (
-                    <Typography variant="body2" component="span" sx={{
-                        color: "text.disabled"
-                    }}>
+                    <Text component="span" fz="sm" c="var(--mantine-color-dimmed)">
                         N/A
-                    </Typography>
+                    </Text>
                 )}
-            </Typography>
-        </Box>
+            </Box>
+        </Group>
     );
 }
 
@@ -80,93 +66,38 @@ export function ClearListDebugButton({ courierId }: { courierId: number }) {
 
     return (
         <>
-            <Tooltip title="Clear list debug info">
-                <IconButton
-                    size="small"
+            <Tooltip label="Clear list debug info">
+                <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="sm"
                     onClick={handleOpen}
-                    sx={{ p: '2px', opacity: 0.6, '&:hover': { opacity: 1 } }}
+                    aria-label="Clear list debug info"
                 >
-                    <InfoOutlinedIcon sx={{ fontSize: '0.875rem' }} />
-                </IconButton>
+                    <Icon lucide={Info} size={14} />
+                </ActionIcon>
             </Tooltip>
-            <Dialog
-                open={open}
-                onClose={handleClose}
-                maxWidth="sm"
-                fullWidth
-                slotProps={{
-                    paper: {
-                        elevation: 24,
-                        sx: {
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            minWidth: 480,
-                            maxWidth: 600,
-                        },
-                    },
-                }}
-            >
-                {/* Header */}
-                <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.info.dark} 100%)`,
-                        color: 'white',
-                        px: 3,
-                        py: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    })}
-                >
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 1.5,
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <BugReportIcon sx={{ fontSize: 24 }} />
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" sx={{
-                            fontWeight: 600
-                        }}>
-                            Clear List Debug
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                            Driver placement diagnostics
-                        </Typography>
-                    </Box>
-                    <IconButton
-                        onClick={handleClose}
-                        sx={{
-                            color: 'white',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
-
-                {/* Content */}
-                <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
+            <DialogShell opened={open} onClose={handleClose} label="Clear List Debug">
+                <DialogHeader
+                    icon={<Icon lucide={Bug} />}
+                    title="Clear List Debug"
+                    subtitle="Driver placement diagnostics"
+                    onClose={handleClose}
+                />
+                <Box bg={dialogContentBg}>
                     {loading && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8 }}>
-                            <CircularProgress size={40} />
-                        </Box>
+                        <Group justify="center" py={64}>
+                            <Loader size={40} role="progressbar" aria-label="Loading debug info" />
+                        </Group>
                     )}
                     {error && (
-                        <Box sx={{ p: 3 }}>
-                            <Alert severity="error">{error}</Alert>
+                        <Box p={24}>
+                            <Alert color="red">{error}</Alert>
                         </Box>
                     )}
                     {data && !loading && <DebugContent data={data} />}
-                </DialogContent>
-            </Dialog>
+                </Box>
+            </DialogShell>
         </>
     );
 }
@@ -179,176 +110,166 @@ function SectionCard({
 }: {
     icon: React.ReactNode;
     title: string;
+    /** A Mantine colour name — tints the section's header strip. */
     color: string;
     children: React.ReactNode;
 }) {
+    const theme = useMantineTheme();
+    const ramp = theme.colors[color] ?? theme.colors[theme.primaryColor];
+
     return (
-        <Paper
-            elevation={0}
-            sx={(theme) => ({
-                borderRadius: 3,
-                border: `1px solid ${theme.palette.divider}`,
-                overflow: 'hidden',
-            })}
-        >
-            <Box
-                sx={(theme) => ({
-                    px: 2.5,
-                    py: 2,
-                    bgcolor: alpha((theme.palette as any)[color.split('.')[0]]?.main ?? theme.palette.primary.main, 0.04),
-                    borderBottom: `1px solid ${theme.palette.divider}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                })}
+        <Paper withBorder radius="lg" style={{ overflow: 'hidden' }}>
+            <Group
+                px={20}
+                py={16}
+                gap={12}
+                wrap="nowrap"
+                style={{
+                    backgroundColor: alpha(ramp[5], 0.04),
+                    borderBottom: '1px solid var(--mantine-color-default-border)',
+                }}
             >
                 {icon}
-                <Typography variant="subtitle1" sx={{
-                    fontWeight: 600
-                }}>
+                <Text fz="md" fw={600}>
                     {title}
-                </Typography>
-            </Box>
-            <Box sx={{ p: 2.5 }}>
-                {children}
-            </Box>
+                </Text>
+            </Group>
+            <Box p={20}>{children}</Box>
         </Paper>
     );
 }
 
 function DebugContent({ data }: { data: IClearListDebugViewModel }) {
+    const theme = useMantineTheme();
     const gpsStale = data.gpsAgeMinutes != null && data.gpsAgeMinutes > 3;
 
     return (
-        <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Stack p={24} gap={24}>
             {/* Explanation */}
-            <Alert severity="info">
-                <Typography variant="body2">{data.explanation}</Typography>
+            <Alert color="blue" icon={<Icon lucide={Info} />}>
+                <Text fz="sm">{data.explanation}</Text>
             </Alert>
+
             {/* Courier Info */}
             <SectionCard
-                icon={<PersonIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
+                icon={<Icon lucide={User} size={22} color="var(--mantine-primary-color-filled)" />}
                 title="Courier"
-                color="primary"
+                color={theme.primaryColor}
             >
                 <InfoRow label="Code" value={data.courierCode} />
                 <InfoRow label="Name" value={data.courierName} />
                 <InfoRow label="Channel ID" value={data.channelId} />
                 <InfoRow label="Fleet" value={data.fleetName} />
-                <InfoRow label="Logged In" value={
-                    data.isLoggedIn
-                        ? <Chip label="Yes" color="success" size="small" />
-                        : <Chip label="No" color="default" size="small" />
-                } />
+                <InfoRow
+                    label="Logged In"
+                    value={
+                        data.isLoggedIn
+                            ? <Badge size="sm" color="green" variant="light">Yes</Badge>
+                            : <Badge size="sm" color="gray" variant="light">No</Badge>
+                    }
+                />
                 {data.loginTime && <InfoRow label="Login Time" value={data.loginTime} />}
             </SectionCard>
+
             {/* GPS Info */}
             <SectionCard
-                icon={<GpsFixedIcon sx={{ color: 'success.main', fontSize: 22 }} />}
+                icon={<Icon lucide={LocateFixed} size={22} color="var(--mantine-color-green-6)" />}
                 title="GPS Location"
-                color="success"
+                color="green"
             >
                 <InfoRow label="Polygon ID" value={data.gpsPolygonId} />
                 <InfoRow label="Polygon Name" value={data.gpsPolygonName} />
                 {data.gpsPolygonSuburbs.length > 0 && (
-                    <InfoRow label="Suburbs in Polygon" value={
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {data.gpsPolygonSuburbs.map(s => (
-                                <Chip key={s} label={s} size="small" />
-                            ))}
-                        </Box>
-                    } />
+                    <InfoRow
+                        label="Suburbs in Polygon"
+                        value={
+                            <Group gap={4} wrap="wrap">
+                                {data.gpsPolygonSuburbs.map(s => (
+                                    <Badge key={s} size="sm" color="gray" variant="light">{s}</Badge>
+                                ))}
+                            </Group>
+                        }
+                    />
                 )}
-                <InfoRow label="Lat/Lng" value={
-                    data.gpsLatitude != null ? `${data.gpsLatitude}, ${data.gpsLongitude}` : null
-                } />
-                <InfoRow label="GPS Age" value={
-                    data.gpsAgeMinutes != null
-                        ? <Chip
-                            label={`${data.gpsAgeMinutes} min ago`}
-                            color={gpsStale ? 'warning' : 'success'}
-                            size="small"
-                        />
-                        : null
-                } />
+                <InfoRow
+                    label="Lat/Lng"
+                    value={data.gpsLatitude != null ? `${data.gpsLatitude}, ${data.gpsLongitude}` : null}
+                />
+                <InfoRow
+                    label="GPS Age"
+                    value={
+                        data.gpsAgeMinutes != null
+                            ? (
+                                <Badge size="sm" variant="light" color={gpsStale ? 'orange' : 'green'}>
+                                    {`${data.gpsAgeMinutes} min ago`}
+                                </Badge>
+                            )
+                            : null
+                    }
+                />
                 {data.gpsTimestamp && <InfoRow label="GPS Timestamp" value={data.gpsTimestamp} />}
             </SectionCard>
+
             {/* Admin Assignment */}
             <SectionCard
-                icon={<AssignmentIcon sx={{ color: 'info.main', fontSize: 22 }} />}
+                icon={<Icon lucide={ClipboardList} size={22} color="var(--mantine-color-reflex-6)" />}
                 title="Admin Assignment (TblClearListAreaOrder)"
-                color="info"
+                color="reflex"
             >
                 <InfoRow label="Assigned Area" value={data.assignedClearListAreaName} />
                 <InfoRow label="Status" value={data.assignedStatusLabel} />
-                <Typography variant="caption" sx={{
-                    color: "text.secondary"
-                }}>
+                <Text fz="xs" c="dimmed">
                     This controls the row position (top/middle/bottom), NOT which area column the driver appears in.
-                </Typography>
+                </Text>
             </SectionCard>
+
             {/* Polygon-to-Area Mappings */}
             <SectionCard
-                icon={<MapIcon sx={{ color: 'warning.main', fontSize: 22 }} />}
+                icon={<Icon tabler={IconMap} size={22} color="var(--mantine-color-orange-6)" />}
                 title="Polygon Area Mappings"
-                color="warning"
+                color="orange"
             >
-                <Typography
-                    variant="caption"
-                    sx={{
-                        color: "text.secondary",
-                        display: 'block',
-                        mb: 1.5
-                    }}>
-                    Which clear list areas this courier's GPS polygon is linked to. The driver appears in areas where
-                    the channel matches.
-                </Typography>
+                <Text fz="xs" c="dimmed" display="block" mb={12}>
+                    Which clear list areas this courier&apos;s GPS polygon is linked to. The driver appears in areas
+                    where the channel matches.
+                </Text>
                 {data.polygonAreaMappings.length === 0 ? (
-                    <Alert severity="warning">
-                        No polygon-to-area mappings found. This driver's GPS polygon is not linked to any clear list area.
+                    <Alert color="orange">
+                        No polygon-to-area mappings found. This driver&apos;s GPS polygon is not linked to any clear
+                        list area.
                     </Alert>
                 ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Stack gap={4}>
                         {data.polygonAreaMappings.map(m => (
-                            <Box
+                            <Group
                                 key={m.clearListAreaId}
-                                sx={(theme) => ({
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                    p: 1,
-                                    borderRadius: 1,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    ...(m.channelMatches
-                                        ? {
-                                            bgcolor: alpha(theme.palette.success.main, 0.06),
-                                            borderColor: theme.palette.success.light,
-                                        }
-                                        : {
-                                            bgcolor: 'action.hover',
-                                        }
-                                    ),
-                                })}
+                                gap={8}
+                                p={8}
+                                wrap="nowrap"
+                                style={{
+                                    borderRadius: 'var(--mantine-radius-sm)',
+                                    border: `1px solid ${m.channelMatches
+                                        ? theme.colors.green[3]
+                                        : 'var(--mantine-color-default-border)'}`,
+                                    backgroundColor: m.channelMatches
+                                        ? alpha(theme.colors.green[5], 0.06)
+                                        : 'var(--mantine-color-gray-1)',
+                                }}
                             >
-                                <Typography variant="body2" sx={{
-                                    fontWeight: 600
-                                }}>
-                                    {m.clearListAreaName}
-                                </Typography>
-                                <Chip
-                                    label={`Ch: ${m.areaChannelId}`}
-                                    size="small"
-                                />
-                                <Chip
-                                    label={m.channelMatches ? 'Channel Match' : 'No Match'}
-                                    color={m.channelMatches ? 'success' : 'default'}
-                                    size="small"
-                                />
-                            </Box>
+                                <Text fz="sm" fw={600}>{m.clearListAreaName}</Text>
+                                <Badge size="sm" color="gray" variant="light">{`Ch: ${m.areaChannelId}`}</Badge>
+                                <Badge
+                                    size="sm"
+                                    variant="light"
+                                    color={m.channelMatches ? 'green' : 'gray'}
+                                >
+                                    {m.channelMatches ? 'Channel Match' : 'No Match'}
+                                </Badge>
+                            </Group>
                         ))}
-                    </Box>
+                    </Stack>
                 )}
             </SectionCard>
-        </Box>
+        </Stack>
     );
 }

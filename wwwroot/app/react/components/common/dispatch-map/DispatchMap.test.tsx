@@ -8,10 +8,10 @@
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {DispatchMap} from './DispatchMap';
 import type {DispatchMapProps, ClearListEnvelopeData} from './DispatchMap.types';
 import * as courierApi from '../../../services/courierApi';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // Mock the courier API
 jest.mock('../../../services/courierApi', () => ({
@@ -71,7 +71,6 @@ jest.mock('./useMapPreferences', () => ({
     })),
 }));
 
-const theme = createTheme();
 
 function createTestQueryClient(): QueryClient {
     return new QueryClient({
@@ -89,7 +88,7 @@ const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) 
     const client = queryClient ?? createTestQueryClient();
     return render(
         <QueryClientProvider client={client}>
-            <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+            <MantineTestProvider>{ui}</MantineTestProvider>
         </QueryClientProvider>
     );
 };

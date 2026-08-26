@@ -3,9 +3,23 @@
  *
  * The migration off `@mui/icons-material` (284 distinct glyphs) replaces each
  * icon with a Lucide (UI chrome) or Tabler (transport/logistics) equivalent,
- * rendered through the {@link Icon} wrapper. This is the seed of the codemod
- * dictionary — the most-used glyphs are mapped here; extend it as the sweep
- * migrates each area. Keys are the `@mui/icons-material` component names.
+ * rendered through the {@link Icon} wrapper. Keys are the `@mui/icons-material`
+ * component names.
+ *
+ * This covers **every** glyph the app used before the Phase 3 sweep, so it is the
+ * complete dictionary rather than a seed. `iconMap.spec.tsx` renders all of them,
+ * so a bad entry is a failing test rather than a silently-missing glyph.
+ *
+ * ⚠️ **Do not import this at runtime.** It is one object literal over ~209
+ * components, indexed dynamically, so esbuild cannot tree-shake it: a single
+ * runtime importer pulls *every* glyph into that bundle. Measured at +178 KB
+ * across `dist` when `SymbolIcon` briefly used it. `iconMap.spec.tsx` asserts
+ * this file has no runtime importers.
+ *
+ * Use it as a **codemod reference**: look the MUI name up here, then import the
+ * Lucide/Tabler component *directly* at the call site. Data-driven registries
+ * that must map a string to a component keep their own local table of direct
+ * imports — see `symbol-icon/SymbolIcon.tsx` and `task-history/eventIcons.tsx`.
  *
  * @example
  *   const {lib, component} = MUI_ICON_MAP.Close;
@@ -21,10 +35,23 @@ import {
     CloudUpload, CloudDownload, Camera, FileUp,
     Network, Handshake, Link as LinkIcon, ListFilter, Columns3, Copy, Ban, Printer,
     ExternalLink, ArrowUpDown,
+    ArrowLeft, ArrowLeftRight, ArrowRight, ArrowUp, Briefcase, Bug, Building2, CalendarCheck,
+    CalendarClock, CalendarCog, CalendarDays, CalendarRange, CalendarSync, CalendarX,
+    ChartNoAxesGantt, CheckCheck, ChevronLeft, Circle, CircleAlert, CircleDollarSign,
+    CirclePause, CirclePlay, CirclePlus, ClipboardList, CreditCard, DoorOpen, FilePlus,
+    FileText, Filter, FilterX, Flag, Folder, Gauge, GlobeLock, Headset, IdCard, Image, Inbox,
+    Landmark, Layers, List, LocateFixed, Lock, LockOpen, Maximize, MessageCircle,
+    MessageSquarePlus, MessageSquareReply, Minimize, Minus, Moon, Mountain, MoveRight,
+    Navigation, NotebookPen, NotebookText, PenTool, PhoneCall, Play, Power, QrCode, ReceiptText,
+    RefreshCcwDot, Rocket, Rows3, Rss, Ruler, Satellite, Scale, Scan, ScanText, ScrollText,
+    SearchX, Shapes, ShieldCheck, ShoppingCart, Shuffle, Siren, SlidersHorizontal, Smartphone,
+    Sparkles, Square, SquareCheck, SquareCheckBig, StickyNote, Store, Tag, TrafficCone,
+    TrendingDown, TrendingUp, Undo2, Upload, UserSearch, UserX, Users, Wallet, Wrench
 } from 'lucide-react';
 import {
     IconTruck, IconPlane, IconPlaneOff, IconMapPin, IconRoute, IconPackage, IconMap,
     IconPlaneDeparture, IconPlaneArrival, IconSnowflake, IconQuestionMark,
+    IconBuildingWarehouse, IconBus, IconCar, IconPlaneTilt, IconUserPin
 } from '@tabler/icons-react';
 import type {LucideIcon, TablerIcon} from './Icon';
 
@@ -112,6 +139,148 @@ export const MUI_ICON_MAP: Record<string, IconMapEntry> = {
     LocalAirport: {lib: 'tabler', component: IconPlane},
     AcUnit: {lib: 'tabler', component: IconSnowflake},
     QuestionMark: {lib: 'tabler', component: IconQuestionMark},
+
+    // ── Phase 3 sweep: the remaining glyphs ─────────────────────────────
+    AccountBalance: {lib: 'lucide', component: Landmark},
+    AccountBalanceWallet: {lib: 'lucide', component: Wallet},
+    AddBusiness: {lib: 'lucide', component: Store},
+    AddCircle: {lib: 'lucide', component: CirclePlus},
+    AddComment: {lib: 'lucide', component: MessageSquarePlus},
+    ArrowBack: {lib: 'lucide', component: ArrowLeft},
+    ArrowDropDown: {lib: 'lucide', component: ChevronDown},
+    ArrowForward: {lib: 'lucide', component: ArrowRight},
+    Assignment: {lib: 'lucide', component: ClipboardList},
+    AutoAwesome: {lib: 'lucide', component: Sparkles},
+    Autorenew: {lib: 'lucide', component: RefreshCw},
+    Badge: {lib: 'lucide', component: IdCard},
+    Block: {lib: 'lucide', component: Ban},
+    BugReport: {lib: 'lucide', component: Bug},
+    Build: {lib: 'lucide', component: Wrench},
+    Business: {lib: 'lucide', component: Building2},
+    CalendarMonth: {lib: 'lucide', component: Calendar},
+    CalendarViewMonth: {lib: 'lucide', component: Columns3},
+    Category: {lib: 'lucide', component: Shapes},
+    Chat: {lib: 'lucide', component: MessageSquare},
+    ChatBubbleOutlined: {lib: 'lucide', component: MessageCircle},
+    CheckBox: {lib: 'lucide', component: SquareCheck},
+    CheckBoxOutlineBlank: {lib: 'lucide', component: Square},
+    ChevronLeft: {lib: 'lucide', component: ChevronLeft},
+    ChevronRight: {lib: 'lucide', component: ChevronRight},
+    Circle: {lib: 'lucide', component: Circle},
+    Clear: {lib: 'lucide', component: X},
+    ContactMail: {lib: 'lucide', component: Mail},
+    ContactPhone: {lib: 'lucide', component: PhoneCall},
+    CropSquare: {lib: 'lucide', component: Square},
+    DateRange: {lib: 'lucide', component: CalendarRange},
+    Description: {lib: 'lucide', component: FileText},
+    DocumentScanner: {lib: 'lucide', component: ScanText},
+    DoneAll: {lib: 'lucide', component: CheckCheck},
+    Download: {lib: 'lucide', component: Download},
+    Draw: {lib: 'lucide', component: PenTool},
+    EditCalendar: {lib: 'lucide', component: CalendarCog},
+    EditNote: {lib: 'lucide', component: NotebookPen},
+    Emergency: {lib: 'lucide', component: Siren},
+    EngineeringOutlined: {lib: 'lucide', component: HardHat},
+    Error: {lib: 'lucide', component: CircleAlert},
+    ErrorOutlined: {lib: 'lucide', component: CircleAlert},
+    Event: {lib: 'lucide', component: CalendarDays},
+    EventBusy: {lib: 'lucide', component: CalendarX},
+    EventNote: {lib: 'lucide', component: CalendarClock},
+    EventRepeat: {lib: 'lucide', component: CalendarSync},
+    FilterAlt: {lib: 'lucide', component: Filter},
+    FilterAltOff: {lib: 'lucide', component: FilterX},
+    FitScreen: {lib: 'lucide', component: Scan},
+    Flag: {lib: 'lucide', component: Flag},
+    FormatListBulleted: {lib: 'lucide', component: List},
+    Fullscreen: {lib: 'lucide', component: Maximize},
+    FullscreenExit: {lib: 'lucide', component: Minimize},
+    GpsFixed: {lib: 'lucide', component: LocateFixed},
+    GridView: {lib: 'lucide', component: LayoutGrid},
+    HistoryEdu: {lib: 'lucide', component: ScrollText},
+    InfoOutlined: {lib: 'lucide', component: Info},
+    Landscape: {lib: 'lucide', component: Image},
+    Layers: {lib: 'lucide', component: Layers},
+    ListAlt: {lib: 'lucide', component: List},
+    Lock: {lib: 'lucide', component: Lock},
+    LockOpen: {lib: 'lucide', component: LockOpen},
+    LockOutlined: {lib: 'lucide', component: Lock},
+    MeetingRoom: {lib: 'lucide', component: DoorOpen},
+    NearMe: {lib: 'lucide', component: Navigation},
+    NightsStay: {lib: 'lucide', component: Moon},
+    Note: {lib: 'lucide', component: StickyNote},
+    NoteAdd: {lib: 'lucide', component: FilePlus},
+    Notes: {lib: 'lucide', component: NotebookText},
+    Paid: {lib: 'lucide', component: CircleDollarSign},
+    PauseCircle: {lib: 'lucide', component: CirclePause},
+    Payments: {lib: 'lucide', component: CreditCard},
+    PeopleAlt: {lib: 'lucide', component: Users},
+    PersonOffOutlined: {lib: 'lucide', component: UserX},
+    PersonSearch: {lib: 'lucide', component: UserSearch},
+    PlayArrow: {lib: 'lucide', component: Play},
+    PlayCircleOutlined: {lib: 'lucide', component: CirclePlay},
+    PowerSettingsNew: {lib: 'lucide', component: Power},
+    PriorityHigh: {lib: 'lucide', component: TriangleAlert},
+    PublicOff: {lib: 'lucide', component: GlobeLock},
+    PublishedWithChanges: {lib: 'lucide', component: RefreshCcwDot},
+    QrCode2: {lib: 'lucide', component: QrCode},
+    QuickreplyOutlined: {lib: 'lucide', component: MessageSquareReply},
+    ReceiptLong: {lib: 'lucide', component: ReceiptText},
+    Remove: {lib: 'lucide', component: Minus},
+    ReportProblem: {lib: 'lucide', component: TriangleAlert},
+    RequestQuote: {lib: 'lucide', component: FileText},
+    RocketLaunch: {lib: 'lucide', component: Rocket},
+    SatelliteAlt: {lib: 'lucide', component: Satellite},
+    Scale: {lib: 'lucide', component: Scale},
+    SearchOff: {lib: 'lucide', component: SearchX},
+    SearchOffOutlined: {lib: 'lucide', component: SearchX},
+    SendToMobile: {lib: 'lucide', component: Smartphone},
+    ShoppingCart: {lib: 'lucide', component: ShoppingCart},
+    Shuffle: {lib: 'lucide', component: Shuffle},
+    Speed: {lib: 'lucide', component: Gauge},
+    StickyNote2: {lib: 'lucide', component: StickyNote},
+    Stop: {lib: 'lucide', component: Square},
+    Straight: {lib: 'lucide', component: ArrowUp},
+    Straighten: {lib: 'lucide', component: Ruler},
+    SupportAgent: {lib: 'lucide', component: Headset},
+    SwapCalls: {lib: 'lucide', component: ArrowLeftRight},
+    SwapHoriz: {lib: 'lucide', component: ArrowLeftRight},
+    Sync: {lib: 'lucide', component: RefreshCw},
+    Tag: {lib: 'lucide', component: Tag},
+    Task: {lib: 'lucide', component: SquareCheckBig},
+    Terrain: {lib: 'lucide', component: Mountain},
+    Timeline: {lib: 'lucide', component: ChartNoAxesGantt},
+    Today: {lib: 'lucide', component: CalendarCheck},
+    Topic: {lib: 'lucide', component: Folder},
+    Traffic: {lib: 'lucide', component: TrafficCone},
+    TrendingDown: {lib: 'lucide', component: TrendingDown},
+    TrendingFlat: {lib: 'lucide', component: MoveRight},
+    TrendingUp: {lib: 'lucide', component: TrendingUp},
+    Tune: {lib: 'lucide', component: SlidersHorizontal},
+    Undo: {lib: 'lucide', component: Undo2},
+    Upcoming: {lib: 'lucide', component: Inbox},
+    Update: {lib: 'lucide', component: RefreshCw},
+    Upload: {lib: 'lucide', component: Upload},
+    VerifiedUser: {lib: 'lucide', component: ShieldCheck},
+    ViewDay: {lib: 'lucide', component: Rows3},
+    ViewList: {lib: 'lucide', component: List},
+    ViewWeek: {lib: 'lucide', component: Columns3},
+    WarningAmber: {lib: 'lucide', component: TriangleAlert},
+    WarningAmberRounded: {lib: 'lucide', component: TriangleAlert},
+    WifiTethering: {lib: 'lucide', component: Rss},
+    WorkOutlined: {lib: 'lucide', component: Briefcase},
+    ZoomOutMap: {lib: 'lucide', component: Maximize},
+
+    // ── Phase 3 sweep: transport & logistics ────────────────────────────
+    AirportShuttle: {lib: 'tabler', component: IconBus},
+    ConnectingAirports: {lib: 'tabler', component: IconPlaneTilt},
+    DirectionsCar: {lib: 'tabler', component: IconCar},
+    FlightTakeoffOutlined: {lib: 'tabler', component: IconPlaneDeparture},
+    Inventory: {lib: 'tabler', component: IconPackage},
+    Inventory2Outlined: {lib: 'tabler', component: IconPackage},
+    LocalAirportOutlined: {lib: 'tabler', component: IconPlane},
+    PersonPinCircleOutlined: {lib: 'tabler', component: IconUserPin},
+    PinDrop: {lib: 'tabler', component: IconMapPin},
+    Warehouse: {lib: 'tabler', component: IconBuildingWarehouse},
 };
 
 export default MUI_ICON_MAP;
