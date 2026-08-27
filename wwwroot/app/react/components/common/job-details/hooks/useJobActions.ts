@@ -8,7 +8,7 @@
 import {useState, useCallback, useRef} from 'react';
 import type {Dayjs} from 'dayjs';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
-import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS} from '../JobDetails.types';
+import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS, podMediaJobId} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {AddressType} from '../../../../../enums/address-type.enum';
@@ -1167,19 +1167,19 @@ export function useJobActions({
     const handlePodUpload = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        (window as any).ReactJobFileUploadDialog?.open?.(j.id, 'POD');
+        (window as any).ReactJobFileUploadDialog?.open?.(podMediaJobId(j), 'POD');
     }, []);
 
     const handlePodReport = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        window.open(getPodReportUrl(j.id), '_blank');
+        window.open(getPodReportUrl(podMediaJobId(j)), '_blank');
     }, []);
 
     const handlePodSpreadsheet = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        window.open(getPodSpreadsheetUrl(j.id), '_blank');
+        window.open(getPodSpreadsheetUrl(podMediaJobId(j)), '_blank');
     }, []);
 
     // Extra overlay documents (invoices, manifests, etc.) offered in the export menu. Fetched lazily the
@@ -1194,7 +1194,7 @@ export function useJobActions({
         overlayFetchedForJob.current = j.id;
         setOverlayDocumentsLoading(true);
         try {
-            setOverlayDocuments(await getJobOverlayDocuments(j.id));
+            setOverlayDocuments(await getJobOverlayDocuments(podMediaJobId(j)));
         } catch {
             setOverlayDocuments([]);
         } finally {
@@ -1205,7 +1205,7 @@ export function useJobActions({
     const handleDownloadOverlay = useCallback((documentType: string) => {
         const j = jobRef.current;
         if (!j) return;
-        window.open(getOverlayDocumentUrl(j.id, documentType), '_blank');
+        window.open(getOverlayDocumentUrl(podMediaJobId(j), documentType), '_blank');
     }, []);
 
     const handleSendPodEmail = useCallback(async () => {
@@ -1213,7 +1213,7 @@ export function useJobActions({
         if (!j) return;
         await ensureSendPodDialog();
         const result = await window.ReactSendPodDialog?.open({
-            jobId: j.id,
+            jobId: podMediaJobId(j),
             jobNo: j.jobNo,
             clientName: j.clientName,
             driverName: j.courierData?.courierName || '',

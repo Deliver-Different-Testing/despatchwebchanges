@@ -7,7 +7,7 @@ import {useMemo} from 'react';
 import {queryKeys} from '../../../../query/queryClient';
 import {getJobDeliveryPhotos, getJobPickupPhotos} from '../../../../services/jobDetailApi';
 import {formatLongDateTime} from '../../../../utils/dateUtils';
-import {isImageFile} from '../JobDetails.types';
+import {isImageFile, podMediaJobId} from '../JobDetails.types';
 import type {PodPhoto, IJob} from '../JobDetails.types';
 import {JobStatus} from '../../../../../enums/job-status.enum';
 import type {Dayjs} from 'dayjs';
@@ -71,7 +71,7 @@ function processPhotoData(
 export function usePodPhotos({job, isRecurringJob}: UsePodPhotosOptions) {
     const completedTime = job?.completedTime;
     // A bulk row's own id is a BulkJobId; S3 keys POD media by the live job id, so prefer the link.
-    const jobId = job?.linkedJobId ?? job?.id ?? 0;
+    const jobId = job ? podMediaJobId(job) : 0;
 
     // Delivery photos are proof-of-delivery, so they only exist once the job is
     // completed. Pickup photos are uploaded at pickup, so they're available from

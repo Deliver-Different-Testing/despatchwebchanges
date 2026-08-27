@@ -108,6 +108,74 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GeneratePodReportAsync_ScheduleRowId_ResolvesMediaAgainstTheLinkedLiveJob()
+    {
+        // A tblBulkJob ("scheduled job") id is not a tucJob id. POD media is written against the
+        // live job the schedule materialised into, so an id that matches no job has to be retried
+        // as a schedule id before the report gives up.
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>()).Returns(new ReportBranding());
+        _jobRepositoryMock.GetSingleJobById(500).Returns((JobViewModel?)null);
+        _jobRepositoryMock.GetLinkedJobIdForBulkJobAsync(500).Returns(987654);
+        _jobRepositoryMock.GetSingleJobById(987654).Returns(new JobViewModel
+        {
+            JobNo = "S-987654",
+            CompletedTime = new DateTime(2026, 8, 7, 8, 35, 0)
+        });
+
+        var (_, fileName) = await CreateService().GeneratePodReportAsync(500);
+
+        Assert.Equal("POD-S-987654.pdf", fileName);
+        await _podMediaServiceMock.Received(1).GetDeliveryMediaAsync(987654, 2026, 8);
+    }
+
+    [Fact]
+    public async Task GeneratePodReportAsync_LiveJobId_NeverConsultsTheScheduleTable()
+    {
+        SetupHttpContext();
+        _tenantBrandingServiceMock.GetBrandingAsync(42, Arg.Any<CancellationToken>()).Returns(new ReportBranding());
+        _jobRepositoryMock.GetSingleJobById(11).Returns(new JobViewModel { JobNo = "J-11" });
+
+        await CreateService().GeneratePodReportAsync(11);
+
+        await _jobRepositoryMock.DidNotReceiveWithAnyArgs().GetLinkedJobIdForBulkJobAsync(default);
+    }
+
+    [Fact]
+    public async Task AppendDeliveryPhotosAsync_ScheduleRowId_AppendsTheLinkedLiveJobsMedia()
+    {
+        // The archived lookup throws rather than returning null for an unknown id, which is what a
+        // schedule id looks like to it.
+        _jobRepositoryMock.GetSingleJobById(500).Throws(new KeyNotFoundException("Archived job 500 not found"));
+        _jobRepositoryMock.GetLinkedJobIdForBulkJobAsync(500).Returns(987654);
+        _jobRepositoryMock.GetSingleJobById(987654)
+            .Returns(new JobViewModel { CompletedTime = new DateTime(2026, 3, 10) });
+
+        var png = Convert.ToBase64String(SamplePng());
+        _podMediaServiceMock.GetDeliveryMediaAsync(987654, 2026, 3).Returns(new List<S3PhotoInfo>
+        {
+            new() { S3Key = "DeliverySignatures/2026/03/987654-s.png", Data = png, FileName = "987654-s.png" }
+        });
+
+        var result = await CreateService().AppendDeliveryPhotosAsync(CreateSamplePdf(), 500);
+
+        Assert.Equal(2, PageCount(result));
+    }
+
+    [Fact]
+    public async Task GeneratePodReportAsync_UnknownIdOnNeitherTable_ThrowsInvalidOperationException()
+    {
+        SetupHttpContext();
+        _jobRepositoryMock.GetSingleJobById(999).Throws(new KeyNotFoundException("Archived job 999 not found"));
+        _jobRepositoryMock.GetLinkedJobIdForBulkJobAsync(999).Returns((int?)null);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => CreateService().GeneratePodReportAsync(999));
+
+        Assert.Contains("999", ex.Message);
+    }
+
+    [Fact]
     public async Task GeneratePodReportAsync_InvalidTenantClaim_ThrowsInvalidOperationException()
     {
         SetupHttpContext("not-a-number");

@@ -85,6 +85,13 @@ public interface IJobQueryRepository
     /// </summary>
     Task<IReadOnlyList<PodMediaLeg>> GetPodMediaLegsAsync(int jobId);
 
+    /// <summary>
+    /// The live job a bulk ("scheduled") row materialised into, or null when the id is not a
+    /// tblBulkJob row. Only safe as a fallback after a tucJob lookup has missed — the two id
+    /// sequences overlap.
+    /// </summary>
+    Task<int?> GetLinkedJobIdForBulkJobAsync(int bulkJobId);
+
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
     Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(

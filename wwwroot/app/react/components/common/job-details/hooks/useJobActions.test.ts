@@ -49,6 +49,9 @@ jest.mock('../../../../services/jobDetailApi', () => ({
     autocompleteSearch: jest.fn(),
     getPodReportUrl: jest.fn(),
     getPodSpreadsheetUrl: jest.fn(),
+    getOverlayDocumentUrl: jest.fn(),
+    getJobOverlayDocuments: jest.fn().mockResolvedValue([]),
+    saveRecurringFlight: jest.fn().mockResolvedValue(undefined),
     updateJobDetail: jest.fn().mockResolvedValue(undefined),
     updateBulkJobDetail: jest.fn().mockResolvedValue(undefined),
     getFamilyForDateChange: jest.fn().mockResolvedValue({relationshipTypeId: null, members: []}),
@@ -1681,5 +1684,75 @@ describe('useJobActions — date cascade', () => {
         expect(onRequestPartnerChange).toHaveBeenCalled();
         expect(getFamilyForDateChange).not.toHaveBeenCalled();
         expect(updateJobDetail).not.toHaveBeenCalled();
+    });
+});
+
+describe('useJobActions — POD & document actions on bulk (scheduled) jobs', () => {
+    const {
+        getPodReportUrl,
+        getPodSpreadsheetUrl,
+        getOverlayDocumentUrl,
+        getJobOverlayDocuments,
+    } = require('../../../../services/jobDetailApi');
+
+    /** A schedule row: its own id is a BulkJobId, the live tucJob is on linkedJobId. */
+    const bulkJob = () => createMockJob({id: 500, linkedJobId: 987654, isBulkJob: true, done: true});
+
+    let openSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+        openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+        getPodReportUrl.mockImplementation((id: number) => `/job/PodReport?jobId=${id}`);
+        getPodSpreadsheetUrl.mockImplementation((id: number) => `/job/PodSpreadsheet?jobId=${id}`);
+        getOverlayDocumentUrl.mockImplementation((id: number, type: string) => `/job/OverlayDocument?jobId=${id}&documentType=${type}`);
+        getJobOverlayDocuments.mockResolvedValue([]);
+    });
+
+    afterEach(() => {
+        clearWindowDialogs();
+        delete (window as any).ReactSendPodDialog;
+        jest.restoreAllMocks();
+        jest.clearAllMocks();
+    });
+
+    it('sends the linked live job id to every POD and document action', async () => {
+        const uploadOpen = mockPhotoDialog();
+        const sendPodOpen = jest.fn().mockResolvedValue(undefined);
+        (window as any).ReactSendPodDialog = {open: sendPodOpen};
+        const {result} = setup({job: bulkJob()});
+
+        act(() => result.current.handlePodReport());
+        act(() => result.current.handlePodSpreadsheet());
+        act(() => result.current.handlePodUpload());
+        act(() => result.current.handleDownloadOverlay('Invoice'));
+        await act(async () => {
+            await result.current.fetchOverlayDocuments();
+        });
+        await act(async () => {
+            await result.current.handleSendPodEmail();
+        });
+
+        expect(getPodReportUrl).toHaveBeenCalledWith(987654);
+        expect(getPodSpreadsheetUrl).toHaveBeenCalledWith(987654);
+        expect(uploadOpen).toHaveBeenCalledWith(987654, 'POD');
+        expect(getOverlayDocumentUrl).toHaveBeenCalledWith(987654, 'Invoice');
+        expect(getJobOverlayDocuments).toHaveBeenCalledWith(987654);
+        expect(sendPodOpen).toHaveBeenCalledWith(expect.objectContaining({jobId: 987654}));
+        expect(openSpy).toHaveBeenCalledWith('/job/PodReport?jobId=987654', '_blank');
+    });
+
+    it('uses the job’s own id when there is no linked job', async () => {
+        const uploadOpen = mockPhotoDialog();
+        const {result} = setup({job: createMockJob({id: 1001, done: true})});
+
+        act(() => result.current.handlePodReport());
+        act(() => result.current.handlePodUpload());
+        await act(async () => {
+            await result.current.fetchOverlayDocuments();
+        });
+
+        expect(getPodReportUrl).toHaveBeenCalledWith(1001);
+        expect(uploadOpen).toHaveBeenCalledWith(1001, 'POD');
+        expect(getJobOverlayDocuments).toHaveBeenCalledWith(1001);
     });
 });
