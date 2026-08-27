@@ -33,12 +33,11 @@ public sealed class PodReportService(
 
         var tenantId = GetTenantId();
         var branding = await GetBrandingOrDefaultAsync(tenantId);
-        var job = await jobRepository.GetSingleJobById(jobId)
-                  ?? throw new InvalidOperationException($"Job {jobId} not found");
+        var (job, mediaJobId) = await ResolveJobAsync(jobId);
 
-        var s3Photos = await GetDeliveryPhotosForJobAsync(job, jobId);
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, mediaJobId);
 
-        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(jobId));
+        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(mediaJobId));
         var document = new PodDocument(podData, branding);
 
         using var stream = new MemoryStream();
@@ -51,12 +50,11 @@ public sealed class PodReportService(
     {
         var tenantId = GetTenantId();
         var branding = await GetBrandingOrDefaultAsync(tenantId);
-        var job = await jobRepository.GetSingleJobById(jobId)
-                  ?? throw new InvalidOperationException($"Job {jobId} not found");
+        var (job, mediaJobId) = await ResolveJobAsync(jobId);
 
-        var s3Photos = await GetDeliveryPhotosForJobAsync(job, jobId);
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, mediaJobId);
 
-        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(jobId));
+        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(mediaJobId));
         var spreadsheet = new PodSpreadsheet(podData, branding);
 
         using var stream = new MemoryStream();
@@ -108,14 +106,56 @@ public sealed class PodReportService(
 
     public async Task<byte[]> AppendDeliveryPhotosAsync(byte[] pdfBytes, int jobId)
     {
-        var job = await jobRepository.GetSingleJobById(jobId);
-        if (job is null)
+        var resolved = await TryResolveJobAsync(jobId);
+        if (resolved is null)
         {
             return pdfBytes;
         }
 
-        var s3Photos = await GetDeliveryPhotosForJobAsync(job, jobId);
+        var (job, mediaJobId) = resolved.Value;
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, mediaJobId);
         return PdfImageAppender.Append(pdfBytes, ExtractDeliveryImages(s3Photos));
+    }
+
+    private async Task<(JobViewModel Job, int MediaJobId)> ResolveJobAsync(int jobId) =>
+        await TryResolveJobAsync(jobId)
+        ?? throw new InvalidOperationException($"Job {jobId} not found");
+
+    /// <summary>
+    /// Resolves the job the POD is about and the id its media is keyed by. A bulk ("scheduled")
+    /// row's id is a tblBulkJob id, not a tucJob id, and the courier writes POD media against the
+    /// live job the schedule materialised into — so an id that matches no job is retried as a
+    /// schedule id. tucJob first, always: the two id sequences overlap.
+    /// </summary>
+    private async Task<(JobViewModel Job, int MediaJobId)?> TryResolveJobAsync(int jobId)
+    {
+        var job = await TryGetJobAsync(jobId);
+        if (job is not null)
+        {
+            return (job, jobId);
+        }
+
+        var linkedJobId = await jobRepository.GetLinkedJobIdForBulkJobAsync(jobId);
+        if (linkedJobId is null)
+        {
+            return null;
+        }
+
+        var linkedJob = await TryGetJobAsync(linkedJobId.Value);
+        return linkedJob is null ? null : (linkedJob, linkedJobId.Value);
+    }
+
+    // The archived lookup throws rather than returning null for an id it doesn't know.
+    private async Task<JobViewModel?> TryGetJobAsync(int jobId)
+    {
+        try
+        {
+            return await jobRepository.GetSingleJobById(jobId);
+        }
+        catch (KeyNotFoundException)
+        {
+            return null;
+        }
     }
 
     // Delivery photos/signatures live in S3 keyed by the completion month and by the id of the leg

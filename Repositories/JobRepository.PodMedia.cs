@@ -96,4 +96,18 @@ public partial class JobRepository
                 .DistinctBy(leg => leg.JobId)
         ];
     }
+
+    /// <summary>
+    /// The live job a bulk ("scheduled") row materialised into, or null when the id is not a
+    /// tblBulkJob row or the schedule has not been released yet.
+    /// </summary>
+    /// <remarks>
+    /// tblBulkJob.BulkJobId and tucJob.ucjbID are separate identity sequences that overlap, so this
+    /// is only safe as a fallback after the tucJob lookup has already missed.
+    /// </remarks>
+    public Task<int?> GetLinkedJobIdForBulkJobAsync(int bulkJobId) =>
+        Context.TblBulkJobs
+            .Where(j => j.BulkJobId == bulkJobId && j.JobId != null)
+            .Select(j => j.JobId)
+            .FirstOrDefaultAsync();
 }

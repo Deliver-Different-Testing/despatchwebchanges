@@ -148,6 +148,14 @@ export function getTrackingMethodText(method?: number): string {
     }
 }
 
+/**
+ * The job id POD media, documents and uploads are keyed by. A bulk (scheduled) row's own id is a
+ * BulkJobId; everything POD-related lives against the live job it materialised into.
+ */
+export function podMediaJobId(job: {id: number; linkedJobId?: number}): number {
+    return job.linkedJobId ?? job.id;
+}
+
 /** Check if a photo file is an image */
 export function isImageFile(photo: {contentType?: string; fileName?: string; s3Key?: string}): boolean {
     if (!photo) return false;
