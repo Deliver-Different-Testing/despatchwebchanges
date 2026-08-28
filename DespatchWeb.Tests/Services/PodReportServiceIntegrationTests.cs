@@ -22,6 +22,14 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
     private readonly IPodMediaService _podMediaServiceMock = Substitute.For<IPodMediaService>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+
+    private readonly IDeliveryJourneyService _deliveryJourneyServiceMock =
+        Substitute.For<IDeliveryJourneyService>();
+
+    public PodReportServiceIntegrationTests() =>
+        _deliveryJourneyServiceMock.GetStatusHistoryForJobAsync(Arg.Any<int>())
+            .Returns([]);
 
     public async ValueTask DisposeAsync()
     {
@@ -35,7 +43,9 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         _jobRepositoryMock,
         _noteRepositoryMock,
         _podMediaServiceMock,
-        _db.CreateFactoryMock()
+        _db.CreateFactoryMock(),
+        _tenantInfoServiceMock,
+        _deliveryJourneyServiceMock
     );
 
     private void SetupHttpContext(string tenantId = "42")

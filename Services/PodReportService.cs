@@ -21,7 +21,9 @@ public sealed class PodReportService(
     IJobQueryRepository jobRepository,
     INoteRepository noteRepository,
     IPodMediaService podMediaService,
-    IDbContextFactory<DespatchContext> contextFactory
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantInfoService infoService,
+    IDeliveryJourneyService deliveryJourneyService
 ) : IPodReportService
 {
     private static bool _questPdfInitialized;
@@ -37,7 +39,8 @@ public sealed class PodReportService(
 
         var s3Photos = await GetDeliveryPhotosForJobAsync(job, mediaJobId);
 
-        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(mediaJobId));
+        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(mediaJobId),
+            infoService.IsUsTenant(), await GetJobHistoryAsync(mediaJobId));
         var document = new PodDocument(podData, branding);
 
         using var stream = new MemoryStream();
@@ -54,7 +57,8 @@ public sealed class PodReportService(
 
         var s3Photos = await GetDeliveryPhotosForJobAsync(job, mediaJobId);
 
-        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(mediaJobId));
+        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(mediaJobId),
+            infoService.IsUsTenant(), await GetJobHistoryAsync(mediaJobId));
         var spreadsheet = new PodSpreadsheet(podData, branding);
 
         using var stream = new MemoryStream();
@@ -250,8 +254,22 @@ public sealed class PodReportService(
         return notes.Count > 0 ? notes[0].NoteText : null;
     }
 
+    private async Task<IReadOnlyList<PodHistoryEntry>> GetJobHistoryAsync(int jobId)
+    {
+        var history = await deliveryJourneyService.GetStatusHistoryForJobAsync(jobId);
+
+        return
+        [
+            .. history.Select(h => new PodHistoryEntry
+            {
+                Status = h.Status,
+                ActionTime = h.ActionTime.DateTime
+            })
+        ];
+    }
+
     internal static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos,
-        string? podNotes = null)
+        string? podNotes = null, bool isUsTenant = false, IReadOnlyList<PodHistoryEntry>? history = null)
     {
         // Separate signatures from delivery photos
         var signaturePhotos = s3Photos
@@ -283,22 +301,67 @@ public sealed class PodReportService(
             Account = job.ClientName,
             ServiceType = job.SpeedName,
             GoodsReady = job.CreatedDate,
-            PickupName = job.From,
+            ItemCount = ResolveItemCount(job),
+            Weight = job.Weight,
+            WeightUnit = isUsTenant ? "lb" : "kg",
+            PickupName = ComposeTopLine(job.From, job.PickupAddress, isUsTenant),
             PickupAddress = job.PickupAddress?.FullAddress,
-            DeliveryName = job.ToAddress,
+            DeliveryName = ComposeTopLine(job.ToAddress, job.DeliveryAddress, isUsTenant),
             DeliveryAddress = job.DeliveryAddress?.FullAddress,
-            CourierName = job.Courier,
-            CourierVehicle = job.Vehicle?.Text,
-            CourierId = job.CourierData?.CourierNumber,
-            GpsLatitude = job.DeliveryLatitude.HasValue ? (double)job.DeliveryLatitude.Value : null,
-            GpsLongitude = job.DeliveryLongitude.HasValue ? (double)job.DeliveryLongitude.Value : null,
             PodName = job.PodName,
             PodDate = job.CompletedTime,
             PodNotes = podNotes,
             SignatureImage = signatureBytes,
             Items = MapItems(job.ParcelDimensions),
+            History = history is null ? [] : [.. history],
             PhotoCategories = MapPhotoCategories(deliveryPhotos)
         };
+    }
+
+    // Mirrors the count the job-details panel shows: pallet quantities win, then parcel rows, then
+    // the job's own item count.
+    internal static int? ResolveItemCount(JobViewModel job)
+    {
+        var palletQuantity = job.PalletInfo?.Sum(p => p.Quantity) ?? 0;
+        if (palletQuantity > 0)
+        {
+            return palletQuantity;
+        }
+
+        var parcelCount = job.ParcelDimensions?.Count ?? 0;
+        if (parcelCount > 0)
+        {
+            return parcelCount;
+        }
+
+        return job.Items > 0 ? job.Items : null;
+    }
+
+    /// <summary>
+    /// The address card's top line: the place name plus its city. NZ tenants keep the suburb on
+    /// line 5 and the city on line 6; US tenants put the city on line 5 and the state on line 6.
+    /// The POD job projection never populates <see cref="DispatchJobViewModel.From"/>, so a blank
+    /// name falls back to the suburb.
+    /// </summary>
+    internal static string? ComposeTopLine(string? name, AddressViewModel? address, bool isUsTenant)
+    {
+        var city = isUsTenant ? address?.AddressLine5 : address?.AddressLine6;
+        var lead = !string.IsNullOrWhiteSpace(name)
+            ? name.Trim()
+            : isUsTenant ? null : address?.AddressLine5?.Trim();
+
+        if (string.IsNullOrWhiteSpace(lead))
+        {
+            return string.IsNullOrWhiteSpace(city) ? null : city.Trim();
+        }
+
+        if (string.IsNullOrWhiteSpace(city)
+            || lead.EndsWith(city.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return lead;
+        }
+
+        return $"{lead}, {city.Trim()}";
     }
 
     internal static List<PodItem> MapItems(List<ParcelDimensions>? parcels)
