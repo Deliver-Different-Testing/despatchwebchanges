@@ -496,6 +496,41 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Retrieves status updates for a job from live or archived tables, including courier, agent, and field changes.
     /// </summary>
+    /// <summary>
+    /// The job's status transitions only. The archive table carries no navigation properties, so
+    /// the status name is joined by hand there.
+    /// </summary>
+    public async Task<IReadOnlyList<JobStatusHistoryEntry>> GetStatusHistoryForJobAsync(int jobId)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync();
+
+        const string changeType = nameof(DeliveryJourneyChangeType.JobStatus);
+
+        var rows = await context.IsLiveJobAsync(jobId)
+            ? await context.JobDeliveryJourneys
+                .Where(s => s.JobId == jobId && s.ChangeType == changeType && s.NewJobStatus != null)
+                .OrderBy(s => s.UpdatedAt)
+                .Select(s => new { Status = s.NewJobStatus.UcjsName, s.UpdatedAt })
+                .TagWith("PodJobHistory - Live Status Changes")
+                .ToListAsync()
+            : await context.JobDeliveryJourneyArchives
+                .Where(s => s.JobId == jobId && s.ChangeType == changeType)
+                .OrderBy(s => s.UpdatedAt)
+                .Join(context.TucJobStatuses,
+                    s => s.NewJobStatusId,
+                    status => status.UcjsId,
+                    (s, status) => new { Status = status.UcjsName, s.UpdatedAt })
+                .TagWith("PodJobHistory - Archived Status Changes")
+                .ToListAsync();
+
+        return
+        [
+            .. rows
+                .Where(r => !string.IsNullOrWhiteSpace(r.Status))
+                .Select(r => new JobStatusHistoryEntry(r.Status, infoService.ConvertUtcToTenantTimeZone(r.UpdatedAt)))
+        ];
+    }
+
     private async Task<IReadOnlyList<DeliveryJourneyViewModel>> GetStatusUpdatesAsync(
         DespatchContext context,
         int jobId,

@@ -1,3 +1,4 @@
+﻿using DeliverDifferentReporting.Models;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using ImageMagick;
@@ -238,5 +239,215 @@ public class PodReportServiceTests
         var result = PodReportService.MapToPodData(job, []);
 
         Assert.Null(result.PodNotes);
+    }
+
+    // ── Item count ──
+
+    [Fact]
+    public void MapToPodData_PalletQuantities_WinOverParcelRows()
+    {
+        var job = new JobViewModel
+        {
+            JobNo = "JOB-7",
+            Items = 99,
+            PalletInfo = [new PalletInfo { Quantity = 3 }, new PalletInfo { Quantity = 2 }],
+            ParcelDimensions = [new ParcelDimensions(), new ParcelDimensions()]
+        };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal(5, result.ItemCount);
+    }
+
+    [Fact]
+    public void MapToPodData_NoPallets_CountsParcelRows()
+    {
+        var job = new JobViewModel
+        {
+            JobNo = "JOB-8",
+            Items = 99,
+            ParcelDimensions = [new ParcelDimensions(), new ParcelDimensions(), new ParcelDimensions()]
+        };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal(3, result.ItemCount);
+    }
+
+    [Fact]
+    public void MapToPodData_NoPalletsOrParcels_FallsBackToItemsCount()
+    {
+        var job = new JobViewModel { JobNo = "JOB-9", Items = 4 };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal(4, result.ItemCount);
+    }
+
+    [Fact]
+    public void MapToPodData_NothingToCount_LeavesItemCountUnset()
+    {
+        var job = new JobViewModel { JobNo = "JOB-10" };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Null(result.ItemCount);
+    }
+
+    // ── Weight ──
+
+    [Fact]
+    public void MapToPodData_MapsJobWeight()
+    {
+        var job = new JobViewModel { JobNo = "JOB-11", Weight = 12.5 };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal(12.5, result.Weight);
+    }
+
+    [Fact]
+    public void MapToPodData_NonUsTenant_WeighsInKilograms()
+    {
+        var job = new JobViewModel { JobNo = "JOB-12", Weight = 12.5 };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal("kg", result.WeightUnit);
+    }
+
+    [Fact]
+    public void MapToPodData_UsTenant_WeighsInPounds()
+    {
+        var job = new JobViewModel { JobNo = "JOB-13", Weight = 12.5 };
+
+        var result = PodReportService.MapToPodData(job, [], isUsTenant: true);
+
+        Assert.Equal("lb", result.WeightUnit);
+    }
+
+    // ── Address top line (name/suburb + city) ──
+
+    [Fact]
+    public void MapToPodData_NzPickup_LeadsWithSuburbAndCity()
+    {
+        // The POD job projection never populates From, so the suburb comes off the address itself.
+        var job = new JobViewModel
+        {
+            JobNo = "JOB-14",
+            PickupAddress = new AddressViewModel { AddressLine5 = "Ellerslie", AddressLine6 = "Auckland" }
+        };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal("Ellerslie, Auckland", result.PickupName);
+    }
+
+    [Fact]
+    public void MapToPodData_NzDelivery_AppendsCityToTheDeliveryName()
+    {
+        var job = new JobViewModel
+        {
+            JobNo = "JOB-15",
+            ToAddress = "Waikato Hospital",
+            DeliveryAddress = new AddressViewModel { AddressLine5 = "Hamilton West", AddressLine6 = "Auckland" }
+        };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal("Waikato Hospital, Auckland", result.DeliveryName);
+    }
+
+    [Fact]
+    public void MapToPodData_UsTenant_TakesTheCityFromLineFive()
+    {
+        var job = new JobViewModel
+        {
+            JobNo = "JOB-16",
+            ToAddress = "Contoso Depot",
+            DeliveryAddress = new AddressViewModel { AddressLine5 = "Dallas", AddressLine6 = "TX" }
+        };
+
+        var result = PodReportService.MapToPodData(job, [], isUsTenant: true);
+
+        Assert.Equal("Contoso Depot, Dallas", result.DeliveryName);
+    }
+
+    [Fact]
+    public void MapToPodData_NoCity_LeavesTheNameAlone()
+    {
+        var job = new JobViewModel
+        {
+            JobNo = "JOB-17",
+            ToAddress = "Contoso Depot",
+            DeliveryAddress = new AddressViewModel { AddressLine4 = "Queen Street" }
+        };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal("Contoso Depot", result.DeliveryName);
+    }
+
+    [Fact]
+    public void MapToPodData_NameAlreadyEndsWithTheCity_DoesNotRepeatIt()
+    {
+        var job = new JobViewModel
+        {
+            JobNo = "JOB-18",
+            ToAddress = "Waikato Hospital, Auckland",
+            DeliveryAddress = new AddressViewModel { AddressLine6 = "Auckland" }
+        };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Equal("Waikato Hospital, Auckland", result.DeliveryName);
+    }
+
+    [Fact]
+    public void MapToPodData_NoAddressAtAll_LeavesTheTopLineUnset()
+    {
+        var job = new JobViewModel { JobNo = "JOB-19" };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Null(result.PickupName);
+        Assert.Null(result.DeliveryName);
+    }
+
+    // ── Job history ──
+
+    [Fact]
+    public void MapToPodData_WithHistory_MapsEveryRowInOrder()
+    {
+        var job = new JobViewModel { JobNo = "JOB-20" };
+        var history = new List<PodHistoryEntry>
+        {
+            new() { Status = "Booked", ActionTime = new DateTime(2026, 8, 11, 14, 5, 0) },
+            new() { Status = "Delivered", ActionTime = new DateTime(2026, 8, 12, 9, 42, 0) }
+        };
+
+        var result = PodReportService.MapToPodData(job, [], history: history);
+
+        Assert.Collection(result.History,
+            first =>
+            {
+                Assert.Equal("Booked", first.Status);
+                Assert.Equal(new DateTime(2026, 8, 11, 14, 5, 0), first.ActionTime);
+            },
+            second =>
+            {
+                Assert.Equal("Delivered", second.Status);
+                Assert.Equal(new DateTime(2026, 8, 12, 9, 42, 0), second.ActionTime);
+            });
+    }
+
+    [Fact]
+    public void MapToPodData_WithoutHistory_LeavesTheHistoryEmpty()
+    {
+        var job = new JobViewModel { JobNo = "JOB-21" };
+
+        var result = PodReportService.MapToPodData(job, []);
+
+        Assert.Empty(result.History);
     }
 }

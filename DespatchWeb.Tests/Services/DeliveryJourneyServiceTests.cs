@@ -2178,4 +2178,115 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         Assert.Contains(result.Runs, r => r.ParentJobNumber == "JOB-A");
         Assert.Contains(result.Runs, r => r.ParentJobNumber == "JOB-B");
     }
+
+    // ── POD job history ──
+
+    private async Task SeedJobStatusesAsync(params TucJobStatus[] statuses)
+    {
+        await using var context = _db.CreateContext();
+        context.TucJobStatuses.AddRange(statuses);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static TucJobStatus JobStatus(int id, string name) =>
+        new() { UcjsId = id, UcjsName = name, UcjsCode = name[..1], UcjsReplyCode = name[..1] };
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_ReturnsStatusChangesOldestFirst()
+    {
+        await SeedJobStatusesAsync(JobStatus(1, "Booked"), JobStatus(2, "Picked Up"), JobStatus(3, "Delivered"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 3, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+                NewJobStatusId = 3, UpdatedAt = new DateTime(2026, 8, 12, 9, 42, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 1, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+                NewJobStatusId = 1, UpdatedAt = new DateTime(2026, 8, 11, 14, 5, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+                NewJobStatusId = 2, UpdatedAt = new DateTime(2026, 8, 11, 17, 20, 0)
+            });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(1);
+
+        Assert.Equal(["Booked", "Picked Up", "Delivered"], result.Select(r => r.Status));
+        Assert.Equal(new DateTime(2026, 8, 11, 14, 5, 0), result[0].ActionTime.DateTime);
+    }
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_IgnoresNonStatusChanges()
+    {
+        await SeedJobStatusesAsync(JobStatus(1, "Booked"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+                NewJobStatusId = 1, UpdatedAt = new DateTime(2026, 8, 11, 14, 5, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.CourierAssignment),
+                UpdatedAt = new DateTime(2026, 8, 11, 15, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 3, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                FieldName = "ucjbWeight", NewValue = "12.5", UpdatedAt = new DateTime(2026, 8, 11, 16, 0, 0)
+            });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(1);
+
+        Assert.Equal("Booked", Assert.Single(result).Status);
+    }
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_ArchivedJob_ResolvesStatusNames()
+    {
+        // The archive table carries no navigation properties, so the status name is joined by hand.
+        await SeedJobStatusesAsync(JobStatus(3, "Delivered"));
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1, JobId = 77, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+            NewJobStatusId = 3, UpdatedAt = new DateTime(2026, 8, 12, 9, 42, 0)
+        });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(77);
+
+        Assert.Equal("Delivered", Assert.Single(result).Status);
+    }
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_JobWithNoJourney_ReturnsEmpty()
+    {
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(1);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_ConvertsTimesToTheTenantTimeZone()
+    {
+        _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(callInfo => new DateTimeOffset(callInfo.Arg<DateTime>().AddHours(12), TimeSpan.FromHours(12)));
+        await SeedJobStatusesAsync(JobStatus(1, "Booked"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+            NewJobStatusId = 1, UpdatedAt = new DateTime(2026, 8, 11, 2, 5, 0)
+        });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(1);
+
+        Assert.Equal(new DateTime(2026, 8, 11, 14, 5, 0), Assert.Single(result).ActionTime.DateTime);
+    }
 }
