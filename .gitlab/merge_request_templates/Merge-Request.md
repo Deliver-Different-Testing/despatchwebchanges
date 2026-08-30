@@ -1,20 +1,17 @@
-# {{title}}
+## What changed
 
-## What I did
-+ {{list item 1}}
-+ {{list item 2}}
-+ {{list item 3}}
-+ {{list item 4}}
- 
-## Implications
-{{implications}}
-
-## Setup
-{{setup tasks, e.g., migrations, grunt, styles}}
+<!-- Plain English, written for a tester. Name the tenant or client if relevant — the
+     release channel is internal.
+     "Fixed null ref in ConsignmentService" is not a release note. -->
 
 ## How to test
-+ {{step 1}}
-+ {{step 2}}
-+ {{step 3}}
 
-**Task: {{link}}**
+<!-- Steps and expected result. If we specced this properly, copy the acceptance criteria. -->
+
+## Risk / areas touched
+
+<!-- Optional. Anything a tester should regression-check beyond the change itself. -->
+
+<!-- These three headings are the parsing contract for the automated release notes
+     (scripts/releaseNotes). Anything left empty here shows up in the note — and in
+     #dfrnt-releases — with a "no test steps supplied" warning against your name. -->

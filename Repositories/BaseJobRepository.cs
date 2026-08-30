@@ -570,7 +570,7 @@ public partial class BaseJobRepository(
     /// <summary>
     /// Sargable equivalent of the date-then-time end filter: jobs booked before the filter day, or
     /// on the filter day at or before the filter time. The UcjbDate comparisons avoid <c>.Date</c>
-    /// so the index range can seek; the intra-day time check on the separate UcjbTime column only
+    /// so the index range can seek; the intraday time check on the separate UcjbTime column only
     /// applies within the single matching day.
     /// </summary>
     internal static Expression<Func<TucJob, bool>> JobDateTimeOnOrBefore(DateTimeOffset endDate)
@@ -586,7 +586,7 @@ public partial class BaseJobRepository(
                 && (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime));
     }
 
-    internal const int DefaultNonPaginatedJobCap = 2000;
+    private const int DefaultNonPaginatedJobCap = 2000;
 
     internal readonly record struct PagedJobIds(IReadOnlyList<int> JobIds, int TotalCount, bool HasMore);
 

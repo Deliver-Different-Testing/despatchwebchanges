@@ -4,7 +4,7 @@ const config = {
     // Default to jsdom — most React tests need it. Pure-Node tests opt out
     // with `/** @jest-environment node */` at the top of the file.
     testEnvironment: 'jest-environment-jsdom',
-    roots: ['<rootDir>/wwwroot'],
+    roots: ['<rootDir>/wwwroot', '<rootDir>/scripts'],
     testMatch: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 

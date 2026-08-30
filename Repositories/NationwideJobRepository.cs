@@ -419,7 +419,7 @@ public class NationwideJobRepository(
     /// <inheritdoc />
     public async Task<IReadOnlyList<BulkAssignmentResult>> AssignAgentToJobsAsync(int agentId,
         IReadOnlyList<int> jobIds, bool includeStopJobs = false,
-        string? emailSubject = null, string? emailBody = null)
+        string emailSubject = null, string emailBody = null)
     {
         var results = new List<BulkAssignmentResult>(jobIds.Count);
 
@@ -558,12 +558,6 @@ public class NationwideJobRepository(
                 Text = x.CarrierCode,
                 FullAirlineName = x.FlightCarrierName
             })
-            .ToListAsync();
-
-    public async Task<IReadOnlyList<string>> GetActiveAirlineCodesAsync() =>
-        await Context.FlightCarriers
-            .Where(fc => fc.IsActive)
-            .Select(x => x.CarrierCode)
             .ToListAsync();
 
     public async Task<string> GetAirlineCodeByIdAsync(int airlineId) =>
