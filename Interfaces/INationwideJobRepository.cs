@@ -48,8 +48,6 @@ public interface INationwideJobRepository
     Task<AgentInboundEmailResult> GetAgentInboundEmailPreviewAsync(int agentId, int jobId);
 
     Task<IReadOnlyList<AirlineSuggestion>> GetActiveAirlineOptionsAsync();
-    Task<IReadOnlyList<string>> GetActiveAirlineCodesAsync();
-    Task<string?> GetAirlineCodeByIdAsync(int airlineId);
     Task SendAgentRequestMessageAsync(int agentId, int jobId, string? emailSubject = null, string? emailBody = null);
     Task<IReadOnlyList<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
     Task RestoreNationwideJobAsync(int jobId);
@@ -74,7 +72,5 @@ public interface INationwideJobRepository
     Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode, bool extraStopOffs,
         DateTime? bookTime);
 
-    Task<IReadOnlyList<GetAirportsDto>> GetAllActiveAirportsAsync();
-    
     Task<IReadOnlyList<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto);
 }

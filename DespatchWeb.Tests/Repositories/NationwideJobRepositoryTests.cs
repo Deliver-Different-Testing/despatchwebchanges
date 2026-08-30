@@ -91,8 +91,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineOptionsAsync();
 
         // Assert
-        Assert.Single(result);
-        Assert.Equal("NZ", result[0].Text);
+        var item = Assert.Single(result);
+        Assert.Equal("NZ", item.Text);
     }
 
     [Fact]
@@ -123,60 +123,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert
         Assert.Single(result);
         Assert.Equal(42, result[0].Id);
-    }
-
-    [Fact]
-    public async Task GetActiveAirlineCodesAsync_WithActiveAirlines_ReturnsCodes()
-    {
-        // Arrange
-        _context.FlightCarriers.AddRange(
-            CreateFlightCarrier(1, "NZ", "Air New Zealand", true),
-            CreateFlightCarrier(2, "QF", "Qantas", true)
-        );
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetActiveAirlineCodesAsync();
-
-        // Assert
-        Assert.Equal(2, result.Count);
-        Assert.Contains("NZ", result);
-        Assert.Contains("QF", result);
-    }
-
-    [Fact]
-    public async Task GetActiveAirlineCodesAsync_OnlyReturnsActiveCodes()
-    {
-        // Arrange
-        _context.FlightCarriers.AddRange(
-            CreateFlightCarrier(1, "NZ", "Air New Zealand", true),
-            CreateFlightCarrier(2, "QF", "Qantas", false) // Inactive
-        );
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetActiveAirlineCodesAsync();
-
-        // Assert
-        Assert.Single(result);
-        Assert.Equal("NZ", result[0]);
-    }
-
-    [Fact]
-    public async Task GetActiveAirlineCodesAsync_WithNoAirlines_ReturnsEmptyList()
-    {
-        // Arrange
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetActiveAirlineCodesAsync();
-
-        // Assert
-        Assert.Empty(result);
     }
 
     [Fact]
@@ -3176,7 +3122,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var results = await repository.AssignAgentToJobsAsync(agentId, [820, 821], false, null, null);
+        var results = await repository.AssignAgentToJobsAsync(agentId, [820, 821]);
 
         // Assert
         Assert.Equal(2, results.Count);
@@ -3233,7 +3179,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var results = await repository.AssignAgentToJobsAsync(agentId, [830, 831], false, null, null);
+        var results = await repository.AssignAgentToJobsAsync(agentId, [830, 831]);
 
         // Assert
         Assert.Equal(2, results.Count);

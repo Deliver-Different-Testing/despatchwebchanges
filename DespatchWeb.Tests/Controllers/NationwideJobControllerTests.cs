@@ -103,7 +103,7 @@ public class NationwideJobControllerTests
     {
         // Arrange
         GivenTenantStaffSession();
-        _repositoryMock.AssignAgentToJobsAsync(5, Arg.Any<IReadOnlyList<int>>(), false, null, null)
+        _repositoryMock.AssignAgentToJobsAsync(5, Arg.Any<IReadOnlyList<int>>())
             .Returns([
                 new BulkAssignmentResult(10, true, null, AgentInboundEmailStatus.Queued),
                 new BulkAssignmentResult(11, false, "no flight", null)

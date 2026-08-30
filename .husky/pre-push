@@ -20,8 +20,11 @@ if ! npm run type-check; then
     exit 1
 fi
 
-# Run .NET tests
-if ! dotnet test --no-build --verbosity minimal; then
+# Run .NET tests. xUnit v3 builds a self-contained runner and the .NET 10 SDK no
+# longer supports the VSTest path `dotnet test` takes, so run the test project
+# directly -- same command CI uses.
+echo "Running .NET tests..."
+if ! dotnet run --project DespatchWeb.Tests; then
     echo ".NET tests failed. Push aborted."
     exit 1
 fi

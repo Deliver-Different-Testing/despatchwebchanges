@@ -25,251 +25,251 @@ internal static class JobWildcardSearch
     internal static Expression<Func<TucJob, bool>> LiveJobMatches(string pattern) => j =>
         EF.Functions.Like(
             j.UcjbNumber + " "
-            + (j.Barcode ?? "") + " "
-            + (j.Gssconnote ?? "") + " "
-            + (j.UcjbOurRef ?? "") + " "
-            + (j.UcjbClientRefa ?? "") + " "
-            + (j.UcjbClientRefb ?? "") + " "
-            + (j.UcjbClientRefc ?? "") + " "
-            + (j.TextRef1 ?? "") + " "
-            + (j.TextRef2 ?? "") + " "
-            + (j.TextRef3 ?? "") + " "
-            + (j.TextRef4 ?? "") + " "
-            + (j.ShopRef1 ?? "") + " "
-            + (j.ShopRef2 ?? "") + " "
-            + (j.ShopRef3 ?? "") + " "
-            + (j.ShopRef4 ?? "") + " "
-            + (j.ShopRef5 ?? "") + " "
-            + (j.ClientItemIds ?? "") + " "
-            + (j.StripeChargeId ?? "") + " "
-            + (j.UcjbClientCode ?? "") + " "
-            + (j.CustomJobName ?? "") + " "
-            + (j.ScheduleName ?? "") + " "
-            + (j.RunName ?? ""),
+            + (j.Barcode ?? string.Empty) + " "
+            + (j.Gssconnote ?? string.Empty) + " "
+            + (j.UcjbOurRef ?? string.Empty) + " "
+            + (j.UcjbClientRefa ?? string.Empty) + " "
+            + (j.UcjbClientRefb ?? string.Empty) + " "
+            + (j.UcjbClientRefc ?? string.Empty) + " "
+            + (j.TextRef1 ?? string.Empty) + " "
+            + (j.TextRef2 ?? string.Empty) + " "
+            + (j.TextRef3 ?? string.Empty) + " "
+            + (j.TextRef4 ?? string.Empty) + " "
+            + (j.ShopRef1 ?? string.Empty) + " "
+            + (j.ShopRef2 ?? string.Empty) + " "
+            + (j.ShopRef3 ?? string.Empty) + " "
+            + (j.ShopRef4 ?? string.Empty) + " "
+            + (j.ShopRef5 ?? string.Empty) + " "
+            + (j.ClientItemIds ?? string.Empty) + " "
+            + (j.StripeChargeId ?? string.Empty) + " "
+            + (j.UcjbClientCode ?? string.Empty) + " "
+            + (j.CustomJobName ?? string.Empty) + " "
+            + (j.ScheduleName ?? string.Empty) + " "
+            + (j.RunName ?? string.Empty),
             pattern)
         // Kept out of the group above: connote is varchar(max), which would drag the whole
         // concatenation into a LOB expression
-        || EF.Functions.Like(j.Connote ?? "", pattern)
+        || EF.Functions.Like(j.Connote ?? string.Empty, pattern)
         || EF.Functions.Like(
-            (j.UcjbContact ?? "") + " "
-            + (j.UcjbContactPhone ?? "") + " "
-            + (j.PickUpName ?? "") + " "
-            + (j.PickupFromContact ?? "") + " "
-            + (j.PickupFromPhone ?? "") + " "
-            + (j.DeliverToContact ?? "") + " "
-            + (j.DeliverToPhone ?? "") + " "
-            + (j.UcjbPodname ?? "") + " "
-            + (j.ProofOfDeliveryEmail ?? "") + " "
-            + (j.ProofOfDeliveryMobile ?? "") + " "
-            + (j.TrackingEmail ?? "") + " "
-            + (j.TrackingMobile ?? ""),
+            (j.UcjbContact ?? string.Empty) + " "
+            + (j.UcjbContactPhone ?? string.Empty) + " "
+            + (j.PickUpName ?? string.Empty) + " "
+            + (j.PickupFromContact ?? string.Empty) + " "
+            + (j.PickupFromPhone ?? string.Empty) + " "
+            + (j.DeliverToContact ?? string.Empty) + " "
+            + (j.DeliverToPhone ?? string.Empty) + " "
+            + (j.UcjbPodname ?? string.Empty) + " "
+            + (j.ProofOfDeliveryEmail ?? string.Empty) + " "
+            + (j.ProofOfDeliveryMobile ?? string.Empty) + " "
+            + (j.TrackingEmail ?? string.Empty) + " "
+            + (j.TrackingMobile ?? string.Empty),
             pattern)
         || EF.Functions.Like(
-            (j.UcjbFromAddr ?? "") + " "
-            + (j.FromAddressStreetName ?? "") + " "
-            + (j.FromAddressExtras ?? "") + " "
-            + (j.FromAddressExtras2 ?? "") + " "
-            + (j.PickupAddressLine1 ?? "") + " "
-            + (j.PickupAddressLine2 ?? "") + " "
-            + (j.PickupAddressLine3 ?? "") + " "
-            + (j.PickupAddressLine4 ?? "") + " "
-            + (j.PickupAddressLine5 ?? "") + " "
-            + (j.PickupAddressLine6 ?? "") + " "
-            + (j.PickupAddressLine7 ?? "") + " "
-            + (j.PickupAddressLine8 ?? "") + " "
-            + (j.UcjbFromNavigation.UcsuName ?? ""),
+            (j.UcjbFromAddr ?? string.Empty) + " "
+            + (j.FromAddressStreetName ?? string.Empty) + " "
+            + (j.FromAddressExtras ?? string.Empty) + " "
+            + (j.FromAddressExtras2 ?? string.Empty) + " "
+            + (j.PickupAddressLine1 ?? string.Empty) + " "
+            + (j.PickupAddressLine2 ?? string.Empty) + " "
+            + (j.PickupAddressLine3 ?? string.Empty) + " "
+            + (j.PickupAddressLine4 ?? string.Empty) + " "
+            + (j.PickupAddressLine5 ?? string.Empty) + " "
+            + (j.PickupAddressLine6 ?? string.Empty) + " "
+            + (j.PickupAddressLine7 ?? string.Empty) + " "
+            + (j.PickupAddressLine8 ?? string.Empty) + " "
+            + (j.UcjbFromNavigation.UcsuName ?? string.Empty),
             pattern)
         || EF.Functions.Like(
-            (j.UcjbToAddr ?? "") + " "
-            + (j.ToAddressStreetName ?? "") + " "
-            + (j.ToAddressExtras ?? "") + " "
-            + (j.ToAddressExtras2 ?? "") + " "
-            + (j.DeliveryAddressLine1 ?? "") + " "
-            + (j.DeliveryAddressLine2 ?? "") + " "
-            + (j.DeliveryAddressLine3 ?? "") + " "
-            + (j.DeliveryAddressLine4 ?? "") + " "
-            + (j.DeliveryAddressLine5 ?? "") + " "
-            + (j.DeliveryAddressLine6 ?? "") + " "
-            + (j.DeliveryAddressLine7 ?? "") + " "
-            + (j.DeliveryAddressLine8 ?? "") + " "
-            + (j.UcjbToNavigation.UcsuName ?? ""),
+            (j.UcjbToAddr ?? string.Empty) + " "
+            + (j.ToAddressStreetName ?? string.Empty) + " "
+            + (j.ToAddressExtras ?? string.Empty) + " "
+            + (j.ToAddressExtras2 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine1 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine2 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine3 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine4 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine5 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine6 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine7 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine8 ?? string.Empty) + " "
+            + (j.UcjbToNavigation.UcsuName ?? string.Empty),
             pattern)
         // Matched one at a time rather than concatenated: the notes columns are nvarchar(4000)
         // each, and SQL Server types a concatenation of them as nvarchar(4000) too - anything
         // past the first long note would be silently truncated away before the LIKE ran.
-        || EF.Functions.Like(j.UcjbNotes ?? "", pattern)
-        || EF.Functions.Like(j.ClientNotes ?? "", pattern)
-        || EF.Functions.Like(j.InternalNotes ?? "", pattern)
-        || EF.Functions.Like(j.ItemNotReadyNotificationNotes ?? "", pattern)
+        || EF.Functions.Like(j.UcjbNotes ?? string.Empty, pattern)
+        || EF.Functions.Like(j.ClientNotes ?? string.Empty, pattern)
+        || EF.Functions.Like(j.InternalNotes ?? string.Empty, pattern)
+        || EF.Functions.Like(j.ItemNotReadyNotificationNotes ?? string.Empty, pattern)
         || EF.Functions.Like(
-            (j.UcjbToSpecial ?? "") + " "
-            + (j.UcjbFlightDetails ?? "") + " "
-            + (j.PickupCondition ?? ""),
+            (j.UcjbToSpecial ?? string.Empty) + " "
+            + (j.UcjbFlightDetails ?? string.Empty) + " "
+            + (j.PickupCondition ?? string.Empty),
             pattern)
         || j.TucJobNationwides.Any(nw => EF.Functions.Like(
-            (nw.UcnwFlightNo ?? "") + " "
-            + (nw.AircraftName ?? "") + " "
-            + (nw.CarrierFsCode ?? "") + " "
-            + (nw.DepartureAirportName ?? "") + " "
-            + (nw.ArrivalAirportName ?? ""),
+            (nw.UcnwFlightNo ?? string.Empty) + " "
+            + (nw.AircraftName ?? string.Empty) + " "
+            + (nw.CarrierFsCode ?? string.Empty) + " "
+            + (nw.DepartureAirportName ?? string.Empty) + " "
+            + (nw.ArrivalAirportName ?? string.Empty),
             pattern))
         || j.UcjbClient.TblClientContacts.Any(cc => EF.Functions.Like(
-            (cc.Contact.UcctFirstname ?? "") + " "
-            + (cc.Contact.UcctSurname ?? ""),
+            (cc.Contact.UcctFirstname ?? string.Empty) + " "
+            + (cc.Contact.UcctSurname ?? string.Empty),
             pattern));
 
     internal static Expression<Func<TucJobArchive, bool>> ArchivedJobMatches(string pattern) => j =>
         EF.Functions.Like(
             j.UcjbNumber + " "
-            + (j.Barcode ?? "") + " "
-            + (j.Gssconnote ?? "") + " "
-            + (j.UcjbOurRef ?? "") + " "
-            + (j.UcjbClientRefa ?? "") + " "
-            + (j.UcjbClientRefb ?? "") + " "
-            + (j.UcjbClientRefc ?? "") + " "
-            + (j.TextRef1 ?? "") + " "
-            + (j.TextRef2 ?? "") + " "
-            + (j.TextRef3 ?? "") + " "
-            + (j.TextRef4 ?? "") + " "
-            + (j.ShopRef1 ?? "") + " "
-            + (j.ShopRef2 ?? "") + " "
-            + (j.ShopRef3 ?? "") + " "
-            + (j.ShopRef4 ?? "") + " "
-            + (j.ShopRef5 ?? "") + " "
-            + (j.ClientItemIds ?? "") + " "
-            + (j.StripeChargeId ?? "") + " "
-            + (j.UcjbClientCode ?? "") + " "
-            + (j.CustomJobName ?? "") + " "
-            + (j.ScheduleName ?? "") + " "
-            + (j.RunName ?? ""),
+            + (j.Barcode ?? string.Empty) + " "
+            + (j.Gssconnote ?? string.Empty) + " "
+            + (j.UcjbOurRef ?? string.Empty) + " "
+            + (j.UcjbClientRefa ?? string.Empty) + " "
+            + (j.UcjbClientRefb ?? string.Empty) + " "
+            + (j.UcjbClientRefc ?? string.Empty) + " "
+            + (j.TextRef1 ?? string.Empty) + " "
+            + (j.TextRef2 ?? string.Empty) + " "
+            + (j.TextRef3 ?? string.Empty) + " "
+            + (j.TextRef4 ?? string.Empty) + " "
+            + (j.ShopRef1 ?? string.Empty) + " "
+            + (j.ShopRef2 ?? string.Empty) + " "
+            + (j.ShopRef3 ?? string.Empty) + " "
+            + (j.ShopRef4 ?? string.Empty) + " "
+            + (j.ShopRef5 ?? string.Empty) + " "
+            + (j.ClientItemIds ?? string.Empty) + " "
+            + (j.StripeChargeId ?? string.Empty) + " "
+            + (j.UcjbClientCode ?? string.Empty) + " "
+            + (j.CustomJobName ?? string.Empty) + " "
+            + (j.ScheduleName ?? string.Empty) + " "
+            + (j.RunName ?? string.Empty),
             pattern)
         // Kept out of the group above: connote is varchar(max), which would drag the whole
         // concatenation into a LOB expression
-        || EF.Functions.Like(j.Connote ?? "", pattern)
+        || EF.Functions.Like(j.Connote ?? string.Empty, pattern)
         || EF.Functions.Like(
-            (j.UcjbContact ?? "") + " "
-            + (j.UcjbContactPhone ?? "") + " "
-            + (j.PickUpName ?? "") + " "
-            + (j.PickUpFromContact ?? "") + " "
-            + (j.PickUpFromPhone ?? "") + " "
-            + (j.DeliverToContact ?? "") + " "
-            + (j.DeliverToPhone ?? "") + " "
-            + (j.UcjbPodname ?? "") + " "
-            + (j.ProofOfDeliveryEmail ?? "") + " "
-            + (j.ProofOfDeliveryMobile ?? "") + " "
-            + (j.TrackingEmail ?? "") + " "
-            + (j.TrackingMobile ?? ""),
+            (j.UcjbContact ?? string.Empty) + " "
+            + (j.UcjbContactPhone ?? string.Empty) + " "
+            + (j.PickUpName ?? string.Empty) + " "
+            + (j.PickUpFromContact ?? string.Empty) + " "
+            + (j.PickUpFromPhone ?? string.Empty) + " "
+            + (j.DeliverToContact ?? string.Empty) + " "
+            + (j.DeliverToPhone ?? string.Empty) + " "
+            + (j.UcjbPodname ?? string.Empty) + " "
+            + (j.ProofOfDeliveryEmail ?? string.Empty) + " "
+            + (j.ProofOfDeliveryMobile ?? string.Empty) + " "
+            + (j.TrackingEmail ?? string.Empty) + " "
+            + (j.TrackingMobile ?? string.Empty),
             pattern)
         || EF.Functions.Like(
-            (j.UcjbFromAddr ?? "") + " "
-            + (j.FromAddressStreetName ?? "") + " "
-            + (j.FromAddressExtras ?? "") + " "
-            + (j.FromAddressExtras2 ?? "") + " "
-            + (j.PickupAddressLine1 ?? "") + " "
-            + (j.PickupAddressLine2 ?? "") + " "
-            + (j.PickupAddressLine3 ?? "") + " "
-            + (j.PickupAddressLine4 ?? "") + " "
-            + (j.PickupAddressLine5 ?? "") + " "
-            + (j.PickupAddressLine6 ?? "") + " "
-            + (j.PickupAddressLine7 ?? "") + " "
-            + (j.PickupAddressLine8 ?? "") + " "
-            + (j.UcjbFromNavigation.UcsuName ?? ""),
+            (j.UcjbFromAddr ?? string.Empty) + " "
+            + (j.FromAddressStreetName ?? string.Empty) + " "
+            + (j.FromAddressExtras ?? string.Empty) + " "
+            + (j.FromAddressExtras2 ?? string.Empty) + " "
+            + (j.PickupAddressLine1 ?? string.Empty) + " "
+            + (j.PickupAddressLine2 ?? string.Empty) + " "
+            + (j.PickupAddressLine3 ?? string.Empty) + " "
+            + (j.PickupAddressLine4 ?? string.Empty) + " "
+            + (j.PickupAddressLine5 ?? string.Empty) + " "
+            + (j.PickupAddressLine6 ?? string.Empty) + " "
+            + (j.PickupAddressLine7 ?? string.Empty) + " "
+            + (j.PickupAddressLine8 ?? string.Empty) + " "
+            + (j.UcjbFromNavigation.UcsuName ?? string.Empty),
             pattern)
         || EF.Functions.Like(
-            (j.UcjbToAddr ?? "") + " "
-            + (j.ToAddressStreetName ?? "") + " "
-            + (j.ToAddressExtras ?? "") + " "
-            + (j.ToAddressExtras2 ?? "") + " "
-            + (j.DeliveryAddressLine1 ?? "") + " "
-            + (j.DeliveryAddressLine2 ?? "") + " "
-            + (j.DeliveryAddressLine3 ?? "") + " "
-            + (j.DeliveryAddressLine4 ?? "") + " "
-            + (j.DeliveryAddressLine5 ?? "") + " "
-            + (j.DeliveryAddressLine6 ?? "") + " "
-            + (j.DeliveryAddressLine7 ?? "") + " "
-            + (j.DeliveryAddressLine8 ?? "") + " "
-            + (j.UcjbToNavigation.UcsuName ?? ""),
+            (j.UcjbToAddr ?? string.Empty) + " "
+            + (j.ToAddressStreetName ?? string.Empty) + " "
+            + (j.ToAddressExtras ?? string.Empty) + " "
+            + (j.ToAddressExtras2 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine1 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine2 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine3 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine4 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine5 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine6 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine7 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine8 ?? string.Empty) + " "
+            + (j.UcjbToNavigation.UcsuName ?? string.Empty),
             pattern)
         // Matched one at a time rather than concatenated: the notes columns are nvarchar(4000)
         // each, and SQL Server types a concatenation of them as nvarchar(4000) too - anything
         // past the first long note would be silently truncated away before the LIKE ran.
-        || EF.Functions.Like(j.UcjbNotes ?? "", pattern)
-        || EF.Functions.Like(j.ClientNotes ?? "", pattern)
-        || EF.Functions.Like(j.InternalNotes ?? "", pattern)
-        || EF.Functions.Like(j.ItemNotReadyNotificationNotes ?? "", pattern)
+        || EF.Functions.Like(j.UcjbNotes ?? string.Empty, pattern)
+        || EF.Functions.Like(j.ClientNotes ?? string.Empty, pattern)
+        || EF.Functions.Like(j.InternalNotes ?? string.Empty, pattern)
+        || EF.Functions.Like(j.ItemNotReadyNotificationNotes ?? string.Empty, pattern)
         || EF.Functions.Like(
-            (j.UcjbToSpecial ?? "") + " "
-            + (j.UcjbFlightDetails ?? "") + " "
-            + (j.PickupCondition ?? ""),
+            (j.UcjbToSpecial ?? string.Empty) + " "
+            + (j.UcjbFlightDetails ?? string.Empty) + " "
+            + (j.PickupCondition ?? string.Empty),
             pattern)
         || EF.Functions.Like(
-            (j.Nationwide.UcnwFlightNo ?? "") + " "
-            + (j.Nationwide.AircraftName ?? "") + " "
-            + (j.Nationwide.CarrierFsCode ?? "") + " "
-            + (j.Nationwide.DepartureAirportName ?? "") + " "
-            + (j.Nationwide.ArrivalAirportName ?? ""),
+            (j.Nationwide.UcnwFlightNo ?? string.Empty) + " "
+            + (j.Nationwide.AircraftName ?? string.Empty) + " "
+            + (j.Nationwide.CarrierFsCode ?? string.Empty) + " "
+            + (j.Nationwide.DepartureAirportName ?? string.Empty) + " "
+            + (j.Nationwide.ArrivalAirportName ?? string.Empty),
             pattern)
         || j.UcjbClient.TblClientContacts.Any(cc => EF.Functions.Like(
-            (cc.Contact.UcctFirstname ?? "") + " "
-            + (cc.Contact.UcctSurname ?? ""),
+            (cc.Contact.UcctFirstname ?? string.Empty) + " "
+            + (cc.Contact.UcctSurname ?? string.Empty),
             pattern));
 
     internal static Expression<Func<TblBulkJob, bool>> BulkJobMatches(string pattern) => j =>
         EF.Functions.Like(
             j.JobNumber + " "
             + j.Barcode + " "
-            + (j.OurRef ?? "") + " "
-            + (j.ClientRefa ?? "") + " "
-            + (j.ClientRefb ?? "") + " "
-            + (j.OrderRef ?? "") + " "
-            + (j.ShopRef1 ?? "") + " "
-            + (j.ShopRef2 ?? "") + " "
-            + (j.ShopRef3 ?? "") + " "
-            + (j.ShopRef4 ?? "") + " "
-            + (j.ShopRef5 ?? "") + " "
-            + (j.ClientItemIds ?? "") + " "
-            + (j.StripeChargeId ?? "") + " "
-            + (j.ClientCode ?? "") + " "
-            + (j.ScheduleName ?? "") + " "
-            + (j.RunName ?? "") + " "
-            + (j.Manifest ?? ""),
+            + (j.OurRef ?? string.Empty) + " "
+            + (j.ClientRefa ?? string.Empty) + " "
+            + (j.ClientRefb ?? string.Empty) + " "
+            + (j.OrderRef ?? string.Empty) + " "
+            + (j.ShopRef1 ?? string.Empty) + " "
+            + (j.ShopRef2 ?? string.Empty) + " "
+            + (j.ShopRef3 ?? string.Empty) + " "
+            + (j.ShopRef4 ?? string.Empty) + " "
+            + (j.ShopRef5 ?? string.Empty) + " "
+            + (j.ClientItemIds ?? string.Empty) + " "
+            + (j.StripeChargeId ?? string.Empty) + " "
+            + (j.ClientCode ?? string.Empty) + " "
+            + (j.ScheduleName ?? string.Empty) + " "
+            + (j.RunName ?? string.Empty) + " "
+            + (j.Manifest ?? string.Empty),
             pattern)
         || EF.Functions.Like(
-            (j.Contact ?? "") + " "
-            + (j.PickupFromContact ?? "") + " "
-            + (j.PickupFromPhone ?? "") + " "
-            + (j.DeliverToContact ?? "") + " "
-            + (j.DeliverToPhone ?? "") + " "
-            + (j.ProofOfDeliveryEmail ?? "") + " "
-            + (j.ProofOfDeliveryMobile ?? "") + " "
-            + (j.TrackingEmail ?? "") + " "
-            + (j.TrackingMobile ?? ""),
+            (j.Contact ?? string.Empty) + " "
+            + (j.PickupFromContact ?? string.Empty) + " "
+            + (j.PickupFromPhone ?? string.Empty) + " "
+            + (j.DeliverToContact ?? string.Empty) + " "
+            + (j.DeliverToPhone ?? string.Empty) + " "
+            + (j.ProofOfDeliveryEmail ?? string.Empty) + " "
+            + (j.ProofOfDeliveryMobile ?? string.Empty) + " "
+            + (j.TrackingEmail ?? string.Empty) + " "
+            + (j.TrackingMobile ?? string.Empty),
             pattern)
         || EF.Functions.Like(
-            (j.FromCompany ?? "") + " "
-            + (j.FromAddress ?? "") + " "
-            + (j.FromSuburb ?? "") + " "
-            + (j.PickupAddressLine1 ?? "") + " "
-            + (j.PickupAddressLine2 ?? "") + " "
-            + (j.PickupAddressLine3 ?? "") + " "
-            + (j.PickupAddressLine4 ?? "") + " "
-            + (j.PickupAddressLine5 ?? "") + " "
-            + (j.PickupAddressLine6 ?? "") + " "
-            + (j.PickupAddressLine7 ?? "") + " "
-            + (j.PickupAddressLine8 ?? ""),
+            (j.FromCompany ?? string.Empty) + " "
+            + (j.FromAddress ?? string.Empty) + " "
+            + (j.FromSuburb ?? string.Empty) + " "
+            + (j.PickupAddressLine1 ?? string.Empty) + " "
+            + (j.PickupAddressLine2 ?? string.Empty) + " "
+            + (j.PickupAddressLine3 ?? string.Empty) + " "
+            + (j.PickupAddressLine4 ?? string.Empty) + " "
+            + (j.PickupAddressLine5 ?? string.Empty) + " "
+            + (j.PickupAddressLine6 ?? string.Empty) + " "
+            + (j.PickupAddressLine7 ?? string.Empty) + " "
+            + (j.PickupAddressLine8 ?? string.Empty),
             pattern)
         || EF.Functions.Like(
-            (j.ToCompany ?? "") + " "
-            + (j.ToAddress ?? "") + " "
-            + (j.ToSuburb ?? "") + " "
-            + (j.DeliveryAddressLine1 ?? "") + " "
-            + (j.DeliveryAddressLine2 ?? "") + " "
-            + (j.DeliveryAddressLine3 ?? "") + " "
-            + (j.DeliveryAddressLine4 ?? "") + " "
-            + (j.DeliveryAddressLine5 ?? "") + " "
-            + (j.DeliveryAddressLine6 ?? "") + " "
-            + (j.DeliveryAddressLine7 ?? "") + " "
-            + (j.DeliveryAddressLine8 ?? ""),
+            (j.ToCompany ?? string.Empty) + " "
+            + (j.ToAddress ?? string.Empty) + " "
+            + (j.ToSuburb ?? string.Empty) + " "
+            + (j.DeliveryAddressLine1 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine2 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine3 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine4 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine5 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine6 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine7 ?? string.Empty) + " "
+            + (j.DeliveryAddressLine8 ?? string.Empty),
             pattern)
-        || EF.Functions.Like(j.Notes ?? "", pattern);
+        || EF.Functions.Like(j.Notes ?? string.Empty, pattern);
 }

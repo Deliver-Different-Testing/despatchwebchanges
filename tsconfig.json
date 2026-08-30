@@ -30,6 +30,7 @@
     "wwwroot/**/*.ts",
     "wwwroot/**/*.tsx",
     "wwwroot/types/*.d.ts",
+    "scripts/**/*.ts",
     "*.ts"
   ]
 }
