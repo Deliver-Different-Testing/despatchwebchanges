@@ -20,6 +20,12 @@ export interface GitLabMergeRequest {
     author?: { name?: string };
 }
 
+export interface GitLabDeployment {
+    id: number;
+    sha: string;
+    created_at: string;
+}
+
 export interface GitLabCompare {
     commit?: { id: string } | null;
     commits: RangeCommit[];
@@ -80,6 +86,18 @@ export class GitLabApi {
             per_page: String(Math.min(limit, 100)),
         });
         return (await response.json()) as RangeCommit[];
+    }
+
+    /** Successful deployments of one environment, newest first. */
+    async listDeployments(environment: string, limit = 20): Promise<GitLabDeployment[]> {
+        const response = await this.request('deployments', {
+            environment,
+            status: 'success',
+            order_by: 'created_at',
+            sort: 'desc',
+            per_page: String(Math.min(limit, 100)),
+        });
+        return (await response.json()) as GitLabDeployment[];
     }
 
     async getMergeRequest(iid: number): Promise<GitLabMergeRequest> {

@@ -19,14 +19,14 @@ const mr = (overrides: Partial<ReleaseMergeRequest> = {}): ReleaseMergeRequest =
 describe('buildReleaseNotes', () => {
     it('renders a heading, the range and one entry per merge request', () => {
         const notes = buildReleaseNotes({
-            tag: 'rc-2026.09.1',
-            previousTag: 'rc-2026.08.1',
+            title: 'Deployed to Production',
+            sinceRef: 'a1b2c3d',
             mergeRequests: [mr()],
             directCommits: [],
         });
 
-        expect(notes).toContain('# Release candidate rc-2026.09.1');
-        expect(notes).toContain('Changes since `rc-2026.08.1`');
+        expect(notes).toContain('# Deployed to Production');
+        expect(notes).toContain('Changes since `a1b2c3d`');
         expect(notes).toContain('### !1148 — POD report: items, weight and job history');
         expect(notes).toContain(
             '_Jacob T · [view MR](https://git.customd.com/urgent-couriers/despatchweb/-/merge_requests/1148)_',
@@ -39,8 +39,8 @@ describe('buildReleaseNotes', () => {
 
     it('warns per missing section and counts incomplete items at the top instead of skipping them', () => {
         const notes = buildReleaseNotes({
-            tag: 'rc-2026.09.1',
-            previousTag: 'rc-2026.08.1',
+            title: 'Deployed to Production',
+            sinceRef: 'a1b2c3d',
             mergeRequests: [
                 mr({ iid: 1, description: '' }),
                 mr({ iid: 2, description: '## What changed\nSomething.' }),
@@ -51,9 +51,9 @@ describe('buildReleaseNotes', () => {
         // A blank line before the blockquote, or markdown folds it into the paragraph above.
         expect(notes).toContain(
             [
-                'Changes since `rc-2026.08.1`',
+                'Changes since `a1b2c3d`',
                 '',
-                '> ⚠️ 3 item(s) in this release are missing description or test steps.',
+                '> ⚠️ 3 item(s) in this deployment are missing description or test steps.',
                 '',
                 '### !1',
             ].join('\n'),
@@ -66,8 +66,8 @@ describe('buildReleaseNotes', () => {
 
     it('includes the optional risk section only when the author supplied one', () => {
         const withRisk = buildReleaseNotes({
-            tag: 'rc-2026.09.1',
-            previousTag: null,
+            title: 'Deployed to Production',
+            sinceRef: null,
             mergeRequests: [
                 mr({ description: `${mr().description}\n\n## Risk / areas touched\nCheck the exports.` }),
             ],
@@ -78,30 +78,30 @@ describe('buildReleaseNotes', () => {
         expect(withRisk).toContain('Check the exports.');
         expect(
             buildReleaseNotes({
-                tag: 'rc-2026.09.1',
-                previousTag: null,
+                title: 'Deployed to Production',
+                sinceRef: null,
                 mergeRequests: [mr()],
                 directCommits: [],
             }),
         ).not.toContain('**Also check**');
     });
 
-    it('says so when the range has no previous tag or no changes at all', () => {
+    it('says so when the environment has no previous deployment or no changes at all', () => {
         const firstRun = buildReleaseNotes({
-            tag: 'rc-2026.09.1',
-            previousTag: null,
+            title: 'Deployed to Production',
+            sinceRef: null,
             mergeRequests: [],
             directCommits: [],
         });
 
-        expect(firstRun).toContain('Changes in this release (no previous RC tag found)');
-        expect(firstRun).toContain('_No merge requests found for this release._');
+        expect(firstRun).toContain('Changes in this deployment (no previous deployment found)');
+        expect(firstRun).toContain('_No merge requests found for this deployment._');
     });
 
     it('lists commits pushed straight to master with a warning', () => {
         const notes = buildReleaseNotes({
-            tag: 'rc-2026.09.1',
-            previousTag: 'rc-2026.08.1',
+            title: 'Deployed to Production',
+            sinceRef: 'a1b2c3d',
             mergeRequests: [mr()],
             directCommits: [{ id: 'abc1234def', title: 'Bump nuget packages' }],
         });

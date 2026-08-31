@@ -14,8 +14,8 @@ export interface ReleaseDirectCommit {
 }
 
 export interface ReleaseNotesInput {
-    tag: string;
-    previousTag: string | null;
+    title: string;
+    sinceRef: string | null;
     mergeRequests: readonly ReleaseMergeRequest[];
     directCommits: readonly ReleaseDirectCommit[];
 }
@@ -24,16 +24,16 @@ export interface ReleaseNotesInput {
  * A change with no description or test steps is still listed, with a marker — a
  * silently omitted change is an untested change.
  */
-export function buildReleaseNotes({ tag, previousTag, mergeRequests, directCommits }: ReleaseNotesInput): string {
-    const header = previousTag
-        ? `Changes since \`${previousTag}\``
-        : 'Changes in this release (no previous RC tag found)';
+export function buildReleaseNotes({ title, sinceRef, mergeRequests, directCommits }: ReleaseNotesInput): string {
+    const header = sinceRef
+        ? `Changes since \`${sinceRef}\``
+        : 'Changes in this deployment (no previous deployment found)';
 
-    const lines: string[] = [`# Release candidate ${tag}`, '', header, ''];
+    const lines: string[] = [`# ${title}`, '', header, ''];
     let incomplete = 0;
 
     if (!mergeRequests.length) {
-        lines.push('_No merge requests found for this release._', '');
+        lines.push('_No merge requests found for this deployment._', '');
     }
 
     for (const mergeRequest of mergeRequests) {
@@ -75,7 +75,7 @@ export function buildReleaseNotes({ tag, previousTag, mergeRequests, directCommi
     }
 
     if (incomplete) {
-        lines.splice(4, 0, `> ⚠️ ${incomplete} item(s) in this release are missing description or test steps.`, '');
+        lines.splice(4, 0, `> ⚠️ ${incomplete} item(s) in this deployment are missing description or test steps.`, '');
     }
 
     return `${lines.join('\n').trimEnd()}\n`;
