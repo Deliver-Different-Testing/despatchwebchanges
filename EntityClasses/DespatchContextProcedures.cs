@@ -519,14 +519,14 @@ namespace DespatchWeb.EntityClasses
                 new SqlParameter
                 {
                     ParameterName = "ReferenceA",
-                    Size = 40,
+                    Size = 200,
                     Value = referenceA ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
                     ParameterName = "ReferenceB",
-                    Size = 30,
+                    Size = 200,
                     Value = referenceB ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },

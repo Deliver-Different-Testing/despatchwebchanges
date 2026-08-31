@@ -221,6 +221,7 @@ internal static class JobWildcardSearch
             + (j.OurRef ?? string.Empty) + " "
             + (j.ClientRefa ?? string.Empty) + " "
             + (j.ClientRefb ?? string.Empty) + " "
+            + (j.ClientRefc ?? string.Empty) + " "
             + (j.OrderRef ?? string.Empty) + " "
             + (j.ShopRef1 ?? string.Empty) + " "
             + (j.ShopRef2 ?? string.Empty) + " "

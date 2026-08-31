@@ -79,6 +79,14 @@ public partial class TucInvoiceNo
 
     public int? OriginalInvoiceId { get; set; }
 
+    public bool Finalized { get; set; }
+
+    public DateTime? FinalizedAt { get; set; }
+
+    public string FinalizedBy { get; set; }
+
+    public bool NeedsResync { get; set; }
+
     public virtual TucInvoiceProcess Process { get; set; }
 
     public virtual TucClient UcinClient { get; set; }

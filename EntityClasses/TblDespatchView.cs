@@ -35,6 +35,8 @@ public partial class TblDespatchView
 
     public decimal? CenterLongitude { get; set; }
 
+    public int? ClientTypeId { get; set; }
+
     public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; } = new List<DespatchViewZoneGroup>();
 
     public virtual ICollection<DfrntpageView> DfrntpageViews { get; set; } = new List<DfrntpageView>();

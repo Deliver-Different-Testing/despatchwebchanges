@@ -346,6 +346,18 @@ describe('getDefaultMapCenter', () => {
         expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);
     });
 
+    it('prefers the network partner address over the country centre', () => {
+        // An NP works one address, not a country. The server only sets this for NP
+        // sessions whose agent record is geocoded.
+        (window as any).serverConfig = {isUSCustomer: false, npMapCenter: {lat: -36.85, lng: 174.76}};
+        expect(getDefaultMapCenter()).toEqual({lat: -36.85, lng: 174.76});
+    });
+
+    it('falls back to the country centre when the partner address is not geocoded', () => {
+        (window as any).serverConfig = {isUSCustomer: true, npMapCenter: null};
+        expect(getDefaultMapCenter()).toEqual(US_MAP_CENTER);
+    });
+
     it('returns NZ center when isUSCustomer is undefined', () => {
         (window as any).serverConfig = {};
         expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);

@@ -25,6 +25,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<CargoFacility> CargoFacilities { get; set; }
 
+    public virtual DbSet<ClientTypeFeature> ClientTypeFeatures { get; set; }
+
     public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
 
     public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
@@ -36,6 +38,8 @@ public partial class DespatchContext : DbContext
     public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
 
     public virtual DbSet<ExtraCharge> ExtraCharges { get; set; }
+
+    public virtual DbSet<Feature> Features { get; set; }
 
     public virtual DbSet<FlightCarrier> FlightCarriers { get; set; }
 
@@ -442,6 +446,23 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK__CargoFaci__Carri__2394F785");
         });
 
+        modelBuilder.Entity<ClientTypeFeature>(entity =>
+        {
+            entity.ToTable("ClientTypeFeature");
+
+            entity.HasIndex(e => new { e.ClientTypeId, e.FeatureKey }, "UX_ClientTypeFeature_TypeFeature").IsUnique();
+
+            entity.Property(e => e.FeatureKey)
+                .IsRequired()
+                .HasMaxLength(80);
+            entity.Property(e => e.Visible).HasDefaultValue(true, "DF_ClientTypeFeature_Visible");
+
+            entity.HasOne(d => d.FeatureKeyNavigation).WithMany(p => p.ClientTypeFeatures)
+                .HasForeignKey(d => d.FeatureKey)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ClientTypeFeature_Feature");
+        });
+
         modelBuilder.Entity<DesQryAllJobType>(entity =>
         {
             entity
@@ -834,6 +855,32 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("WeightExcessDP");
             entity.Property(e => e.WeightIncluded).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.WeightIncrement).HasColumnType("decimal(18, 4)");
+        });
+
+        modelBuilder.Entity<Feature>(entity =>
+        {
+            entity.HasKey(e => e.FeatureKey);
+
+            entity.ToTable("Feature");
+
+            entity.HasIndex(e => e.ParentKey, "IX_Feature_ParentKey");
+
+            entity.Property(e => e.FeatureKey).HasMaxLength(80);
+            entity.Property(e => e.AvailableCountries).HasMaxLength(50);
+            entity.Property(e => e.Category).HasMaxLength(40);
+            entity.Property(e => e.Description).HasMaxLength(400);
+            entity.Property(e => e.DisplayName)
+                .IsRequired()
+                .HasMaxLength(120);
+            entity.Property(e => e.ParentKey).HasMaxLength(80);
+            entity.Property(e => e.ReleaseStatus)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("Draft", "DF_Feature_ReleaseStatus");
+
+            entity.HasOne(d => d.ParentKeyNavigation).WithMany(p => p.InverseParentKeyNavigation)
+                .HasForeignKey(d => d.ParentKey)
+                .HasConstraintName("FK_Feature_Parent");
         });
 
         modelBuilder.Entity<FlightCarrier>(entity =>
@@ -1563,6 +1610,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientRefa).HasMaxLength(100);
             entity.Property(e => e.ClientRefb).HasMaxLength(100);
+            entity.Property(e => e.ClientRefc).HasMaxLength(100);
             entity.Property(e => e.Contact).HasMaxLength(50);
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
@@ -3058,6 +3106,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.DespatchViewId, "IX_DfrntappViews_ViewId_Include_Name");
 
+            entity.HasIndex(e => e.ClientTypeId, "IX_tblDespatchView_ClientTypeId");
+
             entity.HasIndex(e => e.Name, "IX_tblDespatchView_Name").IsUnique();
 
             entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
@@ -3375,8 +3425,12 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.JobDefaultId).HasColumnName("JobDefaultID");
             entity.Property(e => e.ClientNotes).HasMaxLength(500);
-            entity.Property(e => e.ClientReferenceA).HasMaxLength(20);
-            entity.Property(e => e.ClientReferenceB).HasMaxLength(15);
+            entity.Property(e => e.ClientReferenceA)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.ClientReferenceB)
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.Code)
                 .IsRequired()
                 .HasMaxLength(50);
@@ -3944,6 +3998,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.OffsetString)
                 .IsRequired()
                 .HasMaxLength(50);
+            entity.Property(e => e.WindowsTimeZoneId).HasMaxLength(100);
         });
 
         modelBuilder.Entity<TucAgent>(entity =>
@@ -4244,7 +4299,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.RateShortRr)
                 .HasDefaultValue(52, "DF_tucClient_RateShortRR")
                 .HasColumnName("RateShortRR");
-            entity.Property(e => e.RecalcRecurringFuel).HasDefaultValue(true);
             entity.Property(e => e.ReferenceAdefineList).HasColumnName("ReferenceADefineList");
             entity.Property(e => e.ReferenceAmandatory).HasColumnName("ReferenceAMandatory");
             entity.Property(e => e.ReferenceAmessage)
@@ -5220,6 +5274,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.Number, "IX_Number").IsDescending();
 
+            entity.HasIndex(e => e.Finalized, "IX_TucInvoiceNo_Finalized");
+
             entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
             entity.HasIndex(e => e.ProcessId, "ProcessID");
@@ -5237,6 +5293,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DiscountTotal).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.DueDate).HasPrecision(3);
             entity.Property(e => e.ExternalJournalHeaderId).HasColumnName("ExternalJournalHeaderID");
+            entity.Property(e => e.FinalizedBy).HasMaxLength(256);
             entity.Property(e => e.FuelSurcharge).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.GrossProfit).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.Number).HasMaxLength(50);

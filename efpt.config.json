@@ -43,6 +43,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[ClientTypeFeature]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[DespatchViewZoneGroup]",
          "ObjectType": 0
       },
@@ -52,6 +56,10 @@
       },
       {
          "Name": "[dbo].[ExtraCharges]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Feature]",
          "ObjectType": 0
       },
       {

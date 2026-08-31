@@ -263,6 +263,8 @@ public partial class TblBulkJob
 
     public int? RouteId { get; set; }
 
+    public string ClientRefc { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucClient Client { get; set; }

@@ -195,6 +195,49 @@ describe('SideNav', () => {
         });
     });
 
+    describe('Dashboard visibility', () => {
+        // The Razor global is written once at page load, before React mounts, so
+        // setting it before render matches production ordering.
+        afterEach(() => {
+            delete window.VisibleFeatures;
+        });
+
+        it('shows only the dashboards DF Admin granted this session', () => {
+            window.VisibleFeatures = ['dw-dispatch', 'dw-job-search'];
+
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={false} />);
+
+            expect(screen.getByText('Dashboard')).toBeInTheDocument();
+            expect(screen.getByText('Job Search')).toBeInTheDocument();
+            expect(screen.queryByText('Nationwide')).not.toBeInTheDocument();
+            expect(screen.queryByText('Overview')).not.toBeInTheDocument();
+            expect(screen.queryByText('Tasks')).not.toBeInTheDocument();
+            expect(screen.queryByText('Recurring Jobs')).not.toBeInTheDocument();
+            expect(screen.queryByText('Courier Map')).not.toBeInTheDocument();
+            expect(screen.queryByText('Driver Management')).not.toBeInTheDocument();
+        });
+
+        it('keeps the country filter on top of the grant', () => {
+            // Granted, but Driver Management is NZ-only — both gates must pass.
+            window.VisibleFeatures = ['dw-dispatch', 'dw-driver-management'];
+
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={true} />);
+
+            expect(screen.getByText('Dashboard')).toBeInTheDocument();
+            expect(screen.queryByText('Driver Management')).not.toBeInTheDocument();
+        });
+
+        it('renders the full nav when the session is not gated', () => {
+            window.VisibleFeatures = null;
+
+            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={false} />);
+
+            expect(screen.getByText('Dashboard')).toBeInTheDocument();
+            expect(screen.getByText('Courier Map')).toBeInTheDocument();
+            expect(screen.getByText('Driver Management')).toBeInTheDocument();
+        });
+    });
+
     describe('Active State', () => {
         it('should highlight the current navigation item', () => {
             renderWithMantine(<SideNav {...defaultProps} currentState="home" />);

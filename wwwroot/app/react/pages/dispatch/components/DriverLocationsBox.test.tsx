@@ -59,6 +59,23 @@ describe('DriverLocationsBox', () => {
         expect(fetchDriverLocationsMock).not.toHaveBeenCalled();
     });
 
+    it('stays blank when the selected view has no driver-location association', async () => {
+        // The "NP All Jobs" case: a view is selected, so the fetch runs, but the
+        // view has no zone groups behind it. Blank is the answer — falling back to
+        // the tenant-wide board is what
+        // docs/JACOB-NP-DESPATCHWEB-DASHBOARD-VISIBILITY-2026-08-30.md forbids.
+        fetchDriverLocationsMock.mockResolvedValue({areas: []});
+
+        renderBox({despatchViewIds: [11]});
+
+        expect(await screen.findByTestId('dl-no-data')).toBeInTheDocument();
+        expect(screen.queryByTestId('dl-data')).not.toBeInTheDocument();
+        expect(fetchDriverLocationsMock).toHaveBeenCalledWith(
+            expect.objectContaining({despatchViewIds: [11]}),
+            expect.anything(),
+        );
+    });
+
     it('fetches for the selected view ids and shows data when areas come back', async () => {
         renderBox({despatchViewIds: [11]});
 

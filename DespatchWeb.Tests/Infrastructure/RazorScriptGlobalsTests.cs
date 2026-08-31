@@ -21,6 +21,9 @@ public class RazorScriptGlobalsTests
     [Theory]
     [InlineData("ClientInternal")]
     [InlineData("IsNetworkPartner")]
+    // Not a boolean, but the same trap: quoted, the array reaches the browser as a
+    // truthy string and every dashboard check reads the wrong way.
+    [InlineData("VisibleFeatures")]
     public void IndexView_EmitsBooleanGlobal_AsUnquotedJson(string globalName)
     {
         // Arrange

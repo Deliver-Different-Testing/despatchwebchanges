@@ -72,11 +72,18 @@ declare global {
         ContactID?: number;
         ClientInternal?: boolean;
         IsNetworkPartner?: boolean;
+        /**
+         * Dashboard feature keys DF Admin has exposed to this session, or null
+         * when the session is not gated at all. See IFeatureVisibilityService.
+         */
+        VisibleFeatures?: string[] | null;
         TimeZone?: string;
         CurrencyCode?: string;
         serverConfig?: {
             isProduction: boolean;
             isUSCustomer: boolean;
+            /** The signed-in network partner's geocoded address, when there is one. */
+            npMapCenter?: {lat: number; lng: number} | null;
         };
 
         // ── React library globals (set by vendor-react bundle) ──────────
@@ -403,10 +410,12 @@ declare global {
     const ContactID: number;
     const ClientInternal: boolean;
     const IsNetworkPartner: boolean;
+    const VisibleFeatures: string[] | null;
     const TimeZone: string;
     const serverConfig: {
         isProduction: boolean;
         isUSCustomer: boolean;
+        npMapCenter?: {lat: number; lng: number} | null;
     };
 }
 
