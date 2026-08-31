@@ -1005,6 +1005,9 @@ public sealed partial class DeliveryJourneyService(
                 : !string.IsNullOrEmpty(dto.OldAgentName)
                     ? $"Unassigned from Agent {dto.OldAgentName}"
                     : "Agent Assignment Changed",
+            nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment) => !string.IsNullOrEmpty(dto.NewAgentName)
+                ? $"Assigned to Network Partner {dto.NewAgentName}"
+                : "Network Partner Assignment Changed",
             nameof(DeliveryJourneyChangeType.FlightAssignment) => !string.IsNullOrEmpty(dto.FlightNumber)
                 ? $"Flight {dto.FlightNumber} Assigned"
                 : "Flight Assignment Changed",
@@ -1034,6 +1037,9 @@ public sealed partial class DeliveryJourneyService(
                 : !string.IsNullOrEmpty(dto.OldAgentName)
                     ? $"Unassigned from Agent {dto.OldAgentName}"
                     : "Agent Assignment Changed",
+            nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment) => !string.IsNullOrEmpty(dto.NewAgentName)
+                ? $"Assigned to Network Partner {dto.NewAgentName}"
+                : "Network Partner Assignment Changed",
             nameof(DeliveryJourneyChangeType.FlightAssignment) => !string.IsNullOrEmpty(dto.FlightNumber)
                 ? $"Flight {dto.FlightNumber} Assigned"
                 : "Flight Assignment Changed",
@@ -1186,6 +1192,7 @@ public sealed partial class DeliveryJourneyService(
             nameof(DeliveryJourneyChangeType.InternalStatus) => "swap_horiz",
             nameof(DeliveryJourneyChangeType.CourierAssignment) => "local_shipping",
             nameof(DeliveryJourneyChangeType.AgentAssignment) => "support_agent",
+            nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment) => "hub",
             nameof(DeliveryJourneyChangeType.FlightAssignment) => "flight",
             nameof(DeliveryJourneyChangeType.JobUpdate) => GetIconForFieldName(fieldName),
             _ => "update"

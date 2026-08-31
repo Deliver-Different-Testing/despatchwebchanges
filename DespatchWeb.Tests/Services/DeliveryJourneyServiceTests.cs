@@ -788,6 +788,87 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     private static TucStaff Staff(int id, string first, string last) =>
         new() { UcstId = id, UcstFirstName = first, UcstLastName = last, CreatedBy = "test", LastModifiedBy = "test" };
 
+    private async Task SeedAgentsAsync(params TucAgent[] agents)
+    {
+        await using var context = _db.CreateContext();
+        context.TucAgents.AddRange(agents);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static TucAgent Agent(int id, string name) =>
+        new() { UcagId = id, UcagName = name, CreatedBy = "test", LastModifiedBy = "test" };
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_NetworkPartnerAssignment_RendersPartnerTitleAndIcon()
+    {
+        // Arrange — a network partner hand-off is its own event, not a generic job update.
+        await SeedAgentsAsync(Agent(70, "Partner Co"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment),
+            NewAgentId = 70,
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        // Assert
+        Assert.Equal("Assigned to Network Partner Partner Co", entry.Title);
+        Assert.Equal("hub", entry.Icon);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_NetworkPartnerAssignmentWithoutAgentName_RendersGenericPartnerTitle()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment),
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        // Assert
+        Assert.Equal("Network Partner Assignment Changed", entry.Title);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedNetworkPartnerAssignment_RendersPartnerTitleAndIcon()
+    {
+        // Arrange — the archive path has its own GetTitle switch, so it needs its own guard.
+        await SeedAgentsAsync(Agent(70, "Partner Co"));
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment),
+            NewAgentId = 70,
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        // Assert
+        Assert.Equal("Assigned to Network Partner Partner Co", entry.Title);
+        Assert.Equal("hub", entry.Icon);
+    }
+
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromStaffOnStatusRow()
     {

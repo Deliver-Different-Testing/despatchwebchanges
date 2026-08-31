@@ -3010,6 +3010,35 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var journey = await _context.JobDeliveryJourneys.SingleAsync(TestContext.Current.CancellationToken);
         Assert.Equal(nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment), journey.ChangeType);
         Assert.Equal(npAgentId, journey.NewAgentId);
+        Assert.Equal(1, journey.StaffId);
+        Assert.Equal(nameof(DeliveryJourneyUpdatedByType.Staff), journey.UpdatedByType);
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobAsync_WithNoStaffContext_WritesJourneyEntryAsSystem()
+    {
+        // Arrange — CK_JobDeliveryJourney_UserID_Required rejects a Staff row with no
+        // StaffID, so an unattributed assignment must be recorded as System.
+        const int jobId = 702;
+        const int npAgentId = 73;
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns((int?)null);
+        _tenantInfoServiceMock.GetStaffId().Returns(0);
+
+        _context.TucJobs.Add(CreateJob(jobId, "JOB702"));
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignNpAgentToJobAsync(npAgentId, jobId);
+
+        // Assert
+        var journey = await _context.JobDeliveryJourneys.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Null(journey.StaffId);
+        Assert.Equal(nameof(DeliveryJourneyUpdatedByType.System), journey.UpdatedByType);
     }
 
     [Fact]
