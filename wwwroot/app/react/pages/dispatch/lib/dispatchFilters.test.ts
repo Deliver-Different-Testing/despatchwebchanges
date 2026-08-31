@@ -195,6 +195,14 @@ describe('dispatchFilters', () => {
             expect(resolveInitialViewSelection(views, [999], false)).toEqual([11]);
         });
 
+        it('falls back to the first view when a stored selection has gone stale', () => {
+            // A network partner who selected tenant views before the NP audience
+            // filter landed has stored ids the server no longer returns. Leaving
+            // them on an empty selection shows an empty job grid on NZ; land them
+            // on the view they can actually see instead.
+            expect(resolveInitialViewSelection(views, [777, 888], true)).toEqual([11]);
+        });
+
         it('returns [] when the tenant has no views configured', () => {
             expect(resolveInitialViewSelection([], [], false)).toEqual([]);
         });

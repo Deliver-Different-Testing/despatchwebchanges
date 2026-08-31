@@ -14,7 +14,9 @@ public partial class HomeController(
     IClientRepository clientRepository,
     IDfrntViewsRepository viewsRepository,
     ITenantInfoService infoService,
-    IConnectionStringManager connectionStringManager) : Controller
+    IConnectionStringManager connectionStringManager,
+    IFeatureVisibilityService featureVisibilityService,
+    INetworkPartnerContextService networkPartnerContextService) : Controller
 {
     [Authorize]
     public async Task<IActionResult> Index()
@@ -65,6 +67,16 @@ public partial class HomeController(
                 ViewBag.ContactID = clientDetail.StaffID ?? parsedContactId;
                 ViewBag.IsUsTenant = isUsTenantFlag ?? false;
                 ViewBag.TimeZone = tenantTimeZone;
+
+                // Which dashboards DF Admin has exposed to this session, or null
+                // when the session is not gated. Resolved after the tenant
+                // connection is set, since the catalogue lives in that database.
+                var visibleDashboards = await featureVisibilityService.GetVisibleDashboardsAsync();
+                ViewBag.VisibleFeatures = visibleDashboards?.ToArray();
+
+                // Network partners open their maps on their own address; null for
+                // everyone else, which leaves the tenant country centre in place.
+                ViewBag.NpMapCenter = await networkPartnerContextService.GetMapCentreAsync();
             }
             else
             {

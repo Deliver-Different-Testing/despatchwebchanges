@@ -31,6 +31,11 @@ public class SqlInjectionPreventionTests
     [InlineData("Amount > 0 AND Amount < 1000")]
     [InlineData("JobNo LIKE 'JOB%'")]
     [InlineData("(StatusId = 1 OR StatusId = 2) AND ClientId = 5")]
+    // The seeded "NP All Jobs" view's condition. It is safe to leave unfiltered
+    // because the id list it produces is joined back to Context.TucJobs, where the
+    // NpAgentId global query filter applies — but it has to survive this blocklist
+    // first, or the NP dashboard throws instead of loading.
+    [InlineData("1=1")]
     public void IsValidWhereCondition_WithValidConditions_ReturnsTrue(string condition)
     {
         // Act

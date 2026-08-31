@@ -12,6 +12,7 @@ import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
+import {resolveDashboardRedirect} from "./react/services/dashboardRouteGuard";
 import ThemeConfig from "./materialTheme";
 import {bytesFilter, momentFormatFilter, replaceFilter, timezoneShortFilter} from "./filters";
 import EditParcelDimensionsDialogService
@@ -101,6 +102,17 @@ app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     // Body class also drives the non-US colour overrides in the legacy stylesheets
     // (.theme-nz blocks) alongside the non-colour tenant differences.
     document.body.classList.add(appConfig.US_Customer ? 'theme-us' : 'theme-nz');
+}]);
+
+// Enforce the DF-Admin dashboard grant on the router, not just the nav: a hidden
+// dashboard is otherwise still reachable by URL. Ungated sessions resolve to null
+// here and the transition proceeds untouched.
+app.run(["$transitions", ($transitions: any) => {
+    $transitions.onBefore({}, (transition: any) => {
+        const target = transition.to().name;
+        const redirect = resolveDashboardRedirect(target);
+        return redirect ? transition.router.stateService.target(redirect) : true;
+    });
 }]);
 
 // Log state transition errors so route resolve failures are visible in the console

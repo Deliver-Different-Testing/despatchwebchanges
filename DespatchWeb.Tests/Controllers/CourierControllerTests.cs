@@ -25,6 +25,57 @@ public class CourierControllerTests
             _courierReportService);
 
     [Fact]
+    public async Task Index_NoDespatchViews_ReturnsEmptyClearListWithoutQuerying()
+    {
+        // A view with no zone-group association must leave Driver Locations blank.
+        // Substituting a hardcoded view id here would show that view's tenant-wide
+        // driver board instead — see
+        // docs/JACOB-NP-DESPATCHWEB-DASHBOARD-VISIBILITY-2026-08-30.md acceptance
+        // criterion 6.
+        var controller = CreateController();
+
+        var result = await controller.Index([]);
+
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        var model = Assert.IsType<ClearListViewModel>(jsonResult.Value);
+        Assert.Empty(model.Areas);
+        await _courierRepository.DidNotReceiveWithAnyArgs()
+            .GetClearListsAsync(default!, default, default, default);
+    }
+
+    [Fact]
+    public async Task Index_NullDespatchViews_ReturnsEmptyClearList()
+    {
+        var controller = CreateController();
+
+        var result = await controller.Index(null!);
+
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.IsType<ClearListViewModel>(jsonResult.Value);
+        await _courierRepository.DidNotReceiveWithAnyArgs()
+            .GetClearListsAsync(default!, default, default, default);
+    }
+
+    [Fact]
+    public async Task Index_WithDespatchViews_PassesThemThrough()
+    {
+        var expected = new ClearListViewModel();
+        _courierRepository.GetClearListsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<DateTimeOffset?>(),
+            Arg.Any<DateTimeOffset?>(), Arg.Any<CancellationToken>()).Returns(expected);
+
+        var controller = CreateController();
+
+        var result = await controller.Index([7, 9]);
+
+        Assert.Same(expected, Assert.IsType<JsonResult>(result).Value);
+        // Every argument is a matcher: mixing a matcher with a literal token makes
+        // NSubstitute compare the token by value and the assertion misses.
+        await _courierRepository.Received(1).GetClearListsAsync(
+            Arg.Is<IReadOnlyList<int>>(ids => ids.SequenceEqual(new[] {7, 9})),
+            Arg.Any<DateTimeOffset?>(), Arg.Any<DateTimeOffset?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task AllActiveSearch_MultipleCouriersReturned_ReturnsAllInCorrectOrder()
     {
         // Arrange
@@ -289,26 +340,9 @@ public class CourierControllerTests
         Assert.IsType<JsonResult>(result);
     }
 
-    [Fact]
-    public async Task Index_WithNullDespatchViewIds_DefaultsToFallbackId()
-    {
-        // Arrange
-        var expectedResult = new ClearListViewModel();
-
-        _courierRepository.GetClearListsAsync(Arg.Any<IReadOnlyList<int>>(), null, null, Arg.Any<CancellationToken>())
-            .Returns(expectedResult);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.Index(null!);
-
-        // Assert
-        await _courierRepository
-            .Received(1)
-            .GetClearListsAsync(Arg.Any<IReadOnlyList<int>>(), null, null, Arg.Any<CancellationToken>());
-        Assert.IsType<JsonResult>(result);
-    }
+    // Index_WithNullDespatchViewIds_DefaultsToFallbackId is deliberately gone: the
+    // hardcoded fallback view it asserted is the tenant-wide leak this slice fixes.
+    // Index_NullDespatchViews_ReturnsEmptyClearList above replaces it.
 
     [Fact]
     public async Task Index_RepositoryThrowsException_Returns500()

@@ -25,6 +25,7 @@ import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 import {getDispatchBetaEnabled} from '../../../pages/dispatch/lib/betaPreference';
 import {getJobSearchBetaEnabled} from '../../../pages/job-search/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
+import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
 import classes from './SideNav.module.css';
 
 const drawerWidth = 264;
@@ -98,24 +99,28 @@ export const SideNav: React.FC<SideNavProps> = ({
                 // route's redirect hop; operators who opted out still get V1.
                 state: getDispatchBetaEnabled() ? 'dispatchV2' : 'home',
                 matchStates: ['home', 'dispatchV2'],
+                featureKey: dashboardFeatureKeys.dispatch,
             },
             {
                 id: 'shipping',
                 label: isUsCustomer ? 'Domestic' : 'Nationwide',
                 icon: <Icon tabler={IconTruck} size={NAV_ICON_SIZE} />,
                 state: 'nw',
+                featureKey: dashboardFeatureKeys.nationwide,
             },
             {
                 id: 'overview',
                 label: 'Overview',
                 icon: <Icon lucide={ChartColumn} size={NAV_ICON_SIZE} />,
                 state: 'overview',
+                featureKey: dashboardFeatureKeys.overview,
             },
             {
                 id: 'tasks',
                 label: 'Tasks',
                 icon: <Icon lucide={CircleCheckBig} size={NAV_ICON_SIZE} />,
                 state: 'taskDashboard',
+                featureKey: dashboardFeatureKeys.taskDashboard,
             },
             {
                 id: 'jobSearch',
@@ -123,31 +128,38 @@ export const SideNav: React.FC<SideNavProps> = ({
                 icon: <Icon lucide={Search} size={NAV_ICON_SIZE} />,
                 state: getJobSearchBetaEnabled() ? 'jobSearchV2' : 'jobSearch',
                 matchStates: ['jobSearch', 'jobSearchV2'],
+                featureKey: dashboardFeatureKeys.jobSearch,
             },
             {
                 id: 'recurringJobs',
                 label: 'Recurring Jobs',
                 icon: <Icon lucide={Clock} size={NAV_ICON_SIZE} />,
                 state: 'recurringJobs',
+                featureKey: dashboardFeatureKeys.recurringJobs,
             },
             {
                 id: 'courierMap',
                 label: 'Courier Map',
                 icon: <Icon tabler={IconMap} size={NAV_ICON_SIZE} />,
                 state: 'courierMap',
+                featureKey: dashboardFeatureKeys.courierMap,
             },
             {
                 id: 'driverManagement',
                 label: 'Driver Management',
                 icon: <Icon lucide={UserCog} size={NAV_ICON_SIZE} />,
                 state: 'driverManagement',
+                featureKey: dashboardFeatureKeys.driverManagement,
                 nzOnly: true,
             },
         ];
 
         return navItems.filter(item => {
             if (item.usOnly && !isUsCustomer) return false;
-            return !(item.nzOnly && isUsCustomer);
+            if (item.nzOnly && isUsCustomer) return false;
+            // DF Admin's grant, on top of the country filter. Ungated sessions
+            // pass everything, so this is inert for every audience but NP.
+            return !item.featureKey || isDashboardVisible(item.featureKey);
         });
     }, [isUsCustomer]);
 

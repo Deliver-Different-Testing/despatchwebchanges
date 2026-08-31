@@ -31,4 +31,25 @@ describe('computeMapView', () => {
         expect(computeMapView([view({id: 1}), view({id: 2})], DEFAULT))
             .toEqual({center: DEFAULT, zoom: 4});
     });
+
+    describe('network partner centre', () => {
+        const NP = {lat: -36.85, lng: 174.76};
+
+        it('centres on the partner address at zoom 7 instead of the country centre', () => {
+            // A country centre at zoom 4 is useless to a partner working one
+            // address; the view-level centre still wins when there is one.
+            expect(computeMapView([], DEFAULT, NP)).toEqual({center: NP, zoom: 7});
+            expect(computeMapView([view({id: 1}), view({id: 2})], DEFAULT, NP))
+                .toEqual({center: NP, zoom: 7});
+        });
+
+        it('keeps a single view\'s own centre ahead of the partner address', () => {
+            expect(computeMapView([view({centerLatitude: -41.3, centerLongitude: 174.8})], DEFAULT, NP))
+                .toEqual({center: {lat: -41.3, lng: 174.8}, zoom: 7});
+        });
+
+        it('falls back to the country centre when there is no partner address', () => {
+            expect(computeMapView([], DEFAULT, null)).toEqual({center: DEFAULT, zoom: 4});
+        });
+    });
 });

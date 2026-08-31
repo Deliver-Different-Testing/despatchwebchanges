@@ -131,7 +131,12 @@ export function persistSelectedViews(views: DfrntPageViewModel[]): void {
  * `initializeViews`. Selection is rebuilt from the fresh server list so stored
  * ids the server no longer returns fall away, and the first view is only
  * auto-selected on a genuine first visit — an explicitly cleared selection
- * (`hasStoredState`) stays cleared.
+ * (`hasStoredState` with nothing stored) stays cleared.
+ *
+ * A stored selection whose ids have ALL gone stale is not a cleared selection:
+ * it is a user whose view list changed under them (a network partner moved onto
+ * the NP audience list, a view retired). Those land on the first view they can
+ * see, since an empty selection means an empty job grid on NZ.
  */
 export function resolveInitialViewSelection(
     serverViews: DfrntPageViewModel[],
@@ -141,7 +146,9 @@ export function resolveInitialViewSelection(
     if (serverViews.length === 0) return [];
     const stored = new Set(storedIds);
     const selected = serverViews.filter(v => stored.has(v.id)).map(v => v.id);
-    if (selected.length === 0 && !hasStoredState) return [serverViews[0].id];
+    if (selected.length === 0 && (!hasStoredState || storedIds.length > 0)) {
+        return [serverViews[0].id];
+    }
     return selected;
 }
 

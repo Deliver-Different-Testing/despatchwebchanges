@@ -50,7 +50,7 @@ import DispatchBoxes from '../../../components/home/enums/DispatchBoxes';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './lib/boxDefinitions';
 import {computeMapJobs, selectedCourierId} from './lib/mapJobs';
 import {computeMapView} from './lib/mapView';
-import {getDefaultMapCenter} from '../../components/common/here-map/HereMap.types';
+import {getDefaultMapCenter, getNetworkPartnerMapCenter} from '../../components/common/here-map/HereMap.types';
 import {executeAddStopFlow} from './lib/addStopFlow';
 import {
     DispatchFilters,
@@ -378,7 +378,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     // updateMapForSelectedViews); the toolbar writes the full view objects to
     // localStorage before pushing new ids, so re-reading on an id change is fresh.
     const mapView = useMemo(
-        () => computeMapView(loadSelectedViews(), getDefaultMapCenter()),
+        () => computeMapView(loadSelectedViews(), getDefaultMapCenter(), getNetworkPartnerMapCenter()),
         // eslint-disable-next-line react-hooks/exhaustive-deps -- re-derive when the view selection changes
         [filters.despatchViewIds],
     );

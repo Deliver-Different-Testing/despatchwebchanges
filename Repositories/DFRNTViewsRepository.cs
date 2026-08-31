@@ -7,7 +7,9 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFactory)
+public class DfrntViewsRepository(
+    IDbContextFactory<DespatchContext> contextFactory,
+    IScopeProvider scopeProvider)
     : BaseRepository(contextFactory), IDfrntViewsRepository
 {
     public async Task<IReadOnlyList<DfrntPageViewModel>> GetViewsByUserAndPageAsync(int userId, AppPage page)
@@ -16,8 +18,18 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
         try
         {
             var pageInt = (int)page;
+
+            // Views are an audience list, not a per-user one: NULL is the standard
+            // tenant-staff set, and a Network Partner gets only the NP-audience
+            // views. Landing an NP on a tenant zone view would scope their Driver
+            // Locations panel to that zone's clear lists.
+            var audienceClientTypeId = scopeProvider.Scope?.IsNetworkPartner == true
+                ? (int?)ClientType.NetworkPartner
+                : null;
+
             var views = await Context.DfrntpageViews
-                .Where(pv => pv.PageId == pageInt && pv.View != null)
+                .Where(pv => pv.PageId == pageInt && pv.View != null
+                             && pv.View.ClientTypeId == audienceClientTypeId)
                 .Select(dv => new DfrntPageViewModel
                 {
                     Id = dv.View.DespatchViewId,

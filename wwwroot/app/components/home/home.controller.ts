@@ -815,9 +815,13 @@ class HomeController extends BaseController {
             // Rebuild selectedViews from fresh server view objects (not stale localStorage copies)
             this.selectedViews = this.views.filter(v => v.selected);
 
-            // Only default to first view on first visit (no saved state).
-            // If user explicitly cleared all views, respect that.
-            if (this.selectedViews.length === 0 && !hasSavedState) {
+            // Only default to first view on first visit (no saved state), or when
+            // every saved id has gone stale — a view list that changed under the
+            // user (e.g. a network partner moved onto the NP audience list) is not
+            // the same thing as a user who explicitly cleared their selection.
+            // Mirrors resolveInitialViewSelection in the React dispatch page, which
+            // shares this localStorage key.
+            if (this.selectedViews.length === 0 && (!hasSavedState || savedIds.size > 0)) {
                 this.views[0].selected = true;
                 this.selectedViews = [this.views[0]];
                 this.saveViewsToStorage(this.selectedViews);

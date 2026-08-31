@@ -18,6 +18,10 @@ public class HomeControllerTests : IDisposable
     private readonly IDfrntViewsRepository _viewsRepoMock = Substitute.For<IDfrntViewsRepository>();
     private readonly ITenantInfoService _infoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly IConnectionStringManager _connectionStringManagerMock = Substitute.For<IConnectionStringManager>();
+    private readonly IFeatureVisibilityService _featureVisibilityMock = Substitute.For<IFeatureVisibilityService>();
+
+    private readonly INetworkPartnerContextService _networkPartnerContextMock =
+        Substitute.For<INetworkPartnerContextService>();
 
     private readonly string? _originalSqlCredentials = Environment.GetEnvironmentVariable("SQLCredentials");
     private readonly string? _originalHubUrl = Environment.GetEnvironmentVariable("HubUrl");
@@ -29,7 +33,9 @@ public class HomeControllerTests : IDisposable
             _clientRepoMock,
             _viewsRepoMock,
             _infoServiceMock,
-            _connectionStringManagerMock);
+            _connectionStringManagerMock,
+            _featureVisibilityMock,
+            _networkPartnerContextMock);
 
         controller.ControllerContext = new ControllerContext
         {
@@ -88,6 +94,45 @@ public class HomeControllerTests : IDisposable
         var view = Assert.IsType<ViewResult>(result);
         Assert.Equal(true, view.ViewData["ClientInternal"]);
         Assert.Equal(true, view.ViewData["IsNetworkPartner"]);
+    }
+
+    [Fact]
+    public async Task Index_NetworkPartner_PublishesTheResolvedDashboardsAndMapCentre()
+    {
+        // The Razor globals are the only channel carrying this to the frontend —
+        // the nav filter and the map centre both read them.
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        _clientRepoMock.ValidateClientAsync(100).Returns(new ClientViewModel {IsNetworkPartner = true, StaffID = 5});
+        _featureVisibilityMock.GetVisibleDashboardsAsync()
+            .Returns(new HashSet<string> {"dw-dispatch"});
+        _networkPartnerContextMock.GetMapCentreAsync().Returns(new MapCentre(-36.8485m, 174.7633m));
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal(["dw-dispatch"], Assert.IsType<string[]>(view.ViewData["VisibleFeatures"]));
+        Assert.Equal(new MapCentre(-36.8485m, 174.7633m), view.ViewData["NpMapCenter"]);
+    }
+
+    [Fact]
+    public async Task Index_UngatedSession_LeavesTheDashboardsAndMapCentreNull()
+    {
+        // Null is what makes the frontend treat the session as ungated; an empty
+        // array would hide every dashboard.
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        _clientRepoMock.ValidateClientAsync(100).Returns(new ClientViewModel {StaffID = 5});
+        _featureVisibilityMock.GetVisibleDashboardsAsync().Returns((IReadOnlySet<string>?)null);
+        _networkPartnerContextMock.GetMapCentreAsync().Returns((MapCentre?)null);
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Null(view.ViewData["VisibleFeatures"]);
+        Assert.Null(view.ViewData["NpMapCenter"]);
     }
 
     [Fact]
