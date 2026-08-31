@@ -10,6 +10,9 @@ variables:
   GITLAB_NUGET_USERNAME: "gitlab-ci-token"
   GITLAB_NUGET_TOKEN: "${CI_JOB_TOKEN}"
   NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+  # Opts this project into the per-deploy release notes emitted by ci-templates'
+  # generate-pipeline.sh. Setup and CI variables: docs/release-notes-setup.md
+  RELEASE_NOTES_ENABLED: "true"
 
 # Only run deploy on protected branches, not on MR pipelines
 deploy-dynamic-pipeline:
@@ -156,71 +159,3 @@ test:frontend:integration:
   allow_failure: true
   script:
     - npx jest --config jest.integration.config.js --ci --maxWorkers=50%
-
-# Release candidate notes → GitLab Release → Slack.
-#
-# These live in `.pre` deliberately: the included ci-template owns `stages`
-# (templating, deploy), and redeclaring it here would replace that list. `.pre`
-# always exists, runs before the deploy child pipeline is triggered, and the test
-# jobs above never run on a tag pipeline, so the stage is otherwise empty.
-# Setup and CI variables: docs/release-notes-setup.md
-.release-notes-rules:
-  rules:
-    - if: $CI_COMMIT_TAG =~ /^rc-/
-
-release:notes:
-  stage: .pre
-  extends: .release-notes-rules
-  image: node:20-alpine
-  allow_failure: false
-  variables:
-    GIT_DEPTH: 0
-  cache:
-    key:
-      files:
-        - package-lock.json
-    paths:
-      - node_modules/
-      - .npm/
-    policy: pull
-  script:
-    - npm ci --cache .npm --prefer-offline
-    - npx tsx scripts/releaseNotes/generateReleaseNotes.ts
-  artifacts:
-    paths:
-      - release-notes.md
-    expire_in: 30 days
-
-release:create:
-  stage: .pre
-  extends: .release-notes-rules
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  needs:
-    - job: release:notes
-      artifacts: true
-  script:
-    - echo "Creating release $CI_COMMIT_TAG"
-  release:
-    tag_name: $CI_COMMIT_TAG
-    description: ./release-notes.md
-
-release:notify:
-  stage: .pre
-  extends: .release-notes-rules
-  image: node:20-alpine
-  allow_failure: false
-  needs:
-    - job: release:notes
-      artifacts: true
-    - job: release:create
-  cache:
-    key:
-      files:
-        - package-lock.json
-    paths:
-      - node_modules/
-      - .npm/
-    policy: pull
-  script:
-    - npm ci --cache .npm --prefer-offline
-    - npx tsx scripts/releaseNotes/postToSlack.ts

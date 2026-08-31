@@ -48,4 +48,21 @@ describe('GitLabApi', () => {
         );
         await expect(api(fetchImpl).getMergeRequest(1148)).rejects.not.toThrow(/super-secret-token/);
     });
+
+    it('asks only for successful deployments of one environment, newest first', async () => {
+        const fetchImpl = jest
+            .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
+            .mockResolvedValue(jsonResponse([{ id: 31, sha: 'newsha', created_at: '2026-08-31T10:05:00Z' }]));
+
+        await expect(api(fetchImpl).listDeployments('medical/production')).resolves.toEqual([
+            { id: 31, sha: 'newsha', created_at: '2026-08-31T10:05:00Z' },
+        ]);
+
+        const url = String(fetchImpl.mock.calls[0][0]);
+        expect(url).toContain('/projects/42/deployments?');
+        expect(url).toContain('environment=medical%2Fproduction');
+        expect(url).toContain('status=success');
+        expect(url).toContain('order_by=created_at');
+        expect(url).toContain('sort=desc');
+    });
 });

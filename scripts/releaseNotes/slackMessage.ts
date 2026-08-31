@@ -52,19 +52,29 @@ export function chunkForSlack(text: string, limit = SLACK_SECTION_LIMIT): string
 }
 
 export interface SlackMessageInput {
-    tag: string;
-    projectUrl: string;
+    environmentLabel: string;
+    sha: string;
+    pipelineUrl: string;
+    compareUrl: string | null;
     notes: string;
 }
 
-export function buildSlackBlocks({ tag, projectUrl, notes }: SlackMessageInput): SlackBlock[] {
-    const releaseUrl = `${projectUrl}/-/releases/${tag}`;
+export function buildSlackBlocks({
+    environmentLabel,
+    sha,
+    pipelineUrl,
+    compareUrl,
+    notes,
+}: SlackMessageInput): SlackBlock[] {
+    const context = [`\`${sha.slice(0, 8)}\``, `<${pipelineUrl}|pipeline>`];
+    if (compareUrl) {
+        context.push(`<${compareUrl}|changes>`);
+    }
+
+    const moreUrl = compareUrl ?? pipelineUrl;
     const blocks: SlackBlock[] = [
-        { type: 'header', text: { type: 'plain_text', text: `Release candidate ${tag}`, emoji: true } },
-        {
-            type: 'context',
-            elements: [{ type: 'mrkdwn', text: `Ready for testing · <${releaseUrl}|full release in GitLab>` }],
-        },
+        { type: 'header', text: { type: 'plain_text', text: `Deployed to ${environmentLabel}`, emoji: true } },
+        { type: 'context', elements: [{ type: 'mrkdwn', text: context.join(' · ') }] },
         { type: 'divider' },
     ];
 
@@ -81,7 +91,7 @@ export function buildSlackBlocks({ tag, projectUrl, notes }: SlackMessageInput):
             type: 'section',
             text: {
                 type: 'mrkdwn',
-                text: `_This release is too long to post in full — <${releaseUrl}|read the rest in GitLab>._`,
+                text: `_This deployment is too long to post in full — <${moreUrl}|read the rest in GitLab>._`,
             },
         });
     }

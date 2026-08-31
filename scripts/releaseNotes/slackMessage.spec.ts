@@ -62,25 +62,50 @@ describe('chunkForSlack', () => {
 
 describe('buildSlackBlocks', () => {
     const projectUrl = 'https://git.customd.com/urgent-couriers/despatchweb';
+    const message = {
+        environmentLabel: 'Tenant staging',
+        sha: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678',
+        pipelineUrl: `${projectUrl}/-/pipelines/145503`,
+        compareUrl: `${projectUrl}/-/compare/oldsha...a1b2c3d4e5f60718293a4b5c6d7e8f9012345678`,
+        notes: '**All good**',
+    };
 
-    it('opens with the tag, a link to the release and a divider', () => {
-        const blocks = buildSlackBlocks({ tag: 'rc-2026.09.1', projectUrl, notes: '**All good**' });
+    it('marks the environment in the header and the commit and range in the context line', () => {
+        const blocks = buildSlackBlocks(message);
 
         expect(blocks[0]).toEqual({
             type: 'header',
-            text: { type: 'plain_text', text: 'Release candidate rc-2026.09.1', emoji: true },
+            text: { type: 'plain_text', text: 'Deployed to Tenant staging', emoji: true },
         });
-        expect(blocks[1].elements?.[0].text).toContain(`${projectUrl}/-/releases/rc-2026.09.1`);
+
+        const context = blocks[1].elements?.[0].text ?? '';
+        expect(context).toContain('a1b2c3d4');
+        expect(context).toContain(`<${message.pipelineUrl}|pipeline>`);
+        expect(context).toContain(`<${message.compareUrl}|changes>`);
         expect(blocks[2]).toEqual({ type: 'divider' });
         expect(blocks[3]).toEqual({ type: 'section', text: { type: 'mrkdwn', text: '*All good*' } });
     });
 
-    it('truncates and links out rather than failing when a release exceeds the Slack block cap', () => {
+    it('drops the range link when the environment has no previous deployment to compare against', () => {
+        const context = buildSlackBlocks({ ...message, compareUrl: null })[1].elements?.[0].text ?? '';
+
+        expect(context).not.toContain('|changes>');
+        expect(context).toContain(`<${message.pipelineUrl}|pipeline>`);
+    });
+
+    it('truncates and links out rather than failing when a deployment exceeds the Slack block cap', () => {
         const notes = Array.from({ length: 200 }, (_, i) => `${'z'.repeat(2000)}${i}`).join('\n\n');
-        const blocks = buildSlackBlocks({ tag: 'rc-2026.09.1', projectUrl, notes });
+        const blocks = buildSlackBlocks({ ...message, notes });
 
         expect(blocks.length).toBeLessThanOrEqual(SLACK_BLOCK_LIMIT);
         expect(JSON.stringify(blocks.at(-1))).toContain('too long to post in full');
-        expect(JSON.stringify(blocks.at(-1))).toContain(`${projectUrl}/-/releases/rc-2026.09.1`);
+        expect(JSON.stringify(blocks.at(-1))).toContain(message.compareUrl);
+    });
+
+    it('falls back to the pipeline when a truncated deployment has no range to link', () => {
+        const notes = Array.from({ length: 200 }, (_, i) => `${'z'.repeat(2000)}${i}`).join('\n\n');
+        const blocks = buildSlackBlocks({ ...message, compareUrl: null, notes });
+
+        expect(JSON.stringify(blocks.at(-1))).toContain(message.pipelineUrl);
     });
 });
