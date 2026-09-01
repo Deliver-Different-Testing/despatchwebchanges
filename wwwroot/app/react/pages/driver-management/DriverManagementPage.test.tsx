@@ -1,6 +1,6 @@
 import React from 'react';
+import {MantineTestProvider} from '../../__testUtils__';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverManagementPage} from './DriverManagementPage';
 import {useFleetOptions} from '../../hooks/useDriverManagementApi';
@@ -31,16 +31,15 @@ jest.mock('./components/DriverEarningsTab', () => ({
 
 const mockUseFleetOptions = useFleetOptions as jest.MockedFunction<typeof useFleetOptions>;
 
-const theme = createTheme();
 const createTestQueryClient = () => new QueryClient({defaultOptions: {queries: {retry: false}}});
 
 const renderPage = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <DriverManagementPage showToast={showToast} />
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>
     );
 };

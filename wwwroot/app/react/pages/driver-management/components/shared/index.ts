@@ -5,5 +5,4 @@ export {FilterToolbar} from './FilterToolbar';
 // not just this page. Re-exported here so the tabs' imports stay put.
 export {DataTable} from '../../../../components/common/data-table';
 export type {DataTableColumn, SortState, DataTableProps} from '../../../../components/common/data-table';
-export {toolbarButtonSx, toolbarIconButtonSx} from './toolbarActionStyles';
-export {getDayChipColor, getComplianceTypeColor, getFleetChipSx} from './chipColors';
+export {getDayChipColor, getComplianceTypeColor, getFleetChipStyle} from './chipColors';

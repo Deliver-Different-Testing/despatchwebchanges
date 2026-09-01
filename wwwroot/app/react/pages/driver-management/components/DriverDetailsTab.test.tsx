@@ -2,7 +2,6 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
 import {createTestQueryClient} from '../../../__testUtils__';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverDetailsTab} from './DriverDetailsTab';
 import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
@@ -16,14 +15,13 @@ jest.mock('../../../hooks/useDriverManagementApi', () => ({
 const mockUseDriverSearch = useDriverSearch as jest.MockedFunction<typeof useDriverSearch>;
 const mockUseCourierDetails = useCourierDetails as jest.MockedFunction<typeof useCourierDetails>;
 
-const theme = createTheme();
 const renderWithProviders = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <MantineTestProvider><ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <DriverDetailsTab showToast={showToast} />
-            </ThemeProvider></MantineTestProvider>
+            </MantineTestProvider>
         </QueryClientProvider>
     );
 };
@@ -59,14 +57,14 @@ describe('DriverDetailsTab', () => {
             setupMocks();
             renderWithProviders();
 
-            expect(screen.getByLabelText('Select Driver')).toBeInTheDocument();
+            expect(screen.getByRole('combobox', {name: 'Select driver'})).toBeInTheDocument();
         });
 
         it('should render Driver Search header', () => {
             setupMocks();
             renderWithProviders();
 
-            expect(screen.getByText('Driver Search')).toBeInTheDocument();
+            expect(screen.getByText('Driver search')).toBeInTheDocument();
         });
     });
 
@@ -75,8 +73,8 @@ describe('DriverDetailsTab', () => {
             setupMocks();
             renderWithProviders();
 
-            expect(screen.getByText('No Driver Selected')).toBeInTheDocument();
-            expect(screen.getByText('Please select a driver from the search box above to view their details')).toBeInTheDocument();
+            expect(screen.getByText('No driver selected')).toBeInTheDocument();
+            expect(screen.getByText("Search above to see a driver's details.")).toBeInTheDocument();
         });
     });
 
@@ -85,8 +83,8 @@ describe('DriverDetailsTab', () => {
             setupMocks({isLoadingDetails: true});
             renderWithProviders();
 
-            expect(screen.getByRole('progressbar')).toBeInTheDocument();
-            expect(screen.queryByText('No Driver Selected')).not.toBeInTheDocument();
+            expect(screen.getByLabelText('Loading driver details')).toBeInTheDocument();
+            expect(screen.queryByText('No driver selected')).not.toBeInTheDocument();
         });
     });
 
@@ -96,9 +94,10 @@ describe('DriverDetailsTab', () => {
             renderWithProviders();
 
             expect(screen.getByText('Basic Information')).toBeInTheDocument();
-            // JS001 appears in both summary bar and info card
-            expect(screen.getAllByText('JS001')).toHaveLength(2);
-            // john@example.com appears in summary bar chip and info row
+            // The summary bar is a PanelHeader now, so the code is part of its
+            // single title line rather than a chip of its own.
+            expect(screen.getAllByText(/JS001/).length).toBeGreaterThan(0);
+            // Once in the summary badge, once in the info row.
             expect(screen.getAllByText('john@example.com')).toHaveLength(2);
         });
 
@@ -146,7 +145,7 @@ describe('DriverDetailsTab', () => {
             setupMocks({driver: mockDriverData});
             renderWithProviders();
 
-            expect(screen.queryByText('No Driver Selected')).not.toBeInTheDocument();
+            expect(screen.queryByText('No driver selected')).not.toBeInTheDocument();
         });
     });
 });

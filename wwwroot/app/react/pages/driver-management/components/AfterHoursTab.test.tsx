@@ -4,10 +4,9 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
 import {createTestQueryClient} from '../../../__testUtils__';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {AfterHoursTab} from './AfterHoursTab';
 import {AfterHoursPaginated} from '../../../interfaces';
@@ -31,14 +30,13 @@ const mockUseCreateAfterHoursSchedule = useCreateAfterHoursSchedule as jest.Mock
 const mockUseUpdateAfterHoursSchedule = useUpdateAfterHoursSchedule as jest.MockedFunction<typeof useUpdateAfterHoursSchedule>;
 const mockUseDeleteAfterHoursSchedule = useDeleteAfterHoursSchedule as jest.MockedFunction<typeof useDeleteAfterHoursSchedule>;
 
-const theme = createTheme();
 const renderWithProviders = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <MantineTestProvider><ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <AfterHoursTab showToast={showToast} />
-            </ThemeProvider></MantineTestProvider>
+            </MantineTestProvider>
         </QueryClientProvider>
     );
 };
@@ -116,15 +114,20 @@ describe('AfterHoursTab', () => {
         setupMocks();
         renderWithProviders();
 
-        const deleteButtons = screen.getAllByRole('button', {name: 'Delete'});
-        fireEvent.click(deleteButtons[0]);
-        expect(screen.getByText('Delete Schedule')).toBeInTheDocument();
-        expect(screen.getByText(/Are you sure you want to delete this schedule for John Smith/)).toBeInTheDocument();
+        // The row action and the dialog's confirm share a name, so the row button
+        // is taken from the table and the dialog asserted by its own role.
+        fireEvent.click(screen.getAllByRole('button', {name: 'Delete schedule'})[0]);
+
+        expect(await screen.findByRole('dialog')).toBeInTheDocument();
+        // Scoped to the dialog: the driver's name is also in the row behind it.
+        const dialog = within(screen.getByRole('dialog'));
+        expect(dialog.getByText(/Delete this schedule for/)).toBeInTheDocument();
+        expect(dialog.getByText('John Smith')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
         await waitFor(() => {
-            expect(screen.queryByText('Delete Schedule')).not.toBeInTheDocument();
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
     });
 

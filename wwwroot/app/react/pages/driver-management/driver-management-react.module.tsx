@@ -3,7 +3,6 @@ import {DriverManagementPage} from './DriverManagementPage';
 import {MountDriverManagementConfig} from '../../interfaces';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {createPageHost} from '../../utils/reactPageHost';
 
 let refreshCallback: (() => void) | null = null;
@@ -11,17 +10,15 @@ let refreshCallback: (() => void) | null = null;
 const host = createPageHost<MountDriverManagementConfig>({
     logName: 'DriverManagementReact',
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorBoundary>
-                <DriverManagementPage
-                    showToast={config.showToast}
-                    isUsCustomer={config.isUsCustomer}
-                    setRefreshCallback={(cb) => {
-                        refreshCallback = cb;
-                    }}
-                />
-            </ErrorBoundary>
-        </MuiThemeIsland>
+        <ErrorBoundary>
+            <DriverManagementPage
+                showToast={config.showToast}
+                isUsCustomer={config.isUsCustomer}
+                setRefreshCallback={(cb) => {
+                    refreshCallback = cb;
+                }}
+            />
+        </ErrorBoundary>
     ),
 });
 

@@ -1,37 +1,47 @@
-import type {SxProps, Theme} from '@mui/material/styles';
+import type React from 'react';
 
-// Day-of-week color mapping — each day gets a distinct MUI chip color
-const dayColorMap: Record<string, 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'default'> = {
-    monday: 'primary',
-    tuesday: 'secondary',
-    wednesday: 'success',
-    thursday: 'info',
-    friday: 'warning',
-    saturday: 'error',
-    sunday: 'default',
+/**
+ * Badge colours for the driver-management chips.
+ *
+ * These are Mantine palette keys rather than the tenant brand: the point of a
+ * day-of-week or compliance-type chip is that each value is *distinguishable
+ * from its neighbours*, so keying them off a brand that changes per tenant would
+ * collapse two of them together on one tenant and not the other. Same reasoning
+ * as the map flag colours.
+ */
+
+// Day-of-week colour mapping — each day gets a distinct chip colour
+const dayColorMap: Record<string, string> = {
+    monday: 'blue',
+    tuesday: 'grape',
+    wednesday: 'green',
+    thursday: 'cyan',
+    friday: 'yellow',
+    saturday: 'red',
+    sunday: 'gray',
 };
 
-export function getDayChipColor(day: string): 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'default' {
-    return dayColorMap[day.toLowerCase()] ?? 'default';
+export function getDayChipColor(day: string): string {
+    return dayColorMap[day.toLowerCase()] ?? 'gray';
 }
 
-// Compliance type color mapping
-export function getComplianceTypeColor(type: string): 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'default' {
+// Compliance type colour mapping
+export function getComplianceTypeColor(type: string): string {
     switch (type?.toLowerCase()) {
         case "driver's license":
         case 'drivers license':
-            return 'primary';
+            return 'blue';
         case 'dg endorsement':
-            return 'warning';
+            return 'yellow';
         case 'insurance':
-            return 'info';
+            return 'cyan';
         case 'vehicle wof':
-            return 'success';
+            return 'green';
         case 'vehicle registration':
         case 'vehicle rego':
-            return 'secondary';
+            return 'grape';
         default:
-            return 'default';
+            return 'gray';
     }
 }
 
@@ -58,11 +68,17 @@ function hashString(str: string): number {
     return Math.abs(hash);
 }
 
-export function getFleetChipSx(fleet: string): SxProps<Theme> {
+/**
+ * A fleet's chip colours. The palette is explicit hex because the fleet is data:
+ * there is no fixed set to assign theme colours to, so a hash picks one of ten.
+ * Returns a style object rather than `sx` — the values were already concrete, so
+ * only the container changed.
+ */
+export function getFleetChipStyle(fleet: string): React.CSSProperties {
     const idx = hashString(fleet) % fleetPalette.length;
     const color = fleetPalette[idx];
     return {
-        bgcolor: color.bg,
+        backgroundColor: color.bg,
         color: color.text,
         borderColor: color.border,
         fontWeight: 500,
