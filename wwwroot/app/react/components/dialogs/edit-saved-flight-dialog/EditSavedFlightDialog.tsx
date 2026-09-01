@@ -14,27 +14,23 @@
  * Follows the canonical job-detail edit-dialog design language.
  */
 
-import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import Alert from '@mui/material/Alert';
-import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import CloseIcon from '@mui/icons-material/Close';
+import {Alert, Autocomplete, Box, Loader, Paper, Select, Stack, Text, Tooltip} from '@mantine/core';
+import {PlaneTakeoff} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+    sectionLabelProps,
+    sectionPaperProps,
+} from '../shared/mantine';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { EditSavedFlightDialogProps, FlightOption, AirportOption } from './types';
 import {nationwideApi} from '../../../services/nationwideApi';
-import {headerChromeSx, headerChipSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 import type {FlightViewModel} from '../../../interfaces/nationwideJobs';
 
 function normalizeFlightNumber(value: string): string {
@@ -69,12 +65,6 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
     onClose,
     onSubmit,
 }) => {
-    // Explicit ids so the dialog gets an accessible name/description — the
-    // custom Box header means MUI can't auto-wire aria-labelledby from a
-    // <DialogTitle>. (WAI-ARIA / MD3 dialog guidance.)
-    const titleId = useId();
-    const descriptionId = useId();
-
     const [inputValue, setInputValue] = useState('');
     const [savedValue, setSavedValue] = useState('');
     const [isCustom, setIsCustom] = useState(false);
@@ -201,6 +191,21 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         [options]
     );
 
+    /*
+     * MUI split this across onInputChange and onChange; Mantine's Autocomplete has
+     * one callback carrying the string. That is enough because applyTypedValue
+     * already matches on the label as well as the value, so picking a suggestion
+     * and typing its label land in the same place — and anything unmatched is
+     * marked custom, which is what the warning below reads.
+     */
+    const handleFlightInputChange = useCallback(
+        (value: string) => {
+            setInputValue(value);
+            applyTypedValue(value);
+        },
+        [applyTypedValue]
+    );
+
     // In picker mode the route airports must be chosen and a flight number
     // entered before we can save — the auto-assign needs all three.
     const missingRoute = showAirportPickers && (selectedFrom == null || selectedTo == null);
@@ -233,246 +238,120 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
     }, [onSubmit, savedValue, showAirportPickers, selectedFrom, selectedTo]);
 
     return (
-        <Dialog
-            open={open}
+        /*
+         * The header was hand-built from the legacy sx tokens, with its own titleId
+         * and describedby wiring because a custom Box header gave MUI nothing to
+         * name the dialog from. DialogShell takes `label` for that, so both ids go.
+         */
+        <DialogShell
+            opened={open}
             onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            aria-labelledby={titleId}
-            aria-describedby={descriptionId}
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: { overflow: 'hidden', minWidth: 480, maxWidth: 600 },
-                },
-            }}
+            size={dialogSize.sm}
+            label={showAirportPickers ? 'Add flight' : 'Saved flight'}
         >
-            {/* Header */}
-            <Box sx={(theme) => headerChromeSx(theme)}>
-                <Box sx={(theme) => headerChipSx(theme)}>
-                    <FlightTakeoffIcon/>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography id={titleId} variant="h6" sx={{ fontWeight: 600 }}>
-                        {showAirportPickers ? 'Add Flight' : 'Saved Flight'}
-                    </Typography>
-                    <Typography id={descriptionId} variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                        Auto-assigned each time this booking is pushed live
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    disabled={isSaving}
-                    aria-label="Close dialog"
-                    sx={(theme) => ({
-                        color: headerOnColor(theme),
-                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
-                    })}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<Icon lucide={PlaneTakeoff}/>}
+                title={showAirportPickers ? 'Add flight' : 'Saved flight'}
+                subtitle="Auto-assigned each time this booking is pushed live"
+                onClose={onClose}
+                closeDisabled={isSaving}
+            />
 
             {/* Content */}
-            <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
-                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box bg={dialogContentBg}>
+                <Stack p={24} gap={24}>
                     {showAirportPickers && (
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                bgcolor: 'background.paper',
-                                borderRadius: 3,
-                                p: 2.5,
-                                border: '1px solid',
-                                borderColor: 'grey.200',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 2,
-                            }}
-                        >
-                            <Box>
-                                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 1 }}>
-                                    From airport
-                                </Typography>
-                                <Autocomplete
-                                    disabled={isSaving}
-                                    options={airportOptions}
-                                    loading={airportsLoading}
-                                    value={selectedFrom}
-                                    getOptionLabel={(option) => option.label}
-                                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                                    onChange={(_event, newValue) => setSelectedFrom(newValue)}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            autoFocus
-                                            size="small"
-                                            fullWidth
-                                            placeholder="Select departure airport…"
-                                            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
-                                            slotProps={{
-                                                ...params.slotProps,
-                                                htmlInput: {
-                                                    ...params.slotProps?.htmlInput,
-                                                    'aria-label': 'From airport',
-                                                },
-                                            }}
-                                        />
-                                    )}
-                                />
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 1 }}>
-                                    To airport
-                                </Typography>
-                                <Autocomplete
-                                    disabled={isSaving}
-                                    options={airportOptions}
-                                    loading={airportsLoading}
-                                    value={selectedTo}
-                                    getOptionLabel={(option) => option.label}
-                                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                                    onChange={(_event, newValue) => setSelectedTo(newValue)}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            size="small"
-                                            fullWidth
-                                            placeholder="Select arrival airport…"
-                                            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
-                                            slotProps={{
-                                                ...params.slotProps,
-                                                htmlInput: {
-                                                    ...params.slotProps?.htmlInput,
-                                                    'aria-label': 'To airport',
-                                                },
-                                            }}
-                                        />
-                                    )}
-                                />
-                            </Box>
+                        <Paper {...sectionPaperProps}>
+                            <Stack gap={16}>
+                                {/*
+                                  * A Select, not an Autocomplete: the airport list is
+                                  * loaded once into state rather than searched, so
+                                  * there is nothing to type-ahead against. Mantine's
+                                  * Select speaks strings, so the id round-trips.
+                                  */}
+                                <Box>
+                                    <Text {...sectionLabelProps}>From airport</Text>
+                                    <Select
+                                        data-autofocus
+                                        searchable
+                                        disabled={isSaving || airportsLoading}
+                                        placeholder="Select departure airport…"
+                                        aria-label="From airport"
+                                        comboboxProps={{keepMounted: false}}
+                                        value={selectedFrom ? String(selectedFrom.id) : null}
+                                        onChange={(value) =>
+                                            setSelectedFrom(airportOptions.find(a => String(a.id) === value) ?? null)}
+                                        data={airportOptions.map(a => ({value: String(a.id), label: a.label}))}
+                                    />
+                                </Box>
+                                <Box>
+                                    <Text {...sectionLabelProps}>To airport</Text>
+                                    <Select
+                                        searchable
+                                        disabled={isSaving || airportsLoading}
+                                        placeholder="Select arrival airport…"
+                                        aria-label="To airport"
+                                        comboboxProps={{keepMounted: false}}
+                                        value={selectedTo ? String(selectedTo.id) : null}
+                                        onChange={(value) =>
+                                            setSelectedTo(airportOptions.find(a => String(a.id) === value) ?? null)}
+                                        data={airportOptions.map(a => ({value: String(a.id), label: a.label}))}
+                                    />
+                                </Box>
+                            </Stack>
                         </Paper>
                     )}
 
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            bgcolor: 'background.paper',
-                            borderRadius: 3,
-                            p: 2.5,
-                            border: '1px solid',
-                            borderColor: 'grey.200',
-                        }}
-                    >
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 1 }}>
-                            Flight number
-                        </Typography>
+                    <Paper {...sectionPaperProps}>
+                        <Text {...sectionLabelProps}>Flight number</Text>
+                        {/*
+                          * Free text with suggestions, which is what Mantine's
+                          * Autocomplete is — the operator may type a number the
+                          * route search did not return. Picking a suggestion stores
+                          * the flight number behind the label; typing anything else
+                          * is treated as custom and warned about below.
+                          */}
                         <Autocomplete
-                            freeSolo
-                            autoHighlight
                             disabled={isSaving}
-                            options={options}
-                            loading={loading}
-                            inputValue={inputValue}
-                            getOptionLabel={(option) =>
-                                typeof option === 'string' ? option : option.label
-                            }
-                            isOptionEqualToValue={(option, value) =>
-                                typeof value !== 'string' && option.value === value.value
-                            }
-                            onInputChange={(_event, newInput, reason) => {
-                                setInputValue(newInput);
-                                if (reason === 'input' || reason === 'clear') {
-                                    applyTypedValue(newInput);
-                                }
-                            }}
-                            onChange={(_event, newValue) => {
-                                if (newValue == null) {
-                                    setInputValue('');
-                                    setSavedValue('');
-                                    setIsCustom(false);
-                                } else if (typeof newValue === 'string') {
-                                    setInputValue(newValue);
-                                    applyTypedValue(newValue);
-                                } else {
-                                    setInputValue(newValue.label);
-                                    setSavedValue(newValue.value);
-                                    setIsCustom(false);
-                                }
-                            }}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    autoFocus={!showAirportPickers}
-                                    size="small"
-                                    fullWidth
-                                    placeholder={hasAirports ? 'Search flights or type a number…' : 'Enter a flight number…'}
-                                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
-                                    slotProps={{
-                                        ...params.slotProps,
-                                        htmlInput: {
-                                            ...params.slotProps?.htmlInput,
-                                            'aria-label': 'Flight number',
-                                        },
-                                        input: {
-                                            ...params.slotProps.input,
-                                            endAdornment: (
-                                                <>
-                                                    {loading ? <CircularProgress color="inherit" size={16} /> : null}
-                                                    {params.slotProps.input.endAdornment}
-                                                </>
-                                            ),
-                                        },
-                                    }}
-                                />
-                            )}
+                            placeholder={hasAirports ? 'Search flights or type a number…' : 'Enter a flight number…'}
+                            aria-label="Flight number"
+                            value={inputValue}
+                            onChange={handleFlightInputChange}
+                            data={options.map(o => o.label)}
+                            rightSection={loading ? <Loader size={16} aria-label="Searching flights"/> : undefined}
                         />
                     </Paper>
 
                     {message && !loading && options.length === 0 && (
-                        <Alert severity="info">{message}</Alert>
+                        <Alert color="blue" variant="light">{message}</Alert>
                     )}
 
                     {isCustom && savedValue.length > 0 && (
-                        <Alert severity="warning">
+                        <Alert color="yellow" variant="light">
                             <strong>{savedValue}</strong> is a custom flight number that wasn&apos;t found on this
                             route. Double-check it&apos;s correct — we can&apos;t guarantee it&apos;ll auto-assign
                             when this booking is pushed live.
                         </Alert>
                     )}
-                </Box>
-            </DialogContent>
+                </Stack>
+            </Box>
 
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'background.paper',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={onClose} variant="outlined" disabled={isSaving} sx={{ minWidth: 100 }}>
-                    Cancel
-                </Button>
-                <Tooltip title={saveHint}>
-                    {/* span so the tooltip still fires while the button is disabled */}
-                    <span>
-                        <Button
-                            onClick={handleSubmit}
-                            variant="contained"
-                            color="primary"
-                            disabled={submitDisabled}
-                            startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : undefined}
-                            sx={{ minWidth: 100 }}
-                        >
-                            {isSaving ? 'Saving…' : 'Save'}
-                        </Button>
-                    </span>
-                </Tooltip>
-            </DialogActions>
-        </Dialog>
+            {/*
+              * The span that let the tooltip fire over a disabled button is still
+              * needed — a disabled control emits no pointer events in Mantine either.
+              */}
+            <Tooltip label={saveHint}>
+                <span>
+                    <DialogFooter
+                        onCancel={onClose}
+                        onConfirm={handleSubmit}
+                        confirmLabel="Save"
+                        confirmDisabled={submitDisabled}
+                        submitting={isSaving}
+                    />
+                </span>
+            </Tooltip>
+        </DialogShell>
     );
 };
 

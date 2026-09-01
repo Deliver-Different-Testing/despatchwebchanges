@@ -6,41 +6,34 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import {Box, CloseButton, Group, Loader, Paper, Radio, Stack, Table, Text, TextInput, ThemeIcon, UnstyledButton} from '@mantine/core';
+import {
+    ArrowRight,
+    Check,
+    CirclePlus,
+    CircleAlert,
+    CircleCheck,
+    CloudUpload,
+    FileText,
+    FileUp,
+    Info,
+    NotebookPen,
+    Pencil,
+    RefreshCw,
+    Search,
+    SearchX,
+    TriangleAlert,
+} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+} from '../shared/mantine';
+import styles from './BulkPriceUploadDialog.module.css';
 import {formatCurrency} from '../../../utils/currencyUtils';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import CircularProgress from '@mui/material/CircularProgress';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import CloseIcon from '@mui/icons-material/Close';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DescriptionIcon from '@mui/icons-material/Description';
-import EditIcon from '@mui/icons-material/Edit';
-import SyncIcon from '@mui/icons-material/Sync';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import EditNoteIcon from '@mui/icons-material/EditNote';
-import InfoIcon from '@mui/icons-material/Info';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import SearchIcon from '@mui/icons-material/Search';
-import SearchOffIcon from '@mui/icons-material/SearchOff';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CheckIcon from '@mui/icons-material/Check';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import ErrorIcon from '@mui/icons-material/Error';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
     BulkPriceUploadDialogProps,
     BulkPricePreviewRow,
@@ -48,7 +41,6 @@ import {
     PricingMode,
     DialogState,
 } from './types';
-import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 
 const VALID_EXTENSIONS = ['.xls', '.xlsx', '.csv'];
 
@@ -96,13 +88,13 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
     }, [open]);
 
     // File handling
-    const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>): void => {
+    const handleDragOver = useCallback((event: React.DragEvent<HTMLElement>): void => {
         event.preventDefault();
         event.stopPropagation();
         setIsDragOver(true);
     }, []);
 
-    const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>): void => {
+    const handleDragLeave = useCallback((event: React.DragEvent<HTMLElement>): void => {
         event.preventDefault();
         event.stopPropagation();
         setIsDragOver(false);
@@ -121,7 +113,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         setCurrentState('mode-select');
     }, []);
 
-    const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>): void => {
+    const handleDrop = useCallback((event: React.DragEvent<HTMLElement>): void => {
         event.preventDefault();
         event.stopPropagation();
         setIsDragOver(false);
@@ -285,59 +277,56 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
     };
 
     // Render methods
+    /* The same banner appeared verbatim in the upload and mode-select steps. */
+    const renderError = (): React.ReactNode => (
+        <Group
+            gap={8}
+            p={12}
+            mb={16}
+            wrap="nowrap"
+            c="var(--mantine-color-red-8)"
+            style={{
+                borderRadius: 'var(--mantine-radius-md)',
+                background: 'var(--mantine-color-red-0)',
+            }}
+        >
+            <Icon lucide={CircleAlert} size={20}/>
+            <Text fz="sm">{errorMessage}</Text>
+        </Group>
+    );
+
     const renderUploadState = (): React.ReactNode => {
         return (
-            <Box sx={{ p: 3 }}>
+            <Box p={24}>
                 {/* Dropzone */}
-                <Box sx={{ mb: 2.5 }}>
-                    <Box
+                <Box mb={20}>
+                    {/*
+                      * A real button, not a div with onClick: this is the only way
+                      * into the dialog and it was unreachable by keyboard.
+                      */}
+                    <UnstyledButton
+                        className={styles.dropzone}
+                        data-drag-over={isDragOver || undefined}
                         onClick={handleFileInputClick}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        sx={{
+                        w="100%"
+                        p={40}
+                        style={{
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            p: 5,
-                            border: '2px dashed',
-                            borderColor: isDragOver ? 'primary.main' : 'rgba(0, 0, 0, 0.2)',
-                            borderRadius: 3,
-                            bgcolor: isDragOver ? 'rgba(25, 118, 210, 0.08)' : 'rgba(0, 0, 0, 0.02)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                                borderColor: 'rgba(0, 0, 0, 0.35)',
-                                bgcolor: 'rgba(0, 0, 0, 0.04)',
-                            },
                         }}
                     >
-                        <CloudUploadIcon
-                            sx={{ fontSize: 48, color: 'text.secondary', mb: 1.5 }}
-                        />
-                        <Typography
-                            variant="subtitle1"
-                            sx={{
-                                fontWeight: 500,
-                                mb: 0.5
-                            }}>
-                            Drop your file here
-                        </Typography>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                color: "text.secondary",
-                                mb: 1
-                            }}>
-                            or click to browse
-                        </Typography>
-                        <Typography variant="caption" sx={{
-                            color: "text.disabled"
-                        }}>
-                            Supports .xls, .xlsx, .csv files
-                        </Typography>
-                    </Box>
+                        <Box c="dimmed" mb={12}>
+                            <Icon lucide={CloudUpload} size={48}/>
+                        </Box>
+                        <Text fz="md" fw={500} mb={4}>Drop your file here</Text>
+                        <Text fz="sm" c="dimmed" mb={8}>or click to browse</Text>
+                        <Text fz="xs" c="dimmed">Supports .xls, .xlsx, .csv files</Text>
+                    </UnstyledButton>
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -346,52 +335,16 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         onChange={handleFileInputChange}
                     />
                 </Box>
-                {/* Error message */}
-                {errorMessage && (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            p: 1.5,
-                            bgcolor: 'rgba(211, 47, 47, 0.1)',
-                            borderRadius: 2,
-                            mb: 2,
-                        }}
-                    >
-                        <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
-                        <Typography variant="body2" sx={{
-                            color: "error.main"
-                        }}>
-                            {errorMessage}
-                        </Typography>
-                    </Box>
-                )}
+
+                {errorMessage && renderError()}
+
                 {/* File format info */}
-                <Box
-                    sx={{
-                        p: 2,
-                        bgcolor: 'rgba(0, 0, 0, 0.03)',
-                        borderRadius: 2.5,
-                    }}
-                >
-                    <Typography
-                        variant="subtitle2"
-                        sx={{
-                            fontWeight: 600,
-                            mb: 1
-                        }}>
-                        Expected File Format
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: "text.secondary",
-                            mb: 1
-                        }}>
+                <Paper radius="md" p={16} bg="var(--mantine-color-gray-0)">
+                    <Text fz="sm" fw={600} mb={8}>Expected File Format</Text>
+                    <Text fz="sm" c="dimmed" mb={8}>
                         Your spreadsheet should contain a column named <strong>Id</strong> with job IDs, and optionally:
-                    </Typography>
-                    <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+                    </Text>
+                    <Box component="ul" m={0} pl={20}>
                         {[
                             { label: 'Amount', desc: 'Base mode: pre-surcharge base price · Gross mode: final total' },
                             { label: 'Fuel', desc: 'Gross mode only (calculated automatically in Base mode)' },
@@ -400,637 +353,334 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                             { label: 'CourierFuel', desc: 'Courier fuel (Base & Gross modes)' },
                             { label: 'CourierBonus', desc: 'Courier bonus (Base & Gross modes)' },
                         ].map((item) => (
-                            <Box component="li" key={item.label} sx={{ mb: 0.5 }}>
-                                <Typography variant="caption" sx={{
-                                    color: "text.secondary"
-                                }}>
-                                    <strong style={{ color: 'rgba(0, 0, 0, 0.87)' }}>{item.label}</strong> — {item.desc}
-                                </Typography>
+                            <Box component="li" key={item.label} mb={4}>
+                                <Text fz="xs" c="dimmed" component="span">
+                                    <Text fz="xs" fw={700} component="span" c="var(--mantine-color-text)">
+                                        {item.label}
+                                    </Text> — {item.desc}
+                                </Text>
                             </Box>
                         ))}
                     </Box>
-                    <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 1 }}>
+                    <Text fz="xs" c="dimmed" mt={8}>
                         Recalculate mode re-prices each job from its details and ignores the price columns above.
-                    </Typography>
-                </Box>
+                    </Text>
+                </Paper>
             </Box>
         );
     };
 
     const renderModeSelectState = (): React.ReactNode => {
-        const modes: { value: PricingMode; title: string; desc: string; icon: React.ReactNode; colorClass: string }[] = [
+        const modes: { value: PricingMode; title: string; desc: string; icon: React.ReactNode; color: string }[] = [
             {
                 value: 'recalculate',
                 title: 'Auto-Calculate Prices',
                 desc: 'Recalculate from job details & current rates',
-                icon: <SyncIcon />,
-                colorClass: 'recalculate',
+                icon: <Icon lucide={RefreshCw} size={22}/>,
+                color: 'gray',
             },
             {
                 value: 'base',
                 title: 'Base Price (add surcharges)',
                 desc: 'Use file amounts as base; PPD & fuel added on top',
-                icon: <AddCircleIcon />,
-                colorClass: 'base',
+                icon: <Icon lucide={CirclePlus} size={22}/>,
+                color: 'green',
             },
             {
                 value: 'gross',
                 title: 'Final Price (use as-is)',
                 desc: 'Apply file amounts directly as the final price',
-                icon: <EditNoteIcon />,
-                colorClass: 'gross',
+                icon: <Icon lucide={NotebookPen} size={22}/>,
+                color: 'grape',
             },
         ];
 
         return (
-            <Box sx={{ p: 3 }}>
+            <Box p={24}>
                 {/* File badge */}
-                <Box
-                    sx={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        py: 1,
-                        pl: 1.75,
-                        pr: 1,
-                        bgcolor: 'rgba(0, 0, 0, 0.06)',
-                        borderRadius: 6,
-                        mb: 2.5,
+                <Group
+                    gap={8}
+                    display="inline-flex"
+                    py={8}
+                    pl={14}
+                    pr={8}
+                    mb={20}
+                    style={{
+                        borderRadius: 'var(--mantine-radius-xl)',
+                        background: 'var(--mantine-color-gray-1)',
                     }}
                 >
-                    <DescriptionIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontWeight: 500,
-                            maxWidth: 280,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                        }}>
-                        {uploadedFile?.name}
-                    </Typography>
-                    <IconButton
-                        size="small"
+                    <Icon lucide={FileText} size={20}/>
+                    <Text fz="sm" fw={500} maw={280} truncate>{uploadedFile?.name}</Text>
+                    <CloseButton
+                        size="sm"
+                        aria-label="Choose a different file"
+                        icon={<Icon lucide={Pencil} size={16}/>}
                         onClick={handleBackToUpload}
-                        sx={{ width: 28, height: 28 }}
-                    >
-                        <EditIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                </Box>
-                {/* Error message */}
-                {errorMessage && (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            p: 1.5,
-                            bgcolor: 'rgba(211, 47, 47, 0.1)',
-                            borderRadius: 2,
-                            mb: 2,
-                        }}
-                    >
-                        <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
-                        <Typography variant="body2" sx={{
-                            color: "error.main"
-                        }}>
-                            {errorMessage}
-                        </Typography>
-                    </Box>
-                )}
-                <Typography
-                    variant="body1"
-                    sx={{
-                        fontWeight: 600,
-                        mb: 2
-                    }}>
-                    How should prices be applied?
-                </Typography>
-                {/* Pricing options */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-                    {modes.map((mode) => (
-                        <Box
-                            key={mode.value}
-                            onClick={() => handleModeSelect(mode.value)}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1.75,
-                                p: 1.75,
-                                border: '2px solid',
-                                borderColor: selectedMode === mode.value ? 'grey.600' : 'rgba(0, 0, 0, 0.08)',
-                                borderRadius: 2.5,
-                                bgcolor: selectedMode === mode.value ? 'rgba(87, 83, 78, 0.06)' : 'white',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                '&:hover': {
-                                    borderColor: selectedMode === mode.value ? 'grey.600' : 'rgba(0, 0, 0, 0.18)',
-                                    bgcolor: selectedMode === mode.value ? 'rgba(87, 83, 78, 0.06)' : 'rgba(0, 0, 0, 0.02)',
-                                },
-                            }}
-                        >
-                            {/* Radio button */}
-                            <Box
-                                sx={{
-                                    width: 20,
-                                    height: 20,
-                                    border: '2px solid',
-                                    borderColor: selectedMode === mode.value ? 'grey.600' : 'rgba(0, 0, 0, 0.38)',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                {selectedMode === mode.value && (
-                                    <Box
-                                        sx={{
-                                            width: 10,
-                                            height: 10,
-                                            borderRadius: '50%',
-                                            bgcolor: 'grey.600',
-                                        }}
-                                    />
-                                )}
-                            </Box>
+                    />
+                </Group>
 
-                            {/* Icon */}
-                            <Box
-                                sx={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 2.5,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                    bgcolor: selectedMode === mode.value
-                                        ? mode.colorClass === 'recalculate'
-                                            ? 'rgba(87, 83, 78, 0.12)'
-                                            : mode.colorClass === 'base'
-                                                ? 'rgba(76, 175, 80, 0.12)'
-                                                : 'rgba(156, 39, 176, 0.12)'
-                                        : 'rgba(0, 0, 0, 0.06)',
-                                    color: selectedMode === mode.value
-                                        ? mode.colorClass === 'recalculate'
-                                            ? 'grey.600'
-                                            : mode.colorClass === 'base'
-                                                ? 'success.main'
-                                                : 'secondary.main'
-                                        : 'text.secondary',
-                                    transition: 'all 0.2s ease',
-                                    '& svg': { fontSize: 22 },
-                                }}
-                            >
-                                {mode.icon}
-                            </Box>
+                {errorMessage && renderError()}
 
-                            {/* Text */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, minWidth: 0 }}>
-                                <Typography variant="body1" sx={{
-                                    fontWeight: 500
-                                }}>
-                                    {mode.title}
-                                </Typography>
-                                <Typography variant="caption" sx={{
-                                    color: "text.secondary"
-                                }}>
-                                    {mode.desc}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    ))}
-                </Box>
+                <Text fz="md" fw={600} mb={16}>How should prices be applied?</Text>
+
+                {/*
+                  * Radio.Card, not three divs with a hand-drawn dot: the options
+                  * were unreachable by keyboard and announced as nothing. This is
+                  * one tab stop with arrow-key movement, and the selected border
+                  * and fill come with it.
+                  */}
+                <Radio.Group
+                    value={selectedMode}
+                    onChange={(value) => handleModeSelect(value as PricingMode)}
+                    aria-label="How should prices be applied?"
+                >
+                    <Stack gap={10}>
+                        {modes.map((mode) => (
+                            <Radio.Card key={mode.value} value={mode.value} radius="md" p={14}>
+                                <Group gap={14} wrap="nowrap">
+                                    <Radio.Indicator/>
+                                    <ThemeIcon
+                                        variant="light"
+                                        color={mode.color}
+                                        size={40}
+                                        radius="md"
+                                    >
+                                        {mode.icon}
+                                    </ThemeIcon>
+                                    <Box style={{minWidth: 0}}>
+                                        <Text fz="md" fw={500}>{mode.title}</Text>
+                                        <Text fz="xs" c="dimmed">{mode.desc}</Text>
+                                    </Box>
+                                </Group>
+                            </Radio.Card>
+                        ))}
+                    </Stack>
+                </Radio.Group>
+
                 {/* Mode hint */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mt: 2,
-                        p: 1.5,
-                        bgcolor: 'rgba(25, 118, 210, 0.08)',
-                        borderRadius: 2,
+                <Group
+                    gap={8}
+                    mt={16}
+                    p={12}
+                    wrap="nowrap"
+                    style={{
+                        borderRadius: 'var(--mantine-radius-md)',
+                        background: 'var(--mantine-primary-color-light)',
                     }}
                 >
-                    <InfoIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                    <Typography variant="body2" sx={{
-                        color: "text.secondary"
-                    }}>
-                        {modeDescription}
-                    </Typography>
-                </Box>
+                    <Icon lucide={Info} size={18}/>
+                    <Text fz="sm">{modeDescription}</Text>
+                </Group>
             </Box>
         );
     };
 
     const renderLoadingState = (): React.ReactNode => {
         return (
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    py: 7.5,
-                    px: 3,
-                    gap: 2,
-                }}
-            >
-                <CircularProgress size={48} />
-                <Typography
-                    variant="body1"
-                    sx={{
-                        color: "text.secondary",
-                        fontWeight: 500
-                    }}>
-                    {loadingMessage || 'Processing...'}
-                </Typography>
-            </Box>
+            <Stack align="center" justify="center" py={60} px={24} gap={16}>
+                <Loader size={48} aria-label={loadingMessage || 'Processing'}/>
+                <Text fz="md" fw={500} c="dimmed">{loadingMessage || 'Processing...'}</Text>
+            </Stack>
         );
     };
 
     const renderResultState = (): React.ReactNode => {
         const noneUpdated = totalJobs === 0 && skippedJobs > 0;
         const partial = totalJobs > 0 && skippedJobs > 0;
-        const headerColor = noneUpdated ? 'error.main' : partial ? 'warning.main' : 'success.main';
-        const headerBg = noneUpdated
-            ? 'rgba(211, 47, 47, 0.12)'
-            : partial
-                ? 'rgba(237, 108, 2, 0.12)'
-                : 'rgba(76, 175, 80, 0.12)';
+        const headerColor = noneUpdated ? 'red' : partial ? 'yellow' : 'green';
         const headerTitle = noneUpdated ? 'No Prices Updated' : partial ? 'Partially Updated' : 'Prices Updated';
-        const HeaderIcon = noneUpdated ? ErrorIcon : partial ? WarningAmberIcon : CheckCircleIcon;
+        const headerGlyph = noneUpdated ? CircleAlert : partial ? TriangleAlert : CircleCheck;
+
+        /** One figure of the summary strip. */
+        const Stat = ({value, label, color}: {value: string | number; label: string; color?: string}) => (
+            <Box ta="center" style={{flex: 1}}>
+                <Text fz="md" fw={600} c={color}>{value}</Text>
+                <Text fz="xs" c="dimmed">{label}</Text>
+            </Box>
+        );
 
         return (
-            <Box sx={{ p: 2 }}>
+            <Box p={16}>
                 {/* Result header */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        py: 3,
-                    }}
-                >
-                    <Box
-                        sx={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: '50%',
-                            bgcolor: headerBg,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            mb: 1.5,
-                        }}
-                    >
-                        <HeaderIcon sx={{ fontSize: 32, color: headerColor }} />
-                    </Box>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>
-                        {headerTitle}
-                    </Typography>
+                <Stack align="center" py={24} gap={0}>
+                    <ThemeIcon variant="light" color={headerColor} size={56} radius="xl" mb={12}>
+                        <Icon lucide={headerGlyph} size={32}/>
+                    </ThemeIcon>
+                    <Text fz="lg" fw={600}>{headerTitle}</Text>
                     {skippedJobs > 0 && (
-                        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                        <Text fz="sm" c="dimmed" mt={4}>
                             {skippedJobs} {skippedJobs === 1 ? 'job' : 'jobs'} could not be updated — see the highlighted rows below.
-                        </Typography>
+                        </Text>
                     )}
-                </Box>
+                </Stack>
+
                 {/* Summary stats */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        p: 2,
-                        bgcolor: 'rgba(0, 0, 0, 0.03)',
-                        borderRadius: 2.5,
-                        mb: 2,
-                        gap: 1.5,
+                <Group
+                    justify="space-between"
+                    gap={12}
+                    p={16}
+                    mb={16}
+                    wrap="nowrap"
+                    style={{
+                        borderRadius: 'var(--mantine-radius-lg)',
+                        background: 'var(--mantine-color-gray-0)',
                     }}
                 >
-                    <Box sx={{ textAlign: 'center', flex: 1 }}>
-                        <Typography variant="subtitle1" sx={{
-                            fontWeight: 600
-                        }}>
-                            {totalJobs}
-                        </Typography>
-                        <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                        }}>
-                            Jobs Updated
-                        </Typography>
+                    <Stat value={totalJobs} label="Jobs Updated"/>
+                    {skippedJobs > 0 && <Stat value={skippedJobs} label="Skipped" color="yellow.7"/>}
+                    <Stat value={formatCurrency(totalOldAmount)} label="Previous Total"/>
+                    <Box c="dimmed" style={{flexShrink: 0}}>
+                        <Icon lucide={ArrowRight} size={20}/>
                     </Box>
-                    {skippedJobs > 0 && (
-                        <Box sx={{ textAlign: 'center', flex: 1 }}>
-                            <Typography variant="subtitle1" sx={{
-                                fontWeight: 600,
-                                color: 'warning.main'
-                            }}>
-                                {skippedJobs}
-                            </Typography>
-                            <Typography variant="caption" sx={{
-                                color: "text.secondary"
-                            }}>
-                                Skipped
-                            </Typography>
-                        </Box>
-                    )}
-                    <Box sx={{ textAlign: 'center', flex: 1 }}>
-                        <Typography variant="subtitle1" sx={{
-                            fontWeight: 600
-                        }}>
-                            {formatCurrency(totalOldAmount)}
-                        </Typography>
-                        <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                        }}>
-                            Previous Total
-                        </Typography>
-                    </Box>
-                    <ArrowForwardIcon sx={{ color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />
-                    <Box sx={{ textAlign: 'center', flex: 1 }}>
-                        <Typography variant="subtitle1" sx={{
-                            fontWeight: 600
-                        }}>
-                            {formatCurrency(totalNewAmount)}
-                        </Typography>
-                        <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                        }}>
-                            New Total
-                        </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'center', flex: 1 }}>
-                        <Typography
-                            variant="subtitle1"
-                            sx={{
-                                fontWeight: 600,
-                                color: amountChange > 0 ? 'success.main' : amountChange < 0 ? 'error.main' : 'text.secondary'
-                            }}>
-                            {formatChange(amountChange)}
-                        </Typography>
-                        <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                        }}>
-                            Change
-                        </Typography>
-                    </Box>
-                </Box>
+                    <Stat value={formatCurrency(totalNewAmount)} label="New Total"/>
+                    <Stat
+                        value={formatChange(amountChange)}
+                        label="Change"
+                        color={amountChange > 0 ? 'green.7' : amountChange < 0 ? 'red.7' : 'dimmed'}
+                    />
+                </Group>
+
                 {/* Search */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        mb: 1.5,
-                    }}
-                >
-                    <TextField
-                        size="small"
+                <Group gap={12} mb={12} wrap="nowrap">
+                    <TextInput
+                        size="sm"
+                        style={{flex: 1}}
                         placeholder="Search by job number..."
+                        aria-label="Search by job number"
                         value={searchTerm}
                         onChange={handleSearchChange}
-                        sx={{ flex: 1 }}
-                        slotProps={{
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: searchTerm ? (
-                                    <InputAdornment position="end">
-                                        <IconButton size="small" onClick={handleClearSearch}>
-                                            <CloseIcon sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ) : null,
-                            },
-                        }}
+                        leftSection={<Icon lucide={Search} size={20}/>}
+                        rightSection={searchTerm
+                            ? <CloseButton size="sm" aria-label="Clear search" onClick={handleClearSearch}/>
+                            : null}
                     />
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: "text.secondary",
-                            whiteSpace: 'nowrap'
-                        }}>
+                    <Text fz="xs" c="dimmed" style={{whiteSpace: 'nowrap'}}>
                         {filteredRows.length} of {resultRows.length} jobs
-                    </Typography>
-                </Box>
+                    </Text>
+                </Group>
+
                 {/* Results table */}
-                <TableContainer
-                    component={Paper}
-                    elevation={0}
-                    sx={{
-                        maxHeight: 300,
-                        border: '1px solid rgba(0, 0, 0, 0.08)',
-                        borderRadius: 2,
-                    }}
-                >
-                    <Table size="small" stickyHeader>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'rgba(0, 0, 0, 0.03)' }}>
-                                    Job #
-                                </TableCell>
-                                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'rgba(0, 0, 0, 0.03)' }}>
-                                    Field
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'rgba(0, 0, 0, 0.03)' }}>
-                                    Previous
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'rgba(0, 0, 0, 0.03)' }}>
-                                    New Amount
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'rgba(0, 0, 0, 0.03)' }}>
-                                    Change
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
+                <Table.ScrollContainer minWidth={0} mah={300} type="native">
+                    <Table stickyHeader highlightOnHover verticalSpacing={6}>
+                        <Table.Thead>
+                            <Table.Tr>
+                                <Table.Th tt="uppercase" fz="xs">Job #</Table.Th>
+                                <Table.Th tt="uppercase" fz="xs">Field</Table.Th>
+                                <Table.Th tt="uppercase" fz="xs" ta="right">Previous</Table.Th>
+                                <Table.Th tt="uppercase" fz="xs" ta="right">New Amount</Table.Th>
+                                <Table.Th tt="uppercase" fz="xs" ta="right">Change</Table.Th>
+                            </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
                             {filteredRows.map((row) => {
                                 const rowChange = row.newAmount - row.oldAmount;
                                 return (
-                                    <TableRow
+                                    <Table.Tr
                                         key={`${row.jobId}_${row.field}`}
-                                        hover
-                                        sx={{
-                                            bgcolor: row.skipped ? 'rgba(237, 108, 2, 0.08)' : undefined,
-                                        }}
+                                        bg={row.skipped ? 'var(--mantine-color-yellow-0)' : undefined}
                                     >
-                                        <TableCell sx={{ fontWeight: 500 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <Table.Td fw={500}>
+                                            <Group gap={4} wrap="nowrap">
                                                 {row.skipped && (
-                                                    <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                                                    <Box c="yellow.7" style={{display: 'flex'}}>
+                                                        <Icon lucide={TriangleAlert} size={16}/>
+                                                    </Box>
                                                 )}
                                                 {row.jobNo}
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            {row.skipped ? (
-                                                <Typography variant="caption" sx={{ color: 'warning.dark' }}>
-                                                    {row.error || 'Skipped'}
-                                                </Typography>
-                                            ) : (
-                                                row.field
-                                            )}
-                                        </TableCell>
-                                        <TableCell
-                                            align="right"
-                                            sx={{ fontFamily: '"Roboto Mono", monospace' }}
-                                        >
+                                            </Group>
+                                        </Table.Td>
+                                        <Table.Td>
+                                            {row.skipped
+                                                ? <Text fz="xs" c="yellow.8">{row.error || 'Skipped'}</Text>
+                                                : row.field}
+                                        </Table.Td>
+                                        {/* Tabular figures so the columns line up down the page. */}
+                                        <Table.Td ta="right" style={{fontVariantNumeric: 'tabular-nums'}}>
                                             {formatCurrency(row.oldAmount)}
-                                        </TableCell>
-                                        <TableCell
-                                            align="right"
-                                            sx={{ fontFamily: '"Roboto Mono", monospace' }}
-                                        >
+                                        </Table.Td>
+                                        <Table.Td ta="right" style={{fontVariantNumeric: 'tabular-nums'}}>
                                             {row.skipped ? '—' : formatCurrency(row.newAmount)}
-                                        </TableCell>
-                                        <TableCell
-                                            align="right"
-                                            sx={{
-                                                fontFamily: '"Roboto Mono", monospace',
-                                                color: row.skipped
-                                                    ? 'warning.main'
-                                                    : rowChange > 0 ? 'success.main' : rowChange < 0 ? 'error.main' : 'inherit',
-                                            }}
+                                        </Table.Td>
+                                        <Table.Td
+                                            ta="right"
+                                            style={{fontVariantNumeric: 'tabular-nums'}}
+                                            c={row.skipped
+                                                ? 'yellow.7'
+                                                : rowChange > 0 ? 'green.7' : rowChange < 0 ? 'red.7' : undefined}
                                         >
                                             {row.skipped ? 'Skipped' : formatChange(rowChange)}
-                                        </TableCell>
-                                    </TableRow>
+                                        </Table.Td>
+                                    </Table.Tr>
                                 );
                             })}
                             {filteredRows.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
-                                        <SearchOffIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                                        <Typography variant="body2" sx={{
-                                            color: "text.secondary"
-                                        }}>
-                                            No jobs match your search
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
+                                <Table.Tr>
+                                    <Table.Td colSpan={5} ta="center" py={40}>
+                                        <Box c="dimmed" mb={8} style={{display: 'flex', justifyContent: 'center'}}>
+                                            <Icon lucide={SearchX} size={40}/>
+                                        </Box>
+                                        <Text fz="sm" c="dimmed">No jobs match your search</Text>
+                                    </Table.Td>
+                                </Table.Tr>
                             )}
-                        </TableBody>
+                        </Table.Tbody>
                     </Table>
-                </TableContainer>
+                </Table.ScrollContainer>
             </Box>
         );
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={!isLoading ? onClose : undefined}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        overflow: 'hidden',
-                        width: 600,
-                        maxWidth: '95vw',
-                        maxHeight: '90vh',
-                    },
-                },
-            }}
+        <DialogShell
+            opened={open}
+            onClose={isLoading ? () => undefined : onClose}
+            size={dialogSize.sm}
+            label="Bulk Price Upload"
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    ...headerChromeSx(theme),
-                    minHeight: 48,
-                })}
-            >
-                <Box sx={(theme) => headerChipSx(theme)}>
-                    <UploadFileIcon/>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 500
-                    }}>
-                        Bulk Price Upload
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Upload prices from a spreadsheet
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    disabled={isLoading}
-                    sx={(theme) => ({
-                        color: headerOnColor(theme),
-                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)},
-                    })}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<Icon lucide={FileUp}/>}
+                title="Bulk Price Upload"
+                subtitle="Upload prices from a spreadsheet"
+                onClose={onClose}
+                closeDisabled={isLoading}
+            />
+
             {/* Content */}
-            <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
+            <Box bg={dialogContentBg}>
                 {currentState === 'upload' && renderUploadState()}
                 {currentState === 'mode-select' && renderModeSelectState()}
                 {currentState === 'loading' && renderLoadingState()}
                 {currentState === 'result' && renderResultState()}
-            </DialogContent>
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 2,
-                    py: 2,
-                    bgcolor: 'background.paper',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                {currentState === 'upload' && (
-                    <Button onClick={handleCancel} color="inherit">
-                        Cancel
-                    </Button>
-                )}
+            </Box>
 
-                {currentState === 'mode-select' && (
-                    <>
-                        <Button
-                            onClick={handleBackToUpload}
-                            color="inherit"
-                            startIcon={<ArrowBackIcon />}
-                        >
-                            Back
-                        </Button>
-                        <Button
-                            onClick={handleApplyPrices}
-                            variant="contained"
-                            color="primary"
-                            startIcon={<CheckIcon />}
-                            sx={{ minWidth: 140 }}
-                        >
-                            {applyButtonText}
-                        </Button>
-                    </>
-                )}
-
-                {currentState === 'result' && (
-                    <Button
-                        onClick={handleDone}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<CheckIcon />}
-                        sx={{ minWidth: 140 }}
-                    >
-                        Done
-                    </Button>
-                )}
-            </DialogActions>
-        </Dialog>
+            {/*
+              * One footer, four shapes. The wizard's steps differ only in which
+              * of the two buttons they show and what they are called, so the
+              * shared footer carries all of them rather than three DialogActions
+              * blocks that had drifted to three different button styles.
+              */}
+            {currentState === 'upload' && (
+                <DialogFooter onCancel={handleCancel} cancelLabel="Cancel" hideConfirm/>
+            )}
+            {currentState === 'mode-select' && (
+                <DialogFooter
+                    onCancel={handleBackToUpload}
+                    cancelLabel="Back"
+                    onConfirm={handleApplyPrices}
+                    confirmLabel={applyButtonText}
+                    confirmIcon={<Icon lucide={Check}/>}
+                />
+            )}
+            {currentState === 'result' && (
+                <DialogFooter
+                    onConfirm={handleDone}
+                    confirmLabel="Done"
+                    confirmIcon={<Icon lucide={Check}/>}
+                    hideCancel
+                />
+            )}
+        </DialogShell>
     );
 };
 

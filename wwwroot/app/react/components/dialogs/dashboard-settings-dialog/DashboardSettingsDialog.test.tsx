@@ -13,7 +13,7 @@ import {
     DashboardSettingsDialogProps,
     RefreshOption,
 } from './DashboardSettingsDialog';
-import { createProps, renderWithMantineOverMui as renderWithTheme } from '../../../__testUtils__';
+import { createProps, renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 
 const mockRefreshOptions: RefreshOption[] = [
@@ -88,7 +88,7 @@ describe('DashboardSettingsDialog', () => {
             expect(screen.getByText('Auto-refresh')).toBeInTheDocument();
             expect(screen.getByText('Job list')).toBeInTheDocument();
             expect(screen.getByText('How often the job list checks for new and updated jobs')).toBeInTheDocument();
-            expect(screen.getByText('30 seconds')).toBeInTheDocument();
+            expect(screen.getByRole('combobox', {name: 'Job list'})).toHaveValue('30 seconds');
             expect(screen.getByText('Driver locations')).toBeInTheDocument();
             expect(screen.getByText('How often driver positions update on the map')).toBeInTheDocument();
 
@@ -178,8 +178,8 @@ describe('DashboardSettingsDialog', () => {
             const user = setupUser();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
-            const pendingJobsRow = screen.getByText('Pending Jobs').closest('div[class*="Paper"]') as HTMLElement;
-            const toggle = within(pendingJobsRow).getByRole('switch');
+            const toggle = screen.getByRole('switch', {name: 'Pending Jobs'});
+            const pendingJobsRow = screen.getByText('Shows all pending jobs').closest('[data-setting-row]') as HTMLElement;
 
             const initialState = (toggle as HTMLInputElement).checked;
             await user.click(toggle);
@@ -197,15 +197,14 @@ describe('DashboardSettingsDialog', () => {
             const user = setupUser();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
-            const jobListSection = screen.getByText('Job list').closest('div');
-            const select = within(jobListSection!.parentElement!).getByRole('combobox');
+            const select = screen.getByRole('combobox', {name: 'Job list'});
 
             await user.click(select);
             await user.click(await screen.findByRole('option', {name: '5 minutes'}));
             // Assert against the combobox itself: once selected, "5 minutes" appears
             // both as the combobox value and (briefly) as the lingering menu option,
             // so a bare getByText('5 minutes') matches multiple elements on slow CI.
-            expect(select).toHaveTextContent('5 minutes');
+            expect(select).toHaveValue('5 minutes');
         });
     });
 
@@ -234,8 +233,7 @@ describe('DashboardSettingsDialog', () => {
 
             expect(screen.getByText('Tasks')).toBeInTheDocument();
 
-            const tasksSection = screen.getByText('Tasks').closest('div');
-            const select = within(tasksSection!.parentElement!).getByRole('combobox');
+            const select = screen.getByRole('combobox', {name: 'Tasks'});
             await user.click(select);
             await user.click(await screen.findByRole('option', {name: '1 minute'}));
 
@@ -272,7 +270,7 @@ describe('DashboardSettingsDialog', () => {
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onSave})} />);
 
             // Toggle a box first
-            const pendingJobsRow = screen.getByText('Pending Jobs').closest('div[class*="Paper"]');
+            const pendingJobsRow = screen.getByText('Shows all pending jobs').closest('[data-setting-row]');
             await user.click(pendingJobsRow!);
 
             await user.click(screen.getByRole('button', {name: /save/i}));
@@ -297,8 +295,7 @@ describe('DashboardSettingsDialog', () => {
                 selectedDriverLocationRefreshInterval: undefined,
             })} />);
 
-            const driverSection = screen.getByText('Driver locations').closest('div');
-            expect(within(driverSection!.parentElement!).getByText('Disabled')).toBeInTheDocument();
+            expect(screen.getByRole('combobox', {name: 'Driver locations'})).toHaveValue('Disabled');
         });
     });
 
@@ -324,8 +321,7 @@ describe('DashboardSettingsDialog', () => {
 
             expect(screen.getByText('Dispatch version')).toBeInTheDocument();
 
-            const betaRow = screen.getByText('Use the new Dispatch').closest('div[class*="Paper"]') as HTMLElement;
-            await user.click(within(betaRow).getByRole('switch'));
+            await user.click(screen.getByRole('switch', {name: 'Use the new Dispatch'}));
             await user.click(screen.getByRole('button', {name: /save/i}));
 
             expect(onSave).toHaveBeenCalledWith(
@@ -369,13 +365,11 @@ describe('DashboardSettingsDialog', () => {
                 <DashboardSettingsDialog {...createMockProps({config: aiConfig, aiEnabled: false})} />,
             );
 
-            const autoOpenRow = screen.getByText('Open automatically').closest('div[class*="Paper"]') as HTMLElement;
-            const autoOpenSwitch = within(autoOpenRow).getByRole('switch');
+            const autoOpenSwitch = screen.getByRole('switch', {name: 'Open automatically'});
             expect(autoOpenSwitch).toBeDisabled();
 
             // Turning briefings on re-enables the auto-open toggle.
-            const briefingsRow = screen.getByText('Show Auto-mate briefings').closest('div[class*="Paper"]') as HTMLElement;
-            await user.click(within(briefingsRow).getByRole('switch'));
+            await user.click(screen.getByRole('switch', {name: 'Show Auto-mate briefings'}));
             expect(autoOpenSwitch).toBeEnabled();
         });
 
@@ -388,8 +382,7 @@ describe('DashboardSettingsDialog', () => {
                 />,
             );
 
-            const autoOpenRow = screen.getByText('Open automatically').closest('div[class*="Paper"]') as HTMLElement;
-            const autoOpenSwitch = within(autoOpenRow).getByRole('switch') as HTMLInputElement;
+            const autoOpenSwitch = screen.getByRole('switch', {name: 'Open automatically'}) as HTMLInputElement;
             expect(autoOpenSwitch.checked).toBe(false);
 
             await user.click(autoOpenSwitch);

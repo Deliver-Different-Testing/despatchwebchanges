@@ -92,6 +92,21 @@ describe('SearchSelect', () => {
         expect(within(dropdown).getByText('Courier Beta')).toBeInTheDocument();
     });
 
+    /**
+     * Mantine only stamps the combobox role and aria-expanded when the target asks
+     * for them; without it the field announces as a plain text box and nothing tells
+     * a screen reader the list is open.
+     */
+    it('announces itself as a combobox and reports whether the list is open', async () => {
+        renderWithMantine(<Harness />);
+
+        const input = screen.getByRole('combobox', {name: /courier/i});
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+
+        fireEvent.focus(input);
+        await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    });
+
     it('does not search below the minimum term length, and prompts instead', async () => {
         renderWithMantine(<Harness />);
 

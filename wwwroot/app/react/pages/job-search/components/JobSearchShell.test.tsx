@@ -1,11 +1,9 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {JobSearchShell, JobSearchShellProps} from './JobSearchShell';
 import {ILayout} from '../../../../interfaces/layout.interfaces';
 
-const theme = createTheme();
 
 const layout: ILayout = {
     name: 'Default',
@@ -26,9 +24,9 @@ const baseProps: JobSearchShellProps = {
 
 const renderShell = (props: Partial<JobSearchShellProps> = {}) =>
     render(
-        <MantineTestProvider><ThemeProvider theme={theme}>
+        <MantineTestProvider>
             <JobSearchShell {...baseProps} {...props} />
-        </ThemeProvider></MantineTestProvider>,
+        </MantineTestProvider>,
     );
 
 const twoBoxLayout = (name: string): ILayout => ({
@@ -176,14 +174,14 @@ describe('JobSearchShell resize persistence', () => {
 
         // A drag re-lays-out the same (un-remounted) group with new sizes.
         rerender(
-            <MantineTestProvider><ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <JobSearchShell
                     {...baseProps}
                     layout={resized('Default', '70%', '30%')}
                     boxes={multiColBoxes}
                     onColumnSizes={onColumnSizes}
                 />
-            </ThemeProvider></MantineTestProvider>,
+            </MantineTestProvider>,
         );
 
         expect(onColumnSizes).toHaveBeenCalledTimes(1);

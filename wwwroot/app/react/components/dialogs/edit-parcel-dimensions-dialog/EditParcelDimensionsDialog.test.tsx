@@ -1,8 +1,8 @@
 
 import React from 'react';
-import {screen, waitFor, within} from '@testing-library/react';
+import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {EditParcelDimensionsDialog} from './EditParcelDimensionsDialog';
-import { renderWithTheme } from '../../../__testUtils__';
+import { renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import type {ParcelDimensions} from './types';
 import {apiClient} from '../../../services/apiClient';
@@ -69,7 +69,7 @@ describe('EditParcelDimensionsDialog read-only mode', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} readOnly />);
 
         expect(screen.getByText('View only — this job is locked')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /Close/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /^Save|Continue/i})).not.toBeInTheDocument();
 
         // Parcel fields are visible but not editable.
@@ -236,7 +236,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
         await user.click(screen.getByRole('button', {name: /add package type/i}));
 
         // Give the new type a weight so Save enables.
-        const weightInputs = screen.getAllByRole('spinbutton', {name: 'Weight'});
+        const weightInputs = screen.getAllByRole('textbox', {name: 'Weight'});
         await user.clear(weightInputs[weightInputs.length - 1]);
         await user.paste('5');
 
@@ -275,27 +275,28 @@ describe('EditParcelDimensionsDialog weight validation', () => {
         expect(screen.getByText(/all parcels must have a weight greater than 0/i)).toBeInTheDocument();
     });
 
-    it('enables Save once all parcels have a weight greater than 0', async () => {
-        const user = setupUser();
+    it('enables Save once all parcels have a weight greater than 0', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
-        const weightInputs = screen.getAllByRole('spinbutton', {name: 'Weight'});
+        const weightInputs = screen.getAllByRole('textbox', {name: 'Weight'});
         const weightInput = weightInputs[weightInputs.length - 1];
-        await user.clear(weightInput);
-        await user.paste('10');
+        /*
+         * fireEvent, not user.clear + paste: Mantine's modal moves focus to its
+         * first focusable element on mount, and in jsdom that lands after the
+         * first interaction — so the paste goes to the close button.
+         */
+        fireEvent.change(weightInput, {target: {value: '10'}});
 
         expect(screen.getByRole('button', {name: /save/i})).not.toBeDisabled();
         expect(screen.queryByText(/all parcels must have a weight greater than 0/i)).not.toBeInTheDocument();
     });
 
-    it('disables Save when a parcel weight is zero', async () => {
-        const user = setupUser();
+    it('disables Save when a parcel weight is zero', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel({weight: 5})]} />);
 
-        const weightInputs = screen.getAllByRole('spinbutton', {name: 'Weight'});
+        const weightInputs = screen.getAllByRole('textbox', {name: 'Weight'});
         const weightInput = weightInputs[weightInputs.length - 1];
-        await user.clear(weightInput);
-        await user.paste('0');
+        fireEvent.change(weightInput, {target: {value: '0'}});
 
         expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
     });

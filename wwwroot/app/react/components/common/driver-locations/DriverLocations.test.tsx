@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 import { DriverLocations } from './DriverLocations';
 import type {
     DriverLocationsProps,
@@ -16,7 +16,7 @@ import { shouldShowCourier } from './DriverLocations.types';
 
 
 const renderWithProviders = (ui: React.ReactElement) => {
-    return renderWithMantineOverMui(ui);
+    return renderWithMantine(ui);
 };
 
 // Sample data factories

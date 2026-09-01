@@ -13,10 +13,10 @@ import {RefreshCw, SlidersHorizontal} from 'lucide-react';
 import {PanelHeader} from './PanelHeader';
 import {Icon} from '../icon/Icon';
 import {SymbolIcon} from '../symbol-icon';
-import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 
 // SymbolIcon is still MUI, so one MUI theme has to remain in scope for that case.
-const renderPanel = (ui: React.ReactElement) => renderWithMantineOverMui(ui);
+const renderPanel = (ui: React.ReactElement) => renderWithMantine(ui);
 
 const tune = <Icon lucide={SlidersHorizontal}/>;
 

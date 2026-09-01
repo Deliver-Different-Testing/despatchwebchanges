@@ -20,9 +20,8 @@ import '@mantine/core/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import '@mantine/notifications/styles.layer.css';
 
-// Mantine JS — bundled once here and exposed as window globals for the same
-// reason MUI is (see below). Without this every migrated island embeds its own
-// copy of Mantine core (~190 KB each). The global-shim plugin in build.ts
+// Mantine JS — bundled once here and exposed as window globals. Without this
+// every island embeds its own copy of Mantine core (~190 KB each). The global-shim plugin in build.ts
 // rewrites `@mantine/*` barrel imports onto these.
 import * as MantineCore from '@mantine/core';
 import * as MantineHooks from '@mantine/hooks';
@@ -35,35 +34,19 @@ import * as ReactDOMClient from 'react-dom/client';
 import * as jsxRuntime from 'react/jsx-runtime';
 import {QueryClient, QueryClientProvider, keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
-// MUI — bundled once here (together with its single Emotion instance) and
-// exposed as window globals so the React module bundles resolve
-// @mui/material/* and @mui/material/styles to these shared instances (see
-// createReactGlobalShimPlugin in build.ts) instead of each embedding its own
-// full copy of MUI + Emotion.
-import * as MUIMaterial from '@mui/material';
-import * as MUIStyles from '@mui/material/styles';
-// @mui/icons-material stays bundled per-module (small, tree-shaken), but every
-// icon imports the NAMED createSvgIcon from @mui/material/SvgIcon — which the
-// main barrel doesn't re-export — so expose that module's members explicitly.
-import MUISvgIcon, {createSvgIcon as muiCreateSvgIcon, svgIconClasses as muiSvgIconClasses} from '@mui/material/SvgIcon';
-
 // Expose React globally for module bundles to use via shims
 window.React = React;
 // Combine ReactDOM (createPortal, flushSync) with ReactDOMClient (createRoot, hydrateRoot)
 window.ReactDOM = {...ReactDOM, ...ReactDOMClient} as typeof ReactDOM & typeof ReactDOMClient;
 window.ReactJsxRuntime = jsxRuntime;
 
-// Expose MUI and Mantine globally for module bundles to use via shims. dayjs
+// Expose Mantine globally for module bundles to use via shims. dayjs
 // itself is redirected to the configured window.dayjs by the global-shim plugin
 // applied to this bundle.
 window.MantineCore = MantineCore;
 window.MantineHooks = MantineHooks;
 window.MantineDates = MantineDates;
 window.MantineNotifications = MantineNotifications;
-
-window.MUI = MUIMaterial;
-window.MUIStyles = MUIStyles;
-window.MUISvgIcon = {default: MUISvgIcon, createSvgIcon: muiCreateSvgIcon, svgIconClasses: muiSvgIconClasses};
 
 // Expose TanStack Query components/hooks
 window.QueryClient = QueryClient;

@@ -16,9 +16,6 @@ jest.mock('react-dom/client', () => ({
 }));
 
 // Mock the theme
-jest.mock('../../../theme/muiTheme', () => ({
-    getTheme: jest.fn(() => ({})),
-}));
 
 // Mock ReactQueryProvider
 jest.mock('../../../query', () => ({

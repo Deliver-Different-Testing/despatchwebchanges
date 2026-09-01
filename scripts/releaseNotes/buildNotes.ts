@@ -1,3 +1,4 @@
+import { classifyChange, type ChangeType } from './changeTypes';
 import { parseMrSections } from './mrSections';
 
 export interface ReleaseMergeRequest {
@@ -6,6 +7,8 @@ export interface ReleaseMergeRequest {
     webUrl: string;
     authorName: string;
     description: string | null;
+    sourceBranch?: string | null;
+    labels?: readonly string[] | null;
 }
 
 export interface ReleaseDirectCommit {
@@ -13,70 +16,90 @@ export interface ReleaseDirectCommit {
     title: string;
 }
 
-export interface ReleaseNotesInput {
+export interface ReleaseChange {
+    iid: number;
     title: string;
-    sinceRef: string | null;
+    webUrl: string;
+    authorName: string;
+    type: ChangeType;
+    /** One plain-English sentence for the channel summary. */
+    headline: string;
+    what: string;
+    test: string;
+    risk: string;
+}
+
+export interface ReleaseNotes {
+    changes: ReleaseChange[];
+    directCommits: ReleaseDirectCommit[];
+    /** Changes a tester cannot sign off unaided — no test steps, or no merge request at all. */
+    missingTestSteps: number;
+}
+
+export interface ReleaseNotesInput {
     mergeRequests: readonly ReleaseMergeRequest[];
     directCommits: readonly ReleaseDirectCommit[];
+}
+
+const HEADLINE_LIMIT = 140;
+
+/**
+ * The first real sentence of "What changed", which the merge request template asks
+ * authors to write in plain English. The merge request title is the fallback — it is
+ * usually serviceable, and a headline is better wrong than absent.
+ */
+export function headlineFor(what: string, title: string): string {
+    const firstLine = what
+        .split('\n')
+        .map((line) => line.trim())
+        .find((line) => line && !/^[#>|]/.test(line) && !/^[-*_]{3,}$/.test(line));
+
+    if (!firstLine) {
+        return title;
+    }
+
+    const text = firstLine.replace(/^([-*+]|\d+[.)])\s+/, '').trim();
+    const sentence = (/^(.+?[.!?])(\s|$)/.exec(text)?.[1] ?? text).trim();
+
+    if (!sentence) {
+        return title;
+    }
+
+    return sentence.length > HEADLINE_LIMIT ? `${sentence.slice(0, HEADLINE_LIMIT - 1).trimEnd()}…` : sentence;
 }
 
 /**
  * A change with no description or test steps is still listed, with a marker — a
  * silently omitted change is an untested change.
  */
-export function buildReleaseNotes({ title, sinceRef, mergeRequests, directCommits }: ReleaseNotesInput): string {
-    const header = sinceRef
-        ? `Changes since \`${sinceRef}\``
-        : 'Changes in this deployment (no previous deployment found)';
-
-    const lines: string[] = [`# ${title}`, '', header, ''];
-    let incomplete = 0;
-
-    if (!mergeRequests.length) {
-        lines.push('_No merge requests found for this deployment._', '');
-    }
-
-    for (const mergeRequest of mergeRequests) {
+export function buildReleaseNotes({ mergeRequests, directCommits }: ReleaseNotesInput): ReleaseNotes {
+    const changes = mergeRequests.map((mergeRequest): ReleaseChange => {
         const { what, test, risk } = parseMrSections(mergeRequest.description);
 
-        lines.push(`### !${mergeRequest.iid} — ${mergeRequest.title}`);
-        lines.push(`_${mergeRequest.authorName} · [view MR](${mergeRequest.webUrl})_`);
-        lines.push('');
+        return {
+            iid: mergeRequest.iid,
+            title: mergeRequest.title,
+            webUrl: mergeRequest.webUrl,
+            authorName: mergeRequest.authorName,
+            type: classifyChange({ sourceBranch: mergeRequest.sourceBranch, labels: mergeRequest.labels }),
+            headline: headlineFor(what, mergeRequest.title),
+            what,
+            test,
+            risk,
+        };
+    });
 
-        if (what) {
-            lines.push(what);
-        } else {
-            lines.push('⚠️ **No description supplied** — see the MR.');
-            incomplete += 1;
-        }
-        lines.push('');
+    return {
+        changes,
+        directCommits: [...directCommits],
+        missingTestSteps: changes.filter((change) => !change.test).length + directCommits.length,
+    };
+}
 
-        if (test) {
-            lines.push('**How to test**', '', test);
-        } else {
-            lines.push('⚠️ **No test steps supplied** — check with the author before signing off.');
-            incomplete += 1;
-        }
-        lines.push('');
-
-        if (risk) {
-            lines.push('**Also check**', '', risk, '');
-        }
+export function countByType(notes: ReleaseNotes): Record<ChangeType, number> {
+    const counts: Record<ChangeType, number> = { new: 0, improved: 0, fixed: 0, internal: 0, other: 0 };
+    for (const change of notes.changes) {
+        counts[change.type] += 1;
     }
-
-    if (directCommits.length) {
-        lines.push('### ⚠️ Commits with no merge request', '');
-        lines.push('Pushed straight to the default branch, so nobody wrote test steps for them:', '');
-        for (const commit of directCommits) {
-            lines.push(`- \`${commit.id.slice(0, 7)}\` ${commit.title}`);
-        }
-        lines.push('');
-        incomplete += directCommits.length;
-    }
-
-    if (incomplete) {
-        lines.splice(4, 0, `> ⚠️ ${incomplete} item(s) in this deployment are missing description or test steps.`, '');
-    }
-
-    return `${lines.join('\n').trimEnd()}\n`;
+    return counts;
 }

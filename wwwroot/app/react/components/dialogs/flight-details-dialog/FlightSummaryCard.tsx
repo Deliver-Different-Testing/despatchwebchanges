@@ -5,11 +5,10 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import FlightIcon from '@mui/icons-material/Flight';
-import ScheduleIcon from '@mui/icons-material/Schedule';
+import {Box, Group, Paper, Stack, Text} from '@mantine/core';
+import {Clock} from 'lucide-react';
+import {IconPlane} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
 import { FlightSummaryCardProps } from './types';
 
 export const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({
@@ -43,213 +42,125 @@ export const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({
     const flightNum = segment.flightNumber || flight.flightNumber.substring(2);
 
     return (
-        <Paper
-            elevation={1}
-            sx={{
-                bgcolor: 'background.paper',
-                borderRadius: 2,
-                p: 3,
-            }}
-        >
+        <Paper withBorder radius="md" p={24} bg="var(--mantine-color-body)">
             {/* Header: Airline info and date */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    mb: 4,
-                }}
-            >
+            <Group justify="space-between" align="flex-start" mb={32} wrap="nowrap">
                 {/* Airline section */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    {/* Airline logo placeholder */}
+                <Group gap={16} wrap="nowrap">
+                    {/*
+                      * A tinted tile rather than the old brand gradient with white
+                      * text on it: the DFRNT primaries are light enough that white
+                      * on a solid fill fails contrast outright. Tinted background,
+                      * dark-brand text.
+                      */}
                     <Box
-                        sx={(theme) => ({
-                            width: 60,
-                            height: 60,
-                            borderRadius: 1.5,
-                            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+                        w={60}
+                        h={60}
+                        style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'primary.contrastText',
+                            borderRadius: 'var(--mantine-radius-md)',
+                            background: 'var(--mantine-primary-color-light)',
+                            color: 'var(--mantine-primary-color-light-color)',
                             fontWeight: 700,
                             fontSize: '1.25rem',
                             letterSpacing: 1,
-                            boxShadow: 1,
-                        })}
+                        }}
                     >
                         {carrierCode}
                     </Box>
 
                     {/* Airline details */}
                     <Box>
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                fontWeight: 600,
-                                color: 'text.primary',
-                                lineHeight: 1.2,
-                                mb: 0.5,
-                            }}
-                        >
-                            {airlineName}
-                        </Typography>
-                        <Typography
-                            sx={{
-                                fontSize: '1.75rem',
-                                fontWeight: 700,
-                                color: 'primary.main',
-                                letterSpacing: -0.5,
-                                lineHeight: 1.2,
-                            }}
-                        >
+                        <Text fz="lg" fw={600} lh={1.2} mb={4}>{airlineName}</Text>
+                        {/* Ink, not the brand: this is the headline read of the card. */}
+                        <Text fz={28} fw={700} lh={1.2} style={{letterSpacing: -0.5}}>
                             {carrierCode} {flightNum}
-                        </Typography>
+                        </Text>
                     </Box>
-                </Box>
+                </Group>
 
                 {/* Flight date section */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1.5 }}>
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            color: 'text.secondary',
-                            fontWeight: 500,
-                        }}
-                    >
-                        {departureTime.format('ddd, MMM D, YYYY')}
-                    </Typography>
-                </Box>
-            </Box>
+                <Text fz="md" fw={500} c="dimmed">
+                    {departureTime.format('ddd, MMM D, YYYY')}
+                </Text>
+            </Group>
 
             {/* Route overview */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                }}
-            >
+            <Group gap={32} wrap="nowrap">
                 {/* Departure endpoint */}
-                <Box sx={{ flex: '0 0 120px', textAlign: 'left' }}>
-                    <Typography
-                        sx={{
-                            fontSize: '2.5rem',
-                            fontWeight: 700,
-                            color: 'text.primary',
-                            mb: 0.5,
-                            letterSpacing: -1,
-                            lineHeight: 1.2,
-                        }}
-                    >
+                <Box ta="left" style={{flex: '0 0 120px'}}>
+                    <Text fz={40} fw={700} lh={1.2} mb={4} style={{letterSpacing: -1}}>
                         {departureCode}
-                    </Typography>
-                    <Typography
-                        sx={{
-                            fontSize: '1.25rem',
-                            fontWeight: 600,
-                            color: 'primary.main',
-                            lineHeight: 1.2,
-                        }}
-                    >
-                        {departureTime.format('HH:mm')}
-                    </Typography>
+                    </Text>
+                    <Text fz="xl" fw={600} lh={1.2}>{departureTime.format('HH:mm')}</Text>
                 </Box>
 
                 {/* Route visualization */}
-                <Box
-                    sx={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: 1.5,
-                    }}
-                >
+                <Stack align="center" gap={12} style={{flex: 1}}>
                     {/* Route line */}
                     <Box
-                        sx={{
-                            width: '100%',
-                            height: 4,
-                            bgcolor: 'grey.300',
-                            borderRadius: 1,
+                        w="100%"
+                        h={4}
+                        style={{
                             position: 'relative',
-                            overflow: 'visible',
+                            borderRadius: 'var(--mantine-radius-sm)',
+                            background: 'var(--mantine-color-gray-3)',
                         }}
                     >
                         {/* Progress line */}
                         <Box
-                            sx={(theme) => ({
-                                width: '70%',
-                                height: '100%',
-                                background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
-                                borderRadius: 1,
-                            })}
+                            h="100%"
+                            w="70%"
+                            style={{
+                                borderRadius: 'var(--mantine-radius-sm)',
+                                background: 'var(--mantine-primary-color-filled)',
+                            }}
                         />
                         {/* Plane icon */}
-                        <FlightIcon
-                            sx={{
+                        <Box
+                            style={{
                                 position: 'absolute',
                                 top: '50%',
                                 left: '70%',
                                 transform: 'translate(-50%, -50%) rotate(90deg)',
-                                fontSize: 20,
-                                color: 'primary.main',
-                                bgcolor: 'background.paper',
+                                display: 'flex',
+                                padding: 6,
                                 borderRadius: '50%',
-                                p: 0.75,
-                                boxShadow: 1,
+                                background: 'var(--mantine-color-body)',
+                                color: 'var(--mantine-primary-color-filled)',
+                                boxShadow: 'var(--mantine-shadow-xs)',
                             }}
-                        />
+                        >
+                            <Icon tabler={IconPlane} size={20}/>
+                        </Box>
                     </Box>
 
                     {/* Duration badge */}
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.75,
-                            bgcolor: 'grey.100',
-                            px: 2,
-                            py: 1,
-                            borderRadius: 2.5,
-                            color: 'text.secondary',
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
+                    <Group
+                        gap={6}
+                        px={16}
+                        py={8}
+                        c="dimmed"
+                        style={{
+                            borderRadius: 'var(--mantine-radius-xl)',
+                            background: 'var(--mantine-color-gray-1)',
                         }}
                     >
-                        <ScheduleIcon sx={{ fontSize: 16 }} />
-                        <span>{duration}</span>
-                    </Box>
-                </Box>
+                        <Icon lucide={Clock} size={16}/>
+                        <Text fz="sm" fw={500}>{duration}</Text>
+                    </Group>
+                </Stack>
 
                 {/* Arrival endpoint */}
-                <Box sx={{ flex: '0 0 120px', textAlign: 'right' }}>
-                    <Typography
-                        sx={{
-                            fontSize: '2.5rem',
-                            fontWeight: 700,
-                            color: 'text.primary',
-                            mb: 0.5,
-                            letterSpacing: -1,
-                            lineHeight: 1.2,
-                        }}
-                    >
+                <Box ta="right" style={{flex: '0 0 120px'}}>
+                    <Text fz={40} fw={700} lh={1.2} mb={4} style={{letterSpacing: -1}}>
                         {arrivalInfo.code}
-                    </Typography>
-                    <Typography
-                        sx={{
-                            fontSize: '1.25rem',
-                            fontWeight: 600,
-                            color: 'primary.main',
-                            lineHeight: 1.2,
-                        }}
-                    >
-                        {arrivalInfo.time.format('HH:mm')}
-                    </Typography>
+                    </Text>
+                    <Text fz="xl" fw={600} lh={1.2}>{arrivalInfo.time.format('HH:mm')}</Text>
                 </Box>
-            </Box>
+            </Group>
         </Paper>
     );
 };

@@ -11,7 +11,6 @@
 
 import React from 'react';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {DispatchPage, DispatchPageProps, DispatchLayoutBridge} from './DispatchPage';
 import type {DispatchFilters, DispatchRefreshIntervals} from './lib/dispatchFilters';
@@ -36,24 +35,22 @@ let unregisterViewsListener: (() => void) | null = null;
 const host = createPageHost<MountDispatchPageConfig>({
     logName: 'DispatchReact',
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorBoundary>
-                <DispatchPage
-                    {...config}
-                    onLayoutBridgeReady={bridge => {
-                        layoutBridge = bridge;
-                        if (pendingFilters) {
-                            bridge.updateFilters(pendingFilters);
-                            pendingFilters = null;
-                        }
-                        if (pendingViewsListener) {
-                            unregisterViewsListener = bridge.registerViewsListener(pendingViewsListener);
-                        }
-                        config.onLayoutBridgeReady?.(bridge);
-                    }}
-                />
-            </ErrorBoundary>
-        </MuiThemeIsland>
+        <ErrorBoundary>
+            <DispatchPage
+                {...config}
+                onLayoutBridgeReady={bridge => {
+                    layoutBridge = bridge;
+                    if (pendingFilters) {
+                        bridge.updateFilters(pendingFilters);
+                        pendingFilters = null;
+                    }
+                    if (pendingViewsListener) {
+                        unregisterViewsListener = bridge.registerViewsListener(pendingViewsListener);
+                    }
+                    config.onLayoutBridgeReady?.(bridge);
+                }}
+            />
+        </ErrorBoundary>
     ),
 });
 

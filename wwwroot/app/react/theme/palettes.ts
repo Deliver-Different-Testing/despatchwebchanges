@@ -120,3 +120,69 @@ export const accentPalette = {
     800: '#292524',  // Very dark warm gray
     900: '#1c1917',  // Deepest warm gray
 };
+
+/**
+ * Shared (non-primary) colours: the semantic statuses, the surface ladder, the
+ * text hierarchy and the divider.
+ *
+ * These live here rather than in `muiTheme.ts`, where they used to, because they
+ * are plain values with no framework in them — and `designTokens.ts` imports
+ * them. From there they reached four island bundles, each of which was shipping
+ * MUI's Fade, Grow and useMediaQuery in order to read six hex strings.
+ */
+export const sharedColors = {
+    success: {
+        main: '#13b964',   // DFRNT Green
+        light: '#5fd199',
+        dark: '#0b7d44',
+        lighter: '#e5f8ee',
+        contrast: '#FFFFFF',
+    },
+    warning: {
+        main: '#fe811a',   // DFRNT Orange
+        light: '#ffab63',
+        dark: '#b3560b',
+        lighter: '#fff3e6',
+        contrast: '#000000',
+    },
+    error: {
+        main: '#dc3246',   // DFRNT Red
+        light: '#e97b88',
+        dark: '#93212f',
+        lighter: '#fdeaec',
+        contrast: '#FFFFFF',
+    },
+    info: {
+        main: '#2a4eff',   // DFRNT Reflex Blue
+        light: '#7d92ff',
+        dark: '#1b31a8',
+        lighter: '#eaeeff',
+        contrast: '#FFFFFF',
+    },
+    // Surface colors - matching Angular Material
+    surface: {
+        default: '#f4f2f1',   // DFRNT Light Grey page background
+        paper: '#FFFFFF',
+        elevated: '#FFFFFF',
+        // MD3 tonal surface-container tiers (warm-neutral, derived from the
+        // accent ramp). These are the tonal depth cue that supplements shadows
+        // — menus/popovers sit on `container`, higher-emphasis chrome on the
+        // stronger tiers — so depth reads from surface colour, not just shadow.
+        containerLow: accentPalette[50],
+        container: accentPalette[100],
+        containerHigh: accentPalette[200],
+        containerHighest: accentPalette[300],
+    },
+    // Text hierarchy
+    text: {
+        // 0.6 (not MD2's 0.54) so secondary text — section labels, table
+        // heads, dialog subtitles — clears WCAG AA 4.5:1 on the #FAFAFA
+        // surface; 0.54 (#767676) came in at 4.35:1.
+        primary: 'rgba(0, 0, 0, 0.87)',
+        secondary: 'rgba(0, 0, 0, 0.6)',
+        disabled: 'rgba(0, 0, 0, 0.38)',
+        hint: 'rgba(0, 0, 0, 0.38)',
+    },
+    // Dividers
+    divider: 'rgba(0, 0, 0, 0.12)',
+};

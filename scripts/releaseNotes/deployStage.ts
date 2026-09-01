@@ -84,3 +84,26 @@ export function previousShaForStage(environments: readonly EnvironmentDeployment
 
     return previous.reduce((a, b) => (b.created_at < a.created_at ? b : a)).sha;
 }
+
+const STAGE_EMOJI: Record<string, string> = {
+    staging: '🧪',
+    'tenants-staging': '🧪',
+    'tenants-production': '🚀',
+};
+
+export function environmentEmoji(stage: string): string {
+    return STAGE_EMOJI[stage] ?? '📦';
+}
+
+/**
+ * When the stage finished — the last environment to receive the commit. Rendered as
+ * a Slack date token so every reader sees it in their own timezone; tenants span NZ
+ * and the US and a bare local time is ambiguous to half the channel.
+ */
+export function stageDeployedAt(environments: readonly EnvironmentDeployments[], sha: string): string | null {
+    const times = environments
+        .map((environment) => newestDeploymentOf(environment, sha)?.created_at)
+        .filter((at): at is string => Boolean(at));
+
+    return times.length ? times.reduce((a, b) => (b > a ? b : a)) : null;
+}

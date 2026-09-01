@@ -4,7 +4,7 @@
 
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
-import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekday from 'dayjs/plugin/weekday';
@@ -32,7 +32,7 @@ jest.mock('../../../utils/dateUtils', () => ({
 
 const renderWithProviders = (ui: React.ReactElement) => {
     // Mantine outside, MUI inside — the view is still MUI, its rows are Mantine.
-    return renderWithMantineOverMui(ui);
+    return renderWithMantine(ui);
 };
 
 // Sample task data - use relative dates from today

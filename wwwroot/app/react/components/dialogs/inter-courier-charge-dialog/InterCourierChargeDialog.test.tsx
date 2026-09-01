@@ -106,7 +106,7 @@ describe('InterCourierChargeDialog', () => {
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Inter-Courier Charge')).toBeInTheDocument();
-            expect(screen.getByText('Create a charge transfer between couriers')).toBeInTheDocument();
+            expect(screen.getByText('Charge one courier and credit another')).toBeInTheDocument();
             expect(screen.getByLabelText(/from courier/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/to courier/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/client/i)).toBeInTheDocument();
@@ -230,24 +230,94 @@ describe('InterCourierChargeDialog', () => {
     });
 
     describe('Validation', () => {
-        it('shows warning toast and does not submit when form is incomplete', () => {
+        it('names each gap inline, moves focus to the first, and blocks submit', () => {
             const showToast = jest.fn();
             renderWithMantine(<InterCourierChargeDialog {...createMockProps({showToast})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
 
-            expect(showToast).toHaveBeenCalledWith('Please complete all the required fields', 'warning');
+            // Every field is on screen at once, so inline errors carry it - no toast
+            expect(showToast).not.toHaveBeenCalled();
+            expect(mockCreateInterCourierCharge).not.toHaveBeenCalled();
+
+            expect(screen.getByText('Choose the courier being charged.')).toBeInTheDocument();
+            expect(screen.getByText('Choose the courier being credited.')).toBeInTheDocument();
+            expect(screen.getByText('Choose the client to bill.')).toBeInTheDocument();
+            expect(screen.getByText('Enter a reference for this charge.')).toBeInTheDocument();
+            expect(screen.getByText('Enter the number of zones.')).toBeInTheDocument();
+
+            // Focus goes to the first thing that needs attention
+            expect(screen.getByLabelText(/from courier/i)).toHaveFocus();
+        });
+
+        it('refuses a charge that goes to and from the same courier', async () => {
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
+
+            mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
+            await fillAutocomplete('From Courier', 'Courier', 'Courier Alpha');
+            await fillAutocomplete('To Courier', 'Courier', 'Courier Alpha');
+
+            expect(screen.getByText("Pick a different courier. A charge can't go to and from the same one."))
+                .toBeInTheDocument();
+
+            fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
             expect(mockCreateInterCourierCharge).not.toHaveBeenCalled();
         });
 
-        it('shows required error messages on fields after submit attempt', () => {
+        it('caps the reference at the 20 characters the ledger stores', () => {
             renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
-            fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
+            expect(screen.getByLabelText(/reference/i)).toHaveAttribute('maxlength', '20');
+        });
+    });
 
-            const requiredMessages = screen.getAllByText('This field is required.');
-            // From Courier, To Courier, Client, Reference, Zones, Amount = 6 fields
-            expect(requiredMessages.length).toBeGreaterThanOrEqual(4);
+    describe('Ledger Preview', () => {
+        it('shows both sides of the entry, empty on open and signed once filled', async () => {
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
+
+            const ledger = () => within(screen.getByRole('group', {name: 'What gets recorded'}));
+
+            // The shape of the entry is visible before anything is chosen
+            expect(ledger().getByText('Charged')).toBeInTheDocument();
+            expect(ledger().getByText('Credited')).toBeInTheDocument();
+
+            await fillForm();
+
+            // Zones 3 x $7.00 = $21.00, debited from one courier and credited to the other
+            expect(ledger().getByText('Courier Alpha')).toBeInTheDocument();
+            expect(ledger().getByText('Courier Beta')).toBeInTheDocument();
+            expect(ledger().getByText('\u2212$21.00')).toBeInTheDocument();
+            expect(ledger().getByText('+$21.00')).toBeInTheDocument();
+        });
+    });
+
+    describe('Zones and Amount Alignment', () => {
+        it('keeps the zone-rate hint below the input so both fields start on one line', () => {
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
+
+            const zonesInput = screen.getByLabelText(/zones/i);
+            const hint = screen.getByText('$7.00 a zone');
+
+            // DOCUMENT_POSITION_FOLLOWING: the hint comes after the input, so nothing
+            // sits between the label and the input to push Zones below Amount.
+            expect(zonesInput.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING)
+                .toBeTruthy();
+        });
+    });
+
+    describe('Amount Override', () => {
+        it('flags an amount that has left the zone rate and offers it back', () => {
+            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
+
+            fireEvent.change(screen.getByLabelText(/zones/i), {target: {value: '3'}});
+            expect(screen.queryByText('Overridden')).not.toBeInTheDocument();
+
+            fireEvent.change(screen.getByLabelText(/amount/i), {target: {value: '99.5'}});
+            expect(screen.getByText('Overridden')).toBeInTheDocument();
+
+            fireEvent.click(screen.getByRole('button', {name: 'Reset to $21.00'}));
+            expect(screen.getByLabelText(/amount/i)).toHaveValue('21');
+            expect(screen.queryByText('Overridden')).not.toBeInTheDocument();
         });
     });
 
@@ -271,7 +341,7 @@ describe('InterCourierChargeDialog', () => {
                 });
             });
 
-            expect(showToast).toHaveBeenCalledWith('Inter-Courier Charge saved successfully', 'success');
+            expect(showToast).toHaveBeenCalledWith('Charge added', 'success');
             expect(onClose).toHaveBeenCalled();
         });
     });
@@ -294,7 +364,7 @@ describe('InterCourierChargeDialog', () => {
                 await Promise.resolve();
             });
 
-            expect(showToast).toHaveBeenCalledWith('An error occurred while saving the charge', 'error');
+            expect(showToast).toHaveBeenCalledWith("Couldn't add the charge. Try again.", 'error');
             expect(onClose).not.toHaveBeenCalled();
             errorSpy.mockRestore();
         });

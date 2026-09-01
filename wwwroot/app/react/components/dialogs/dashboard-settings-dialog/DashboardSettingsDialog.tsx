@@ -1,31 +1,39 @@
 /**
  * React Dashboard Settings Dialog
  *
- * A modern replacement for the AngularJS dashboard-settings-dialog using MUI components.
+ * The gear dialog behind Dispatch, Job Search and the dashboards: refresh
+ * cadences, Auto-mate, the classic/new page toggles, and panel visibility.
+ * Follows the dialog design language in CLAUDE.md.
  */
 
 import React, {useState, useMemo} from 'react';
-import {alpha, type Theme} from '@mui/material/styles';
-import DialogContent from '@mui/material/DialogContent';
-import Chip from '@mui/material/Chip';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Switch from '@mui/material/Switch';
-import Alert from '@mui/material/Alert';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import Divider from '@mui/material/Divider';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import InfoIcon from '@mui/icons-material/Info';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {
+    Alert,
+    Badge,
+    Box,
+    Divider,
+    Group,
+    Paper,
+    Select,
+    Stack,
+    Switch,
+    Text,
+    ThemeIcon,
+    Title,
+    alpha,
+} from '@mantine/core';
+import {Clock, Info, LayoutDashboard, Settings, Sparkles} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+} from '../shared/mantine';
 import {aiAccentColor} from '../../../theme/designTokens';
 import {AutoMateLogo} from '../../common/auto-mate-logo/AutoMateLogo';
+import styles from './DashboardSettingsDialog.module.css';
 
 // Types that mirror the AngularJS interfaces
 export interface RefreshOption {
@@ -97,26 +105,84 @@ export interface DashboardSettingsDialogProps {
     onSave: (result: DashboardSettingsResult) => void;
 }
 
-/** The 36px tinted square each settings section leads with. */
-const sectionIconSx = (palette: 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error') =>
-    (theme: Theme) => ({
-        width: 36,
-        height: 36,
-        borderRadius: 1.5,
-        bgcolor: alpha(theme.palette[palette].main, 0.1),
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    });
+/**
+ * A concrete value, not a Mantine colour name: it feeds inline custom
+ * properties and CSS strings, where a name does not resolve.
+ */
+const BRAND_ACCENT = 'var(--mantine-primary-color-filled)';
 
-/** The bordered card every settings row sits in. */
-const settingsCardSx = (theme: Theme) => ({
-    p: 2,
-    borderRadius: 2,
-    border: `1px solid ${theme.palette.divider}`,
-    bgcolor: 'background.paper',
-});
+/** The tinted square and heading each settings section leads with. */
+function SectionHeading({icon, title, accent = BRAND_ACCENT}: {
+    icon: React.ReactNode;
+    title: string;
+    accent?: string;
+}) {
+    return (
+        <Group gap={12} wrap="nowrap" mb={16}>
+            <ThemeIcon
+                size={36}
+                radius="md"
+                style={{'--ti-bg': alpha(accent, 0.1), '--ti-color': accent} as React.CSSProperties}
+            >
+                {icon}
+            </ThemeIcon>
+            <Title order={5} fw={600}>{title}</Title>
+        </Group>
+    );
+}
 
+/**
+ * One setting: a title, an explanation and a control, in a card that is itself
+ * the click target. Five copies of this markup had drifted apart — the AI rows
+ * carried a hover the panel rows did not, and each repeated the switch's
+ * stopPropagation by hand.
+ */
+function SettingRow({title, description, badge, accent = BRAND_ACCENT, checked, disabled, onToggle}: {
+    title: string;
+    description: React.ReactNode;
+    badge?: React.ReactNode;
+    accent?: string;
+    checked: boolean;
+    /** Dims the row and stops both the card and the switch responding. */
+    disabled?: boolean;
+    onToggle: () => void;
+}) {
+    return (
+        <Paper
+            data-setting-row
+            data-clickable={disabled ? undefined : true}
+            className={styles.settingRow}
+            withBorder
+            radius="md"
+            p={16}
+            onClick={disabled ? undefined : onToggle}
+            style={{
+                '--setting-accent': accent,
+                cursor: disabled ? 'default' : 'pointer',
+                opacity: disabled ? 0.5 : 1,
+            } as React.CSSProperties}
+        >
+            <Group justify="space-between" wrap="nowrap" gap={16}>
+                <Box>
+                    <Group gap={8}>
+                        <Text fz="sm" fw={600}>{title}</Text>
+                        {badge}
+                    </Group>
+                    <Text fz="sm" c="dimmed">{description}</Text>
+                </Box>
+                <Switch
+                    checked={checked}
+                    disabled={disabled}
+                    aria-label={title}
+                    /* The card already toggles; without this a click on the switch counts twice. */
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={onToggle}
+                    style={{'--switch-bg': accent} as React.CSSProperties}
+                />
+            </Group>
+        </Paper>
+    );
+}
 
 /** One "how often does X refresh" row: a label, an explanation and an interval picker. */
 function RefreshIntervalSetting({title, description, value, options, onChange}: {
@@ -127,41 +193,29 @@ function RefreshIntervalSetting({title, description, value, options, onChange}: 
     onChange: (option: RefreshOption) => void;
 }) {
     return (
-        <Paper elevation={0} sx={settingsCardSx}>
-            <Stack
-                direction="row"
-                sx={{
-                    alignItems: "center",
-                    justifyContent: "space-between"
-                }}>
+        <Paper withBorder radius="md" p={16}>
+            <Group justify="space-between" wrap="nowrap" gap={16}>
                 <Box>
-                    <Typography variant="subtitle2" sx={{
-                        fontWeight: 600
-                    }}>
-                        {title}
-                    </Typography>
-                    <Typography variant="body2" sx={{
-                        color: "text.secondary"
-                    }}>
-                        {description}
-                    </Typography>
+                    <Text fz="sm" fw={600}>{title}</Text>
+                    <Text fz="sm" c="dimmed">{description}</Text>
                 </Box>
-                <FormControl size="small" sx={{minWidth: 140}}>
-                    <Select
-                        value={value.id}
-                        onChange={(e) => {
-                            const option = options.find((o) => o.id === e.target.value);
-                            if (option) onChange(option);
-                        }}
-                    >
-                        {options.map((option) => (
-                            <MenuItem key={option.id} value={option.id}>
-                                {option.text}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </Stack>
+                <Select
+                    size="sm"
+                    w={140}
+                    aria-label={title}
+                    allowDeselect={false}
+                    /* Up to three of these render at once over the same options, and
+                       Mantine keeps a closed dropdown mounted — without this every
+                       interval sits in the DOM several times over. */
+                    comboboxProps={{keepMounted: false}}
+                    value={String(value.id)}
+                    onChange={(selected) => {
+                        const option = options.find((o) => String(o.id) === selected);
+                        if (option) onChange(option);
+                    }}
+                    data={options.map((option) => ({value: String(option.id), label: option.text}))}
+                />
+            </Group>
         </Paper>
     );
 }
@@ -238,50 +292,21 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     };
 
     return (
-        <DialogShell
-            open={open}
-            onClose={onClose}
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        overflow: 'hidden',
-                    },
-                },
-            }}
-        >
+        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label={config.title}>
             <DialogHeader
-                icon={<SettingsIcon/>}
+                icon={<Icon lucide={Settings}/>}
                 title={config.title}
                 subtitle="Choose what appears on your dashboard and how often it updates"
                 onClose={onClose}
             />
             {/* Content */}
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
+            <Box bg={dialogContentBg}>
                 {/* Auto-Refresh Section */}
                 {config.showRefreshInterval && (
-                    <Box sx={{p: 3}}>
-                        <Stack
-                            direction="row"
-                            spacing={1.5}
-                            sx={{
-                                alignItems: "center",
-                                mb: 2
-                            }}>
-                            <Box
-                                sx={sectionIconSx('primary')}
-                            >
-                                <ScheduleIcon color="primary" />
-                            </Box>
-                            <Typography variant="h6" sx={{
-                                fontWeight: 600
-                            }}>
-                                Auto-refresh
-                            </Typography>
-                        </Stack>
+                    <Box p={24}>
+                        <SectionHeading icon={<Icon lucide={Clock}/>} title="Auto-refresh"/>
 
-                        <Stack spacing={2}>
-                            {/* Job List Refresh */}
+                        <Stack gap={16}>
                             <RefreshIntervalSetting
                                 title="Job list"
                                 description="How often the job list checks for new and updated jobs"
@@ -290,7 +315,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 onChange={setRefreshInterval}
                             />
 
-                            {/* Tasks Refresh — independent of the Job list cadence */}
+                            {/* Tasks — an independent cadence from the job list's */}
                             {config.showTaskRefresh && (
                                 <RefreshIntervalSetting
                                     title="Tasks"
@@ -301,7 +326,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 />
                             )}
 
-                            {/* Driver Location Refresh */}
                             {config.showDriverLocationRefresh && (
                                 <RefreshIntervalSetting
                                     title="Driver locations"
@@ -315,160 +339,53 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                     </Box>
                 )}
 
-                {config.showRefreshInterval && <Divider />}
+                {config.showRefreshInterval && <Divider/>}
 
                 {/* AI Features Section */}
                 {config.showAiToggle && (
-                    <Box sx={{p: 3}}>
-                        <Stack
-                            direction="row"
-                            spacing={1.5}
-                            sx={{
-                                alignItems: "center",
-                                mb: 2
-                            }}>
-                            <Box
-                                sx={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(aiAccentColor, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <AutoMateLogo size={28} />
-                            </Box>
-                            <Typography variant="h6" sx={{
-                                fontWeight: 600
-                            }}>
-                                Auto-mate Settings
-                            </Typography>
-                        </Stack>
+                    <Box p={24}>
+                        <SectionHeading
+                            icon={<AutoMateLogo size={28}/>}
+                            title="Auto-mate Settings"
+                            accent={aiAccentColor}
+                        />
 
-                        <Stack spacing={2}>
-                            <Paper
-                                elevation={0}
-                                onClick={() => setAiEnabled((prev) => !prev)}
-                                sx={(theme) => ({
-                                    ...settingsCardSx(theme),
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                        borderColor: aiAccentColor,
-                                        bgcolor: alpha(aiAccentColor, 0.02),
-                                    },
-                                })}
-                            >
-                                <Stack
-                                    direction="row"
-                                    sx={{
-                                        alignItems: "center",
-                                        justifyContent: "space-between"
-                                    }}>
-                                    <Box>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Typography variant="subtitle2" sx={{
-                                                fontWeight: 600
-                                            }}>
-                                                Show Auto-mate briefings
-                                            </Typography>
-                                            <Chip
-                                                label="BETA"
-                                                size="small"
-                                                sx={{
-                                                    height: 18,
-                                                    fontSize: '0.625rem',
-                                                    fontWeight: 700,
-                                                    bgcolor: aiAccentColor,
-                                                    color: 'common.white',
-                                                }}
-                                            />
-                                        </Box>
-                                        <Typography variant="body2" sx={{
-                                            color: "text.secondary"
-                                        }}>
-                                            Adds a short AI briefing — verdict, what needs attention, and key facts —
-                                            to the job details, task dashboard, operations, and driver compliance pages.
-                                            Applies to your account only.
-                                        </Typography>
-                                    </Box>
-                                    <Switch
-                                        checked={aiEnabled}
-                                        onClick={(e) => e.stopPropagation()}
-                                        onChange={() => setAiEnabled((prev) => !prev)}
-                                        sx={{
-                                            '& .MuiSwitch-switchBase.Mui-checked': {
-                                                color: aiAccentColor,
-                                            },
-                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                backgroundColor: aiAccentColor,
-                                            },
-                                        }}
-                                    />
-                                </Stack>
-                            </Paper>
+                        <Stack gap={16}>
+                            <SettingRow
+                                title="Show Auto-mate briefings"
+                                badge={
+                                    <Badge
+                                        size="xs"
+                                        c="white"
+                                        style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
+                                    >
+                                        BETA
+                                    </Badge>
+                                }
+                                description="Adds a short AI briefing — verdict, what needs attention, and key facts —
+                                    to the job details, task dashboard, operations, and driver compliance pages.
+                                    Applies to your account only."
+                                accent={aiAccentColor}
+                                checked={aiEnabled}
+                                onToggle={() => setAiEnabled((prev) => !prev)}
+                            />
 
-                            {/* Open automatically — only meaningful while briefings are on,
-                                so the row is disabled/dimmed when "Show Auto-mate briefings"
-                                is off. */}
-                            <Paper
-                                elevation={0}
-                                onClick={aiEnabled ? () => setAiAutoOpen((prev) => !prev) : undefined}
-                                sx={(theme) => ({
-                                    ...settingsCardSx(theme),
-                                    cursor: aiEnabled ? 'pointer' : 'default',
-                                    opacity: aiEnabled ? 1 : 0.5,
-                                    transition: 'all 0.2s ease',
-                                    ...(aiEnabled && {
-                                        '&:hover': {
-                                            borderColor: aiAccentColor,
-                                            bgcolor: alpha(aiAccentColor, 0.02),
-                                        },
-                                    }),
-                                })}
-                            >
-                                <Stack
-                                    direction="row"
-                                    sx={{
-                                        alignItems: "center",
-                                        justifyContent: "space-between"
-                                    }}>
-                                    <Box>
-                                        <Typography variant="subtitle2" sx={{
-                                            fontWeight: 600
-                                        }}>
-                                            Open automatically
-                                        </Typography>
-                                        <Typography variant="body2" sx={{
-                                            color: "text.secondary"
-                                        }}>
-                                            Opens the Auto-mate briefing expanded instead of waiting for a click.
-                                            Applies to your account only.
-                                        </Typography>
-                                    </Box>
-                                    <Switch
-                                        checked={aiAutoOpen}
-                                        disabled={!aiEnabled}
-                                        onClick={(e) => e.stopPropagation()}
-                                        onChange={() => setAiAutoOpen((prev) => !prev)}
-                                        sx={{
-                                            '& .MuiSwitch-switchBase.Mui-checked': {
-                                                color: aiAccentColor,
-                                            },
-                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                backgroundColor: aiAccentColor,
-                                            },
-                                        }}
-                                    />
-                                </Stack>
-                            </Paper>
+                            {/* Only meaningful while briefings are on, so the row is
+                                disabled and dimmed when they are off. */}
+                            <SettingRow
+                                title="Open automatically"
+                                description="Opens the Auto-mate briefing expanded instead of waiting for a click.
+                                    Applies to your account only."
+                                accent={aiAccentColor}
+                                checked={aiAutoOpen}
+                                disabled={!aiEnabled}
+                                onToggle={() => setAiAutoOpen((prev) => !prev)}
+                            />
                         </Stack>
                     </Box>
                 )}
 
-                {config.showAiToggle && <Divider />}
+                {config.showAiToggle && <Divider/>}
 
                 {/* Job Search version toggle — the React rebuild of /jobSearch is
                     now the default; this switches back to the classic page.
@@ -476,53 +393,20 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                     `showJobSearchBetaToggle: true`. Caller persists localStorage
                     and triggers the route redirect after Save. */}
                 {config.showJobSearchBetaToggle && (
-                    <Box sx={{p: 3}}>
-                        <Stack direction="row" spacing={1.5} sx={{alignItems: 'center', mb: 2}}>
-                            <Box
-                                sx={sectionIconSx('primary')}
-                            >
-                                <AutoAwesomeIcon color="primary" />
-                            </Box>
-                            <Typography variant="h6" sx={{fontWeight: 600}}>
-                                Job Search version
-                            </Typography>
-                        </Stack>
-
-                        <Paper
-                            elevation={0}
-                            onClick={() => setJobSearchBetaEnabled((prev) => !prev)}
-                            sx={(theme) => ({
-                                ...settingsCardSx(theme),
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                '&:hover': {
-                                    borderColor: theme.palette.primary.main,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.02),
-                                },
-                            })}
-                        >
-                            <Stack direction="row" sx={{alignItems: 'center', justifyContent: 'space-between'}}>
-                                <Box>
-                                    <Typography variant="subtitle2" sx={{fontWeight: 600}}>
-                                        Use the new Job Search
-                                    </Typography>
-                                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                                        The rebuilt Job Search is now the default — faster filtering, quicker loads,
-                                        and modern dialogs. Turn this off to go back to the classic page. Applies to
-                                        your account only.
-                                    </Typography>
-                                </Box>
-                                <Switch
-                                    checked={jobSearchBetaEnabled}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={() => setJobSearchBetaEnabled((prev) => !prev)}
-                                />
-                            </Stack>
-                        </Paper>
+                    <Box p={24}>
+                        <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Job Search version"/>
+                        <SettingRow
+                            title="Use the new Job Search"
+                            description="The rebuilt Job Search is now the default — faster filtering, quicker loads,
+                                and modern dialogs. Turn this off to go back to the classic page. Applies to
+                                your account only."
+                            checked={jobSearchBetaEnabled}
+                            onToggle={() => setJobSearchBetaEnabled((prev) => !prev)}
+                        />
                     </Box>
                 )}
 
-                {config.showJobSearchBetaToggle && <Divider />}
+                {config.showJobSearchBetaToggle && <Divider/>}
 
                 {/* Dispatch version toggle — the React rebuild of the home/dispatch
                     page is now the default; this switches back to the classic
@@ -530,208 +414,74 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                     dispatchV2 route) sets `showDispatchBetaToggle: true`. Caller
                     persists localStorage and triggers the route redirect after Save. */}
                 {config.showDispatchBetaToggle && (
-                    <Box sx={{p: 3}}>
-                        <Stack direction="row" spacing={1.5} sx={{alignItems: 'center', mb: 2}}>
-                            <Box
-                                sx={sectionIconSx('primary')}
-                            >
-                                <AutoAwesomeIcon color="primary" />
-                            </Box>
-                            <Typography variant="h6" sx={{fontWeight: 600}}>
-                                Dispatch version
-                            </Typography>
-                        </Stack>
-
-                        <Paper
-                            elevation={0}
-                            onClick={() => setDispatchBetaEnabled((prev) => !prev)}
-                            sx={(theme) => ({
-                                ...settingsCardSx(theme),
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                '&:hover': {
-                                    borderColor: theme.palette.primary.main,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.02),
-                                },
-                            })}
-                        >
-                            <Stack direction="row" sx={{alignItems: 'center', justifyContent: 'space-between'}}>
-                                <Box>
-                                    <Typography variant="subtitle2" sx={{fontWeight: 600}}>
-                                        Use the new Dispatch
-                                    </Typography>
-                                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                                        The rebuilt Dispatch is now the default — faster loads, modern dialogs, and
-                                        more customisation options like choosing your columns. Saved layouts follow
-                                        your account, so they persist across browsers and computers. Turn this off to
-                                        go back to the classic page. Applies to your account only.
-                                    </Typography>
-                                </Box>
-                                <Switch
-                                    checked={dispatchBetaEnabled}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={() => setDispatchBetaEnabled((prev) => !prev)}
-                                />
-                            </Stack>
-                        </Paper>
+                    <Box p={24}>
+                        <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Dispatch version"/>
+                        <SettingRow
+                            title="Use the new Dispatch"
+                            description="The rebuilt Dispatch is now the default — faster loads, modern dialogs, and
+                                more customisation options like choosing your columns. Saved layouts follow
+                                your account, so they persist across browsers and computers. Turn this off to
+                                go back to the classic page. Applies to your account only."
+                            checked={dispatchBetaEnabled}
+                            onToggle={() => setDispatchBetaEnabled((prev) => !prev)}
+                        />
                     </Box>
                 )}
 
-                {config.showDispatchBetaToggle && config.showPanels !== false && <Divider />}
+                {config.showDispatchBetaToggle && config.showPanels !== false && <Divider/>}
 
                 {/* Dashboard Panels Section */}
                 {config.showPanels !== false && (
-                <Box sx={{p: 3}}>
-                    <Stack
-                        direction="row"
-                        spacing={1.5}
-                        sx={{
-                            alignItems: "center",
-                            mb: 1
-                        }}>
-                        <Box
-                            sx={sectionIconSx('primary')}
-                        >
-                            <DashboardIcon color="primary" />
-                        </Box>
-                        <Typography variant="h6" sx={{
-                            fontWeight: 600
-                        }}>
-                            Dashboard panels
-                        </Typography>
-                    </Stack>
+                    <Box p={24}>
+                        <SectionHeading icon={<Icon lucide={LayoutDashboard}/>} title="Dashboard panels"/>
 
-                    {config.panelsMovedNotice ? (
-                        <Alert severity="info" sx={{ml: 6}}>
-                            Panel options have moved. Use the Layouts menu in the toolbar, then
-                            <strong> Customize panels</strong>, to choose which panels appear.
-                        </Alert>
-                    ) : config.showDashboards ? (
-                        <>
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: "text.secondary",
-                                    mb: 2,
-                                    ml: 6
-                                }}>
-                                Choose which panels appear on your dashboard
-                            </Typography>
+                        {config.panelsMovedNotice ? (
+                            <Alert color="blue" variant="light" ml={48}>
+                                Panel options have moved. Use the Layouts menu in the toolbar, then
+                                <strong> Customize panels</strong>, to choose which panels appear.
+                            </Alert>
+                        ) : config.showDashboards ? (
+                            <>
+                                <Text fz="sm" c="dimmed" mb={16} ml={48}>
+                                    Choose which panels appear on your dashboard
+                                </Text>
 
-                            <Stack spacing={1}>
-                                {boxList.map((box) => (
-                                    <Paper
-                                        key={box.key}
-                                        elevation={0}
-                                        onClick={() => handleToggleBox(box.key)}
-                                        sx={(theme) => ({
-                                            ...settingsCardSx(theme),
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s ease',
-                                            '&:hover': {
-                                                borderColor: theme.palette.primary.main,
-                                                bgcolor: alpha(theme.palette.primary.main, 0.02),
-                                            },
-                                        })}
-                                    >
-                                        <Stack
-                                            direction="row"
-                                            spacing={2}
-                                            sx={{
-                                                alignItems: "center"
-                                            }}
-                                        >
-                                            <Box
-                                                sx={(theme) => ({
-                                                    width: 40,
-                                                    height: 40,
-                                                    borderRadius: 1.5,
-                                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                })}
-                                            >
-                                                <DashboardIcon
-                                                    sx={(theme) => ({
-                                                        color: theme.palette.primary.main,
-                                                        fontSize: 22,
-                                                    })}
-                                                />
-                                            </Box>
-                                            <Box sx={{flex: 1}}>
-                                                <Typography variant="subtitle2" sx={{
-                                                    fontWeight: 600
-                                                }}>
-                                                    {box.title || box.name}
-                                                </Typography>
-                                                {box.description && (
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{
-                                                            color: "text.secondary"
-                                                        }}
-                                                    >
-                                                        {box.description}
-                                                    </Typography>
-                                                )}
-                                            </Box>
-                                            <Switch
-                                                checked={box.visible ?? true}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onChange={() => handleToggleBox(box.key)}
-                                                color="primary"
-                                            />
-                                        </Stack>
-                                    </Paper>
-                                ))}
-                            </Stack>
-                        </>
-                    ) : (
-                        /* Empty state when custom layout not available */
-                        (<Paper
-                            elevation={0}
-                            sx={(theme) => ({
-                                p: 4,
-                                borderRadius: 2,
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'background.paper',
-                                textAlign: 'center',
-                            })}
-                        >
-                            <Box
-                                sx={(theme) => ({
-                                    width: 56,
-                                    height: 56,
-                                    borderRadius: 2,
-                                    bgcolor: alpha(theme.palette.info.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    mx: 'auto',
-                                    mb: 2,
-                                })}
-                            >
-                                <InfoIcon sx={(theme) => ({fontSize: 28, color: theme.palette.info.main})} />
-                            </Box>
-                            <Typography variant="body1" sx={{
-                                color: "text.secondary"
-                            }}>
-                                Panel visibility is only available with a custom layout.
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: "text.secondary",
-                                    mt: 0.5
-                                }}>
-                                Create a custom layout to choose which panels appear.
-                            </Typography>
-                        </Paper>)
-                    )}
-                </Box>
+                                <Stack gap={8}>
+                                    {boxList.map((box) => (
+                                        <SettingRow
+                                            key={box.key}
+                                            title={box.title || box.name || box.key}
+                                            description={box.description}
+                                            checked={box.visible ?? true}
+                                            onToggle={() => handleToggleBox(box.key)}
+                                        />
+                                    ))}
+                                </Stack>
+                            </>
+                        ) : (
+                            /* Empty state when custom layout not available */
+                            <Paper withBorder radius="md" p={32} ta="center">
+                                <ThemeIcon
+                                    color="blue"
+                                    variant="light"
+                                    size={56}
+                                    radius="md"
+                                    mx="auto"
+                                    mb={16}
+                                >
+                                    <Icon lucide={Info} size={28}/>
+                                </ThemeIcon>
+                                <Text c="dimmed">
+                                    Panel visibility is only available with a custom layout.
+                                </Text>
+                                <Text fz="sm" c="dimmed" mt={4}>
+                                    Create a custom layout to choose which panels appear.
+                                </Text>
+                            </Paper>
+                        )}
+                    </Box>
                 )}
-            </DialogContent>
+            </Box>
             {/* Actions */}
             <DialogFooter
                 onCancel={onClose}

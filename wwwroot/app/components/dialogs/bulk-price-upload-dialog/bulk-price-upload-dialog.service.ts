@@ -28,13 +28,25 @@ class BulkPriceUploadDialogService implements angular.IServiceProvider {
         const manifest = manifestResponse.data;
         const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
 
+        // The island's stylesheet has to be listed alongside its script: an emitted
+        // CSS module is only fetched if it appears here, and a missing one fails
+        // silently — the dialog just renders unstyled. Mirrors routes.ts's
+        // `islandFiles`.
+        const islandFiles = (entry: string) => {
+            const files = [getAssetPath(`${entry}.js`)];
+            if (manifest[`${entry}.css`]) {
+                files.push(getAssetPath(`${entry}.css`));
+            }
+            return files;
+        };
+
         if (!(window as any).React) {
             await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
         }
 
         await this.$ocLazyLoad.load({
             name: 'uDispatch.bulkPriceUploadDialogReact',
-            files: [getAssetPath('bulkPriceUploadDialogReact.js')]
+            files: islandFiles('bulkPriceUploadDialogReact')
         });
     }
 

@@ -7,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 import dayjs from 'dayjs';
 import { FlightSummaryCard } from './FlightSummaryCard';
 import { FlightData, FlightSegmentData } from './types';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 function createSegment(overrides?: Partial<FlightSegmentData>): FlightSegmentData {
     return {

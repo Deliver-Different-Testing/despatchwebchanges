@@ -12,7 +12,6 @@ import {EditAddressDialogViewModel} from '../../../interfaces';
 import type {ToastService} from '../../../services/toastService';
 import {AddressType} from '../../../../enums/address-type.enum';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
 interface EditAddressPayload {
@@ -28,21 +27,19 @@ interface EditAddressPayload {
 const host = createDialogHost<EditAddressPayload, EditAddressDialogViewModel | null>({
     containerId: 'react-edit-address-dialog-root',
     render: ({open, payload, close, showToast}) => islandTree(
-        <MuiThemeIsland>
-            <EditAddressDialog
-                open={open}
-                addressDetails={payload.addressDetails}
-                title={payload.title}
-                submitLabel={payload.submitLabel}
-                showContactInfo={payload.showContactInfo}
-                isUsTenant={payload.isUsTenant}
-                addressType={payload.addressType}
-                readOnly={payload.readOnly}
-                onClose={() => close(null)}
-                onSave={close}
-                showToast={showToast}
-            />
-        </MuiThemeIsland>
+        <EditAddressDialog
+            open={open}
+            addressDetails={payload.addressDetails}
+            title={payload.title}
+            submitLabel={payload.submitLabel}
+            showContactInfo={payload.showContactInfo}
+            isUsTenant={payload.isUsTenant}
+            addressType={payload.addressType}
+            readOnly={payload.readOnly}
+            onClose={() => close(null)}
+            onSave={close}
+            showToast={showToast}
+        />
     ),
 });
 

@@ -2,7 +2,7 @@ import React from 'react';
 import {screen} from '@testing-library/react';
 import {CustomizePanelsDialog, CustomizePanelsDialogProps} from './CustomizePanelsDialog';
 import type {DashboardBox} from '../dashboard-settings-dialog/DashboardSettingsDialog';
-import { createProps, renderWithTheme } from '../../../__testUtils__';
+import { createProps, renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 
 // Shared fast userEvent instance (see setupUser).
@@ -25,7 +25,7 @@ const createMockProps = (overrides?: Partial<CustomizePanelsDialogProps>) =>
 
 describe('CustomizePanelsDialog', () => {
     it('renders a visibility switch per panel reflecting initial state', () => {
-        renderWithTheme(<CustomizePanelsDialog {...createMockProps()} />);
+        renderWithMantine(<CustomizePanelsDialog {...createMockProps()} />);
 
         expect(screen.getByText('Customize panels')).toBeInTheDocument();
         expect(screen.getByLabelText('Live Job Data')).toBeChecked();
@@ -33,18 +33,23 @@ describe('CustomizePanelsDialog', () => {
     });
 
     it("renders each panel's own icon glyph", () => {
-        renderWithTheme(<CustomizePanelsDialog {...createMockProps()} />);
+        renderWithMantine(<CustomizePanelsDialog {...createMockProps()} />);
 
-        // Each panel row renders its glyph as an MUI SvgIcon.
+        /*
+         * SymbolIcon stamps the name it resolved, which Lucide and Tabler do not
+         * emit a test hook of their own for. Asserting on the stamp proves the
+         * panel's own glyph reached the DOM — querying for any <svg> only proved
+         * that something drew one.
+         */
         const jobListRow = screen.getByText('Live Job Data').closest('li')!;
         const mapRow = screen.getByText('Map').closest('li')!;
-        expect(jobListRow.querySelector('svg')).toBeInTheDocument();
-        expect(mapRow.querySelector('svg')).toBeInTheDocument();
+        expect(jobListRow.querySelector('[data-symbol-icon="filter_list"]')).toBeInTheDocument();
+        expect(mapRow.querySelector('[data-symbol-icon="map"]')).toBeInTheDocument();
     });
 
     it('toggles a panel and returns the updated boxes on Save', async () => {
         const onSave = jest.fn();
-        renderWithTheme(<CustomizePanelsDialog {...createMockProps({onSave})} />);
+        renderWithMantine(<CustomizePanelsDialog {...createMockProps({onSave})} />);
 
         await userEvent.click(screen.getByLabelText('Map'));
         await userEvent.click(screen.getByRole('button', {name: /save/i}));
@@ -56,7 +61,7 @@ describe('CustomizePanelsDialog', () => {
     });
 
     it('lets every layout be customised, including Default', () => {
-        renderWithTheme(<CustomizePanelsDialog {...createMockProps({title: 'Default'})} />);
+        renderWithMantine(<CustomizePanelsDialog {...createMockProps({title: 'Default'})} />);
 
         expect(screen.getByLabelText('Live Job Data')).toBeEnabled();
         expect(screen.getByRole('button', {name: /save/i})).toBeEnabled();
@@ -64,7 +69,7 @@ describe('CustomizePanelsDialog', () => {
 
     it('calls onClose from Cancel', async () => {
         const onClose = jest.fn();
-        renderWithTheme(<CustomizePanelsDialog {...createMockProps({onClose})} />);
+        renderWithMantine(<CustomizePanelsDialog {...createMockProps({onClose})} />);
 
         await userEvent.click(screen.getByRole('button', {name: /cancel/i}));
         expect(onClose).toHaveBeenCalledTimes(1);

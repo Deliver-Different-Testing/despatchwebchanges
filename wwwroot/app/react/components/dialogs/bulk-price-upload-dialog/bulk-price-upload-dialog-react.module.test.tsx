@@ -13,9 +13,6 @@ jest.mock('react-dom/client', () => ({
 }));
 
 // Mock the theme
-jest.mock('../../../theme/muiTheme', () => ({
-    getTheme: jest.fn(() => ({})),
-}));
 
 // Mock the API service
 jest.mock('../../../services/bulkPriceApi', () => ({

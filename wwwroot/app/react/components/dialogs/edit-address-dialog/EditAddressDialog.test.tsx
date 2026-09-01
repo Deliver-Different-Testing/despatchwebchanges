@@ -5,14 +5,13 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EditAddressDialog, EditAddressDialogProps} from './EditAddressDialog';
 import {EditAddressDialogViewModel, HereMapsLocationResult, HereMapsLookupResponse,} from '../../../interfaces';
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../services/addressApi';
-import {suppressConsoleError} from '../../../__testUtils__';
+import {renderWithMantine, suppressConsoleError} from '../../../__testUtils__';
 import {HERE_US_ADDRESS_FIELDS} from '../../../__testUtils__/mockData';
 
 // Mock the React Query hooks
@@ -34,7 +33,6 @@ const mockUseHereMapsApiKey = useHereMapsApiKey as jest.MockedFunction<typeof us
 const mockAddressApi = addressApi as jest.Mocked<typeof addressApi>;
 
 // Create a theme for testing
-const theme = createTheme();
 
 // Create a QueryClient for testing
 const createTestQueryClient = () =>
@@ -49,27 +47,16 @@ const createTestQueryClient = () =>
 // Helper to render component with theme and query client
 function renderWithProviders(props: EditAddressDialogProps) {
     const queryClient = createTestQueryClient();
-    return render(
+    return renderWithMantine(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                <EditAddressDialog {...props} />
-            </ThemeProvider>
+            <EditAddressDialog {...props} />
         </QueryClientProvider>
     );
 }
 
-// MUI <Select> renders the trigger as a div[role="combobox"] (vs MUI Autocomplete's
-// input[role="combobox"]). The State Select has no explicit labelId, so we locate
-// it by walking up from its visible "State *" label to the enclosing FormControl
-// and then querying the combobox role within that subtree.
+/** The State picker, by its accessible name rather than its markup. */
 function getStateSelect(): HTMLElement {
-    const label = screen.getAllByText('State *').find((el) => el.tagName === 'LABEL');
-    if (!label) throw new Error('State * label not found');
-    const formControl = label.closest('.MuiFormControl-root');
-    if (!formControl) throw new Error('FormControl not found for State select');
-    const combobox = formControl.querySelector('[role="combobox"]');
-    if (!combobox) throw new Error('combobox not found within State FormControl');
-    return combobox as HTMLElement;
+    return screen.getByRole('combobox', {name: /State/});
 }
 
 // Default props factory
@@ -288,6 +275,18 @@ describe('EditAddressDialog', () => {
             expect(screen.getByText('Address Details')).toBeInTheDocument();
             expect(screen.getByText('Location Preview')).toBeInTheDocument();
         });
+
+        /*
+         * HERE draws its info bubbles and marker tooltips inside the map container
+         * at z-index ~1001. Without a stacking context on the wrapper they paint
+         * over the sibling zoom rail and it stops being clickable — the trap
+         * CLAUDE.md records, which has already shipped once.
+         */
+        it('traps the map SDK z-index below the control rail', () => {
+            renderWithProviders(createDefaultProps());
+
+            expect(screen.getByTestId('edit-address-map-wrapper')).toHaveStyle({isolation: 'isolate'});
+        });
     });
 
     describe('Address Format', () => {
@@ -300,8 +299,7 @@ describe('EditAddressDialog', () => {
             expect(screen.getByLabelText(/ZIP Code/)).toBeInTheDocument();
             expect(screen.getByLabelText(/Unit\/Suite/)).toBeInTheDocument();
             expect(screen.getByLabelText(/Country/)).toBeInTheDocument();
-            const stateLabels = screen.getAllByText('State *');
-            expect(stateLabels.length).toBeGreaterThan(0);
+            expect(getStateSelect()).toBeInTheDocument();
         });
 
         it('shows NZ-specific fields (Suburb, City, Post Code, Unit/Flat/Suite, Country)', () => {
@@ -371,7 +369,9 @@ describe('EditAddressDialog', () => {
             expect(screen.getByDisplayValue('Suite 100')).toBeInTheDocument();
             expect(screen.getByDisplayValue('350')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Fifth Avenue')).toBeInTheDocument();
-            expect(screen.getByDisplayValue('New York')).toBeInTheDocument();
+            // City and State both read "New York" now that the State picker is an
+            // input rather than a div, so this one names its field.
+            expect(screen.getByLabelText(/City/)).toHaveValue('New York');
             expect(screen.getByDisplayValue('10118')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Main entrance')).toBeInTheDocument();
 
@@ -847,8 +847,7 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            const stateLabels = screen.getAllByText('State *');
-            expect(stateLabels.length).toBeGreaterThan(0);
+            expect(getStateSelect()).toBeInTheDocument();
         });
 
         it('does not show state selection for NZ tenant', () => {
@@ -867,7 +866,7 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const stateSelect = getStateSelect();
-            expect(stateSelect).toHaveTextContent('New York');
+            expect(stateSelect).toHaveValue('New York');
         });
 
         it('populates the State dropdown when addressLine6 holds the full state name', () => {
@@ -880,7 +879,7 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const stateSelect = getStateSelect();
-            expect(stateSelect).toHaveTextContent('New York');
+            expect(stateSelect).toHaveValue('New York');
         });
 
         it('populates the State dropdown when stateAbbreviation itself is a full name', () => {
@@ -893,7 +892,7 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const stateSelect = getStateSelect();
-            expect(stateSelect).toHaveTextContent('New York');
+            expect(stateSelect).toHaveValue('New York');
         });
 
         it('handles multi-word state names in addressLine6', () => {
@@ -906,7 +905,7 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const stateSelect = getStateSelect();
-            expect(stateSelect).toHaveTextContent('North Carolina');
+            expect(stateSelect).toHaveValue('North Carolina');
         });
     });
 

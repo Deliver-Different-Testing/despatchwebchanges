@@ -15,13 +15,13 @@
 
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 import {AiSummaryPanel} from './AiSummaryPanel';
 import type {AiSummaryResponse} from '../../../interfaces/ai';
 
 // AiSummaryPanel is still MUI but renders the Mantine <AutoMateLogo>, so it needs
 // Mantine outside and MUI inside — the island coexistence order.
-const renderWithTheme = renderWithMantineOverMui;
+const renderWithTheme = renderWithMantine;
 
 // Helper to create a mock fetchSummary that resolves with a summary
 const createMockFetch = (summary = 'Test summary content', delay = 0) => {

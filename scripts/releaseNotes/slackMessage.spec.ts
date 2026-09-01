@@ -1,17 +1,61 @@
 /** @jest-environment node */
+import { buildReleaseNotes, type ReleaseMergeRequest, type ReleaseNotes } from './buildNotes';
 import {
-    buildSlackBlocks,
+    buildDetailPost,
+    buildDirectCommitPost,
+    buildReleasePost,
+    buildSummaryBlocks,
     chunkForSlack,
+    slackDate,
+    summaryText,
     toSlackMrkdwn,
-    SLACK_BLOCK_LIMIT,
     SLACK_SECTION_LIMIT,
+    type SlackBlock,
 } from './slackMessage';
 
+const projectUrl = 'https://git.customd.com/urgent-couriers/despatchweb';
+const sha = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
+
+const mr = (overrides: Partial<ReleaseMergeRequest> = {}): ReleaseMergeRequest => ({
+    iid: 1152,
+    title: 'Let DF Admin decide which dashboards a Network Partner can open',
+    webUrl: `${projectUrl}/-/merge_requests/1152`,
+    authorName: 'Jacob T',
+    sourceBranch: 'feat/np-dashboard-visibility',
+    labels: [],
+    description: [
+        '## What changed',
+        'DF Admin can now choose which dashboards a Network Partner sees.',
+        '',
+        '## How to test',
+        'Log in as DF Admin and untick a dashboard.',
+    ].join('\n'),
+    ...overrides,
+});
+
+const notesFor = (mergeRequests: ReleaseMergeRequest[], directCommits: { id: string; title: string }[] = []) =>
+    buildReleaseNotes({ mergeRequests, directCommits });
+
+const summary = (notes: ReleaseNotes, overrides: Record<string, unknown> = {}): SlackBlock[] =>
+    buildSummaryBlocks({
+        environmentLabel: 'Production',
+        environmentEmoji: '🚀',
+        tenantCount: 8,
+        deployedAt: '2026-09-02T04:12:00Z',
+        sha,
+        pipelineUrl: `${projectUrl}/-/pipelines/145503`,
+        compareUrl: `${projectUrl}/-/compare/oldsha...${sha}`,
+        notes,
+        ...overrides,
+    } as Parameters<typeof buildSummaryBlocks>[0]);
+
+const textOf = (blocks: SlackBlock[]) =>
+    blocks.map((block) => block.text?.text ?? block.elements?.[0].text ?? '').join('\n');
+
 describe('toSlackMrkdwn', () => {
-    it('converts the markdown the note generator emits into Slack mrkdwn', () => {
+    it('converts markdown headings, bold and links into Slack mrkdwn', () => {
         const markdown = [
-            '# Release candidate rc-2026.09.1',
-            '### !1148 — POD report',
+            '### Background',
             '_Jacob T · [view MR](https://git.customd.com/mr/1148)_',
             '**How to test**',
             '- Export a POD',
@@ -19,8 +63,7 @@ describe('toSlackMrkdwn', () => {
 
         expect(toSlackMrkdwn(markdown)).toBe(
             [
-                '*Release candidate rc-2026.09.1*',
-                '*!1148 — POD report*',
+                '*Background*',
                 '_Jacob T · <https://git.customd.com/mr/1148|view MR>_',
                 '*How to test*',
                 '- Export a POD',
@@ -30,6 +73,12 @@ describe('toSlackMrkdwn', () => {
 
     it('leaves blockquotes, code spans and warning markers alone', () => {
         expect(toSlackMrkdwn('> ⚠️ 2 item(s) missing `rc-2026.09.1`')).toBe('> ⚠️ 2 item(s) missing `rc-2026.09.1`');
+    });
+
+    it('escapes angle brackets so Slack does not swallow component names', () => {
+        expect(toSlackMrkdwn('Rebuilt on <DialogShell> & <DialogFooter>')).toBe(
+            'Rebuilt on &lt;DialogShell&gt; &amp; &lt;DialogFooter&gt;',
+        );
     });
 });
 
@@ -60,52 +109,171 @@ describe('chunkForSlack', () => {
     });
 });
 
-describe('buildSlackBlocks', () => {
-    const projectUrl = 'https://git.customd.com/urgent-couriers/despatchweb';
-    const message = {
-        environmentLabel: 'Tenant staging',
-        sha: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678',
-        pipelineUrl: `${projectUrl}/-/pipelines/145503`,
-        compareUrl: `${projectUrl}/-/compare/oldsha...a1b2c3d4e5f60718293a4b5c6d7e8f9012345678`,
-        notes: '**All good**',
-    };
+describe('slackDate', () => {
+    it('emits a date token so every reader sees their own timezone, with a UTC fallback', () => {
+        expect(slackDate('2026-09-02T04:12:00Z')).toBe(
+            '<!date^1788322320^{date_short_pretty} at {time}|2026-09-02 04:12 UTC>',
+        );
+    });
+});
 
-    it('marks the environment in the header and the commit and range in the context line', () => {
-        const blocks = buildSlackBlocks(message);
+describe('summaryText', () => {
+    it('reads as a notification preview, counting only user-visible changes', () => {
+        const notes = notesFor([
+            mr({ iid: 1, sourceBranch: 'feat/a' }),
+            mr({ iid: 2, sourceBranch: 'fix/b' }),
+            mr({ iid: 3, sourceBranch: 'chore/c' }),
+        ]);
+
+        expect(summaryText('Production', notes)).toBe('Live on Production — 2 changes (1 new, 1 fixed)');
+    });
+
+    it('gets the singular right, and says so when nothing shipped', () => {
+        expect(summaryText('Staging', notesFor([mr()]))).toBe('Live on Staging — 1 change (1 new)');
+        expect(summaryText('Staging', notesFor([]))).toBe('Live on Staging — no changes found');
+    });
+});
+
+describe('buildSummaryBlocks', () => {
+    it('leads with the environment, then the count, then one bullet per change grouped by kind', () => {
+        const blocks = summary(
+            notesFor([
+                mr({ iid: 1152 }),
+                mr({
+                    iid: 1146,
+                    sourceBranch: 'fix/pod-images-on-scheduled-jobs',
+                    webUrl: `${projectUrl}/-/merge_requests/1146`,
+                    description: '## What changed\nPOD images now appear on exports for scheduled jobs.',
+                }),
+            ]),
+        );
 
         expect(blocks[0]).toEqual({
             type: 'header',
-            text: { type: 'plain_text', text: 'Deployed to Tenant staging', emoji: true },
+            text: { type: 'plain_text', text: '🚀 Live on Production', emoji: true },
+        });
+        expect(blocks[1].elements?.[0].text).toBe('8 tenants · <!date^1788322320^{date_short_pretty} at {time}|2026-09-02 04:12 UTC>');
+        expect(blocks[2].text?.text).toBe('*2 changes*  ·  1 new · 1 fixed');
+        expect(blocks[3]).toEqual({ type: 'divider' });
+
+        const body = textOf(blocks);
+        expect(body).toContain(
+            `*✨ New*\n• DF Admin can now choose which dashboards a Network Partner sees.  <${projectUrl}/-/merge_requests/1152|!1152>`,
+        );
+        expect(body).toContain(
+            `*🛠 Fixed*\n• POD images now appear on exports for scheduled jobs.  <${projectUrl}/-/merge_requests/1146|!1146>`,
+        );
+    });
+
+    it('collapses internal work to one line instead of a group', () => {
+        const body = textOf(summary(notesFor([mr({ iid: 1, sourceBranch: 'feat/a' }), mr({ iid: 2, sourceBranch: 'chore/b' })])));
+
+        expect(body).toContain('*1 change*  ·  1 new');
+        expect(body).toContain('_Plus 1 internal change — dependencies, refactors and tooling, with no user-visible effect._');
+        expect(body).not.toContain('*📋 Other changes*');
+    });
+
+    it('puts the commit, links and any missing test steps in a quiet footer, not at the top', () => {
+        const blocks = summary(notesFor([mr({ description: '## What changed\nSomething.' })]));
+        const footer = blocks.at(-1)?.elements?.[0].text ?? '';
+
+        expect(footer).toBe(
+            `\`a1b2c3d4\` · <${projectUrl}/-/pipelines/145503|pipeline> · <${projectUrl}/-/compare/oldsha...${sha}|compare> · ⚠️ 1 change has no test steps`,
+        );
+        expect(blocks[2].text?.text).not.toContain('⚠️');
+    });
+
+    it('drops the compare link and the warning when there is nothing to say', () => {
+        const footer = summary(notesFor([mr()]), { compareUrl: null }).at(-1)?.elements?.[0].text ?? '';
+
+        expect(footer).toBe(`\`a1b2c3d4\` · <${projectUrl}/-/pipelines/145503|pipeline>`);
+    });
+
+    it('omits the tenant count and timestamp on a single-environment stage', () => {
+        const blocks = summary(notesFor([mr()]), { tenantCount: 1, deployedAt: null });
+
+        expect(blocks[1].type).toBe('section');
+    });
+
+    it('says so plainly when a deployment carried no merge requests', () => {
+        expect(textOf(summary(notesFor([])))).toContain('_No merge requests in this deployment._');
+    });
+
+    it('says so when everything in the deployment was internal', () => {
+        const body = textOf(summary(notesFor([mr({ sourceBranch: 'chore/bump' })])));
+
+        expect(body).toContain('*No user-visible changes* in this deployment.');
+        expect(body).toContain('_Plus 1 internal change');
+    });
+});
+
+describe('buildDetailPost', () => {
+    it('carries the tester detail: who, what, how to test and what else to check', () => {
+        const [change] = notesFor([
+            mr({ description: `${mr().description}\n\n## Risk / areas touched\nCheck the exports.` }),
+        ]).changes;
+        const post = buildDetailPost(change);
+        const body = textOf(post.blocks);
+
+        expect(post.text).toBe('!1152 — Let DF Admin decide which dashboards a Network Partner can open');
+        expect(body).toContain(
+            `*!1152 — Let DF Admin decide which dashboards a Network Partner can open*\n_Jacob T · <${projectUrl}/-/merge_requests/1152|view MR>_`,
+        );
+        expect(body).toContain('DF Admin can now choose which dashboards a Network Partner sees.');
+        expect(body).toContain('*How to test*\nLog in as DF Admin and untick a dashboard.');
+        expect(body).toContain('*Also check*\nCheck the exports.');
+    });
+
+    it('keeps the warning against the change itself when the author left a section empty', () => {
+        const [change] = notesFor([mr({ description: '' })]).changes;
+        const body = textOf(buildDetailPost(change).blocks);
+
+        expect(body).toContain('⚠️ *No description supplied* — see the MR.');
+        expect(body).toContain('⚠️ *No test steps supplied* — check with the author before signing off.');
+    });
+});
+
+describe('buildDirectCommitPost', () => {
+    it('lists commits pushed straight to master with a warning', () => {
+        const body = textOf(buildDirectCommitPost([{ id: 'abc1234def', title: 'Bump nuget packages' }]).blocks);
+
+        expect(body).toContain('*⚠️ Commits with no merge request*');
+        expect(body).toContain('• `abc1234` Bump nuget packages');
+    });
+});
+
+describe('buildReleasePost', () => {
+    it('posts one thread reply per change, plus one for any direct commits', () => {
+        const post = buildReleasePost({
+            environmentLabel: 'Production',
+            environmentEmoji: '🚀',
+            tenantCount: 8,
+            deployedAt: '2026-09-02T04:12:00Z',
+            sha,
+            pipelineUrl: `${projectUrl}/-/pipelines/145503`,
+            compareUrl: null,
+            notes: notesFor([mr({ iid: 1 }), mr({ iid: 2 })], [{ id: 'abc1234def', title: 'Bump nuget packages' }]),
         });
 
-        const context = blocks[1].elements?.[0].text ?? '';
-        expect(context).toContain('a1b2c3d4');
-        expect(context).toContain(`<${message.pipelineUrl}|pipeline>`);
-        expect(context).toContain(`<${message.compareUrl}|changes>`);
-        expect(blocks[2]).toEqual({ type: 'divider' });
-        expect(blocks[3]).toEqual({ type: 'section', text: { type: 'mrkdwn', text: '*All good*' } });
+        expect(post.text).toBe('Live on Production — 2 changes (2 new)');
+        expect(post.replies).toHaveLength(3);
+        expect(post.replies.at(-1)?.text).toBe('1 commit with no merge request');
     });
 
-    it('drops the range link when the environment has no previous deployment to compare against', () => {
-        const context = buildSlackBlocks({ ...message, compareUrl: null })[1].elements?.[0].text ?? '';
+    it('keeps every message well inside the 50-block cap even for a huge deployment', () => {
+        const mergeRequests = Array.from({ length: 60 }, (_, i) => mr({ iid: i + 1 }));
+        const post = buildReleasePost({
+            environmentLabel: 'Production',
+            environmentEmoji: '🚀',
+            tenantCount: 8,
+            deployedAt: null,
+            sha,
+            pipelineUrl: `${projectUrl}/-/pipelines/145503`,
+            compareUrl: null,
+            notes: notesFor(mergeRequests),
+        });
 
-        expect(context).not.toContain('|changes>');
-        expect(context).toContain(`<${message.pipelineUrl}|pipeline>`);
-    });
-
-    it('truncates and links out rather than failing when a deployment exceeds the Slack block cap', () => {
-        const notes = Array.from({ length: 200 }, (_, i) => `${'z'.repeat(2000)}${i}`).join('\n\n');
-        const blocks = buildSlackBlocks({ ...message, notes });
-
-        expect(blocks.length).toBeLessThanOrEqual(SLACK_BLOCK_LIMIT);
-        expect(JSON.stringify(blocks.at(-1))).toContain('too long to post in full');
-        expect(JSON.stringify(blocks.at(-1))).toContain(message.compareUrl);
-    });
-
-    it('falls back to the pipeline when a truncated deployment has no range to link', () => {
-        const notes = Array.from({ length: 200 }, (_, i) => `${'z'.repeat(2000)}${i}`).join('\n\n');
-        const blocks = buildSlackBlocks({ ...message, compareUrl: null, notes });
-
-        expect(JSON.stringify(blocks.at(-1))).toContain(message.pipelineUrl);
+        expect(post.blocks.length).toBeLessThan(50);
+        post.replies.forEach((reply) => expect(reply.blocks.length).toBeLessThan(50));
     });
 });

@@ -6,32 +6,11 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
-import DialogContent from '@mui/material/DialogContent';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Alert from '@mui/material/Alert';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import FlightIcon from '@mui/icons-material/Flight';
-import PersonIcon from '@mui/icons-material/Person';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
-import EditIcon from '@mui/icons-material/Edit';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import {ActionIcon, Alert, Badge, Box, Button, Checkbox, Divider, Group, Loader, Paper, Stack, Text, Textarea, TextInput, Title} from '@mantine/core';
 import {DateTimePicker} from '@mantine/dates';
+import {ArrowRight, Ban, CircleAlert, CircleCheck, Clock, Pencil, TriangleAlert, User} from 'lucide-react';
+import {IconPackage, IconPlane, IconTruck} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
 import dayjs, {Dayjs} from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import utc from 'dayjs/plugin/utc';
@@ -46,12 +25,20 @@ import {
     FlightCargoProcessing,
     FlightSegment,
 } from './types';
-import {AgentEmailFields, type AgentEmailState, DialogFooter, DialogHeader, DialogShell} from '../shared';
+import {
+    AgentEmailFields,
+    type AgentEmailState,
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+    sectionPaperProps,
+} from '../shared/mantine';
 
 /**
  * `DateTimePicker` is string-valued, so these two fields are wall-clock end to end —
- * no instant is constructed and no zone is applied. The surrounding dialog is still
- * MUI; see the plan's Phase 7b note on picker-only conversions.
+ * no instant is constructed and no zone is applied.
  */
 const PICKER_VALUE_FORMAT = 'YYYY-MM-DD HH:mm';
 const PICKER_DISPLAY_FORMAT = 'DD MMM YYYY HH:mm';
@@ -64,6 +51,15 @@ const applyPicked = (value: string | null, set: (next: Dayjs) => void): void => 
     if (parsed?.isValid()) {
         set(parsed);
     }
+};
+
+/** Glyphs the cargo calculation can name. */
+const STATUS_ICONS: Record<string, typeof Clock> = {
+    check_circle: CircleCheck,
+    cancel: Ban,
+    warning: TriangleAlert,
+    error: CircleAlert,
+    schedule: Clock,
 };
 
 dayjs.extend(duration);
@@ -480,381 +476,274 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
         onConfirm(result);
     };
 
-    // Get status icon component
+    /*
+     * The status glyph is chosen from a name the calculation supplies, so this is a
+     * registry rather than a call site: it keeps its own table of direct imports and
+     * stamps the name it resolved. Lucide emits no test hook of its own, where MUI
+     * auto-generated data-testid="CheckCircleIcon".
+     */
     const getStatusIcon = (iconName: string, className: string) => {
-        const color: 'success' | 'warning' | 'error' | 'inherit' = className.includes('valid') || className.includes('sufficient') || className.includes('open')
-            ? 'success'
+        const color = className.includes('valid') || className.includes('sufficient') || className.includes('open')
+            ? 'green'
             : className.includes('warning')
-                ? 'warning'
+                ? 'yellow'
                 : className.includes('critical') || className.includes('invalid') || className.includes('closed') || className.includes('error')
-                    ? 'error'
-                    : 'inherit';
+                    ? 'red'
+                    : undefined;
 
-        switch (iconName) {
-            case 'check_circle':
-                return <CheckCircleIcon color={color}/>;
-            case 'cancel':
-                return <CancelIcon color={color}/>;
-            case 'warning':
-                return <WarningIcon color={color}/>;
-            case 'error':
-                return <ErrorIcon color={color}/>;
-            case 'schedule':
-                return <ScheduleIcon color="inherit"/>;
-            default:
-                return <ScheduleIcon color="inherit"/>;
-        }
+        const glyph = STATUS_ICONS[iconName] ?? Clock;
+        // 'schedule' is neutral by definition — it reports a time, not a verdict.
+        const tone = iconName === 'schedule' || !STATUS_ICONS[iconName] ? undefined : color;
+
+        return <Icon lucide={glyph} color={tone && `var(--mantine-color-${tone}-filled)`} data-status-icon={iconName}/>;
     };
 
     return (
-            <DialogShell
-                open={open}
+        <DialogShell
+            opened={open}
+            onClose={onClose}
+            size={dialogSize.md}
+            label={dialogTitle}
+        >
+            <DialogHeader
+                icon={mode === 'flight' ? <Icon tabler={IconPlane}/> : <Icon lucide={User}/>}
+                title={dialogTitle}
+                subtitle={
+                    mode === 'flight' && departureAirport && arrivalAirport
+                        ? `${departureAirport} → ${arrivalAirport}`
+                        : undefined
+                }
                 onClose={onClose}
-                maxWidth="md"
-                slotProps={{
-                    paper: {
-                        sx: {
-                            overflow: 'hidden',
-                            maxHeight: '90vh',
-                        },
-                    },
-                }}
-            >
-                <DialogHeader
-                    icon={mode === 'flight' ? <FlightIcon/> : <PersonIcon/>}
-                    title={dialogTitle}
-                    subtitle={
-                        mode === 'flight' && departureAirport && arrivalAirport
-                            ? `${departureAirport} → ${arrivalAirport}`
-                            : undefined
-                    }
-                    onClose={onClose}
-                />
+            />
 
-                {/* Content */}
-                <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
-                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 3}}>
-                        {/* Flight Route Section */}
-                        {mode === 'flight' && flight && (
-                            <Paper elevation={0} sx={{p: 2, border: '1px solid', borderColor: 'divider'}}>
-                                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                                    {/* Departure */}
-                                    <Box sx={{textAlign: 'center', flex: 1}}>
-                                        <Typography variant="h4" color="primary" sx={{
-                                            fontWeight: 700
-                                        }}>
-                                            {departureAirport}
-                                        </Typography>
-                                        {departureTime && (
-                                            <Typography variant="body2" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                {departureTime.format('MMM D, HH:mm')}
-                                            </Typography>
-                                        )}
-                                    </Box>
-
-                                    {/* Arrow and Flight Number */}
-                                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', px: 3}}>
-                                        <Chip
-                                            icon={<FlightIcon/>}
-                                            label={flightNumber}
-                                            size="small"
-                                            color="primary"
-                                        />
-                                        <ArrowForwardIcon sx={{fontSize: 32, color: 'text.secondary', mt: 1}}/>
-                                    </Box>
-
-                                    {/* Arrival */}
-                                    <Box sx={{textAlign: 'center', flex: 1}}>
-                                        <Typography variant="h4" color="primary" sx={{
-                                            fontWeight: 700
-                                        }}>
-                                            {arrivalAirport}
-                                        </Typography>
-                                        {arrivalTime && (
-                                            <Typography variant="body2" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                {arrivalTime.format('MMM D, HH:mm')}
-                                            </Typography>
-                                        )}
-                                    </Box>
-                                </Box>
-                            </Paper>
-                        )}
-
-                        {/* Cargo Processing Section (Flight mode only) */}
-                        {mode === 'flight' && (
-                            <Box sx={{display: 'flex', gap: 2}}>
-                                {/* Cargo Facility Hours */}
-                                <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
-                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
-                                        <LocalShippingIcon color="action" fontSize="small"/>
-                                        <Typography variant="subtitle2" sx={{
-                                            color: "text.secondary"
-                                        }}>
-                                            Cargo Facility
-                                        </Typography>
-                                    </Box>
-                                    {isCalculatingTimes ? (
-                                        <CircularProgress size={20}/>
-                                    ) : cargoStatus ? (
-                                        <>
-                                            <Typography variant="h6" sx={{
-                                                fontWeight: 600
-                                            }}>
-                                                {cargoStatus.hours}
-                                            </Typography>
-                                            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5}}>
-                                                {getStatusIcon(cargoStatus.icon, cargoStatus.class)}
-                                                <Typography variant="body2" sx={{
-                                                    color: "text.secondary"
-                                                }}>
-                                                    {cargoStatus.text}
-                                                </Typography>
-                                            </Box>
-                                        </>
-                                    ) : null}
-                                </Paper>
-
-                                {/* Processing Time */}
-                                <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
-                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
-                                        <AccessTimeIcon color="action" fontSize="small"/>
-                                        <Typography variant="subtitle2" sx={{
-                                            color: "text.secondary"
-                                        }}>
-                                            Processing Time
-                                        </Typography>
-                                    </Box>
-                                    {isCalculatingTimes ? (
-                                        <CircularProgress size={20}/>
-                                    ) : cargoProcessing ? (
-                                        <Typography variant="h6" sx={{
-                                            fontWeight: 600
-                                        }}>
-                                            {cargoProcessing.processingTimeMins} min
-                                        </Typography>
-                                    ) : null}
-                                </Paper>
-
-                                {/* Package Ready */}
-                                <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
-                                    <Box sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        mb: 1
-                                    }}>
-                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                            <InventoryIcon color="action" fontSize="small"/>
-                                            <Typography variant="subtitle2" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                Package Ready
-                                            </Typography>
-                                        </Box>
-                                        <IconButton size="small"
-                                                    onClick={() => setPackageTimeEditEnabled(!packageTimeEditEnabled)}>
-                                            <EditIcon fontSize="small"/>
-                                        </IconButton>
-                                    </Box>
-                                    {isCalculatingTimes ? (
-                                        <CircularProgress size={20}/>
-                                    ) : packageTimeEditEnabled ? (
-                                        <DateTimePicker
-                                            aria-label="Package ready"
-                                            value={pickerValue(packageReadyTime)}
-                                            onChange={(value) => applyPicked(value, setPackageReadyTime)}
-                                            valueFormat={PICKER_DISPLAY_FORMAT}
-                                            timePickerProps={{format: '24h', withDropdown: true}}
-                                            size="sm"
-                                        />
-                                    ) : packageReadyTime ? (
-                                        <>
-                                            <Typography variant="h6" sx={{
-                                                fontWeight: 600
-                                            }}>
-                                                {packageReadyTime.format('HH:mm')}
-                                            </Typography>
-                                            <Typography variant="body2" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                {packageReadyTime.format('MMM D, YYYY')}
-                                            </Typography>
-                                            {cargoIndicator && (
-                                                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5}}>
-                                                    {getStatusIcon(cargoIndicator.icon, cargoIndicator.class)}
-                                                    <Typography variant="body2" sx={{
-                                                        color: "text.secondary"
-                                                    }}>
-                                                        {cargoIndicator.text}
-                                                    </Typography>
-                                                </Box>
-                                            )}
-                                        </>
-                                    ) : null}
-                                </Paper>
+            {/* Content */}
+            <Stack bg={dialogContentBg} p={24} gap={24}>
+                {/* Flight Route Section */}
+                {mode === 'flight' && flight && (
+                    <Paper {...sectionPaperProps}>
+                        <Group justify="space-between" wrap="nowrap">
+                            {/* Departure. The airport codes stay Ink rather than
+                                taking the brand tint — both brand primaries are too
+                                light to carry text on this surface. */}
+                            <Box ta="center" style={{flex: 1}}>
+                                <Title order={3} fw={700}>{departureAirport}</Title>
+                                {departureTime && (
+                                    <Text fz="sm" c="dimmed">
+                                        {departureTime.format('MMM D, HH:mm')}
+                                    </Text>
+                                )}
                             </Box>
-                        )}
 
-                        {/* Warning Card */}
-                        {showWarning && (
-                            <Alert
-                                severity="warning"
-                                sx={{'& .MuiAlert-message': {width: '100%'}}}
-                            >
-                                <Typography variant="subtitle2" gutterBottom sx={{
-                                    fontWeight: 600
-                                }}>
-                                    Package Available After Cargo Hours
-                                </Typography>
-                                <Typography variant="body2" sx={{mb: 2}}>
-                                    {warningMessage}
-                                </Typography>
-                                <Box sx={{display: 'flex', gap: 1}}>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={handleSetNextMorning}
-                                    >
-                                        Set to {nextMorningTime}
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={handleSetBaggagePickup}
-                                    >
-                                        Baggage Carousel
-                                    </Button>
-                                </Box>
-                            </Alert>
-                        )}
+                            {/* Arrow and Flight Number */}
+                            <Stack align="center" gap={4} px={24}>
+                                <Badge
+                                    size="lg"
+                                    variant="light"
+                                    leftSection={<Icon tabler={IconPlane} size={14}/>}
+                                >
+                                    {flightNumber}
+                                </Badge>
+                                <Icon lucide={ArrowRight} size={32} color="var(--mantine-color-dimmed)"/>
+                            </Stack>
 
-                        {/* Delivery Section (Flight mode only) */}
-                        {mode === 'flight' && (
-                            <Box sx={{display: 'flex', gap: 2}}>
-                                {/* Deliver By */}
-                                <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
-                                    <Typography variant="subtitle2" gutterBottom sx={{
-                                        color: "text.secondary"
-                                    }}>
-                                        Deliver By
-                                    </Typography>
-                                    <DateTimePicker
-                                        aria-label="Deliver by"
-                                        value={pickerValue(deliveryByTime)}
-                                        onChange={(value) => applyPicked(value, setDeliveryByTime)}
-                                        valueFormat={PICKER_DISPLAY_FORMAT}
-                                        timePickerProps={{format: '24h', withDropdown: true}}
-                                        size="sm"
-                                    />
-                                    {!deliveryByTime && (
-                                        <Button
-                                            size="small"
-                                            onClick={handleSetDeliveryTime}
-                                            sx={{mt: 1}}
-                                        >
-                                            Set Default (+4 hours)
-                                        </Button>
-                                    )}
-                                </Paper>
-
-                                {/* Available Time */}
-                                <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
-                                    <Typography variant="subtitle2" gutterBottom sx={{
-                                        color: "text.secondary"
-                                    }}>
-                                        Available Time
-                                    </Typography>
-                                    {isCalculatingTimes ? (
-                                        <CircularProgress size={20}/>
-                                    ) : availableTime ? (
-                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                            {getStatusIcon(availableTime.icon, availableTime.class)}
-                                            <Box>
-                                                <Typography variant="h6" sx={{
-                                                    fontWeight: 600
-                                                }}>
-                                                    {availableTime.text}
-                                                </Typography>
-                                                <Typography variant="body2" sx={{
-                                                    color: "text.secondary"
-                                                }}>
-                                                    {availableTime.subtext}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    ) : null}
-                                </Paper>
+                            {/* Arrival */}
+                            <Box ta="center" style={{flex: 1}}>
+                                <Title order={3} fw={700}>{arrivalAirport}</Title>
+                                {arrivalTime && (
+                                    <Text fz="sm" c="dimmed">
+                                        {arrivalTime.format('MMM D, HH:mm')}
+                                    </Text>
+                                )}
                             </Box>
-                        )}
+                        </Group>
+                    </Paper>
+                )}
 
-                        <Divider/>
+                {/* Cargo Processing Section (Flight mode only) */}
+                {mode === 'flight' && (
+                    <Group gap={16} align="stretch" grow>
+                        {/* Cargo Facility Hours */}
+                        <Paper {...sectionPaperProps}>
+                            <Group gap={8} mb={8} c="dimmed">
+                                <Icon tabler={IconTruck} size={18}/>
+                                <Text fz="sm">Cargo Facility</Text>
+                            </Group>
+                            {isCalculatingTimes ? (
+                                <Loader size={20} aria-label="Calculating cargo facility hours"/>
+                            ) : cargoStatus ? (
+                                <>
+                                    <Text fz="lg" fw={600}>{cargoStatus.hours}</Text>
+                                    <Group gap={4} mt={4}>
+                                        {getStatusIcon(cargoStatus.icon, cargoStatus.class)}
+                                        <Text fz="sm" c="dimmed">{cargoStatus.text}</Text>
+                                    </Group>
+                                </>
+                            ) : null}
+                        </Paper>
 
-                        {mode === 'agent' && agent && (
-                            <AgentEmailFields
-                                key={`${agent.id}-${jobId}`}
-                                agentId={agent.id}
-                                jobId={jobId}
-                                onChange={setAgentEmail}
-                            />
-                        )}
+                        {/* Processing Time */}
+                        <Paper {...sectionPaperProps}>
+                            <Group gap={8} mb={8} c="dimmed">
+                                <Icon lucide={Clock} size={18}/>
+                                <Text fz="sm">Processing Time</Text>
+                            </Group>
+                            {isCalculatingTimes ? (
+                                <Loader size={20} aria-label="Calculating processing time"/>
+                            ) : cargoProcessing ? (
+                                <Text fz="lg" fw={600}>{cargoProcessing.processingTimeMins} min</Text>
+                            ) : null}
+                        </Paper>
 
-                        {/* Delivery Notes */}
-                        <TextField
-                            fullWidth
-                            multiline
-                            rows={3}
-                            label="Delivery Instructions"
-                            placeholder="Add any delivery notes or instructions..."
-                            value={deliveryNotes}
-                            onChange={(e) => setDeliveryNotes(e.target.value)}
-                            sx={{'& .MuiOutlinedInput-root': {bgcolor: 'background.paper'}}}
-                        />
-
-                        {/* AWB and Stop Jobs */}
-                        <Box sx={{display: 'flex', gap: 2, alignItems: 'flex-start'}}>
-                            <TextField
-                                label="AWB Number"
-                                value={awb}
-                                onChange={(e) => setAwb(e.target.value)}
-                                disabled={isAwbDisabled}
-                                size="small"
-                                sx={{flex: 1, '& .MuiOutlinedInput-root': {bgcolor: 'background.paper'}}}
-                            />
-                            {showIncludeStopJobs && (
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={assignToStopJobs}
-                                            onChange={(e) => setAssignToStopJobs(e.target.checked)}
-                                        />
-                                    }
-                                    label={`Assign to ${stopJobCount} stop job${(stopJobCount ?? 0) > 1 ? 's' : ''}`}
+                        {/* Package Ready */}
+                        <Paper {...sectionPaperProps}>
+                            <Group justify="space-between" wrap="nowrap" mb={8}>
+                                <Group gap={8} c="dimmed">
+                                    <Icon tabler={IconPackage} size={18}/>
+                                    <Text fz="sm">Package Ready</Text>
+                                </Group>
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    aria-label="Edit package ready time"
+                                    onClick={() => setPackageTimeEditEnabled(!packageTimeEditEnabled)}
+                                >
+                                    <Icon lucide={Pencil} size={16}/>
+                                </ActionIcon>
+                            </Group>
+                            {isCalculatingTimes ? (
+                                <Loader size={20} aria-label="Calculating package ready time"/>
+                            ) : packageTimeEditEnabled ? (
+                                <DateTimePicker
+                                    aria-label="Package ready"
+                                    value={pickerValue(packageReadyTime)}
+                                    onChange={(value) => applyPicked(value, setPackageReadyTime)}
+                                    valueFormat={PICKER_DISPLAY_FORMAT}
+                                    timePickerProps={{format: '24h', withDropdown: true}}
+                                    size="sm"
                                 />
+                            ) : packageReadyTime ? (
+                                <>
+                                    <Text fz="lg" fw={600}>{packageReadyTime.format('HH:mm')}</Text>
+                                    <Text fz="sm" c="dimmed">{packageReadyTime.format('MMM D, YYYY')}</Text>
+                                    {cargoIndicator && (
+                                        <Group gap={4} mt={4}>
+                                            {getStatusIcon(cargoIndicator.icon, cargoIndicator.class)}
+                                            <Text fz="sm" c="dimmed">{cargoIndicator.text}</Text>
+                                        </Group>
+                                    )}
+                                </>
+                            ) : null}
+                        </Paper>
+                    </Group>
+                )}
+
+                {/* Warning Card */}
+                {showWarning && (
+                    <Alert color="yellow" variant="light" title="Package Available After Cargo Hours">
+                        <Text fz="sm" mb={16}>{warningMessage}</Text>
+                        <Group gap={8}>
+                            <Button variant="default" size="xs" onClick={handleSetNextMorning}>
+                                Set to {nextMorningTime}
+                            </Button>
+                            <Button variant="default" size="xs" onClick={handleSetBaggagePickup}>
+                                Baggage Carousel
+                            </Button>
+                        </Group>
+                    </Alert>
+                )}
+
+                {/* Delivery Section (Flight mode only) */}
+                {mode === 'flight' && (
+                    <Group gap={16} align="stretch" grow>
+                        {/* Deliver By */}
+                        <Paper {...sectionPaperProps}>
+                            <Text fz="sm" c="dimmed" mb={8}>Deliver By</Text>
+                            <DateTimePicker
+                                aria-label="Deliver by"
+                                value={pickerValue(deliveryByTime)}
+                                onChange={(value) => applyPicked(value, setDeliveryByTime)}
+                                valueFormat={PICKER_DISPLAY_FORMAT}
+                                timePickerProps={{format: '24h', withDropdown: true}}
+                                size="sm"
+                            />
+                            {!deliveryByTime && (
+                                <Button variant="subtle" size="xs" mt={8} onClick={handleSetDeliveryTime}>
+                                    Set Default (+4 hours)
+                                </Button>
                             )}
-                        </Box>
+                        </Paper>
 
-                        {/* Dangerous Goods Alert */}
-                        {dgClassName && (
-                            <Alert severity="warning">
-                                <Typography variant="subtitle2">
-                                    Dangerous Goods: {dgClassName}
-                                </Typography>
-                            </Alert>
-                        )}
-                    </Box>
-                </DialogContent>
+                        {/* Available Time */}
+                        <Paper {...sectionPaperProps}>
+                            <Text fz="sm" c="dimmed" mb={8}>Available Time</Text>
+                            {isCalculatingTimes ? (
+                                <Loader size={20} aria-label="Calculating available time"/>
+                            ) : availableTime ? (
+                                <Group gap={8} wrap="nowrap">
+                                    {getStatusIcon(availableTime.icon, availableTime.class)}
+                                    <Box>
+                                        <Text fz="lg" fw={600}>{availableTime.text}</Text>
+                                        <Text fz="sm" c="dimmed">{availableTime.subtext}</Text>
+                                    </Box>
+                                </Group>
+                            ) : null}
+                        </Paper>
+                    </Group>
+                )}
 
-                <DialogFooter
-                    onCancel={onClose}
-                    onConfirm={handleConfirm}
-                    confirmLabel="Confirm Assignment"
-                    confirmDisabled={mode === 'flight' && isCalculatingTimes}
+                <Divider/>
+
+                {mode === 'agent' && agent && (
+                    <AgentEmailFields
+                        key={`${agent.id}-${jobId}`}
+                        agentId={agent.id}
+                        jobId={jobId}
+                        onChange={setAgentEmail}
+                    />
+                )}
+
+                {/* Delivery Notes */}
+                <Textarea
+                    rows={3}
+                    label="Delivery Instructions"
+                    placeholder="Add any delivery notes or instructions..."
+                    value={deliveryNotes}
+                    onChange={(e) => setDeliveryNotes(e.currentTarget.value)}
                 />
-            </DialogShell>
+
+                {/* AWB and Stop Jobs */}
+                <Group gap={16} align="flex-end" wrap="nowrap">
+                    <TextInput
+                        label="AWB Number"
+                        style={{flex: 1}}
+                        value={awb}
+                        onChange={(e) => setAwb(e.currentTarget.value)}
+                        disabled={isAwbDisabled}
+                    />
+                    {showIncludeStopJobs && (
+                        <Checkbox
+                            checked={assignToStopJobs}
+                            onChange={(e) => setAssignToStopJobs(e.currentTarget.checked)}
+                            label={`Assign to ${stopJobCount} stop job${(stopJobCount ?? 0) > 1 ? 's' : ''}`}
+                        />
+                    )}
+                </Group>
+
+                {/* Dangerous Goods Alert */}
+                {dgClassName && (
+                    <Alert color="yellow" variant="light">
+                        <Text fz="sm" fw={600}>Dangerous Goods: {dgClassName}</Text>
+                    </Alert>
+                )}
+            </Stack>
+
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleConfirm}
+                confirmLabel="Confirm Assignment"
+                confirmDisabled={mode === 'flight' && isCalculatingTimes}
+            />
+        </DialogShell>
     );
 };
 

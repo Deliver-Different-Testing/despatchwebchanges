@@ -1,47 +1,20 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import Dialog from '@mui/material/Dialog';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Tooltip from '@mui/material/Tooltip';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import CloseIcon from '@mui/icons-material/Close';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import {ActionIcon, Alert, Badge, Box, Button, Group, NumberInput, Table, Text, TextInput, Tooltip} from '@mantine/core';
+import {ChevronDown, ChevronUp, Info, Minus, Plus, Trash2, TriangleAlert} from 'lucide-react';
+import {IconPackage, IconLock} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
+import {SegmentedToggle} from '../../common/segmented-toggle/SegmentedToggle';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogSize,
+} from '../shared/mantine';
 
-import {alpha} from '@mui/material/styles';
-import {headerChipSx, headerChromeSx, headerOnColor, headerOverlayColor} from '../shared/styles';
 import {apiClient} from '../../../services/apiClient';
 import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions} from './types';
 
 const MAX_NAME_LENGTH = 50;
-
-const noSpinnerSx = {
-    '& input::-webkit-outer-spin-button': {display: 'none'},
-    '& input::-webkit-inner-spin-button': {display: 'none'},
-    '& input[type=number]': {MozAppearance: 'textfield'},
-} as const;
 
 interface ParcelItemType {
     name: string;
@@ -173,27 +146,31 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
 }
 
 /** One numeric cell of the dimensions grid — same field, different measurement. */
-function DimensionCell({value, disabled, htmlInput, onChange}: {
+function DimensionCell({value, disabled, label, step = 0.01, onChange}: {
     value: string | number;
     disabled?: boolean;
-    htmlInput: Record<string, unknown>;
+    /** Names the input where the column header cannot — Weight and Volume. */
+    label?: string;
+    step?: number;
     onChange: (value: string) => void;
 }) {
     return (
-        <TableCell>
-            <TextField
-                size="small"
-                type="number"
-                fullWidth
+        <Table.Td>
+            <NumberInput
+                size="sm"
+                min={0}
+                step={step}
+                /* The grid is dense and every cell is numeric; the steppers would
+                   double the visual weight of the row for no reach they do not
+                   already have from the keyboard. */
+                hideControls
                 disabled={disabled}
+                aria-label={label}
                 value={value}
-                onChange={e => onChange(e.target.value)}
-                onWheel={e => e.currentTarget.blur()}
+                onChange={next => onChange(String(next))}
                 placeholder="—"
-                slotProps={{htmlInput}}
-                sx={noSpinnerSx}
             />
-        </TableCell>
+        </Table.Td>
     );
 }
 
@@ -447,222 +424,253 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         }
     }, [groups, dimensionUnit, jobId, bulkJobId, partnerMode, totalParcels, parcelTotal, isPerJob, showToast, onSubmit]);
 
-    const numInput = {min: 0, step: 0.01};
+    const saveBlockedReason = hasEmptyWeights
+        ? 'All parcels must have a weight greater than 0'
+        : weightMismatch
+            ? 'Job weight must match parcel total before saving'
+            : cubicMismatch
+                ? 'Job volume must match parcel volume total before saving'
+                : '';
 
     return (
-        <Dialog
-            open={open}
+        <DialogShell
+            opened={open}
             onClose={handleCancel}
-            fullWidth
-            maxWidth="md"
-            slotProps={{paper: {sx: {maxHeight: '90vh', display: 'flex', flexDirection: 'column'}}}}
+            size={dialogSize.lg}
+            label="Edit Quantity"
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    ...headerChromeSx(theme),
-                    flexShrink: 0,
-                })}
-            >
-                <Box sx={(theme) => headerChipSx(theme)}>
-                    {readOnly ? <LockOutlinedIcon/> : <Inventory2OutlinedIcon/>}
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" sx={{
-                        fontWeight: 600
-                    }}>Edit Quantity</Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        {readOnly
-                            ? 'View only — this job is locked'
-                            : `${groups.length} type${groups.length !== 1 ? 's' : ''} · ${totalParcels} parcel${totalParcels !== 1 ? 's' : ''} total`}
-                    </Typography>
-                </Box>
-                <IconButton onClick={handleCancel} disabled={isLoading} sx={(theme) => ({
-                    color: headerOnColor(theme),
-                    '&:hover': {bgcolor: headerOverlayColor(theme, 0.1)}
-                })}>
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={readOnly ? <Icon tabler={IconLock}/> : <Icon tabler={IconPackage}/>}
+                title="Edit Quantity"
+                subtitle={readOnly
+                    ? 'View only — this job is locked'
+                    : `${groups.length} type${groups.length !== 1 ? 's' : ''} · ${totalParcels} parcel${totalParcels !== 1 ? 's' : ''} total`}
+                onClose={handleCancel}
+                closeDisabled={isLoading}
+            />
+
             {isParentJob && (
-                <Alert severity="info" icon={<InfoIcon />} sx={{borderRadius: 0, flexShrink: 0}}>
+                <Alert color="blue" variant="light" radius={0} icon={<Icon lucide={Info}/>}>
                     This is a child job. Parcel information has been inherited from the parent job.
                 </Alert>
             )}
+
             {/* Table */}
-            <Box sx={{flex: 1, overflowY: 'auto', p: 2}}>
-                <Table size="small" stickyHeader>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell sx={{minWidth: 130}}>Name</TableCell>
-                            <TableCell align="center" sx={{width: 80}}>L ({dimensionUnit})</TableCell>
-                            <TableCell align="center" sx={{width: 80}}>W ({dimensionUnit})</TableCell>
-                            <TableCell align="center" sx={{width: 80}}>H ({dimensionUnit})</TableCell>
-                            <TableCell align="center" sx={{width: 90}}>Weight ({weightUnit})</TableCell>
-                            <TableCell align="center" sx={{width: 90}}>Volume ({volUnit})</TableCell>
-                            <TableCell align="center" sx={{width: 110}}>Qty</TableCell>
-                            <TableCell sx={{width: 72}} />
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
+            <Box p={16}>
+                <Table striped={false} verticalSpacing={4} horizontalSpacing={8} stickyHeader>
+                    <Table.Thead>
+                        <Table.Tr>
+                            <Table.Th style={{minWidth: 130}}>Name</Table.Th>
+                            <Table.Th ta="center" w={80}>L ({dimensionUnit})</Table.Th>
+                            <Table.Th ta="center" w={80}>W ({dimensionUnit})</Table.Th>
+                            <Table.Th ta="center" w={80}>H ({dimensionUnit})</Table.Th>
+                            <Table.Th ta="center" w={90}>Weight ({weightUnit})</Table.Th>
+                            <Table.Th ta="center" w={90}>Volume ({volUnit})</Table.Th>
+                            <Table.Th ta="center" w={110}>Qty</Table.Th>
+                            <Table.Th w={72}/>
+                        </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
                         {groups.map(g => (
                             <React.Fragment key={g.id}>
-                                <TableRow>
-                                    <TableCell>
-                                        <TextField
-                                            size="small"
-                                            fullWidth
+                                <Table.Tr>
+                                    <Table.Td>
+                                        <TextInput
+                                            size="sm"
                                             disabled={readOnly}
                                             value={g.itemName}
-                                            onChange={e => updateGroup(g.id, 'itemName', e.target.value)}
+                                            onChange={e => updateGroup(g.id, 'itemName', e.currentTarget.value)}
                                             placeholder="Name"
-                                            slotProps={{htmlInput: {maxLength: MAX_NAME_LENGTH}}}
+                                            aria-label="Name"
+                                            maxLength={MAX_NAME_LENGTH}
                                         />
                                         {g.representativeItemId != null && (itemTypesByItemId.get(g.representativeItemId) ?? []).length > 0 && (
-                                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5}}>
+                                            <Group gap={4} mt={4}>
                                                 {(itemTypesByItemId.get(g.representativeItemId) ?? []).map((t, i) => (
-                                                    <Box key={i} sx={(theme) => ({fontSize: 11, bgcolor: alpha(theme.palette.info.main, 0.1), border: `1px solid ${alpha(theme.palette.info.main, 0.4)}`, borderRadius: 1.25, px: 0.75, py: 0.25, color: theme.palette.info.dark, whiteSpace: 'nowrap', lineHeight: 1.6})}>
+                                                    <Badge key={i} size="xs" variant="light" color="blue">
                                                         {t.name} ×{t.quantity}
-                                                    </Box>
+                                                    </Badge>
                                                 ))}
-                                            </Box>
+                                            </Group>
                                         )}
-                                    </TableCell>
+                                    </Table.Td>
                                     <DimensionCell
                                         value={g.length}
                                         disabled={readOnly}
-                                        htmlInput={numInput}
+                                        label="Length"
                                         onChange={value => updateGroup(g.id, 'length', value)}
                                     />
                                     <DimensionCell
                                         value={g.depth}
                                         disabled={readOnly}
-                                        htmlInput={numInput}
+                                        label="Width"
                                         onChange={value => updateGroup(g.id, 'depth', value)}
                                     />
                                     <DimensionCell
                                         value={g.height}
                                         disabled={readOnly}
-                                        htmlInput={numInput}
+                                        label="Height"
                                         onChange={value => updateGroup(g.id, 'height', value)}
                                     />
                                     <DimensionCell
                                         value={g.weight}
                                         disabled={readOnly}
-                                        htmlInput={{min: 0, step: 0.001, 'aria-label': 'Weight'}}
+                                        label="Weight"
+                                        step={0.001}
                                         onChange={value => updateGroup(g.id, 'weight', value)}
                                     />
                                     <DimensionCell
                                         value={g.cubic}
                                         disabled={readOnly}
-                                        htmlInput={{min: 0, step: 0.001, 'aria-label': 'Volume'}}
+                                        label="Volume"
+                                        step={0.001}
                                         onChange={value => updateGroup(g.id, 'cubic', value)}
                                     />
-                                    <TableCell>
-                                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5}}>
-                                            <IconButton size="small" aria-label="Decrease quantity" onClick={() => adjustQty(g.id, -1)} disabled={readOnly || g.barcodes.length <= 1}>
-                                                <RemoveIcon fontSize="small" />
-                                            </IconButton>
-                                            <Typography variant="body2" sx={{minWidth: 20, textAlign: 'center'}}>
+                                    <Table.Td>
+                                        <Group gap={4} justify="center" wrap="nowrap">
+                                            <ActionIcon
+                                                variant="subtle"
+                                                color="gray"
+                                                size="sm"
+                                                aria-label="Decrease quantity"
+                                                onClick={() => adjustQty(g.id, -1)}
+                                                disabled={readOnly || g.barcodes.length <= 1}
+                                            >
+                                                <Icon lucide={Minus} size={16}/>
+                                            </ActionIcon>
+                                            <Text fz="sm" ta="center" style={{minWidth: 20}}>
                                                 {g.barcodes.length}
-                                            </Typography>
-                                            <IconButton size="small" aria-label="Increase quantity" onClick={() => adjustQty(g.id, 1)} disabled={readOnly}>
-                                                <AddIcon fontSize="small" />
-                                            </IconButton>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.25}}>
-                                            <Tooltip title="Delete row">
+                                            </Text>
+                                            <ActionIcon
+                                                variant="subtle"
+                                                color="gray"
+                                                size="sm"
+                                                aria-label="Increase quantity"
+                                                onClick={() => adjustQty(g.id, 1)}
+                                                disabled={readOnly}
+                                            >
+                                                <Icon lucide={Plus} size={16}/>
+                                            </ActionIcon>
+                                        </Group>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Group gap={2} wrap="nowrap">
+                                            <Tooltip label="Delete row">
+                                                {/* A disabled control emits no pointer events, so the
+                                                    tooltip needs something of its own to hang on. */}
                                                 <span>
-                                                    <IconButton size="small" aria-label="Delete row" color="error" onClick={() => deleteGroup(g.id)} disabled={readOnly}>
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
+                                                    <ActionIcon
+                                                        variant="subtle"
+                                                        color="red"
+                                                        size="sm"
+                                                        aria-label="Delete row"
+                                                        onClick={() => deleteGroup(g.id)}
+                                                        disabled={readOnly}
+                                                    >
+                                                        <Icon lucide={Trash2} size={16}/>
+                                                    </ActionIcon>
                                                 </span>
                                             </Tooltip>
-                                            <Tooltip title={g.expandedBarcodes ? 'Hide barcodes' : 'Show barcodes'}>
-                                                <IconButton size="small" onClick={() => toggleBarcodes(g.id)}>
-                                                    {g.expandedBarcodes ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-                                                </IconButton>
+                                            <Tooltip label={g.expandedBarcodes ? 'Hide barcodes' : 'Show barcodes'}>
+                                                <ActionIcon
+                                                    variant="subtle"
+                                                    color="gray"
+                                                    size="sm"
+                                                    aria-label={g.expandedBarcodes ? 'Hide barcodes' : 'Show barcodes'}
+                                                    aria-expanded={g.expandedBarcodes}
+                                                    onClick={() => toggleBarcodes(g.id)}
+                                                >
+                                                    <Icon lucide={g.expandedBarcodes ? ChevronUp : ChevronDown} size={16}/>
+                                                </ActionIcon>
                                             </Tooltip>
-                                        </Box>
-                                    </TableCell>
-                                </TableRow>
+                                        </Group>
+                                    </Table.Td>
+                                </Table.Tr>
 
                                 {g.expandedBarcodes && g.barcodes.map((barcode, i) => (
-                                    <TableRow key={`${g.id}-bc-${i}`} sx={{bgcolor: 'action.hover'}}>
-                                        <TableCell sx={{pl: 4}}>
-                                            <Typography variant="caption" sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                Item {i + 1}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell colSpan={7}>
-                                            <TextField
-                                                size="small"
-                                                fullWidth
+                                    <Table.Tr key={`${g.id}-bc-${i}`} bg="var(--mantine-color-gray-0)">
+                                        <Table.Td pl={32}>
+                                            <Text fz="xs" c="dimmed">Item {i + 1}</Text>
+                                        </Table.Td>
+                                        <Table.Td colSpan={7}>
+                                            <TextInput
+                                                size="sm"
                                                 disabled={readOnly}
                                                 value={barcode}
-                                                onChange={e => updateBarcode(g.id, i, e.target.value)}
+                                                onChange={e => updateBarcode(g.id, i, e.currentTarget.value)}
                                                 placeholder="Barcode"
                                                 label="Barcode"
                                             />
-                                        </TableCell>
-                                    </TableRow>
+                                        </Table.Td>
+                                    </Table.Tr>
                                 ))}
                             </React.Fragment>
                         ))}
-                    </TableBody>
+                    </Table.Tbody>
                 </Table>
 
-                <Box sx={{mt: 1.5}}>
-                    <Button size="small" startIcon={<AddIcon />} onClick={addGroup} disabled={readOnly}>
-                        Add package type
-                    </Button>
-                </Box>
-            </Box>
-            {/* Weight section */}
-            <Box sx={{px: 2, py: 1.5, borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, flexWrap: 'wrap'}}>
-                <Tooltip title={isPerJob
-                    ? 'Per Job: each row\'s weight/dimensions already represent the whole job — quantity isn\'t multiplied in'
-                    : 'Per Item: each row\'s weight/dimensions apply to a single parcel and are multiplied by quantity'}
+                <Button
+                    variant="subtle"
+                    size="xs"
+                    mt={12}
+                    leftSection={<Icon lucide={Plus} size={16}/>}
+                    onClick={addGroup}
+                    disabled={readOnly}
                 >
-                    <ToggleButtonGroup
-                        size="small"
-                        exclusive
-                        disabled={readOnly}
-                        value={isPerJob ? 'perJob' : 'perItem'}
-                        onChange={(_e, value) => {
-                            if (value === null) return;
-                            setIsPerJob(value === 'perJob');
-                            setIsFormDirty(true);
-                        }}
-                    >
-                        <ToggleButton value="perItem">Per Item</ToggleButton>
-                        <ToggleButton value="perJob">Per Job</ToggleButton>
-                    </ToggleButtonGroup>
-                </Tooltip>
-                <TextField
-                    size="small"
+                    Add package type
+                </Button>
+            </Box>
+
+            {/* Weight section */}
+            <Group px={16} py={12} gap={16} align="flex-end" wrap="wrap"
+                   style={{borderTop: '1px solid var(--mantine-color-default-border)'}}>
+                {/*
+                  * Exclusive and not clearable — the MUI group returned early on a
+                  * null value to say so. That is the app's single-select grammar, and
+                  * SegmentedToggle renders real radios, so re-picking the active
+                  * option can no longer deselect it.
+                  */}
+                <SegmentedToggle
+                    aria-label="How weights and dimensions are counted"
+                    variant="inline"
+                    value={isPerJob ? 'perJob' : 'perItem'}
+                    onChange={value => {
+                        setIsPerJob(value === 'perJob');
+                        setIsFormDirty(true);
+                    }}
+                    data={[
+                        {
+                            value: 'perItem',
+                            label: 'Per Item',
+                            disabled: readOnly,
+                            tooltip: "Per Item: each row's weight/dimensions apply to a single parcel and are multiplied by quantity",
+                        },
+                        {
+                            value: 'perJob',
+                            label: 'Per Job',
+                            disabled: readOnly,
+                            tooltip: "Per Job: each row's weight/dimensions already represent the whole job — quantity isn't multiplied in",
+                        },
+                    ]}
+                />
+                <NumberInput
+                    size="sm"
+                    w={150}
                     label="Job weight"
-                    type="number"
+                    min={0}
+                    step={0.001}
+                    hideControls
                     disabled={readOnly}
                     value={targetWeight}
-                    onChange={e => setTargetWeight(e.target.value)}
-                    onWheel={e => e.currentTarget.blur()}
-                    slotProps={{
-                        input: {endAdornment: <InputAdornment position="end">{weightUnit}</InputAdornment>},
-                        htmlInput: {min: 0, step: 0.001},
-                    }}
-                    sx={{...noSpinnerSx, width: 150}}
+                    onChange={value => setTargetWeight(String(value))}
+                    rightSection={<Text fz="sm" c="dimmed">{weightUnit}</Text>}
                     error={weightMismatch}
                 />
-                <Tooltip title="Scale individual item weights proportionally so they total the job weight">
+                <Tooltip label="Scale individual item weights proportionally so they total the job weight">
                     <span>
                         <Button
-                            size="small"
-                            variant="outlined"
+                            size="sm"
+                            variant="default"
                             onClick={handleMatchProportionally}
                             disabled={readOnly || isNaN(parseFloat(targetWeight)) || parseFloat(targetWeight) <= 0 || parcelTotal <= 0}
                         >
@@ -670,26 +678,24 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         </Button>
                     </span>
                 </Tooltip>
-                <TextField
-                    size="small"
+                <NumberInput
+                    size="sm"
+                    w={150}
                     label="Job volume"
-                    type="number"
+                    min={0}
+                    step={0.001}
+                    hideControls
                     disabled={readOnly}
                     value={targetCubic}
-                    onChange={e => setTargetCubic(e.target.value)}
-                    onWheel={e => e.currentTarget.blur()}
-                    slotProps={{
-                        input: {endAdornment: <InputAdornment position="end">{volUnit}</InputAdornment>},
-                        htmlInput: {min: 0, step: 0.001},
-                    }}
-                    sx={{...noSpinnerSx, width: 150}}
+                    onChange={value => setTargetCubic(String(value))}
+                    rightSection={<Text fz="sm" c="dimmed">{volUnit}</Text>}
                     error={cubicMismatch}
                 />
-                <Tooltip title="Scale individual item volumes proportionally so they total the job volume">
+                <Tooltip label="Scale individual item volumes proportionally so they total the job volume">
                     <span>
                         <Button
-                            size="small"
-                            variant="outlined"
+                            size="sm"
+                            variant="default"
                             onClick={handleMatchCubicProportionally}
                             disabled={readOnly || isNaN(parseFloat(targetCubic)) || parseFloat(targetCubic) <= 0 || parcelCubicTotal <= 0}
                         >
@@ -697,84 +703,71 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         </Button>
                     </span>
                 </Tooltip>
-                <Box sx={{flex: 1}} />
-                <Typography variant="body2" sx={{
-                    color: "text.secondary"
-                }}>
+                <Box style={{flex: 1}}/>
+                <Text fz="sm" c="dimmed">
                     Parcel total: <strong>{parcelTotal > 0 ? parcelTotal.toFixed(1) : '—'} {parcelTotal > 0 ? weightUnit : ''}</strong>
                     {' · '}
                     Volume total: <strong>{parcelCubicTotal > 0 ? parcelCubicTotal.toFixed(3) : '—'} {parcelCubicTotal > 0 ? volUnit : ''}</strong>
-                </Typography>
-            </Box>
+                </Text>
+            </Group>
+
             {hasEmptyWeights && (
-                <Alert severity="error" sx={{borderRadius: 0, flexShrink: 0, py: 0.25, '& .MuiAlert-message': {py: 0.5}}}>
+                <Alert color="red" variant="light" radius={0} py={4}>
                     All parcels must have a weight greater than 0 before saving.
                 </Alert>
             )}
             {!hasEmptyWeights && weightMismatch && (
-                <Alert severity="warning" sx={{borderRadius: 0, flexShrink: 0, py: 0.25, '& .MuiAlert-message': {py: 0.5}}}>
-                    Job weight ({(parseFloat(targetWeight) || 0).toFixed(1)} {weightUnit}) doesn't match parcel total ({parcelTotal.toFixed(1)} {weightUnit}). Adjust line item weights or click <strong>Match proportionally</strong>.
+                <Alert color="yellow" variant="light" radius={0} py={4}>
+                    Job weight ({(parseFloat(targetWeight) || 0).toFixed(1)} {weightUnit}) doesn&apos;t match parcel total ({parcelTotal.toFixed(1)} {weightUnit}). Adjust line item weights or click <strong>Match proportionally</strong>.
                 </Alert>
             )}
             {cubicMismatch && (
-                <Alert severity="warning" sx={{borderRadius: 0, flexShrink: 0, py: 0.25, '& .MuiAlert-message': {py: 0.5}}}>
-                    Job volume ({(parseFloat(targetCubic) || 0).toFixed(3)} {volUnit}) doesn't match parcel volume total ({parcelCubicTotal.toFixed(3)} {volUnit}). Adjust line item volumes or click <strong>Match proportionally</strong>.
+                <Alert color="yellow" variant="light" radius={0} py={4}>
+                    Job volume ({(parseFloat(targetCubic) || 0).toFixed(3)} {volUnit}) doesn&apos;t match parcel volume total ({parcelCubicTotal.toFixed(3)} {volUnit}). Adjust line item volumes or click <strong>Match proportionally</strong>.
                 </Alert>
             )}
+
             {/* Footer */}
-            <Box sx={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, p: 2, borderTop: 1, borderColor: 'divider', flexShrink: 0}}>
-                <Button onClick={handleCancel} disabled={isLoading}>
-                    {readOnly ? 'Close' : 'Cancel'}
-                </Button>
-                {!readOnly && (isLoading ? (
-                    <CircularProgress size={20} />
-                ) : (
-                    <Tooltip title={hasEmptyWeights ? 'All parcels must have a weight greater than 0' : weightMismatch ? 'Job weight must match parcel total before saving' : cubicMismatch ? 'Job volume must match parcel volume total before saving' : ''}>
-                        <span>
-                            <Button variant="contained" onClick={handleSubmit} disabled={hasEmptyWeights || weightMismatch || cubicMismatch}>
-                                {partnerMode ? 'Continue' : 'Save'}
-                            </Button>
-                        </span>
-                    </Tooltip>
-                ))}
-            </Box>
+            <Tooltip label={saveBlockedReason} disabled={!saveBlockedReason}>
+                <span>
+                    <DialogFooter
+                        onCancel={handleCancel}
+                        onConfirm={handleSubmit}
+                        cancelLabel={readOnly ? 'Close' : 'Cancel'}
+                        confirmLabel={partnerMode ? 'Continue' : 'Save'}
+                        confirmDisabled={hasEmptyWeights || weightMismatch || cubicMismatch}
+                        submitting={isLoading}
+                        hideConfirm={readOnly}
+                    />
+                </span>
+            </Tooltip>
+
             {/* Discard confirmation */}
-            <Dialog
-                open={discardDialogOpen}
+            <DialogShell
+                opened={discardDialogOpen}
                 onClose={() => setDiscardDialogOpen(false)}
-                maxWidth="xs"
-                fullWidth
+                size={dialogSize.sm}
+                label="Discard unsaved changes"
             >
-                <Box
-                    sx={(theme) => headerChromeSx(theme, 'warning')}
-                >
-                    <Box sx={(theme) => headerChipSx(theme, 'warning')}>
-                        <WarningAmberIcon/>
-                    </Box>
-                    <Box sx={{flex: 1}}>
-                        <Typography variant="h6" sx={{
-                            fontWeight: 600
-                        }}>Discard unsaved changes</Typography>
-                        <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>Changes will be permanently lost</Typography>
-                    </Box>
-                    <IconButton onClick={() => setDiscardDialogOpen(false)} sx={(theme) => ({
-                        color: headerOnColor(theme, 'warning'),
-                        '&:hover': {bgcolor: headerOverlayColor(theme, 0.1, 'warning')}
-                    })}>
-                        <CloseIcon />
-                    </IconButton>
+                <DialogHeader
+                    variant="warning"
+                    icon={<Icon lucide={TriangleAlert}/>}
+                    title="Discard unsaved changes"
+                    subtitle="Changes will be permanently lost"
+                    onClose={() => setDiscardDialogOpen(false)}
+                />
+                <Box p={24}>
+                    <Text>Your changes to parcel dimensions haven&apos;t been saved and will be lost.</Text>
                 </Box>
-                <DialogContent>
-                    <DialogContentText sx={{mt: 1}}>
-                        Your changes to parcel dimensions haven't been saved and will be lost.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{px: 3, py: 2, borderTop: 1, borderColor: 'divider'}}>
-                    <Button autoFocus onClick={() => setDiscardDialogOpen(false)}>Keep editing</Button>
-                    <Button onClick={() => { setDiscardDialogOpen(false); onClose(); }} color="error">Discard</Button>
-                </DialogActions>
-            </Dialog>
-        </Dialog>
+                <DialogFooter
+                    onCancel={() => setDiscardDialogOpen(false)}
+                    cancelLabel="Keep editing"
+                    onConfirm={() => { setDiscardDialogOpen(false); onClose(); }}
+                    confirmLabel="Discard"
+                    confirmColor="red"
+                />
+            </DialogShell>
+        </DialogShell>
     );
 };
 

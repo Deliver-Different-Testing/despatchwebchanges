@@ -14,7 +14,6 @@ import React from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {JobListPanel} from './JobListPanel';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 import type {DispatchJob, MountJobListConfig, JobListSearchParams} from '../../interfaces';
 import {ErrorBoundary} from '../common/error-boundary';
 
@@ -59,40 +58,38 @@ export function createJobListBridge(options: JobListBridgeOptions): JobListBridg
 
         // ErrorBoundary is a shared MUI leaf still rendered by unmigrated islands.
         instance.root.render(islandTree(
-            <MuiThemeIsland>
-                <ErrorBoundary>
-                    <JobListPanel
-                        showToast={config.showToast}
-                        isUsCustomer={config.isUsCustomer}
-                        appPage={config.appPage ?? defaultAppPage}
-                        onJobSelect={config.onJobSelect}
-                        onJobDispatch={config.onJobDispatch}
-                        onRefresh={config.onRefresh}
-                        onSearchChange={config.onSearchChange}
-                        onCategoryChange={config.onCategoryChange}
-                        onBackendFilter={config.onBackendFilter}
-                        onLoadMoreJobs={config.onLoadMoreJobs}
-                        onAddStop={config.onAddStop}
-                        onJobsLoaded={config.onJobsLoaded}
-                        defaultCategory={config.defaultCategory}
-                        storagePrefix={config.storagePrefix ?? defaultStoragePrefix}
-                        hideLoggedInSwitch={config.hideLoggedInSwitch ?? defaultHideLoggedInSwitch}
-                        fetchConfig={config.fetchConfig}
-                        setJobsCallback={(cb) => {
-                            instance.updateJobsCallback = cb;
-                        }}
-                        setRefreshCallback={(cb) => {
-                            instance.refreshCallback = cb;
-                        }}
-                        setSelectJobCallback={(cb) => {
-                            instance.selectJobCallback = cb;
-                        }}
-                        setUpdateSearchParamsCallback={(cb) => {
-                            instance.updateSearchParamsCallback = cb;
-                        }}
-                    />
-                </ErrorBoundary>
-            </MuiThemeIsland>
+            <ErrorBoundary>
+                <JobListPanel
+                    showToast={config.showToast}
+                    isUsCustomer={config.isUsCustomer}
+                    appPage={config.appPage ?? defaultAppPage}
+                    onJobSelect={config.onJobSelect}
+                    onJobDispatch={config.onJobDispatch}
+                    onRefresh={config.onRefresh}
+                    onSearchChange={config.onSearchChange}
+                    onCategoryChange={config.onCategoryChange}
+                    onBackendFilter={config.onBackendFilter}
+                    onLoadMoreJobs={config.onLoadMoreJobs}
+                    onAddStop={config.onAddStop}
+                    onJobsLoaded={config.onJobsLoaded}
+                    defaultCategory={config.defaultCategory}
+                    storagePrefix={config.storagePrefix ?? defaultStoragePrefix}
+                    hideLoggedInSwitch={config.hideLoggedInSwitch ?? defaultHideLoggedInSwitch}
+                    fetchConfig={config.fetchConfig}
+                    setJobsCallback={(cb) => {
+                        instance.updateJobsCallback = cb;
+                    }}
+                    setRefreshCallback={(cb) => {
+                        instance.refreshCallback = cb;
+                    }}
+                    setSelectJobCallback={(cb) => {
+                        instance.selectJobCallback = cb;
+                    }}
+                    setUpdateSearchParamsCallback={(cb) => {
+                        instance.updateSearchParamsCallback = cb;
+                    }}
+                />
+            </ErrorBoundary>
         ));
     }
 

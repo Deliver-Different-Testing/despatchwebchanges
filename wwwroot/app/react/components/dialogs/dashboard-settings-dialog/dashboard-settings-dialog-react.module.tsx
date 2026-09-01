@@ -16,7 +16,6 @@ import {
 import {CustomizePanelsDialog} from '../customize-panels-dialog/CustomizePanelsDialog';
 import {isAiAutoOpenEnabled, setAiAutoOpenEnabled} from '../../../../functions/aiSettings';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
 interface DashboardSettingsPayload {
@@ -73,31 +72,29 @@ function formatDuration(seconds: number): string {
 const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSettingsResult | null>({
     containerId: 'react-dashboard-settings-dialog-root',
     render: ({open, payload, close}) => islandTree(
-        <MuiThemeIsland>
-            <DashboardSettingsDialog
-                open={open}
-                config={payload.config}
-                boxes={payload.boxes}
-                selectedRefreshInterval={payload.selectedRefreshInterval}
-                selectedDriverLocationRefreshInterval={payload.selectedDriverLocationRefreshInterval}
-                selectedTaskRefreshInterval={payload.selectedTaskRefreshInterval}
-                refreshOptions={payload.refreshOptions}
-                aiEnabled={payload.aiEnabled}
-                aiAutoOpen={payload.aiAutoOpen}
-                jobSearchBetaEnabled={payload.jobSearchBetaEnabled}
-                dispatchBetaEnabled={payload.dispatchBetaEnabled}
-                onClose={() => close(null)}
-                onSave={(result: DashboardSettingsResult) => {
-                    // The "Open automatically" preference is owned by this bridge: seeded
-                    // from localStorage and persisted here so the AngularJS callers don't
-                    // need to know about it.
-                    if (result.aiAutoOpen !== undefined) {
-                        setAiAutoOpenEnabled(result.aiAutoOpen);
-                    }
-                    close(result);
-                }}
-            />
-        </MuiThemeIsland>
+        <DashboardSettingsDialog
+            open={open}
+            config={payload.config}
+            boxes={payload.boxes}
+            selectedRefreshInterval={payload.selectedRefreshInterval}
+            selectedDriverLocationRefreshInterval={payload.selectedDriverLocationRefreshInterval}
+            selectedTaskRefreshInterval={payload.selectedTaskRefreshInterval}
+            refreshOptions={payload.refreshOptions}
+            aiEnabled={payload.aiEnabled}
+            aiAutoOpen={payload.aiAutoOpen}
+            jobSearchBetaEnabled={payload.jobSearchBetaEnabled}
+            dispatchBetaEnabled={payload.dispatchBetaEnabled}
+            onClose={() => close(null)}
+            onSave={(result: DashboardSettingsResult) => {
+                // The "Open automatically" preference is owned by this bridge: seeded
+                // from localStorage and persisted here so the AngularJS callers don't
+                // need to know about it.
+                if (result.aiAutoOpen !== undefined) {
+                    setAiAutoOpenEnabled(result.aiAutoOpen);
+                }
+                close(result);
+            }}
+        />
     ),
 });
 
@@ -136,16 +133,14 @@ const panelsHost = createDialogHost<
 >({
     containerId: 'react-customize-panels-dialog-root',
     render: ({open, payload, close}) => islandTree(
-        <MuiThemeIsland>
-            <CustomizePanelsDialog
-                open={open}
-                title={payload.title}
-                boxes={payload.boxes}
-                layoutEditable={payload.layoutEditable}
-                onClose={() => close(null)}
-                onSave={close}
-            />
-        </MuiThemeIsland>
+        <CustomizePanelsDialog
+            open={open}
+            title={payload.title}
+            boxes={payload.boxes}
+            layoutEditable={payload.layoutEditable}
+            onClose={() => close(null)}
+            onSave={close}
+        />
     ),
 });
 

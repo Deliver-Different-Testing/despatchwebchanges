@@ -10,21 +10,18 @@ import React from 'react';
 import {CreateJobDialog} from './CreateJobDialog';
 import type {ToastService} from '../../../services/toastService';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
 const host = createDialogHost<{isUsTenant: boolean}, number | null>({
     containerId: 'react-create-job-dialog-root',
     render: ({open, payload, close, showToast}) => islandTree(
-        <MuiThemeIsland>
-            <CreateJobDialog
-                open={open}
-                isUsTenant={payload.isUsTenant}
-                onClose={() => close(null)}
-                onSubmit={close}
-                showToast={showToast}
-            />
-        </MuiThemeIsland>
+        <CreateJobDialog
+            open={open}
+            isUsTenant={payload.isUsTenant}
+            onClose={() => close(null)}
+            onSubmit={close}
+            showToast={showToast}
+        />
     ),
 });
 

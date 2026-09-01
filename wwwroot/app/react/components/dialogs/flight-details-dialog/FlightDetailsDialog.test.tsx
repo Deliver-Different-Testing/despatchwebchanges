@@ -9,7 +9,7 @@ import {fireEvent} from '@testing-library/react';
 import dayjs from 'dayjs';
 import {FlightDetailsDialog} from './FlightDetailsDialog';
 import {FlightData, FlightSegmentData} from './types';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 // Create a theme for testing
 // Create sample single-segment flight

@@ -4,11 +4,10 @@
  * Semantic color constants for use outside MUI's sx prop / theme context.
  * For MUI sx props, prefer theme path strings (e.g. bgcolor: 'background.default').
  *
- * These re-export values from muiTheme.ts to keep a single source of truth.
+ * These re-export values from palettes.ts to keep a single source of truth.
  */
 
-import {sharedColors} from './muiTheme';
-import {accentPalette, aiColors, grossModeColor, shellColors} from './palettes';
+import {accentPalette, aiColors, grossModeColor, sharedColors, shellColors} from './palettes';
 
 /** Ink-Blue shell colour (#0d0c2c) — app bar, side-nav header, dark chrome. */
 export const toolbarColor = shellColors.appBar;

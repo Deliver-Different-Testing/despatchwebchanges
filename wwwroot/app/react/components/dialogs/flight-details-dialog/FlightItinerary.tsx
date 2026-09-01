@@ -5,15 +5,19 @@
  */
 
 import React from 'react';
-import {useTheme} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import FlightIcon from '@mui/icons-material/Flight';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import RouteIcon from '@mui/icons-material/Route';
+import {Box, Group, Paper, Stack, Text} from '@mantine/core';
+import {useMediaQuery} from '@mantine/hooks';
+import {Clock} from 'lucide-react';
+import {IconPlane, IconRoute} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
 import { FlightItineraryProps, FlightSegmentData } from './types';
+
+/**
+ * The dialog stacks its segment rows below this width. Kept as the pixel value
+ * the MUI `breakpoints.down('md')` resolved to, so the layout flips where it
+ * always did rather than at Mantine's differently-placed `md`.
+ */
+const STACK_BELOW = '(max-width: 899px)';
 
 /**
  * Format elapsed time in minutes to readable string
@@ -28,122 +32,95 @@ function formatDuration(minutes: number): string {
     return `${mins}m`;
 }
 
+/** One airport end of a leg: time, code, name and terminal. */
+function SegmentEndpoint({time, code, name, terminal, stacked}: {
+    time: string;
+    code: string;
+    name?: string;
+    terminal?: string;
+    stacked: boolean;
+}) {
+    return (
+        <Box ta="center" style={{flex: stacked ? 'none' : '0 0 140px'}}>
+            <Text fz="xl" fw={700} mb={4}>{time}</Text>
+            <Text fz="md" fw={700} mb={4}>{code}</Text>
+            {name && <Text fz="xs" c="dimmed" mb={4}>{name}</Text>}
+            {terminal && (
+                <Box
+                    display="inline-block"
+                    px={8}
+                    style={{
+                        fontSize: '0.6875rem',
+                        borderRadius: 'var(--mantine-radius-sm)',
+                        background: 'var(--mantine-color-gray-2)',
+                    }}
+                >
+                    Terminal {terminal}
+                </Box>
+            )}
+        </Box>
+    );
+}
+
 interface SegmentItemProps {
     segment: FlightSegmentData;
     isLast: boolean;
     connectionTime?: string;
-    isMobile: boolean;
+    isStacked: boolean;
 }
 
-const SegmentItem: React.FC<SegmentItemProps> = ({ segment, isLast, connectionTime, isMobile }) => {
+const SegmentItem: React.FC<SegmentItemProps> = ({ segment, isLast, connectionTime, isStacked }) => {
     return (
-        <Box sx={{ position: 'relative', mb: 3 }}>
+        <Box mb={24} style={{position: 'relative'}}>
             {/* Segment content */}
-            <Box
-                sx={{
-                    bgcolor: 'grey.50',
-                    borderRadius: 1.5,
-                    p: 2.5,
-                    border: '1px solid',
-                    borderColor: 'grey.200',
-                }}
-            >
+            <Paper withBorder radius="md" p={20} bg="var(--mantine-color-gray-0)">
                 {/* Segment header */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 2,
-                    }}
-                >
-                    <Typography
-                        sx={{
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            color: 'text.secondary',
-                            textTransform: 'uppercase',
-                            letterSpacing: 0.5,
-                        }}
-                    >
+                <Group justify="space-between" mb={16}>
+                    <Text fz="xs" fw={600} c="dimmed" tt="uppercase" style={{letterSpacing: 0.5}}>
                         Segment {segment.segmentOrder + 1}
-                    </Typography>
+                    </Text>
                     <Box
-                        sx={{
+                        px={12}
+                        py={2}
+                        style={{
                             fontSize: '0.875rem',
                             fontWeight: 700,
-                            color: 'primary.main',
-                            bgcolor: 'background.paper',
-                            px: 1.5,
-                            py: 0.5,
-                            borderRadius: 1.5,
-                            border: '1px solid',
-                            borderColor: 'primary.main',
+                            borderRadius: 'var(--mantine-radius-sm)',
+                            background: 'var(--mantine-color-body)',
+                            border: '1px solid var(--mantine-color-default-border)',
                         }}
                     >
                         {segment.carrierFsCode}{segment.flightNumber}
                     </Box>
-                </Box>
+                </Group>
 
                 {/* Segment route */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: isMobile ? 'stretch' : 'center',
-                        flexDirection: isMobile ? 'column' : 'row',
-                        gap: isMobile ? 2 : 3,
-                    }}
+                <Group
+                    align={isStacked ? 'stretch' : 'center'}
+                    gap={isStacked ? 16 : 24}
+                    wrap="nowrap"
+                    style={{flexDirection: isStacked ? 'column' : 'row'}}
                 >
-                    {/* Departure point */}
-                    <Box sx={{ flex: isMobile ? 'none' : '0 0 140px', textAlign: 'center' }}>
-                        <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-                            {segment.departureTime.format('HH:mm')}
-                        </Typography>
-                        <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
-                            {segment.departureAirportFsCode}
-                        </Typography>
-                        {segment.departureAirportName && (
-                            <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 0.5 }}>
-                                {segment.departureAirportName}
-                            </Typography>
-                        )}
-                        {segment.departureTerminal && (
-                            <Box
-                                sx={{
-                                    fontSize: '0.6875rem',
-                                    color: 'text.primary',
-                                    bgcolor: 'grey.200',
-                                    px: 1,
-                                    py: 0.25,
-                                    borderRadius: 1.25,
-                                    display: 'inline-block',
-                                }}
-                            >
-                                Terminal {segment.departureTerminal}
-                            </Box>
-                        )}
-                    </Box>
+                    <SegmentEndpoint
+                        time={segment.departureTime.format('HH:mm')}
+                        code={segment.departureAirportFsCode}
+                        name={segment.departureAirportName}
+                        terminal={segment.departureTerminal}
+                        stacked={isStacked}
+                    />
 
                     {/* Route connection */}
-                    <Box
-                        sx={{
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 1,
-                        }}
-                    >
+                    <Stack align="center" gap={8} style={{flex: 1}}>
                         {/* Duration badge */}
                         <Box
-                            sx={{
-                                bgcolor: 'primary.main',
-                                color: 'primary.contrastText',
-                                px: 1.5,
-                                py: 0.5,
-                                borderRadius: 1.5,
+                            px={12}
+                            py={2}
+                            style={{
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
+                                borderRadius: 'var(--mantine-radius-sm)',
+                                background: 'var(--mantine-primary-color-light)',
+                                color: 'var(--mantine-primary-color-light-color)',
                             }}
                         >
                             {formatDuration(segment.elapsedTime)}
@@ -151,121 +128,100 @@ const SegmentItem: React.FC<SegmentItemProps> = ({ segment, isLast, connectionTi
 
                         {/* Connection line */}
                         <Box
-                            sx={{
-                                width: isMobile ? 60 : '100%',
+                            w={isStacked ? 60 : '100%'}
+                            style={{
+                                position: 'relative',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                position: 'relative',
                             }}
                         >
                             <Box
-                                sx={{
-                                    width: '100%',
-                                    height: 3,
-                                    bgcolor: 'primary.main',
-                                    borderRadius: 1,
+                                w="100%"
+                                h={3}
+                                style={{
+                                    borderRadius: 'var(--mantine-radius-sm)',
+                                    background: 'var(--mantine-primary-color-filled)',
                                 }}
                             />
-                            <FlightIcon
-                                sx={{
+                            <Box
+                                style={{
                                     position: 'absolute',
-                                    fontSize: 16,
-                                    color: 'primary.main',
-                                    bgcolor: 'background.paper',
+                                    display: 'flex',
+                                    padding: 4,
                                     borderRadius: '50%',
-                                    p: 0.5,
-                                    transform: isMobile ? 'rotate(180deg)' : 'rotate(90deg)',
+                                    background: 'var(--mantine-color-body)',
+                                    color: 'var(--mantine-primary-color-filled)',
+                                    transform: isStacked ? 'rotate(180deg)' : 'rotate(90deg)',
                                 }}
-                            />
+                            >
+                                <Icon tabler={IconPlane} size={16}/>
+                            </Box>
                         </Box>
 
                         {/* Aircraft badge */}
                         {(segment.aircraftName || segment.flightEquipmentIataCode) && (
                             <Box
-                                sx={{
+                                px={8}
+                                py={2}
+                                c="dimmed"
+                                style={{
                                     fontSize: '0.6875rem',
-                                    color: 'text.secondary',
-                                    bgcolor: 'background.paper',
-                                    px: 1,
-                                    py: 0.5,
-                                    borderRadius: 1.25,
-                                    border: '1px solid',
-                                    borderColor: 'grey.300',
+                                    borderRadius: 'var(--mantine-radius-sm)',
+                                    background: 'var(--mantine-color-body)',
+                                    border: '1px solid var(--mantine-color-gray-3)',
                                 }}
                             >
                                 {segment.aircraftName || segment.flightEquipmentIataCode}
                             </Box>
                         )}
-                    </Box>
+                    </Stack>
 
-                    {/* Arrival point */}
-                    <Box sx={{ flex: isMobile ? 'none' : '0 0 140px', textAlign: 'center' }}>
-                        <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-                            {segment.arrivalTime.format('HH:mm')}
-                        </Typography>
-                        <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
-                            {segment.arrivalAirportFsCode}
-                        </Typography>
-                        {segment.arrivalAirportName && (
-                            <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 0.5 }}>
-                                {segment.arrivalAirportName}
-                            </Typography>
-                        )}
-                        {segment.arrivalTerminal && (
-                            <Box
-                                sx={{
-                                    fontSize: '0.6875rem',
-                                    color: 'text.primary',
-                                    bgcolor: 'grey.200',
-                                    px: 1,
-                                    py: 0.25,
-                                    borderRadius: 1.25,
-                                    display: 'inline-block',
-                                }}
-                            >
-                                Terminal {segment.arrivalTerminal}
-                            </Box>
-                        )}
-                    </Box>
-                </Box>
-            </Box>
+                    <SegmentEndpoint
+                        time={segment.arrivalTime.format('HH:mm')}
+                        code={segment.arrivalAirportFsCode}
+                        name={segment.arrivalAirportName}
+                        terminal={segment.arrivalTerminal}
+                        stacked={isStacked}
+                    />
+                </Group>
+            </Paper>
 
-            {/* Connection info (if not last segment) */}
+            {/*
+              * Not an Alert: this is a standing fact about the itinerary, and
+              * Mantine's Alert is an assertive live region — it would be announced
+              * as though it had just happened, every time a tab is switched.
+              */}
             {!isLast && connectionTime && (
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 1,
-                        mt: 1.5,
-                        bgcolor: 'warning.lighter',
-                        color: 'warning.dark',
-                        px: 1.5,
-                        py: 1.5,
-                        borderRadius: 1,
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
+                <Group
+                    justify="center"
+                    gap={8}
+                    mt={12}
+                    px={12}
+                    py={12}
+                    style={{
+                        borderRadius: 'var(--mantine-radius-sm)',
+                        background: 'var(--mantine-color-yellow-0)',
+                        color: 'var(--mantine-color-yellow-9)',
                     }}
                 >
-                    <ScheduleIcon sx={{ fontSize: '1.25rem' }} />
-                    <span>
+                    <Icon lucide={Clock} size={20}/>
+                    <Text fz="sm" fw={500}>
                         {connectionTime} connection time in {segment.arrivalAirportFsCode}
-                    </span>
-                </Box>
+                    </Text>
+                </Group>
             )}
 
             {/* Timeline connector */}
             {!isLast && (
                 <Box
-                    sx={{
+                    w={2}
+                    h={24}
+                    style={{
                         position: 'absolute',
                         left: '50%',
                         bottom: -12,
-                        width: 2,
-                        height: 24,
-                        bgcolor: 'grey.300',
+                        background: 'var(--mantine-color-gray-3)',
                         transform: 'translateX(-50%)',
                     }}
                 />
@@ -278,36 +234,21 @@ export const FlightItinerary: React.FC<FlightItineraryProps> = ({
     segments,
     getConnectionTime,
 }) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    /* `false` initial value, resolved on the first render rather than deferred to
+       an effect — otherwise the timeline mounts side-by-side and reflows. */
+    const isStacked = useMediaQuery(STACK_BELOW, false, {getInitialValueInEffect: false});
 
     if (!segments || segments.length === 0) {
         return null;
     }
 
     return (
-        <Paper
-            elevation={1}
-            sx={{
-                bgcolor: 'background.paper',
-                borderRadius: 2,
-                p: 3,
-            }}
-        >
+        <Paper withBorder radius="md" p={24} bg="var(--mantine-color-body)">
             {/* Card title */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    mb: 3,
-                }}
-            >
-                <RouteIcon sx={{ fontSize: '1.5rem', color: 'primary.main' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                    Flight Itinerary
-                </Typography>
-            </Box>
+            <Group gap={12} mb={24}>
+                <Icon tabler={IconRoute} size={24}/>
+                <Text fz="lg" fw={600}>Flight Itinerary</Text>
+            </Group>
 
             {/* Timeline container */}
             <Box>
@@ -323,7 +264,7 @@ export const FlightItinerary: React.FC<FlightItineraryProps> = ({
                             segment={segment}
                             isLast={isLast}
                             connectionTime={connectionTime}
-                            isMobile={isMobile}
+                            isStacked={isStacked}
                         />
                     );
                 })}

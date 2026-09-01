@@ -140,6 +140,40 @@ describe('BulkPriceUploadDialogService', () => {
             });
         });
 
+        /*
+         * The dialog's dropzone carries a CSS module, and the emitted stylesheet is
+         * only fetched if this loader lists it — a missing one fails silently and
+         * the dropzone renders with no border or hover at all. routes.ts pairs
+         * script and stylesheet through islandFiles(); so must this.
+         */
+        it('loads the island stylesheet alongside the script when the manifest has one', async () => {
+            delete (window as any).ReactBulkPriceUploadDialog;
+            mockHttp.get.mockResolvedValue({
+                data: {
+                    'vendor-react.js': 'vendor-react.abc.js',
+                    'bulkPriceUploadDialogReact.js': 'bulkPriceUploadDialogReact.bulk789.js',
+                    'bulkPriceUploadDialogReact.css': 'bulkPriceUploadDialogReact.css123.css',
+                },
+            });
+            mockOcLazyLoad.load.mockImplementation(async (arg: any) => {
+                if (typeof arg === 'object' && arg.name) {
+                    (window as any).ReactBulkPriceUploadDialog = {
+                        open: jest.fn().mockResolvedValue(true),
+                    };
+                }
+            });
+
+            await service.openBulkPriceUploadDialog(mockEvent);
+
+            expect(mockOcLazyLoad.load).toHaveBeenCalledWith({
+                name: 'uDispatch.bulkPriceUploadDialogReact',
+                files: [
+                    'dist/bulkPriceUploadDialogReact.bulk789.js',
+                    'dist/bulkPriceUploadDialogReact.css123.css',
+                ],
+            });
+        });
+
         it('should fall back to unhashed filename when manifest entry is missing', async () => {
             delete (window as any).ReactBulkPriceUploadDialog;
             mockHttp.get.mockResolvedValue({ data: {} });

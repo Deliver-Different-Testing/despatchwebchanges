@@ -7,27 +7,11 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import Autocomplete from '@mui/material/Autocomplete';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import Collapse from '@mui/material/Collapse';
-import DialogContent from '@mui/material/DialogContent';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Paper from '@mui/material/Paper';
-import Select from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ShippingIcon from '@mui/icons-material/LocalShipping';
-import LocationIcon from '@mui/icons-material/LocationOn';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import MapIcon from '@mui/icons-material/Map';
-import SaveIcon from '@mui/icons-material/Save';
-import SearchIcon from '@mui/icons-material/Search';
+import {Box, Button, Collapse, Group, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Textarea} from '@mantine/core';
+import {ChevronDown, ChevronUp, Lock, Map as MapGlyph, Save, Search} from 'lucide-react';
+import {IconMapPin, IconTruck} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
+import {SearchSelect} from '../../common/search-select/SearchSelect';
 import {
     EditAddressDialogViewModel,
     HereMapsLocationResult,
@@ -41,7 +25,14 @@ import type {ShowToastFn} from '../../../services/toastService';
 import {MapZoomViewControls} from '../../common/dispatch-map';
 import {safeRemoveObject} from '../../common/here-map/hereMapUtils';
 import {AddressType} from '../../../../enums/address-type.enum';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+    sectionPaperProps,
+} from '../shared/mantine';
 
 // Match the pickup/delivery flag colors used on the other maps so the pin
 // inherits the same visual language as the job-detail headers.
@@ -166,6 +157,25 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     );
 
     const {data: hereMapsApiKey} = useHereMapsApiKey({enabled: open});
+
+    /*
+     * The map needs a laid-out container, so it waits a frame after the dialog
+     * opens rather than building during the first render.
+     *
+     * This deliberately does not hang off the modal's transition callback, which
+     * is where the MUI version got it. Mantine drives the transition through
+     * useDidUpdate, so a dialog that mounts already open — which is every dialog
+     * reactDialogHost renders — never reports that it opened, and the map would
+     * never be built. Pinned in shared.test.tsx.
+     */
+    useEffect(() => {
+        if (!open) {
+            setDialogFullyOpen(false);
+            return;
+        }
+        const frame = requestAnimationFrame(() => setDialogFullyOpen(true));
+        return () => cancelAnimationFrame(frame);
+    }, [open]);
 
     // Initialize map when API key is available
     useEffect(() => {
@@ -599,436 +609,326 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
     return (
         <DialogShell
-            open={open}
+            opened={open}
             onClose={onClose}
-            maxWidth="md"
-            slotProps={{
-                paper: {
-                    sx: {
-                        overflow: 'hidden',
-                        maxWidth: 800,
-                    },
-                },
-                transition: {
-                    onEntered: () => setDialogFullyOpen(true),
-                },
-            }}
+            size={dialogSize.md}
+            label={title}
         >
             <DialogHeader
-                icon={readOnly ? <LockOutlinedIcon /> : <LocationIcon />}
+                icon={readOnly ? <Icon lucide={Lock}/> : <Icon tabler={IconMapPin}/>}
                 title={title}
                 subtitle={readOnly ? 'View only — this job is locked' : 'Search and update the address details'}
                 onClose={onClose}
                 closeDisabled={isSubmitting}
             />
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
+            <Stack bg={dialogContentBg} p={24} gap={20}>
                 {/* Address Search Section */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 2.5,
-                        mb: 2.5,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                    }}
-                >
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
-                        <SearchIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" sx={{
-                            fontWeight: 500
-                        }}>
-                            Address Lookup
-                        </Typography>
-                    </Box>
+                <Paper {...sectionPaperProps}>
+                    <Group gap={8} mb={16} c="dimmed">
+                        <Icon lucide={Search}/>
+                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Address Lookup</Text>
+                    </Group>
 
-                    <Autocomplete
-                        options={addressOptions}
+                    {/* Object-valued and searched on the server, which is the case
+                        Mantine's Autocomplete cannot cover. */}
+                    <SearchSelect
+                        label="Search Address"
+                        placeholder="Type at least 3 characters to search..."
                         disabled={readOnly}
-                        getOptionLabel={(option) => option.address.label}
+                        minSearchLength={3}
+                        value={null}
+                        onChange={handleAddressSelect}
+                        options={addressOptions}
                         loading={isSearchingAddresses || isLoadingAddress}
-                        inputValue={addressSearchText}
-                        onInputChange={(_, value) => setAddressSearchText(value)}
-                        onChange={(_, value) => handleAddressSelect(value)}
-                        filterOptions={(x) => x} // Disable client-side filtering
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                        renderInput={({slotProps: autoSlotProps, ...params}) => (
-                            <TextField
-                                {...params}
-                                label="Search Address"
-                                placeholder="Type at least 3 characters to search..."
-                                slotProps={{
-                                    ...autoSlotProps,
-                                    input: {
-                                        ...autoSlotProps.input,
-                                        endAdornment: (
-                                            <>
-                                                {(isSearchingAddresses || isLoadingAddress) && (
-                                                    <CircularProgress size={20} />
-                                                )}
-                                                {autoSlotProps.input.endAdornment}
-                                            </>
-                                        ),
-                                    },
-                                }}
-                            />
-                        )}
-                        noOptionsText={
-                            addressSearchText.length < 3
-                                ? 'Type at least 3 characters to search...'
-                                : 'No addresses found'
-                        }
+                        onSearchChange={setAddressSearchText}
+                        getOptionKey={(o) => o.id}
+                        getOptionLabel={(o) => o.address.label}
                     />
 
                     {isLoadingAddress && (
-                        <Box sx={{mt: 1, display: 'flex', alignItems: 'center', gap: 1}}>
-                            <CircularProgress size={16} />
-                            <Typography variant="body2" sx={{
-                                color: "text.secondary"
-                            }}>
-                                Loading address details...
-                            </Typography>
-                        </Box>
+                        <Group gap={8} mt={8}>
+                            <Loader size={16} aria-label="Loading address details"/>
+                            <Text fz="sm" c="dimmed">Loading address details...</Text>
+                        </Group>
                     )}
                 </Paper>
 
                 {/* Address Details Section */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 2.5,
-                        mb: 2.5,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                    }}
-                >
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
-                        <LocationIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" sx={{
-                            fontWeight: 500
-                        }}>
-                            Address Details
-                        </Typography>
-                    </Box>
+                <Paper {...sectionPaperProps}>
+                    <Group gap={8} mb={16} c="dimmed">
+                        <Icon tabler={IconMapPin}/>
+                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Address Details</Text>
+                    </Group>
 
-                    {/* Line 1: Company/Building/Complex */}
-                    <TextField
-                        label="Company/Building/Complex"
-                        value={addressLine1}
-                        onChange={(e) => setAddressLine1(e.target.value)}
-                        fullWidth
-                        disabled={isLoadingAddress || readOnly}
-                        sx={{mb: 2}}
-                    />
+                    <Stack gap={16}>
+                        {/* Line 1: Company/Building/Complex */}
+                        <TextInput
+                            label="Company/Building/Complex"
+                            value={addressLine1}
+                            onChange={(e) => setAddressLine1(e.currentTarget.value)}
+                            disabled={isLoadingAddress || readOnly}
+                        />
 
-                    {/* Line 2-4: Unit, Street Number, Street Name */}
-                    <Box sx={{display: 'flex', gap: 2, mb: 2}}>
-                        <TextField
-                            label={isUsTenant ? 'Unit/Suite' : 'Unit/Flat/Suite'}
-                            value={addressLine2}
-                            onChange={(e) => setAddressLine2(e.target.value)}
-                            disabled={isLoadingAddress || readOnly}
-                            sx={{flex: '0 0 25%'}}
-                        />
-                        <TextField
-                            label="Street Number"
-                            value={addressLine3}
-                            onChange={(e) => setAddressLine3(e.target.value)}
-                            disabled={isLoadingAddress || readOnly}
-                            sx={{flex: '0 0 20%'}}
-                        />
-                        <TextField
-                            label="Street Name"
-                            value={addressLine4}
-                            onChange={(e) => setAddressLine4(e.target.value)}
-                            error={!!validationErrors.addressLine4}
-                            helperText={validationErrors.addressLine4}
-                            disabled={isLoadingAddress || readOnly}
-                            sx={{flex: 1}}
-                        />
-                    </Box>
-
-                    {/* US Format: City, State, ZIP */}
-                    {isUsTenant && (
-                        <Box sx={{display: 'flex', gap: 2, mb: 2}}>
-                            <TextField
-                                label="City"
-                                value={addressLine5}
-                                onChange={(e) => setAddressLine5(e.target.value)}
-                                error={!!validationErrors.addressLine5}
-                                helperText={validationErrors.addressLine5}
+                        {/* Line 2-4: Unit, Street Number, Street Name */}
+                        <Group gap={16} align="flex-start" wrap="nowrap">
+                            <TextInput
+                                label={isUsTenant ? 'Unit/Suite' : 'Unit/Flat/Suite'}
+                                value={addressLine2}
+                                onChange={(e) => setAddressLine2(e.currentTarget.value)}
                                 disabled={isLoadingAddress || readOnly}
-                                required
-                                sx={{flex: '0 0 50%'}}
+                                style={{flex: '0 0 25%'}}
                             />
-                            <FormControl sx={{flex: '0 0 25%'}} error={!!validationErrors.addressLine6}>
-                                <InputLabel>State *</InputLabel>
-                                <Select
-                                    value={stateAbbreviation}
-                                    onChange={(e) => handleStateChange(e.target.value)}
-                                    label="State *"
+                            <TextInput
+                                label="Street Number"
+                                value={addressLine3}
+                                onChange={(e) => setAddressLine3(e.currentTarget.value)}
+                                disabled={isLoadingAddress || readOnly}
+                                style={{flex: '0 0 20%'}}
+                            />
+                            <TextInput
+                                label="Street Name"
+                                value={addressLine4}
+                                onChange={(e) => setAddressLine4(e.currentTarget.value)}
+                                error={validationErrors.addressLine4}
+                                disabled={isLoadingAddress || readOnly}
+                                style={{flex: 1}}
+                            />
+                        </Group>
+
+                        {/* US Format: City, State, ZIP */}
+                        {isUsTenant && (
+                            <Group gap={16} align="flex-start" wrap="nowrap">
+                                <TextInput
+                                    label="City"
+                                    withAsterisk
+                                    value={addressLine5}
+                                    onChange={(e) => setAddressLine5(e.currentTarget.value)}
+                                    error={validationErrors.addressLine5}
                                     disabled={isLoadingAddress || readOnly}
-                                >
-                                    {US_STATES.map((state) => (
-                                        <MenuItem key={state.abbreviation} value={state.abbreviation}>
-                                            {state.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <TextField
-                                label="ZIP Code"
-                                value={addressLine7}
-                                onChange={(e) => setAddressLine7(e.target.value)}
-                                error={!!validationErrors.addressLine7}
-                                helperText={validationErrors.addressLine7}
-                                disabled={isLoadingAddress || readOnly}
-                                required
-                                sx={{flex: '0 0 auto', maxWidth: 120}}
-                                slotProps={{htmlInput: {pattern: '[0-9]{5}(-[0-9]{4})?'}}}
-                            />
-                        </Box>
-                    )}
+                                    style={{flex: '0 0 45%'}}
+                                />
+                                <Select
+                                    label="State"
+                                    withAsterisk
+                                    searchable
+                                    comboboxProps={{keepMounted: false}}
+                                    value={stateAbbreviation || null}
+                                    onChange={(value) => handleStateChange(value ?? '')}
+                                    data={US_STATES.map((state) => ({
+                                        value: state.abbreviation,
+                                        label: state.name,
+                                    }))}
+                                    error={validationErrors.addressLine6}
+                                    disabled={isLoadingAddress || readOnly}
+                                    style={{flex: '0 0 30%'}}
+                                />
+                                <TextInput
+                                    label="ZIP Code"
+                                    withAsterisk
+                                    value={addressLine7}
+                                    onChange={(e) => setAddressLine7(e.currentTarget.value)}
+                                    error={validationErrors.addressLine7}
+                                    disabled={isLoadingAddress || readOnly}
+                                    style={{flex: 1}}
+                                />
+                            </Group>
+                        )}
 
-                    {/* NZ Format: Suburb, City, Post Code */}
-                    {!isUsTenant && (
-                        <Box sx={{display: 'flex', gap: 2, mb: 2}}>
-                            <TextField
-                                label="Suburb"
-                                value={addressLine5}
-                                onChange={(e) => setAddressLine5(e.target.value)}
-                                disabled={isLoadingAddress || readOnly}
-                                sx={{flex: '0 0 40%'}}
-                            />
-                            <TextField
-                                label="City"
-                                value={addressLine6}
-                                onChange={(e) => setAddressLine6(e.target.value)}
-                                error={!!validationErrors.addressLine6}
-                                helperText={validationErrors.addressLine6}
-                                disabled={isLoadingAddress || readOnly}
-                                required
-                                sx={{flex: '0 0 40%'}}
-                            />
-                            <TextField
-                                label="Post Code"
-                                value={addressLine7}
-                                onChange={(e) => setAddressLine7(e.target.value)}
-                                error={!!validationErrors.addressLine7}
-                                helperText={validationErrors.addressLine7}
-                                disabled={isLoadingAddress || readOnly}
-                                required
-                                sx={{flex: '0 0 auto', maxWidth: 110}}
-                                slotProps={{htmlInput: {pattern: '[0-9]{4}'}}}
-                            />
-                        </Box>
-                    )}
+                        {/* NZ Format: Suburb, City, Post Code */}
+                        {!isUsTenant && (
+                            <Group gap={16} align="flex-start" wrap="nowrap">
+                                <TextInput
+                                    label="Suburb"
+                                    value={addressLine5}
+                                    onChange={(e) => setAddressLine5(e.currentTarget.value)}
+                                    disabled={isLoadingAddress || readOnly}
+                                    style={{flex: '0 0 40%'}}
+                                />
+                                <TextInput
+                                    label="City"
+                                    withAsterisk
+                                    value={addressLine6}
+                                    onChange={(e) => setAddressLine6(e.currentTarget.value)}
+                                    error={validationErrors.addressLine6}
+                                    disabled={isLoadingAddress || readOnly}
+                                    style={{flex: '0 0 40%'}}
+                                />
+                                <TextInput
+                                    label="Post Code"
+                                    withAsterisk
+                                    value={addressLine7}
+                                    onChange={(e) => setAddressLine7(e.currentTarget.value)}
+                                    error={validationErrors.addressLine7}
+                                    disabled={isLoadingAddress || readOnly}
+                                    style={{flex: 1}}
+                                />
+                            </Group>
+                        )}
 
-                    {/* Line 8: Country */}
-                    <TextField
-                        label="Country"
-                        value={addressLine8}
-                        onChange={(e) => setAddressLine8(e.target.value)}
-                        disabled={isLoadingAddress || readOnly}
-                        fullWidth
-                        sx={{mb: 2}}
-                    />
-
-                    {/* Coordinates */}
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <TextField
-                            label="Latitude"
-                            type="number"
-                            value={latitude ?? ''}
-                            onChange={(e) => setLatitude(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        {/* Line 8: Country */}
+                        <TextInput
+                            label="Country"
+                            value={addressLine8}
+                            onChange={(e) => setAddressLine8(e.currentTarget.value)}
                             disabled={isLoadingAddress || readOnly}
-                            slotProps={{htmlInput: {step: 'any'}}}
-                            sx={{flex: 1}}
                         />
-                        <TextField
-                            label="Longitude"
-                            type="number"
-                            value={longitude ?? ''}
-                            onChange={(e) => setLongitude(e.target.value ? parseFloat(e.target.value) : undefined)}
-                            disabled={isLoadingAddress || readOnly}
-                            slotProps={{htmlInput: {step: 'any'}}}
-                            sx={{flex: 1}}
-                        />
-                    </Box>
+
+                        {/* Coordinates */}
+                        <Group gap={16} align="flex-start" grow>
+                            <NumberInput
+                                label="Latitude"
+                                value={latitude ?? ''}
+                                onChange={(value) => setLatitude(value === '' ? undefined : Number(value))}
+                                disabled={isLoadingAddress || readOnly}
+                                decimalScale={6}
+                            />
+                            <NumberInput
+                                label="Longitude"
+                                value={longitude ?? ''}
+                                onChange={(value) => setLongitude(value === '' ? undefined : Number(value))}
+                                disabled={isLoadingAddress || readOnly}
+                                decimalScale={6}
+                            />
+                        </Group>
+                    </Stack>
                 </Paper>
 
                 {/* Shipment Details Card */}
                 {showContactInfo && (
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            mb: 2.5,
-                            borderRadius: 2,
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            bgcolor: 'background.paper',
-                            overflow: 'hidden',
-                        }}
-                    >
-                        <Box
-                            sx={(theme) => ({
-                                px: 2.5,
-                                py: 1.5,
-                                display: 'flex',
-                                alignItems: 'center',
-                                cursor: 'pointer',
-                                '&:hover': {bgcolor: alpha(theme.palette.common.black, 0.02)},
-                            })}
+                    <Paper {...sectionPaperProps} p={0}>
+                        {/*
+                          * A real button, not a div with onClick: this toggles a
+                          * region, so it needs to be reachable by keyboard and to
+                          * report its state. `subtle` carries the hover the MUI
+                          * version hand-rolled.
+                          */}
+                        <Button
+                            variant="subtle"
+                            color="gray"
+                            fullWidth
+                            justify="space-between"
+                            h={52}
+                            aria-expanded={isContactCardExpanded}
+                            leftSection={<Icon tabler={IconTruck}/>}
+                            rightSection={<Icon lucide={isContactCardExpanded ? ChevronUp : ChevronDown}/>}
                             onClick={() => setIsContactCardExpanded(!isContactCardExpanded)}
                         >
-                            <ShippingIcon sx={{color: 'text.secondary', mr: 1}} />
-                            <Typography
-                                variant="subtitle1"
-                                sx={{
-                                    fontWeight: 500,
-                                    flex: 1
-                                }}>
-                                Shipment Details
-                            </Typography>
-                            {isContactCardExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </Box>
+                            <Text fz="md" fw={500}>Shipment Details</Text>
+                        </Button>
 
-                        <Collapse in={isContactCardExpanded}>
-                            <Box sx={{px: 2.5, pb: 2.5}}>
+                        <Collapse expanded={isContactCardExpanded}>
+                            <Stack gap={16} px={20} pb={20}>
                                 {/* Contact Info */}
-                                <Box sx={{display: 'flex', gap: 2, mb: 2}}>
-                                    <TextField
+                                <Group gap={16} align="flex-start" grow>
+                                    <TextInput
                                         label="Contact Name"
                                         value={contactName}
-                                        onChange={(e) => setContactName(e.target.value)}
+                                        onChange={(e) => setContactName(e.currentTarget.value)}
                                         disabled={readOnly}
-                                        fullWidth
                                     />
-                                    <TextField
+                                    <TextInput
                                         label="Contact Phone"
-                                        value={contactMobile}
-                                        onChange={(e) => setContactMobile(e.target.value)}
                                         type="tel"
+                                        value={contactMobile}
+                                        onChange={(e) => setContactMobile(e.currentTarget.value)}
                                         disabled={readOnly}
-                                        fullWidth
                                     />
-                                </Box>
+                                </Group>
 
                                 {/* Weight and Quantity */}
-                                <Box sx={{display: 'flex', gap: 2, mb: 2}}>
-                                    <TextField
+                                <Group gap={16} align="flex-start" grow>
+                                    <NumberInput
                                         label={`Weight (${isUsTenant ? 'lbs' : 'kg'})`}
-                                        type="number"
+                                        min={0}
+                                        step={0.1}
                                         value={weight ?? ''}
-                                        onChange={(e) => setWeight(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        slotProps={{htmlInput: {min: 0, step: 0.1}}}
+                                        onChange={(value) => setWeight(value === '' ? undefined : Number(value))}
                                         disabled={readOnly}
-                                        fullWidth
                                     />
-                                    <TextField
+                                    <NumberInput
                                         label="Quantity"
-                                        type="number"
+                                        min={1}
+                                        allowDecimal={false}
                                         value={quantity ?? ''}
-                                        onChange={(e) => setQuantity(e.target.value ? parseInt(e.target.value) : undefined)}
-                                        slotProps={{htmlInput: {min: 1}}}
+                                        onChange={(value) => setQuantity(value === '' ? undefined : Number(value))}
                                         disabled={readOnly}
-                                        fullWidth
                                     />
-                                </Box>
+                                </Group>
 
                                 {/* Dimensions */}
-                                <Box sx={{display: 'flex', gap: 2, mb: 2}}>
-                                    <TextField
+                                <Group gap={16} align="flex-start" grow>
+                                    <NumberInput
                                         label={`Length (${isUsTenant ? 'in' : 'cm'})`}
-                                        type="number"
+                                        min={0}
+                                        step={0.1}
                                         value={length ?? ''}
-                                        onChange={(e) => setLength(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        slotProps={{htmlInput: {min: 0, step: 0.1}}}
+                                        onChange={(value) => setLength(value === '' ? undefined : Number(value))}
                                         disabled={readOnly}
-                                        fullWidth
                                     />
-                                    <TextField
+                                    <NumberInput
                                         label={`Width (${isUsTenant ? 'in' : 'cm'})`}
-                                        type="number"
+                                        min={0}
+                                        step={0.1}
                                         value={depth ?? ''}
-                                        onChange={(e) => setDepth(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        slotProps={{htmlInput: {min: 0, step: 0.1}}}
+                                        onChange={(value) => setDepth(value === '' ? undefined : Number(value))}
                                         disabled={readOnly}
-                                        fullWidth
                                     />
-                                    <TextField
+                                    <NumberInput
                                         label={`Height (${isUsTenant ? 'in' : 'cm'})`}
-                                        type="number"
+                                        min={0}
+                                        step={0.1}
                                         value={height ?? ''}
-                                        onChange={(e) => setHeight(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        slotProps={{htmlInput: {min: 0, step: 0.1}}}
+                                        onChange={(value) => setHeight(value === '' ? undefined : Number(value))}
                                         disabled={readOnly}
-                                        fullWidth
                                     />
-                                </Box>
+                                </Group>
 
                                 {/* Notes */}
-                                <TextField
+                                <Textarea
                                     label="Notes"
-                                    value={jobNotes}
-                                    onChange={(e) => setJobNotes(e.target.value)}
                                     placeholder="Additional notes or special instructions..."
-                                    multiline
                                     rows={3}
-                                    slotProps={{htmlInput: {maxLength: 150}}}
+                                    maxLength={150}
+                                    value={jobNotes}
+                                    onChange={(e) => setJobNotes(e.currentTarget.value)}
                                     disabled={readOnly}
-                                    fullWidth
                                 />
-                            </Box>
+                            </Stack>
                         </Collapse>
                     </Paper>
                 )}
 
                 {/* Map Section */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 2.5,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                    }}
-                >
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
-                        <MapIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" sx={{
-                            fontWeight: 500
-                        }}>
-                            Location Preview
-                        </Typography>
+                <Paper {...sectionPaperProps}>
+                    <Group gap={8} mb={16} c="dimmed">
+                        <Icon lucide={MapGlyph}/>
+                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Location Preview</Text>
                         {!readOnly && (
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: "text.secondary",
-                                    ml: 'auto'
-                                }}>
-                                Click on the map to set coordinates
-                            </Typography>
+                            <Text fz="sm" c="dimmed" ml="auto">Click on the map to set coordinates</Text>
                         )}
-                    </Box>
+                    </Group>
 
+                    {/*
+                      * `isolation: isolate` is load-bearing, and inline on purpose.
+                      * HERE renders its bubbles and marker tooltips inside the map
+                      * container at z-index ~1001, which paints over any sibling
+                      * control rail — here MapZoomViewControls — unless this wrapper
+                      * establishes its own stacking context. See CLAUDE.md.
+                      */}
                     <Box
-                        sx={{
+                        data-testid="edit-address-map-wrapper"
+                        style={{
+                            isolation: 'isolate',
                             position: 'relative',
                             width: '100%',
                             height: 300,
-                            borderRadius: 1,
+                            borderRadius: 'var(--mantine-radius-sm)',
                             overflow: 'hidden',
-                            bgcolor: 'grey.100',
+                            background: 'var(--mantine-color-gray-1)',
                         }}
                     >
-                        <Box ref={mapContainerRef} sx={{width: '100%', height: '100%'}} />
+                        <div ref={mapContainerRef} style={{width: '100%', height: '100%'}}/>
                         {mapInstance ? (
                             <MapZoomViewControls
                                 map={mapInstance}
@@ -1040,13 +940,13 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         ) : null}
                     </Box>
                 </Paper>
-            </DialogContent>
+            </Stack>
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
                 confirmLabel={isSubmitting ? 'Saving...' : submitLabel}
                 cancelLabel={readOnly ? 'Close' : 'Cancel'}
-                confirmIcon={<SaveIcon />}
+                confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={isSubmitting}
                 submitting={isSubmitting}
                 hideConfirm={readOnly}

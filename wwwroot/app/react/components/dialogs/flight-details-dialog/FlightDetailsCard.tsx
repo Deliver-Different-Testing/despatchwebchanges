@@ -5,27 +5,72 @@
  */
 
 import React from 'react';
-import {useTheme} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import InfoIcon from '@mui/icons-material/Info';
-import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import FlightLandIcon from '@mui/icons-material/FlightLand';
-import TerminalIcon from '@mui/icons-material/MeetingRoom';
-import AircraftIcon from '@mui/icons-material/AirplanemodeActive';
+import {Box, Divider, Group, Paper, SimpleGrid, Text} from '@mantine/core';
+import {DoorOpen, Info} from 'lucide-react';
+import {IconPlane, IconPlaneArrival, IconPlaneDeparture} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
 import { FlightDetailsCardProps } from './types';
+
+/** Airport, code, city, local time and terminal — the same block for each end of the leg. */
+function Endpoint({icon, title, info}: {
+    icon: React.ReactNode;
+    title: string;
+    info: {
+        name: string;
+        code: string;
+        city?: string;
+        country?: string;
+        time: {format: (pattern: string) => string};
+        terminal?: string;
+    };
+}) {
+    return (
+        <Box>
+            <Group gap={8} mb={16}>
+                {icon}
+                <Text fz="md" fw={600}>{title}</Text>
+            </Group>
+
+            <Box mb={12}>
+                <Text fz="lg" fw={600} mb={4}>{info.name}</Text>
+                <Text fz="sm" fw={600} mb={4}>{info.code}</Text>
+                {info.city && (
+                    <Text fz="sm" c="dimmed">
+                        {info.city}{info.country ? `, ${info.country}` : ''}
+                    </Text>
+                )}
+            </Box>
+
+            <Box mb={12}>
+                <Text fz={24} fw={700} lh={1.2} mb={4}>{info.time.format('HH:mm')}</Text>
+                <Text fz="sm" c="dimmed">{info.time.format('MMM D, YYYY')}</Text>
+            </Box>
+
+            {info.terminal && (
+                <Group
+                    gap={8}
+                    px={12}
+                    py={8}
+                    c="dimmed"
+                    w="fit-content"
+                    style={{
+                        borderRadius: 'var(--mantine-radius-sm)',
+                        background: 'var(--mantine-color-gray-1)',
+                    }}
+                >
+                    <Icon lucide={DoorOpen} size={16}/>
+                    <Text fz="sm" fw={500}>Terminal {info.terminal}</Text>
+                </Group>
+            )}
+        </Box>
+    );
+}
 
 export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
     segment,
     flight,
     isOverview,
 }) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
     // Get arrival info - for overview with multi-segment, show final destination
     const getArrivalInfo = () => {
         if (isOverview && flight.isMultiSegment && flight.flightSegments && flight.flightSegments.length > 0) {
@@ -62,204 +107,49 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
     const aircraftName = segment.aircraftName || flight.aircraft;
 
     return (
-        <Paper
-            elevation={1}
-            sx={{
-                bgcolor: 'background.paper',
-                borderRadius: 2,
-                p: 3,
-            }}
-        >
+        <Paper withBorder radius="md" p={24} bg="var(--mantine-color-body)">
             {/* Card title */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    mb: 3,
-                }}
-            >
-                <InfoIcon sx={{ fontSize: '1.5rem', color: 'primary.main' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                    Flight Information
-                </Typography>
-            </Box>
-            {/* Details grid */}
-            <Box
-                sx={{
-                    display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-                    gap: 4,
-                    mb: 3,
-                }}
-            >
-                {/* Departure section */}
-                <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <FlightTakeoffIcon sx={{ fontSize: 20, color: 'primary.main' }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                            Departure
-                        </Typography>
-                    </Box>
+            <Group gap={12} mb={24}>
+                <Icon lucide={Info} size={24}/>
+                <Text fz="lg" fw={600}>Flight Information</Text>
+            </Group>
 
-                    <Box sx={{ mb: 1.5 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
-                            {departureInfo.name}
-                        </Typography>
-                        <Typography
-                            sx={{
-                                fontWeight: 600,
-                                color: 'primary.main',
-                                fontSize: '0.875rem',
-                                mb: 0.5,
-                            }}
-                        >
-                            {departureInfo.code}
-                        </Typography>
-                        {departureInfo.city && (
-                            <Typography variant="body2" sx={{
-                                color: "text.secondary"
-                            }}>
-                                {departureInfo.city}{departureInfo.country ? `, ${departureInfo.country}` : ''}
-                            </Typography>
-                        )}
-                    </Box>
+            {/*
+              * One column on a narrow dialog, two otherwise. This was a
+              * useMediaQuery driving a grid-template-columns string; SimpleGrid
+              * says the same thing without a hook or a re-render on resize.
+              */}
+            <SimpleGrid cols={{base: 1, md: 2}} spacing={32} mb={24}>
+                <Endpoint
+                    icon={<Icon tabler={IconPlaneDeparture} size={20}/>}
+                    title="Departure"
+                    info={departureInfo}
+                />
+                <Endpoint
+                    icon={<Icon tabler={IconPlaneArrival} size={20}/>}
+                    title="Arrival"
+                    info={arrivalInfo}
+                />
+            </SimpleGrid>
 
-                    <Box sx={{ mb: 1.5 }}>
-                        <Typography
-                            sx={{
-                                fontSize: '1.5rem',
-                                fontWeight: 700,
-                                color: 'text.primary',
-                                mb: 0.5,
-                                lineHeight: 1.2,
-                            }}
-                        >
-                            {departureInfo.time.format('HH:mm')}
-                        </Typography>
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            {departureInfo.time.format('MMM D, YYYY')}
-                        </Typography>
-                    </Box>
-
-                    {departureInfo.terminal && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                bgcolor: 'grey.100',
-                                px: 1.5,
-                                py: 1,
-                                borderRadius: 1,
-                                width: 'fit-content',
-                                fontWeight: 500,
-                                color: 'text.secondary',
-                                fontSize: '0.875rem',
-                            }}
-                        >
-                            <TerminalIcon sx={{ fontSize: 16 }} />
-                            <span>Terminal {departureInfo.terminal}</span>
-                        </Box>
-                    )}
-                </Box>
-
-                {/* Arrival section */}
-                <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <FlightLandIcon sx={{ fontSize: 20, color: 'primary.main' }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                            Arrival
-                        </Typography>
-                    </Box>
-
-                    <Box sx={{ mb: 1.5 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
-                            {arrivalInfo.name}
-                        </Typography>
-                        <Typography
-                            sx={{
-                                fontWeight: 600,
-                                color: 'primary.main',
-                                fontSize: '0.875rem',
-                                mb: 0.5,
-                            }}
-                        >
-                            {arrivalInfo.code}
-                        </Typography>
-                        {arrivalInfo.city && (
-                            <Typography variant="body2" sx={{
-                                color: "text.secondary"
-                            }}>
-                                {arrivalInfo.city}{arrivalInfo.country ? `, ${arrivalInfo.country}` : ''}
-                            </Typography>
-                        )}
-                    </Box>
-
-                    <Box sx={{ mb: 1.5 }}>
-                        <Typography
-                            sx={{
-                                fontSize: '1.5rem',
-                                fontWeight: 700,
-                                color: 'text.primary',
-                                mb: 0.5,
-                                lineHeight: 1.2,
-                            }}
-                        >
-                            {arrivalInfo.time.format('HH:mm')}
-                        </Typography>
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            {arrivalInfo.time.format('MMM D, YYYY')}
-                        </Typography>
-                    </Box>
-
-                    {arrivalInfo.terminal && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                bgcolor: 'grey.100',
-                                px: 1.5,
-                                py: 1,
-                                borderRadius: 1,
-                                width: 'fit-content',
-                                fontWeight: 500,
-                                color: 'text.secondary',
-                                fontSize: '0.875rem',
-                            }}
-                        >
-                            <TerminalIcon sx={{ fontSize: 16 }} />
-                            <span>Terminal {arrivalInfo.terminal}</span>
-                        </Box>
-                    )}
-                </Box>
-            </Box>
             {/* Aircraft section */}
             {aircraftName && (
                 <>
-                    <Divider sx={{ my: 3 }} />
+                    <Divider my={24}/>
                     <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                            <AircraftIcon sx={{ fontSize: 20, color: 'primary.main' }} />
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                                Aircraft
-                            </Typography>
-                        </Box>
+                        <Group gap={8} mb={12}>
+                            <Icon tabler={IconPlane} size={20}/>
+                            <Text fz="md" fw={600}>Aircraft</Text>
+                        </Group>
                         <Box
-                            sx={{
-                                bgcolor: 'grey.100',
-                                px: 2,
-                                py: 1.5,
-                                borderRadius: 1,
-                                display: 'inline-block',
+                            px={16}
+                            py={12}
+                            c="dimmed"
+                            display="inline-block"
+                            style={{
+                                borderRadius: 'var(--mantine-radius-sm)',
+                                background: 'var(--mantine-color-gray-1)',
                                 fontWeight: 500,
-                                color: 'text.secondary',
-                                fontSize: '1rem',
                             }}
                         >
                             {aircraftName}

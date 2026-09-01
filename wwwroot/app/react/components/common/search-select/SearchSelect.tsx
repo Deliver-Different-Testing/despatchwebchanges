@@ -29,6 +29,7 @@ export function SearchSelect<T>({
     label,
     'aria-label': ariaLabel,
     placeholder,
+    description,
     value,
     onChange,
     search,
@@ -134,11 +135,19 @@ export function SearchSelect<T>({
 
     return (
         <Combobox store={combobox} onOptionSubmit={handleSubmit} disabled={disabled}>
-            <Combobox.Target>
+            {/*
+              * withExpandedAttribute is off by default, and without it the target
+              * gets neither the combobox role nor aria-expanded — the field
+              * announces as a plain text box and nothing reports that the list is
+              * open. Mantine's own Select and Autocomplete pass it for the same
+              * reason.
+              */}
+            <Combobox.Target withExpandedAttribute>
                 <TextInput
                     label={label}
                     aria-label={ariaLabel}
                     placeholder={placeholder}
+                    description={description}
                     withAsterisk={withAsterisk}
                     disabled={disabled}
                     autoFocus={autoFocus}

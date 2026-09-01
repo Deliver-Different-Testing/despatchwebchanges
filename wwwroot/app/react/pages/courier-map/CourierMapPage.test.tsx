@@ -10,7 +10,7 @@ import {QueryClient} from '@tanstack/react-query';
 import {CourierMapPage} from './CourierMapPage';
 import type {CourierMapPageProps} from './CourierMapPage.types';
 import * as courierApi from '../../services/courierApi';
-import {renderWithMantineOverMui} from '../../__testUtils__';
+import {renderWithMantine} from '../../__testUtils__';
 
 // Mock the courier API
 jest.mock('../../services/courierApi', () => ({
@@ -46,7 +46,7 @@ function createTestQueryClient(): QueryClient {
 }
 
 const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) =>
-    renderWithMantineOverMui(ui, {queryClient: queryClient ?? createTestQueryClient()});
+    renderWithMantine(ui, {queryClient: queryClient ?? createTestQueryClient()});
 
 interface CourierMapPageInternalProps extends CourierMapPageProps {
     apiKey: string | null;

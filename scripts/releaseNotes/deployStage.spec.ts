@@ -1,9 +1,11 @@
 /** @jest-environment node */
 import {
+    environmentEmoji,
     environmentLabel,
     isStageComplete,
     postingEnvironment,
     previousShaForStage,
+    stageDeployedAt,
     type EnvironmentDeployments,
 } from './deployStage';
 
@@ -83,5 +85,29 @@ describe('previousShaForStage', () => {
         const fresh = stage();
         fresh[1].deployments = [deployment(31, 'newsha', '2026-08-31T10:05:00Z')];
         expect(previousShaForStage(fresh, 'newsha')).toBeNull();
+    });
+});
+
+describe('environmentEmoji', () => {
+    it('marks production apart from the staging stages', () => {
+        expect(environmentEmoji('tenants-production')).toBe('🚀');
+        expect(environmentEmoji('staging')).toBe('🧪');
+        expect(environmentEmoji('tenants-staging')).toBe('🧪');
+        expect(environmentEmoji('something-else')).toBe('📦');
+    });
+});
+
+describe('stageDeployedAt', () => {
+    const environments = [
+        { environment: 'urgent-prod', deployments: [{ id: 1, sha: 'head', created_at: '2026-09-02T04:10:00Z' }] },
+        { environment: 'medical-prod', deployments: [{ id: 2, sha: 'head', created_at: '2026-09-02T04:12:00Z' }] },
+    ];
+
+    it('reports when the last environment in the stage got the commit', () => {
+        expect(stageDeployedAt(environments, 'head')).toBe('2026-09-02T04:12:00Z');
+    });
+
+    it('reports nothing when no environment is on the commit', () => {
+        expect(stageDeployedAt(environments, 'other')).toBeNull();
     });
 });

@@ -15,47 +15,6 @@ import {configure} from '@testing-library/react';
 // bounded by jest.config.js testTimeout (30s).
 configure({asyncUtilTimeout: 5000});
 
-// Disable MUI enter/exit animations globally in tests. Dialog/Menu/Popover/
-// Collapse/Tooltip transitions run on real timers and add hundreds of ms per
-// interaction (act/userEvent wait for them to settle) without testing
-// anything. Patching createTheme reaches every theme — including the many
-// per-file `createTheme()` calls — by deep-merging zero-duration transitions
-// and instant component defaults on top of whatever options the caller passes.
-jest.mock('@mui/material/styles', () => {
-    const actual = jest.requireActual('@mui/material/styles');
-    const noAnimationOverrides = {
-        transitions: {
-            // Zero durations AND collapse the transition CSS string to 'none' so no
-            // transition property is emitted at all (durations alone still leave the
-            // property present, which some MUI surfaces schedule timers around).
-            create: () => 'none',
-            duration: {
-                shortest: 0, shorter: 0, short: 0,
-                standard: 0, complex: 0,
-                enteringScreen: 0, leavingScreen: 0,
-            },
-        },
-        components: {
-            // TouchRipple is a timer-driven animation fired on every ButtonBase click
-            // (Button/IconButton/MenuItem/Tab/...). Disabling it removes that per-click
-            // cost across the whole suite.
-            MuiButtonBase: {defaultProps: {disableRipple: true}},
-            MuiDialog: {defaultProps: {transitionDuration: 0}},
-            MuiBackdrop: {defaultProps: {transitionDuration: 0}},
-            MuiMenu: {defaultProps: {transitionDuration: 0}},
-            MuiPopover: {defaultProps: {transitionDuration: 0}},
-            MuiCollapse: {defaultProps: {timeout: 0}},
-            MuiTooltip: {defaultProps: {enterDelay: 0, leaveDelay: 0, enterNextDelay: 0}},
-        },
-    };
-    return {
-        ...actual,
-        __esModule: true,
-        createTheme: (...args: unknown[]) =>
-            actual.createTheme(...(args.length ? args : [{}]), noAnimationOverrides),
-    };
-});
-
 // DOM mocks — only run in jsdom environment (skipped for node-only tests)
 if (typeof window !== 'undefined') {
     // Mock window.history for navigation tests
