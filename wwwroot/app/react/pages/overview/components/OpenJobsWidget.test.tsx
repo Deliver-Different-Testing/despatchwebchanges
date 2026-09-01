@@ -1,7 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {OpenJobsWidget} from './OpenJobsWidget';
 import type {IOpenJobResponse} from '../OverviewPage.interfaces';
 
@@ -10,14 +9,13 @@ jest.mock('../../../utils/dateUtils', () => ({
     formatMins: jest.fn((s: string) => s),
 }));
 
-const theme = createTheme();
 
 // ContactID is defined as 0 in setup.ts — the localStorage keys will use that
 const VIEW_MODE_KEY = 'openJobsViewMode_0';
 const LIMIT_KEY = 'openJobsTableViewLimit0';
 
 const renderWithTheme = (ui: React.ReactElement) =>
-    render(<MantineTestProvider><ThemeProvider theme={theme}>{ui}</ThemeProvider></MantineTestProvider>);
+    render(<MantineTestProvider>{ui}</MantineTestProvider>);
 
 function createMockOpenJob(overrides: Partial<IOpenJobResponse> = {}): IOpenJobResponse {
     return {
@@ -55,7 +53,9 @@ describe('OpenJobsWidget', () => {
 
         it('renders view mode toggle', () => {
             renderWithTheme(<OpenJobsWidget openJobs={[]} isLoading={false} />);
-            expect(screen.getByRole('switch')).toBeInTheDocument();
+            // A SegmentedToggle: two radios, Cards selected by default.
+            expect(screen.getByRole('radio', {name: 'Cards'})).toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Table'})).not.toBeChecked();
         });
     });
 
@@ -111,8 +111,7 @@ describe('OpenJobsWidget', () => {
             renderWithTheme(<OpenJobsWidget openJobs={jobs} isLoading={false} />);
 
             // Toggle to table view
-            const toggle = screen.getByRole('switch');
-            fireEvent.click(toggle);
+            fireEvent.click(screen.getByRole('radio', {name: 'Table'}));
 
             // Table headers should appear
             expect(screen.getByText('Job Number')).toBeInTheDocument();
@@ -162,8 +161,7 @@ describe('OpenJobsWidget', () => {
         it('saves view mode to localStorage', () => {
             renderWithTheme(<OpenJobsWidget openJobs={[]} isLoading={false} />);
 
-            const toggle = screen.getByRole('switch');
-            fireEvent.click(toggle);
+            fireEvent.click(screen.getByRole('radio', {name: 'Table'}));
 
             expect(localStorage.getItem(VIEW_MODE_KEY)).toBe('table');
         });

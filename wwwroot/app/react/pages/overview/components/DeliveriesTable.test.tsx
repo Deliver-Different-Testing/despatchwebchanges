@@ -1,13 +1,12 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {DeliveriesTable} from './DeliveriesTable';
 import type {OverviewTableParentJob, TableSort} from '../OverviewPage.interfaces';
 
-const theme = createTheme();
 
 const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    render(<MantineTestProvider>{ui}</MantineTestProvider>);
 
 function createMockDelivery(overrides: Partial<OverviewTableParentJob> = {}): OverviewTableParentJob {
     return {

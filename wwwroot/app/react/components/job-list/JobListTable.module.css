@@ -72,12 +72,6 @@
     transition: opacity 0.15s, transform 0.15s;
 }
 
-/* The priority gutter's sort control is the chevron alone. With no label to aim
-   at, it has to be visible at rest rather than appearing on hover. */
-.sortButtonIconOnly .sortIcon:not(.sortIconActive) {
-    opacity: 0.5;
-}
-
 .sortButton:hover .sortIcon {
     opacity: 0.5;
 }

@@ -1,0 +1,42 @@
+/*
+ * Only what props cannot express: :hover states. Everything else on this component
+ * is a Mantine prop or a style prop — see CLAUDE.md's native-first ladder.
+ *
+ * Resting values live here next to their hover rule on purpose. An inline resting
+ * colour would outrank a class rule and make its own hover unreachable.
+ */
+
+.taskItem {
+    transition: all 0.2s ease;
+    box-shadow: var(--mantine-shadow-xs);
+}
+
+.taskItem:hover {
+    box-shadow: var(--mantine-shadow-sm);
+    transform: translateY(-1px);
+    background-color: var(--mantine-color-gray-0);
+}
+
+.calendarDay {
+    transition: all 0.2s ease;
+    box-shadow: var(--mantine-shadow-xs);
+}
+
+.calendarDay:hover {
+    box-shadow: var(--mantine-shadow-md);
+    transform: translateY(-2px);
+}
+
+.dayTask {
+    transition: all 0.2s ease;
+}
+
+.dayTask:hover {
+    transform: translateX(4px);
+    box-shadow: var(--mantine-shadow-xs);
+}
+
+/* Week and day view time slots highlight on hover. */
+.timeSlot:hover {
+    background-color: var(--mantine-color-gray-0);
+}

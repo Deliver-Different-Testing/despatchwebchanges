@@ -604,15 +604,19 @@ describe('JobListPanel', () => {
         });
 
         it('sorts by priority in the same order the row indicators are shown', () => {
+            // The gutter has no sort control any more; a sort saved before it was
+            // removed still loads and still orders the list.
+            localStorage.setItem(
+                'test_sortState_42',
+                JSON.stringify({column: 'priority', direction: 'asc'}),
+            );
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'P-1', statusId: JobStatus.Void, booked: dayjs().add(8, 'hours')}),
                 createMockDispatchJob({id: 2, jobNo: 'P-2', statusId: JobStatus.LateDelivery, booked: dayjs().add(8, 'hours')}),
                 createMockDispatchJob({id: 3, jobNo: 'P-3', toAirportId: 12, booked: dayjs().add(8, 'hours')}),
                 createMockDispatchJob({id: 4, jobNo: 'P-4', booked: dayjs().add(10, 'minutes')}),
             ];
-            renderAndPushJobs(jobs);
-
-            fireEvent.click(screen.getByRole('button', {name: 'Sort by priority'}));
+            renderAndPushJobs(jobs, {storagePrefix: 'test'});
 
             // flight → late delivery → urgent → no marker
             expect(screen.getAllByText(/^P-\d$/).map(el => el.textContent))

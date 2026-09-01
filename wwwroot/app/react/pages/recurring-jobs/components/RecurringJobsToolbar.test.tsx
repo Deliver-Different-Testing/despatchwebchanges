@@ -5,9 +5,9 @@
 
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {renderWithMantine} from '../../../__testUtils__';
 import {RecurringJobsToolbar, RecurringJobsToolbarProps, RecurringJobsFilters} from './RecurringJobsToolbar';
 import {RecurringMode} from '../../../interfaces';
 
@@ -28,7 +28,6 @@ const mockUseSpeedList = useSpeedList as jest.MockedFunction<typeof useSpeedList
 const mockUseRouteList = useRouteList as jest.MockedFunction<typeof useRouteList>;
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
 
-const theme = createTheme();
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -41,11 +40,9 @@ const createTestQueryClient = () =>
 
 const renderWithProviders = (props: RecurringJobsToolbarProps) => {
     const queryClient = createTestQueryClient();
-    return render(
+    return renderWithMantine(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                <RecurringJobsToolbar {...props} />
-            </ThemeProvider>
+            <RecurringJobsToolbar {...props} />
         </QueryClientProvider>
     );
 };
@@ -120,20 +117,17 @@ describe('RecurringJobsToolbar', () => {
         expect(mockUseSpeedList).toHaveBeenCalled();
 
         // Speed select control with combobox
-        const speedLabel = speedLabels[0];
-        const formControl = speedLabel.closest('.MuiFormControl-root');
-        const selectButton = formControl?.querySelector('[role="combobox"]');
-        expect(selectButton).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Speed'})).toBeInTheDocument();
 
         // Courier autocomplete
-        expect(screen.getByLabelText('Courier')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Courier'})).toBeInTheDocument();
 
         // Courier autocomplete with combobox role
-        const courierInput = screen.getByRole('combobox', {name: /courier/i});
+        const courierInput = screen.getByRole('combobox', {name: 'Courier'});
         expect(courierInput).toBeInTheDocument();
 
         // Day toggle buttons
-        expect(screen.getByText('Days:')).toBeInTheDocument();
+        expect(screen.getByText('Days')).toBeInTheDocument();
         expect(screen.getByText('M')).toBeInTheDocument();
         expect(screen.getByText('T')).toBeInTheDocument();
         expect(screen.getByText('W')).toBeInTheDocument();
@@ -143,10 +137,10 @@ describe('RecurringJobsToolbar', () => {
         expect(screen.getByText('Su')).toBeInTheDocument();
 
         // Refresh button
-        expect(screen.getByTestId('RefreshIcon')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Refresh'})).toBeInTheDocument();
 
         // Export button
-        expect(screen.getByTestId('FileDownloadIcon')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Export to CSV'})).toBeInTheDocument();
     });
 
     describe('Search field', () => {
@@ -154,7 +148,7 @@ describe('RecurringJobsToolbar', () => {
             renderWithProviders(createDefaultProps({searchText: 'test'}));
 
             expect(screen.getByDisplayValue('test')).toBeInTheDocument();
-            expect(screen.getByTestId('ClearIcon')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Clear search'})).toBeInTheDocument();
         });
 
         it('should call onSearchChange after debounce', async () => {
@@ -176,7 +170,7 @@ describe('RecurringJobsToolbar', () => {
             renderWithProviders(createDefaultProps({searchText: 'test', onSearchChange}));
 
             const clearButtons = screen.getAllByRole('button');
-            const clearButton = clearButtons.find(btn => btn.querySelector('[data-testid="ClearIcon"]'));
+            const clearButton = clearButtons.find(btn => btn.getAttribute('aria-label') === 'Clear search');
             if (clearButton) {
                 fireEvent.click(clearButton);
                 expect(onSearchChange).toHaveBeenCalledWith('');
@@ -228,7 +222,7 @@ describe('RecurringJobsToolbar', () => {
         it('should use courier search hook when typing', async () => {
             renderWithProviders(createDefaultProps());
 
-            const courierInput = screen.getByRole('combobox', {name: /courier/i});
+            const courierInput = screen.getByRole('combobox', {name: 'Courier'});
             const user = setupUser();
             await user.click(courierInput);
             await user.paste('John');
@@ -283,32 +277,33 @@ describe('RecurringJobsToolbar', () => {
     });
 
     describe('Clear filters button', () => {
-        it('should not show clear filters when no filters active', () => {
+        it('stays in place but is disabled when no filters are active', () => {
             renderWithProviders(createDefaultProps());
 
-            expect(screen.queryByRole('button', {name: /clear all filters/i})).not.toBeInTheDocument();
+            // Present either way, so its position never moves on the reader.
+            expect(screen.getByRole('button', {name: 'Clear all'})).toBeDisabled();
         });
 
-        it('should show clear filters when speed, courier, or days filter is active', () => {
+        it('counts each applied criterion, days by the day', () => {
             // Speed filter active
             const {unmount: unmount1} = renderWithProviders(createDefaultProps({
                 filters: {...defaultFilters, speedId: 1},
             }));
-            expect(screen.getByRole('button', {name: /clear all filters/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Clear all (1)'})).toBeEnabled();
             unmount1();
 
             // Courier filter active
             const {unmount: unmount2} = renderWithProviders(createDefaultProps({
                 filters: {...defaultFilters, courierId: 1},
             }));
-            expect(screen.getByRole('button', {name: /clear all filters/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Clear all (1)'})).toBeEnabled();
             unmount2();
 
-            // Days filter active
+            // Days is a bitmask, so Monday + Tuesday counts two, not one.
             renderWithProviders(createDefaultProps({
-                filters: {...defaultFilters, daysOfWeek: 1},
+                filters: {...defaultFilters, daysOfWeek: 3},
             }));
-            expect(screen.getByRole('button', {name: /clear all filters/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Clear all (2)'})).toBeEnabled();
         });
 
         it('should clear all filters when clicked', () => {
@@ -318,7 +313,7 @@ describe('RecurringJobsToolbar', () => {
                 onFiltersChange,
             }));
 
-            fireEvent.click(screen.getByRole('button', {name: /clear all filters/i}));
+            fireEvent.click(screen.getByRole('button', {name: /^Clear all/}));
 
             expect(onFiltersChange).toHaveBeenCalledWith({
                 speedId: undefined,
@@ -333,7 +328,7 @@ describe('RecurringJobsToolbar', () => {
             const onRefresh = jest.fn();
             renderWithProviders(createDefaultProps({onRefresh}));
 
-            const refreshButton = screen.getByTestId('RefreshIcon').closest('button')!;
+            const refreshButton = screen.getByRole('button', {name: 'Refresh'});
             fireEvent.click(refreshButton);
 
             expect(onRefresh).toHaveBeenCalledTimes(1);
@@ -357,7 +352,7 @@ describe('RecurringJobsToolbar', () => {
             const onExport = jest.fn();
             renderWithProviders(createDefaultProps({onExport}));
 
-            const exportButton = screen.getByTestId('FileDownloadIcon').closest('button')!;
+            const exportButton = screen.getByRole('button', {name: 'Export to CSV'});
             fireEvent.click(exportButton);
 
             expect(onExport).toHaveBeenCalledTimes(1);
@@ -388,11 +383,11 @@ describe('RecurringJobsToolbar', () => {
             expect(mondayButton).toBeDisabled();
 
             // Courier autocomplete disabled
-            expect(screen.getByLabelText('Courier')).toBeDisabled();
+            expect(screen.getByRole('combobox', {name: 'Courier'})).toBeDisabled();
 
             // The refresh spinner is driven by isRefreshing, not isLoading, so an
             // initial-load `isLoading` alone leaves the refresh icon in place.
-            expect(screen.getByTestId('RefreshIcon')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Refresh'})).toBeInTheDocument();
         });
     });
 });

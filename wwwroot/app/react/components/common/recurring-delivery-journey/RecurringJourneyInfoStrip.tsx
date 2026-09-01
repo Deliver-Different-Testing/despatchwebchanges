@@ -4,14 +4,13 @@
  */
 
 import React from 'react';
-import Alert from '@mui/material/Alert';
-import Typography from '@mui/material/Typography';
+import {Alert, Text} from '@mantine/core';
 
 export const RecurringJourneyInfoStrip: React.FC = () => (
-    <Alert severity="info" variant="standard" sx={{mx: 2, mt: 2, py: 0.5}}>
-        <Typography variant="body2">
+    <Alert color="blue" variant="light" mx={16} mt={16} py={4}>
+        <Text fz="sm">
             One entry per day the recurring schedule has run. Click a parent or child to open it in Job Search.
-        </Typography>
+        </Text>
     </Alert>
 );
 

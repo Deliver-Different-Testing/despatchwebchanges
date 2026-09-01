@@ -204,15 +204,12 @@ describe('JobListTable', () => {
             expect(screen.getByText('Needs attention')).toBeInTheDocument();
         });
 
-        it('sorts from its own control, which is named even though the column has no label', async () => {
-            const props = createDefaultProps();
-            renderWithMantine(<JobListTable {...props}/>);
+        it('offers no sort control — the gutter holds icons, not a value to order by', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
 
-            const sortButton = screen.getByRole('button', {name: 'Sort by priority'});
-            expect(document.querySelector('th[data-column-key="priority"]')).toContainElement(sortButton);
-
-            await setupUser().click(sortButton);
-            expect(props.onSortChange).toHaveBeenCalledWith('priority');
+            const header = document.querySelector('th[data-column-key="priority"]')!;
+            expect(header.querySelector('[data-sort-column]')).toBeNull();
+            expect(screen.queryByRole('button', {name: 'Sort by priority'})).not.toBeInTheDocument();
         });
     });
 

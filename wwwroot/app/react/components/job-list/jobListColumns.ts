@@ -24,7 +24,7 @@ export interface ColumnDef {
 }
 
 export const ALL_COLUMNS: ColumnDef[] = [
-    {key: 'priority', label: '', sortable: true, width: 64, align: 'center', locked: true},
+    {key: 'priority', label: '', sortable: false, width: 64, align: 'center', locked: true},
     {key: 'date', label: 'Date', sortable: true, width: 80},
     {key: 'time', label: 'Time', sortable: true, width: 80},
     {key: 'speed', label: 'Speed', sortable: true, width: 80},

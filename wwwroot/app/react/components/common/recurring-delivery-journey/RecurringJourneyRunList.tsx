@@ -4,10 +4,10 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import type {SxProps, Theme} from '@mui/material/styles';
+import {Box} from '@mantine/core';
 import {RecurringJourneyRunRow} from './RecurringJourneyRunRow';
 import type {RecurringJourneyRun} from './RecurringDeliveryJourney.types';
+import classes from './RecurringDeliveryJourney.module.css';
 
 interface RecurringJourneyRunListProps {
     runs: RecurringJourneyRun[];
@@ -15,29 +15,13 @@ interface RecurringJourneyRunListProps {
     onChildClick: (jobId: number, jobNumber: string) => void;
 }
 
-const listSx = ((theme: Theme) => ({
-    position: 'relative',
-    listStyle: 'none',
-    m: 0,
-    p: 0,
-    py: 0.75,
-    '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 14,
-        bottom: 14,
-        left: 32, // matches first column (16 px panel-pad + 16 to dot centre)
-        width: '2px',
-        bgcolor: theme.palette.divider,
-    },
-})) satisfies SxProps<Theme>;
-
 export const RecurringJourneyRunList: React.FC<RecurringJourneyRunListProps> = ({
     runs,
     onParentClick,
     onChildClick,
 }) => (
-    <Box component="ul" sx={listSx}>
+    // The rail is a ::before on the list — see the stylesheet.
+    <Box component="ul" className={classes.runList}>
         {runs.map(run => (
             <Box component="li" key={run.parentJobId}>
                 <RecurringJourneyRunRow

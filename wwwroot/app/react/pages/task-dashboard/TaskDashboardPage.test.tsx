@@ -10,7 +10,7 @@ import { setupUser } from '../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import useMediaQuery from '@mui/material/useMediaQuery';
+import {useMediaQuery} from '@mantine/hooks';
 import {TaskDashboardPage} from './TaskDashboardPage';
 import {TaskDashboardPageProps} from './TaskDashboardPage.interfaces';
 import {Task} from '../../interfaces';
@@ -18,7 +18,11 @@ import {tasksApi} from '../../services/tasksApi';
 
 // Control the compact/expanded breakpoint deterministically. Defaults to
 // expanded (false) in beforeEach; the compact-layout test flips it to true.
-jest.mock('@mui/material/useMediaQuery');
+// Only useMediaQuery is replaced — the rest of @mantine/hooks stays real.
+jest.mock('@mantine/hooks', () => ({
+    ...jest.requireActual('@mantine/hooks'),
+    useMediaQuery: jest.fn(),
+}));
 const mockUseMediaQuery = useMediaQuery as jest.Mock;
 
 // Mock JobDetails to avoid AngularJS dependency chain
@@ -174,22 +178,22 @@ describe('TaskDashboardPage', () => {
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         // View toggle buttons
-        expect(screen.getByRole('button', {name: /List/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /Calendar/i})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: /List/i})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: /Calendar/i})).toBeInTheDocument();
 
-        // Stat cards mirror the time-to-action buckets with correct counts
+        // The status filter mirrors the time-to-action buckets with their counts
         // (mock data: 1 overdue, 0 due today, 1 upcoming/tomorrow, 1 done).
-        expect(await screen.findByRole('button', {name: /OVERDUE: 1/})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /TODAY: 0/})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /UPCOMING: 1/})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /DONE: 1/})).toBeInTheDocument();
+        expect(await screen.findByRole('radio', {name: /Overdue 1/})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: /Today \(0\)/})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: /Upcoming \(1\)/})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: /Done \(1\)/})).toBeInTheDocument();
 
         // Tasks rendered after loading
         expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
         expect(screen.getByText('Future email reminder')).toBeInTheDocument();
 
-        // Filter bar: inline search + a Filters button (staff/type live in its popover)
-        expect(screen.getByRole('textbox', {name: /Search/i})).toBeInTheDocument();
+        // Panel bar: inline search + a Filters button (staff/type/refresh live in its popover)
+        expect(screen.getByRole('textbox', {name: /Search tasks/i})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /^Filters/})).toBeInTheDocument();
 
         // Job Details panel (rendered directly in React, no AngularJS bridge)
@@ -227,8 +231,9 @@ describe('TaskDashboardPage', () => {
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
-        const skeletons = document.querySelectorAll('.MuiSkeleton-root');
-        expect(skeletons.length).toBe(4);
+        // Mantine's Skeleton has no role and no generated class hook, so the
+        // component stamps its own.
+        expect(screen.getAllByTestId('task-skeleton')).toHaveLength(4);
     });
 
     // ── Empty state (shared NoData component) ───────────────────────
@@ -242,26 +247,29 @@ describe('TaskDashboardPage', () => {
         expect(screen.getByText('No tasks match your filters')).toBeInTheDocument();
     });
 
-    // ── Stat cards toggle the bucket filter via aria-pressed ────────
-    it('toggles the bucket filter and reflects it with aria-pressed on the stat cards', async () => {
+    // ── The status filter is a radio group ──────────────────────────
+    it('selects a bucket and clears it through the explicit All option', async () => {
         const user = setupUser();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
-        const overdueCard = await screen.findByRole('button', {name: /OVERDUE: 1/});
-        const upcomingCard = screen.getByRole('button', {name: /UPCOMING: 1/});
+        const overdue = await screen.findByRole('radio', {name: /Overdue 1/});
+        const upcoming = screen.getByRole('radio', {name: /Upcoming \(1\)/});
+        const all = screen.getByRole('radio', {name: 'All'});
 
-        // Default is "All" — no single bucket is selected.
-        expect(overdueCard).toHaveAttribute('aria-pressed', 'false');
-        expect(upcomingCard).toHaveAttribute('aria-pressed', 'false');
+        // Default is "All", which is now an option rather than an absence.
+        expect(all).toBeChecked();
+        expect(overdue).not.toBeChecked();
 
-        await user.click(overdueCard);
-        expect(overdueCard).toHaveAttribute('aria-pressed', 'true');
-        expect(upcomingCard).toHaveAttribute('aria-pressed', 'false');
+        await user.click(overdue);
+        expect(overdue).toBeChecked();
+        expect(upcoming).not.toBeChecked();
+        expect(all).not.toBeChecked();
 
-        // Clicking the active card again returns to All.
-        await user.click(overdueCard);
-        expect(overdueCard).toHaveAttribute('aria-pressed', 'false');
+        // A radio group cannot deselect, so clearing goes through All.
+        await user.click(all);
+        expect(all).toBeChecked();
+        expect(overdue).not.toBeChecked();
     });
 
     // ── Adaptive layout: Job Details opens in a drawer below md ─────
@@ -297,7 +305,7 @@ describe('TaskDashboardPage', () => {
         expect(await screen.findByText(/Tasks \(/)).toBeInTheDocument();
 
         // Switch to calendar
-        await user.click(screen.getByRole('button', {name: /Calendar/i}));
+        await user.click(screen.getByRole('radio', {name: /Calendar/i}));
 
         // Tasks panel replaced by calendar
         await waitFor(() => {
@@ -329,7 +337,7 @@ describe('TaskDashboardPage', () => {
     });
 
     // ── Status Filters (single render, sequential clicks) ───────────
-    it('filters tasks by status card clicks and updates task count', async () => {
+    it('filters tasks by bucket and updates the task count', async () => {
         const user = setupUser();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
@@ -337,17 +345,17 @@ describe('TaskDashboardPage', () => {
         expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
         expect(screen.getByText('Tasks (2)')).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', {name: /UPCOMING:/}));
+        await user.click(screen.getByRole('radio', {name: /Upcoming/}));
         expect(await screen.findByText('Future email reminder')).toBeInTheDocument();
         expect(screen.queryByText('Overdue follow up call')).not.toBeInTheDocument();
 
         // Click Overdue → only overdue tasks
-        await user.click(screen.getByRole('button', {name: /OVERDUE:/}));
+        await user.click(screen.getByRole('radio', {name: /Overdue/}));
         expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
         expect(screen.queryByText('Future email reminder')).not.toBeInTheDocument();
 
         // Click Done → only completed tasks with "Completed" heading
-        await user.click(screen.getByRole('button', {name: /DONE:/}));
+        await user.click(screen.getByRole('radio', {name: /Done/}));
         expect(await screen.findByText('Completed task')).toBeInTheDocument();
         expect(screen.getByText('Completed')).toBeInTheDocument();
         expect(screen.queryByText('Overdue follow up call')).not.toBeInTheDocument();
@@ -384,9 +392,10 @@ describe('TaskDashboardPage', () => {
         await waitFor(() => {
             expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(2);
         });
-        // Both selects show their "all" default value.
-        expect(screen.getByText('All Staff')).toBeInTheDocument();
-        expect(screen.getByText('All Task Types')).toBeInTheDocument();
+        // Both selects show their "all" default value. Copy matches dispatch's
+        // Tasks panel: sentence case, terse.
+        expect(screen.getByRole('combobox', {name: 'Staff'})).toHaveValue('All staff');
+        expect(screen.getByRole('combobox', {name: 'Type'})).toHaveValue('All types');
     });
 
     // ── Freshness indicator ─────────────────────────────────────────
@@ -419,7 +428,7 @@ describe('TaskDashboardPage', () => {
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
-        expect(await screen.findByRole('button', {name: /List/i})).toBeInTheDocument();
+        expect(await screen.findByRole('radio', {name: /List/i})).toBeInTheDocument();
     });
 
     // ── Panel header consistency ─────────────────────────────────────
@@ -439,21 +448,28 @@ describe('TaskDashboardPage', () => {
     // ── Auto-refresh: default off ───────────────────────────────────
     it('renders the auto-refresh control defaulting to the 60s cadence', async () => {
         // No stored preference must not mean "never refresh" — nothing pushes task updates.
+        const user = setupUser();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         await screen.findByText('Overdue follow up call');
-        expect(screen.getByRole('button', {name: /Auto: 1m/i})).toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: /^Filters/}));
+
+        expect(await screen.findByRole('combobox', {name: 'Auto-refresh'})).toHaveValue('1 min');
     });
 
     // ── Auto-refresh: seed from localStorage ────────────────────────
     it('seeds the auto-refresh interval from localStorage', async () => {
         localStorageMock.setStore({'taskDashboardRefreshInterval-1': '30'});
 
+        const user = setupUser();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
-        expect(await screen.findByRole('button', {name: /Auto: 30s/i})).toBeInTheDocument();
+        await screen.findByText('Overdue follow up call');
+        await user.click(screen.getByRole('button', {name: /^Filters/}));
+
+        expect(await screen.findByRole('combobox', {name: 'Auto-refresh'})).toHaveValue('30 seconds');
     });
 
     // ── Auto-refresh: select an interval, then turn off ─────────────
@@ -463,21 +479,22 @@ describe('TaskDashboardPage', () => {
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         await screen.findByText('Overdue follow up call');
+        await user.click(screen.getByRole('button', {name: /^Filters/}));
 
-        // Open the menu (showing the 60s default) and pick "2 mins"
-        await user.click(screen.getByRole('button', {name: /Auto: 1m/i}));
-        await user.click(await screen.findByRole('menuitem', {name: '2 mins'}));
+        // Open the Auto-refresh select (showing the 60s default) and pick "2 mins"
+        await user.click(await screen.findByRole('combobox', {name: 'Auto-refresh'}));
+        await user.click(await screen.findByRole('option', {name: '2 mins'}));
 
-        // Persisted as seconds and reflected on the button
+        // Persisted as seconds and reflected on the control
         expect(localStorageMock.setItem).toHaveBeenCalledWith('taskDashboardRefreshInterval-1', '120');
-        expect(await screen.findByRole('button', {name: /Auto: 2m/i})).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Auto-refresh'})).toHaveValue('2 mins');
 
         // Turn it off — an explicit choice that must survive the new default
-        await user.click(screen.getByRole('button', {name: /Auto: 2m/i}));
-        await user.click(await screen.findByRole('menuitem', {name: 'Off'}));
+        await user.click(screen.getByRole('combobox', {name: 'Auto-refresh'}));
+        await user.click(await screen.findByRole('option', {name: 'Off'}));
 
         expect(localStorageMock.setItem).toHaveBeenCalledWith('taskDashboardRefreshInterval-1', '0');
-        expect(await screen.findByRole('button', {name: /Auto-refresh/i})).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Auto-refresh'})).toHaveValue('Off');
     });
 
     // ── No onTaskSelect prop (bridge removed) ───────────────────────

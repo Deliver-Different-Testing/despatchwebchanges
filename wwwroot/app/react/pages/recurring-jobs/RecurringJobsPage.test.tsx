@@ -5,9 +5,9 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
 import {renderWithMantineOverMui} from '../../__testUtils__';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClient} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../interfaces';
 import dayjs from 'dayjs';
@@ -182,15 +182,11 @@ describe('RecurringJobsPage', () => {
         expect(setRefreshCallback).toHaveBeenCalledWith(expect.any(Function));
 
         // Speed filter
-        const speedLabels = screen.getAllByText('Speed');
-        const formControl = speedLabels[0].closest('.MuiFormControl-root');
-        expect(formControl).toBeInTheDocument();
-        const selectButton = formControl?.querySelector('[role="combobox"]');
-        expect(selectButton).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Speed'})).toBeInTheDocument();
 
         // Refresh button — the recurring log panel also renders one, so
         // grab the first which is the toolbar's.
-        const refreshIcon = screen.getAllByTestId('RefreshIcon')[0];
+        const refreshIcon = screen.getAllByRole('button', {name: 'Refresh'})[0];
         const refreshButton = refreshIcon.closest('button');
         expect(refreshButton).toBeInTheDocument();
         fireEvent.click(refreshButton!);
@@ -199,7 +195,7 @@ describe('RecurringJobsPage', () => {
         });
 
         // Export button
-        const exportIcon = screen.getByTestId('FileDownloadIcon');
+        const exportIcon = screen.getByRole('button', {name: 'Export to CSV'});
         const exportButton = exportIcon.closest('button');
         expect(exportButton).toBeInTheDocument();
         fireEvent.click(exportButton!);
@@ -300,7 +296,7 @@ describe('RecurringJobsPage', () => {
 
         // Cancel with No → dialog closes
         fireEvent.click(screen.getByText('No'));
-        await waitForElementToBeRemoved(() => screen.queryByText('Deactivate Recurring Job'));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
         expect(mockUpdateJobDetail).not.toHaveBeenCalled();
 
         // Re-open and confirm with Yes

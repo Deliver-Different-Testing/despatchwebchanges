@@ -16,11 +16,15 @@ export type SortDirection = 'asc' | 'desc';
 
 export interface SortableThProps {
     children: React.ReactNode;
-    /** True when this column is the one currently sorted. */
-    active: boolean;
-    direction: SortDirection;
-    onSort: () => void;
-    /** Omit to render a plain, non-sortable header cell. */
+    /**
+     * Sort state. Optional because a non-sortable header has none — and because
+     * DataTable drives `sortable` from a per-column flag, so the three cannot be
+     * required together without forcing every plain column to invent them.
+     */
+    active?: boolean;
+    direction?: SortDirection;
+    onSort?: () => void;
+    /** Pass false to render a plain, non-sortable header cell. */
     sortable?: boolean;
     width?: string | number;
     align?: 'left' | 'center' | 'right';
@@ -28,8 +32,8 @@ export interface SortableThProps {
 
 export const SortableTh: React.FC<SortableThProps> = ({
     children,
-    active,
-    direction,
+    active = false,
+    direction = 'asc',
     onSort,
     sortable = true,
     width,

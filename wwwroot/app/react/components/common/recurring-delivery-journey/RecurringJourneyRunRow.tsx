@@ -9,18 +9,12 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import RouteIcon from '@mui/icons-material/Route';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import BlockIcon from '@mui/icons-material/Block';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import type {SxProps, Theme} from '@mui/material/styles';
+import {Badge, Box, Group, Stack, Text} from '@mantine/core';
+import {Ban, CheckCircle2, Clock, RefreshCw, Route} from 'lucide-react';
+import {Icon} from '../icon/Icon';
 import type {RecurringJourneyRun, RecurringJourneyStatus} from './RecurringDeliveryJourney.types';
 import {getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
+import classes from './RecurringDeliveryJourney.module.css';
 
 interface RecurringJourneyRunRowProps {
     run: RecurringJourneyRun;
@@ -28,46 +22,17 @@ interface RecurringJourneyRunRowProps {
     onChildClick: (jobId: number, jobNumber: string) => void;
 }
 
-const rowSx = {
-    display: 'grid',
-    gridTemplateColumns: '32px 1fr',
-    gap: 1.25,
-    px: 2,
-    py: 1.25,
-    position: 'relative',
-    '&:hover': {bgcolor: 'action.hover'},
-} satisfies SxProps<Theme>;
-
-const dotBaseSx = {
-    width: 14,
-    height: 14,
-    borderRadius: '50%',
-    border: '3px solid',
-    borderColor: 'background.paper',
-    mt: 0.5,
-    ml: '7px',
-    zIndex: 1,
-    position: 'relative',
-} satisfies SxProps<Theme>;
-
-function dotSxForStatus(status: RecurringJourneyStatus): SxProps<Theme> {
-    return (theme: Theme) => {
-        const tone = statusColor(status, theme);
-        return {
-            ...dotBaseSx,
-            bgcolor: tone,
-            boxShadow: `0 0 0 2px ${tone}`,
-        };
-    };
-}
-
-function statusColor(status: RecurringJourneyStatus, theme: Theme): string {
+/**
+ * Concrete values rather than Mantine colour names: the dot feeds both a
+ * background and a `box-shadow` ring string, neither of which resolves a name.
+ */
+function statusColor(status: RecurringJourneyStatus): string {
     switch (status) {
-        case 'Completed': return theme.palette.success.main;
-        case 'InProgress': return theme.palette.warning.main;
-        case 'Voided': return theme.palette.error.main;
+        case 'Completed': return 'var(--mantine-color-green-6)';
+        case 'InProgress': return 'var(--mantine-color-yellow-6)';
+        case 'Voided': return 'var(--mantine-color-red-6)';
         case 'Pending':
-        default: return theme.palette.grey[400];
+        default: return 'var(--mantine-color-gray-4)';
     }
 }
 
@@ -83,36 +48,13 @@ function statusLabel(status: RecurringJourneyStatus): string {
 
 function StatusIcon({status}: {status: RecurringJourneyStatus}) {
     switch (status) {
-        case 'Completed': return <CheckCircleIcon sx={{fontSize: 13}} />;
-        case 'InProgress': return <AutorenewIcon sx={{fontSize: 13}} />;
-        case 'Voided': return <BlockIcon sx={{fontSize: 13}} />;
+        case 'Completed': return <Icon lucide={CheckCircle2} size={13}/>;
+        case 'InProgress': return <Icon lucide={RefreshCw} size={13}/>;
+        case 'Voided': return <Icon lucide={Ban} size={13}/>;
         case 'Pending':
-        default: return <ScheduleIcon sx={{fontSize: 13}} />;
+        default: return <Icon lucide={Clock} size={13}/>;
     }
 }
-
-const parentLabelSx = {
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    color: 'text.secondary',
-    fontWeight: 600,
-} satisfies SxProps<Theme>;
-
-const metaSx = {
-    mt: 0.75,
-    fontSize: 11,
-    color: 'text.secondary',
-    display: 'flex',
-    gap: 1.25,
-    flexWrap: 'wrap',
-} satisfies SxProps<Theme>;
-
-const metaItemSx = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 0.5,
-} satisfies SxProps<Theme>;
 
 export const RecurringJourneyRunRow: React.FC<RecurringJourneyRunRowProps> = ({
     run,
@@ -121,108 +63,130 @@ export const RecurringJourneyRunRow: React.FC<RecurringJourneyRunRowProps> = ({
 }) => {
     const timezone = getTenantTimezone();
     const tzAbbr = getTimezoneAbbreviation(timezone);
+    const tone = statusColor(run.status);
 
     return (
-        <Box sx={rowSx}>
-            <Box sx={dotSxForStatus(run.status)} />
-            <Box sx={{minWidth: 0}}>
-                <Box sx={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1}}>
-                    <Typography variant="subtitle2" sx={{fontWeight: 600}}>
+        <Box
+            className={classes.runRow}
+            px={16}
+            py={10}
+            style={{
+                display: 'grid',
+                gridTemplateColumns: '32px 1fr',
+                gap: 10,
+                position: 'relative',
+            }}
+        >
+            {/* The ring lifts the dot off the rail running behind it. */}
+            <Box
+                w={14}
+                h={14}
+                mt={4}
+                ml={7}
+                style={{
+                    borderRadius: '50%',
+                    border: '3px solid var(--mantine-color-body)',
+                    backgroundColor: tone,
+                    boxShadow: `0 0 0 2px ${tone}`,
+                    zIndex: 1,
+                    position: 'relative',
+                }}
+            />
+            <Box miw={0}>
+                <Group align="flex-start" justify="space-between" gap={8} wrap="nowrap">
+                    <Text fz="sm" fw={600}>
                         {run.serviceDate.format('MMM D, YYYY')}
-                    </Typography>
-                    <PodBlock run={run} tzAbbr={tzAbbr} />
-                </Box>
+                    </Text>
+                    <PodBlock run={run} tzAbbr={tzAbbr}/>
+                </Group>
 
-                <Stack direction="row" spacing={1} sx={{mt: 0.75, alignItems: 'center'}}>
-                    <Typography sx={parentLabelSx}>Parent</Typography>
-                    <Chip
-                        label={run.parentJobNumber}
-                        size="small"
-                        color="primary"
-                        clickable
+                <Group gap={8} mt={6} align="center">
+                    <Text fz={10} fw={600} tt="uppercase" c="dimmed" style={{letterSpacing: '0.5px'}}>
+                        Parent
+                    </Text>
+                    <Badge
+                        component="button"
+                        type="button"
+                        size="sm"
+                        fw={700}
+                        tt="none"
+                        style={{cursor: 'pointer'}}
                         onClick={() => onParentClick(run.parentJobId, run.parentJobNumber)}
-                        sx={{fontWeight: 700}}
-                    />
-                </Stack>
+                    >
+                        {run.parentJobNumber}
+                    </Badge>
+                </Group>
 
                 {run.children.length > 0 && (
-                    <Box sx={{mt: 0.75, display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
+                    <Group gap={4} mt={6}>
                         {run.children.map((child, idx) => {
                             const isAccent = idx === 0 || idx === run.children.length - 1;
                             return (
-                                <Chip
+                                <Badge
                                     key={child.jobId}
-                                    label={child.jobNumber}
-                                    size="small"
-                                    color={isAccent ? 'primary' : 'default'}
-                                    clickable
+                                    component="button"
+                                    type="button"
+                                    size="sm"
+                                    tt="none"
+                                    color={isAccent ? undefined : 'gray'}
+                                    style={{cursor: 'pointer'}}
                                     onClick={() => onChildClick(child.jobId, child.jobNumber)}
-                                />
+                                >
+                                    {child.jobNumber}
+                                </Badge>
                             );
                         })}
-                    </Box>
+                    </Group>
                 )}
 
-                <Box sx={metaSx}>
+                <Group gap={10} mt={6} fz={11} c="dimmed">
                     {run.miles != null && (
-                        <Box sx={metaItemSx}>
-                            <RouteIcon sx={{fontSize: 13}} />
+                        <Group gap={4} wrap="nowrap" component="span">
+                            <Icon lucide={Route} size={13}/>
                             <span>{run.miles} mi</span>
-                        </Box>
+                        </Group>
                     )}
-                    <Box sx={metaItemSx}>
-                        <StatusIcon status={run.status} />
+                    <Group gap={4} wrap="nowrap" component="span">
+                        <StatusIcon status={run.status}/>
                         <span>{statusLabel(run.status)}</span>
-                    </Box>
-                </Box>
+                    </Group>
+                </Group>
             </Box>
         </Box>
     );
 };
 
-const podLabelSx = {
-    fontSize: 8,
-    fontWeight: 700,
-    letterSpacing: '0.5px',
-    color: 'text.secondary',
-    textTransform: 'uppercase',
-} satisfies SxProps<Theme>;
-
-const podBlockSx = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '1px',
-    lineHeight: 1.3,
-    textAlign: 'right',
-    minWidth: 0,
-} satisfies SxProps<Theme>;
-
 function PodBlock({run, tzAbbr}: {run: RecurringJourneyRun; tzAbbr: string}) {
+    const label = (
+        <Text component="span" fz={8} fw={700} tt="uppercase" c="dimmed" style={{letterSpacing: '0.5px'}}>
+            POD
+        </Text>
+    );
+
     if (run.pod) {
         return (
-            <Box sx={podBlockSx}>
-                <Typography component="span" sx={podLabelSx}>POD</Typography>
-                <Typography component="span" sx={{fontSize: 11, fontWeight: 600, color: 'text.primary', whiteSpace: 'nowrap'}}>
+            <Stack align="flex-end" gap={1} miw={0} ta="right" style={{lineHeight: 1.3}}>
+                {label}
+                <Text component="span" fz={11} fw={600} style={{whiteSpace: 'nowrap'}}>
                     {run.pod.time.format('MMM D · HH:mm')} {tzAbbr}
-                </Typography>
+                </Text>
                 {run.pod.signedBy && (
-                    <Typography component="span" sx={{fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                    <Text component="span" fz={10} c="dimmed" maw={130} truncate>
                         {run.pod.signedBy}
-                    </Typography>
+                    </Text>
                 )}
-            </Box>
+            </Stack>
         );
     }
 
     const dimmedLabel = run.status === 'Pending' ? '— scheduled —' : '— awaiting POD —';
     return (
-        <Box sx={podBlockSx}>
-            <Typography component="span" sx={podLabelSx}>POD</Typography>
-            <Typography component="span" sx={{fontSize: 11, fontStyle: 'italic', color: 'text.disabled'}}>
+        <Stack align="flex-end" gap={1} miw={0} ta="right" style={{lineHeight: 1.3}}>
+            {label}
+            <Text component="span" fz={11} c="dimmed" fs="italic">
                 {dimmedLabel}
-            </Typography>
-        </Box>
+            </Text>
+        </Stack>
     );
 }
 

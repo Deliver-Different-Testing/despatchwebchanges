@@ -1,0 +1,30 @@
+/*
+ * The resize gutter, and only the gutter. react-resizable-panels stamps
+ * data-resize-handle-state on the PanelResizeHandle root, so the styling is
+ * selected from that *parent* down to this child — an ancestor-attribute
+ * selector no prop can express. Mirrors the AngularJS .rg-right gutter
+ * (udispatch.less:326-349) so the affordance matches job-search, nationwide
+ * and home.
+ */
+
+.resizeHandle {
+    width: 8px;
+    height: 100%;
+    margin: 0 4px;
+    background-color: transparent;
+    cursor: col-resize;
+    border-radius: 4px;
+    transition:
+        background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-resize-handle-state='hover'] .resizeHandle {
+    background-color: color-mix(in srgb, var(--mantine-primary-color-filled) 30%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--mantine-primary-color-filled) 30%, transparent);
+}
+
+[data-resize-handle-state='drag'] .resizeHandle {
+    background-color: color-mix(in srgb, var(--mantine-primary-color-filled) 50%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--mantine-primary-color-filled) 50%, transparent);
+}

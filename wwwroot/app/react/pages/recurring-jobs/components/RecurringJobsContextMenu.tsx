@@ -11,16 +11,9 @@
  */
 
 import React from 'react';
-import Divider from '@mui/material/Divider';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import BuildIcon from '@mui/icons-material/Build';
-import PinDropIcon from '@mui/icons-material/PinDrop';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutlined';
-import StopIcon from '@mui/icons-material/Stop';
+import {Menu} from '@mantine/core';
+import {Hammer, MapPin, Play, PlayCircle, Square} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
 import {PrebookListModel, RecurringMode} from '../../../interfaces';
 
 export interface RecurringJobsContextMenuProps {
@@ -79,80 +72,95 @@ export const RecurringJobsContextMenu: React.FC<RecurringJobsContextMenuProps> =
     // ucbkID, so pushing a child in isolation isn't a supported flow.
     const isChild = job?.isChild === true;
 
+    const opened = anchorPosition !== null && job !== null;
+
     return (
+        // closeOnItemClick is off because every handler below already calls
+        // onClose(); leaving it on fires the callback twice per click.
         <Menu
-            open={anchorPosition !== null && job !== null}
+            opened={opened}
             onClose={onClose}
-            anchorReference="anchorPosition"
-            anchorPosition={
-                anchorPosition
-                    ? {top: anchorPosition.y, left: anchorPosition.x}
-                    : undefined
-            }
-            slotProps={{
-                paper: {
-                    elevation: 8,
-                    sx: {
-                        minWidth: 200,
-                        borderRadius: 1,
-                    },
-                },
-            }}
+            closeOnItemClick={false}
+            position="bottom-start"
+            withinPortal
+            shadow="md"
+            width={200}
         >
-            <MenuItem onClick={handleAddPickupStop}>
-                <ListItemIcon>
-                    <PinDropIcon fontSize="small" sx={{color: 'success.main'}}/>
-                </ListItemIcon>
-                <ListItemText>Add Pickup Stop</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={handleAddDeliveryStop}>
-                <ListItemIcon>
-                    <PinDropIcon fontSize="small" sx={{color: 'error.main'}}/>
-                </ListItemIcon>
-                <ListItemText>Add Delivery Stop</ListItemText>
-            </MenuItem>
+            {/*
+              * MUI positioned this menu with anchorReference="anchorPosition".
+              * Mantine anchors to its own Target, so the target is a zero-size
+              * element parked at the pointer — it renders nothing visible and
+              * exists only to give the dropdown somewhere to attach.
+              */}
+            <Menu.Target>
+                <div
+                    aria-hidden
+                    style={{
+                        position: 'fixed',
+                        top: anchorPosition?.y ?? 0,
+                        left: anchorPosition?.x ?? 0,
+                        width: 0,
+                        height: 0,
+                    }}
+                />
+            </Menu.Target>
 
-            {isManual && !isChild && onInsertToLive && (
-                [
-                    <Divider key="insert-divider"/>,
-                    <MenuItem key="insert" onClick={handleInsertToLive}>
-                        <ListItemIcon>
-                            <PlayCircleOutlineIcon fontSize="small" sx={{color: 'warning.main'}}/>
-                        </ListItemIcon>
-                        <ListItemText>Insert to live...</ListItemText>
-                    </MenuItem>
-                ]
-            )}
+            <Menu.Dropdown>
+                <Menu.Item
+                    onClick={handleAddPickupStop}
+                    leftSection={<Icon lucide={MapPin} size={16} color="var(--mantine-color-green-6)" data-stop-icon="pickup"/>}
+                >
+                    Add Pickup Stop
+                </Menu.Item>
+                <Menu.Item
+                    onClick={handleAddDeliveryStop}
+                    leftSection={<Icon lucide={MapPin} size={16} color="var(--mantine-color-red-6)" data-stop-icon="delivery"/>}
+                >
+                    Add Delivery Stop
+                </Menu.Item>
 
-            {onSetMode && currentMode !== undefined && (
-                [
-                    <Divider key="mode-divider"/>,
-                    !isActive && (
-                        <MenuItem key="activate" onClick={() => handleSetMode(RecurringMode.Active)}>
-                            <ListItemIcon>
-                                <PlayArrowIcon fontSize="small" sx={{color: 'success.main'}}/>
-                            </ListItemIcon>
-                            <ListItemText>Activate</ListItemText>
-                        </MenuItem>
-                    ),
-                    !isManual && (
-                        <MenuItem key="manual" onClick={() => handleSetMode(RecurringMode.Manual)}>
-                            <ListItemIcon>
-                                <BuildIcon fontSize="small" sx={{color: 'warning.main'}}/>
-                            </ListItemIcon>
-                            <ListItemText>Move to Manual</ListItemText>
-                        </MenuItem>
-                    ),
-                    !isInactive && (
-                        <MenuItem key="deactivate" onClick={() => handleSetMode(RecurringMode.Inactive)}>
-                            <ListItemIcon>
-                                <StopIcon fontSize="small" sx={{color: 'grey.600'}}/>
-                            </ListItemIcon>
-                            <ListItemText>Deactivate</ListItemText>
-                        </MenuItem>
-                    ),
-                ]
-            )}
+                {isManual && !isChild && onInsertToLive && (
+                    <>
+                        <Menu.Divider/>
+                        <Menu.Item
+                            onClick={handleInsertToLive}
+                            leftSection={<Icon lucide={PlayCircle} size={16} color="var(--mantine-color-yellow-6)"/>}
+                        >
+                            Insert to live...
+                        </Menu.Item>
+                    </>
+                )}
+
+                {onSetMode && currentMode !== undefined && (
+                    <>
+                        <Menu.Divider/>
+                        {!isActive && (
+                            <Menu.Item
+                                onClick={() => handleSetMode(RecurringMode.Active)}
+                                leftSection={<Icon lucide={Play} size={16} color="var(--mantine-color-green-6)"/>}
+                            >
+                                Activate
+                            </Menu.Item>
+                        )}
+                        {!isManual && (
+                            <Menu.Item
+                                onClick={() => handleSetMode(RecurringMode.Manual)}
+                                leftSection={<Icon lucide={Hammer} size={16} color="var(--mantine-color-yellow-6)"/>}
+                            >
+                                Move to Manual
+                            </Menu.Item>
+                        )}
+                        {!isInactive && (
+                            <Menu.Item
+                                onClick={() => handleSetMode(RecurringMode.Inactive)}
+                                leftSection={<Icon lucide={Square} size={16} color="var(--mantine-color-gray-6)"/>}
+                            >
+                                Deactivate
+                            </Menu.Item>
+                        )}
+                    </>
+                )}
+            </Menu.Dropdown>
         </Menu>
     );
 };

@@ -17,10 +17,13 @@ describe('DEFAULT_COLUMN_WIDTHS', () => {
 });
 
 describe('ALL_COLUMNS sortable flags', () => {
-    it('marks every column sortable, including the derived and unlabelled ones', () => {
-        expect(ALL_COLUMNS.filter(c => !c.sortable)).toEqual([]);
-        expect(ALL_COLUMNS.find(c => c.key === 'priority')?.sortable).toBe(true);
+    it('marks every labelled column sortable, including the derived ones', () => {
+        expect(keys(ALL_COLUMNS.filter(c => !c.sortable))).toEqual(['priority']);
         expect(ALL_COLUMNS.find(c => c.key === 'remaining')?.sortable).toBe(true);
+    });
+
+    it('leaves the unlabelled indicator gutter unsortable', () => {
+        expect(ALL_COLUMNS.find(c => c.key === 'priority')?.sortable).toBe(false);
     });
 });
 

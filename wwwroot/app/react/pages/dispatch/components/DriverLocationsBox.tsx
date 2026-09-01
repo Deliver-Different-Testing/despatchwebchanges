@@ -1,7 +1,6 @@
 import React from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Box} from '@mantine/core';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import type {Dayjs} from 'dayjs';
 import {DriverLocations} from '../../../components/common/driver-locations';
 import type {
@@ -62,8 +61,6 @@ export const DriverLocationsBox: React.FC<DriverLocationsBoxProps> = ({
     // here it's just forwarded to the presentational component (shouldShowCourier).
     return (
         <Box style={{height: '100%', minHeight: 0, overflow: 'auto'}}>
-            {/* DriverLocations is still MUI — it moves with the maps work (Phase 8). */}
-            <MuiThemeIsland>
             <DriverLocations
                 driverLocations={data as IClearListViewModelWithColumns | undefined}
                 loading={isLoading}
@@ -75,7 +72,6 @@ export const DriverLocationsBox: React.FC<DriverLocationsBoxProps> = ({
                 onAreaClick={(area: IAreaClearList) => onAreaSelect?.(area.id)}
                 onClearFilter={onClearArea}
             />
-            </MuiThemeIsland>
         </Box>
     );
 };

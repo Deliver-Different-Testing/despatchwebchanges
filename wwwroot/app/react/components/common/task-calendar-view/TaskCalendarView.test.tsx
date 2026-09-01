@@ -102,9 +102,9 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            expect(screen.getByRole('button', {name: /month view/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /week view/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /day view/i})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /month view/i})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /week view/i})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /day view/i})).toBeInTheDocument();
         });
     });
 
@@ -114,7 +114,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             // Week view shows date range format
             await waitFor(() => {
@@ -128,7 +128,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /day view/i}));
+            await user.click(screen.getByRole('radio', {name: /day view/i}));
 
             // Day view shows full date format
             await waitFor(() => {
@@ -143,13 +143,37 @@ describe('TaskCalendarView', () => {
             renderWithProviders(<TaskCalendarView {...props} />);
 
             // Switch to week view first
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             // Then back to month view
-            await user.click(screen.getByRole('button', {name: /month view/i}));
+            await user.click(screen.getByRole('radio', {name: /month view/i}));
 
             const currentMonth = dayjs().format('MMMM YYYY');
             expect(await screen.findByText(currentMonth)).toBeInTheDocument();
+        });
+    });
+
+    // Period navigation had no test and no accessible name; both were added before
+    // the conversion so the arrows stay reachable and provable afterwards.
+    describe('Period Navigation', () => {
+        it('steps forward and back a month, and Today returns to the current one', async () => {
+            const user = setupUser();
+            renderWithProviders(<TaskCalendarView {...createDefaultProps()} />);
+
+            const thisMonth = dayjs().format('MMMM YYYY');
+            expect(screen.getByText(thisMonth)).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /next period/i}));
+            expect(await screen.findByText(dayjs().add(1, 'month').format('MMMM YYYY'))).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /previous period/i}));
+            expect(await screen.findByText(thisMonth)).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /previous period/i}));
+            expect(await screen.findByText(dayjs().subtract(1, 'month').format('MMMM YYYY'))).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /^today$/i}));
+            expect(await screen.findByText(thisMonth)).toBeInTheDocument();
         });
     });
 
@@ -280,7 +304,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             expect(await screen.findByText('12 AM')).toBeInTheDocument();
             expect(screen.getByText('12 PM')).toBeInTheDocument();
@@ -291,7 +315,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             // Week view should show day column headers
             // Check that time slots are rendered (confirms week view is active)
@@ -305,7 +329,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /day view/i}));
+            await user.click(screen.getByRole('radio', {name: /day view/i}));
 
             expect(await screen.findByText('12 AM')).toBeInTheDocument();
             expect(screen.getByText('6 AM')).toBeInTheDocument();
@@ -324,7 +348,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps({tasks: [overdueTask]});
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /day view/i}));
+            await user.click(screen.getByRole('radio', {name: /day view/i}));
 
             expect(await screen.findByText('Overdue Tasks (1)')).toBeInTheDocument();
         });
@@ -340,7 +364,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps({tasks: [completedTask]});
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /day view/i}));
+            await user.click(screen.getByRole('radio', {name: /day view/i}));
 
             await waitFor(() => {
                 expect(screen.queryByText(/Overdue Tasks/)).not.toBeInTheDocument();
@@ -366,7 +390,7 @@ describe('TaskCalendarView', () => {
 
             jest.clearAllMocks();
 
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             await waitFor(() => {
                 expect(props.onViewChange).toHaveBeenCalled();

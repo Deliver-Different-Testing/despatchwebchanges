@@ -10,7 +10,6 @@ import {OverviewPage} from './OverviewPage';
 import {MountOverviewConfig} from './OverviewPage.interfaces';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {createPageHost} from '../../utils/reactPageHost';
 
 let refreshCallback: (() => void) | null = null;
@@ -18,18 +17,16 @@ let refreshCallback: (() => void) | null = null;
 const host = createPageHost<MountOverviewConfig>({
     logName: 'OverviewReact',
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorBoundary>
-                <OverviewPage
-                    showToast={config.showToast}
-                    isUsCustomer={config.isUsCustomer}
-                    onOpenJobDetail={config.onOpenJobDetail}
-                    setRefreshCallback={(cb) => {
-                        refreshCallback = cb;
-                    }}
-                />
-            </ErrorBoundary>
-        </MuiThemeIsland>
+        <ErrorBoundary>
+            <OverviewPage
+                showToast={config.showToast}
+                isUsCustomer={config.isUsCustomer}
+                onOpenJobDetail={config.onOpenJobDetail}
+                setRefreshCallback={(cb) => {
+                    refreshCallback = cb;
+                }}
+            />
+        </ErrorBoundary>
     ),
 });
 

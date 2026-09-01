@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import type {Dayjs} from 'dayjs';
 import {Icon} from '../../../components/common/icon/Icon';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {NoData} from '../../../components/common/no-data/NoData';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
 import {HeaderMenuButton, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
@@ -246,27 +245,21 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
                 </Progress.Root>
             )}
             <Box p={4} style={{flex: 1, minHeight: 0, overflow: 'auto'}}>
-                {/* NoData and TaskItem are shared MUI leaves that move with their other hosts. */}
                 {needsJobSelection ? (
-                    <MuiThemeIsland>
-                        <NoData
-                            title="No job selected"
-                            message="Select a job to see its tasks."
-                        />
-                    </MuiThemeIsland>
+                    <NoData
+                        title="No job selected"
+                        message="Select a job to see its tasks."
+                    />
                 ) : tasks.length === 0 && !isLoading ? (
-                    <MuiThemeIsland>
-                        <NoData
-                            title="No tasks"
-                            message={taskScope === 'all'
-                                ? 'No tasks match your filter.'
-                                : 'This job has no tasks matching your filter.'}
-                        />
-                    </MuiThemeIsland>
+                    <NoData
+                        title="No tasks"
+                        message={taskScope === 'all'
+                            ? 'No tasks match your filter.'
+                            : 'This job has no tasks matching your filter.'}
+                    />
                 ) : (
                     tasks.map(task => (
                         <Box key={task.id} mb={4}>
-                        <MuiThemeIsland>
                             <TaskItem
                                 task={task}
                                 config={{
@@ -288,7 +281,6 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
                                 showSuccessToast={showSuccessToast}
                                 showErrorToast={showErrorToast}
                             />
-                        </MuiThemeIsland>
                         </Box>
                     ))
                 )}

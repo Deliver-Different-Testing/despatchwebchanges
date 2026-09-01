@@ -19,7 +19,6 @@ import {Briefcase, ChevronUp, Info, TriangleAlert, UserPlus, UserSearch, Zap} fr
 
 import {Icon} from '../common/icon/Icon';
 import {ActionButton, ACTION_BUTTON_COMPACT_GLYPH_SIZE, ACTION_BUTTON_COMPACT_HEIGHT} from '../common/action-button';
-import {MuiThemeIsland} from '../common/mui-interop/MuiThemeIsland';
 import {SearchSelect} from '../common/search-select/SearchSelect';
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -294,19 +293,15 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         [onSortChange],
     );
 
-    // The label-less priority column needs an explicit accessible name; every
-    // other column's own label is its name.
     const renderSortButton = useCallback(
-        (col: ColumnDef, ariaLabel?: string) => {
+        (col: ColumnDef) => {
             const active = sortState.column === col.key;
             return (
                 <button
                     type="button"
-                    className={[classes.sortButton, col.label ? '' : classes.sortButtonIconOnly]
-                        .filter(Boolean).join(' ')}
+                    className={classes.sortButton}
                     onClick={handleSort}
                     data-sort-column={col.key}
-                    aria-label={ariaLabel}
                     aria-sort={active ? (sortState.direction === 'desc' ? 'descending' : 'ascending') : undefined}
                 >
                     {col.label}
@@ -391,16 +386,12 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     }, [virtualItems, jobs.length, onLoadMore, hasMore, isFetchingMore]);
 
     if (jobs.length === 0) {
-        // `NoData` is a shared leaf still rendered by unmigrated MUI islands, so
-        // it moves in a later phase; until then it needs the MUI theme.
         return (
-            <MuiThemeIsland>
-                <NoData
-                    title="No Jobs"
-                    message="No jobs to display"
-                    icon={<Icon lucide={Briefcase} size={48}/>}
-                />
-            </MuiThemeIsland>
+            <NoData
+                title="No Jobs"
+                message="No jobs to display"
+                icon={<Icon lucide={Briefcase} size={48}/>}
+            />
         );
     }
 
@@ -428,8 +419,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                 style={{width: columnWidths[col.key] ?? col.width, position: 'relative'}}
                             >
                                 {col.key === 'priority' ? (
-                                    // The gutter carries two controls in ~50px: the legend and its
-                                    // own sort. Siblings, so a click on one can never be the other.
                                     <Group gap={2} wrap="nowrap" justify="center">
                                         <Tooltip label="What do these icons mean?" withArrow>
                                             <ActionIcon
@@ -442,7 +431,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                                 <Icon lucide={Info} size={16}/>
                                             </ActionIcon>
                                         </Tooltip>
-                                        {renderSortButton(col, 'Sort by priority')}
                                     </Group>
                                 ) : col.sortable ? (
                                     renderSortButton(col)

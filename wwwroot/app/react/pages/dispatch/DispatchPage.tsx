@@ -5,7 +5,6 @@ import {ActionIcon, Badge, Box, Group, Stack, Text} from '@mantine/core';
 import {useDisclosure} from '@mantine/hooks';
 import {Briefcase, X} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 
 /** Translucent washes for content sitting on the beta banner's brand fill. */
 const BANNER_SCRIM = 'color-mix(in srgb, currentColor 18%, transparent)';
@@ -625,14 +624,11 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             case DispatchBoxes.JobDetail:
                 if (!currentJobId) {
                     return (
-                        // NoData is a shared MUI leaf that moves with its other hosts.
-                        <MuiThemeIsland>
-                            <NoData
-                                title="No Job Selected"
-                                message="Select a job from the list to see its details."
-                                icon={<Icon lucide={Briefcase} size={48}/>}
-                            />
-                        </MuiThemeIsland>
+                        <NoData
+                            title="No Job Selected"
+                            message="Select a job from the list to see its details."
+                            icon={<Icon lucide={Briefcase} size={48}/>}
+                        />
                     );
                 }
                 return (
