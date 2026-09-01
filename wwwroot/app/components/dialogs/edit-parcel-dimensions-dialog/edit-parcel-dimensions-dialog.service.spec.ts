@@ -126,6 +126,34 @@ describe('EditParcelDimensionsDialogService', () => {
             });
         });
 
+        /*
+         * The dialog's single-select toggle brings a CSS module with it, and the
+         * emitted stylesheet is only fetched if this loader lists it — a missing one
+         * fails silently, leaving the control unstyled. routes.ts pairs script and
+         * stylesheet through islandFiles(); so must this.
+         */
+        it('loads the island stylesheet alongside the script when the manifest has one', async () => {
+            mockHttp.get.mockResolvedValue({
+                data: {
+                    'vendor-react.js': 'vendor-react.abc123.js',
+                    'editParcelDimensionsDialogReact.js': 'editParcelDimensionsDialogReact.xyz789.js',
+                    'editParcelDimensionsDialogReact.css': 'editParcelDimensionsDialogReact.def456.css',
+                },
+            });
+
+            await service.showJobDimensionsDialog(
+                mockEvent, createMockJob()
+            ).catch(() => {});
+
+            expect(mockOcLazyLoad.load).toHaveBeenCalledWith({
+                name: 'uDispatch.editParcelDimensionsDialogReact',
+                files: [
+                    'dist/editParcelDimensionsDialogReact.xyz789.js',
+                    'dist/editParcelDimensionsDialogReact.def456.css',
+                ],
+            });
+        });
+
         it('should skip vendor-react loading if window.React already exists', async () => {
             (window as any).React = {};
 

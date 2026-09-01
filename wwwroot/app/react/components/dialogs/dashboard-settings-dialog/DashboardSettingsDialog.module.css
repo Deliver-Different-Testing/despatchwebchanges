@@ -1,0 +1,17 @@
+/*
+ * The settings rows are cards you click anywhere on, so they need a hover —
+ * the one thing that cannot be expressed as a Mantine prop. Each row sets its
+ * own accent as a custom property (brand, or Auto-mate's) and these rules
+ * resolve against it.
+ *
+ * The resting border and background stay Mantine's, set by `withBorder` on the
+ * Paper rather than inline, so these rules can actually reach them.
+ */
+.settingRow {
+    transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.settingRow[data-clickable]:hover {
+    border-color: var(--setting-accent);
+    background-color: color-mix(in srgb, var(--setting-accent) 4%, var(--mantine-color-body));
+}

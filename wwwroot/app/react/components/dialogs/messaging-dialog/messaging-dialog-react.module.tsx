@@ -10,7 +10,6 @@ import React from 'react';
 import { MessagingDialog } from './MessagingDialog';
 import { OpenMessagingDialogOptions } from './types';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
 // Get current staff info from global variables
@@ -23,16 +22,14 @@ const currentStaffId = (): number => (typeof ContactID !== 'undefined' ? Contact
 const host = createDialogHost<void, void>({
     containerId: 'react-messaging-dialog-root',
     render: ({open, close, showToast}) => islandTree(
-        <MuiThemeIsland>
-            <MessagingDialog
-                open={open}
-                onClose={() => close()}
-                showToast={showToast}
-                currentStaffId={currentStaffId()}
-                currentStaffName={typeof FullName !== 'undefined' ? FullName : 'Unknown'}
-                timeZone={typeof TimeZone !== 'undefined' ? TimeZone : 'UTC'}
-            />
-        </MuiThemeIsland>
+        <MessagingDialog
+            open={open}
+            onClose={() => close()}
+            showToast={showToast}
+            currentStaffId={currentStaffId()}
+            currentStaffName={typeof FullName !== 'undefined' ? FullName : 'Unknown'}
+            timeZone={typeof TimeZone !== 'undefined' ? TimeZone : 'UTC'}
+        />
     ),
 });
 

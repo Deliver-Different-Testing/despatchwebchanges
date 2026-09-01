@@ -6,7 +6,7 @@
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor, within} from '@testing-library/react';
-import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {TaskHistory} from './TaskHistory';
@@ -44,7 +44,7 @@ function createTestQueryClient() {
 
 const renderWithProviders = (ui: React.ReactElement) =>
     // Mantine outside, MUI inside — the list is still MUI, its rows are Mantine.
-    renderWithMantineOverMui(ui, {queryClient: createTestQueryClient()});
+    renderWithMantine(ui, {queryClient: createTestQueryClient()});
 
 // Sample delivery journey data
 const createMockDeliveryEvents = (): DeliveryJourney[] => [

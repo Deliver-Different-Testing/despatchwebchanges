@@ -9,6 +9,8 @@ export interface SearchSelectProps<T> {
     label?: string;
     'aria-label'?: string;
     placeholder?: string;
+    /** Hint under the label — e.g. what leaving the field empty means. */
+    description?: string;
     /** The selected option, or null. Owned by the caller. */
     value: T | null;
     /** Fired with the chosen option, or with null as soon as the user edits the text. */

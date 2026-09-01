@@ -1,16 +1,14 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {BoxHeader} from './BoxHeader';
 
-const theme = createTheme();
 
 const renderHeader = (props: Partial<React.ComponentProps<typeof BoxHeader>> = {}) =>
     render(
-        <MantineTestProvider><ThemeProvider theme={theme}>
+        <MantineTestProvider>
             <BoxHeader icon="filter_list" title="Filters" {...props} />
-        </ThemeProvider></MantineTestProvider>,
+        </MantineTestProvider>,
     );
 
 describe('BoxHeader drag handle', () => {

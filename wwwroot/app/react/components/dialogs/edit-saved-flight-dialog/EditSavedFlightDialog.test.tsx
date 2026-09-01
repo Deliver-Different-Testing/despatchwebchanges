@@ -8,7 +8,7 @@ import dayjs from 'dayjs';
 import {EditSavedFlightDialog} from './EditSavedFlightDialog';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {nationwideApi} from '../../../services/nationwideApi';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 jest.mock('../../../services/nationwideApi', () => ({
     nationwideApi: {getRecurringFlightOptions: jest.fn(), getAllActiveAirportSuggestions: jest.fn()},

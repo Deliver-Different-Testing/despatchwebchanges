@@ -217,8 +217,8 @@
 {
     <script src="/dist/@vendorPluginsJs"></script>
 }
-@* vendor-react must evaluate before app.js: the module bundles resolve React,
-   Mantine and MUI off the window globals it publishes. *@
+@* vendor-react must evaluate before app.js: the module bundles resolve React
+   and Mantine off the window globals it publishes. *@
 @if (!string.IsNullOrEmpty(vendorReactJs))
 {
     <script src="/dist/@vendorReactJs"></script>

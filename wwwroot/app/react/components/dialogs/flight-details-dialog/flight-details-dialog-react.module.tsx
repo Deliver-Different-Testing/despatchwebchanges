@@ -11,7 +11,6 @@ import { FlightDetailsDialog } from './FlightDetailsDialog';
 import { FlightData } from './types';
 import { IFlightViewModel } from '../../../../components/Nationwide/nationwide.interfaces';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
 /**
@@ -63,13 +62,11 @@ function convertFlightViewModelToFlightData(viewModel: IFlightViewModel): Flight
 const host = createDialogHost<{flight: FlightData}, void>({
     containerId: 'react-flight-details-dialog-root',
     render: ({open, payload, close}) => islandTree(
-        <MuiThemeIsland>
-            <FlightDetailsDialog
-                open={open}
-                flight={payload.flight}
-                onClose={() => close()}
-            />
-        </MuiThemeIsland>
+        <FlightDetailsDialog
+            open={open}
+            flight={payload.flight}
+            onClose={() => close()}
+        />
     ),
 });
 

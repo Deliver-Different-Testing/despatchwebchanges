@@ -13,9 +13,6 @@ jest.mock('react-dom/client', () => ({
     })),
 }));
 
-jest.mock('../../../theme/muiTheme', () => ({
-    getTheme: jest.fn(() => ({})),
-}));
 
 import {openInterCourierChargeDialog} from './inter-courier-charge-dialog-react.module';
 

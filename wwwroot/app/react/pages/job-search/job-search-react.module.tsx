@@ -10,7 +10,6 @@
 
 import React from 'react';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {JobSearchPage} from './JobSearchPage';
 import type {ImportLayoutsResult} from './lib/layoutPersistence';
@@ -27,17 +26,15 @@ let layoutBridge: JobSearchLayoutBridge | null = null;
 const host = createPageHost<MountJobSearchPageConfig>({
     logName: 'JobSearchReact',
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorBoundary>
-                <JobSearchPage
-                    {...config}
-                    onLayoutBridgeReady={bridge => {
-                        layoutBridge = bridge;
-                        config.onLayoutBridgeReady?.(bridge);
-                    }}
-                />
-            </ErrorBoundary>
-        </MuiThemeIsland>
+        <ErrorBoundary>
+            <JobSearchPage
+                {...config}
+                onLayoutBridgeReady={bridge => {
+                    layoutBridge = bridge;
+                    config.onLayoutBridgeReady?.(bridge);
+                }}
+            />
+        </ErrorBoundary>
     ),
 });
 

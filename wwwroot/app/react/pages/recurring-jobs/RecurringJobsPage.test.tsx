@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {act, fireEvent, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
-import {renderWithMantineOverMui} from '../../__testUtils__';
+import {renderWithMantine} from '../../__testUtils__';
 import {QueryClient} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../interfaces';
@@ -77,7 +77,7 @@ const createTestQueryClient = () =>
 
 const renderWithProviders = (props: RecurringJobsPageProps) => {
     const queryClient = createTestQueryClient();
-    return renderWithMantineOverMui(<RecurringJobsPage {...props} />, {queryClient});
+    return renderWithMantine(<RecurringJobsPage {...props} />, {queryClient});
 };
 
 const createMockAddress = (line1: string, full: string) => ({

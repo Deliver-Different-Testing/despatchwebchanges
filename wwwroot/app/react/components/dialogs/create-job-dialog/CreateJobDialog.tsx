@@ -1,28 +1,42 @@
 /**
- * React Create Job Dialog
+ * Create Job Dialog
  *
- * MUI-based replacement for the AngularJS create-job-dialog.
- * Allows users to create a new job with client, addresses, contacts, vehicle, speed, and optional courier dispatch.
+ * Grouped by what the operator is deciding, not by field type: **Job** (who pays,
+ * what it costs), **Route** (the two legs of the journey), **Service** (how it
+ * moves) and an optional **References & notes**. The address, contact and notes
+ * for one leg sit together — they used to be spread across three sections.
+ *
+ * A failed submit reports every incomplete field at once through a summary that
+ * jumps to each one, rather than a toast per failure.
  */
 
-import React, {useCallback, useEffect, useState} from 'react';
-import Autocomplete from '@mui/material/Autocomplete';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import Paper from '@mui/material/Paper';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import AddBusinessIcon from '@mui/icons-material/AddBusiness';
-import ContactIcon from '@mui/icons-material/ContactPhone';
-import RefIcon from '@mui/icons-material/Description';
-import VehicleIcon from '@mui/icons-material/DirectionsCar';
-import LocationIcon from '@mui/icons-material/LocationOn';
-import NotesIcon from '@mui/icons-material/Notes';
-import PersonIcon from '@mui/icons-material/Person';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+    Alert,
+    Anchor,
+    Badge,
+    Box,
+    Divider,
+    Flex,
+    Group,
+    NumberInput,
+    Paper,
+    Select,
+    SimpleGrid,
+    Stack,
+    Text,
+    TextInput,
+    Textarea,
+    ThemeIcon,
+    alpha,
+} from '@mantine/core';
 import {DateInput} from '@mantine/dates';
+import {ArrowDown, ArrowRight, CircleAlert, Plus} from 'lucide-react';
+import {IconFlag, IconMapPin, IconTruck} from '@tabler/icons-react';
+import type {LucideIcon, TablerIcon} from '../../common/icon/Icon';
+import {Icon} from '../../common/icon/Icon';
+import {SearchSelect} from '../../common/search-select/SearchSelect';
+import {MARKER_COLORS} from '../../common/dispatch-map/DispatchMap.types';
 import type {CourierSuggestion} from '../../../interfaces';
 import {
     AddressViewModel,
@@ -37,44 +51,139 @@ import {useCourierSearch} from '../../../hooks/useCourierApi';
 import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
 import {addressApi} from '../../../services/addressApi';
 import {jobApi} from '../../../services/jobApi';
+import {formatCurrency} from '../../../utils/currencyUtils';
 import {dayjs, formatDateForApi, getIanaTimezone, getInputDateFormat} from '../../../utils/dateUtils';
 import {getStateByAbbreviation} from '../../../utils/usStates';
 import type {Dayjs} from 'dayjs';
 import type {ShowToastFn} from '../../../services/toastService';
-import {DialogShell, DialogHeader} from '../shared';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+    sectionLabelProps,
+    sectionPaperProps,
+} from '../shared/mantine';
 
 /** The string form `DateInput` exchanges values in. */
 const ISO_DATE = 'YYYY-MM-DD';
 
-// Section wrapper component for consistent styling
-const FormSection: React.FC<{
-    icon: React.ReactNode;
+const NOTES_MAX = 150;
+const REFERENCE_MAX = 20;
+
+/** How full a capped field has to be before its counter is worth the ink. */
+const COUNTER_THRESHOLD = 0.75;
+
+/**
+ * Anchors for the summary shortcuts. They sit on a wrapper rather than the input
+ * because `SearchSelect` owns its own input and takes no `id`.
+ */
+const FIELD = {
+    client: 'create-job-client',
+    charge: 'create-job-charge',
+    weight: 'create-job-weight',
+    pickupAddress: 'create-job-pickup-address',
+    pickupContact: 'create-job-pickup-contact',
+    deliveryAddress: 'create-job-delivery-address',
+    deliveryContact: 'create-job-delivery-contact',
+    podName: 'create-job-pod-name',
+    vehicle: 'create-job-vehicle',
+    speed: 'create-job-speed',
+    jobDate: 'create-job-date',
+} as const;
+
+/** A field the operator still has to fill in, and where to find it. */
+interface MissingField {
+    anchor: string;
+    label: string;
+}
+
+const isPositiveNumber = (value: string): boolean => {
+    const parsed = parseFloat(value);
+    return value !== '' && Number.isFinite(parsed) && parsed > 0;
+};
+
+/** Moves the operator to a field named in the error summary. */
+const focusField = (anchor: string): void => {
+    const host = document.getElementById(anchor);
+    if (!host) return;
+    host.scrollIntoView?.({block: 'center'});
+    host.querySelector<HTMLElement>('input:not([type="hidden"]), textarea, button')?.focus();
+};
+
+/** A section: the house quiet label, then the white card the fields sit on. */
+const Section: React.FC<{
     title: string;
+    aside?: React.ReactNode;
     children: React.ReactNode;
-    isLast?: boolean;
-}> = ({icon, title, children, isLast}) => (
-    <Paper
-        elevation={0}
-        sx={{
-            p: 2.5,
-            mb: isLast ? 0 : 2.5,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-        }}
-    >
-        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
-            {React.cloneElement(icon as React.ReactElement<Record<string, unknown>>, {sx: {color: 'text.secondary'}})}
-            <Typography variant="subtitle1" sx={{
-                fontWeight: 500
-            }}>
-                {title}
-            </Typography>
-        </Box>
-        {children}
-    </Paper>
+}> = ({title, aside, children}) => (
+    <Box>
+        <Group justify="space-between" align="center" mb="xs" wrap="nowrap">
+            <Text {...sectionLabelProps} mb={0}>{title}</Text>
+            {aside}
+        </Group>
+        <Paper {...sectionPaperProps}>{children}</Paper>
+    </Box>
 );
+
+/** Wraps a field so the error summary has something to scroll to and focus. */
+const Field: React.FC<{anchor: string; children: React.ReactNode}> = ({anchor, children}) => (
+    <Box id={anchor} miw={0}>{children}</Box>
+);
+
+/**
+ * A leg's marker: the same blue pickup / green delivery the dispatch map paints,
+ * so the route reads the same way in the dialog as it does on the board.
+ */
+const LegHeader: React.FC<{color: string; glyph: TablerIcon; label: string}> = ({color, glyph, label}) => (
+    <Group gap={8} wrap="nowrap">
+        <ThemeIcon
+            size={26}
+            radius="md"
+            style={{
+                '--ti-bg': alpha(color, 0.14),
+                '--ti-color': color,
+            } as React.CSSProperties & Record<`--${string}`, string>}
+        >
+            <Icon tabler={glyph} size={15}/>
+        </ThemeIcon>
+        <Text fz={11} fw={700} tt="uppercase" lts={0.8} c="dimmed">{label}</Text>
+    </Group>
+);
+
+/** The rail between the two legs — decorative; the leg headers carry the meaning. */
+const RouteConnector: React.FC = () => {
+    const chip = (glyph: LucideIcon) => (
+        <ThemeIcon size={26} radius="xl" variant="light" color="gray">
+            <Icon lucide={glyph} size={14}/>
+        </ThemeIcon>
+    );
+    return (
+        <>
+            <Stack visibleFrom="sm" w={34} gap={6} align="center" aria-hidden>
+                <Divider orientation="vertical" style={{flexGrow: 1}}/>
+                {chip(ArrowRight)}
+                <Divider orientation="vertical" style={{flexGrow: 1}}/>
+            </Stack>
+            <Group hiddenFrom="sm" gap={6} wrap="nowrap" aria-hidden>
+                <Divider style={{flexGrow: 1}}/>
+                {chip(ArrowDown)}
+                <Divider style={{flexGrow: 1}}/>
+            </Group>
+        </>
+    );
+};
+
+/** Stays hidden until the cap is within reach, so the resting form stays quiet. */
+const CharCount: React.FC<{value: string; max: number}> = ({value, max}) => {
+    if (value.length < max * COUNTER_THRESHOLD) return null;
+    return (
+        <Text fz="xs" ta="right" mt={4} c={value.length >= max ? 'red' : 'dimmed'}>
+            {value.length}/{max}
+        </Text>
+    );
+};
 
 export interface CreateJobDialogProps {
     open: boolean;
@@ -91,42 +200,46 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
     onSubmit,
     showToast,
 }) => {
-    // Form state - Job Details
+    // Form state - Job
     const [selectedClient, setSelectedClient] = useState<Suggestion | null>(null);
     const [clientSearchText, setClientSearchText] = useState('');
     const [charge, setCharge] = useState<string>('');
     const [weight, setWeight] = useState<string>('');
-    const [selectedCourier, setSelectedCourier] = useState<CourierSuggestion | null>(null);
-    const [courierSearchText, setCourierSearchText] = useState('');
     const [jobDate, setJobDate] = useState<Dayjs>(dayjs().tz(getIanaTimezone()));
 
-    // Form state - Addresses
+    // Form state - Route
     const [fromAddressSearchText, setFromAddressSearchText] = useState('');
     const [toAddressSearchText, setToAddressSearchText] = useState('');
     const [selectedPickupAddress, setSelectedPickupAddress] = useState<HereMapsLocationResult | null>(null);
     const [selectedDeliveryAddress, setSelectedDeliveryAddress] = useState<HereMapsLocationResult | null>(null);
-
-    // Form state - Contacts
     const [pickupContact, setPickupContact] = useState('');
     const [deliveryContact, setDeliveryContact] = useState('');
     const [podName, setPodName] = useState('');
+    const [pickupNotes, setPickupNotes] = useState('');
+    const [deliveryNotes, setDeliveryNotes] = useState('');
 
-    // Form state - Vehicle & Speed
+    // Form state - Service
     const [selectedVehicle, setSelectedVehicle] = useState<Suggestion | null>(null);
-    const [vehicleSearchText, setVehicleSearchText] = useState('');
     const [selectedSpeed, setSelectedSpeed] = useState<Suggestion | null>(null);
-    const [speedSearchText, setSpeedSearchText] = useState('');
+    const [selectedCourier, setSelectedCourier] = useState<CourierSuggestion | null>(null);
+    const [courierSearchText, setCourierSearchText] = useState('');
 
-    // Form state - References & Notes
+    // Form state - References & notes
     const [refA, setRefA] = useState('');
     const [refB, setRefB] = useState('');
     const [jobNotes, setJobNotes] = useState('');
-    const [pickupNotes, setPickupNotes] = useState('');
-    const [deliveryNotes, setDeliveryNotes] = useState('');
 
     // UI state
     const [isLoading, setIsLoading] = useState(false);
     const [touched, setTouched] = useState(false);
+    const [submitAttempt, setSubmitAttempt] = useState(0);
+    const summaryRef = useRef<HTMLDivElement>(null);
+
+    const weightLabel = isUsTenant ? 'Weight (lb)' : 'Weight (kg)';
+
+    /* The tenant's currency marker, taken from the same formatter the rest of the
+       app prices with rather than a symbol table of our own. */
+    const currencySymbol = useMemo(() => formatCurrency(0).replace(/[\d\s.,\u00a0]/g, ''), []);
 
     // React Query hooks
     const {data: clientOptions = [], isFetching: isSearchingClients} = useClientSearch(
@@ -166,9 +279,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             setDeliveryContact('');
             setPodName('');
             setSelectedVehicle(null);
-            setVehicleSearchText('');
             setSelectedSpeed(null);
-            setSpeedSearchText('');
             setRefA('');
             setRefB('');
             setJobNotes('');
@@ -176,6 +287,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             setDeliveryNotes('');
             setIsLoading(false);
             setTouched(false);
+            setSubmitAttempt(0);
         }
     }, [open]);
 
@@ -248,60 +360,31 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         }
     }, [isUsTenant]);
 
-    // Validation
-    const validate = useCallback((): boolean => {
-        if (!selectedClient) {
-            showToast('Please select a client.', 'warning');
-            return false;
-        }
-        const chargeNum = parseFloat(charge);
-        if (!charge || isNaN(chargeNum) || chargeNum <= 0) {
-            showToast('Please enter a valid charge amount.', 'warning');
-            return false;
-        }
-        const weightNum = parseFloat(weight);
-        if (!weight || isNaN(weightNum) || weightNum <= 0) {
-            showToast(
-                isUsTenant ? 'Please enter a valid weight (lb).' : 'Please enter a valid weight (kg).',
-                'warning'
-            );
-            return false;
-        }
-        if (!jobDate || !jobDate.isValid()) {
-            showToast('Please select a job date.', 'warning');
-            return false;
-        }
-        if (!selectedPickupAddress) {
-            showToast('Please select a pickup address.', 'warning');
-            return false;
-        }
-        if (!selectedDeliveryAddress) {
-            showToast('Please select a delivery address.', 'warning');
-            return false;
-        }
-        if (!pickupContact.trim()) {
-            showToast('Please enter a pickup contact name.', 'warning');
-            return false;
-        }
-        if (!deliveryContact.trim()) {
-            showToast('Please enter a delivery contact name.', 'warning');
-            return false;
-        }
-        if (!podName.trim()) {
-            showToast('Please enter a POD name.', 'warning');
-            return false;
-        }
-        if (!selectedVehicle) {
-            showToast('Please select a vehicle.', 'warning');
-            return false;
-        }
-        if (!selectedSpeed) {
-            showToast('Please select a speed.', 'warning');
-            return false;
-        }
-        return true;
-    }, [selectedClient, charge, weight, isUsTenant, jobDate, selectedPickupAddress, selectedDeliveryAddress,
-        pickupContact, deliveryContact, podName, selectedVehicle, selectedSpeed, showToast]);
+    /* Every gap at once — the operator fixes the form in one pass instead of
+       resubmitting to discover the next missing field. */
+    const missingFields = useMemo<MissingField[]>(() => {
+        const missing: MissingField[] = [];
+        if (!selectedClient) missing.push({anchor: FIELD.client, label: 'Client'});
+        if (!isPositiveNumber(charge)) missing.push({anchor: FIELD.charge, label: 'Charge Amount'});
+        if (!isPositiveNumber(weight)) missing.push({anchor: FIELD.weight, label: weightLabel});
+        if (!jobDate?.isValid()) missing.push({anchor: FIELD.jobDate, label: 'Job Date'});
+        if (!selectedPickupAddress) missing.push({anchor: FIELD.pickupAddress, label: 'Pickup Address'});
+        if (!pickupContact.trim()) missing.push({anchor: FIELD.pickupContact, label: 'Pickup Contact'});
+        if (!selectedDeliveryAddress) missing.push({anchor: FIELD.deliveryAddress, label: 'Delivery Address'});
+        if (!deliveryContact.trim()) missing.push({anchor: FIELD.deliveryContact, label: 'Delivery Contact'});
+        if (!podName.trim()) missing.push({anchor: FIELD.podName, label: 'POD Name'});
+        if (!selectedVehicle) missing.push({anchor: FIELD.vehicle, label: 'Vehicle'});
+        if (!selectedSpeed) missing.push({anchor: FIELD.speed, label: 'Speed'});
+        return missing;
+    }, [selectedClient, charge, weight, weightLabel, jobDate, selectedPickupAddress, pickupContact,
+        selectedDeliveryAddress, deliveryContact, podName, selectedVehicle, selectedSpeed]);
+
+    const showSummary = touched && missingFields.length > 0;
+
+    // The summary is the response to pressing Create Job, so bring it into view.
+    useEffect(() => {
+        if (submitAttempt > 0) summaryRef.current?.scrollIntoView?.({block: 'nearest'});
+    }, [submitAttempt]);
 
     // Submit handler
     const handleSubmit = useCallback(async () => {
@@ -309,7 +392,10 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
 
         setTouched(true);
 
-        if (!validate()) return;
+        if (missingFields.length > 0) {
+            setSubmitAttempt(attempt => attempt + 1);
+            return;
+        }
 
         setIsLoading(true);
 
@@ -391,398 +477,318 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [isLoading, validate, processAddress, selectedPickupAddress, selectedDeliveryAddress,
+    }, [isLoading, missingFields, processAddress, selectedPickupAddress, selectedDeliveryAddress,
         selectedClient, deliveryContact, podName, jobDate, pickupContact, refA, refB,
         deliveryNotes, pickupNotes, jobNotes, charge, weight, isUsTenant, selectedSpeed, selectedVehicle,
         selectedCourier, onSubmit, showToast]);
 
     // Filter vehicle/speed options locally
-    const filteredVehicles = vehicleSizes.filter(v =>
-        v.text.toLowerCase().includes(vehicleSearchText.toLowerCase())
-    );
-    const filteredSpeeds = speedOptions.filter(s =>
-        s.text.toLowerCase().includes(speedSearchText.toLowerCase())
-    );
+    /* Mantine's Select filters a loaded list itself, so the two pickers need no
+       search text of their own — only the id round-trip back to the option. */
+    const toOptions = (items: Suggestion[]) => items.map(i => ({value: String(i.id), label: i.text}));
+    const findById = (items: Suggestion[], id: string | null) =>
+        items.find(i => String(i.id) === id) ?? null;
 
-    // Helper for showing required field error
     if (!open) return null;
 
     return (
         <DialogShell
-            open={open}
-            onClose={isLoading ? undefined : onClose}
-            maxWidth="md"
-            slotProps={{
-                paper: {
-                    sx: {
-                        overflow: 'hidden',
-                        maxWidth: 900,
-                    },
-                },
-            }}
+            opened={open}
+            onClose={isLoading ? () => undefined : onClose}
+            size={dialogSize.lg}
+            label="Add New Job"
         >
             <DialogHeader
-                icon={<AddBusinessIcon />}
+                icon={<Icon tabler={IconTruck}/>}
                 title="Add New Job"
                 subtitle="Create a new dispatch job"
                 onClose={onClose}
                 closeDisabled={isLoading}
             />
-            {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
-                {/* Job Details Section */}
-                <FormSection icon={<PersonIcon />} title="Job Details">
-                    <Box sx={{display: 'flex', gap: 2, mb: 2}}>
-                        <Autocomplete
-                            sx={{flex: 1}}
-                            options={clientOptions}
-                            getOptionLabel={(option) => option.text}
-                            loading={isSearchingClients}
-                            value={selectedClient}
-                            inputValue={clientSearchText}
-                            onInputChange={(_, value) => setClientSearchText(value)}
-                            onChange={(_, value) => setSelectedClient(value)}
-                            filterOptions={(x) => x}
-                            isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({slotProps: autoSlotProps, ...params}) => (
-                                <TextField
-                                    {...params}
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                <Stack gap="lg">
+                    {showSummary && (
+                        <Alert
+                            ref={summaryRef}
+                            color="red"
+                            variant="light"
+                            icon={<Icon lucide={CircleAlert}/>}
+                            title={`Complete ${missingFields.length} field${missingFields.length === 1 ? '' : 's'} to create this job`}
+                        >
+                            <Group gap={6}>
+                                {missingFields.map(field => (
+                                    <Anchor
+                                        key={field.anchor}
+                                        component="button"
+                                        type="button"
+                                        fz="sm"
+                                        onClick={() => focusField(field.anchor)}
+                                    >
+                                        {field.label}
+                                    </Anchor>
+                                ))}
+                            </Group>
+                        </Alert>
+                    )}
+
+                    <Section title="Job">
+                        <Stack gap="md">
+                            {/*
+                              * SearchSelect, not Mantine's Autocomplete: these four
+                              * pickers carry an object and search the server, where
+                              * Autocomplete is string-valued and filters only what it
+                              * already holds.
+                              */}
+                            <Field anchor={FIELD.client}>
+                                <SearchSelect
                                     label="Client"
                                     placeholder="Start typing to search clients"
-                                    required
-                                    error={touched && !selectedClient}
-                                    helperText={touched && !selectedClient ? 'Client is required.' : ''}
-                                    slotProps={{
-                                        ...autoSlotProps,
-                                        input: {
-                                            ...autoSlotProps.input,
-                                            endAdornment: (
-                                                <>
-                                                    {isSearchingClients && <CircularProgress size={20} />}
-                                                    {autoSlotProps.input.endAdornment}
-                                                </>
-                                            ),
-                                        },
-                                    }}
+                                    withAsterisk
+                                    minSearchLength={3}
+                                    value={selectedClient}
+                                    onChange={setSelectedClient}
+                                    options={clientOptions}
+                                    loading={isSearchingClients}
+                                    onSearchChange={setClientSearchText}
+                                    getOptionKey={(o) => o.id}
+                                    getOptionLabel={(o) => o.text}
+                                    error={touched && !selectedClient ? 'Client is required.' : undefined}
                                 />
-                            )}
-                            noOptionsText={
-                                clientSearchText.length < 3
-                                    ? 'Type at least 3 characters to search...'
-                                    : 'No clients found'
-                            }
-                        />
-                        <TextField
-                            sx={{flex: '0 0 180px'}}
-                            label="Charge Amount"
-                            type="number"
-                            value={charge}
-                            onChange={(e) => setCharge(e.target.value)}
-                            required
-                            error={touched && (!charge || parseFloat(charge) <= 0)}
-                            helperText={touched && (!charge || parseFloat(charge) <= 0) ? 'Charge must be greater than 0.' : ''}
-                            slotProps={{htmlInput: {step: '0.01', min: '0.01'}}}
-                        />
-                        <TextField
-                            sx={{flex: '0 0 160px'}}
-                            label={isUsTenant ? 'Weight (lb)' : 'Weight (kg)'}
-                            type="number"
-                            value={weight}
-                            onChange={(e) => setWeight(e.target.value)}
-                            required
-                            error={touched && (!weight || parseFloat(weight) <= 0)}
-                            helperText={touched && (!weight || parseFloat(weight) <= 0) ? 'Weight must be greater than 0.' : ''}
-                            slotProps={{htmlInput: {step: 'any', min: '0', inputMode: 'decimal'}}}
-                        />
-                    </Box>
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <Autocomplete
-                            sx={{flex: 1}}
-                            options={courierOptions}
-                            getOptionLabel={(option) => option.text}
-                            loading={isSearchingCouriers}
-                            value={selectedCourier}
-                            inputValue={courierSearchText}
-                            onInputChange={(_, value) => setCourierSearchText(value)}
-                            onChange={(_, value) => setSelectedCourier(value)}
-                            filterOptions={(x) => x}
-                            isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({slotProps: autoSlotProps, ...params}) => (
-                                <TextField
-                                    {...params}
-                                    label="Courier"
-                                    placeholder="Start typing to search couriers"
-                                    slotProps={{
-                                        ...autoSlotProps,
-                                        input: {
-                                            ...autoSlotProps.input,
-                                            endAdornment: (
-                                                <>
-                                                    {isSearchingCouriers && <CircularProgress size={20} />}
-                                                    {autoSlotProps.input.endAdornment}
-                                                </>
-                                            ),
-                                        },
-                                    }}
-                                />
-                            )}
-                            noOptionsText={
-                                courierSearchText.length < 2
-                                    ? 'Type at least 2 characters to search...'
-                                    : 'No couriers found'
-                            }
-                        />
-                        {/* Mantine's `DateInput` is string-valued (`YYYY-MM-DD`), so the job
-                            date stays a calendar date all the way to `formatDateForApi`. The
-                            surrounding form is still MUI — see the plan's Phase 7b note. */}
-                        <DateInput
-                            label="Job Date"
-                            required
-                            value={jobDate?.isValid() ? jobDate.format(ISO_DATE) : null}
-                            onChange={(value) => {
-                                if (value) setJobDate(dayjs(value));
-                            }}
-                            valueFormat={getInputDateFormat()}
-                            placeholder={getInputDateFormat()}
-                            error={touched && (!jobDate || !jobDate.isValid()) ? 'Job date is required.' : undefined}
-                            size="md"
-                            style={{flex: '0 0 200px'}}
-                        />
-                    </Box>
-                </FormSection>
+                            </Field>
+                            <SimpleGrid cols={{base: 1, sm: 3}} spacing="md">
+                                <Field anchor={FIELD.charge}>
+                                    <NumberInput
+                                        label="Charge Amount"
+                                        withAsterisk
+                                        min={0.01}
+                                        step={0.01}
+                                        decimalScale={2}
+                                        leftSection={<Text fz="sm" c="dimmed">{currencySymbol}</Text>}
+                                        leftSectionWidth={Math.max(32, 14 + currencySymbol.length * 9)}
+                                        leftSectionPointerEvents="none"
+                                        value={charge}
+                                        onChange={(value) => setCharge(String(value))}
+                                        error={touched && !isPositiveNumber(charge)
+                                            ? 'Charge must be greater than 0.' : undefined}
+                                    />
+                                </Field>
+                                <Field anchor={FIELD.weight}>
+                                    <NumberInput
+                                        label={weightLabel}
+                                        withAsterisk
+                                        min={0}
+                                        value={weight}
+                                        onChange={(value) => setWeight(String(value))}
+                                        error={touched && !isPositiveNumber(weight)
+                                            ? 'Weight must be greater than 0.' : undefined}
+                                    />
+                                </Field>
+                                {/* `DateInput` is string-valued (`YYYY-MM-DD`), so the job date
+                                    stays a calendar date all the way to `formatDateForApi`. */}
+                                <Field anchor={FIELD.jobDate}>
+                                    <DateInput
+                                        label="Job Date"
+                                        withAsterisk
+                                        value={jobDate?.isValid() ? jobDate.format(ISO_DATE) : null}
+                                        onChange={(value) => {
+                                            if (value) setJobDate(dayjs(value));
+                                        }}
+                                        valueFormat={getInputDateFormat()}
+                                        placeholder={getInputDateFormat()}
+                                        error={touched && !jobDate?.isValid() ? 'Job date is required.' : undefined}
+                                    />
+                                </Field>
+                            </SimpleGrid>
+                        </Stack>
+                    </Section>
 
-                {/* Addresses Section */}
-                <FormSection icon={<LocationIcon />} title="Addresses">
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <Autocomplete
-                            sx={{flex: 1}}
-                            options={fromAddressOptions}
-                            getOptionLabel={(option) => option.address.label}
-                            loading={isSearchingFromAddress}
-                            inputValue={fromAddressSearchText}
-                            onInputChange={(_, value) => setFromAddressSearchText(value)}
-                            onChange={(_, value) => setSelectedPickupAddress(value)}
-                            filterOptions={(x) => x}
-                            isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({slotProps: autoSlotProps, ...params}) => (
-                                <TextField
-                                    {...params}
-                                    label="From Address"
-                                    placeholder="Start typing to search addresses"
-                                    required
-                                    error={touched && !selectedPickupAddress}
-                                    helperText={touched && !selectedPickupAddress ? 'Pickup address is required.' : ''}
-                                    slotProps={{
-                                        ...autoSlotProps,
-                                        input: {
-                                            ...autoSlotProps.input,
-                                            endAdornment: (
-                                                <>
-                                                    {isSearchingFromAddress && <CircularProgress size={20} />}
-                                                    {autoSlotProps.input.endAdornment}
-                                                </>
-                                            ),
-                                        },
-                                    }}
-                                />
-                            )}
-                            noOptionsText={
-                                fromAddressSearchText.length < 3
-                                    ? 'Type at least 3 characters to search...'
-                                    : 'No addresses found'
-                            }
-                        />
-                        <Autocomplete
-                            sx={{flex: 1}}
-                            options={toAddressOptions}
-                            getOptionLabel={(option) => option.address.label}
-                            loading={isSearchingToAddress}
-                            inputValue={toAddressSearchText}
-                            onInputChange={(_, value) => setToAddressSearchText(value)}
-                            onChange={(_, value) => setSelectedDeliveryAddress(value)}
-                            filterOptions={(x) => x}
-                            isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({slotProps: autoSlotProps, ...params}) => (
-                                <TextField
-                                    {...params}
-                                    label="To Address"
-                                    placeholder="Start typing to search addresses"
-                                    required
-                                    error={touched && !selectedDeliveryAddress}
-                                    helperText={touched && !selectedDeliveryAddress ? 'Delivery address is required.' : ''}
-                                    slotProps={{
-                                        ...autoSlotProps,
-                                        input: {
-                                            ...autoSlotProps.input,
-                                            endAdornment: (
-                                                <>
-                                                    {isSearchingToAddress && <CircularProgress size={20} />}
-                                                    {autoSlotProps.input.endAdornment}
-                                                </>
-                                            ),
-                                        },
-                                    }}
-                                />
-                            )}
-                            noOptionsText={
-                                toAddressSearchText.length < 3
-                                    ? 'Type at least 3 characters to search...'
-                                    : 'No addresses found'
-                            }
-                        />
-                    </Box>
-                </FormSection>
+                    <Section title="Route">
+                        <Flex direction={{base: 'column', sm: 'row'}} gap="md" align="stretch">
+                            <Stack flex={1} miw={0} gap="md">
+                                <LegHeader color={MARKER_COLORS.PICKUP} glyph={IconMapPin} label="Pickup"/>
+                                <Field anchor={FIELD.pickupAddress}>
+                                    <SearchSelect
+                                        label="Pickup Address"
+                                        placeholder="Start typing to search addresses"
+                                        withAsterisk
+                                        minSearchLength={3}
+                                        value={selectedPickupAddress}
+                                        onChange={setSelectedPickupAddress}
+                                        options={fromAddressOptions}
+                                        loading={isSearchingFromAddress}
+                                        onSearchChange={setFromAddressSearchText}
+                                        getOptionKey={(o) => o.id}
+                                        getOptionLabel={(o) => o.address.label}
+                                        error={touched && !selectedPickupAddress ? 'Pickup address is required.' : undefined}
+                                    />
+                                </Field>
+                                <Field anchor={FIELD.pickupContact}>
+                                    <TextInput
+                                        label="Pickup Contact"
+                                        withAsterisk
+                                        value={pickupContact}
+                                        onChange={(e) => setPickupContact(e.currentTarget.value)}
+                                        error={touched && !pickupContact.trim() ? 'Pickup contact is required.' : undefined}
+                                    />
+                                </Field>
+                                <Box>
+                                    <Textarea
+                                        label="Pickup Notes"
+                                        autosize
+                                        minRows={2}
+                                        maxRows={4}
+                                        maxLength={NOTES_MAX}
+                                        value={pickupNotes}
+                                        onChange={(e) => setPickupNotes(e.currentTarget.value)}
+                                    />
+                                    <CharCount value={pickupNotes} max={NOTES_MAX}/>
+                                </Box>
+                            </Stack>
 
-                {/* Contacts Section */}
-                <FormSection icon={<ContactIcon />} title="Contacts">
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <TextField
-                            sx={{flex: 1}}
-                            label="Pickup Contact"
-                            value={pickupContact}
-                            onChange={(e) => setPickupContact(e.target.value)}
-                            required
-                            error={touched && !pickupContact.trim()}
-                            helperText={touched && !pickupContact.trim() ? 'Pickup contact is required.' : ''}
-                        />
-                        <TextField
-                            sx={{flex: 1}}
-                            label="Delivery Contact"
-                            value={deliveryContact}
-                            onChange={(e) => setDeliveryContact(e.target.value)}
-                            required
-                            error={touched && !deliveryContact.trim()}
-                            helperText={touched && !deliveryContact.trim() ? 'Delivery contact is required.' : ''}
-                        />
-                        <TextField
-                            sx={{flex: 1}}
-                            label="POD Name"
-                            value={podName}
-                            onChange={(e) => setPodName(e.target.value)}
-                            required
-                            error={touched && !podName.trim()}
-                            helperText={touched && !podName.trim() ? 'POD name is required.' : ''}
-                        />
-                    </Box>
-                </FormSection>
+                            <RouteConnector/>
 
-                {/* Vehicle & Speed Section */}
-                <FormSection icon={<VehicleIcon />} title="Vehicle & Speed">
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <Autocomplete
-                            sx={{flex: 1}}
-                            options={filteredVehicles}
-                            getOptionLabel={(option) => option.text}
-                            value={selectedVehicle}
-                            inputValue={vehicleSearchText}
-                            onInputChange={(_, value) => setVehicleSearchText(value)}
-                            onChange={(_, value) => setSelectedVehicle(value)}
-                            isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
+                            <Stack flex={1} miw={0} gap="md">
+                                <LegHeader color={MARKER_COLORS.DELIVERY} glyph={IconFlag} label="Delivery"/>
+                                <Field anchor={FIELD.deliveryAddress}>
+                                    <SearchSelect
+                                        label="Delivery Address"
+                                        placeholder="Start typing to search addresses"
+                                        withAsterisk
+                                        minSearchLength={3}
+                                        value={selectedDeliveryAddress}
+                                        onChange={setSelectedDeliveryAddress}
+                                        options={toAddressOptions}
+                                        loading={isSearchingToAddress}
+                                        onSearchChange={setToAddressSearchText}
+                                        getOptionKey={(o) => o.id}
+                                        getOptionLabel={(o) => o.address.label}
+                                        error={touched && !selectedDeliveryAddress ? 'Delivery address is required.' : undefined}
+                                    />
+                                </Field>
+                                <SimpleGrid cols={{base: 1, md: 2}} spacing="md">
+                                    <Field anchor={FIELD.deliveryContact}>
+                                        <TextInput
+                                            label="Delivery Contact"
+                                            withAsterisk
+                                            value={deliveryContact}
+                                            onChange={(e) => setDeliveryContact(e.currentTarget.value)}
+                                            error={touched && !deliveryContact.trim() ? 'Delivery contact is required.' : undefined}
+                                        />
+                                    </Field>
+                                    <Field anchor={FIELD.podName}>
+                                        <TextInput
+                                            label="POD Name"
+                                            withAsterisk
+                                            value={podName}
+                                            onChange={(e) => setPodName(e.currentTarget.value)}
+                                            error={touched && !podName.trim() ? 'POD name is required.' : undefined}
+                                        />
+                                    </Field>
+                                </SimpleGrid>
+                                <Box>
+                                    <Textarea
+                                        label="Delivery Notes"
+                                        autosize
+                                        minRows={2}
+                                        maxRows={4}
+                                        maxLength={NOTES_MAX}
+                                        value={deliveryNotes}
+                                        onChange={(e) => setDeliveryNotes(e.currentTarget.value)}
+                                    />
+                                    <CharCount value={deliveryNotes} max={NOTES_MAX}/>
+                                </Box>
+                            </Stack>
+                        </Flex>
+                    </Section>
+
+                    <Section title="Service">
+                        <Stack gap="md">
+                        <SimpleGrid cols={{base: 1, sm: 2}} spacing="md">
+                            <Field anchor={FIELD.vehicle}>
+                                <Select
                                     label="Vehicle"
-                                    required
-                                    error={touched && !selectedVehicle}
-                                    helperText={touched && !selectedVehicle ? 'Vehicle is required.' : ''}
+                                    withAsterisk
+                                    searchable
+                                    nothingFoundMessage="No vehicles found"
+                                    comboboxProps={{keepMounted: false}}
+                                    data={toOptions(vehicleSizes)}
+                                    value={selectedVehicle ? String(selectedVehicle.id) : null}
+                                    onChange={(value) => setSelectedVehicle(findById(vehicleSizes, value))}
+                                    error={touched && !selectedVehicle ? 'Vehicle is required.' : undefined}
                                 />
-                            )}
-                            noOptionsText="No vehicles found"
-                        />
-                        <Autocomplete
-                            sx={{flex: 1}}
-                            options={filteredSpeeds}
-                            getOptionLabel={(option) => option.text}
-                            value={selectedSpeed}
-                            inputValue={speedSearchText}
-                            onInputChange={(_, value) => setSpeedSearchText(value)}
-                            onChange={(_, value) => setSelectedSpeed(value)}
-                            isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
+                            </Field>
+                            <Field anchor={FIELD.speed}>
+                                <Select
                                     label="Speed"
-                                    required
-                                    error={touched && !selectedSpeed}
-                                    helperText={touched && !selectedSpeed ? 'Speed is required.' : ''}
+                                    withAsterisk
+                                    searchable
+                                    nothingFoundMessage="No speeds found"
+                                    comboboxProps={{keepMounted: false}}
+                                    data={toOptions(speedOptions)}
+                                    value={selectedSpeed ? String(selectedSpeed.id) : null}
+                                    onChange={(value) => setSelectedSpeed(findById(speedOptions, value))}
+                                    error={touched && !selectedSpeed ? 'Speed is required.' : undefined}
                                 />
-                            )}
-                            noOptionsText="No speeds found"
+                            </Field>
+                        </SimpleGrid>
+                        <SearchSelect
+                            label="Courier"
+                            placeholder="Start typing to search couriers"
+                            description="Dispatch now, or leave empty to assign later."
+                            minSearchLength={2}
+                            value={selectedCourier}
+                            onChange={setSelectedCourier}
+                            options={courierOptions}
+                            loading={isSearchingCouriers}
+                            onSearchChange={setCourierSearchText}
+                            getOptionKey={(o) => o.id}
+                            getOptionLabel={(o) => o.text}
                         />
-                    </Box>
-                </FormSection>
+                        </Stack>
+                    </Section>
 
-                {/* References Section */}
-                <FormSection icon={<RefIcon />} title="References">
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <TextField
-                            sx={{flex: 1}}
-                            label="Reference A"
-                            value={refA}
-                            onChange={(e) => setRefA(e.target.value)}
-                            slotProps={{htmlInput: {maxLength: 20}}}
-                        />
-                        <TextField
-                            sx={{flex: 1}}
-                            label="Reference B"
-                            value={refB}
-                            onChange={(e) => setRefB(e.target.value)}
-                            slotProps={{htmlInput: {maxLength: 20}}}
-                        />
-                    </Box>
-                </FormSection>
-
-                {/* Notes Section */}
-                <FormSection icon={<NotesIcon />} title="Notes" isLast>
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <TextField
-                            sx={{flex: 1}}
-                            label="Job Notes"
-                            value={jobNotes}
-                            onChange={(e) => setJobNotes(e.target.value)}
-                            multiline
-                            rows={3}
-                            slotProps={{htmlInput: {maxLength: 150}}}
-                        />
-                        <TextField
-                            sx={{flex: 1}}
-                            label="Pickup Notes"
-                            value={pickupNotes}
-                            onChange={(e) => setPickupNotes(e.target.value)}
-                            multiline
-                            rows={3}
-                            slotProps={{htmlInput: {maxLength: 150}}}
-                        />
-                        <TextField
-                            sx={{flex: 1}}
-                            label="Delivery Notes"
-                            value={deliveryNotes}
-                            onChange={(e) => setDeliveryNotes(e.target.value)}
-                            multiline
-                            rows={3}
-                            slotProps={{htmlInput: {maxLength: 150}}}
-                        />
-                    </Box>
-                </FormSection>
-            </DialogContent>
-            {/* Actions */}
-            <DialogActions sx={{px: 3, py: 2, bgcolor: 'background.default', borderTop: '1px solid', borderColor: 'divider'}}>
-                {isLoading && <CircularProgress size={28} sx={{mr: 1}} />}
-                {!isLoading && (
-                    <>
-                        <Button onClick={onClose} disabled={isLoading}>
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            onClick={handleSubmit}
-                            disabled={isLoading}
-                        >
-                            Create Job
-                        </Button>
-                    </>
-                )}
-            </DialogActions>
+                    <Section
+                        title="References & notes"
+                        aside={<Badge variant="light" color="gray" size="sm">Optional</Badge>}
+                    >
+                        <Stack gap="md">
+                            <SimpleGrid cols={{base: 1, sm: 2}} spacing="md">
+                                <TextInput
+                                    label="Reference A"
+                                    maxLength={REFERENCE_MAX}
+                                    value={refA}
+                                    onChange={(e) => setRefA(e.currentTarget.value)}
+                                />
+                                <TextInput
+                                    label="Reference B"
+                                    maxLength={REFERENCE_MAX}
+                                    value={refB}
+                                    onChange={(e) => setRefB(e.currentTarget.value)}
+                                />
+                            </SimpleGrid>
+                            <Box>
+                                <Textarea
+                                    label="Job Notes"
+                                    autosize
+                                    minRows={3}
+                                    maxRows={6}
+                                    maxLength={NOTES_MAX}
+                                    value={jobNotes}
+                                    onChange={(e) => setJobNotes(e.currentTarget.value)}
+                                />
+                                <CharCount value={jobNotes} max={NOTES_MAX}/>
+                            </Box>
+                        </Stack>
+                    </Section>
+                </Stack>
+            </Box>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSubmit}
+                confirmLabel="Create Job"
+                confirmIcon={<Icon lucide={Plus} size={16}/>}
+                submitting={isLoading}
+            />
         </DialogShell>
     );
 };

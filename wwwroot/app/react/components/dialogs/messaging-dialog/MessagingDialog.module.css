@@ -1,0 +1,34 @@
+/*
+ * The refresh spinner. This was a <style> element built with
+ * document.createElement at module scope and appended to <head> on import —
+ * it ran before React did, on every page that merely bundled this island.
+ */
+@keyframes messaging-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spinning {
+    animation: messaging-spin 1s linear infinite;
+}
+
+/*
+ * The mark-as-read action stays hidden until its row is hovered, so a long list
+ * is not a wall of buttons. Revealed unconditionally where hover does not exist,
+ * or it would be unreachable on a touch screen.
+ */
+.conversationRow .markRead {
+    opacity: 0;
+    transition: opacity 150ms ease;
+}
+
+.conversationRow:hover .markRead,
+.conversationRow:focus-within .markRead {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .conversationRow .markRead {
+        opacity: 1;
+    }
+}

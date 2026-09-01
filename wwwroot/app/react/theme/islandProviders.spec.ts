@@ -13,7 +13,7 @@
  *
  * The rule below removes the judgement call: an island's render argument is always
  * `islandTree(...)`, which supplies the provider. Islands whose own tree is still MUI
- * nest `<MuiThemeIsland>` *inside* it.
+ * nested `<MuiThemeIsland>` *inside* it, back when MUI was still installed.
  */
 
 import fs from 'fs';
@@ -90,11 +90,12 @@ describe('island providers', () => {
     );
 
     it.each(entries.map(e => [e.file, e.source]))(
-        '%s leaves MUI theming to MuiThemeIsland',
+        '%s pulls in no MUI',
         (file, source) => {
-            // MUI must enter *inside* the Mantine stack, never wrap it — otherwise the
-            // provider order silently inverts and Mantine children lose their context.
-            expect(source).not.toMatch(/import\s*\{[^}]*\bThemeProvider\b[^}]*\}\s*from\s*'@mui\/material\/styles'/);
+            // The rule used to be "MUI may only enter inside the Mantine stack,
+            // never wrapping it" — provider order inverting was the failure mode.
+            // With MUI uninstalled it is simply: not at all.
+            expect(source).not.toMatch(/from\s*'@mui\//);
         },
     );
 });

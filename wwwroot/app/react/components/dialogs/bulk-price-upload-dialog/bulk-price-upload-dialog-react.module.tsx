@@ -11,20 +11,17 @@ import { BulkPriceUploadDialog } from './BulkPriceUploadDialog';
 import { OpenBulkPriceUploadDialogOptions, PricingMode } from './types';
 import { bulkPriceApi } from '../../../services/bulkPriceApi';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
 const host = createDialogHost<void, boolean>({
     containerId: 'react-bulk-price-upload-dialog-root',
     render: ({open, close, showToast}) => islandTree(
-        <MuiThemeIsland>
-            <BulkPriceUploadDialog
-                open={open}
-                onClose={() => close(false)}
-                onSubmit={(file: File, mode: PricingMode) => bulkPriceApi.applyBulkPriceUpdate(file, mode)}
-                showToast={showToast}
-            />
-        </MuiThemeIsland>
+        <BulkPriceUploadDialog
+            open={open}
+            onClose={() => close(false)}
+            onSubmit={(file: File, mode: PricingMode) => bulkPriceApi.applyBulkPriceUpdate(file, mode)}
+            showToast={showToast}
+        />
     ),
 });
 

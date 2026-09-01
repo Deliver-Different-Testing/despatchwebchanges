@@ -10,7 +10,9 @@
  *
  *   CI_API_V4_URL, CI_PROJECT_ID, CI_COMMIT_SHA, CI_PROJECT_URL, CI_PIPELINE_URL
  *   NOTES_API_TOKEN              project access token, read_api
- *   SLACK_RELEASE_WEBHOOK        incoming webhook, masked + protected
+ *   SLACK_BOT_TOKEN              bot token with chat:write, masked + protected
+ *   SLACK_RELEASE_CHANNEL        channel id the bot posts to
+ *   SLACK_RELEASE_WEBHOOK        incoming webhook; fallback, cannot thread
  *   RELEASE_STAGE                staging | tenants-staging | tenants-production
  *   RELEASE_ENVIRONMENT          this job's GitLab environment name
  *   RELEASE_STAGE_ENVIRONMENTS   every environment in the stage, comma separated
@@ -19,9 +21,17 @@
  */
 import { buildReleaseNotes, type ReleaseMergeRequest } from './buildNotes';
 import { collectFromCommits, type RangeCommit } from './collectRelease';
-import { environmentLabel, postingEnvironment, previousShaForStage, type EnvironmentDeployments } from './deployStage';
+import {
+    environmentEmoji,
+    environmentLabel,
+    postingEnvironment,
+    previousShaForStage,
+    stageDeployedAt,
+    type EnvironmentDeployments,
+} from './deployStage';
 import { GitLabApi } from './gitlabApi';
-import { buildSlackBlocks } from './slackMessage';
+import { postRelease } from './slackClient';
+import { buildReleasePost } from './slackMessage';
 
 function requireEnv(name: string): string {
     const value = process.env[name];
@@ -81,45 +91,39 @@ async function main(): Promise<void> {
             webUrl: mergeRequest.web_url,
             authorName: mergeRequest.author?.name ?? 'unknown',
             description: mergeRequest.description,
+            sourceBranch: mergeRequest.source_branch,
+            labels: mergeRequest.labels,
         });
     }
 
     const label = environmentLabel(stage);
-    const notes = buildReleaseNotes({
-        title: `Deployed to ${label}`,
-        sinceRef: sinceRef ? sinceRef.slice(0, 8) : null,
-        mergeRequests,
-        directCommits,
+    const release = buildReleasePost({
+        environmentLabel: label,
+        environmentEmoji: environmentEmoji(stage),
+        tenantCount: stageEnvironments.length,
+        deployedAt: stageDeployedAt(deployments, sha),
+        sha,
+        pipelineUrl,
+        compareUrl: sinceRef ? `${projectUrl}/-/compare/${sinceRef}...${sha}` : null,
+        notes: buildReleaseNotes({ mergeRequests, directCommits }),
     });
 
-    const payload = {
-        text: `${label}: ${mergeRequests.length} change(s) deployed`,
-        blocks: buildSlackBlocks({
-            environmentLabel: label,
-            sha,
-            pipelineUrl,
-            compareUrl: sinceRef ? `${projectUrl}/-/compare/${sinceRef}...${sha}` : null,
-            notes,
-        }),
-    };
-
     if (process.env.DRY_RUN) {
-        console.log(JSON.stringify(payload, null, 2));
+        console.log(JSON.stringify({ text: release.text, blocks: release.blocks }, null, 2));
+        release.replies.forEach((reply, index) => {
+            console.log(`--- thread reply ${index + 1} of ${release.replies.length} ---`);
+            console.log(JSON.stringify(reply, null, 2));
+        });
         return;
     }
 
-    const response = await fetch(requireEnv('SLACK_RELEASE_WEBHOOK'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+    const posted = await postRelease(release, {
+        botToken: process.env.SLACK_BOT_TOKEN,
+        channel: process.env.SLACK_RELEASE_CHANNEL,
+        webhookUrl: process.env.SLACK_RELEASE_WEBHOOK,
     });
 
-    const body = await response.text();
-    if (!response.ok) {
-        throw new Error(`Slack webhook returned ${response.status}: ${body}`);
-    }
-
-    console.error(`Posted ${payload.blocks.length} block(s) for ${label} (${body})`);
+    console.error(`Posted ${posted} message(s) for ${label}.`);
 }
 
 main().catch((error: unknown) => {

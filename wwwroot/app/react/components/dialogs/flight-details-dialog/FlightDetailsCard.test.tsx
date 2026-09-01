@@ -3,11 +3,11 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import dayjs from 'dayjs';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import { FlightData, FlightSegmentData } from './types';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 function createSegment(overrides?: Partial<FlightSegmentData>): FlightSegmentData {
     return {

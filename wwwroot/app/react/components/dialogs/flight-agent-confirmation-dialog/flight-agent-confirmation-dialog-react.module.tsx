@@ -17,7 +17,6 @@ import {formatDateForApi, getIanaTimezone, getTenantTimezone} from '../../../uti
 import {nationwideApi} from '../../../services/nationwideApi';
 import {AgentSuggestion, FlightAgentDialogResult, FlightCargoProcessing, FlightViewModel, ToastService,} from './types';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
 dayjs.extend(utc);
@@ -62,24 +61,22 @@ async function calculateCargoTimes(
 const host = createDialogHost<FlightAgentPayload, FlightAgentDialogResult>({
     containerId: 'react-flight-agent-confirmation-dialog-root',
     render: ({open, payload, close, showToast}) => islandTree(
-        <MuiThemeIsland>
-            <FlightAgentConfirmationDialog
-                open={open}
-                mode={payload.mode}
-                jobId={payload.jobId}
-                jobNumber={payload.jobNumber}
-                flight={payload.flight}
-                agent={payload.agent}
-                existingAwb={payload.existingAwb}
-                dgClass={payload.dgClass}
-                stopJobCount={payload.stopJobCount}
-                timezone={getIanaTimezone(getTenantTimezone())}
-                onClose={() => close(DISMISSED)}
-                onConfirm={close}
-                onCalculateCargoTimes={calculateCargoTimes}
-                showToast={showToast}
-            />
-        </MuiThemeIsland>
+        <FlightAgentConfirmationDialog
+            open={open}
+            mode={payload.mode}
+            jobId={payload.jobId}
+            jobNumber={payload.jobNumber}
+            flight={payload.flight}
+            agent={payload.agent}
+            existingAwb={payload.existingAwb}
+            dgClass={payload.dgClass}
+            stopJobCount={payload.stopJobCount}
+            timezone={getIanaTimezone(getTenantTimezone())}
+            onClose={() => close(DISMISSED)}
+            onConfirm={close}
+            onCalculateCargoTimes={calculateCargoTimes}
+            showToast={showToast}
+        />
     ),
 });
 

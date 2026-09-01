@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-import {screen, waitFor, within} from '@testing-library/react';
+import {screen, waitFor} from '@testing-library/react';
 import {MessagingDialog, isNearBottom} from './MessagingDialog';
 import {dayjs} from '../../../utils/dateUtils';
 import {messagingApi} from '../../../services/messagingApi';
 import { suppressConsoleError } from '../../../__testUtils__';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
 
@@ -95,9 +95,7 @@ describe('MessagingDialog', () => {
         expect(await screen.findByText('Message Center')).toBeInTheDocument();
         expect(screen.getByText('Conversations')).toBeInTheDocument();
 
-        // Close button — find within the drawer's gradient header (parent of the title)
-        const header = screen.getByText('Message Center').closest('div')!.parentElement!;
-        await user.click(within(header).getByRole('button'));
+        await user.click(screen.getByRole('button', {name: 'Close message center'}));
         expect(onClose).toHaveBeenCalled();
     });
 
@@ -111,15 +109,12 @@ describe('MessagingDialog', () => {
         expect(await screen.findByText('Message Center')).toBeInTheDocument();
 
         // Clicking the dimmed backdrop outside the panel must NOT close it.
-        const backdrop = document.querySelector('.MuiBackdrop-root');
-        expect(backdrop).not.toBeNull();
-        await user.click(backdrop as Element);
+        await user.click(screen.getByTestId('messaging-overlay'));
         expect(onClose).not.toHaveBeenCalled();
         expect(screen.getByText('Message Center')).toBeInTheDocument();
 
         // The header close button still dismisses.
-        const header = screen.getByText('Message Center').closest('div')!.parentElement!;
-        await user.click(within(header).getByRole('button'));
+        await user.click(screen.getByRole('button', {name: 'Close message center'}));
         expect(onClose).toHaveBeenCalled();
     });
 
@@ -263,7 +258,7 @@ describe('MessagingDialog', () => {
         });
         expect(await screen.findByText(/Courier/)).toBeInTheDocument();
         expect(await screen.findByPlaceholderText('Type a message...')).toBeInTheDocument();
-        expect(await screen.findByText('Smart')).toBeInTheDocument();
+        expect(await screen.findByRole('combobox', {name: 'Delivery method'})).toHaveValue('Smart');
 
         // Empty messages state
         expect(await screen.findByText('Start the conversation')).toBeInTheDocument();
@@ -295,9 +290,9 @@ describe('MessagingDialog', () => {
         expect(await screen.findByText('Read message')).toBeInTheDocument();
         expect(screen.getByText('Sent unread')).toBeInTheDocument();
         expect(screen.getByText('They sent this')).toBeInTheDocument();
-        // DoneAllIcon for read, DoneIcon for sent-unread
-        expect(screen.getByTestId('DoneAllIcon')).toBeInTheDocument();
-        expect(screen.getByTestId('DoneIcon')).toBeInTheDocument();
+        // Double tick for read, single for sent-but-unread.
+        expect(screen.getByLabelText('Read')).toBeInTheDocument();
+        expect(screen.getByLabelText('Sent')).toBeInTheDocument();
     });
 
     // ── Sending messages + empty check (single render) ──────────────
@@ -317,9 +312,7 @@ describe('MessagingDialog', () => {
             expect(await screen.findByPlaceholderText('Type a message...')).toBeInTheDocument();
 
             // Send button disabled when empty
-            const sendButton = screen.getAllByRole('button').find(btn =>
-                btn.querySelector('[data-testid="SendIcon"]')
-            );
+            const sendButton = screen.getByRole('button', {name: 'Send message'});
             expect(sendButton).toBeDisabled();
 
             // Type and send
@@ -354,10 +347,7 @@ describe('MessagingDialog', () => {
             await user.click(screen.getByPlaceholderText('Type a message...'));
             await user.paste('Fail');
 
-            const sendButton = screen.getAllByRole('button').find(btn =>
-                btn.querySelector('[data-testid="SendIcon"]')
-            );
-            await user.click(sendButton!);
+            await user.click(screen.getByRole('button', {name: 'Send message'}));
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith('Failed to send message', 'error');
@@ -380,10 +370,7 @@ describe('MessagingDialog', () => {
         await user.click(screen.getByText('John Driver'));
         expect(await screen.findByPlaceholderText('Type a message...')).toBeInTheDocument();
 
-        const quickReplyButton = screen.getAllByRole('button').find(btn =>
-            btn.querySelector('[data-testid="QuickreplyOutlinedIcon"]')
-        );
-        await user.click(quickReplyButton!);
+        await user.click(screen.getByRole('button', {name: 'Quick responses'}));
 
         expect(await screen.findByText('Quick Responses')).toBeInTheDocument();
     });
@@ -400,10 +387,7 @@ describe('MessagingDialog', () => {
 
         expect(await screen.findByText('Recent Alice')).toBeInTheDocument();
 
-        const addChatButton = screen.getAllByRole('button').find(btn =>
-            btn.querySelector('[data-testid="AddCommentIcon"]')
-        );
-        await user.click(addChatButton!);
+        await user.click(screen.getByRole('button', {name: 'New conversation'}));
 
         expect(await screen.findByText('New Conversation')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Search by name or ID...')).toBeInTheDocument();
@@ -413,11 +397,7 @@ describe('MessagingDialog', () => {
         expect(screen.getByText('Recent')).toBeInTheDocument();
 
         // Back button returns to main
-        const backButton = screen.getAllByRole('button').find(btn =>
-            btn.querySelector('[data-testid="ArrowBackIcon"]')
-        );
-        expect(backButton).toBeDefined();
-        await user.click(backButton!);
+        await user.click(screen.getByRole('button', {name: 'Back'}));
         expect(await screen.findByText('Message Center')).toBeInTheDocument();
     });
 
@@ -440,7 +420,7 @@ describe('MessagingDialog', () => {
 
         // Clear, then unread-only
         await user.click(screen.getByLabelText('Clear filter'));
-        await user.click(screen.getByRole('button', {name: 'Unread'}));
+        await user.click(screen.getByRole('checkbox', {name: 'Unread'}));
         await waitFor(() => expect(screen.queryByText('Alice')).not.toBeInTheDocument());
         expect(screen.getByText('Bob')).toBeInTheDocument();
     });
@@ -498,10 +478,10 @@ describe('MessagingDialog', () => {
 
         // Optimistic bubble appears immediately with a "Sending" indicator
         expect(await screen.findByText('Pending msg')).toBeInTheDocument();
-        expect(screen.getByTitle('Sending')).toBeInTheDocument();
+        expect(screen.getByLabelText('Sending')).toBeInTheDocument();
 
         resolveSend();
-        await waitFor(() => expect(screen.queryByTitle('Sending')).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByLabelText('Sending')).not.toBeInTheDocument());
     });
 
     it('shows a failed state with retry when sending fails, and resends on retry', async () => {

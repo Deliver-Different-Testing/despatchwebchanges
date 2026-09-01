@@ -25,9 +25,6 @@ jest.mock('./JobSearchPage', () => ({
     JobSearchPage: () => null,
 }));
 
-jest.mock('../../theme/muiTheme', () => ({
-    getTheme: jest.fn(() => ({})),
-}));
 
 jest.mock('../../query', () => ({
     ReactQueryProvider: ({children}: {children: any}) => children,

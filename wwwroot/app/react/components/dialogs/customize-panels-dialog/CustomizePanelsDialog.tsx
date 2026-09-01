@@ -9,22 +9,19 @@
  */
 
 import React, {useMemo, useState} from 'react';
-import DialogContent from '@mui/material/DialogContent';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Switch from '@mui/material/Switch';
-import Alert from '@mui/material/Alert';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import SaveIcon from '@mui/icons-material/Save';
-import {alpha} from '@mui/material/styles';
-import type {SxProps, Theme} from '@mui/material/styles';
+import {Alert, Box, Group, Paper, Stack, Switch, Text, ThemeIcon} from '@mantine/core';
+import {LayoutDashboard, Save} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+    sectionLabelProps,
+    sectionPaperProps,
+} from '../shared/mantine';
 import type {DashboardBox} from '../dashboard-settings-dialog/DashboardSettingsDialog';
-import {DialogShell, DialogHeader, DialogFooter} from '../shared';
 import {SymbolIcon} from '../../common/symbol-icon';
 
 export interface CustomizePanelsDialogProps {
@@ -40,20 +37,6 @@ export interface CustomizePanelsDialogProps {
     onClose: () => void;
     onSave: (boxes: Record<string, DashboardBox>) => void;
 }
-
-const sectionPaperSx = {
-    bgcolor: 'background.paper',
-    borderRadius: 3,
-    p: 1,
-    border: '1px solid',
-    borderColor: 'grey.200',
-} satisfies SxProps<Theme>;
-
-const sectionLabelSx = {
-    color: 'text.secondary',
-    fontWeight: 500,
-    mb: 1,
-} satisfies SxProps<Theme>;
 
 export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
     open,
@@ -87,83 +70,67 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
     const handleSave = () => onSave(boxes);
 
     return (
-        <DialogShell open={open} onClose={onClose}>
+        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label="Customize panels">
             <DialogHeader
-                icon={<DashboardIcon />}
+                icon={<Icon lucide={LayoutDashboard}/>}
                 title="Customize panels"
                 subtitle={title}
                 onClose={onClose}
             />
 
             {/* Content */}
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
+            <Box bg={dialogContentBg}>
+                <Stack p={24} gap={24}>
                     {!layoutEditable && (
-                        <Alert severity="info">
+                        <Alert color="blue" variant="light">
                             The Default layout is read-only. Save a layout of your own to choose
                             which panels appear.
                         </Alert>
                     )}
                     <Box>
-                        <Typography variant="body2" sx={sectionLabelSx}>
+                        <Text {...sectionLabelProps}>
                             Choose which panels appear on your dashboard
-                        </Typography>
-                        <Paper elevation={0} sx={sectionPaperSx}>
-                            <List disablePadding>
+                        </Text>
+                        <Paper {...sectionPaperProps}>
+                            {/*
+                              * Still a real list. Mantine has no row-with-a-control
+                              * equivalent of MUI's List, but the count and position a
+                              * list conveys are worth keeping, so the Stack and its
+                              * rows carry the ul/li themselves.
+                              */}
+                            <Stack component="ul" gap={4} m={0} p={0} style={{listStyle: 'none'}}>
                                 {boxList.map((box) => (
-                                        <ListItem
-                                            key={box.key}
-                                            secondaryAction={
-                                                <Switch
-                                                    edge="end"
-                                                    color="primary"
-                                                    checked={box.visible ?? true}
-                                                    disabled={!layoutEditable}
-                                                    onChange={() => handleToggle(box.key)}
-                                                    slotProps={{input: {'aria-label': box.title || box.name || box.key}}}
-                                                />
-                                            }
-                                        >
-                                            <ListItemIcon sx={{minWidth: 0, mr: 2}}>
-                                                <Box
-                                                    sx={(theme) => ({
-                                                        width: 40,
-                                                        height: 40,
-                                                        borderRadius: 1.5,
-                                                        bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                    })}
-                                                >
-                                                    {box.icon ? (
-                                                        <SymbolIcon
-                                                            name={box.icon}
-                                                            aria-hidden
-                                                            size={22} color="var(--mantine-primary-color-filled)"
-                                                        />
-                                                    ) : (
-                                                        <DashboardIcon sx={{fontSize: 22, color: 'primary.main'}} />
-                                                    )}
-                                                </Box>
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={box.title || box.name}
-                                                secondary={box.description}
-                                            />
-                                        </ListItem>
-                                    ))}
-                            </List>
+                                    <Group component="li" key={box.key} gap={16} wrap="nowrap" px={8} py={6}>
+                                        <ThemeIcon variant="light" size={40} radius="md">
+                                            {box.icon
+                                                ? <SymbolIcon name={box.icon} aria-hidden size={22}/>
+                                                : <Icon lucide={LayoutDashboard} size={22}/>}
+                                        </ThemeIcon>
+                                        <Box style={{flex: 1, minWidth: 0}}>
+                                            <Text fz="sm">{box.title || box.name}</Text>
+                                            {box.description && (
+                                                <Text fz="xs" c="dimmed">{box.description}</Text>
+                                            )}
+                                        </Box>
+                                        <Switch
+                                            checked={box.visible ?? true}
+                                            disabled={!layoutEditable}
+                                            onChange={() => handleToggle(box.key)}
+                                            aria-label={box.title || box.name || box.key}
+                                        />
+                                    </Group>
+                                ))}
+                            </Stack>
                         </Paper>
                     </Box>
-                </Box>
-            </DialogContent>
+                </Stack>
+            </Box>
 
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
                 confirmLabel="Save"
-                confirmIcon={<SaveIcon />}
+                confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={!layoutEditable}
             />
         </DialogShell>

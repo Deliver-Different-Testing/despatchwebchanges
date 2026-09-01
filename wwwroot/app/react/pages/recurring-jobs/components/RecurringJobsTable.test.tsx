@@ -5,14 +5,14 @@
 
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
-import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 import {RecurringJobsTable, RecurringJobsTableProps} from './RecurringJobsTable';
 import {PrebookListModel} from '../../../interfaces';
 import dayjs from 'dayjs';
 
 
 const renderWithTheme = (ui: React.ReactElement) => {
-    return renderWithMantineOverMui(ui);
+    return renderWithMantine(ui);
 };
 
 const createMockAddress = (line1: string, line2: string, full: string) => ({

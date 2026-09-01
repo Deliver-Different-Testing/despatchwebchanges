@@ -4,8 +4,8 @@
 
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {screen, waitFor} from '@testing-library/react';
-import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {QueryClient} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
@@ -28,7 +28,7 @@ const neverResolves = () => new Promise(() => { /* never resolves */ });
 // MUI inside: the dialog is still MUI but its two date fields are Mantine.
 // (Production mounts this dialog inside ReactQueryProvider via its bridge module.)
 function renderWithTheme(ui: React.ReactElement) {
-    return renderWithMantineOverMui(ui, {
+    return renderWithMantine(ui, {
         queryClient: new QueryClient({defaultOptions: {queries: {retry: false}}}),
     });
 }
@@ -345,9 +345,12 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            const awbInput = screen.getByLabelText('AWB Number');
-            await user.click(awbInput);
-            await user.paste('987-65432109');
+            /*
+             * fireEvent, not user.paste: Mantine's modal moves focus to the first
+             * focusable element on mount, and in jsdom that lands after the first
+             * click — so a paste goes to the close button instead of this field.
+             */
+            fireEvent.change(screen.getByLabelText('AWB Number'), {target: {value: '987-65432109'}});
 
             expect(screen.getByDisplayValue('987-65432109')).toBeInTheDocument();
         });
@@ -404,9 +407,12 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            const notesInput = screen.getByLabelText('Delivery Instructions');
-            await user.click(notesInput);
-            await user.paste('Handle with care');
+            /*
+             * fireEvent, not user.paste: Mantine's modal moves focus to the first
+             * focusable element on mount, and in jsdom that lands after the first
+             * click — so a paste goes to the close button instead of this field.
+             */
+            fireEvent.change(screen.getByLabelText('Delivery Instructions'), {target: {value: 'Handle with care'}});
 
             expect(screen.getByDisplayValue('Handle with care')).toBeInTheDocument();
         });
@@ -445,9 +451,12 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             // Enter AWB
-            const awbInput = screen.getByLabelText('AWB Number');
-            await user.click(awbInput);
-            await user.paste('111-22233344');
+            /*
+             * fireEvent, not user.paste: Mantine's modal moves focus to the first
+             * focusable element on mount, and in jsdom that lands after the first
+             * click — so a paste goes to the close button instead of this field.
+             */
+            fireEvent.change(screen.getByLabelText('AWB Number'), {target: {value: '111-22233344'}});
 
             // Click confirm
             await user.click(screen.getByText('Confirm Assignment'));

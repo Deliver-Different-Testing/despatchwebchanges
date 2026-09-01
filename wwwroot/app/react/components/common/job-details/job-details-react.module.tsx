@@ -8,7 +8,6 @@
 import React from 'react';
 import {JobDetails} from './JobDetails';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../mui-interop/MuiThemeIsland';
 import {queryClient} from '../../../query/queryClient';
 import {ErrorBoundary} from '../error-boundary';
 import type {MountJobDetailsConfig} from './JobDetails.types';
@@ -23,11 +22,9 @@ let refreshNonce = 0;
 const host = createPageHost<MountJobDetailsConfig>({
     logName: 'JobDetailsReact',
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorBoundary>
-                <JobDetails config={config} />
-            </ErrorBoundary>
-        </MuiThemeIsland>
+        <ErrorBoundary>
+            <JobDetails config={config} />
+        </ErrorBoundary>
     ),
 });
 

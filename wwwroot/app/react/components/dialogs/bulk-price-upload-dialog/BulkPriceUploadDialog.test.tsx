@@ -3,24 +3,16 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantine} from '../../../__testUtils__';
 import {BulkPriceUploadDialog} from './BulkPriceUploadDialog';
 import {BulkPricePreviewResponse} from './types';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+const renderWithTheme = (ui: React.ReactElement) => renderWithMantine(ui);
 
 const mockResponse: BulkPricePreviewResponse = {
     rows: [
@@ -271,6 +263,23 @@ describe('BulkPriceUploadDialog', () => {
             await userEvent.click(grossOption);
 
             expect(screen.getByText(/File amounts are applied directly as the final prices/)).toBeInTheDocument();
+        });
+
+        /*
+         * The three modes were divs with a hand-drawn dot: not focusable, and
+         * announced as nothing. Radio.Card makes them one tab stop with arrow-key
+         * movement and a reported selection.
+         */
+        it('exposes the modes as a radio group with the current mode selected', async () => {
+            const props = createMockProps();
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            expect(screen.getByRole('radio', {name: /Auto-Calculate Prices/})).toBeChecked();
+            expect(screen.getByRole('radio', {name: /Base Price/})).not.toBeChecked();
+
+            await userEvent.click(screen.getByRole('radio', {name: /Base Price/}));
+            expect(screen.getByRole('radio', {name: /Base Price/})).toBeChecked();
         });
 
         it('should display Back and Apply buttons', async () => {
@@ -618,17 +627,8 @@ describe('BulkPriceUploadDialog', () => {
             expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
 
             // Close and reopen
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <BulkPriceUploadDialog {...props} open={false} />
-                </ThemeProvider>
-            );
-
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <BulkPriceUploadDialog {...props} open={true} />
-                </ThemeProvider>
-            );
+            rerender(<BulkPriceUploadDialog {...props} open={false} />);
+            rerender(<BulkPriceUploadDialog {...props} open={true} />);
 
             // Should be back to upload state
             expect(screen.getByText('Drop your file here')).toBeInTheDocument();

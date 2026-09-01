@@ -107,15 +107,6 @@ declare global {
         MantineDates?: typeof import('@mantine/dates');
         MantineNotifications?: typeof import('@mantine/notifications');
 
-        // ── MUI globals (set by vendor-react bundle) ─────────────────────
-        MUI?: typeof import('@mui/material');
-        MUIStyles?: typeof import('@mui/material/styles');
-        MUISvgIcon?: {
-            default: typeof import('@mui/material/SvgIcon').default;
-            createSvgIcon: typeof import('@mui/material/SvgIcon').createSvgIcon;
-            svgIconClasses: typeof import('@mui/material/SvgIcon').svgIconClasses;
-        };
-
         // ── Utility library globals (set by vendor-core bundle) ──────────
         dayjs?: typeof import('dayjs').default;
         windowsIana?: typeof import('windows-iana');

@@ -7,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 import dayjs from 'dayjs';
 import { FlightItinerary } from './FlightItinerary';
 import { FlightSegmentData } from './types';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 function createSegment(overrides?: Partial<FlightSegmentData>): FlightSegmentData {
     return {
@@ -82,21 +82,25 @@ function defaultGetConnectionTime(first: FlightSegmentData, second: FlightSegmen
 
 describe('FlightItinerary', () => {
     describe('Null/Empty Rendering', () => {
+        /*
+         * Not container.firstChild: MantineProvider injects a <style> element, so
+         * the container is never empty. Assert the card itself is absent.
+         */
         it('renders nothing when segments array is empty', () => {
-            const { container } = renderWithTheme(
+            renderWithTheme(
                 <FlightItinerary segments={[]} getConnectionTime={defaultGetConnectionTime} />
             );
-            expect(container.firstChild).toBeNull();
+            expect(screen.queryByText('Flight Itinerary')).not.toBeInTheDocument();
         });
 
         it('renders nothing when segments is undefined', () => {
-            const { container } = renderWithTheme(
+            renderWithTheme(
                 <FlightItinerary
                     segments={undefined as unknown as FlightSegmentData[]}
                     getConnectionTime={defaultGetConnectionTime}
                 />
             );
-            expect(container.firstChild).toBeNull();
+            expect(screen.queryByText('Flight Itinerary')).not.toBeInTheDocument();
         });
     });
 

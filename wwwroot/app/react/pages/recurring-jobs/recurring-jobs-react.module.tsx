@@ -8,7 +8,6 @@
 import React from 'react';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {MountRecurringJobsConfig} from "../../interfaces";
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {createPageHost} from '../../utils/reactPageHost';
@@ -21,18 +20,16 @@ let refreshCallback: (() => void) | null = null;
 const host = createPageHost<MountRecurringJobsConfig>({
     logName: 'RecurringJobsReact',
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorBoundary>
-                <RecurringJobsPage
-                    showToast={config.showToast}
-                    isUsCustomer={config.isUsCustomer}
-                    onAddStop={config.onAddStop}
-                    setRefreshCallback={(cb) => {
-                        refreshCallback = cb;
-                    }}
-                />
-            </ErrorBoundary>
-        </MuiThemeIsland>
+        <ErrorBoundary>
+            <RecurringJobsPage
+                showToast={config.showToast}
+                isUsCustomer={config.isUsCustomer}
+                onAddStop={config.onAddStop}
+                setRefreshCallback={(cb) => {
+                    refreshCallback = cb;
+                }}
+            />
+        </ErrorBoundary>
     ),
 });
 

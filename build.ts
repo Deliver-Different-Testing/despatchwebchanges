@@ -398,49 +398,6 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 }));
             }
 
-            // ── MUI: redirect to the vendor-react globals so module bundles don't
-            // each embed their own copy of MUI + Emotion. vendor-react exposes
-            // window.MUI (@mui/material barrel) and window.MUIStyles
-            // (@mui/material/styles).
-
-            // @mui/material/styles — named utilities (register before the general
-            // component handler so it wins the resolve for this exact specifier).
-            build.onResolve({filter: /^@mui\/material\/styles$/}, () => ({
-                path: "@mui/material/styles",
-                namespace: "mui-styles-shim",
-            }));
-
-            build.onLoad({filter: /.*/, namespace: "mui-styles-shim"}, () => ({
-                contents: `const S = window.MUIStyles;\n` + [
-                    "alpha", "useTheme", "createTheme", "ThemeProvider", "styled", "useThemeProps",
-                    "responsiveFontSizes", "StyledEngineProvider", "useColorScheme", "emphasize",
-                    "darken", "lighten", "hexToRgb", "rgbToHex", "decomposeColor", "recomposeColor",
-                    "css", "keyframes",
-                ].map(k => pureExport(k, `S.${k}`)).join("\n"),
-                loader: "js",
-            }));
-
-            // @mui/material/<Component> — every such import in the app is a default
-            // import, exposed on the barrel by its (Pascal-cased) last segment.
-            build.onResolve({filter: /^@mui\/material\/[^/]+$/}, (args) => {
-                if (args.path === "@mui/material/styles") return null;
-                return {path: args.path, namespace: "mui-component-shim"};
-            });
-
-            build.onLoad({filter: /.*/, namespace: "mui-component-shim"}, (args) => {
-                const name = args.path.slice("@mui/material/".length);
-                // SvgIcon also exposes named exports (createSvgIcon, svgIconClasses)
-                // that @mui/icons-material depends on and the barrel doesn't carry.
-                if (name === "SvgIcon") {
-                    return {
-                        contents: `const S = window.MUISvgIcon;\nexport default S.default;\n`
-                            + ["createSvgIcon", "svgIconClasses"]
-                                .map(k => pureExport(k, `S.${k}`)).join("\n"),
-                        loader: "js",
-                    };
-                }
-                return {contents: `export default window.MUI.${name};`, loader: "js"};
-            });
         },
     };
 }
@@ -595,27 +552,27 @@ function generateSimpleManifest(): Record<string, string> {
 
 // Size budgets, in bytes, for the production JS outputs worth guarding. Seeded from a
 // known-good build with ~10% headroom. These exist to catch the class of regression
-// where a bundle silently stops using a vendor shim and re-embeds React/Mantine/MUI —
+// where a bundle silently stops using a vendor shim and re-embeds React or Mantine —
 // historically worth megabytes, and invisible until someone looks at the dist folder.
 // Raise a number deliberately when a bundle legitimately grows; don't raise it to make
 // a build go green.
-const TOTAL_JS_BUDGET = 10_500_000;
+const TOTAL_JS_BUDGET = 9_200_000;
 const bundleBudgets: Partial<Record<EntryPointName, number>> = {
-    "vendor-react": 1_700_000,
-    "vendor-core": 1_000_000,
-    app: 580_000,
-    home: 465_000,
-    dispatchReact: 445_000,
-    jobSearchReact: 430_000,
-    nationwide: 425_000,
-    recurringJobsReact: 415_000,
-    jobSearch: 410_000,
-    taskDashboardReact: 395_000,
-    jobDetailsReact: 350_000,
-    jobSearchJobListReact: 270_000,
-    nationwideJobListReact: 270_000,
-    currentWorkJobListReact: 270_000,
-    jobListReact: 270_000,
+    "vendor-react": 1_075_000,
+    "vendor-core": 995_000,
+    app: 551_000,
+    nationwide: 424_000,
+    home: 442_000,
+    dispatchReact: 422_000,
+    jobSearchReact: 410_000,
+    recurringJobsReact: 401_000,
+    jobSearch: 395_000,
+    taskDashboardReact: 374_000,
+    jobDetailsReact: 335_000,
+    currentWorkJobListReact: 255_000,
+    jobListReact: 255_000,
+    jobSearchJobListReact: 254_000,
+    nationwideJobListReact: 254_000,
 };
 
 // Fails the build when an output exceeds its budget, so a size regression surfaces here

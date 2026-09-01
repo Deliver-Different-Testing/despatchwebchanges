@@ -1,7 +1,6 @@
 import React, {act} from 'react';
 import {render, screen, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import dayjs, {Dayjs} from 'dayjs';
 import type {SearchActionDates} from '../../components/common/search-criteria-panel/SearchCriteriaPanel';
 
@@ -81,14 +80,14 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof JobSearchPage
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MantineTestProvider><ThemeProvider theme={createTheme()}>
+            <MantineTestProvider>
                 <JobSearchPage
                     showToast={jest.fn()}
                     isUsCustomer={false}
                     timeZone="New Zealand Standard Time"
                     {...overrides}
                 />
-            </ThemeProvider></MantineTestProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }

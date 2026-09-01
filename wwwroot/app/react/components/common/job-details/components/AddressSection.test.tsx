@@ -6,13 +6,13 @@ import React from 'react';
 import {screen, fireEvent} from '@testing-library/react';
 import {AddressSection} from './AddressSection';
 import {createMockJob, createMockAddress} from '../__testUtils__/mockJob';
-import {renderWithMantineOverMui} from '../../../../__testUtils__';
+import {renderWithMantine} from '../../../../__testUtils__';
 import {STALE_ADDRESS_DEVICE, STALE_ADDRESS_LINES} from '../../../../__testUtils__/mockData';
 
 // AddressSection reads usePendingChangeForField (React Query); the test needs
 // both ThemeProvider AND QueryClientProvider — renderWithProviders bundles them.
 function renderWithTheme(ui: React.ReactElement) {
-    return renderWithMantineOverMui(ui, {withQueryClient: true});
+    return renderWithMantine(ui, {withQueryClient: true});
 }
 
 function createDefaultProps(overrides?: Record<string, any>) {

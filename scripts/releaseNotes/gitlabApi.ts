@@ -18,6 +18,8 @@ export interface GitLabMergeRequest {
     web_url: string;
     description: string | null;
     author?: { name?: string };
+    source_branch?: string;
+    labels?: string[];
 }
 
 export interface GitLabDeployment {

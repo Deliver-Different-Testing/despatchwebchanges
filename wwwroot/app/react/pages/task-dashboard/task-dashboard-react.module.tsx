@@ -9,7 +9,6 @@ import React from 'react';
 import {TaskDashboardPage} from './TaskDashboardPage';
 import {MountTaskDashboardConfig} from './TaskDashboardPage.interfaces';
 import {islandTree} from '../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../components/common/mui-interop/MuiThemeIsland';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {createPageHost} from '../../utils/reactPageHost';
 
@@ -21,17 +20,15 @@ let refreshCallback: (() => void) | null = null;
 const host = createPageHost<MountTaskDashboardConfig>({
     logName: 'TaskDashboardReact',
     render: (config) => islandTree(
-        <MuiThemeIsland>
-            <ErrorBoundary>
-                <TaskDashboardPage
-                    showToast={config.showToast}
-                    isUsCustomer={config.isUsCustomer}
-                    setRefreshCallback={(cb) => {
-                        refreshCallback = cb;
-                    }}
-                />
-            </ErrorBoundary>
-        </MuiThemeIsland>
+        <ErrorBoundary>
+            <TaskDashboardPage
+                showToast={config.showToast}
+                isUsCustomer={config.isUsCustomer}
+                setRefreshCallback={(cb) => {
+                    refreshCallback = cb;
+                }}
+            />
+        </ErrorBoundary>
     ),
 });
 

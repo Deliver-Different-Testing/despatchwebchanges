@@ -12,7 +12,6 @@
 
 import React from 'react';
 import {render, screen, fireEvent, act} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createMockJob, createMockReadTracker} from './__testUtils__/mockJob';
 import type {MountJobDetailsConfig, IJob} from './JobDetails.types';
@@ -118,7 +117,6 @@ jest.mock('./components/PodPhotosSection', () => ({
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-const theme = createTheme();
 
 function createQueryClient() {
     return new QueryClient({
@@ -143,9 +141,9 @@ function renderJobDetails(configOverrides?: Partial<MountJobDetailsConfig>) {
 
     return render(
         <QueryClientProvider client={createQueryClient()}>
-            <MantineTestProvider><ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <JobDetails config={config} />
-            </ThemeProvider></MantineTestProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -498,7 +496,7 @@ describe('JobDetails', () => {
             const {JobDetails} = require('./JobDetails');
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
-                    <MantineTestProvider><ThemeProvider theme={theme}>
+                    <MantineTestProvider>
                         <JobDetails config={{
                             jobId: 200,
                             isRecurringJob: false,
@@ -506,7 +504,7 @@ describe('JobDetails', () => {
                             isUsCustomer: false,
                             showToast: jest.fn(),
                         }} />
-                    </ThemeProvider></MantineTestProvider>
+                    </MantineTestProvider>
                 </QueryClientProvider>,
             );
 
@@ -625,9 +623,9 @@ describe('JobDetails', () => {
             };
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
-                    <MantineTestProvider><ThemeProvider theme={theme}>
+                    <MantineTestProvider>
                         <JobDetails config={freshConfig} />
-                    </ThemeProvider></MantineTestProvider>
+                    </MantineTestProvider>
                 </QueryClientProvider>,
             );
 

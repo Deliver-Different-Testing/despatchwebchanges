@@ -1,5 +1,5 @@
 import React from 'react';
-import {screen} from '@testing-library/react';
+import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
     DialogShell,
@@ -130,6 +130,47 @@ describe('DialogShell scrolling', () => {
             .toHaveStyle({position: 'sticky', top: '0px'});
         expect(screen.getByRole('button', {name: 'Cancel'}).parentElement)
             .toHaveStyle({position: 'sticky', bottom: '0px'});
+    });
+
+    /*
+     * Mantine drives the modal transition through useDidUpdate, which skips the
+     * first render — so a dialog that mounts already open never reports that it
+     * finished opening. Every dialog here mounts that way: reactDialogHost's very
+     * first render is the one with open=true.
+     *
+     * This is a trap, not a preference. EditAddressDialog originally gated its
+     * HERE map on MUI's onEntered, which did fire on mount; translated literally,
+     * the map would simply never have initialised, with nothing to say so.
+     *
+     * env: 'default' throughout — env="test" strips transitions entirely, and a
+     * transition that never runs never reports anything either way.
+     */
+    it('does not report a transition for a dialog that mounts already open', async () => {
+        const onEntered = jest.fn();
+
+        renderWithMantine(
+            <DialogShell opened onClose={jest.fn()} transitionProps={{onEntered}}>
+                <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+            </DialogShell>,
+            {env: 'default'},
+        );
+
+        await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+        expect(onEntered).not.toHaveBeenCalled();
+    });
+
+    it('does forward the callback once a mounted dialog is opened', async () => {
+        const onEntered = jest.fn();
+        const shell = (opened: boolean) => (
+            <DialogShell opened={opened} onClose={jest.fn()} transitionProps={{onEntered}}>
+                <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+            </DialogShell>
+        );
+
+        const {rerender} = renderWithMantine(shell(false), {env: 'default'});
+        rerender(shell(true));
+
+        await waitFor(() => expect(onEntered).toHaveBeenCalled());
     });
 
     it('exposes the shell and chrome styles as plain objects', () => {

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { renderWithMantineOverMui } from '../../__testUtils__';
+import { renderWithMantine } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -101,7 +101,7 @@ const createTestQueryClient = () =>
 const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) =>
     // Mantine outside, MUI inside: the page is still MUI but its rows (`TaskItem`)
     // are Mantine, so both providers have to be present.
-    renderWithMantineOverMui(ui, {queryClient: queryClient ?? createTestQueryClient()});
+    renderWithMantine(ui, {queryClient: queryClient ?? createTestQueryClient()});
 
 // Sample test data
 const createMockTasks = (): Task[] => [
