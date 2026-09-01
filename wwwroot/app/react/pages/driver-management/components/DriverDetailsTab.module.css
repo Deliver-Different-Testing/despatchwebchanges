@@ -1,0 +1,16 @@
+/*
+ * Only what props cannot express: the last row in each info card drops its rule,
+ * so the card does not end on a hanging line. A :last-child selector is the whole
+ * reason this file exists.
+ */
+
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.infoRow:last-child {
+    border-bottom: none;
+}

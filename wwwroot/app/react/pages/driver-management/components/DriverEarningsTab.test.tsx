@@ -5,7 +5,6 @@ import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
 import {createTestQueryClient} from '../../../__testUtils__';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverEarningsTab} from './DriverEarningsTab';
 import {CourierDailyEarningsPaginated} from '../../../interfaces';
@@ -25,15 +24,14 @@ jest.mock('../../../services/driverManagementApi', () => ({
 
 const mockUseDriverEarnings = useDriverEarnings as jest.MockedFunction<typeof useDriverEarnings>;
 
-const theme = createTheme();
 
 const renderWithProviders = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <MantineTestProvider><ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <DriverEarningsTab showToast={showToast}/>
-            </ThemeProvider></MantineTestProvider>
+            </MantineTestProvider>
         </QueryClientProvider>
     );
 };

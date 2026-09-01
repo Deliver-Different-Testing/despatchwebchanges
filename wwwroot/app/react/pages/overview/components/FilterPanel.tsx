@@ -207,7 +207,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   * whitespace alone stops reading as a boundary — a region and a
                   * speed look identical and sit flush together.
                   */}
-                <Divider/>
+                <Divider role="separator"/>
 
                 {/* Regions */}
                 <Stack gap={CRITERION_LABEL_GAP} miw={0}>
@@ -240,7 +240,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     )}
                 </Stack>
 
-                <Divider/>
+                <Divider role="separator"/>
 
                 {/* Speeds */}
                 <Stack gap={CRITERION_LABEL_GAP} miw={0}>
@@ -273,7 +273,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     )}
                 </Stack>
 
-                <Divider/>
+                <Divider role="separator"/>
 
                 {/* Couriers */}
                 <Stack gap={CRITERION_LABEL_GAP} miw={0}>

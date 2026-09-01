@@ -1,24 +1,4 @@
 import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import IconButton from '@mui/material/IconButton';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import DownloadIcon from '@mui/icons-material/Download';
-import EmailIcon from '@mui/icons-material/Email';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import SendIcon from '@mui/icons-material/Send';
-import VerifiedIcon from '@mui/icons-material/VerifiedUser';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
     useComplianceList,
     useSendBulkComplianceReminders,
@@ -37,25 +17,40 @@ import {
     SearchField,
     SortState,
     StatCard,
-    toolbarButtonSx,
-    toolbarIconButtonSx
 } from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 import {dataTablePagingProps} from './dataTablePaging';
+import {ActionIcon, Badge, Box, Button, Group, Select, Stack, Text, Tooltip} from '@mantine/core';
+import {CircleAlert, CircleCheck, Download, Mail, Send, ShieldCheck, TriangleAlert, Users} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
+import {
+    CRITERION_LABEL_GAP,
+    FILTER_CONTROL_HEIGHT,
+    GroupLabel,
+} from '../../../components/common/filter-fields';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+} from '../../../components/dialogs/shared/mantine';
 
 interface DriverComplianceTabProps {
     showToast: ShowToastFn;
     fleetOptions: FleetOption[];
 }
 
-function getComplianceStatus(expiryDate?: string): { status: string; color: 'error' | 'warning' | 'success' | 'default'; daysUntil: number } {
-    if (!expiryDate) return {status: 'Not Set', color: 'default', daysUntil: -999};
+/** Mantine palette keys — see chipColors for why these are not the tenant brand. */
+function getComplianceStatus(expiryDate?: string): { status: string; color: string; daysUntil: number } {
+    if (!expiryDate) return {status: 'Not Set', color: 'gray', daysUntil: -999};
     const today = dayjs();
     const daysUntil = dayjs(expiryDate).diff(today, 'day');
-    if (daysUntil < 0) return {status: 'Expired', color: 'error', daysUntil};
-    if (daysUntil <= 30) return {status: 'Expiring Soon', color: 'warning', daysUntil};
-    return {status: 'Valid', color: 'success', daysUntil};
+    if (daysUntil < 0) return {status: 'Expired', color: 'red', daysUntil};
+    if (daysUntil <= 30) return {status: 'Expiring Soon', color: 'yellow', daysUntil};
+    return {status: 'Valid', color: 'green', daysUntil};
 }
 
 function formatDaysUntil(daysUntil: number): string {
@@ -66,18 +61,18 @@ function formatDaysUntil(daysUntil: number): string {
 
 
 const columns: DataTableColumn<CourierCompliance>[] = [
-    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Chip label={row.code} size="small" color="primary" />},
+    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Badge size="sm" tt="none">{row.code}</Badge>},
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
-    {key: 'complianceType', label: 'Type', sortable: true, render: (row) => <Chip label={row.complianceType} size="small" color={getComplianceTypeColor(row.complianceType)} />},
+    {key: 'complianceType', label: 'Type', sortable: true, render: (row) => <Badge size="sm" tt="none" color={getComplianceTypeColor(row.complianceType)}>{row.complianceType}</Badge>},
     {key: 'itemNumber', label: 'Item/Number', sortable: true, render: (row) => row.itemNumber},
     {key: 'expiryDate', label: 'Expiry Date', sortable: true, width: '120px', render: (row) => row.expiryDate ? dayjs(row.expiryDate).format('MMM D, YYYY') : ''},
     {key: 'status', label: 'Status', sortable: true, sortKey: 'expiryDate', width: '120px', render: (row) => {
         const cs = getComplianceStatus(row.expiryDate);
-        return <Chip label={cs.status} size="small" color={cs.color} />;
+        return <Badge size="sm" tt="none" color={cs.color}>{cs.status}</Badge>;
     }},
     {key: 'daysUntil', label: 'Days Until Expiry', sortable: true, sortKey: 'expiryDate', width: '140px', render: (row) => {
         const cs = getComplianceStatus(row.expiryDate);
-        return <Chip label={formatDaysUntil(cs.daysUntil)} size="small" color={cs.color} />;
+        return <Badge size="sm" tt="none" color={cs.color}>{formatDaysUntil(cs.daysUntil)}</Badge>;
     }},
     {key: 'actions', label: 'Actions', width: '80px', align: 'center', render: () => null},
 ];
@@ -139,6 +134,16 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
         }
     };
 
+    const activeFilterCount =
+        (filters.type !== 'all' ? 1 : 0)
+        + (filters.status !== 'all' ? 1 : 0)
+        + (filters.fleet ? 1 : 0);
+
+    const handleClearFilters = () => {
+        setFilters(f => ({...f, type: 'all', status: 'all', fleet: 0}));
+        setQuery(q => ({...q, page: 1}));
+    };
+
     const handleExport = async () => {
         try {
             await driverManagementApi.exportComplianceCsv(query, filters);
@@ -151,27 +156,33 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
     const columnsWithActions: DataTableColumn<CourierCompliance>[] = columns.map(col =>
         col.key === 'actions'
             ? {...col, render: (row: CourierCompliance) => (
-                <Tooltip title="Send Reminder">
-                    <IconButton size="small" onClick={(e) => {
-                        e.stopPropagation();
-                        return handleSendReminder(row);
-                    }}>
-                        <EmailIcon fontSize="small" />
-                    </IconButton>
+                <Tooltip label="Send reminder">
+                    <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        aria-label="Send reminder"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            return handleSendReminder(row);
+                        }}
+                    >
+                        <Icon lucide={Mail} size={16}/>
+                    </ActionIcon>
                 </Tooltip>
             )}
             : col
     );
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+        <Stack gap={16}>
             {/* Stats */}
-            <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
-                <StatCard value={stats.expired} label="Expired" color="error.main" icon={<ErrorOutlineIcon />} />
-                <StatCard value={stats.expiring} label="Expiring Soon" color="warning.main" icon={<WarningAmberIcon />} />
-                <StatCard value={stats.valid} label="Valid" color="success.main" icon={<CheckCircleIcon />} />
-                <StatCard value={stats.totalDrivers} label="Total Drivers" color="info.main" icon={<PeopleAltIcon />} />
-            </Box>
+            <Group gap={16}>
+                <StatCard value={stats.expired} label="Expired" color="var(--mantine-color-red-6)" icon={<Icon lucide={CircleAlert} size={28} color="var(--mantine-color-red-6)"/>} />
+                <StatCard value={stats.expiring} label="Expiring Soon" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={TriangleAlert} size={28} color="var(--mantine-color-yellow-6)"/>} />
+                <StatCard value={stats.valid} label="Valid" color="var(--mantine-color-green-6)" icon={<Icon lucide={CircleCheck} size={28} color="var(--mantine-color-green-6)"/>} />
+                <StatCard value={stats.totalDrivers} label="Total Drivers" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users} size={28} color="var(--mantine-color-cyan-6)"/>} />
+            </Group>
 
             {/* AI Compliance Risk Summary */}
             {isAiEnabled() && (
@@ -183,49 +194,87 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
 
             {/* Filters */}
             <FilterToolbar
+                activeFilterCount={activeFilterCount}
+                onClearAll={handleClearFilters}
                 actions={
                     <>
                         <Button
-                            size="small"
-                            variant="contained"
-                            color="primary"
-                            startIcon={<SendIcon />}
+                            size="compact-sm"
+                            h={FILTER_CONTROL_HEIGHT}
+                            leftSection={<Icon lucide={Send} size={16}/>}
                             onClick={handleOpenBulkDialog}
-                            sx={toolbarButtonSx}
                         >
-                            Send Reminders
+                            Send reminders
                         </Button>
-                        <Tooltip title="Export CSV">
-                            <IconButton size="small" sx={toolbarIconButtonSx} onClick={handleExport}>
-                                <DownloadIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
+                        <HeaderActionIcon label="Export CSV" onClick={handleExport}>
+                            <Icon lucide={Download} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                        </HeaderActionIcon>
                     </>
                 }
             >
-                <TextField select label="Type" size="small" sx={{minWidth: 150}} value={filters.type}
-                    onChange={(e) => { setFilters(f => ({...f, type: e.target.value})); setQuery(q => ({...q, page: 1})); }}>
-                    <MenuItem value="all">All Types</MenuItem>
-                    <MenuItem value="drivers_license">Driver's License</MenuItem>
-                    <MenuItem value="dg_endorsement">DG Endorsement</MenuItem>
-                    <MenuItem value="insurance">Insurance</MenuItem>
-                    <MenuItem value="vehicle_wof">Vehicle WOF</MenuItem>
-                    <MenuItem value="vehicle_rego">Vehicle Registration</MenuItem>
-                </TextField>
-                <TextField select label="Status" size="small" sx={{minWidth: 150}} value={filters.status}
-                    onChange={(e) => { setFilters(f => ({...f, status: e.target.value})); setQuery(q => ({...q, page: 1})); }}>
-                    <MenuItem value="all">All Statuses</MenuItem>
-                    <MenuItem value="expired">Expired</MenuItem>
-                    <MenuItem value="expiring">Expiring Soon</MenuItem>
-                    <MenuItem value="valid">Valid</MenuItem>
-                </TextField>
-                <TextField select label="Fleet" size="small" sx={{minWidth: 150}} value={filters.fleet}
-                    onChange={(e) => { setFilters(f => ({...f, fleet: Number(e.target.value)})); setQuery(q => ({...q, page: 1})); }}>
-                    <MenuItem value={0}>All Fleets</MenuItem>
-                    {fleetOptions.map(opt => (
-                        <MenuItem key={opt.id} value={opt.id}>{opt.text}</MenuItem>
-                    ))}
-                </TextField>
+                <Stack gap={CRITERION_LABEL_GAP}>
+                    <GroupLabel selected={filters.type !== 'all' ? 1 : 0}>Type</GroupLabel>
+                    <Select
+                        size="xs"
+                        aria-label="Type"
+                        miw={150}
+                        allowDeselect={false}
+                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
+                        value={filters.type}
+                        onChange={(value) => {
+                            setFilters(f => ({...f, type: value ?? 'all'}));
+                            setQuery(q => ({...q, page: 1}));
+                        }}
+                        data={[
+                            {value: 'all', label: 'All types'},
+                            {value: 'drivers_license', label: "Driver's licence"},
+                            {value: 'dg_endorsement', label: 'DG endorsement'},
+                            {value: 'insurance', label: 'Insurance'},
+                            {value: 'vehicle_wof', label: 'Vehicle WOF'},
+                            {value: 'vehicle_rego', label: 'Vehicle registration'},
+                        ]}
+                    />
+                </Stack>
+                <Stack gap={CRITERION_LABEL_GAP}>
+                    <GroupLabel selected={filters.status !== 'all' ? 1 : 0}>Status</GroupLabel>
+                    <Select
+                        size="xs"
+                        aria-label="Status"
+                        miw={150}
+                        allowDeselect={false}
+                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
+                        value={filters.status}
+                        onChange={(value) => {
+                            setFilters(f => ({...f, status: value ?? 'all'}));
+                            setQuery(q => ({...q, page: 1}));
+                        }}
+                        data={[
+                            {value: 'all', label: 'All statuses'},
+                            {value: 'expired', label: 'Expired'},
+                            {value: 'expiring', label: 'Expiring soon'},
+                            {value: 'valid', label: 'Valid'},
+                        ]}
+                    />
+                </Stack>
+                <Stack gap={CRITERION_LABEL_GAP}>
+                    <GroupLabel selected={filters.fleet ? 1 : 0}>Fleet</GroupLabel>
+                    <Select
+                        size="xs"
+                        aria-label="Fleet"
+                        miw={150}
+                        allowDeselect={false}
+                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
+                        value={String(filters.fleet)}
+                        onChange={(value) => {
+                            setFilters(f => ({...f, fleet: Number(value ?? 0)}));
+                            setQuery(q => ({...q, page: 1}));
+                        }}
+                        data={[
+                            {value: '0', label: 'All fleets'},
+                            ...fleetOptions.map(opt => ({value: String(opt.id), label: opt.text})),
+                        ]}
+                    />
+                </Stack>
                 <SearchField
                     value={query.searchTerm ?? ''}
                     onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
@@ -243,24 +292,39 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                 sort={sort}
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
-                emptyIcon={<VerifiedIcon />}
+                emptyIcon={<Icon lucide={ShieldCheck} size={40}/>}
                 emptyTitle="No Compliance Records"
                 emptyMessage="No compliance records match your criteria."
             />
 
             {/* Bulk Reminders Confirmation Dialog */}
-            <Dialog open={bulkDialogOpen} onClose={() => setBulkDialogOpen(false)}>
-                <DialogTitle>Send Bulk Reminders</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Send reminder emails to {remindableItems.length} driver(s) with expiring or expired compliance items?
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setBulkDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleBulkReminders} variant="contained" color="primary">Send</Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+            {/* A raw MUI <Dialog> before; composed from the shared Mantine
+                primitives per CLAUDE.md. */}
+            <DialogShell
+                opened={bulkDialogOpen}
+                onClose={() => setBulkDialogOpen(false)}
+                size={dialogSize.sm}
+                label="Send bulk reminders"
+            >
+                <DialogHeader
+                    icon={<Icon lucide={Send}/>}
+                    title="Send bulk reminders"
+                    subtitle="Drivers with expiring or expired compliance items"
+                    onClose={() => setBulkDialogOpen(false)}
+                />
+                <Box p={24} bg={dialogContentBg}>
+                    <Text>
+                        Send a reminder email to <strong>{remindableItems.length}</strong>{' '}
+                        {remindableItems.length === 1 ? 'driver' : 'drivers'}?
+                    </Text>
+                </Box>
+                <DialogFooter
+                    onCancel={() => setBulkDialogOpen(false)}
+                    onConfirm={handleBulkReminders}
+                    confirmLabel="Send reminders"
+                    confirmIcon={<Icon lucide={Send}/>}
+                />
+            </DialogShell>
+        </Stack>
     );
 };

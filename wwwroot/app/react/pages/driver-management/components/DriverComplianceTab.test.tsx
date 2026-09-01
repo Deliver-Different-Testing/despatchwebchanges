@@ -6,7 +6,6 @@ import { setupUser } from '../../../__testUtils__/setupUser';
 import {createTestQueryClient} from '../../../__testUtils__';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverComplianceTab} from './DriverComplianceTab';
 import {CourierCompliancePaginated} from '../../../interfaces';
@@ -28,14 +27,13 @@ const mockUseComplianceList = useComplianceList as jest.MockedFunction<typeof us
 const mockUseSendComplianceReminder = useSendComplianceReminder as jest.MockedFunction<typeof useSendComplianceReminder>;
 const mockUseSendBulkComplianceReminders = useSendBulkComplianceReminders as jest.MockedFunction<typeof useSendBulkComplianceReminders>;
 
-const theme = createTheme();
 const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text: 'Fleet A'}]) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <MantineTestProvider><ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <DriverComplianceTab showToast={showToast} fleetOptions={fleetOptions} />
-            </ThemeProvider></MantineTestProvider>
+            </MantineTestProvider>
         </QueryClientProvider>
     );
 };
@@ -120,10 +118,10 @@ describe('DriverComplianceTab', () => {
             setupMocks();
             renderWithProviders();
 
-            await user.click(screen.getByRole('button', {name: /Send Reminders/}));
+            await user.click(screen.getByRole('button', {name: /Send reminders/}));
 
-            expect(screen.getByText('Send Bulk Reminders')).toBeInTheDocument();
-            expect(screen.getByText(/Send reminder emails to 1 driver/)).toBeInTheDocument();
+            expect(screen.getByText('Send bulk reminders')).toBeInTheDocument();
+            expect(screen.getByText(/Send a reminder email to/)).toBeInTheDocument();
         });
 
         it('should close dialog when Cancel is clicked', async () => {
@@ -131,13 +129,13 @@ describe('DriverComplianceTab', () => {
             setupMocks();
             renderWithProviders();
 
-            await user.click(screen.getByRole('button', {name: /Send Reminders/}));
-            expect(screen.getByText('Send Bulk Reminders')).toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: /Send reminders/}));
+            expect(screen.getByText('Send bulk reminders')).toBeInTheDocument();
 
             await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
             await waitFor(() =>
-                expect(screen.queryByText('Send Bulk Reminders')).not.toBeInTheDocument(),
+                expect(screen.queryByText('Send bulk reminders')).not.toBeInTheDocument(),
             );
         });
     });

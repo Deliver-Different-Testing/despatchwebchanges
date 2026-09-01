@@ -1,15 +1,14 @@
 import React from 'react';
+import {MantineTestProvider} from '../../../../__testUtils__';
 import {fireEvent, render, screen, act} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {SearchField} from './SearchField';
 
-const theme = createTheme();
 
 const renderSearchField = (props = {}) =>
     render(
-        <ThemeProvider theme={theme}>
+        <MantineTestProvider>
             <SearchField value="" onChange={jest.fn()} {...props} />
-        </ThemeProvider>
+        </MantineTestProvider>
     );
 
 describe('SearchField', () => {

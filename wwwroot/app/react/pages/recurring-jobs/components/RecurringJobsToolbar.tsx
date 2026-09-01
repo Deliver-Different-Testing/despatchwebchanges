@@ -266,7 +266,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     ) : null}
                 />
 
-                <Divider orientation="vertical" h={FILTER_CONTROL_HEIGHT} style={{alignSelf: 'flex-end'}}/>
+                <Divider role="separator" orientation="vertical" h={FILTER_CONTROL_HEIGHT} style={{alignSelf: 'flex-end'}}/>
 
                 {/* Active / Manual / Inactive Filter (Steve 2026-06-09) */}
                 <Stack gap={CRITERION_LABEL_GAP}>
@@ -349,7 +349,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     />
                 </Stack>
 
-                <Divider orientation="vertical" h={FILTER_CONTROL_HEIGHT} style={{alignSelf: 'flex-end'}}/>
+                <Divider role="separator" orientation="vertical" h={FILTER_CONTROL_HEIGHT} style={{alignSelf: 'flex-end'}}/>
 
                 {/* Courier Filter */}
                 {/* Mantine's Autocomplete is a free-text string input — it has no object
@@ -369,7 +369,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     />
                 </Stack>
 
-                <Divider orientation="vertical" h={FILTER_CONTROL_HEIGHT} style={{alignSelf: 'flex-end'}}/>
+                <Divider role="separator" orientation="vertical" h={FILTER_CONTROL_HEIGHT} style={{alignSelf: 'flex-end'}}/>
 
                 {/* Days of Week Filter */}
                 <Stack gap={CRITERION_LABEL_GAP}>
@@ -398,7 +398,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     </Button.Group>
                 </Stack>
 
-                <Divider orientation="vertical" h={FILTER_CONTROL_HEIGHT} style={{alignSelf: 'flex-end'}}/>
+                <Divider role="separator" orientation="vertical" h={FILTER_CONTROL_HEIGHT} style={{alignSelf: 'flex-end'}}/>
 
                 {/* Recurring Route Filter */}
                 <Stack gap={CRITERION_LABEL_GAP}>
