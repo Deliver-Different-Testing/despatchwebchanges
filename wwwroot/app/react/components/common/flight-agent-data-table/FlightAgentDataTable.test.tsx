@@ -7,7 +7,7 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
-import {renderWithMantineOverMui} from '../../../__testUtils__';
+import {renderWithMantine} from '../../../__testUtils__';
 import {FlightAgentDataTable} from './FlightAgentDataTable';
 import {AgentOption, FlightAgentDataTableProps, FlightOption, FlightSegment} from './types';
 import dayjs from 'dayjs';
@@ -27,7 +27,7 @@ jest.mock('../../dialogs/agent-info-dialog', () => ({
 
 
 const renderWithTheme = (ui: React.ReactElement) =>
-    renderWithMantineOverMui(ui);
+    renderWithMantine(ui);
 
 const mockFlightSegment: FlightSegment = {
     segmentOrder: 0,
@@ -165,10 +165,10 @@ describe('FlightAgentDataTable', () => {
     // ── Flight Mode ─────────────────────────────────────────────────
     describe('Flight Mode', () => {
         it('shows loading indicator when flights are loading', () => {
-            const {container} = renderWithTheme(
+            renderWithTheme(
                 <FlightAgentDataTable {...createMockProps({flightsLoading: true, showFlightList: false})} />
             );
-            expect(container.querySelectorAll('[class*="MuiBox"]').length).toBeGreaterThan(0);
+            expect(screen.getByRole('progressbar', {name: /loading/i})).toBeInTheDocument();
         });
 
         // ── Flight empty states (single render each) ────────────────
@@ -264,8 +264,8 @@ describe('FlightAgentDataTable', () => {
                 expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
 
                 // Action buttons
-                expect(screen.getAllByTestId('AddIcon').length).toBeGreaterThan(0);
-                expect(screen.getAllByTestId('InfoIcon').length).toBeGreaterThan(0);
+                expect(screen.getAllByRole('button', {name: 'Assign Flight'}).length).toBeGreaterThan(0);
+                expect(screen.getAllByRole('button', {name: 'More Info'}).length).toBeGreaterThan(0);
                 expect(screen.getByRole('button', {name: /^more$/i})).toBeInTheDocument();
                 expect(screen.getByRole('button', {name: /next day/i})).toBeInTheDocument();
 
@@ -347,7 +347,7 @@ describe('FlightAgentDataTable', () => {
                 const props = createMockProps();
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                fireEvent.click(screen.getAllByTestId('AddIcon')[0].closest('button')!);
+                fireEvent.click(screen.getAllByRole('button', {name: 'Assign Flight'})[0]);
                 expect(props.onAddFlightToJob).toHaveBeenCalled();
             });
 
@@ -356,7 +356,7 @@ describe('FlightAgentDataTable', () => {
                 mockOpen.mockClear();
                 renderWithTheme(<FlightAgentDataTable {...createMockProps()} />);
 
-                fireEvent.click(screen.getAllByTestId('InfoIcon')[0].closest('button')!);
+                fireEvent.click(screen.getAllByRole('button', {name: 'More Info'})[0]);
                 expect(mockOpen).toHaveBeenCalledWith(expect.objectContaining({flightNumber: 'AA100', airline: 'AA'}));
             });
 
@@ -387,8 +387,123 @@ describe('FlightAgentDataTable', () => {
                     <FlightAgentDataTable {...createMockProps({filteredFlightOptions: [mockMultiSegmentFlight]})} />
                 );
                 expect(screen.getByText('1 stop')).toBeInTheDocument();
-                expect(screen.getByTestId('ExpandMoreIcon')).toBeInTheDocument();
+                expect(screen.getByRole('button', {name: /expand segments/i})).toHaveAttribute('aria-expanded', 'false');
             });
+        });
+
+        // ── Airport menus ───────────────────────────────────────────
+        // Chunk 4 moves these off `anchorEl` onto `Menu.Target`. Nothing below
+        // was covered before, so the restructure could have dropped any of it.
+        describe('Airport menus', () => {
+            // The no-flights state is used because it renders the filter bar without a
+            // table, so 'LAX' resolves to the airport button and not a row cell.
+            const filterBarOnly = {showNoFlightsAvailableMessage: true, showFlightList: false};
+
+            const openOutboundMenu = async () =>
+                userEvent.click(screen.getByRole('button', {name: 'Departure airport'}));
+
+            it('selects an airport from the menu', async () => {
+                const props = createMockProps({...filterBarOnly, selectedOutboundAirport: undefined});
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                await openOutboundMenu();
+                await userEvent.click(await screen.findByText('LAX - Los Angeles'));
+
+                expect(props.onOutboundAirportChange).toHaveBeenCalledWith(
+                    expect.objectContaining({id: 1}),
+                );
+            });
+
+            it('clears the selection when one is set', async () => {
+                const props = createMockProps(filterBarOnly);
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                await openOutboundMenu();
+                await userEvent.click(await screen.findByText('Clear selection'));
+
+                expect(props.onOutboundAirportChange).toHaveBeenCalledWith(null);
+            });
+
+            it('marks the selected airport in the list', async () => {
+                renderWithTheme(<FlightAgentDataTable {...createMockProps(filterBarOnly)} />);
+
+                await openOutboundMenu();
+
+                // The check glyph is the only thing distinguishing the selected item, and
+                // Lucide emits no test hook — hence the data attribute on the item.
+                const item = (await screen.findByText('LAX - Los Angeles')).closest('[data-selected]');
+                expect(item).toHaveAttribute('data-selected', 'true');
+            });
+
+            it('offers no Clear item when nothing is selected', async () => {
+                renderWithTheme(
+                    <FlightAgentDataTable {...createMockProps({
+                        ...filterBarOnly,
+                        selectedOutboundAirport: undefined,
+                    })} />
+                );
+
+                await openOutboundMenu();
+                await screen.findByText('LAX - Los Angeles');
+                expect(screen.queryByText('Clear selection')).not.toBeInTheDocument();
+            });
+        });
+
+        // ── Expand / collapse ───────────────────────────────────────
+        describe('Segment expansion', () => {
+            const multiSegmentProps = {
+                filteredFlightOptions: [
+                    {...mockMultiSegmentFlight, flightNumber: 'AA200', amount: 300},
+                    {...mockFlight, flightNumber: 'AA100', amount: 250},
+                ],
+            };
+
+            it('toggles aria-expanded and reveals the segment airports', async () => {
+                const user = setupUser();
+                renderWithTheme(<FlightAgentDataTable {...createMockProps(multiSegmentProps)} />);
+
+                const toggle = screen.getByRole('button', {name: /expand segments/i});
+                expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+                await user.click(toggle);
+
+                // aria-expanded is asserted rather than visibility: MUI's Collapse hides
+                // with `visibility`, Mantine's with `height`, so toBeVisible() inverts
+                // silently across the conversion.
+                const expanded = screen.getByRole('button', {name: /collapse segments/i});
+                expect(expanded).toHaveAttribute('aria-expanded', 'true');
+                expect(screen.getAllByText('ORD').length).toBeGreaterThan(0);
+                expect(screen.getByText('2h 30m')).toBeInTheDocument();
+            });
+
+            it('keeps a flight expanded across a re-sort', async () => {
+                const user = setupUser();
+                renderWithTheme(<FlightAgentDataTable {...createMockProps(multiSegmentProps)} />);
+
+                await user.click(screen.getByRole('button', {name: /expand segments/i}));
+                expect(screen.getByRole('button', {name: /collapse segments/i})).toBeInTheDocument();
+
+                // Expansion is keyed on connectionId, not row index — re-sorting must
+                // not reset it.
+                await user.click(screen.getByRole('button', {name: /rate/i}));
+
+                expect(screen.getByRole('button', {name: /collapse segments/i}))
+                    .toHaveAttribute('aria-expanded', 'true');
+            });
+        });
+
+        // ── Codeshare marker ────────────────────────────────────────
+        it('marks codeshare flights with an asterisk', () => {
+            const {unmount} = renderWithTheme(<FlightAgentDataTable {...createMockProps()} />);
+            expect(screen.queryByText('*')).not.toBeInTheDocument();
+            unmount();
+
+            renderWithTheme(
+                <FlightAgentDataTable {...createMockProps({
+                    filteredFlightOptions: [{...mockFlight, isCodeShare: true}],
+                })} />
+            );
+            expect(screen.getByText('*')).toBeInTheDocument();
         });
 
         // ── Sorting ─────────────────────────────────────────────────
@@ -403,9 +518,32 @@ describe('FlightAgentDataTable', () => {
                     })} />
                 );
 
+                // Row order is the library-independent proof that the sort ran;
+                // aria-sort is the accessibility contract SortableTh added, which
+                // MUI's TableSortLabel never set.
+                // getAllByText returns document order, and the flight number is its own
+                // element — the row's textContent runs the cells together with no
+                // separator, so a regex over the row cannot find its boundary.
+                const flightNumbersInOrder = () =>
+                    screen.getAllByText(/^AA\d{3}$/).map(el => el.textContent);
+
                 const rateHeader = screen.getByRole('button', {name: /rate/i});
+
                 await userEvent.click(rateHeader);
-                expect(rateHeader).toBeInTheDocument();
+                expect(flightNumbersInOrder()).toEqual(['AA100', 'AA200']);
+                expect(rateHeader.closest('th')).toHaveAttribute('aria-sort', 'ascending');
+
+                // Clicking the same column again flips the direction.
+                await userEvent.click(rateHeader);
+                expect(flightNumbersInOrder()).toEqual(['AA200', 'AA100']);
+                expect(rateHeader.closest('th')).toHaveAttribute('aria-sort', 'descending');
+
+                // A new column starts ascending again rather than inheriting 'desc'.
+                const flightHeader = screen.getByRole('button', {name: /^flight$/i});
+                await userEvent.click(flightHeader);
+                expect(flightNumbersInOrder()).toEqual(['AA100', 'AA200']);
+                expect(flightHeader.closest('th')).toHaveAttribute('aria-sort', 'ascending');
+                expect(rateHeader.closest('th')).toHaveAttribute('aria-sort', 'none');
             });
         });
     });
@@ -413,14 +551,14 @@ describe('FlightAgentDataTable', () => {
     // ── Agent Mode ──────────────────────────────────────────────────
     describe('Agent Mode', () => {
         it('shows loading indicator when agents are loading', () => {
-            const {container} = renderWithTheme(
+            renderWithTheme(
                 <FlightAgentDataTable {...createMockProps({
                     isDeliveryJobType: true,
                     agentsLoading: true,
                     showAgentList: false
                 })} />
             );
-            expect(container.querySelectorAll('[class*="MuiBox"]').length).toBeGreaterThan(0);
+            expect(screen.getByRole('progressbar', {name: /loading/i})).toBeInTheDocument();
         });
 
         // ── Agent empty states ──────────────────────────────────────
@@ -490,11 +628,11 @@ describe('FlightAgentDataTable', () => {
                 expect(props.onOpenAgentSearchDialog).toHaveBeenCalled();
 
                 // Assign agent
-                fireEvent.click(screen.getAllByTestId('AddIcon')[0].closest('button')!);
+                fireEvent.click(screen.getAllByRole('button', {name: 'Assign Job'})[0]);
                 expect(props.onAddAgentToJob).toHaveBeenCalledWith(mockAgent);
 
                 // Quote request
-                fireEvent.click(screen.getAllByTestId('RequestQuoteIcon')[0].closest('button')!);
+                fireEvent.click(screen.getAllByRole('button', {name: 'Send Quote Request'})[0]);
                 expect(props.onSendQuoteRequest).toHaveBeenCalledWith(mockAgent);
             });
 
@@ -503,7 +641,7 @@ describe('FlightAgentDataTable', () => {
                 mockOpen.mockClear();
                 renderWithTheme(<FlightAgentDataTable {...createMockProps(agentListProps)} />);
 
-                fireEvent.click(screen.getAllByTestId('InfoIcon')[0].closest('button')!);
+                fireEvent.click(screen.getAllByRole('button', {name: 'More Info'})[0]);
                 expect(mockOpen).toHaveBeenCalledWith({agentId: mockAgent.agentId});
             });
         });

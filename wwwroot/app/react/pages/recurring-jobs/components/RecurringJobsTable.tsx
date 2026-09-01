@@ -4,27 +4,13 @@
  * Data table with sorting, pagination, and row selection for recurring jobs.
  */
 
-import React, {useCallback} from 'react';
-import {alpha} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import TableSortLabel from '@mui/material/TableSortLabel';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
-import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import React from 'react';
+import {ActionIcon, Box, Text, Tooltip} from '@mantine/core';
+import {Power, Repeat} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
+import {DataTable, type DataTableColumn} from '../../../components/common/data-table';
 import type {Dayjs} from 'dayjs';
 import {AddressViewModel, PrebookListModel, RecurringJobColumn, RecurringJobSort,} from '../../../interfaces';
-import {NoData} from '../../../components/common/no-data/NoData';
 
 export interface RecurringJobsTableProps {
     jobs: PrebookListModel[];
@@ -117,147 +103,83 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                                                                           onDeleteClick,
                                                                           onContextMenu,
                                                                       }) => {
-    const handleSortClick = useCallback(
-        (column: string) => {
-            const isAsc = sort.column === column && sort.direction === 'asc';
-            onSortChange({
-                column,
-                direction: isAsc ? 'desc' : 'asc',
-            });
-        },
-        [sort, onSortChange]
-    );
-
-    const handlePageChange = useCallback(
-        (_event: unknown, newPage: number) => {
-            onPageChange(newPage + 1); // MUI pagination is 0-indexed
-        },
-        [onPageChange]
-    );
-
-    const handleRowsPerPageChange = useCallback(
-        (event: React.ChangeEvent<HTMLInputElement>) => {
-            onPageSizeChange(parseInt(event.target.value, 10));
-        },
-        [onPageSizeChange]
-    );
-
     const renderCellContent = (job: PrebookListModel, column: RecurringJobColumn) => {
         switch (column.key) {
             case 'booked':
                 return (
                     <Box>
-                        <Typography variant="body2" noWrap>
-                            {formatDate(job.booked)}
-                        </Typography>
-                        <Typography variant="caption" noWrap sx={{
-                            color: "text.secondary"
-                        }}>
-                            {formatTime(job.booked)}
-                        </Typography>
+                        <Text fz="sm" truncate>{formatDate(job.booked)}</Text>
+                        <Text fz="xs" c="dimmed" truncate>{formatTime(job.booked)}</Text>
                     </Box>
                 );
             case 'speed':
                 return (
-                    <Typography variant="body2" noWrap>
-                        {job.speed}
-                    </Typography>
+                    <Text fz="sm" truncate>{job.speed}</Text>
                 );
             case 'customJobName':
                 return (
-                    <Tooltip title={job.customJobName || ''} placement="top">
-                        <Typography variant="body2" noWrap sx={{maxWidth: 150}}>
-                            {job.customJobName || '-'}
-                        </Typography>
+                    <Tooltip label={job.customJobName || ''} position="top">
+                        <Text fz="sm" truncate maw={150}>{job.customJobName || '-'}</Text>
                     </Tooltip>
                 );
             case 'client':
                 return (
-                    <Typography variant="body2" noWrap>
-                        {job.client}
-                    </Typography>
+                    <Text fz="sm" truncate>{job.client}</Text>
                 );
             case 'from':
                 return (
-                    <Tooltip title={getAddressTooltip(job.pickupAddress)} placement="top">
+                    <Tooltip label={getAddressTooltip(job.pickupAddress)} position="top">
                         <Box>
-                            <Typography variant="body2" noWrap sx={{maxWidth: 150}}>
-                                {getAddressPrimary(job.pickupAddress)}
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                noWrap
-                                sx={{
-                                    color: "text.secondary",
-                                    maxWidth: 150
-                                }}>
+                            <Text fz="sm" truncate maw={150}>{getAddressPrimary(job.pickupAddress)}</Text>
+                            <Text fz="xs" c="dimmed" truncate maw={150}>
                                 {getAddressSecondary(job.pickupAddress, isUsCustomer)}
-                            </Typography>
+                            </Text>
                         </Box>
                     </Tooltip>
                 );
             case 'to':
                 return (
-                    <Tooltip title={getAddressTooltip(job.deliveryAddress)} placement="top">
+                    <Tooltip label={getAddressTooltip(job.deliveryAddress)} position="top">
                         <Box>
-                            <Typography variant="body2" noWrap sx={{maxWidth: 150}}>
-                                {getAddressPrimary(job.deliveryAddress)}
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                noWrap
-                                sx={{
-                                    color: "text.secondary",
-                                    maxWidth: 150
-                                }}>
+                            <Text fz="sm" truncate maw={150}>{getAddressPrimary(job.deliveryAddress)}</Text>
+                            <Text fz="xs" c="dimmed" truncate maw={150}>
                                 {getAddressSecondary(job.deliveryAddress, isUsCustomer)}
-                            </Typography>
+                            </Text>
                         </Box>
                     </Tooltip>
                 );
             case 'route':
                 return (
-                    <Tooltip title={job.routeName || ''} placement="top">
-                        <Typography variant="body2" noWrap sx={{maxWidth: 140}}>
-                            {job.routeName || '-'}
-                        </Typography>
+                    <Tooltip label={job.routeName || ''} position="top">
+                        <Text fz="sm" truncate maw={140}>{job.routeName || '-'}</Text>
                     </Tooltip>
                 );
             case 'nextDueTime':
                 return (
                     <Box>
-                        <Typography variant="body2" noWrap>
-                            {formatDate(job.nextDueTime)}
-                        </Typography>
-                        <Typography variant="caption" noWrap sx={{
-                            color: "text.secondary"
-                        }}>
-                            {formatTime(job.nextDueTime)}
-                        </Typography>
+                        <Text fz="sm" truncate>{formatDate(job.nextDueTime)}</Text>
+                        <Text fz="xs" c="dimmed" truncate>{formatTime(job.nextDueTime)}</Text>
                     </Box>
                 );
             case 'courier':
                 return (
-                    <Typography variant="body2" noWrap>
-                        {job.courier || '-'}
-                    </Typography>
+                    <Text fz="sm" truncate>{job.courier || '-'}</Text>
                 );
             case 'actions':
                 return (
-                    <Tooltip title="Deactivate">
-                        <IconButton
-                            size="small"
+                    <Tooltip label="Deactivate">
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            aria-label="Deactivate"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onDeleteClick(job);
                             }}
-                            sx={{
-                                color: 'text.secondary',
-                                '&:hover': {color: 'primary.main'},
-                            }}
                         >
-                            <PowerSettingsNewIcon fontSize="small"/>
-                        </IconButton>
+                            <Icon lucide={Power} size={16}/>
+                        </ActionIcon>
                     </Tooltip>
                 );
             default:
@@ -265,114 +187,41 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
         }
     };
 
+    // The shared kit owns the markup; this file keeps only its column definitions
+    // and cell renderers. Note TablePager is 1-based, so the page index no longer
+    // needs the ±1 the MUI pagination required.
+    const dataColumns: DataTableColumn<PrebookListModel>[] = columns.map((column) => ({
+        key: column.key,
+        label: column.label,
+        sortable: column.sortable,
+        sortKey: column.sortKey,
+        width: column.width,
+        align: column.align,
+        render: (job) => renderCellContent(job, column),
+    }));
+
     return (
-        <Paper elevation={0} sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-            <TableContainer sx={{flex: 1, overflow: 'auto'}}>
-                <Table stickyHeader size="small">
-                    <TableHead>
-                        <TableRow>
-                            {columns.map((column) => (
-                                <TableCell
-                                    key={column.key}
-                                    align={column.align || 'left'}
-                                    sx={{
-                                        width: column.width,
-                                        fontWeight: 600,
-                                        bgcolor: 'grey.100',
-                                        borderBottom: 2,
-                                        borderColor: 'grey.300',
-                                    }}
-                                >
-                                    {column.sortable ? (
-                                        <TableSortLabel
-                                            active={sort.column === column.key}
-                                            direction={sort.column === column.key ? sort.direction : 'asc'}
-                                            onClick={() => handleSortClick(column.sortKey || column.key)}
-                                        >
-                                            {column.label}
-                                        </TableSortLabel>
-                                    ) : (
-                                        column.label
-                                    )}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} align="center" sx={{py: 8}}>
-                                    <CircularProgress size={32}/>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: "text.secondary",
-                                            mt: 2
-                                        }}>
-                                        Loading recurring jobs...
-                                    </Typography>
-                                </TableCell>
-                            </TableRow>
-                        ) : jobs.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} align="center" sx={{py: 8}}>
-                                    <NoData
-                                        title="No Recurring Jobs"
-                                        message="No recurring jobs available"
-                                        icon={<EventRepeatIcon/>}
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            jobs.map((job) => (
-                                <TableRow
-                                    key={job.id}
-                                    hover
-                                    selected={selectedJobId === job.id}
-                                    onClick={() => onRowClick(job)}
-                                    onContextMenu={(e) => onContextMenu(e, job)}
-                                    sx={(theme) => ({
-                                        cursor: 'pointer',
-                                        '&.Mui-selected': {
-                                            bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                        },
-                                        '&.Mui-selected:hover': {
-                                            bgcolor: alpha(theme.palette.primary.main, 0.12),
-                                        },
-                                    })}
-                                >
-                                    {columns.map((column) => (
-                                        <TableCell
-                                            key={column.key}
-                                            align={column.align || 'left'}
-                                            sx={{py: 1}}
-                                        >
-                                            {renderCellContent(job, column)}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <TablePagination
-                component="div"
-                count={totalCount}
-                page={page - 1} // MUI pagination is 0-indexed
-                rowsPerPage={pageSize}
-                rowsPerPageOptions={pageSizeOptions}
-                onPageChange={handlePageChange}
-                onRowsPerPageChange={handleRowsPerPageChange}
-                sx={{
-                    borderTop: 1,
-                    borderColor: 'divider',
-                    '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
-                        mb: 0,
-                    },
-                }}
-            />
-        </Paper>
+        <DataTable
+            rows={jobs}
+            columns={dataColumns}
+            rowKey={(job) => job.id}
+            totalCount={totalCount}
+            isLoading={isLoading}
+            loadingMessage="Loading recurring jobs..."
+            sort={sort}
+            onSortChange={(next) => onSortChange(next as RecurringJobSort)}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={pageSizeOptions}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+            onRowClick={onRowClick}
+            onRowContextMenu={onContextMenu}
+            isRowSelected={(job) => selectedJobId === job.id}
+            emptyIcon={<Icon lucide={Repeat} size={40}/>}
+            emptyTitle="No Recurring Jobs"
+            emptyMessage="No recurring jobs available"
+        />
     );
 };
 

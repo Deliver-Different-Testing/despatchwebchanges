@@ -1,8 +1,8 @@
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import {Box, Group, Stack, Text} from '@mantine/core';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {OverviewStatsViewModel} from '../OverviewPage.interfaces';
+import classes from './StatsTabs.module.css';
 
 interface StatsTabsProps {
     statistics: OverviewStatsViewModel;
@@ -18,69 +18,59 @@ const TAB_CONFIG = [
 
 export const StatsTabs: React.FC<StatsTabsProps> = React.memo(({statistics, activeTab, onTabChange}) => {
     return (
-        <Box sx={{display: 'flex', justifyContent: 'center', gap: 4, py: 2}}>
+        <Group justify="center" gap={32} py={16}>
             {TAB_CONFIG.map((tab, index) => {
                 const isActive = activeTab === index;
                 const value = statistics[tab.key];
 
                 return (
-                    <Box
+                    <Stack
                         key={tab.key}
+                        align="center"
+                        gap={0}
                         onClick={() => onTabChange(index)}
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                            opacity: isActive ? 1 : 0.6,
-                            transition: 'opacity 0.2s',
-                            '&:hover': {opacity: 1},
-                        }}
+                        // The resting opacity and its hover override live together in
+                        // the stylesheet: an inline resting value would outrank the
+                        // class rule and make the hover unreachable.
+                        className={classes.tab}
+                        data-active={isActive}
                     >
-                        <Box
-                            sx={{
-                                width: 75,
-                                height: 75,
-                                borderRadius: '50%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                bgcolor: isActive ? 'primary.main' : 'grey.200',
-                                color: isActive ? 'primary.contrastText' : 'text.secondary',
-                                transition: 'all 0.2s',
-                            }}
+                        <Stack
+                            w={75}
+                            h={75}
+                            align="center"
+                            justify="center"
+                            gap={0}
+                            bg={isActive ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-gray-2)'}
+                            c={isActive ? 'var(--mantine-primary-color-contrast)' : 'dimmed'}
+                            style={{borderRadius: '50%', transition: 'all 0.2s'}}
                         >
-                            <Typography variant="h6" sx={{fontWeight: 700, lineHeight: 1}}>
+                            <Text fz="h6" fw={700} lh={1}>
                                 {value}
-                            </Typography>
+                            </Text>
                             <SymbolIcon name={tab.icon} size={20} style={{marginTop: 2}} />
-                        </Box>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                mt: 0.5,
-                                fontWeight: isActive ? 600 : 400,
-                                color: isActive ? 'primary.main' : 'text.secondary',
-                            }}
+                        </Stack>
+                        <Text
+                            fz="sm"
+                            mt={4}
+                            fw={isActive ? 600 : 400}
+                            c={isActive ? 'var(--mantine-primary-color-filled)' : 'dimmed'}
                         >
                             {tab.label}
-                        </Typography>
+                        </Text>
                         {isActive && (
                             <Box
-                                sx={{
-                                    width: 32,
-                                    height: 3,
-                                    borderRadius: 1.5,
-                                    bgcolor: 'primary.main',
-                                    mt: 0.5,
-                                }}
+                                w={32}
+                                h={3}
+                                mt={4}
+                                bg="var(--mantine-primary-color-filled)"
+                                style={{borderRadius: 6}}
                             />
                         )}
-                    </Box>
+                    </Stack>
                 );
             })}
-        </Box>
+        </Group>
     );
 });
 StatsTabs.displayName = 'StatsTabs';

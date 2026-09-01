@@ -7,7 +7,6 @@ import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {FilterPanel} from './FilterPanel';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 
@@ -27,7 +26,6 @@ jest.mock('../../../components/common/job-details/hooks/useDialogLoader', () => 
     }),
 }));
 
-const theme = createTheme();
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -38,7 +36,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <MantineTestProvider><ThemeProvider theme={theme}>{ui}</ThemeProvider></MantineTestProvider>
+            <MantineTestProvider>{ui}</MantineTestProvider>
         </QueryClientProvider>,
     );
 };
@@ -72,6 +70,7 @@ const defaultProps = {
     onRemoveCourier: jest.fn(),
     dateRange: {} as DateRange,
     onDateRangeChange: jest.fn(),
+    onClearAll: jest.fn(),
 };
 
 describe('FilterPanel', () => {
@@ -82,10 +81,10 @@ describe('FilterPanel', () => {
         expect(screen.getByText('Quick Filters')).toBeInTheDocument();
 
         // Date Range section
-        expect(screen.getByText('Date Range')).toBeInTheDocument();
-        expect(screen.getByText('Select Dates')).toBeInTheDocument();
+        expect(screen.getByText('Date range')).toBeInTheDocument();
+        expect(screen.getByText('Select dates')).toBeInTheDocument();
 
-        // Regions section
+        // Regions section — a field label above its options, not a header bar.
         expect(screen.getByText('Regions')).toBeInTheDocument();
         expect(screen.getByText('London')).toBeInTheDocument();
         expect(screen.getByText('Manchester')).toBeInTheDocument();
@@ -96,13 +95,70 @@ describe('FilterPanel', () => {
         expect(screen.getByText('Same Day')).toBeInTheDocument();
         expect(screen.getByText('Next Day')).toBeInTheDocument();
 
-        // Couriers section
+        // Couriers section — the same ChipsAutocomplete job search uses.
         expect(screen.getByText('Couriers')).toBeInTheDocument();
-        expect(screen.getByLabelText('Search couriers...')).toBeInTheDocument();
+        // ChipsAutocomplete is a MultiSelect, so its input is a combobox — the
+        // same handle its own test uses.
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
 
-        // Select All / Unselect All toggle
-        const selectAlls = screen.getAllByText('Select All');
-        expect(selectAlls.length).toBeGreaterThanOrEqual(1);
+        // Regions and Speeds each carry their own select-all beside the label.
+        expect(screen.getAllByText('Select all')).toHaveLength(2);
+    });
+
+    it('reports how many options each multi-select group has chosen', () => {
+        renderWithProviders(
+            <FilterPanel
+                {...defaultProps}
+                selectedRegionIds={new Set([1, 2])}
+                selectedSpeedIds={new Set([1])}
+                selectedCouriers={[{id: 7, text: 'Courier A'}]}
+            />,
+        );
+
+        // The count sits beside its own label, so scope each assertion to the
+        // group rather than trusting document order.
+        const countFor = (label: string) =>
+            screen.getByText(label).parentElement?.textContent?.replace(label, '');
+
+        expect(countFor('Regions')).toBe('2');
+        expect(countFor('Speeds')).toBe('1');
+        expect(countFor('Couriers')).toBe('1');
+    });
+
+    it('shows no count on a group with nothing chosen', () => {
+        renderWithProviders(<FilterPanel {...defaultProps} />);
+
+        expect(screen.getByText('Regions').parentElement?.textContent).toBe('Regions');
+    });
+
+    describe('Clear all', () => {
+        it('stays in place but is disabled when nothing is applied', () => {
+            renderWithProviders(<FilterPanel {...defaultProps} />);
+
+            // Present either way, so its position never moves on the reader.
+            expect(screen.getByRole('button', {name: 'Clear all'})).toBeDisabled();
+        });
+
+        it('counts every applied criterion and clears them', () => {
+            const onClearAll = jest.fn();
+            renderWithProviders(
+                <FilterPanel
+                    {...defaultProps}
+                    onClearAll={onClearAll}
+                    dateRange={{start: new Date('2024-01-15')}}
+                    selectedRegionIds={new Set([1, 2])}
+                    selectedSpeedIds={new Set([1])}
+                    selectedCouriers={[{id: 7, text: 'Courier A'}]}
+                />,
+            );
+
+            // 1 date + 2 regions + 1 speed + 1 courier.
+            const clearAll = screen.getByRole('button', {name: 'Clear all (5)'});
+            expect(clearAll).toBeEnabled();
+
+            fireEvent.click(clearAll);
+            expect(onClearAll).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('Date Range section', () => {
@@ -144,7 +200,7 @@ describe('FilterPanel', () => {
                     <FilterPanel {...defaultProps} onDateRangeChange={onDateRangeChange} />,
                 );
 
-                fireEvent.click(screen.getByText('Select Dates'));
+                fireEvent.click(screen.getByText('Select dates'));
 
                 await waitFor(() => expect(mockEnsureDateRangeDialog).toHaveBeenCalled());
                 await waitFor(() => expect(mockOpen).toHaveBeenCalled());
@@ -163,7 +219,7 @@ describe('FilterPanel', () => {
                     <FilterPanel {...defaultProps} onDateRangeChange={onDateRangeChange} />,
                 );
 
-                fireEvent.click(screen.getByText('Select Dates'));
+                fireEvent.click(screen.getByText('Select dates'));
 
                 await waitFor(() => expect(mockOpen).toHaveBeenCalled());
                 expect(onDateRangeChange).not.toHaveBeenCalled();
@@ -188,7 +244,7 @@ describe('FilterPanel', () => {
         it('calls onToggleRegion when checkbox clicked', () => {
             renderWithProviders(<FilterPanel {...defaultProps} />);
 
-            const londonCheckbox = screen.getByText('London').closest('label')!.querySelector('input')!;
+            const londonCheckbox = screen.getByRole('checkbox', {name: 'London'});
             fireEvent.click(londonCheckbox);
 
             expect(defaultProps.onToggleRegion).toHaveBeenCalledWith(1);
@@ -196,14 +252,14 @@ describe('FilterPanel', () => {
 
         it('shows Unselect All when all regions selected', () => {
             renderWithProviders(<FilterPanel {...defaultProps} allRegionsSelected />);
-            expect(screen.getByText('Unselect All')).toBeInTheDocument();
+            expect(screen.getByText('Unselect all')).toBeInTheDocument();
         });
 
         it('calls onToggleAllRegions when Select All clicked', () => {
             // Set allSpeedsSelected so speeds shows "Unselect All", leaving only regions with "Select All"
             renderWithProviders(<FilterPanel {...defaultProps} allSpeedsSelected />);
 
-            const selectAllCheckbox = screen.getByText('Select All').closest('label')!.querySelector('input')!;
+            const selectAllCheckbox = screen.getByRole('checkbox', {name: 'Select all regions'});
             fireEvent.click(selectAllCheckbox);
 
             expect(defaultProps.onToggleAllRegions).toHaveBeenCalled();
@@ -214,9 +270,9 @@ describe('FilterPanel', () => {
                 <FilterPanel {...defaultProps} selectedRegionIds={new Set([1, 3])} />,
             );
 
-            const londonCheckbox = screen.getByText('London').closest('label')!.querySelector('input')!;
-            const manchesterCheckbox = screen.getByText('Manchester').closest('label')!.querySelector('input')!;
-            const birminghamCheckbox = screen.getByText('Birmingham').closest('label')!.querySelector('input')!;
+            const londonCheckbox = screen.getByRole('checkbox', {name: 'London'});
+            const manchesterCheckbox = screen.getByRole('checkbox', {name: 'Manchester'});
+            const birminghamCheckbox = screen.getByRole('checkbox', {name: 'Birmingham'});
 
             expect(londonCheckbox).toBeChecked();
             expect(manchesterCheckbox).not.toBeChecked();
@@ -233,7 +289,7 @@ describe('FilterPanel', () => {
         it('calls onToggleSpeed when checkbox clicked', () => {
             renderWithProviders(<FilterPanel {...defaultProps} />);
 
-            const sameDayCheckbox = screen.getByText('Same Day').closest('label')!.querySelector('input')!;
+            const sameDayCheckbox = screen.getByRole('checkbox', {name: 'Same Day'});
             fireEvent.click(sameDayCheckbox);
 
             expect(defaultProps.onToggleSpeed).toHaveBeenCalledWith(1);
@@ -264,8 +320,10 @@ describe('FilterPanel', () => {
                 />,
             );
 
-            const chip = screen.getByText('Courier A').closest('.MuiChip-root')!;
-            const deleteButton = chip.querySelector('.MuiChip-deleteIcon')!;
+            // Mantine marks a Pill's remove button aria-hidden by design, so its
+            // class is the only handle — the same one ChipsAutocomplete's own test
+            // uses. The keyboard path (Backspace) is covered there too.
+            const deleteButton = document.querySelector<HTMLElement>('.mantine-Pill-remove')!;
             fireEvent.click(deleteButton);
 
             expect(defaultProps.onRemoveCourier).toHaveBeenCalledWith(1);

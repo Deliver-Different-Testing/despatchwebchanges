@@ -1,20 +1,6 @@
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import CircularProgress from '@mui/material/CircularProgress';
-import LinearProgress from '@mui/material/LinearProgress';
-import Chip from '@mui/material/Chip';
-import TablePagination from '@mui/material/TablePagination';
-import Tooltip from '@mui/material/Tooltip';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableSortLabel from '@mui/material/TableSortLabel';
-import {alpha, useTheme, type Theme} from '@mui/material/styles';
+import {ActionIcon, Badge, Box, Group, Loader, Progress, Stack, Table, Text, Tooltip, alpha} from '@mantine/core';
+import {SortableTh, TablePager} from '../../../components/common/data-table';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {OverviewTableParentJob, TableSort} from '../OverviewPage.interfaces';
 
@@ -45,89 +31,81 @@ const COLUMNS = [
     {key: 'actions', label: 'Actions', sortable: false},
 ];
 
-type StatusStyleMap = Record<string, {bg: string; color?: string}>;
+type StatusStyle = {bg: string; color?: string};
 
-// Cache the per-theme status chip palette so we build the lookup map once per
-// theme instance, not once per row. Themes are stable across the app lifetime
-// (effectively one instance), so this WeakMap holds at most a handful of entries.
-const STATUS_STYLE_CACHE = new WeakMap<Theme, StatusStyleMap>();
+/**
+ * Concrete colour values rather than Mantine colour names: these are read into a
+ * background and a text colour on an inline style, where a name would not resolve.
+ * The theme lookup and its per-theme WeakMap cache are gone with it — this is a
+ * plain module-level constant now, built once.
+ */
+const INFO = 'var(--mantine-color-cyan-6)';
+const SUCCESS = 'var(--mantine-color-green-6)';
+const DANGER = 'var(--mantine-color-red-6)';
 
-function getStatusStylesForTheme(theme: Theme): StatusStyleMap {
-    const cached = STATUS_STYLE_CACHE.get(theme);
-    if (cached) return cached;
-    const p = theme.palette;
-    const map: StatusStyleMap = {
-        NEW: {bg: alpha(p.info.main, 0.25)},
-        PREASSIGNED: {bg: alpha(p.info.main, 0.25)},
-        DESPATCHED: {bg: alpha(p.success.main, 0.2)},
-        ACCEPTED: {bg: alpha(p.success.main, 0.2)},
-        PICKED_UP: {bg: alpha(p.success.main, 0.35)},
-        IN_TRANSIT: {bg: alpha(p.success.main, 0.35)},
-        OUT_FOR_DELIVERY: {bg: alpha(p.success.main, 0.35)},
-        REJECTED: {bg: alpha(p.error.main, 0.25)},
-        LATE_PICKUP: {bg: alpha(p.error.main, 0.25)},
-        LATE_DELIVERY: {bg: alpha(p.error.main, 0.25)},
-        WARNING: {bg: alpha(p.error.main, 0.25)},
-        UNDELIVERABLE: {bg: p.error.dark, color: p.error.contrastText},
-        COMPLETED: {bg: p.grey[500], color: '#fff'},
-        AWAITING_POD: {bg: p.grey[500], color: '#fff'},
-        ASSUMING_COMPLETED: {bg: p.grey[500], color: '#fff'},
-    };
-    STATUS_STYLE_CACHE.set(theme, map);
-    return map;
-}
+const STATUS_STYLES: Record<string, StatusStyle> = {
+    NEW: {bg: alpha(INFO, 0.25)},
+    PREASSIGNED: {bg: alpha(INFO, 0.25)},
+    DESPATCHED: {bg: alpha(SUCCESS, 0.2)},
+    ACCEPTED: {bg: alpha(SUCCESS, 0.2)},
+    PICKED_UP: {bg: alpha(SUCCESS, 0.35)},
+    IN_TRANSIT: {bg: alpha(SUCCESS, 0.35)},
+    OUT_FOR_DELIVERY: {bg: alpha(SUCCESS, 0.35)},
+    REJECTED: {bg: alpha(DANGER, 0.25)},
+    LATE_PICKUP: {bg: alpha(DANGER, 0.25)},
+    LATE_DELIVERY: {bg: alpha(DANGER, 0.25)},
+    WARNING: {bg: alpha(DANGER, 0.25)},
+    UNDELIVERABLE: {bg: 'var(--mantine-color-red-8)', color: 'var(--mantine-color-white)'},
+    COMPLETED: {bg: 'var(--mantine-color-gray-6)', color: 'var(--mantine-color-white)'},
+    AWAITING_POD: {bg: 'var(--mantine-color-gray-6)', color: 'var(--mantine-color-white)'},
+    ASSUMING_COMPLETED: {bg: 'var(--mantine-color-gray-6)', color: 'var(--mantine-color-white)'},
+};
 
-function getStatusChipStyle(status: string, theme: Theme): {bg: string; color?: string} {
+function getStatusChipStyle(status: string): StatusStyle {
     const normalized = status.toUpperCase().replace(/[\s-]/g, '_');
-    return getStatusStylesForTheme(theme)[normalized] ?? {bg: theme.palette.grey[300]};
+    return STATUS_STYLES[normalized] ?? {bg: 'var(--mantine-color-gray-3)'};
 }
 
-function getProgressColor(completion: number, theme: Theme): string {
-    if (completion < 30) return theme.palette.success.main;
-    if (completion < 70) return theme.palette.success.light;
-    return theme.palette.grey[400];
+function getProgressColor(completion: number): string {
+    if (completion < 30) return 'green.6';
+    if (completion < 70) return 'green.4';
+    return 'gray.4';
 }
 
 function transformStatus(status: string): string {
     return status.toUpperCase().replace(/[\s-]/g, '_');
 }
 
-const StatusChip: React.FC<{status: string; theme: Theme}> = React.memo(({status, theme}) => {
+const StatusChip: React.FC<{status: string}> = React.memo(({status}) => {
     const display = transformStatus(status);
-    const style = getStatusChipStyle(display, theme);
+    const style = getStatusChipStyle(display);
     return (
-        <Chip
-            label={display}
-            size="small"
-            sx={{
-                bgcolor: style.bg,
-                color: style.color ?? 'text.primary',
-                fontWeight: 500,
-                fontSize: '0.75rem',
-                height: 24,
-            }}
-        />
+        <Badge
+            h={24}
+            fz="0.75rem"
+            fw={500}
+            tt="none"
+            style={{backgroundColor: style.bg, color: style.color ?? 'var(--mantine-color-text)'}}
+        >
+            {display}
+        </Badge>
     );
 });
 StatusChip.displayName = 'StatusChip';
 
-const ProgressBar: React.FC<{value: number; theme: Theme}> = React.memo(({value, theme}) => (
-    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, minWidth: 100}}>
-        <LinearProgress
-            variant="determinate"
+const ProgressBar: React.FC<{value: number}> = React.memo(({value}) => (
+    <Group gap={8} wrap="nowrap" miw={100}>
+        <Progress
             value={value}
-            sx={{
-                flex: 1,
-                height: 6,
-                borderRadius: 3,
-                bgcolor: 'grey.200',
-                '& .MuiLinearProgress-bar': {bgcolor: getProgressColor(value, theme)},
-            }}
+            size={6}
+            radius={3}
+            color={getProgressColor(value)}
+            style={{flex: 1}}
         />
-        <Typography variant="caption" sx={{minWidth: 32, textAlign: 'right'}}>
+        <Text fz="xs" miw={32} ta="right">
             {value}%
-        </Typography>
-    </Box>
+        </Text>
+    </Group>
 ));
 ProgressBar.displayName = 'ProgressBar';
 
@@ -145,178 +123,136 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
     onOpenJobDetail,
     onToggleExpand,
 }) => {
-    const theme = useTheme();
-
     const handleSort = (columnKey: string) => {
         const newDirection = sort.column === columnKey && sort.direction === 'asc' ? 'desc' : 'asc';
         onSort({column: columnKey, direction: newDirection});
     };
 
     return (
-        <Box sx={{position: 'relative'}}>
+        <Box style={{position: 'relative'}}>
             {/* Loading overlay */}
             {isLoading && (
-                <Box
-                    sx={{
+                <Group
+                    justify="center"
+                    align="center"
+                    style={{
                         position: 'absolute',
                         inset: 0,
-                        bgcolor: alpha(theme.palette.background.paper, 0.7),
+                        backgroundColor: alpha('var(--mantine-color-body)', 0.7),
                         zIndex: 10,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
                     }}
                 >
-                    <CircularProgress size={40} />
-                </Box>
+                    <Loader size={40} role="progressbar" aria-label="Loading deliveries"/>
+                </Group>
             )}
-            {/* Table */}
-            <TableContainer>
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
+            {/* Table. Rows nest (a parent expands to its children), so this reuses
+                SortableTh and TablePager directly rather than DataTable's column API. */}
+            <Table.ScrollContainer minWidth={0}>
+                <Table verticalSpacing={4}>
+                    <Table.Thead>
+                        <Table.Tr>
                             {COLUMNS.map((col) => (
-                                <TableCell
+                                <SortableTh
                                     key={col.key}
-                                    sx={{
-                                        fontWeight: 600,
-                                        bgcolor: 'grey.100',
-                                        borderBottom: 2,
-                                        borderColor: 'grey.300',
-                                        width: col.width,
-                                        whiteSpace: 'nowrap',
-                                    }}
+                                    sortable={col.sortable}
+                                    active={sort.column === col.key}
+                                    direction={sort.column === col.key ? sort.direction : 'asc'}
+                                    onSort={() => handleSort(col.key)}
+                                    width={col.width}
                                 >
-                                    {col.sortable ? (
-                                        <TableSortLabel
-                                            active={sort.column === col.key}
-                                            direction={sort.column === col.key ? sort.direction : 'asc'}
-                                            onClick={() => handleSort(col.key)}
-                                        >
-                                            {col.label}
-                                        </TableSortLabel>
-                                    ) : (
-                                        col.label
-                                    )}
-                                </TableCell>
+                                    {col.label}
+                                </SortableTh>
                             ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
+                        </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
                         {deliveries.map((delivery) => (
                             <React.Fragment key={delivery.jobId}>
-                                <TableRow hover sx={{height: 48}}>
-                                    <TableCell sx={{py: 1}}>
+                                <Table.Tr h={48}>
+                                    <Table.Td>
                                         {delivery.childJobs?.length > 0 && (
-                                            <IconButton
-                                                size="small"
+                                            <ActionIcon
+                                                variant="subtle"
+                                                color="gray"
+                                                size="sm"
                                                 onClick={() => onToggleExpand(delivery.jobId)}
                                                 aria-label={delivery.expanded ? 'Collapse child jobs' : 'Expand child jobs'}
+                                                aria-expanded={delivery.expanded}
                                             >
                                                 <SymbolIcon name={delivery.expanded ? 'expand_more' : 'chevron_right'} size={20} />
-                                            </IconButton>
+                                            </ActionIcon>
                                         )}
-                                    </TableCell>
-                                    <TableCell sx={{py: 1}}>{delivery.jobName}</TableCell>
-                                    <TableCell sx={{py: 1}}>
-                                        <StatusChip status={delivery.status} theme={theme} />
-                                    </TableCell>
-                                    <TableCell sx={{py: 1}}>
-                                        <ProgressBar value={delivery.completion} theme={theme} />
-                                    </TableCell>
-                                    <TableCell sx={{py: 1}}>{delivery.pickup}</TableCell>
-                                    <TableCell sx={{py: 1}}>{delivery.delivery}</TableCell>
-                                    <TableCell sx={{py: 1}}>{delivery.driver}</TableCell>
-                                    <TableCell sx={{py: 1}}>{delivery.region}</TableCell>
-                                    <TableCell sx={{py: 1, whiteSpace: 'nowrap'}}>
-                                        <Tooltip title="Open Map">
-                                            <IconButton size="small" onClick={() => onShowMap(delivery)} aria-label="Open map">
+                                    </Table.Td>
+                                    <Table.Td>{delivery.jobName}</Table.Td>
+                                    <Table.Td>
+                                        <StatusChip status={delivery.status} />
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <ProgressBar value={delivery.completion} />
+                                    </Table.Td>
+                                    <Table.Td>{delivery.pickup}</Table.Td>
+                                    <Table.Td>{delivery.delivery}</Table.Td>
+                                    <Table.Td>{delivery.driver}</Table.Td>
+                                    <Table.Td>{delivery.region}</Table.Td>
+                                    <Table.Td style={{whiteSpace: 'nowrap'}}>
+                                        <Tooltip label="Open Map">
+                                            <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => onShowMap(delivery)} aria-label="Open map">
                                                 <SymbolIcon name="map" size={20} />
-                                            </IconButton>
+                                            </ActionIcon>
                                         </Tooltip>
-                                        <Tooltip title="View Job Details">
-                                            <IconButton size="small" onClick={() => onOpenJobDetail(delivery)} aria-label="View job details">
+                                        <Tooltip label="View Job Details">
+                                            <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => onOpenJobDetail(delivery)} aria-label="View job details">
                                                 <SymbolIcon name="visibility" size={20} />
-                                            </IconButton>
+                                            </ActionIcon>
                                         </Tooltip>
-                                    </TableCell>
-                                </TableRow>
+                                    </Table.Td>
+                                </Table.Tr>
 
                                 {/* Child rows */}
                                 {delivery.expanded &&
                                     delivery.childJobs?.map((child) => (
-                                        <TableRow key={child.jobId} sx={{bgcolor: 'grey.50'}}>
-                                            <TableCell sx={{py: 1}} />
-                                            <TableCell sx={{py: 1}}>{child.jobName}</TableCell>
-                                            <TableCell sx={{py: 1}}>
-                                                <StatusChip status={child.status} theme={theme} />
-                                            </TableCell>
-                                            <TableCell sx={{py: 1}}>
-                                                <ProgressBar value={child.completion} theme={theme} />
-                                            </TableCell>
-                                            <TableCell sx={{py: 1}}>{child.pickup}</TableCell>
-                                            <TableCell sx={{py: 1}}>{child.delivery}</TableCell>
-                                            <TableCell sx={{py: 1}}>{child.driver}</TableCell>
-                                            <TableCell sx={{py: 1}}>{child.region}</TableCell>
-                                            <TableCell sx={{py: 1}} />
-                                        </TableRow>
+                                        <Table.Tr key={child.jobId} bg="var(--mantine-color-gray-0)">
+                                            <Table.Td />
+                                            <Table.Td>{child.jobName}</Table.Td>
+                                            <Table.Td>
+                                                <StatusChip status={child.status} />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <ProgressBar value={child.completion} />
+                                            </Table.Td>
+                                            <Table.Td>{child.pickup}</Table.Td>
+                                            <Table.Td>{child.delivery}</Table.Td>
+                                            <Table.Td>{child.driver}</Table.Td>
+                                            <Table.Td>{child.region}</Table.Td>
+                                            <Table.Td />
+                                        </Table.Tr>
                                     ))}
                             </React.Fragment>
                         ))}
-                    </TableBody>
+                    </Table.Tbody>
                 </Table>
-            </TableContainer>
+            </Table.ScrollContainer>
             {/* Empty state */}
             {deliveries.length === 0 && !isLoading && (
-                <Box sx={{textAlign: 'center', py: 6, color: 'text.disabled'}}>
+                <Stack align="center" gap={4} py={48} c="dimmed">
                     <SymbolIcon name="local_shipping" size={48} />
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            color: "text.secondary",
-                            mt: 1
-                        }}>
-                        No deliveries found
-                    </Typography>
-                    <Typography variant="body2" sx={{
-                        color: "text.secondary"
-                    }}>
-                        Try adjusting your filters or date range.
-                    </Typography>
-                </Box>
+                    <Text mt={8}>No deliveries found</Text>
+                    <Text fz="sm">Try adjusting your filters or date range.</Text>
+                </Stack>
             )}
             {/* Pagination */}
             {total > 0 && (
-                <TablePagination
-                    component="div"
-                    size="small"
-                    count={total}
-                    page={page - 1}
-                    onPageChange={(_e, newPage) => onPageChange(newPage + 1)}
-                    rowsPerPage={limit}
-                    onRowsPerPageChange={(e) => onLimitChange(parseInt(e.target.value, 10))}
-                    rowsPerPageOptions={[10, 20, 30, 50]}
-                    sx={{
-                        borderTop: 1,
-                        borderColor: 'divider',
-                        '& .MuiTablePagination-toolbar': {
-                            minHeight: 40,
-                            px: 1,
-                            alignItems: 'center',
-                        },
-                        '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                            fontSize: '0.8125rem',
-                            m: 0,
-                        },
-                        '& .MuiTablePagination-select': {
-                            fontSize: '0.8125rem',
-                        },
-                        '& .MuiTablePagination-input': {
-                            m: 0,
-                            mr: 2,
-                        },
-                    }}
-                />
+                // TablePager is 1-based, so the ±1 the MUI pagination needed is gone.
+                <Box style={{borderTop: '1px solid var(--mantine-color-default-border)'}}>
+                    <TablePager
+                        totalCount={total}
+                        page={page}
+                        pageSize={limit}
+                        onPageChange={onPageChange}
+                        onPageSizeChange={onLimitChange}
+                        pageSizeOptions={[10, 20, 30, 50]}
+                    />
+                </Box>
             )}
         </Box>
     );

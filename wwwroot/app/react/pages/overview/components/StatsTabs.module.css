@@ -1,0 +1,19 @@
+/*
+ * A dimmed tab brightens on hover. Both the resting opacity and the hover
+ * override live here: an inline resting value would outrank a class rule and
+ * make its own hover unreachable.
+ */
+
+.tab {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.tab[data-active='true'] {
+    opacity: 1;
+}
+
+.tab:hover {
+    opacity: 1;
+}

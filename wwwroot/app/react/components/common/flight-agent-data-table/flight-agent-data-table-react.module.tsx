@@ -20,7 +20,6 @@ import {
     CurrentJob,
 } from './types';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
-import {MuiThemeIsland} from '../../../components/common/mui-interop/MuiThemeIsland';
 
 /**
  * AngularJS Component Controller for React FlightAgentDataTable
@@ -273,10 +272,7 @@ class FlightAgentDataTableReactController implements angular.IController {
         };
 
         this.root.render(islandTree(
-            <MuiThemeIsland>
             <FlightAgentDataTable {...props} />
-
-            </MuiThemeIsland>
         ));
     }
 }

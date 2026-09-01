@@ -1,21 +1,8 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
-import Collapse from '@mui/material/Collapse';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import Switch from '@mui/material/Switch';
-import TablePagination from '@mui/material/TablePagination';
-import Tooltip from '@mui/material/Tooltip';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableSortLabel from '@mui/material/TableSortLabel';
-import Typography from '@mui/material/Typography';
+import {Badge, Box, Card, Collapse, Divider, Group, Stack, Table, Text} from '@mantine/core';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
+import {SegmentedToggle} from '../../../components/common/segmented-toggle';
+import {SortableTh, TablePager} from '../../../components/common/data-table';
 import dayjs from 'dayjs';
 import {formatMins} from '../../../utils/dateUtils';
 import {PanelHeader} from '../../../components/common/panel-header';
@@ -89,11 +76,11 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
         });
     }, []);
 
-    const toggleViewMode = useCallback(() => {
-        setIsTableView((prev) => {
-            localStorage.setItem(OPEN_JOBS_VIEW_MODE_KEY, !prev ? 'table' : 'card');
-            return !prev;
-        });
+    // Sets rather than flips: the control is a radio group, so re-picking the
+    // active view must be a no-op, not a switch to the other one.
+    const selectViewMode = useCallback((table: boolean) => {
+        localStorage.setItem(OPEN_JOBS_VIEW_MODE_KEY, table ? 'table' : 'card');
+        setIsTableView(table);
     }, []);
 
     // Transform open jobs into ViewJob format
@@ -206,175 +193,128 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
     };
 
     return (
-        <Card variant="outlined" sx={{mt: 2}}>
+        <Card withBorder p={0} mt={16}>
             <PanelHeader
                 icon={<SymbolIcon name="inventory_2" />}
                 title="Open Jobs"
                 action={
                     <>
-                        <Tooltip title={isTableView ? 'Card View' : 'Table View'}>
-                            <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                <SymbolIcon
-                                    name={isTableView ? 'dashboard' : 'view_list'}
-                                    size={18} style={{marginRight: 4}}
-                                />
-                                <Switch
-                                    checked={isTableView}
-                                    onChange={toggleViewMode}
-                                    size="small"
-                                />
-                            </Box>
-                        </Tooltip>
+                        {/* A Switch reads as on/off; this picks one of two views, so
+                            it takes the app's single-select grammar instead. */}
+                        <SegmentedToggle<'cards' | 'table'>
+                            aria-label="Open jobs view"
+                            value={isTableView ? 'table' : 'cards'}
+                            onChange={(value) => selectViewMode(value === 'table')}
+                            data={[
+                                {
+                                    value: 'cards',
+                                    label: 'Cards',
+                                    icon: <SymbolIcon name="dashboard" size={PANEL_CONTROL_GLYPH_SIZE}/>,
+                                },
+                                {
+                                    value: 'table',
+                                    label: 'Table',
+                                    icon: <SymbolIcon name="view_list" size={PANEL_CONTROL_GLYPH_SIZE}/>,
+                                },
+                            ]}
+                        />
 
-                        <IconButton
-                            size="small"
+                        <HeaderActionIcon
+                            label={isCollapsed ? 'Expand open jobs' : 'Collapse open jobs'}
                             onClick={toggleCollapse}
-                            aria-label={isCollapsed ? 'Expand open jobs' : 'Collapse open jobs'}
-                            sx={{color: 'inherit'}}
+                            aria-expanded={!isCollapsed}
                         >
-                            <SymbolIcon name={isCollapsed ? 'expand_more' : 'expand_less'} />
-                        </IconButton>
+                            <SymbolIcon
+                                name={isCollapsed ? 'expand_more' : 'expand_less'}
+                                size={PANEL_CONTROL_GLYPH_SIZE}
+                            />
+                        </HeaderActionIcon>
                     </>
                 }
             />
-            <Collapse in={!isCollapsed}>
-                <Box sx={{p: 2}}>
+            <Collapse expanded={!isCollapsed}>
+                <Box p={16}>
                     {/* Empty state */}
                     {viewJobs.length === 0 && !isLoading && (
-                        <Box sx={{textAlign: 'center', py: 4, color: 'text.disabled'}}>
+                        <Stack align="center" gap={4} py={32} c="dimmed">
                             <SymbolIcon name="inventory_2" size={48} />
-                            <Typography
-                                variant="body1"
-                                sx={{
-                                    color: "text.secondary",
-                                    mt: 1
-                                }}>
-                                No open jobs match your current filter criteria
-                            </Typography>
-                        </Box>
+                            <Text mt={8}>No open jobs match your current filter criteria</Text>
+                        </Stack>
                     )}
 
                     {/* Table View */}
                     {isTableView && viewJobs.length > 0 && (
-                        <Box sx={{overflowX: 'auto'}}>
-                            <TableContainer>
-                                <Table size="small">
-                                    <TableHead>
-                                        <TableRow>
+                        <Box>
+                            <Table.ScrollContainer minWidth={0}>
+                                <Table verticalSpacing={4}>
+                                    <Table.Thead>
+                                        <Table.Tr>
                                             {TABLE_COLUMNS.map((col) => (
-                                                <TableCell
+                                                <SortableTh
                                                     key={col.key}
+                                                    sortable={col.sortable}
+                                                    active={tableSort.column === col.key}
+                                                    direction={tableSort.column === col.key ? tableSort.direction : 'asc'}
+                                                    onSort={() => handleSort(col.key)}
                                                     align={col.key === 'mileage' ? 'right' : 'left'}
-                                                    sx={{
-                                                        fontWeight: 600,
-                                                        bgcolor: 'grey.100',
-                                                        borderBottom: 2,
-                                                        borderColor: 'grey.300',
-                                                        whiteSpace: 'nowrap',
-                                                        cursor: col.sortable ? 'pointer' : 'default',
-                                                    }}
-                                                    onClick={col.sortable ? () => handleSort(col.key) : undefined}
                                                 >
-                                                    {col.sortable ? (
-                                                        <TableSortLabel
-                                                            active={tableSort.column === col.key}
-                                                            direction={tableSort.column === col.key ? tableSort.direction : 'asc'}
-                                                            onClick={() => handleSort(col.key)}
-                                                        >
-                                                            {col.label}
-                                                        </TableSortLabel>
-                                                    ) : (
-                                                        col.label
-                                                    )}
-                                                </TableCell>
+                                                    {col.label}
+                                                </SortableTh>
                                             ))}
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
                                         {paginatedTableJobs.map((job) => (
-                                            <TableRow key={job.reference} hover>
-                                                <TableCell sx={{py: 1}}>{job.reference}</TableCell>
-                                                <TableCell sx={{py: 1}}>{job.driverName || 'Unassigned'}</TableCell>
-                                                <TableCell sx={{py: 1}}>
-                                                    <Chip
-                                                        label={job.status}
-                                                        size="small"
-                                                        sx={{fontSize: '0.75rem', height: 24}}
-                                                    />
-                                                </TableCell>
-                                                <TableCell sx={{py: 1}}>{job.pickup.timeString}</TableCell>
-                                                <TableCell sx={{py: 1, maxWidth: 180}}>
-                                                    <Box sx={{overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                                                        <Typography variant="body2" noWrap>
-                                                            {job.pickup.name}
-                                                        </Typography>
-                                                        <Typography variant="caption" noWrap sx={{
-                                                            color: "text.secondary"
-                                                        }}>
-                                                            {job.pickup.address}
-                                                        </Typography>
+                                            <Table.Tr key={job.reference}>
+                                                <Table.Td>{job.reference}</Table.Td>
+                                                <Table.Td>{job.driverName || 'Unassigned'}</Table.Td>
+                                                <Table.Td>
+                                                    <Badge h={24} fz="0.75rem" tt="none" variant="light" color="gray">
+                                                        {job.status}
+                                                    </Badge>
+                                                </Table.Td>
+                                                <Table.Td>{job.pickup.timeString}</Table.Td>
+                                                <Table.Td maw={180}>
+                                                    <Box>
+                                                        <Text fz="sm" truncate>{job.pickup.name}</Text>
+                                                        <Text fz="xs" c="dimmed" truncate>{job.pickup.address}</Text>
                                                     </Box>
-                                                </TableCell>
-                                                <TableCell sx={{py: 1}}>{job.delivery.timeString}</TableCell>
-                                                <TableCell sx={{py: 1, maxWidth: 180}}>
-                                                    <Box sx={{overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                                                        <Typography variant="body2" noWrap>
-                                                            {job.delivery.name}
-                                                        </Typography>
-                                                        <Typography variant="caption" noWrap sx={{
-                                                            color: "text.secondary"
-                                                        }}>
-                                                            {job.delivery.address}
-                                                        </Typography>
+                                                </Table.Td>
+                                                <Table.Td>{job.delivery.timeString}</Table.Td>
+                                                <Table.Td maw={180}>
+                                                    <Box>
+                                                        <Text fz="sm" truncate>{job.delivery.name}</Text>
+                                                        <Text fz="xs" c="dimmed" truncate>{job.delivery.address}</Text>
                                                     </Box>
-                                                </TableCell>
-                                                <TableCell sx={{py: 1}}>
+                                                </Table.Td>
+                                                <Table.Td>
                                                     {job.quantity} {job.packageType}
-                                                </TableCell>
-                                                <TableCell align="right" sx={{py: 1}}>
+                                                </Table.Td>
+                                                <Table.Td align="right">
                                                     {job.mileage}
-                                                </TableCell>
-                                            </TableRow>
+                                                </Table.Td>
+                                            </Table.Tr>
                                         ))}
-                                    </TableBody>
+                                    </Table.Tbody>
                                 </Table>
-                            </TableContainer>
+                            </Table.ScrollContainer>
 
-                            <TablePagination
-                                component="div"
-                                size="small"
-                                count={sortedTableJobs.length}
-                                page={tablePage - 1}
-                                onPageChange={(_e, newPage) => setTablePage(newPage + 1)}
-                                rowsPerPage={tableLimit}
-                                onRowsPerPageChange={(e) => {
-                                    const newLimit = parseInt(e.target.value, 10);
-                                    setTableLimit(newLimit);
-                                    localStorage.setItem(OPEN_JOBS_LIMIT_KEY, `${newLimit}`);
-                                    setTablePage(1);
-                                }}
-                                rowsPerPageOptions={[5, 10, 15, 20]}
-                                sx={{
-                                    borderTop: 1,
-                                    borderColor: 'divider',
-                                    '& .MuiTablePagination-toolbar': {
-                                        minHeight: 40,
-                                        px: 1,
-                                        alignItems: 'center',
-                                    },
-                                    '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                                        fontSize: '0.8125rem',
-                                        m: 0,
-                                    },
-                                    '& .MuiTablePagination-select': {
-                                        fontSize: '0.8125rem',
-                                    },
-                                    '& .MuiTablePagination-input': {
-                                        m: 0,
-                                        mr: 2,
-                                    },
-                                }}
-                            />
+                            {/* TablePager is 1-based, so the ±1 the MUI pagination
+                                needed is gone. */}
+                            <Box style={{borderTop: '1px solid var(--mantine-color-default-border)'}}>
+                                <TablePager
+                                    totalCount={sortedTableJobs.length}
+                                    page={tablePage}
+                                    pageSize={tableLimit}
+                                    onPageChange={setTablePage}
+                                    onPageSizeChange={(newLimit) => {
+                                        setTableLimit(newLimit);
+                                        localStorage.setItem(OPEN_JOBS_LIMIT_KEY, `${newLimit}`);
+                                        setTablePage(1);
+                                    }}
+                                    pageSizeOptions={[5, 10, 15, 20]}
+                                />
+                            </Box>
                         </Box>
                     )}
 
@@ -404,155 +344,130 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = React.memo(({driver: ini
     }, [initialDriver.lastCompleted]);
 
     return (
-        <Card variant="outlined" sx={{mb: 1}}>
-            <Box
+        <Card withBorder p={0} mb={8}>
+            <Group
                 onClick={() => setExpanded(!expanded)}
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    px: 2,
-                    py: 1,
-                    bgcolor: 'background.paper',
-                    color: 'text.primary',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
+                px={16}
+                py={8}
+                mih={44}
+                gap={0}
+                wrap="nowrap"
+                bg="var(--mantine-color-body)"
+                style={{
+                    borderBottom: '1px solid var(--mantine-color-default-border)',
                     cursor: 'pointer',
-                    minHeight: 44,
                 }}
             >
                 <SymbolIcon name={expanded ? 'expand_less' : 'expand_more'} size={20} />
-                <Typography variant="subtitle2" sx={{ml: 1, fontWeight: 600}}>
+                <Text fz="sm" ml={8} fw={600}>
                     {initialDriver.name || 'Unassigned'}
-                </Typography>
-                <Divider orientation="vertical" flexItem sx={{mx: 1, borderColor: 'divider'}} />
-                <Typography variant="caption">({initialDriver.jobs.length} open jobs)</Typography>
+                </Text>
+                <Divider orientation="vertical" mx={8} />
+                <Text fz="xs">({initialDriver.jobs.length} open jobs)</Text>
 
-                <Box sx={{flex: 1}} />
+                <div style={{flex: 1}} />
 
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, color: initialDriver.completedToday > 0 ? 'success.main' : 'error.main'}}>
+                <Group gap={16} wrap="nowrap">
+                    <Group
+                        gap={4}
+                        wrap="nowrap"
+                        c={initialDriver.completedToday > 0
+                            ? 'var(--mantine-color-green-6)'
+                            : 'var(--mantine-color-red-6)'}
+                    >
                         <SymbolIcon name="check_circle" size={18} />
-                        <Typography variant="caption">{initialDriver.completedToday} completed today</Typography>
-                    </Box>
+                        <Text fz="xs">{initialDriver.completedToday} completed today</Text>
+                    </Group>
 
-                    <Divider orientation="vertical" flexItem sx={{borderColor: 'divider'}} />
+                    <Divider orientation="vertical" />
 
                     <Box>
-                        <Typography variant="caption">
+                        <Text fz="xs">
                             Last completed:{' '}
                             {initialDriver.lastCompleted === 'N/A' ? (
-                                <Typography component="span" variant="caption" sx={{
-                                    color: "warning.main"
-                                }}>N/A</Typography>
+                                <Text component="span" fz="xs" c="var(--mantine-color-yellow-6)">N/A</Text>
                             ) : (
                                 initialDriver.lastCompleted
                             )}
-                        </Typography>
+                        </Text>
                         {minsSinceLastCompleted !== null && (
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    display: "block",
-                                    fontSize: '0.625rem'
-                                }}>
+                            <Text fz="0.625rem" display="block">
                                 {minsSinceLastCompleted} mins ago
-                            </Typography>
+                            </Text>
                         )}
                     </Box>
-                </Box>
-            </Box>
-            <Collapse in={expanded}>
-                <Box sx={{p: 2, display: 'flex', flexWrap: 'wrap', gap: 2}}>
+                </Group>
+            </Group>
+            <Collapse expanded={expanded}>
+                <Group p={16} gap={16} align="stretch">
                     {initialDriver.jobs.map((job) => (
                         <JobCard key={job.jobId} job={job} />
                     ))}
-                </Box>
+                </Group>
             </Collapse>
         </Card>
     );
 });
 DriverCard.displayName = 'DriverCard';
 
-const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
-    <Card variant="outlined" sx={{width: 'calc(50% - 8px)', minWidth: 300}}>
-        <Box sx={{p: 2}}>
-            {/* Header */}
-            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1}}>
-                <Box>
-                    <Typography variant="caption" sx={{
-                        color: "text.secondary"
-                    }}>
-                        Reference
-                    </Typography>
-                    <Typography variant="body2">{job.reference}</Typography>
-                </Box>
-                <Chip
-                    icon={<SymbolIcon name="package_2" size={16} />}
-                    label={job.status}
-                    size="small"
-                    sx={{fontSize: '0.75rem'}}
-                />
-            </Box>
+const LEGS = [
+    {key: 'pickup', label: 'Pickup'},
+    {key: 'delivery', label: 'Delivery'},
+] as const;
 
-            <Divider sx={{my: 1}} />
+const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
+    <Card withBorder p={0} miw={300} style={{width: 'calc(50% - 8px)'}}>
+        <Box p={16}>
+            {/* Header */}
+            <Group justify="space-between" align="center" mb={8} wrap="nowrap">
+                <Box>
+                    <Text fz="xs" c="dimmed">Reference</Text>
+                    <Text fz="sm">{job.reference}</Text>
+                </Box>
+                <Badge
+                    fz="0.75rem"
+                    tt="none"
+                    variant="light"
+                    color="gray"
+                    leftSection={<SymbolIcon name="package_2" size={16} />}
+                >
+                    {job.status}
+                </Badge>
+            </Group>
+
+            <Divider my={8} />
 
             {/* Pickup / Delivery */}
-            <Box sx={{display: 'flex', gap: 2}}>
-                <Box sx={{flex: 1}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: 'primary.main'}}>
-                        <SymbolIcon name="pin_drop" size={16} />
-                        <Typography variant="body2" sx={{fontWeight: 500, color: 'text.primary'}}>
-                            Pickup: {job.pickup.timeString}
-                        </Typography>
+            <Group gap={16} align="flex-start" wrap="nowrap">
+                {LEGS.map((leg) => (
+                    <Box key={leg.label} style={{flex: 1}}>
+                        <Group gap={4} mb={4} wrap="nowrap" c="var(--mantine-primary-color-filled)">
+                            <SymbolIcon name="pin_drop" size={16} />
+                            <Text fz="sm" fw={500} c="var(--mantine-color-text)">
+                                {leg.label}: {job[leg.key].timeString}
+                            </Text>
+                        </Group>
+                        <Text fz="sm" pl={24}>{job[leg.key].name}</Text>
+                        <Text fz="xs" c="dimmed" pl={24}>{job[leg.key].address}</Text>
                     </Box>
-                    <Typography variant="body2" sx={{pl: 3}}>
-                        {job.pickup.name}
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: "text.secondary",
-                            pl: 3
-                        }}>
-                        {job.pickup.address}
-                    </Typography>
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: 'primary.main'}}>
-                        <SymbolIcon name="pin_drop" size={16} />
-                        <Typography variant="body2" sx={{fontWeight: 500, color: 'text.primary'}}>
-                            Delivery: {job.delivery.timeString}
-                        </Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{pl: 3}}>
-                        {job.delivery.name}
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: "text.secondary",
-                            pl: 3
-                        }}>
-                        {job.delivery.address}
-                    </Typography>
-                </Box>
-            </Box>
+                ))}
+            </Group>
 
-            <Divider sx={{my: 1}} />
+            <Divider my={8} />
 
             {/* Footer */}
-            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+            <Group justify="space-between" align="center" wrap="nowrap">
+                <Group gap={4} wrap="nowrap">
                     <SymbolIcon name="directions_car" size={16} />
-                    <Typography variant="caption">Mileage: {job.mileage}</Typography>
-                </Box>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                    <Text fz="xs">Mileage: {job.mileage}</Text>
+                </Group>
+                <Group gap={4} wrap="nowrap">
                     <SymbolIcon name="inventory_2" size={16} />
-                    <Typography variant="caption">
+                    <Text fz="xs">
                         {job.quantity} {job.packageType}
-                    </Typography>
-                </Box>
-            </Box>
+                    </Text>
+                </Group>
+            </Group>
         </Box>
     </Card>
 ));

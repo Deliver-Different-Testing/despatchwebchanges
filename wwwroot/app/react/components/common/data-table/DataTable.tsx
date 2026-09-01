@@ -49,6 +49,10 @@ export interface DataTableProps<T> {
     emptyTitle?: string;
     emptyMessage?: string;
     onRowClick?: (row: T) => void;
+    /** Right-click on a row — used for context menus. */
+    onRowContextMenu?: (event: React.MouseEvent, row: T) => void;
+    /** Overrides the default "Loading..." caption. */
+    loadingMessage?: string;
     isRowSelected?: (row: T) => boolean;
     checkboxSelection?: boolean;
     allSelected?: boolean;
@@ -74,6 +78,8 @@ export function DataTable<T>({
     emptyTitle = 'No Data',
     emptyMessage = 'No records match your criteria.',
     onRowClick,
+    onRowContextMenu,
+    loadingMessage = 'Loading...',
     isRowSelected,
     checkboxSelection,
     allSelected,
@@ -132,7 +138,7 @@ export function DataTable<T>({
                                 <Table.Td colSpan={colSpan} ta="center" py={64}>
                                     <Stack align="center" gap="md">
                                         <Loader size={32} role="progressbar" aria-label="Loading" />
-                                        <Text fz="sm" c="dimmed">Loading...</Text>
+                                        <Text fz="sm" c="dimmed">{loadingMessage}</Text>
                                     </Stack>
                                 </Table.Td>
                             </Table.Tr>
@@ -154,6 +160,7 @@ export function DataTable<T>({
                                     data-selected={isRowSelected?.(row) ?? false}
                                     data-clickable={!!onRowClick}
                                     onClick={onRowClick ? () => onRowClick(row) : undefined}
+                                    onContextMenu={onRowContextMenu ? (e) => onRowContextMenu(e, row) : undefined}
                                 >
                                     {checkboxSelection && (
                                         <Table.Td>{renderCheckbox?.(row)}</Table.Td>

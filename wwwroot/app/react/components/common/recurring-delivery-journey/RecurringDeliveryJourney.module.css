@@ -1,0 +1,37 @@
+/*
+ * Only what props cannot express: the timeline's continuous rail (a ::before
+ * pseudo-element) and two :hover states. Everything else is a Mantine prop —
+ * see CLAUDE.md's native-first ladder.
+ */
+
+/* The rail runs behind every row, so it belongs to the list, not the rows. */
+.runList {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 6px 0;
+}
+
+.runList::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    /* Matches the first column: 16px panel padding + 16px to the dot centre. */
+    left: 32px;
+    width: 2px;
+    background-color: var(--mantine-color-default-border);
+}
+
+.runRow:hover {
+    background-color: var(--mantine-color-gray-0);
+}
+
+/*
+ * The panel header is a solid brand fill, so its action button needs a light
+ * overlay rather than the scheme-following default — the same reason
+ * SHELL_ICON_HOVER_FILL exists for the Ink shell.
+ */
+.headerAction:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}

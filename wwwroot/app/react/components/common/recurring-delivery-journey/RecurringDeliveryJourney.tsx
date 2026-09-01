@@ -10,16 +10,10 @@
  */
 
 import React, {useCallback, useState} from 'react';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import IconButton from '@mui/material/IconButton';
-import LinearProgress from '@mui/material/LinearProgress';
-import Typography from '@mui/material/Typography';
-import type {SxProps, Theme} from '@mui/material/styles';
-import HistoryEduIcon from '@mui/icons-material/HistoryEdu';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import EventBusyIcon from '@mui/icons-material/EventBusy';
+import {ActionIcon, Alert, Box, Card, Progress, Stack, Text} from '@mantine/core';
+import {CalendarX2, RefreshCw, ScrollText} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import classes from './RecurringDeliveryJourney.module.css';
 
 import {useRecurringJobDeliveryJourney} from '../../../hooks/useRecurringJobsApi';
 import {openJobInSearch} from '../../../services/navigationService';
@@ -32,50 +26,6 @@ import {OpenJobConfirmDialog} from './OpenJobConfirmDialog';
 interface RecurringDeliveryJourneyProps {
     bookingId: number | null;
 }
-
-const cardSx = {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    minHeight: 0,
-} satisfies SxProps<Theme>;
-
-const headerActionSx = {
-    color: 'inherit',
-    '&:hover': {bgcolor: 'rgba(255,255,255,0.15)'},
-} satisfies SxProps<Theme>;
-
-const bodySx = {
-    flex: 1,
-    overflow: 'auto',
-    bgcolor: 'background.paper',
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: 0,
-} satisfies SxProps<Theme>;
-
-const emptyStateSx = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'text.secondary',
-    py: 5,
-    px: 3,
-    gap: 1.5,
-    flex: 1,
-} satisfies SxProps<Theme>;
-
-const footerSx = ((theme: Theme) => ({
-    borderTop: `1px solid ${theme.palette.divider}`,
-    px: 2,
-    py: 1.25,
-    bgcolor: theme.palette.background.default,
-    fontSize: 11,
-    color: theme.palette.text.secondary,
-    flexShrink: 0,
-})) satisfies SxProps<Theme>;
 
 export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> = ({bookingId}) => {
     const {data, isLoading, isError, error, refetch, isFetching} =
@@ -101,38 +51,46 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
     const handleCancel = useCallback(() => setConfirmTarget(null), []);
 
     return (
-        <Card variant="outlined" sx={cardSx}>
+        <Card withBorder p={0} style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0}}>
             <PanelHeader
-                icon={<HistoryEduIcon />}
+                icon={<Icon lucide={ScrollText}/>}
                 title="Recurring Log"
                 badge="RECURRING"
                 action={
-                    <IconButton
-                        size="small"
+                    <ActionIcon
+                        variant="subtle"
+                        c="inherit"
+                        className={classes.headerAction}
                         onClick={() => refetch()}
-                        sx={headerActionSx}
                         aria-label="Refresh recurring log"
                         disabled={!bookingId || isFetching}
                     >
-                        <RefreshIcon fontSize="small" />
-                    </IconButton>
+                        <Icon lucide={RefreshCw} size={16}/>
+                    </ActionIcon>
                 }
             />
 
-            {isFetching && <LinearProgress />}
+            {isFetching && (
+                <Progress.Root size={4} radius={0}>
+                    <Progress.Section value={100} animated aria-label="Loading recurring log"/>
+                </Progress.Root>
+            )}
 
-            <Box sx={bodySx}>
+            <Box
+                bg="var(--mantine-color-body)"
+                style={{flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0}}
+            >
                 {!bookingId && (
-                    <Box sx={emptyStateSx}>
-                        <EventBusyIcon sx={{fontSize: 40, color: 'text.disabled'}} />
-                        <Typography variant="body2">
+                    <Stack align="center" justify="center" gap={12} py={40} px={24} c="dimmed" style={{flex: 1}}>
+                        <Icon lucide={CalendarX2} size={40}/>
+                        <Text fz="sm">
                             Select a recurring job to see its run history.
-                        </Typography>
-                    </Box>
+                        </Text>
+                    </Stack>
                 )}
 
                 {bookingId && isError && (
-                    <Alert severity="error" sx={{m: 2}}>
+                    <Alert color="red" m={16}>
                         Failed to load recurring log: {error?.message ?? 'unknown error'}
                     </Alert>
                 )}
@@ -142,11 +100,11 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
                         <RecurringJourneyBreakdown breakdown={data.breakdown} />
                         <RecurringJourneyInfoStrip />
                         {data.runs.length === 0 ? (
-                            <Box sx={emptyStateSx}>
-                                <Typography variant="body2">
+                            <Stack align="center" justify="center" gap={12} py={40} px={24} c="dimmed" style={{flex: 1}}>
+                                <Text fz="sm">
                                     No runs yet — this recurring job hasn't been pushed live.
-                                </Typography>
-                            </Box>
+                                </Text>
+                            </Stack>
                         ) : (
                             <RecurringJourneyRunList
                                 runs={data.runs}
@@ -158,14 +116,21 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
                 )}
 
                 {bookingId && isLoading && !data && (
-                    <Box sx={emptyStateSx}>
-                        <Typography variant="body2">Loading recurring log…</Typography>
-                    </Box>
+                    <Stack align="center" justify="center" gap={12} py={40} px={24} c="dimmed" style={{flex: 1}}>
+                        <Text fz="sm">Loading recurring log…</Text>
+                    </Stack>
                 )}
             </Box>
 
             {data && data.runs.length > 0 && (
-                <Box sx={footerSx}>
+                <Box
+                    px={16}
+                    py={10}
+                    fz={11}
+                    c="dimmed"
+                    bg="var(--mantine-color-body)"
+                    style={{borderTop: '1px solid var(--mantine-color-default-border)', flexShrink: 0}}
+                >
                     Latest run: <strong>{data.runs[0].parentJobNumber}</strong>
                     {' · '}
                     {data.runs[0].serviceDate.format('MMM D, YYYY')}

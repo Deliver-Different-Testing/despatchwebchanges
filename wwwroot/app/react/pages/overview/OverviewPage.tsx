@@ -1,11 +1,6 @@
 import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import Collapse from '@mui/material/Collapse';
+import {Box, Card, Collapse, Flex, Group, TextInput} from '@mantine/core';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../components/common/panel-controls';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../query';
 import {
@@ -223,6 +218,19 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         [],
     );
 
+    /*
+     * Resets every criterion at once. It lives here rather than being composed
+     * from the per-group props in the panel, because "unselect all" is a toggle:
+     * calling it on an empty group would select everything instead of clearing.
+     */
+    const handleClearAllFilters = useCallback(() => {
+        setDateRange({});
+        setSelectedRegionIds(new Set());
+        setSelectedSpeedIds(new Set());
+        setSelectedCouriers([]);
+        setPage(1);
+    }, []);
+
     const handleToggleAllSpeeds = useCallback(() => {
         if (allSpeedsSelected) {
             setSelectedSpeedIds(new Set());
@@ -313,18 +321,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         });
     }, []);
     
+    // Flex takes a responsive direction natively — no media query needed.
     return (
-        <Box
-            sx={{
-                p: 1,
-                display: 'flex',
-                flexDirection: {xs: 'column', md: 'row'},
-                gap: 2,
-                bgcolor: 'background.default',
-            }}
-        >
+        <Flex p={8} gap={16} direction={{base: 'column', md: 'row'}} bg="var(--mantine-color-body)">
             {/* Left Panel — Filters */}
-            <Box sx={{flex: '0 0 20%', minWidth: 250}}>
+            <Box miw={250} style={{flex: '0 0 20%'}}>
                 <FilterPanel
                     regions={regions}
                     regionsLoading={regionsLoading}
@@ -343,58 +344,64 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                     onRemoveCourier={handleRemoveCourier}
                     dateRange={dateRange}
                     onDateRangeChange={handleDateRangeChange}
+                    onClearAll={handleClearAllFilters}
                 />
             </Box>
 
             {/* Right Panel — Overview + Open Jobs */}
-            <Box sx={{flex: 1, minWidth: 0}}>
-                <Card variant="outlined">
+            <Box miw={0} style={{flex: 1}}>
+                <Card withBorder p={0}>
                     <PanelHeader
                         icon={<SymbolIcon name="overview" />}
                         title="Overview"
                         action={
-                            <IconButton
-                                size="small"
+                            <HeaderActionIcon
+                                label={isOverviewCollapsed ? 'Expand overview' : 'Collapse overview'}
                                 onClick={handleToggleOverviewCard}
-                                aria-label={isOverviewCollapsed ? 'Expand overview' : 'Collapse overview'}
-                                sx={{color: 'inherit'}}
+                                aria-expanded={!isOverviewCollapsed}
                             >
-                                <SymbolIcon name={isOverviewCollapsed ? 'expand_more' : 'expand_less'} />
-                            </IconButton>
+                                <SymbolIcon
+                                    name={isOverviewCollapsed ? 'expand_more' : 'expand_less'}
+                                    size={PANEL_CONTROL_GLYPH_SIZE}
+                                />
+                            </HeaderActionIcon>
                         }
                     />
 
-                    <Collapse in={!isOverviewCollapsed}>
-                        <Box sx={{p: 2}}>
-                            {/* Search */}
-                            <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 2}}>
-                                <TextField
-                                    size="small"
-                                    placeholder="Search deliveries..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    slotProps={{
-                                        input: {
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <SymbolIcon name="search" size={20} />
-                                                </InputAdornment>
-                                            ),
-                                        },
-                                    }}
-                                    sx={{flex: 1}}
-                                />
-                            </Box>
-
-                            {/* Stats Tabs */}
-                            <StatsTabs
-                                statistics={statistics}
-                                activeTab={activeTab}
-                                onTabChange={handleTabChange}
+                    <Collapse expanded={!isOverviewCollapsed}>
+                        {/*
+                          * The panel's controls, on the same 32px band as the header
+                          * above them: which status, and free-text within it.
+                          */}
+                        <Group
+                            gap="sm"
+                            px="md"
+                            py="xs"
+                            wrap="nowrap"
+                            style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
+                        >
+                            <div style={{flex: 1}}/>
+                            <TextInput
+                                size="xs"
+                                w={220}
+                                placeholder="Search deliveries"
+                                aria-label="Search deliveries"
+                                value={search}
+                                onChange={(e) => setSearch(e.currentTarget.value)}
+                                leftSection={<SymbolIcon name="search" size={PANEL_CONTROL_GLYPH_SIZE} />}
                             />
-
+                        </Group>
+                        {/* The status tabs lead the list they filter — they are the
+                            page's headline read, not a compact control, so they sit at
+                            the top of the list rather than on the 32px control band. */}
+                        <StatsTabs
+                            statistics={statistics}
+                            activeTab={activeTab}
+                            onTabChange={handleTabChange}
+                        />
+                        <Box px={16} pb={16}>
                             {/* AI Operations Insights */}
-                            {isAiEnabled() && <Box ref={aiContainerRef} sx={{mb: 2}}/>}
+                            {isAiEnabled() && <Box ref={aiContainerRef} mb={16}/>}
 
                             {/* Deliveries Table */}
                             <DeliveriesTable
@@ -434,7 +441,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 onCancel={handleCancelOpenJob}
                 onConfirm={handleConfirmOpenJob}
             />
-        </Box>
+        </Flex>
     );
 };
 

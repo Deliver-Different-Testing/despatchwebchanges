@@ -18,6 +18,7 @@ import {
 } from '@mantine/core';
 import {ChevronDown, Download, FileText, ReceiptText, Upload} from 'lucide-react';
 import {Icon} from '../icon/Icon';
+import {criteriaFieldProps, groupLabelProps} from '../filter-fields';
 import classes from './SearchCriteriaPanel.module.css';
 import {Dayjs} from 'dayjs';
 import {DateRangePicker} from '../date-range-picker/DateRangePicker';
@@ -55,26 +56,6 @@ export interface SearchCriteriaPanelProps {
 }
 
 /** The quiet caption above each criterion group. */
-const groupLabelProps = {
-    fz: '0.625rem',
-    fw: 500,
-    c: 'dimmed',
-    tt: 'uppercase',
-    lh: 2.5,
-    style: {letterSpacing: '0.08333em'},
-} as const;
-
-/**
- * The compact field every criterion uses. The MUI original reached into
- * `.MuiOutlinedInput-*` to set the height, font and border; Mantine's `xs` size
- * and the theme's input styling already give all three, so only the exact 34px
- * height (which the panel's density depends on) has to be stated.
- */
-const criteriaFieldProps = {
-    size: 'xs',
-    styles: {input: {height: 34, minHeight: 34, fontSize: '0.8125rem'}},
-} as const;
-
 /** The four square icon actions in the footer. */
 const actionProps = {
     variant: 'subtle',

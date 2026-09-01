@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, screen} from '@testing-library/react';
 import {renderWithMantineOverMui} from '../../../__testUtils__';
 import {RecurringJobsTable, RecurringJobsTableProps} from './RecurringJobsTable';
 import {PrebookListModel} from '../../../interfaces';
@@ -197,8 +197,13 @@ describe('RecurringJobsTable', () => {
                 <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={2} selectedJobId={1}/>
             );
 
+            // DataTable stamps data-selected rather than relying on a generated
+            // class, so the assertion checks the state reached the DOM and that the
+            // other row did not pick it up.
             const selectedRow = screen.getByText('Job Name 1').closest('tr');
-            expect(selectedRow).toHaveClass('Mui-selected');
+            const otherRow = screen.getByText('Job Name 2').closest('tr');
+            expect(selectedRow).toHaveAttribute('data-selected', 'true');
+            expect(otherRow).toHaveAttribute('data-selected', 'false');
         });
     });
 });

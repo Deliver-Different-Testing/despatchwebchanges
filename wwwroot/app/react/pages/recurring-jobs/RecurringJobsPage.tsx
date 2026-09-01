@@ -5,20 +5,11 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import EventRepeatIcon from '@mui/icons-material/EventRepeat';
-import InfoIcon from '@mui/icons-material/Info';
-import TuneIcon from '@mui/icons-material/Tune';
-import {alpha} from '@mui/material/styles';
-import type {SxProps, Theme} from '@mui/material';
+import {Box, Card, Stack, Text} from '@mantine/core';
+import {Info, Repeat, SlidersHorizontal} from 'lucide-react';
+import {Icon} from '../../components/common/icon/Icon';
+import {DialogFooter, DialogHeader, DialogShell, dialogContentBg, dialogSize} from '../../components/dialogs/shared/mantine';
+import classes from './RecurringJobsPage.module.css';
 import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
@@ -51,28 +42,9 @@ const DEFAULT_QUERY: RecurringJobQuery = {
     recurringMode: RecurringMode.Active,
 };
 
-// Mirrors the AngularJS .rg-right gutter look (udispatch.less:326-349) so the
-// gutter affordance matches the resizable widgets on job-search/nationwide/home.
-// react-resizable-panels stamps data-resize-handle-state on the <PanelResizeHandle>
-// root ("hover" | "drag" | "inactive"); we select from that parent down to the
-// styled <Box> child so the gutter glows during hover and intensifies on drag.
-const resizeHandleSx = ((theme: Theme) => ({
-    width: '8px',
-    height: '100%',
-    mx: 0.5,
-    bgcolor: 'transparent',
-    cursor: 'col-resize',
-    borderRadius: 1,
-    transition: 'background-color 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s cubic-bezier(0.4,0,0.2,1)',
-    '[data-resize-handle-state="hover"] &': {
-        bgcolor: alpha(theme.palette.primary.main, 0.3),
-        boxShadow: `0 0 8px ${alpha(theme.palette.primary.main, 0.3)}`,
-    },
-    '[data-resize-handle-state="drag"] &': {
-        bgcolor: alpha(theme.palette.primary.main, 0.5),
-        boxShadow: `0 0 12px ${alpha(theme.palette.primary.main, 0.5)}`,
-    },
-})) satisfies SxProps<Theme>;
+// The gutter's look lives in RecurringJobsPage.module.css: react-resizable-panels
+// stamps data-resize-handle-state on the PanelResizeHandle root, so the rule has to
+// select from that parent down to this child.
 
 export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                                                                         showToast,
@@ -269,18 +241,14 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     }, [onAddStop]);
 
     return (
-        <Box sx={{
-            height: '100%',
-            p: 1,
-            bgcolor: 'background.default',
-        }}>
+        <Box h="100%" p={8} bg="var(--mantine-color-body)">
             <PanelGroup direction="horizontal" autoSaveId="recurring-jobs-layout">
             {/* Left Panel: Filters + Table (~40%) */}
             <Panel defaultSize={40} minSize={25}>
-            <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0, minWidth: 0}}>
+            <Stack gap={16} h="100%" miw={0} style={{minHeight: 0}}>
                 {/* Filters Card */}
-                <Card variant="outlined" sx={{flexShrink: 0, overflow: 'hidden'}}>
-                    <PanelHeader icon={<TuneIcon />} title="Filters" />
+                <Card withBorder p={0} style={{flexShrink: 0, overflow: 'hidden'}}>
+                    <PanelHeader icon={<Icon lucide={SlidersHorizontal}/>} title="Filters" />
                     <RecurringJobsToolbar
                         searchText={query.searchText || ''}
                         recurringMode={query.recurringMode ?? (query.active ? RecurringMode.Active : RecurringMode.Inactive)}
@@ -304,8 +272,9 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
 
                 {/* Recurring Jobs Table Card */}
                 <Card
-                    variant="outlined"
-                    sx={{
+                    withBorder
+                    p={0}
+                    style={{
                         flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
@@ -314,11 +283,11 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                     }}
                 >
                     <PanelHeader
-                        icon={<EventRepeatIcon />}
+                        icon={<Icon lucide={Repeat}/>}
                         title="Recurring Jobs"
                         count={data?.total || undefined}
                     />
-                    <Box sx={{flex: 1, overflow: 'hidden'}}>
+                    <Box style={{flex: 1, overflow: 'hidden'}}>
                         <RecurringJobsTable
                             jobs={data?.items || []}
                             isLoading={isLoading}
@@ -337,25 +306,26 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                         />
                     </Box>
                 </Card>
-            </Box>
+            </Stack>
             </Panel>
 
             <PanelResizeHandle>
-                <Box sx={resizeHandleSx} />
+                <Box className={classes.resizeHandle} />
             </PanelResizeHandle>
 
             {/* Middle Panel: Job Details (~35%) */}
             <Panel defaultSize={35} minSize={20}>
-            <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0}}>
+            <Stack gap={0} h="100%" miw={0} style={{minHeight: 0}}>
                 <Card
-                    variant="outlined"
-                    sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
+                    withBorder
+                    p={0}
+                    style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
                 >
                     <PanelHeader
-                        icon={<InfoIcon />}
+                        icon={<Icon lucide={Info}/>}
                         title={selectedJobId ? `Job Details - Job #${selectedJobId}` : 'Job Details'}
                     />
-                    <Box sx={{flex: 1, overflow: 'auto'}}>
+                    <Box style={{flex: 1, overflow: 'auto'}}>
                         <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
                             <JobDetails
                                 key={selectedJobId ?? 'none'}
@@ -371,20 +341,20 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                         </ErrorBoundary>
                     </Box>
                 </Card>
-            </Box>
+            </Stack>
             </Panel>
 
             <PanelResizeHandle>
-                <Box sx={resizeHandleSx} />
+                <Box className={classes.resizeHandle} />
             </PanelResizeHandle>
 
             {/* Right Panel: Recurring Log (~25%) */}
             <Panel defaultSize={25} minSize={20}>
-            <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0}}>
+            <Stack gap={0} h="100%" miw={0} style={{minHeight: 0}}>
                 <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
                     <RecurringDeliveryJourney bookingId={selectedJobId} />
                 </ErrorBoundary>
-            </Box>
+            </Stack>
             </Panel>
             </PanelGroup>
 
@@ -409,34 +379,36 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             />
 
             {/* Deactivate Confirmation Dialog */}
-            <Dialog
-                open={deactivateDialogOpen}
+            {/* A raw MUI <Dialog> before; now composed from the shared Mantine
+                primitives per CLAUDE.md, which is where the confirm/cancel shape,
+                the submitting state and the accessible name all come from. */}
+            <DialogShell
+                opened={deactivateDialogOpen}
                 onClose={handleDeactivateCancel}
-                maxWidth="xs"
-                fullWidth
+                size={dialogSize.sm}
+                label="Deactivate Recurring Job"
             >
-                <DialogTitle>Deactivate Recurring Job</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
+                <DialogHeader
+                    icon={<Icon lucide={Repeat}/>}
+                    title="Deactivate Recurring Job"
+                    onClose={handleDeactivateCancel}
+                    closeDisabled={isDeactivating}
+                    variant="warning"
+                />
+                <Box p={24} bg={dialogContentBg}>
+                    <Text>
                         This will deactivate this recurring job. You can re-activate it
                         later from the Inactive tab. Continue?
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleDeactivateCancel} disabled={isDeactivating}>
-                        No
-                    </Button>
-                    <Button
-                        onClick={handleDeactivateConfirm}
-                        color="primary"
-                        variant="contained"
-                        disabled={isDeactivating}
-                        startIcon={isDeactivating ? <CircularProgress size={16} color="inherit"/> : undefined}
-                    >
-                        {isDeactivating ? 'Deactivating...' : 'Yes'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                    </Text>
+                </Box>
+                <DialogFooter
+                    onCancel={handleDeactivateCancel}
+                    onConfirm={handleDeactivateConfirm}
+                    cancelLabel="No"
+                    confirmLabel={isDeactivating ? 'Deactivating...' : 'Yes'}
+                    submitting={isDeactivating}
+                />
+            </DialogShell>
         </Box>
     );
 };

@@ -2,7 +2,6 @@ import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {MantineTestProvider} from '../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {OverviewPage} from './OverviewPage';
 
 // ContactID and FirstName are defined in setup.ts as 0 and 'Test'
@@ -76,7 +75,6 @@ const mockUseOverviewSpeeds = useOverviewSpeeds as jest.MockedFunction<typeof us
 const mockUseOverviewStats = useOverviewStats as jest.MockedFunction<typeof useOverviewStats>;
 const mockUseOverviewOpenJobs = useOverviewOpenJobs as jest.MockedFunction<typeof useOverviewOpenJobs>;
 
-const theme = createTheme();
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -100,9 +98,9 @@ function renderOverviewPage(overrides: Partial<React.ComponentProps<typeof Overv
 
     return render(
         <QueryClientProvider client={queryClient}>
-            <MantineTestProvider><ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <OverviewPage {...defaultProps} />
-            </ThemeProvider></MantineTestProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -165,7 +163,8 @@ describe('OverviewPage', () => {
 
         it('renders search input', () => {
             renderOverviewPage();
-            expect(screen.getByPlaceholderText('Search deliveries...')).toBeInTheDocument();
+            // The input carries a real accessible name now, not just a placeholder.
+            expect(screen.getByRole('textbox', {name: 'Search deliveries'})).toBeInTheDocument();
         });
     });
 

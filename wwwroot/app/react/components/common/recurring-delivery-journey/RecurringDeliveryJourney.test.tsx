@@ -6,7 +6,6 @@ import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {RecurringDeliveryJourney} from './RecurringDeliveryJourney';
@@ -29,7 +28,6 @@ jest.mock('../../../services/navigationService', () => ({
     openJobInSearch: (...args: unknown[]) => mockOpenJobInSearch(...args),
 }));
 
-const theme = createTheme();
 
 function createTestQueryClient() {
     return new QueryClient({
@@ -44,7 +42,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <MantineTestProvider><ThemeProvider theme={theme}>{ui}</ThemeProvider></MantineTestProvider>
+            <MantineTestProvider>{ui}</MantineTestProvider>
         </QueryClientProvider>,
     );
 };

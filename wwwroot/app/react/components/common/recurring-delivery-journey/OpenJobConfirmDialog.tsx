@@ -3,17 +3,14 @@
  * Recurring Log timeline. Confirming opens the live job in Job Search in a
  * new tab via openJobInSearch (navigationService.ts).
  *
- * Visual language follows the project's dialog conventions in CLAUDE.md:
- * gradient header, white footer with minWidth: 100 buttons.
+ * Composed from the shared Mantine dialog primitives per CLAUDE.md.
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import DialogContent from '@mui/material/DialogContent';
-import Typography from '@mui/material/Typography';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import type {SxProps, Theme} from '@mui/material/styles';
-import {DialogShell, DialogHeader, DialogFooter} from '../../dialogs/shared';
+import {Box, Text} from '@mantine/core';
+import {ExternalLink} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import {DialogFooter, DialogHeader, DialogShell, dialogContentBg, dialogSize} from '../../dialogs/shared/mantine';
 
 interface OpenJobConfirmDialogProps {
     open: boolean;
@@ -22,11 +19,6 @@ interface OpenJobConfirmDialogProps {
     onCancel: () => void;
     onConfirm: () => void;
 }
-
-const paperSx = {
-    minWidth: 420,
-    maxWidth: 520,
-} satisfies SxProps<Theme>;
 
 export const OpenJobConfirmDialog: React.FC<OpenJobConfirmDialogProps> = ({
     open,
@@ -39,31 +31,29 @@ export const OpenJobConfirmDialog: React.FC<OpenJobConfirmDialogProps> = ({
 
     return (
         <DialogShell
-            open={open}
+            opened={open}
             onClose={onCancel}
-            maxWidth="xs"
-            slotProps={{paper: {sx: paperSx}}}
+            size={dialogSize.sm}
+            label={`Open job ${displayNumber}`}
         >
             <DialogHeader
-                icon={<OpenInNewIcon/>}
+                icon={<Icon lucide={ExternalLink}/>}
                 title={`Open job ${displayNumber}`}
                 subtitle="Job Search will open in a new tab"
                 onClose={onCancel}
             />
 
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                <Box sx={{p: 3}}>
-                    <Typography variant="body1">
-                        Open the live job <strong>{displayNumber}</strong> in Job Search? It will open in a new browser tab so you can keep this recurring log open.
-                    </Typography>
-                </Box>
-            </DialogContent>
+            <Box p={24} bg={dialogContentBg}>
+                <Text>
+                    Open the live job <strong>{displayNumber}</strong> in Job Search? It will open in a new browser tab so you can keep this recurring log open.
+                </Text>
+            </Box>
 
             <DialogFooter
                 onCancel={onCancel}
                 onConfirm={onConfirm}
                 confirmLabel="Open Job"
-                confirmIcon={<OpenInNewIcon/>}
+                confirmIcon={<Icon lucide={ExternalLink}/>}
             />
         </DialogShell>
     );
