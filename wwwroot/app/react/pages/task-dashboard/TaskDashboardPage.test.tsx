@@ -51,6 +51,7 @@ jest.mock('../../services/tasksApi', () => ({
 
 // Mock the date utilities
 jest.mock('../../utils/dateUtils', () => ({
+    ...jest.requireActual('../../utils/dateUtils'),
     formatDateForApi: jest.fn((date) => date.toISOString()),
     parseDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
     formatRelativeDateTime: jest.fn((dateStr) => dateStr),

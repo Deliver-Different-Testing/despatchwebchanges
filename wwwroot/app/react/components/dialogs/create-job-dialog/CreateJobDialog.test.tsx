@@ -330,16 +330,40 @@ describe('CreateJobDialog', () => {
          * call in CI. The option lookup is scoped to this input's own dropdown
          * via aria-controls, because both address fields search the same list
          * and an unscoped query matches the other field's copy of the option.
+         *
+         * Pass an empty `typeText` for a Mantine `Select`: it filters a list it
+         * already holds, and typing an option's exact label re-matches it as the
+         * dropdown closes, which `allowDeselect` then toggles straight back off.
          */
         async function selectAutocomplete(input: HTMLElement, typeText: string, optionText: string | RegExp) {
             fireEvent.focus(input);
             if (typeText) {
                 fireEvent.change(input, {target: {value: typeText}});
             }
-            const dropdownId = input.getAttribute('aria-controls');
-            const dropdown = dropdownId ? document.getElementById(dropdownId) : null;
-            if (!dropdown) throw new Error(`no dropdown for ${input.getAttribute('name') ?? 'input'}`);
-            fireEvent.click(await within(dropdown).findByText(optionText));
+            // Focus alone no longer opens a Mantine Select (it needs `openOnFocus`),
+            // so click to open. Every field here maps click to `openDropdown`,
+            // never a toggle, so re-clicking is safe.
+            fireEvent.click(input);
+
+            // Wait for the option rather than the dropdown: Mantine keeps the list
+            // mounted and its click handler live even while `aria-expanded` is
+            // false, and under worker contention the expanded flag can lag. Scope
+            // to this input's own list whenever it exposes one, because both
+            // address fields carry the same option text.
+            const option = await waitFor(() => {
+                const dropdownId = input.getAttribute('aria-controls');
+                const scope = dropdownId ? document.getElementById(dropdownId) : null;
+                const match = (scope ? within(scope) : screen)
+                    .queryAllByText(optionText)
+                    .map(node => node.closest('[role="option"]'))
+                    .find((node): node is HTMLElement => node instanceof HTMLElement);
+                if (!match) {
+                    fireEvent.click(input);
+                    throw new Error(`no option ${String(optionText)}`);
+                }
+                return match;
+            });
+            fireEvent.click(option);
         }
 
         it('submits with US-tenant Lb weight, populates addressLine8 from HERE Maps', async () => {
@@ -371,8 +395,8 @@ describe('CreateJobDialog', () => {
             fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
             fireEvent.change(screen.getByLabelText(/delivery contact/i), {target: {value: 'Jane'}});
             fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
-            await selectAutocomplete(screen.getByRole('combobox', {name: /vehicle/i}), 'Car', 'Car');
-            await selectAutocomplete(screen.getByRole('combobox', {name: /speed/i}), 'Sta', /Standard/);
+            await selectAutocomplete(screen.getByRole('combobox', {name: /vehicle/i}), '', 'Car');
+            await selectAutocomplete(screen.getByRole('combobox', {name: /speed/i}), '', /Standard/);
 
             // Submit — use fireEvent.click to avoid the slow user-event pointer pipeline
             // (the rest of the test already uses fireEvent for the same reason)
@@ -416,8 +440,8 @@ describe('CreateJobDialog', () => {
             fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
             fireEvent.change(screen.getByLabelText(/delivery contact/i), {target: {value: 'Jane'}});
             fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
-            await selectAutocomplete(screen.getByRole('combobox', {name: /vehicle/i}), 'Car', 'Car');
-            await selectAutocomplete(screen.getByRole('combobox', {name: /speed/i}), 'Sta', /Standard/);
+            await selectAutocomplete(screen.getByRole('combobox', {name: /vehicle/i}), '', 'Car');
+            await selectAutocomplete(screen.getByRole('combobox', {name: /speed/i}), '', /Standard/);
 
             fireEvent.click(screen.getByRole('button', {name: /create job/i}));
 

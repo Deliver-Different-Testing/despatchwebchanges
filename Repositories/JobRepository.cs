@@ -22,7 +22,8 @@ public partial class JobRepository(
     ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
     ICreateJobService createJobService,
-    ICourierRepository courierRepository)
+    ICourierRepository courierRepository,
+    ISuburbResolver suburbResolver)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobQueryRepository,
         IJobCommandRepository
 {
@@ -1432,6 +1433,7 @@ public partial class JobRepository(
 
             // Combine all address lines for device sync field
             var fullAddress = CombineAddressLines(address);
+            var suburbId = await ResolveSuburbIdAsync(address);
 
             // Update archive record if JobId is found
             if (isArchived)
@@ -1449,7 +1451,8 @@ public partial class JobRepository(
                         .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
                         .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7)
                         .SetProperty(j => j.DeliveryAddressLine8, address.AddressLine8)
-                        .SetProperty(j => j.UcjbToAddr, fullAddress));
+                        .SetProperty(j => j.UcjbToAddr, fullAddress)
+                        .SetProperty(j => j.UcjbTo, j => suburbId ?? j.UcjbTo));
 
                 return;
             }
@@ -1467,7 +1470,8 @@ public partial class JobRepository(
                     .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
                     .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7)
                     .SetProperty(j => j.DeliveryAddressLine8, address.AddressLine8)
-                    .SetProperty(j => j.UcjbToAddr, fullAddress));
+                    .SetProperty(j => j.UcjbToAddr, fullAddress)
+                    .SetProperty(j => j.UcjbTo, j => suburbId ?? j.UcjbTo));
 
             if (rowsAffected == 0)
             {
@@ -1496,6 +1500,7 @@ public partial class JobRepository(
 
             // Combine all address lines for device sync field
             var fullAddress = CombineAddressLines(address);
+            var suburbId = await ResolveSuburbIdAsync(address);
 
             if (isArchived)
             {
@@ -1512,7 +1517,8 @@ public partial class JobRepository(
                         .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
                         .SetProperty(j => j.PickupAddressLine7, address.AddressLine7)
                         .SetProperty(j => j.PickupAddressLine8, address.AddressLine8)
-                        .SetProperty(j => j.UcjbFromAddr, fullAddress));
+                        .SetProperty(j => j.UcjbFromAddr, fullAddress)
+                        .SetProperty(j => j.UcjbFrom, j => suburbId ?? j.UcjbFrom));
 
                 return;
             }
@@ -1530,7 +1536,8 @@ public partial class JobRepository(
                     .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
                     .SetProperty(j => j.PickupAddressLine7, address.AddressLine7)
                     .SetProperty(j => j.PickupAddressLine8, address.AddressLine8)
-                    .SetProperty(j => j.UcjbFromAddr, fullAddress));
+                    .SetProperty(j => j.UcjbFromAddr, fullAddress)
+                    .SetProperty(j => j.UcjbFrom, j => suburbId ?? j.UcjbFrom));
 
             if (rowsAffected == 0)
             {
@@ -5070,6 +5077,21 @@ public partial class JobRepository(
             FuelSurchargeAmount = row.FuelSurchargeAmount,
             RawBaseAmount = row.RawBaseAmount
         };
+    }
+
+    /// <summary>
+    /// Resolves the suburb for an edited address on non-US tenants, mirroring the suburb match
+    /// DD_stpJob_Excelerator_Insert performs at job creation. Returns null when nothing matches so
+    /// the existing suburb survives rather than being downgraded to Unknown.
+    /// </summary>
+    private async Task<int?> ResolveSuburbIdAsync(AddressViewModel address)
+    {
+        if (_infoService.IsUsTenant())
+        {
+            return null;
+        }
+
+        return await suburbResolver.ResolveAsync(address.AddressLine5, address.AddressLine7);
     }
 
     /// <summary>

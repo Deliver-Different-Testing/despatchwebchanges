@@ -47,7 +47,8 @@ public class JobRepositoryRestoreJobsTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeService,
         _createJobService,
-        _courierRepository
+        _courierRepository,
+        Substitute.For<ISuburbResolver>()
     );
 
     private async Task SeedJobAsync(int id, bool done, bool @void, int? courierId = null,

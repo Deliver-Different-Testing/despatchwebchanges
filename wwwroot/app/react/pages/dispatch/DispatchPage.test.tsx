@@ -67,6 +67,11 @@ jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
     },
 }));
 
+// Without this the real layout sync fires a live XHR at DispatchLayout/GetLayouts.
+jest.mock('../../services/dispatchLayoutApi', () => ({
+    getLayouts: jest.fn().mockResolvedValue([]),
+    saveLayouts: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('../../services/dispatchExecutorApi', () => ({
     getDispatchJobDetail: jest.fn().mockResolvedValue({id: 55, jobNo: 'JOB-55'}),
 }));

@@ -7,6 +7,16 @@
 import type {CourierMarkerData, IAvailableCourierPosition} from './DispatchMap.types';
 import {COURIER_LABEL_COLORS, ICON_CACHE_LIMIT, MARKER_COLORS, POSITION_THRESHOLD,} from './DispatchMap.types';
 import {createMapTooltipElement, removeStaleMarkers, safeRemoveObject} from '../here-map/hereMapUtils';
+import type {CourierFlagColors, CourierFlagLines} from '../here-map/courierFlagSvg';
+import {
+    courierFlagAnchor,
+    courierFlagCacheKey,
+    createCourierFlagSvg,
+    createCourierTooltipHtml,
+    createLargeCourierFlagSvg,
+    getCourierFlagLines,
+    getCourierStatus,
+} from '../here-map/courierFlagSvg';
 
 declare const H: any;
 
@@ -116,8 +126,13 @@ export class DispatchCourierMarkerManager {
                     existing.lng = courier.longitude!;
                 }
 
-                // Update icon if status changed
-                const newLabel = this.getDisplayText(courier);
+                // The tooltip reads straight off the marker, so refresh its payload or it keeps
+                // reporting the job counts and last delivery from when the marker was created.
+                existing.marker.setData(courier);
+
+                // Repaint when anything the flag renders changes — including the last-delivery
+                // minutes, which tick between polls.
+                const newLabel = this.getFlagCacheKey(courier, largeView);
                 if (existing.name !== newLabel) {
                     const icon = this.getOrCreateIcon(courier, largeView);
                     existing.marker.setIcon(icon);
@@ -133,7 +148,7 @@ export class DispatchCourierMarkerManager {
                     courierId: courier.courierId,
                     lat: courier.latitude!,
                     lng: courier.longitude!,
-                    name: this.getDisplayText(courier),
+                    name: this.getFlagCacheKey(courier, largeView),
                 });
             }
         });
@@ -183,20 +198,21 @@ export class DispatchCourierMarkerManager {
      * Get or create cached icon
      */
     private getOrCreateIcon(courier: IAvailableCourierPosition, largeView: boolean): any {
-        const displayText = this.getDisplayText(courier);
-        const status = this.getCourierStatus(courier);
-        const cacheKey = `${displayText}_${status}_${largeView}`;
+        const lines = this.getFlagLines(courier, largeView);
+        const status = getCourierStatus(courier);
+        const cacheKey = courierFlagCacheKey(lines, status, largeView);
 
         if (this.iconCache.has(cacheKey)) {
             return this.iconCache.get(cacheKey);
         }
 
+        const colors = this.getLabelColors(courier, largeView);
         const svgMarkup = largeView
-            ? this.createLargeFlagSvg(courier.courierName.split(' ')[0])
-            : this.createFlagSvg(displayText, courier);
+            ? createLargeCourierFlagSvg(lines, colors)
+            : createCourierFlagSvg(lines, colors);
 
         const icon = new H.map.Icon(svgMarkup, {
-            anchor: largeView ? { x: 4, y: 40 } : { x: 4, y: 40 },
+            anchor: courierFlagAnchor(lines, largeView),
         });
 
         // Cache with limit
@@ -212,69 +228,35 @@ export class DispatchCourierMarkerManager {
     }
 
     /**
-     * Get display text for courier
+     * Everything the flag renders, in one string — the marker's repaint trigger and its icon-cache
+     * key, which must agree or a courier keeps a stale flag.
      */
-    private getDisplayText(courier: IAvailableCourierPosition): string {
-        const firstName = courier.courierName.split(' ')[0];
-        if (courier.overDueJobs > 0) {
-            return `${firstName} ${courier.totalJobs}/${courier.overDueJobs}`;
+    private getFlagCacheKey(courier: IAvailableCourierPosition, largeView: boolean): string {
+        return courierFlagCacheKey(
+            this.getFlagLines(courier, largeView), getCourierStatus(courier), largeView);
+    }
+
+    /**
+     * Flag text. Large view drops the job counts from the first line — the pennant is for spotting a
+     * driver at a glance, not for reading their workload — but keeps the last-delivery line.
+     */
+    private getFlagLines(courier: IAvailableCourierPosition, largeView: boolean): CourierFlagLines {
+        const lines = getCourierFlagLines(courier);
+        return largeView
+            ? {...lines, primary: courier.courierName.split(' ')[0]}
+            : lines;
+    }
+
+    /**
+     * Get label colors based on courier status. Large view keeps its single brand fill so the
+     * pennant stays legible against its white outline at any zoom.
+     */
+    private getLabelColors(
+        courier: IAvailableCourierPosition, largeView = false
+    ): CourierFlagColors {
+        if (largeView) {
+            return {bg: MARKER_COLORS.COURIER_FLAG_LARGE, text: '#FFFFFF', border: '#0D47A1'};
         }
-        return `${firstName} ${courier.totalJobs}`;
-    }
-
-    /**
-     * Get courier status for styling
-     */
-    private getCourierStatus(courier: IAvailableCourierPosition): string {
-        if (courier.totalJobs === 0) return 'noJobs';
-        if (courier.overDueJobs > 0) return 'overdue';
-        return 'hasJobs';
-    }
-
-    /**
-     * Create large flag SVG (Material Design 3 pennant on a rounded pin stem)
-     */
-    private createLargeFlagSvg(code: string): string {
-        const escapedCode = this.escapeHtml(code);
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="44" viewBox="0 0 80 44">
-            <defs>
-                <filter id="largeFlagShadow" x="-20%" y="-30%" width="140%" height="170%">
-                    <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.24"/>
-                </filter>
-            </defs>
-            <line x1="4" y1="4" x2="4" y2="42" stroke="#0D47A1" stroke-width="3" stroke-linecap="round"/>
-            <path d="M8,4 L76,4 L68,16 L76,28 L8,28 Z" fill="${MARKER_COLORS.COURIER_FLAG_LARGE}" stroke="#FFFFFF" stroke-width="2" filter="url(#largeFlagShadow)"/>
-            <text x="38" y="20" font-family="Roboto, Arial, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">${escapedCode}</text>
-        </svg>`;
-    }
-
-    /**
-     * Create flag SVG with a Material Design 3 tonal label on a rounded pin stem.
-     * Fully-rounded (MD3 full corner) chip, Roboto type, soft tonal elevation.
-     * Sizing preserved: 50px min width, 22px height flag, 12px font.
-     */
-    private createFlagSvg(displayText: string, courier: IAvailableCourierPosition): string {
-        const colors = this.getLabelColors(courier);
-        const escapedText = this.escapeHtml(displayText);
-        const textWidth = Math.max(50, Math.min(displayText.length * 7 + 16, 150));
-        const totalWidth = textWidth + 6;
-
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="36" viewBox="0 0 ${totalWidth} 36">
-            <defs>
-                <filter id="flagShadow" x="-30%" y="-30%" width="160%" height="160%">
-                    <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.24"/>
-                </filter>
-            </defs>
-            <line x1="4" y1="24" x2="4" y2="35" stroke="${colors.border}" stroke-width="2.5" stroke-linecap="round"/>
-            <rect x="4" y="2" width="${textWidth}" height="22" rx="11" ry="11" fill="${colors.bg}" stroke="${colors.border}" stroke-width="1" filter="url(#flagShadow)"/>
-            <text x="${4 + textWidth / 2}" y="17" font-family="Roboto, Arial, sans-serif" font-size="12" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapedText}</text>
-        </svg>`;
-    }
-
-    /**
-     * Get label colors based on courier status
-     */
-    private getLabelColors(courier: IAvailableCourierPosition): { bg: string; text: string; border: string } {
         if (courier.totalJobs === 0) {
             return COURIER_LABEL_COLORS.NO_JOBS;
         }
@@ -290,20 +272,10 @@ export class DispatchCourierMarkerManager {
     private showTooltip(marker: any, courier: IAvailableCourierPosition): void {
         if (!this.tooltipElement) return;
 
-        const overdueText = courier.overDueJobs > 0
-            ? `<span style="color: #E53935; font-weight: bold;">Overdue Jobs: ${courier.overDueJobs}</span><br>`
-            : '';
-
         // Set content
         const contentEl = this.tooltipElement.querySelector('.gm-style-iw-content');
         if (contentEl) {
-            contentEl.innerHTML = `
-                <strong>${this.escapeHtml(courier.courierName)}</strong><br>
-                ${courier.isUrgentArmyDriver ? 'Fleet: UA<br>' : ''}
-                ${courier.vehicleType ? `Vehicle: ${this.escapeHtml(courier.vehicleType)}<br>` : ''}
-                <strong>Total Jobs: ${courier.totalJobs}</strong><br>
-                ${overdueText}
-            `;
+            contentEl.innerHTML = createCourierTooltipHtml(courier);
         }
 
         // Get screen position of marker
@@ -368,16 +340,6 @@ export class DispatchCourierMarkerManager {
             lat >= -90 && lat <= 90 &&
             lng >= -180 && lng <= 180
         );
-    }
-
-    /**
-     * Escape HTML for tooltip content
-     */
-    private escapeHtml(text: string | null | undefined): string {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     /**

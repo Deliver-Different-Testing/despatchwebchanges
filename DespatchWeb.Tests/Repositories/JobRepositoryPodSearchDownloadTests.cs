@@ -42,7 +42,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeServiceMock,
         _createJobServiceMock,
-        Substitute.For<ICourierRepository>()
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
     );
 
     private DespatchContext CreateContext() => _db.CreateContext();

@@ -71,7 +71,8 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeServiceMock,
         _createJobServiceMock,
-        Substitute.For<ICourierRepository>()
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
     );
 
     private static PodSearchRequest Request(string wild) => new()

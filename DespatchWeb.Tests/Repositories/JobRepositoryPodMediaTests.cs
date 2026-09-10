@@ -47,7 +47,8 @@ public class JobRepositoryPodMediaTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeServiceMock,
         _createJobServiceMock,
-        Substitute.For<ICourierRepository>()
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
     );
 
     [Fact]

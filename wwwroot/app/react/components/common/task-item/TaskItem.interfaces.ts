@@ -21,7 +21,6 @@ export interface TaskItemConfig {
     showDescription?: boolean;
     showStatusIndicators?: boolean;
     allowCompletion?: boolean;
-    showOverdueWarning?: boolean;
     onTaskClick?: boolean;
     /** When true, clicking an unassigned, open task also claims it for the current user. */
     autoAssignOnClick?: boolean;

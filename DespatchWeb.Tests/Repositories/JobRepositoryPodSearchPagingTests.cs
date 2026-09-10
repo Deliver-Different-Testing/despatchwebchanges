@@ -53,7 +53,8 @@ public class JobRepositoryPodSearchPagingTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeServiceMock,
         _createJobServiceMock,
-        Substitute.For<ICourierRepository>()
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
     );
 
     private static PodSearchRequest Request(string? sortColumn = null, string? sortDirection = null, int page = 0) => new()

@@ -346,6 +346,60 @@ describe('RouterConfig', () => {
             expect(state.template).toContain('react-courier-map');
         });
     });
+
+    describe('Island stylesheet loading', () => {
+        // An island with a `*.module.css` gets a sibling CSS entry in the
+        // manifest. A `loadModule` that only asks for the `.js` leaves the
+        // island unstyled, and nothing fails loudly when it happens.
+        beforeEach(() => {
+            new RouterConfig(
+                mockUrlRouterProvider as any,
+                mockStateProvider as any
+            );
+        });
+
+        const invokeLoadModule = async (stateName: string, manifest: Record<string, string>) => {
+            const loaded: string[] = [];
+            const ocLazyLoad = {
+                load: jest.fn((arg: any) => {
+                    const files = typeof arg === 'string' ? [arg] : (arg.files ?? []);
+                    loaded.push(...files);
+                    return Promise.resolve();
+                })
+            };
+
+            const resolve = registeredStates.get(stateName).resolve.loadModule;
+            const fn = resolve[resolve.length - 1];
+            await fn(ocLazyLoad as any, manifest);
+
+            return loaded;
+        };
+
+        it('should load the stylesheet alongside the driverManagement island', async () => {
+            const loaded = await invokeLoadModule('driverManagement', {
+                'vendor-react.js': 'vendor-react.HASH.js',
+                'driverManagementReact.js': 'driverManagementReact.HASH.js',
+                'driverManagementReact.css': 'driverManagementReact.HASH.css',
+                'composeEmailDialogReact.js': 'composeEmailDialogReact.HASH.js',
+                'editAfterhoursDialogReact.js': 'editAfterhoursDialogReact.HASH.js'
+            });
+
+            expect(loaded).toContain('dist/driverManagementReact.HASH.js');
+            expect(loaded).toContain('dist/driverManagementReact.HASH.css');
+        });
+
+        it('should not invent a stylesheet the manifest does not list', async () => {
+            const loaded = await invokeLoadModule('driverManagement', {
+                'vendor-react.js': 'vendor-react.HASH.js',
+                'driverManagementReact.js': 'driverManagementReact.HASH.js',
+                'composeEmailDialogReact.js': 'composeEmailDialogReact.HASH.js',
+                'editAfterhoursDialogReact.js': 'editAfterhoursDialogReact.HASH.js'
+            });
+
+            expect(loaded).toContain('dist/driverManagementReact.HASH.js');
+            expect(loaded.some(f => f.endsWith('.css'))).toBe(false);
+        });
+    });
 });
 
 describe('Base URL Behavior', () => {

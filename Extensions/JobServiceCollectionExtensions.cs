@@ -1,4 +1,4 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
 
 namespace DespatchWeb.Extensions;
@@ -22,6 +22,7 @@ public static class JobServiceCollectionExtensions
         services.AddScoped<IJobChangeRequestPartnerClient, JobChangeRequestPartnerClient>();
         services.AddScoped<IPartnerJobGate, PartnerJobGate>();
         services.AddScoped<IArrivalWaitRerateService, ArrivalWaitRerateService>();
+        services.AddScoped<ISuburbResolver, SuburbResolver>();
 
         return services;
     }

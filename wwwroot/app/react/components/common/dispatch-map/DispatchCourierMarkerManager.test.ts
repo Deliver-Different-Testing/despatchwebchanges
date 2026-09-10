@@ -13,14 +13,21 @@ import {
     MARKER_COLORS,
     POSITION_THRESHOLD
 } from './DispatchMap.types';
+import {COURIER_FLAG_HEIGHT, COURIER_FLAG_LARGE_HEIGHT} from '../here-map/courierFlagSvg';
 
 // Mock HERE Maps marker
-const createMockMarker = (data?: any) => ({
-    getData: jest.fn(() => data),
-    setIcon: jest.fn(),
-    setGeometry: jest.fn(),
-    getGeometry: jest.fn(() => ({ lat: 40.7128, lng: -74.006 })),
-});
+const createMockMarker = (data?: any) => {
+    let payload = data;
+    return {
+        getData: jest.fn(() => payload),
+        setData: jest.fn((next: any) => {
+            payload = next;
+        }),
+        setIcon: jest.fn(),
+        setGeometry: jest.fn(),
+        getGeometry: jest.fn(() => ({ lat: 40.7128, lng: -74.006 })),
+    };
+};
 
 const createMockMarkerGroup = () => ({
     addObjects: jest.fn(),
@@ -39,9 +46,8 @@ const createMockMarkerGroup = () => ({
 const createMockMap = () => ({
     addObject: jest.fn(),
     removeObject: jest.fn(),
-    getElement: jest.fn(() => ({
-        appendChild: jest.fn(),
-    })),
+    // A real node, so the tooltip the manager appends can be read back and asserted on.
+    getElement: jest.fn(() => mapElement),
     geoToScreen: jest.fn(() => ({ x: 100, y: 100 })),
     setCenter: jest.fn(),
     setZoom: jest.fn(),
@@ -49,6 +55,8 @@ const createMockMap = () => ({
 });
 
 const createMockUI = () => ({});
+
+let mapElement: HTMLDivElement = document.createElement('div');
 
 // Mock H global
 const mockMarkerInstances: any[] = [];
@@ -68,6 +76,9 @@ const mockH = {
 };
 
 (global as any).H = mockH;
+
+/** An ISO timestamp N minutes before now, for the flag's last-delivery line. */
+const minutesAgo = (n: number) => new Date(Date.now() - n * 60_000).toISOString();
 
 // Helper to create mock courier
 const createMockCourier = (overrides?: Partial<IAvailableCourierPosition>): IAvailableCourierPosition => ({
@@ -92,6 +103,7 @@ describe('DispatchCourierMarkerManager', () => {
 
     beforeEach(() => {
         mockMarkerInstances.length = 0;
+        mapElement = document.createElement('div');
         mockMap = createMockMap();
         mockUI = createMockUI();
         manager = new DispatchCourierMarkerManager(mockMap, mockUI);
@@ -230,7 +242,7 @@ describe('DispatchCourierMarkerManager', () => {
             const iconCalls = mockH.map.Icon.mock.calls;
             const hasLargeViewIcon = iconCalls.some(
                 (call: any[]) =>
-                    call[0] && call[0].includes('width="80"') && call[0].includes('height="44"')
+                    call[0] && call[0].includes(`height="${COURIER_FLAG_LARGE_HEIGHT}"`)
             );
             expect(hasLargeViewIcon).toBe(true);
         });
@@ -440,6 +452,44 @@ describe('DispatchCourierMarkerManager', () => {
                 (call: any[]) => call[0] && call[0].includes('Madonna 4')
             );
             expect(hasSingleName).toBe(true);
+        });
+    });
+
+    describe('Last Delivery Line', () => {
+        it('adds a second line with the last delivery city and elapsed minutes', () => {
+            manager.updateMarkers([createMockCourier({
+                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryTime: minutesAgo(12),
+            })]);
+
+            const svg = mockH.map.Icon.mock.calls.at(-1)![0];
+            expect(svg).toContain('Ponsonby \u00b7 12m');
+            expect(svg).toContain(`height="${COURIER_FLAG_HEIGHT.twoLine}"`);
+        });
+
+        it('stays a one-line flag for a courier with no completed delivery', () => {
+            manager.updateMarkers([createMockCourier()]);
+
+            const svg = mockH.map.Icon.mock.calls.at(-1)![0];
+            expect(svg).toContain(`height="${COURIER_FLAG_HEIGHT.oneLine}"`);
+        });
+
+        it('repaints the flag and refreshes the marker payload as the minutes tick', () => {
+            const at = (mins: number) => createMockCourier({
+                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryTime: minutesAgo(mins),
+            });
+
+            manager.updateMarkers([at(12)]);
+            const marker = mockMarkerInstances[0];
+            marker.setIcon.mockClear();
+
+            const older = at(13);
+            manager.updateMarkers([older]);
+
+            expect(marker.setIcon).toHaveBeenCalled();
+            // The tooltip reads off the marker, so the payload has to move with it.
+            expect(marker.getData().lastDeliveryTime).toBe(older.lastDeliveryTime);
         });
     });
 
@@ -773,38 +823,78 @@ describe('DispatchCourierMarkerManager', () => {
         });
     });
 
+    /** Fires the group's pointerenter handler for the first marker and returns the tooltip HTML. */
+    function hoverFirstMarker(): string {
+        const group = mockH.map.Group.mock.results[0].value;
+        const enter = group.addEventListener.mock.calls
+            .find((call: any[]) => call[0] === 'pointerenter')![1];
+        enter({target: mockMarkerInstances[0]});
+
+        return mapElement.querySelector('.gm-style-iw-content')!.innerHTML;
+    }
+
     describe('Tooltip Functionality', () => {
         it('creates tooltip element on construction', () => {
             expect(mockMap.getElement).toHaveBeenCalled();
         });
 
-        it('includes courier name in tooltip content', () => {
-            const couriers = [createMockCourier({ courierName: 'Test Courier' })];
-            manager.updateMarkers(couriers);
+        it('reports name, fleet, vehicle, job counts and last delivery on hover', () => {
+            manager.updateMarkers([createMockCourier({
+                courierName: 'Test Courier',
+                vehicleType: 'Bike',
+                isUrgentArmyDriver: true,
+                totalJobs: 5,
+                overDueJobs: 2,
+                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryTime: minutesAgo(12),
+            })]);
 
-            // Tooltip element is created with courier info
-            expect(manager).toBeDefined();
+            const content = hoverFirstMarker();
+
+            expect(content).toContain('Test Courier');
+            expect(content).toContain('Fleet: UA');
+            expect(content).toContain('Vehicle: Bike');
+            expect(content).toContain('Total Jobs: 5');
+            expect(content).toContain('Overdue Jobs: 2');
+            expect(content).toContain('Last delivery: Ponsonby');
+            expect(content).toContain('12 mins ago');
         });
 
-        it('includes vehicle type in tooltip when present', () => {
-            const couriers = [createMockCourier({ vehicleType: 'Bike' })];
-            manager.updateMarkers(couriers);
+        it('omits the optional rows when the courier has none of them', () => {
+            manager.updateMarkers([createMockCourier({
+                vehicleType: '',
+                isUrgentArmyDriver: false,
+                totalJobs: 3,
+                overDueJobs: 0,
+            })]);
 
-            expect(manager).toBeDefined();
+            const content = hoverFirstMarker();
+
+            expect(content).not.toContain('Fleet: UA');
+            expect(content).not.toContain('Vehicle:');
+            expect(content).not.toContain('Overdue Jobs');
+            expect(content).not.toContain('Last delivery');
         });
 
-        it('shows fleet indicator for urgent army drivers', () => {
-            const couriers = [createMockCourier({ isUrgentArmyDriver: true })];
-            manager.updateMarkers(couriers);
+        it('singularises a one-minute-old delivery and names an unknown city', () => {
+            manager.updateMarkers([createMockCourier({
+                lastDeliveryCity: null,
+                lastDeliveryTime: minutesAgo(1),
+            })]);
 
-            expect(manager).toBeDefined();
+            const content = hoverFirstMarker();
+
+            expect(content).toContain('Last delivery: Unknown');
+            expect(content).toContain('1 min ago');
         });
 
-        it('shows overdue jobs count when present', () => {
-            const couriers = [createMockCourier({ totalJobs: 5, overDueJobs: 2 })];
-            manager.updateMarkers(couriers);
+        it('escapes markup in the tooltip', () => {
+            manager.updateMarkers([createMockCourier({courierName: '<img src=x onerror=alert(1)>'})]);
 
-            expect(manager).toBeDefined();
+            const content = hoverFirstMarker();
+
+            expect(content).not.toContain('<img');
+            expect(content).toContain('&lt;img');
         });
     });
 
@@ -876,7 +966,7 @@ describe('DispatchCourierMarkerManager', () => {
 
             const svg = mockH.map.Icon.mock.calls
                 .map((call: any[]) => call[0])
-                .find((s: string) => s && s.includes('width="80"'));
+                .find((s: string) => s && s.includes(`height="${COURIER_FLAG_LARGE_HEIGHT}"`));
 
             expect(svg).toBeDefined();
             expect(svg).toContain('font-family="Roboto, Arial, sans-serif"');
@@ -884,20 +974,25 @@ describe('DispatchCourierMarkerManager', () => {
     });
 
     describe('Icon Anchor Configuration', () => {
-        it('sets correct anchor for normal flag markers', () => {
-            const couriers = [createMockCourier()];
-            manager.updateMarkers(couriers, false, false);
+        // The anchor is the stem tip, so it has to grow with the flag or every marker drifts off
+        // its GPS point the moment a second line appears.
+        it('anchors a one-line flag at its own height', () => {
+            manager.updateMarkers([createMockCourier()], false, false);
 
-            const iconCalls = mockH.map.Icon.mock.calls;
-            expect(iconCalls.length).toBeGreaterThan(0);
+            const [, options] = mockH.map.Icon.mock.calls.at(-1)!;
+            expect(options.anchor).toEqual({x: 4, y: COURIER_FLAG_HEIGHT.oneLine});
         });
 
-        it('sets correct anchor for large flag markers', () => {
-            const couriers = [createMockCourier()];
-            manager.updateMarkers(couriers, false, true);
+        it('anchors a two-line flag lower, and the large pennant lower still', () => {
+            manager.updateMarkers([
+                createMockCourier({lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(12)}),
+            ], false, false);
+            expect(mockH.map.Icon.mock.calls.at(-1)![1].anchor)
+                .toEqual({x: 4, y: COURIER_FLAG_HEIGHT.twoLine});
 
-            const iconCalls = mockH.map.Icon.mock.calls;
-            expect(iconCalls.length).toBeGreaterThan(0);
+            manager.updateMarkers([createMockCourier({courierId: 2})], false, true);
+            expect(mockH.map.Icon.mock.calls.at(-1)![1].anchor)
+                .toEqual({x: 4, y: COURIER_FLAG_LARGE_HEIGHT});
         });
     });
 });

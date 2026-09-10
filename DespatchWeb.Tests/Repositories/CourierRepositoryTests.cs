@@ -1522,6 +1522,188 @@ public class CourierRepositoryTests : IAsyncDisposable
         Assert.Equal(2, driver.TotalJobs);
     }
 
+    // The courier flag on the maps shows where the driver last dropped and how long ago, so the
+    // driver list carries the most recent completed job's delivery city and completion time.
+    [Theory]
+    [InlineData(false)] // NZ query path
+    [InlineData(true)]  // US query path
+    public async Task GetAvailableCouriersAsync_ReturnsTheMostRecentCompletedDelivery(bool isUsTenant)
+    {
+        // Arrange - clock is 2024-01-15 10:00. Two completed jobs; the newer one wins.
+        _tenantInfoServiceMock.IsUsTenant().Returns(isUsTenant);
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CompletedJob(1, new DateTime(2024, 1, 15, 8, 0, 0), city: "Newmarket"),
+                CompletedJob(2, new DateTime(2024, 1, 15, 9, 30, 0), city: "Ponsonby"),
+                CompletedJob(3, new DateTime(2024, 1, 14, 16, 0, 0), city: "Takapuna")
+            );
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal("Ponsonby", driver.LastDeliveryCity);
+        Assert.Equal(new DateTime(2024, 1, 15, 9, 30, 0), driver.LastDeliveryTime?.DateTime);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_NoCompletedJob_LeavesLastDeliveryNull()
+    {
+        // Arrange - the courier's only job is still outstanding
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(OverviewJob(1, new DateTime(2024, 1, 15)));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Null(driver.LastDeliveryCity);
+        Assert.Null(driver.LastDeliveryTime);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_LastDeliveryWithoutCity_FallsBackToSuburb()
+    {
+        // Arrange - address line 6 (city) is often blank on suburban drops; line 5 (suburb) is not
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(
+                CompletedJob(1, new DateTime(2024, 1, 15, 9, 0, 0), city: null, suburb: "Grey Lynn"));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal("Grey Lynn", driver.LastDeliveryCity);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_LastDelivery_IgnoresVoidedJobs()
+    {
+        // Arrange - a job voided after completion keeps its completion time, but it is not a delivery
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CompletedJob(1, new DateTime(2024, 1, 15, 8, 0, 0), city: "Newmarket"),
+                CompletedJob(2, new DateTime(2024, 1, 15, 9, 30, 0), city: "Ponsonby", isVoid: true),
+                CompletedJob(3, new DateTime(2024, 1, 15, 9, 45, 0), city: "Takapuna",
+                    status: (int)JobStatus.Void));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal("Newmarket", driver.LastDeliveryCity);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_LastDeliveryWithBlankCity_FallsBackToSuburb()
+    {
+        // Arrange - a blank city is far more common in this data than a null one
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(
+                CompletedJob(1, new DateTime(2024, 1, 15, 9, 0, 0), city: "", suburb: "Grey Lynn"));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal("Grey Lynn", driver.LastDeliveryCity);
+    }
+
+    private static TucJob CompletedJob(int id, DateTime completedAt, string city, string suburb = null,
+        bool isVoid = false, int status = (int)JobStatus.Completed) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = $"JOB{id:000}",
+        UcjbCourierId = 1,
+        UcjbDate = completedAt.Date,
+        UcjbComplTime = completedAt,
+        UcjbJobDone = true,
+        UcjbVoid = isVoid,
+        UcjbStatus = status,
+        DeliveryAddressLine5 = suburb,
+        DeliveryAddressLine6 = city
+    };
+
     /// <summary>
     /// Seeds one active and one inactive courier, both with a valid (future) driver's
     /// license, for the compliance-list tests. Clock is fixed at 2024-01-15.
@@ -1677,6 +1859,100 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Assert
         var driver = Assert.Single(result);
         Assert.Equal(0, driver.JobCount);
+    }
+
+    // A courier whose session has no LogOutTime read "Active" no matter how stale the session was,
+    // so a driver who logged in days ago and never logged out never dropped out of Dispatch ->
+    // Current Work -> Active Drivers. Active now means an open session opened inside the window.
+    [Theory]
+    // clock is 2024-01-15 10:00
+    [InlineData("2024-01-15T08:00:00", "Active")]   // this morning
+    [InlineData("2024-01-14T23:00:00", "Active")]   // clocked on last night, still working past midnight
+    [InlineData("2024-01-12T08:00:00", "Inactive")] // three days ago, never logged out
+    public async Task GetDriverWorkOverviewAsync_ActiveOnlyWhileTheOpenSessionIsRecent(
+        string logInTime, string expectedStatus)
+    {
+        // Arrange
+        await SetupWorkOverviewCourier(logInTime: DateTime.Parse(logInTime));
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetDriverWorkOverviewAsync();
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(expectedStatus, driver.DriverStatusText);
+    }
+
+    [Fact]
+    public async Task GetDriverWorkOverviewAsync_LoggedOutCourier_IsInactive()
+    {
+        // Arrange - a session opened inside the window but already closed
+        await SetupWorkOverviewCourier(
+            logInTime: new DateTime(2024, 1, 15, 6, 0, 0),
+            logOutTime: new DateTime(2024, 1, 15, 9, 0, 0));
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetDriverWorkOverviewAsync();
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal("Inactive", driver.DriverStatusText);
+    }
+
+    [Fact]
+    public async Task GetDriverWorkOverviewAsync_OrdersByName()
+    {
+        // Arrange - the list is capped at 500; without an explicit order which drivers survive the
+        // cap is left to the query plan and can change between refreshes.
+        await SetupWorkOverviewCourier(courierId: 1, firstName: "Zoe");
+        await SetupWorkOverviewCourier(courierId: 2, firstName: "Adam");
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetDriverWorkOverviewAsync();
+
+        // Assert
+        Assert.Equal(["Adam Test", "Zoe Test"], result.Select(d => d.Name));
+    }
+
+    private async Task SetupWorkOverviewCourier(
+        int courierId = 1,
+        string firstName = "John",
+        DateTime? logInTime = null,
+        DateTime? logOutTime = null)
+    {
+        await using var context = CreateContext();
+
+        context.TblCourierLogInOuts.Add(new TblCourierLogInOut
+        {
+            CourierLogInOutId = courierId,
+            CourierId = courierId,
+            LogInTime = logInTime ?? new DateTime(2024, 1, 15, 8, 0, 0),
+            LogOutTime = logOutTime,
+            Created = TestDates.Now,
+            CreatedBy = "Test",
+            LastModified = TestDates.Now,
+            LastModifiedBy = "Test"
+        });
+
+        context.TucCouriers.Add(new TucCourier
+        {
+            UccrId = courierId,
+            Code = $"C{courierId:D3}",
+            UccrName = firstName,
+            UccrSurname = "Test",
+            Active = true,
+            UccrChannelId = 1,
+            CourierLogInOutId = courierId,
+            Created = TestDates.Now,
+            CreatedBy = "Test",
+            LastModified = TestDates.Now,
+            LastModifiedBy = "Test"
+        });
+
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private static TucJob OverviewJob(int id, DateTime date, bool done = false, bool isVoid = false,

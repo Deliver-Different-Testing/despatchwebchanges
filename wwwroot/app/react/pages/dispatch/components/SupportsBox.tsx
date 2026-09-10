@@ -269,7 +269,6 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
                                     showDateTime: true,
                                     allowCompletion: true,
                                     showStatusIndicators: true,
-                                    showOverdueWarning: true,
                                     onTaskClick: !!onSelectJob,
                                     autoAssignOnClick: true,
                                 }}

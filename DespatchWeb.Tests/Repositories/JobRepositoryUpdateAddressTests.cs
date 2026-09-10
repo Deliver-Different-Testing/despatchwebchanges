@@ -1,4 +1,4 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -22,6 +22,7 @@ public class JobRepositoryUpdateAddressTests : IAsyncDisposable
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
     private readonly SqliteTestDatabase _db = new();
+    private readonly ISuburbResolver _suburbResolverMock = Substitute.For<ISuburbResolver>();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public JobRepositoryUpdateAddressTests()
@@ -44,7 +45,8 @@ public class JobRepositoryUpdateAddressTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeServiceMock,
         _createJobServiceMock,
-        Substitute.For<ICourierRepository>()
+        Substitute.For<ICourierRepository>(),
+        _suburbResolverMock
     );
 
     private static AddressViewModel BuildAddress(string country) => new(
@@ -131,5 +133,109 @@ public class JobRepositoryUpdateAddressTests : IAsyncDisposable
         var archive = await _context.TucJobArchives.AsNoTracking()
             .FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
         Assert.Equal("Canada", archive.PickupAddressLine8);
+    }
+
+    [Fact]
+    public async Task UpdateDeliveryAddressAsync_NonUsTenant_PersistsResolvedSuburbId()
+    {
+        const int jobId = 500;
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = "JOB-500", UcjbTo = 11 });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _suburbResolverMock.ResolveAsync("Auckland", "1010", Arg.Any<CancellationToken>()).Returns(881);
+
+        await CreateRepository().UpdateDeliveryAddressAsync(new UpdateAddressRequest
+        {
+            JobId = jobId,
+            Address = BuildAddress("New Zealand")
+        });
+
+        var job = await _context.TucJobs.AsNoTracking()
+            .FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(881, job.UcjbTo);
+    }
+
+    [Fact]
+    public async Task UpdateDeliveryAddressAsync_ArchivedJob_PersistsResolvedSuburbId()
+    {
+        const int jobId = 510;
+        _context.TucJobArchives.Add(new TucJobArchive { UcjbId = jobId, UcjbNumber = "ARCH-510", UcjbTo = 11 });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _suburbResolverMock.ResolveAsync("Auckland", "1010", Arg.Any<CancellationToken>()).Returns(881);
+
+        await CreateRepository().UpdateDeliveryAddressAsync(new UpdateAddressRequest
+        {
+            JobId = jobId,
+            Address = BuildAddress("New Zealand")
+        });
+
+        var archive = await _context.TucJobArchives.AsNoTracking()
+            .FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(881, archive.UcjbTo);
+    }
+
+    [Fact]
+    public async Task UpdateDeliveryAddressAsync_UsTenant_LeavesSuburbIdUnchanged()
+    {
+        const int jobId = 520;
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = "JOB-520", UcjbTo = 11 });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+
+        await CreateRepository().UpdateDeliveryAddressAsync(new UpdateAddressRequest
+        {
+            JobId = jobId,
+            Address = BuildAddress("United States")
+        });
+
+        await _suburbResolverMock.DidNotReceive().ResolveAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+
+        var job = await _context.TucJobs.AsNoTracking()
+            .FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(11, job.UcjbTo);
+    }
+
+    [Fact]
+    public async Task UpdateDeliveryAddressAsync_UnresolvedSuburb_LeavesSuburbIdUnchanged()
+    {
+        const int jobId = 530;
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = "JOB-530", UcjbTo = 11 });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _suburbResolverMock.ResolveAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((int?)null);
+
+        await CreateRepository().UpdateDeliveryAddressAsync(new UpdateAddressRequest
+        {
+            JobId = jobId,
+            Address = BuildAddress("New Zealand")
+        });
+
+        var job = await _context.TucJobs.AsNoTracking()
+            .FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(11, job.UcjbTo);
+        Assert.Equal("Main Street", job.DeliveryAddressLine4);
+    }
+
+    [Fact]
+    public async Task UpdatePickupAddressAsync_NonUsTenant_PersistsResolvedSuburbId()
+    {
+        const int jobId = 540;
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = "JOB-540", UcjbFrom = 11 });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _suburbResolverMock.ResolveAsync("Auckland", "1010", Arg.Any<CancellationToken>()).Returns(881);
+
+        await CreateRepository().UpdatePickupAddressAsync(new UpdateAddressRequest
+        {
+            JobId = jobId,
+            Address = BuildAddress("New Zealand")
+        });
+
+        var job = await _context.TucJobs.AsNoTracking()
+            .FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(881, job.UcjbFrom);
     }
 }

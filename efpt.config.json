@@ -621,6 +621,10 @@
       {
          "Name": "[dbo].[UTL_fncS_GetNationwideService_RawPrice]",
          "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[UTL_fncSuburb_FromNameWithPostCode]",
+         "ObjectType": 2
       }
    ],
    "UiHint": null,
