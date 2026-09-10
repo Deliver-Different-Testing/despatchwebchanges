@@ -29,6 +29,8 @@ const config = {
 
     setupFilesAfterEnv: [
         '<rootDir>/wwwroot/app/tests/setup.ts',
+        // Unit-only: the integration config omits this so MSW can intercept XHR.
+        '<rootDir>/wwwroot/app/tests/noNetwork.ts',
     ],
 
     collectCoverageFrom: [

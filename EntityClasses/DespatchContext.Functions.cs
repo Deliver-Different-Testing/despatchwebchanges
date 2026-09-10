@@ -53,6 +53,12 @@ namespace DespatchWeb.EntityClasses
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }
 
+        [DbFunction("UTL_fncSuburb_FromNameWithPostCode", "dbo")]
+        public static int? UTL_fncSuburb_FromNameWithPostCode(string Suburb, int? SiteID, int? PostCode)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         protected void OnModelCreatingGeneratedFunctions(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<UTL_fncClearList_OtherResult>().HasNoKey();

@@ -1,4 +1,4 @@
-﻿using DeliverDifferentReporting.Models;
+using DeliverDifferentReporting.Models;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using ImageMagick;
@@ -126,8 +126,8 @@ public class PodReportServiceTests
 
         var result = PodReportService.MapPhotoCategories(photos);
 
-        Assert.Single(result);
-        Assert.Equal("Delivery Photos", result[0].Category);
+        var item = Assert.Single(result);
+        Assert.Equal("Delivery Photos", item.Category);
         Assert.Single(result[0].Photos);
         Assert.Equal(imageBytes, result[0].Photos[0].ImageBytes);
         Assert.Equal("delivery.jpg", result[0].Photos[0].Caption);
@@ -147,8 +147,8 @@ public class PodReportServiceTests
 
         var result = PodReportService.MapPhotoCategories(photos);
 
-        Assert.Single(result);
-        Assert.Equal(2, result[0].Photos.Count);
+        var item = Assert.Single(result);
+        Assert.Equal(2, item.Photos.Count);
     }
 
     [Fact]
@@ -206,19 +206,19 @@ public class PodReportServiceTests
     }
 
     [Fact]
-    public void MapToPodData_SignatureOnFlatCanvas_KeysOutTheBackground()
+    public void MapToPodData_SignatureOnFlatCanvas_PassesTheStoredBytesThroughUnkeyed()
     {
-        // Signatures arrive as opaque JPEGs with the pad's canvas colour baked in, which QuestPDF
-        // then draws as a visible grey box around the ink.
+        // Keying the pad's canvas out moved into PodDocument in DeliverDifferentReporting 2.0.52,
+        // so every consumer of the library gets it without having to remember. The mapper hands
+        // over exactly what S3 stored. The PDF Overlay path never reaches PodDocument and so still
+        // keys its own — see ExtractDeliveryImages_KeysTheSignatureCanvasButLeavesThePhotoAlone.
         var job = new JobViewModel { JobNo = "JOB-4" };
-        var photos = new List<S3PhotoInfo> { PodTestData.SignaturePhoto(PodTestData.SignatureJpeg()) };
+        var jpeg = PodTestData.SignatureJpeg();
+        var photos = new List<S3PhotoInfo> { PodTestData.SignaturePhoto(jpeg) };
 
         var result = PodReportService.MapToPodData(job, photos);
 
-        using var image = new MagickImage(result.SignatureImage!);
-        Assert.True(image.HasAlpha);
-        using var pixels = image.GetPixels();
-        Assert.Equal(0, pixels.GetPixel(2, 2).ToColor()!.A);
+        Assert.Equal(jpeg, result.SignatureImage);
     }
 
     [Fact]

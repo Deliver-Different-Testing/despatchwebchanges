@@ -5,7 +5,6 @@ import "./react/components/dialogs/note-management-dialog/note-management-dialog
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
 import ToastrService from "./services/toastr.service";
-import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
 import "./react/components/dialogs/event-group-dialog/event-group-dialog-react.module";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
@@ -15,8 +14,6 @@ import RouterConfig from "./routes";
 import {resolveDashboardRedirect} from "./react/services/dashboardRouteGuard";
 import ThemeConfig from "./materialTheme";
 import {bytesFilter, momentFormatFilter, replaceFilter, timezoneShortFilter} from "./filters";
-import EditParcelDimensionsDialogService
-    from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobAddStopService from "./services/job-add-stop.service";
 import dayjs from "dayjs";
@@ -27,15 +24,10 @@ import TruckCourierStatusDialogController
 import TruckCourierStatusDialogService
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
-import VoidJobConfirmationDialogService
-    from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import SwapPodsDialogService from "./components/dialogs/swap-pods-dialog/swap-pods-dialog.service";
 import RestoreConfirmationDialogService
     from "./components/dialogs/restore-confirmation-dialog/restore-confirmation-dialog.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
-import SimplePriceEditDialogService
-    from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.service";
 import BulkPriceUploadDialogService
     from "./components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
@@ -236,19 +228,14 @@ app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogCon
 app.service("configService", ConfigService);
 app.service("DispatchData", DispatchCoreService);
 app.service("toastrService", ToastrService);
-app.service('selectDialogService', SelectDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
 app.service("jobFileUploadDialogService", JobFileUploadDialogService);
-app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingDialogService", MessagingDialogService);
-app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
-app.service('swapPodsDialogService', SwapPodsDialogService);
 app.service('restoreConfirmationDialogService', RestoreConfirmationDialogService);
-app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
 app.service('bulkPriceUploadDialogService', BulkPriceUploadDialogService);
 app.service('dispatchJobService', DispatchExecutorService);
 

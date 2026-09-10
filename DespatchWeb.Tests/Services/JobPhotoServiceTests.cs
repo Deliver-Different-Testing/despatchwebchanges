@@ -107,6 +107,29 @@ public class JobPhotoServiceTests
         Assert.Matches(@"^PickupPhotos/\d{4}/\d{2}/1-\d{14}\.jpg$", result.S3Key);
     }
 
+    // Pickup signatures belong in PickupSignatures, alongside DeliverySignatures. They were misfiled into
+    // PickupScannedDocuments, which is where the driver app puts documents scanned at pickup — indistinguishable
+    // from a signature to anything reading the bucket, and the reason a pickup scan printed in the BOL's
+    // shipper's-signature box (E1431OTG).
+    [Fact]
+    public async Task UploadJobPhotoOrSignatureAsync_PickupSignature_UploadsToPickupSignaturesFolder()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        var file = CreateMockFile("signature.png", "image/png", 50);
+
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
+
+        // Act
+        var result = await service.UploadJobPhotoOrSignatureAsync(1, file, JobPhotoType.Pickup, isPod: false);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Matches(@"^PickupSignatures/\d{4}/\d{2}/1-\d{14}\.png$", result.S3Key);
+    }
+
     [Fact]
     public async Task UploadJobPhotoOrSignatureAsync_S3Error_ReturnsFailure()
     {

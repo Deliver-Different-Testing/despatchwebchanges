@@ -12,13 +12,12 @@ namespace DespatchWeb.Controllers;
 public class NoteController(
     INoteRepository noteRepository,
     IRecurringJobRepository recurringJobRepository
-    ) : Controller
+) : Controller
 {
     public async Task<IActionResult> GetNotes(int jobId)
     {
         try
         {
-
             var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
             return Json(notes);
         }
@@ -34,7 +33,6 @@ public class NoteController(
     {
         try
         {
-
             var bulkJobNotes = await noteRepository.GetBulkJobNotesByBulkJobIdAsync(bulkJobId);
             return Json(bulkJobNotes);
         }
@@ -50,7 +48,6 @@ public class NoteController(
     {
         try
         {
-
             var notes = await recurringJobRepository.GetRecurringNotesByJobIdAsync(jobId);
             return Json(notes);
         }
@@ -92,7 +89,7 @@ public class NoteController(
         }
     }
 
-   [HttpPost]
+    [HttpPost]
     public async Task<ActionResult<TucNoteViewModel>> CreateBulkJobNote([FromBody] TucNoteViewModel noteViewModel)
     {
         try

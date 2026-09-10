@@ -782,12 +782,19 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
 
     /// <summary>
     /// Gets the appropriate upload folder based on photo type and whether it's a POD photo or signature.
+    /// Mapped explicitly rather than indexed out of <see cref="GetFoldersByPhotoType"/>: that list is the
+    /// read-side sweep and its pickup arm leads with PickupScannedDocuments, so positional lookup filed
+    /// pickup signatures in with the driver's scanned documents.
     /// </summary>
-    private static string GetUploadFolder(JobPhotoType photoType, bool isPod)
-    {
-        var folders = GetFoldersByPhotoType(photoType);
-        return isPod ? folders[1] : folders[0];
-    }
+    private static string GetUploadFolder(JobPhotoType photoType, bool isPod) =>
+        (photoType, isPod) switch
+        {
+            (JobPhotoType.Delivery, true) => "DeliveryPhotos",
+            (JobPhotoType.Delivery, false) => "DeliverySignatures",
+            (JobPhotoType.Pickup, true) => "PickupPhotos",
+            (JobPhotoType.Pickup, false) => "PickupSignatures",
+            _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
+        };
 
     /// <summary>
     /// Determines the MIME content type based on file extension.

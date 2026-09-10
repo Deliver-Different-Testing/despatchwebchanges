@@ -1422,9 +1422,18 @@ class RouterConfig {
                 loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
                     await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
-                    await $ocLazyLoad.load(getAssetPath('composeEmailDialogReact.js'));
-                    await $ocLazyLoad.load(getAssetPath('editAfterhoursDialogReact.js'));
-                    return $ocLazyLoad.load(getAssetPath('driverManagementReact.js'));
+                    await $ocLazyLoad.load({
+                        name: 'uDispatch.composeEmailDialogReact',
+                        files: islandFiles(manifest, 'composeEmailDialogReact')
+                    });
+                    await $ocLazyLoad.load({
+                        name: 'uDispatch.editAfterhoursDialogReact',
+                        files: islandFiles(manifest, 'editAfterhoursDialogReact')
+                    });
+                    return $ocLazyLoad.load({
+                        name: 'uDispatch.driverManagementReact',
+                        files: islandFiles(manifest, 'driverManagementReact')
+                    });
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',

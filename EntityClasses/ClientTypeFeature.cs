@@ -15,5 +15,7 @@ public partial class ClientTypeFeature
 
     public bool Visible { get; set; }
 
+    public bool Grantable { get; set; }
+
     public virtual Feature FeatureKeyNavigation { get; set; }
 }

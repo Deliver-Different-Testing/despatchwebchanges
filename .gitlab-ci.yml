@@ -97,10 +97,25 @@ test:backend:
     KUBERNETES_CPU_LIMIT: "4"
     KUBERNETES_MEMORY_REQUEST: "4Gi"
     KUBERNETES_MEMORY_LIMIT: "6Gi"
+    # Disk is the other eviction axis: kubelet ranks pods by usage ABOVE their request,
+    # so a request of 0 made this pod (2.5Gi of extracted NuGet cache) the node's first
+    # victim whenever the cluster crossed its ephemeral-storage threshold. Same "only if
+    # the runner allows overwrites" caveat as the CPU/memory pair above.
+    KUBERNETES_EPHEMERAL_STORAGE_REQUEST: "6Gi"
+    KUBERNETES_EPHEMERAL_STORAGE_LIMIT: "12Gi"
+    # Pull-only by default. `pull-push` re-tarred 17,968 files (~2.5Gi) to the pod's
+    # ephemeral disk on every single MR run for a cache that almost never changes, which
+    # is what tipped the node over. A cold or stale cache is harmless — `dotnet restore`
+    # just fetches the delta from the network. To refresh the cache, run a pipeline with
+    # BACKEND_CACHE_POLICY=pull-push (pipeline variables outrank job variables).
+    # Note it must be refreshed from an MR/non-protected ref: the runner namespaces the
+    # cache as `-non_protected` vs `-protected`, so a master run writes a different key.
+    BACKEND_CACHE_POLICY: "pull"
   cache:
     key: dotnet-packages
     paths:
       - .nuget/packages/
+    policy: $BACKEND_CACHE_POLICY
   script:
     - dotnet restore
     - dotnet run --project DespatchWeb.Tests --no-restore

@@ -12,7 +12,6 @@ import {
     NZ_BOUNDS,
     POSITION_THRESHOLD,
     ICON_CACHE_LIMIT,
-    MARKER_LABEL_MAX_LENGTH,
     REFRESH_INTERVAL_MS,
     SEARCH_DEBOUNCE_MS,
     DEFAULT_ZOOM,
@@ -114,16 +113,6 @@ describe('CourierMapPage Constants', () => {
         it('should be a reasonable cache size', () => {
             expect(ICON_CACHE_LIMIT).toBeGreaterThanOrEqual(50);
             expect(ICON_CACHE_LIMIT).toBeLessThanOrEqual(1000);
-        });
-    });
-
-    describe('MARKER_LABEL_MAX_LENGTH', () => {
-        it('should be 12 characters', () => {
-            expect(MARKER_LABEL_MAX_LENGTH).toBe(12);
-        });
-
-        it('should allow reasonable driver names', () => {
-            expect(MARKER_LABEL_MAX_LENGTH).toBeGreaterThanOrEqual(8);
         });
     });
 

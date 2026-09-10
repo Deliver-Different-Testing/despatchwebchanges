@@ -455,6 +455,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FeatureKey)
                 .IsRequired()
                 .HasMaxLength(80);
+            entity.Property(e => e.Grantable).HasDefaultValue(true, "DF_ClientTypeFeature_Grantable");
             entity.Property(e => e.Visible).HasDefaultValue(true, "DF_ClientTypeFeature_Visible");
 
             entity.HasOne(d => d.FeatureKeyNavigation).WithMany(p => p.ClientTypeFeatures)

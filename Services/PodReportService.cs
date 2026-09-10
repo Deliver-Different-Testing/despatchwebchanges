@@ -1,5 +1,6 @@
 #nullable enable
 using DeliverDifferentReporting.Documents;
+using DeliverDifferentReporting.Helpers;
 using DeliverDifferentReporting.Models;
 using DeliverDifferentReporting.Services;
 using DespatchWeb.EntityClasses;
@@ -185,9 +186,10 @@ public sealed class PodReportService(
             .Where(p => p.S3Key.Contains("DeliverySignatures/", StringComparison.OrdinalIgnoreCase)
                         && !string.IsNullOrEmpty(p.Data));
 
-        // Signatures carry the pad's opaque canvas colour (see SignatureBackgroundRemover); key it
-        // out so the appended page matches the keyed signature stamped on the overlay itself. A
-        // delivery photo's background is real content and is left alone.
+        // Signatures carry the pad's opaque canvas colour; key it out so the appended page matches
+        // the keyed signature stamped on the overlay itself. A delivery photo's background is real
+        // content and is left alone. PodDocument does this for the built-in report, but the overlay
+        // path never goes near it, so this arm keys them itself.
         return
         [
             .. deliveryPhotos.Select(p => Convert.FromBase64String(p.Data)),
@@ -284,12 +286,12 @@ public sealed class PodReportService(
         // FirstOrDefault yields default(S3PhotoInfo) with a null Data when no signature exists —
         // decode only when data is present, otherwise leave the (nullable) signature unset so a
         // POD without a signature still renders instead of throwing.
-        // The pad's opaque canvas colour is baked into the stored JPEG, so key it out before the
-        // report draws it — otherwise it renders as a grey box around the ink.
+        // The pad's opaque canvas colour is keyed out by PodDocument/PodSpreadsheet, not here — the
+        // raw stored bytes are what they expect.
         var firstSignature = signaturePhotos.FirstOrDefault(p => !string.IsNullOrEmpty(p.Data));
         var signatureBytes = string.IsNullOrEmpty(firstSignature.Data)
             ? null
-            : SignatureBackgroundRemover.RemoveFlatBackground(Convert.FromBase64String(firstSignature.Data));
+            : Convert.FromBase64String(firstSignature.Data);
 
         return new PodData
         {
@@ -348,7 +350,9 @@ public sealed class PodReportService(
         var city = isUsTenant ? address?.AddressLine5 : address?.AddressLine6;
         var lead = !string.IsNullOrWhiteSpace(name)
             ? name.Trim()
-            : isUsTenant ? null : address?.AddressLine5?.Trim();
+            : isUsTenant
+                ? null
+                : address?.AddressLine5?.Trim();
 
         if (string.IsNullOrWhiteSpace(lead))
         {

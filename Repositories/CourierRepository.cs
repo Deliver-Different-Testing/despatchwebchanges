@@ -24,6 +24,16 @@ public class CourierRepository(
     : BaseRepository(contextFactory),
         ICourierRepository
 {
+    /// <summary>
+    /// How long an open (never logged out) courier session still counts as "Active". A full day so a
+    /// driver who clocked on last night is still active after midnight, short enough that an
+    /// abandoned session from earlier in the week is not.
+    /// </summary>
+    private const int ActiveSessionWindowHours = 24;
+
+    /// <summary>How far back to look for a courier's most recent completed delivery.</summary>
+    private const int LastDeliveryLookbackDays = 30;
+
     private static readonly IReadOnlyList<ClearListResult> StaticSeparatorRows =
     [
         new()
@@ -1572,15 +1582,24 @@ public class CourierRepository(
     {
         var now = clock.TenantNow;
 
+        // An open session alone is not enough: drivers routinely never tap log-out, so without a
+        // window a session from last week keeps reading "Active" forever. The window spans a whole
+        // day so the driver who clocked on at 23:00 is still Active at 01:00.
+        var sessionCutoff = now.AddHours(-ActiveSessionWindowHours);
+
         var drivers = await Context.TucCouriers
             .Where(c => c.Active)
+            .OrderBy(c => c.UccrName)
+            .ThenBy(c => c.UccrSurname)
             .Take(500)
             .Select(c => new
             {
                 c.UccrId,
                 CourierName = c.UccrName + " " + c.UccrSurname,
                 c.UccrVehicle,
-                DriverStatusText = c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime == null
+                DriverStatusText = c.CourierLogInOut != null
+                                   && c.CourierLogInOut.LogOutTime == null
+                                   && c.CourierLogInOut.LogInTime > sessionCutoff
                     ? "Active"
                     : "Inactive"
             })
@@ -1794,6 +1813,47 @@ public class CourierRepository(
         return $"polygon-mappings:{sortedIds}";
     }
 
+    /// <summary>
+    /// The city and completion time of each courier's most recently completed job, keyed by courier.
+    /// Feeds the "last delivery" line on the map courier flags. Scoped to the last 30 days so the
+    /// descending index on ucjbComplTime carries the scan instead of walking the whole job history;
+    /// a courier who has not delivered in a month reads as having no last delivery, which is the
+    /// same thing as far as the flag is concerned.
+    /// </summary>
+    private async Task<Dictionary<int, (string City, DateTime CompletedAt)>> GetLastDeliveriesAsync(
+        List<int> courierIds, DateTime now, CancellationToken cancellationToken)
+    {
+        var completionCutoff = now.AddDays(-LastDeliveryLookbackDays);
+
+        var lastDeliveries = await Context.TucJobs
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        courierIds.Contains(j.UcjbCourierId.Value) &&
+                        j.UcjbStatus == (int)JobStatus.Completed &&
+                        !j.UcjbVoid &&
+                        j.UcjbComplTime.HasValue &&
+                        j.UcjbComplTime.Value >= completionCutoff)
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new
+            {
+                CourierId = g.Key,
+                // Address line 6 is the city and line 5 the suburb (see JobMappings.Rating); suburban
+                // drops routinely leave the city blank — empty as often as null — and a blank flag
+                // line helps nobody.
+                City = g.OrderByDescending(j => j.UcjbComplTime)
+                    .Select(j => j.DeliveryAddressLine6 == null || j.DeliveryAddressLine6 == ""
+                        ? j.DeliveryAddressLine5
+                        : j.DeliveryAddressLine6)
+                    .FirstOrDefault(),
+                CompletedAt = g.Max(j => j.UcjbComplTime)
+            })
+            .TagWith("GetAvailableCouriers: Last Delivery")
+            .ToListAsync(cancellationToken);
+
+        return lastDeliveries
+            .Where(d => d.CompletedAt.HasValue)
+            .ToDictionary(d => d.CourierId, d => (d.City, d.CompletedAt!.Value));
+    }
+
     private async Task<IReadOnlyList<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
         CourierLocationRequest data, CancellationToken cancellationToken = default)
     {
@@ -1870,9 +1930,13 @@ public class CourierRepository(
                     }
                 );
 
+            var lastDeliveries = await GetLastDeliveriesAsync(courierIds, currentDate, cancellationToken);
+            var tenantTimeZone = infoService.GetTenantTimeZone();
+
             return courierData.Select(c =>
             {
                 var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
+                var hasLastDelivery = lastDeliveries.TryGetValue(c.UccrId, out var lastDelivery);
 
                 return new AvailableCourierPosition
                 {
@@ -1891,7 +1955,11 @@ public class CourierRepository(
                         j.UcjbDate.CombineWithTime(j.UcjbTime).AddMinutes(j.Minutes) < currentDate) ?? 0,
                     DisplayOrder = c.DisplayOrder,
                     CourierFleetId = c.CourierFleetId,
-                    CourierFleetName = c.CourierFleetName
+                    CourierFleetName = c.CourierFleetName,
+                    LastDeliveryCity = hasLastDelivery ? lastDelivery.City : null,
+                    LastDeliveryTime = hasLastDelivery
+                        ? TimeZoneHelper.SetDateTimeWithTimeZone(lastDelivery.CompletedAt, tenantTimeZone)
+                        : null
                 };
             }).ToList();
         }
@@ -1980,9 +2048,13 @@ public class CourierRepository(
                     }
                 );
 
+            var lastDeliveries = await GetLastDeliveriesAsync(courierIds, now, cancellationToken);
+            var tenantTimeZone = infoService.GetTenantTimeZone();
+
             return courierData.Select(c =>
             {
                 var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
+                var hasLastDelivery = lastDeliveries.TryGetValue(c.UccrId, out var lastDelivery);
 
                 return new AvailableCourierPosition
                 {
@@ -2002,7 +2074,11 @@ public class CourierRepository(
                         j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
                     DisplayOrder = c.DisplayOrder,
                     CourierFleetId = c.CourierFleetId,
-                    CourierFleetName = c.CourierFleetName
+                    CourierFleetName = c.CourierFleetName,
+                    LastDeliveryCity = hasLastDelivery ? lastDelivery.City : null,
+                    LastDeliveryTime = hasLastDelivery
+                        ? TimeZoneHelper.SetDateTimeWithTimeZone(lastDelivery.CompletedAt, tenantTimeZone)
+                        : null
                 };
             }).ToList();
         }

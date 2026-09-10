@@ -42,7 +42,8 @@ public class JobRepositoryWaitedMinutesTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeServiceMock,
         _createJobServiceMock,
-        Substitute.For<ICourierRepository>()
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
     );
 
     private async Task SeedJobAsync(TucJob job)

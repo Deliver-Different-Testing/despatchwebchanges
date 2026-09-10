@@ -840,7 +840,6 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                                         showDateTime: true,
                                                                         allowCompletion: true,
                                                                         showStatusIndicators: true,
-                                                                        showOverdueWarning: true,
                                                                         onTaskClick: true,
                                                                         autoAssignOnClick: true,
                                                                     }}

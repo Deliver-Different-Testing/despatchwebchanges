@@ -33,6 +33,8 @@ export const mockCourierLocations = [
         lastUpdate: '2024-01-15T10:00:00Z',
         courierFleetId: 32,
         courierFleetName: 'UA Auckland',
+        lastDeliveryCity: 'Ponsonby',
+        lastDeliveryTime: '2024-01-15T09:48:00Z',
     },
     {
         courierId: 2,
@@ -42,6 +44,9 @@ export const mockCourierLocations = [
         lastUpdate: '2024-01-15T10:05:00Z',
         courierFleetId: 34,
         courierFleetName: 'UA Wellington',
+        // No completed delivery yet — the flag stays a single line for this one.
+        lastDeliveryCity: null,
+        lastDeliveryTime: null,
     },
 ];
 

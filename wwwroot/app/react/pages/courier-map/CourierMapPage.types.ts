@@ -219,7 +219,6 @@ export const ICON_CACHE_LIMIT = 200;
 /**
  * Maximum characters for marker label before truncation
  */
-export const MARKER_LABEL_MAX_LENGTH = 12;
 
 /**
  * Auto-refresh interval in milliseconds (30 seconds)

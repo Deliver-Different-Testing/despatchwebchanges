@@ -74,7 +74,6 @@ export function useCourierMap({
             // markers and the driver list stay in step with the palette.
             markerManagerRef.current = new CourierMarkerManager(
                 mapInstanceRef.current,
-                isUsCustomer,
                 getMarkerColors(themeRef.current)
             );
 
