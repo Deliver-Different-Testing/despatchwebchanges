@@ -1,6 +1,6 @@
 import {useCallback, useMemo, useState} from 'react';
 import dayjs, {Dayjs} from 'dayjs';
-import JobSearchDateRange from '../../../../components/jobSearch/enums/JobSearchDateRange';
+import JobSearchDateRange from '../lib/jobSearchDateRange';
 import {ISuggestion} from '../../../../interfaces/job.interface';
 import {
     resolveDateRange,

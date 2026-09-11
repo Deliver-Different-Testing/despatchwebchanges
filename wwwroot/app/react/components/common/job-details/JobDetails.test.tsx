@@ -300,6 +300,16 @@ describe('JobDetails', () => {
         });
     });
 
+    describe('outer chrome', () => {
+        it('flattens the card and read-status corners so it sits flush inside its host', () => {
+            setupDefaultMocks({job: createMockJob()});
+            renderJobDetails();
+
+            expect(screen.getByTestId('job-details-card')).toHaveStyle({borderRadius: '0'});
+            expect(screen.getByTestId('job-details-read-status')).toHaveStyle({borderRadius: '0'});
+        });
+    });
+
     describe('dense vs normal container styles', () => {
         it('uses normal container style when not dense', () => {
             setupDefaultMocks({isDense: false});

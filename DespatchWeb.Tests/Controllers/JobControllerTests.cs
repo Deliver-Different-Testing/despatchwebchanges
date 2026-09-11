@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
@@ -1916,6 +1916,26 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateJob_ArchivedCompletedJob_ReturnsBadRequestWithTheAuthoredMessage()
+    {
+        // Arrange
+        const int jobId = 1;
+        const string message = "Job JOB-001 is archived and completed, so it can't be marked not done.";
+
+        _jobCommandRepositoryMock.UpdateJobAsync(jobId, JobProperty.Delivered, "false")
+            .ThrowsAsync(new ArchivedJobCompletionException(message));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.UpdateJob(jobId, JobProperty.Delivered, "false", CancellationToken.None);
+
+        // Assert - a refusal the operator can read, not a 500
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains(message, JsonConvert.SerializeObject(badRequest.Value));
+    }
+
+    [Fact]
     public async Task UpdateJob_DateField_WithoutCascade_DoesNotPropagateToFamily()
     {
         // "This job only" must move the parent and nothing else — and must not fall through to
@@ -3082,7 +3102,7 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task QuickCreateJob_ValidRequest_ReturnsJobId()
+    public async Task QuickCreateJob_ValidRequest_ReturnsJobIdAndJobNumber()
     {
         // Arrange
         var request = new JobCreateViewModel
@@ -3091,10 +3111,9 @@ public class JobControllerTests : IDisposable
             PickUpAddress = new AddressViewModel { AddressLine1 = "123 Pickup St" },
             DeliveryAddress = new AddressViewModel { AddressLine1 = "456 Delivery Ave" }
         };
-        const int expectedJobId = 123;
 
         _jobCommandRepositoryMock.QuickAddJobAsync(request)
-            .Returns(expectedJobId);
+            .Returns(new QuickAddJobResult(123, "ABC123"));
 
         var controller = CreateController();
 
@@ -3102,9 +3121,11 @@ public class JobControllerTests : IDisposable
         var result = await controller.QuickCreateJob(request);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        Assert.Equal(expectedJobId, jsonResult.Value);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        var value = jsonResult.Value;
+        Assert.NotNull(value);
+        Assert.Equal(123, value.GetType().GetProperty("jobId")!.GetValue(value));
+        Assert.Equal("ABC123", value.GetType().GetProperty("jobNumber")!.GetValue(value));
     }
 
     [Fact]
@@ -3129,7 +3150,7 @@ public class JobControllerTests : IDisposable
         var request = new JobCreateViewModel();
 
         _jobCommandRepositoryMock.QuickAddJobAsync(request)
-            .Returns(0);
+            .Returns(new QuickAddJobResult(0, string.Empty));
 
         var controller = CreateController();
 

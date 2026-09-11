@@ -1,20 +1,22 @@
 import React from 'react';
 import {ActionIcon, Badge, Box, Group, Loader, Progress, Stack, Table, Text, Tooltip, alpha} from '@mantine/core';
-import {SortableTh, TablePager} from '../../../components/common/data-table';
-import {SymbolIcon} from '../../../components/common/symbol-icon';
-import type {OverviewTableParentJob, TableSort} from '../OverviewPage.interfaces';
+import {SortableTh, TablePager} from '../data-table';
+import type {SortState} from '../data-table';
+import {SymbolIcon} from '../symbol-icon';
+import type {OverviewTableParentJob} from './DeliveriesTable.types';
 
 interface DeliveriesTableProps {
     deliveries: OverviewTableParentJob[];
     isLoading: boolean;
-    sort: TableSort;
-    onSort: (sort: TableSort) => void;
+    sort: SortState;
+    onSort: (sort: SortState) => void;
     page: number;
     limit: number;
     total: number;
     onPageChange: (page: number) => void;
     onLimitChange: (limit: number) => void;
-    onShowMap: (delivery: OverviewTableParentJob) => void;
+    /** Omit to drop the per-row map action — Dispatch has a Map panel of its own. */
+    onShowMap?: (delivery: OverviewTableParentJob) => void;
     onOpenJobDetail: (delivery: OverviewTableParentJob) => void;
     onToggleExpand: (jobId: number) => void;
 }
@@ -72,7 +74,8 @@ function getProgressColor(completion: number): string {
     return 'gray.4';
 }
 
-function transformStatus(status: string): string {
+/** Normalise an API status into the DISPLAY_FORM the style table is keyed by. */
+export function transformStatus(status: string): string {
     return status.toUpperCase().replace(/[\s-]/g, '_');
 }
 
@@ -195,11 +198,13 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                                     <Table.Td>{delivery.driver}</Table.Td>
                                     <Table.Td>{delivery.region}</Table.Td>
                                     <Table.Td style={{whiteSpace: 'nowrap'}}>
-                                        <Tooltip label="Open Map">
-                                            <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => onShowMap(delivery)} aria-label="Open map">
-                                                <SymbolIcon name="map" size={20} />
-                                            </ActionIcon>
-                                        </Tooltip>
+                                        {onShowMap && (
+                                            <Tooltip label="Open Map">
+                                                <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => onShowMap(delivery)} aria-label="Open map">
+                                                    <SymbolIcon name="map" size={20} />
+                                                </ActionIcon>
+                                            </Tooltip>
+                                        )}
                                         <Tooltip label="View Job Details">
                                             <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => onOpenJobDetail(delivery)} aria-label="View job details">
                                                 <SymbolIcon name="visibility" size={20} />

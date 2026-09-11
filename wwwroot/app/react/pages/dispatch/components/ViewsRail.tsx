@@ -9,7 +9,7 @@
  * Presentational only — the page owns the selection and its persistence.
  */
 
-import React from 'react';
+import React, {useLayoutEffect, useRef} from 'react';
 import {Box, Group, Skeleton, Text} from '@mantine/core';
 import {Layers, ListX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
@@ -36,6 +36,19 @@ export const ViewsRail: React.FC<ViewsRailProps> = ({
     onToggle,
     onClearAll,
 }) => {
+    /*
+     * The trailing slot swaps between the wide hint and the narrow "Clear" button on
+     * the first/last selection, which widens the scroller and makes the browser clamp
+     * `scrollLeft`. Hold the operator's position across that swap.
+     */
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const scrollLeftRef = useRef(0);
+    const hasSelection = selectedIds.length > 0;
+    useLayoutEffect(() => {
+        const node = scrollRef.current;
+        if (node) node.scrollLeft = scrollLeftRef.current;
+    }, [hasSelection]);
+
     if (loading) {
         return (
             <Group align="center" gap="sm" px="md" py={4} wrap="nowrap" style={railStyle} data-testid="views-rail-loading">
@@ -52,7 +65,11 @@ export const ViewsRail: React.FC<ViewsRailProps> = ({
     return (
         <Group align="center" gap="sm" px="md" py={4} wrap="nowrap" style={railStyle}>
             <Icon lucide={Layers} size={16} color="var(--mantine-color-dimmed)" aria-hidden style={{flexShrink: 0}}/>
-            <Box className={classes.scroll}>
+            <Box
+                ref={scrollRef}
+                className={classes.scroll}
+                onScroll={(event) => { scrollLeftRef.current = event.currentTarget.scrollLeft; }}
+            >
                 {/*
                   * Multi-select toggles, so these stay buttons with `aria-pressed`
                   * rather than becoming a `Chip.Group` — Mantine chips are checkboxes,
@@ -71,7 +88,7 @@ export const ViewsRail: React.FC<ViewsRailProps> = ({
                     ))}
                 </Group>
             </Box>
-            {selectedIds.length > 0 ? (
+            {hasSelection ? (
                 <ActionButton
                     leftSection={<Icon lucide={ListX} size={ACTION_BUTTON_GLYPH_SIZE}/>}
                     onClick={onClearAll}

@@ -119,7 +119,10 @@ describe('JobDetailHeader', () => {
         unmount();
 
         renderWithTheme(<JobDetailHeader {...createDefaultProps({job: createMockJob({done: false})})} />);
-        expect(screen.getByLabelText('Documents')).toBeInTheDocument();
+        const trigger = screen.getByLabelText('Documents');
+        expect(trigger).toBeInTheDocument();
+        // Lucide stamps its glyph name as a class; it is the only hook the icon emits.
+        expect(trigger.querySelector('svg')).toHaveClass('lucide-files');
     });
 
     it('disables POD options and ignores clicks until the job is completed', () => {

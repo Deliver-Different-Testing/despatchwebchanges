@@ -178,12 +178,12 @@ describe('jobApi', () => {
                 weightKg: null,
                 weightLb: null,
             };
-            mockApiClient.post.mockResolvedValueOnce(999);
+            mockApiClient.post.mockResolvedValueOnce({jobId: 999, jobNumber: 'JOB-999'});
 
             const result = await quickCreateJob(mockJob);
 
             expect(mockApiClient.post).toHaveBeenCalledWith('job/QuickCreateJob', mockJob);
-            expect(result).toBe(999);
+            expect(result).toEqual({jobId: 999, jobNumber: 'JOB-999'});
         });
     });
 

@@ -8,6 +8,7 @@ import { setupUser } from '../../../__testUtils__/setupUser';
 import { renderWithMantine } from '../../../__testUtils__';
 import { SimplePriceEditDialog } from './SimplePriceEditDialog';
 import { SimplePriceEditDialogProps } from './types';
+import { pricingModeColors } from '../../../theme/designTokens';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
@@ -63,10 +64,14 @@ describe('SimplePriceEditDialog', () => {
             expect(screen.getByRole('dialog')).toBeInTheDocument();
         });
 
-        it('leaves the shell to scroll, rather than clipping its own content', () => {
+        it('scrolls its body rather than the whole shell, so the scrollbar stays off the header', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
-            expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'auto'});
+            const dialog = screen.getByRole('dialog');
+            const scrollRegion = dialog.querySelector<HTMLElement>('[data-dialog-scroll]')!;
+
+            expect(scrollRegion.style.overflowY).toBe('auto');
+            expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Close dialog'}));
         });
 
         it('displays "Edit Price" title', () => {
@@ -535,6 +540,34 @@ describe('SimplePriceEditDialog', () => {
             // Should be back in edit state
             expect(screen.queryByText('Price Updated')).not.toBeInTheDocument();
             expect(screen.getByText('Auto-Calculate Prices')).toBeInTheDocument();
+        });
+    });
+});
+
+describe('SimplePriceEditDialog pricing-mode identity', () => {
+    const modeColour = (mode: string) =>
+        (document.querySelector(`[data-pricing-mode="${mode}"]`) as HTMLElement | null)
+            ?.style.getPropertyValue('--radio-color').trim();
+
+    it('gives every mode its own colour, visible before anything is selected', () => {
+        renderWithProviders(createDefaultProps());
+
+        const colours = ['recalculate', 'base', 'gross'].map(modeColour);
+
+        expect(colours).toEqual([
+            pricingModeColors.recalculate,
+            pricingModeColors.base,
+            pricingModeColors.gross,
+        ]);
+        expect(new Set(colours).size).toBe(3);
+    });
+
+    it('pairs the colour with a glyph so the modes read without it', () => {
+        renderWithProviders(createDefaultProps());
+
+        ['recalculate', 'base', 'gross'].forEach((mode) => {
+            const card = document.querySelector(`[data-pricing-mode="${mode}"]`);
+            expect(card?.querySelector('svg')).toBeInTheDocument();
         });
     });
 });

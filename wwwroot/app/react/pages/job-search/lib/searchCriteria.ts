@@ -1,7 +1,7 @@
 import dayjs, {Dayjs} from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import JobSearchDateRange from '../../../../components/jobSearch/enums/JobSearchDateRange';
+import JobSearchDateRange from './jobSearchDateRange';
 import {ISuggestion} from '../../../../interfaces/job.interface';
 import {getIanaTimezone} from '../../../utils/dateUtils';
 

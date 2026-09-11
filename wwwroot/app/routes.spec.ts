@@ -162,6 +162,7 @@ describe('RouterConfig', () => {
                 'home',
                 'dispatchV2',
                 'nw',
+                'nwV2',
                 'cs',
                 'jobSearch',
                 'jobSearchV2',
@@ -181,13 +182,31 @@ describe('RouterConfig', () => {
             });
         });
 
+        it('leaves /Nationwide on the classic page unless the operator opts in', () => {
+            // Nationwide is opt-in while the React page is unproven, so an
+            // operator who has never touched the toggle must not be redirected.
+            localStorage.clear();
+            const nw = registeredStates.get('nw');
+
+            expect(nw.redirectTo({params: () => ({})})).toBeUndefined();
+        });
+
+        it('redirects /Nationwide to the React page once opted in, keeping ?jobId', () => {
+            localStorage.setItem('nationwideBetaEnabled-0', 'true');
+            const nw = registeredStates.get('nw');
+
+            expect(nw.redirectTo({params: () => ({jobId: '42'})}))
+                .toEqual({state: 'nwV2', params: {jobId: '42'}});
+
+            localStorage.clear();
+        });
+
         it('should register exactly the expected number of states', () => {
-            // 15 states total (excluding commented megaMap; jobSearchV2 added
-            // for Phase 3 of the AngularJS → React migration — see
-            // wwwroot/app/react/pages/job-search/MIGRATION_CHECKLIST.md;
-            // dispatchV2 added for the parallel React rebuild of the home/
-            // dispatch page).
-            expect(registeredStates.size).toBe(15);
+            // 16 states total (excluding commented megaMap). The three `*V2`
+            // states are the parallel React rebuilds of the home/dispatch, job
+            // search and Nationwide pages; each collapses onto its classic URL
+            // once that page is deleted.
+            expect(registeredStates.size).toBe(16);
         });
     });
 
@@ -442,21 +461,32 @@ describe('Base URL Behavior', () => {
     });
 });
 
-describe('jobSearchV2 Layout Toolbar', () => {
+const TOOLBARS = [
+    {
+        state: 'dispatchV2',
+        bridgeName: 'ReactDispatch',
+        layoutsKey: 'layoutV2',
+        lastActiveKey: 'lastActiveLayoutV2',
+    },
+    {
+        state: 'jobSearchV2',
+        bridgeName: 'ReactJobSearch',
+        layoutsKey: 'layoutsCSV2',
+        lastActiveKey: 'lastActiveLayoutCSV2',
+    },
+] as const;
+
+// Both AngularJS toolbars drive their layout dropdown through the shared
+// `createLayoutToolbarActions` factory; these cover the wiring — each state
+// talks to its own React bridge and its own storage keys.
+describe.each(TOOLBARS)('$state layout toolbar', ({state, bridgeName, layoutsKey, lastActiveKey}) => {
     const CONTACT_ID = 4242;
-    const LAYOUTS_KEY = `layoutsCSV2-${CONTACT_ID}`;
-    const LAST_ACTIVE_KEY = `lastActiveLayoutCSV2-${CONTACT_ID}`;
+    const LAYOUTS_KEY = `${layoutsKey}-${CONTACT_ID}`;
+    const LAST_ACTIVE_KEY = `${lastActiveKey}-${CONTACT_ID}`;
 
-    let reactJobSearch: {
-        mount: jest.Mock;
-        unmount: jest.Mock;
-        setCurrentLayoutName: jest.Mock;
-        reloadLayoutsFromStorage: jest.Mock;
-        promptSaveLayout: jest.Mock;
-        promptDeleteLayout: jest.Mock;
-    };
+    let bridge: Record<string, jest.Mock>;
 
-    // Build the jobSearchV2 controller instance and return its `ctrl`.
+    // Build the state's controller instance and return its `ctrl`.
     function makeController() {
         const registeredStates = new Map<string, any>();
         const stateProvider: {state: jest.Mock} = {
@@ -468,10 +498,10 @@ describe('jobSearchV2 Layout Toolbar', () => {
         const urlRouterProvider = {when: jest.fn(), otherwise: jest.fn()};
         new RouterConfig(urlRouterProvider as any, stateProvider as any);
 
-        const controllerArr = registeredStates.get('jobSearchV2').controller;
+        const controllerArr = registeredStates.get(state).controller;
         const controllerFn = controllerArr[controllerArr.length - 1];
 
-        const $scope: any = {$on: jest.fn()};
+        const $scope: any = {$on: jest.fn(), $applyAsync: jest.fn()};
         const $stateParams: any = {jobId: null};
         const toastr = {
             showSuccessToast: jest.fn(),
@@ -479,28 +509,41 @@ describe('jobSearchV2 Layout Toolbar', () => {
             showErrorToast: jest.fn(),
             showInfoToast: jest.fn(),
         };
-        controllerFn($scope, $stateParams, toastr, {US_Customer: false});
+        // dispatchV2 also takes $http/$interval for its unread-message badge;
+        // jobSearchV2 ignores the extra arguments.
+        const $http = {get: jest.fn(() => ({then: () => ({catch: jest.fn()})}))};
+        const $interval: any = jest.fn(() => 'interval-token');
+        $interval.cancel = jest.fn();
+        controllerFn($scope, $stateParams, toastr, {US_Customer: false}, $http, $interval);
         return {ctrl: $scope.ctrl, toastr};
     }
+
+    const persistedNames = (): string[] =>
+        JSON.parse(localStorage.getItem(LAYOUTS_KEY) ?? '[]').map((l: {name: string}) => l.name);
 
     beforeEach(() => {
         localStorage.clear();
         (window as any).ContactID = CONTACT_ID;
         (window as any).TimeZone = 'New Zealand Standard Time';
-        reactJobSearch = {
+        bridge = {
             mount: jest.fn(),
             unmount: jest.fn(),
             setCurrentLayoutName: jest.fn(),
             reloadLayoutsFromStorage: jest.fn(),
             promptSaveLayout: jest.fn().mockResolvedValue(null),
             promptDeleteLayout: jest.fn().mockResolvedValue(false),
+            promptRenameLayout: jest.fn().mockResolvedValue(null),
+            importLegacyLayouts: jest.fn().mockReturnValue({imported: [], skipped: []}),
+            registerViewsListener: jest.fn(() => jest.fn()),
+            updateFilters: jest.fn(),
+            setColumnEditMode: jest.fn(),
         };
-        (window as any).ReactJobSearch = reactJobSearch;
+        (window as any)[bridgeName] = bridge;
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
-        delete (window as any).ReactJobSearch;
+        delete (window as any)[bridgeName];
     });
 
     it('always exposes a selectable "Default" layout at index 0 when storage is empty', () => {
@@ -513,29 +556,27 @@ describe('jobSearchV2 Layout Toolbar', () => {
 
     it('keeps Default at index 0 when saving the first custom layout', async () => {
         const {ctrl} = makeController();
-        reactJobSearch.promptSaveLayout.mockResolvedValue('My Layout');
+        bridge.promptSaveLayout.mockResolvedValue('My Layout');
 
         await ctrl.saveLayout();
 
-        const persisted = JSON.parse(localStorage.getItem(LAYOUTS_KEY)!);
-        expect(persisted[0].name).toBe('Default');
-        expect(persisted[1].name).toBe('My Layout');
+        expect(persistedNames()).toEqual(['Default', 'My Layout']);
         expect(ctrl.layouts.map((l: {name: string}) => l.name)).toEqual(['Default', 'My Layout']);
-        expect(reactJobSearch.setCurrentLayoutName).toHaveBeenCalledWith('My Layout');
-        expect(reactJobSearch.reloadLayoutsFromStorage).toHaveBeenCalled();
+        expect(bridge.setCurrentLayoutName).toHaveBeenCalledWith('My Layout');
+        expect(bridge.reloadLayoutsFromStorage).toHaveBeenCalled();
     });
 
     it('switches back to Default via loadLayout(0)', async () => {
         const {ctrl} = makeController();
-        reactJobSearch.promptSaveLayout.mockResolvedValue('My Layout');
+        bridge.promptSaveLayout.mockResolvedValue('My Layout');
         await ctrl.saveLayout();
-        reactJobSearch.setCurrentLayoutName.mockClear();
+        bridge.setCurrentLayoutName.mockClear();
 
         ctrl.loadLayout(0);
 
         expect(ctrl.currentLayoutName).toBe('Default');
         expect(localStorage.getItem(LAST_ACTIVE_KEY)).toBe('Default');
-        expect(reactJobSearch.setCurrentLayoutName).toHaveBeenCalledWith('Default');
+        expect(bridge.setCurrentLayoutName).toHaveBeenCalledWith('Default');
     });
 
     it('never deletes the Default layout', () => {
@@ -543,6 +584,31 @@ describe('jobSearchV2 Layout Toolbar', () => {
         ctrl.deleteLayout(0);
         // No confirm prompt, no storage write, Default stays put.
         expect(ctrl.layouts[0].name).toBe('Default');
-        expect(reactJobSearch.reloadLayoutsFromStorage).not.toHaveBeenCalled();
+        expect(bridge.promptDeleteLayout).not.toHaveBeenCalled();
+        expect(bridge.reloadLayoutsFromStorage).not.toHaveBeenCalled();
+    });
+
+    it('renames a custom layout through its own storage keys', async () => {
+        const {ctrl, toastr} = makeController();
+        bridge.promptSaveLayout.mockResolvedValue('My Layout');
+        await ctrl.saveLayout();
+        bridge.promptRenameLayout.mockResolvedValue('Renamed');
+
+        await ctrl.renameLayout(1);
+
+        expect(bridge.promptRenameLayout).toHaveBeenCalledWith('My Layout');
+        expect(persistedNames()).toEqual(['Default', 'Renamed']);
+        expect(ctrl.layouts.map((l: {name: string}) => l.name)).toEqual(['Default', 'Renamed']);
+        expect(ctrl.currentLayoutName).toBe('Renamed');
+        expect(toastr.showSuccessToast).toHaveBeenCalledWith('Layout renamed successfully');
+    });
+
+    it('reports the V1 import result through the toolbar toasts', () => {
+        const {ctrl, toastr} = makeController();
+        bridge.importLegacyLayouts.mockReturnValue({imported: ['Old'], skipped: []});
+
+        ctrl.importLayouts();
+
+        expect(toastr.showSuccessToast).toHaveBeenCalledWith('Imported 1 V1 layout');
     });
 });

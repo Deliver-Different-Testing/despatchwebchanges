@@ -10,7 +10,6 @@ import {
     loadDateFilter,
     loadDispatchFilters,
     loadRefreshIntervals,
-    filtersKey,
     persistSelectedViews,
     resolveInitialViewSelection,
 } from './dispatchFilters';
@@ -208,19 +207,12 @@ describe('dispatchFilters', () => {
         });
     });
 
-    describe('loadDispatchFilters + filtersKey', () => {
+    describe('loadDispatchFilters', () => {
         it('combines view ids and date range', () => {
             localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([{id: 5, selected: true}]));
             const filters = loadDispatchFilters();
             expect(filters.despatchViewIds).toEqual([5]);
             expect(filters.startDate).toBeDefined();
-        });
-
-        it('produces a stable key that changes with the inputs', () => {
-            const base = {despatchViewIds: [1, 2], startDate: dayjs('2025-02-01'), endDate: dayjs('2025-02-02'), useTime: false};
-            expect(filtersKey(base)).toBe(filtersKey({...base}));
-            expect(filtersKey(base)).not.toBe(filtersKey({...base, despatchViewIds: [1]}));
-            expect(filtersKey(base)).not.toBe(filtersKey({...base, useTime: true}));
         });
     });
 });

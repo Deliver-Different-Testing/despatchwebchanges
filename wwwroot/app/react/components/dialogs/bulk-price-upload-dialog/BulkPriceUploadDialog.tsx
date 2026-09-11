@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import {Box, CloseButton, Group, Loader, Paper, Radio, Stack, Table, Text, TextInput, ThemeIcon, UnstyledButton} from '@mantine/core';
+import {alpha, Box, CloseButton, Group, Loader, Paper, Radio, Stack, Table, Text, TextInput, ThemeIcon, UnstyledButton} from '@mantine/core';
 import {
     ArrowRight,
     Check,
@@ -25,6 +25,7 @@ import {
     TriangleAlert,
 } from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
+import {pricingModeColors} from '../../../theme/designTokens';
 import {
     DialogFooter,
     DialogHeader,
@@ -371,27 +372,24 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
     };
 
     const renderModeSelectState = (): React.ReactNode => {
-        const modes: { value: PricingMode; title: string; desc: string; icon: React.ReactNode; color: string }[] = [
+        const modes: { value: PricingMode; title: string; desc: string; icon: React.ReactNode }[] = [
             {
                 value: 'recalculate',
                 title: 'Auto-Calculate Prices',
                 desc: 'Recalculate from job details & current rates',
                 icon: <Icon lucide={RefreshCw} size={22}/>,
-                color: 'gray',
             },
             {
                 value: 'base',
                 title: 'Base Price (add surcharges)',
                 desc: 'Use file amounts as base; PPD & fuel added on top',
                 icon: <Icon lucide={CirclePlus} size={22}/>,
-                color: 'green',
             },
             {
                 value: 'gross',
                 title: 'Final Price (use as-is)',
                 desc: 'Apply file amounts directly as the final price',
                 icon: <Icon lucide={NotebookPen} size={22}/>,
-                color: 'grape',
             },
         ];
 
@@ -436,15 +434,32 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     aria-label="How should prices be applied?"
                 >
                     <Stack gap={10}>
-                        {modes.map((mode) => (
-                            <Radio.Card key={mode.value} value={mode.value} radius="md" p={14}>
+                        {modes.map((mode) => {
+                            const modeColor = pricingModeColors[mode.value];
+                            return (
+                            <Radio.Card
+                                key={mode.value}
+                                value={mode.value}
+                                radius="md"
+                                p={14}
+                                data-pricing-mode={mode.value}
+                                style={{
+                                    '--radio-color': modeColor,
+                                    borderWidth: 2,
+                                    backgroundColor: selectedMode === mode.value
+                                        ? alpha(modeColor, 0.06)
+                                        : undefined,
+                                } as React.CSSProperties}
+                            >
                                 <Group gap={14} wrap="nowrap">
                                     <Radio.Indicator/>
                                     <ThemeIcon
-                                        variant="light"
-                                        color={mode.color}
                                         size={40}
                                         radius="md"
+                                        style={{
+                                            '--ti-bg': alpha(modeColor, selectedMode === mode.value ? 0.16 : 0.08),
+                                            '--ti-color': modeColor,
+                                        } as React.CSSProperties}
                                     >
                                         {mode.icon}
                                     </ThemeIcon>
@@ -454,7 +469,8 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                     </Box>
                                 </Group>
                             </Radio.Card>
-                        ))}
+                            );
+                        })}
                     </Stack>
                 </Radio.Group>
 

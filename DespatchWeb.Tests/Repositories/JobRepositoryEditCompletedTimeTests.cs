@@ -1,5 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -199,6 +200,37 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Null(updatedArchive.UcjbComplTime); // empty value should null the archived POD time
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_CompletedTime_EmptyValue_ArchivedDoneJob_IsRefused()
+    {
+        // Arrange - an archived job that is marked done
+        await using (var context = CreateContext())
+        {
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 12,
+                UcjbNumber = "JOB-012",
+                UcjbJobDone = true,
+                UcjbStatus = (int)JobStatus.Completed,
+                UcjbComplTime = new DateTime(2024, 6, 15, 12, 37, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act / Assert - clearing the POD time would leave it done with nothing to show for it,
+        // and an archived job cannot be un-done to fix that
+        await Assert.ThrowsAsync<ArchivedJobCompletionException>(
+            () => repository.UpdateJobAsync(12, JobProperty.CompletedTime, string.Empty));
+
+        await using var verifyContext = CreateContext();
+        var untouched = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 12,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotNull(untouched.UcjbComplTime);
     }
 
     [Fact]

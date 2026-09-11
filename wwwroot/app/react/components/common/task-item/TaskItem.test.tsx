@@ -1,12 +1,14 @@
 /**
  * TaskItem Component Tests
  *
- * The row is a dispatch run-sheet line: a due rail (bold tabular time over a day or
- * "how late" line), a headline, plain-text metadata, and one trailing assignee
- * control. Only the two editable facts — the due instant and the assignee — carry a
- * control shape, so those are queried by role and everything else by visible text or
- * its `data-task-meta` stamp (the icons that replaced the "Courier:"/"Client:"
- * prefixes emit no test hook of their own).
+ * The row is two flat lines: headline plus the due button (top right), then the
+ * task's facts as filled key/value chips with the assignee control trailing. Each
+ * chip names its own datum, so the assertions are on the visible key word and value;
+ * a chip's identity comes from its `data-task-meta` stamp.
+ *
+ * State lives on the due button as `data-due-state`, not on a coloured keyline — the
+ * tones themselves are stylesheet-owned and CSS modules are mocked to `{}` in Jest,
+ * so the stamp is the contract.
  */
 
 import React from 'react';
@@ -91,32 +93,44 @@ const row = () => document.querySelector('[data-task-state]') as HTMLElement;
 const dueControl = () => screen.getByRole('button', {name: /edit date and time/});
 const assigneeControl = () => screen.getByRole('button', {name: /change assignee|Assign task/});
 
+/** Opens the due popover and moves to the named option. */
+const openDueOption = async (option: 'Date' | 'Time') => {
+    await userEvent.click(dueControl());
+    await userEvent.click(await screen.findByRole('radio', {name: option}));
+};
+
 describe('TaskItem', () => {
     describe('Row anatomy', () => {
-        it('renders the headline, description, assignee and plain-text metadata', () => {
+        it('renders the headline, description, assignee and every fact', () => {
             renderWithProviders(<TaskItem {...createDefaultProps()} />);
 
             expect(screen.getByText('Test Task')).toBeInTheDocument();
             expect(screen.getByText('This is a test task description')).toBeInTheDocument();
             expect(screen.getByText('John Doe')).toBeInTheDocument();
-            expect(screen.getByText('JD')).toBeInTheDocument();
-            expect(screen.getByText('#JOB-001')).toBeInTheDocument();
+            expect(screen.getByText('JOB-001')).toBeInTheDocument();
             expect(screen.getByText('Pickup')).toBeInTheDocument();
             expect(screen.getByText('ABC123 — John Smith')).toBeInTheDocument();
             expect(screen.getByText('ACME')).toBeInTheDocument();
         });
 
-        it('carries no status word and no label prefixes', () => {
+        it('names the type of every fact it shows', () => {
             renderWithProviders(<TaskItem {...createDefaultProps()} />);
 
-            // State is the keyline colour and the rail, not a badge repeating it.
+            expect(meta('jobNumber')).toHaveTextContent(/^JobJOB-001$/);
+            expect(meta('courier')).toHaveTextContent(/^CourierABC123 — John Smith$/);
+            expect(meta('client')).toHaveTextContent(/^ClientACME$/);
+            expect(meta('priority')).toHaveTextContent(/^PriorityHigh$/);
+            // The event type names itself, so a key word would only repeat it.
+            expect(meta('jobType')).toHaveTextContent(/^Pickup$/);
+            expect(assigneeControl()).toHaveTextContent(/^AssigneeJohn Doe$/);
+        });
+
+        it('carries no status word — the due button is the state', () => {
+            renderWithProviders(<TaskItem {...createDefaultProps()} />);
+
             expect(screen.queryByText('To do')).not.toBeInTheDocument();
             expect(screen.queryByText('Done')).not.toBeInTheDocument();
             expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
-            // The icons are the labels.
-            expect(screen.queryByText(/Courier:/)).not.toBeInTheDocument();
-            expect(screen.queryByText(/Client:/)).not.toBeInTheDocument();
-            expect(screen.queryByText(/^Job #/)).not.toBeInTheDocument();
         });
 
         it('names the timezone once, on the due control', () => {
@@ -159,7 +173,7 @@ describe('TaskItem', () => {
      * mislead. That is also what keeps the rail from echoing the task dashboard's
      * sticky Today / Tomorrow / Overdue group headers.
      */
-    describe('Due rail', () => {
+    describe('Due button', () => {
         it('shows the time and no day line for a task due today', () => {
             const due = laterToday();
             const task = createMockTask({dueDate: due, _dueTimeString: '11:59 PM'});
@@ -203,7 +217,7 @@ describe('TaskItem', () => {
             expect(dueControl()).toHaveAccessibleName(/2:00 PM/);
         });
 
-        it('hides the rail when showDateTime is false', () => {
+        it('hides the button when showDateTime is false', () => {
             renderWithProviders(<TaskItem {...createDefaultProps({config: {showDateTime: false}})} />);
 
             expect(screen.queryByRole('button', {name: /edit date and time/})).not.toBeInTheDocument();
@@ -217,41 +231,47 @@ describe('TaskItem', () => {
      * segment, and each fire here would be an API write.
      */
     describe('Due editor', () => {
-        const openDueEditor = async () => {
-            await userEvent.click(dueControl());
-            return screen.findByLabelText('Task due date');
-        };
-
-        it('opens both editors from one control, seeded with the task time', async () => {
+        it('names both options and the instant they apply to, opening on Date', async () => {
             renderWithProviders(<TaskItem {...createDefaultProps()} />);
 
-            await openDueEditor();
+            await userEvent.click(dueControl());
 
-            expect(screen.getByLabelText('Hours')).toHaveValue('14');
+            expect(await screen.findByRole('radio', {name: 'Date'})).toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Time'})).not.toBeChecked();
+            expect(screen.getByText('Due Jan 15, 2025 2:00 PM (EST)')).toBeInTheDocument();
+            expect(screen.getByLabelText('Task due date')).toBeInTheDocument();
+        });
+
+        it('seeds the time editor with the task time', async () => {
+            renderWithProviders(<TaskItem {...createDefaultProps()} />);
+
+            await openDueOption('Time');
+
+            expect(await screen.findByLabelText('Hours')).toHaveValue('14');
             expect(screen.getByLabelText('Minutes')).toHaveValue('00');
             expect(screen.getByRole('button', {name: 'Set time'})).toBeInTheDocument();
         });
 
-        it('writes the date on selection and stays open so the time can follow', async () => {
+        it('writes the date on selection and advances to the time option', async () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            await openDueEditor();
-            await userEvent.click(screen.getByRole('button', {name: '20 January 2025'}));
+            await userEvent.click(dueControl());
+            await userEvent.click(await screen.findByRole('button', {name: '20 January 2025'}));
 
             await waitFor(() => {
                 expect(props.tasksService.updateTaskDate).toHaveBeenCalled();
             });
             expect(props.showSuccessToast).toHaveBeenCalledWith('Task date updated successfully');
-            expect(screen.getByLabelText('Hours')).toBeInTheDocument();
+            expect(await screen.findByLabelText('Hours')).toBeInTheDocument();
         });
 
         it('does not write the time until Set time is pressed', async () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskItem {...props} />);
 
-            await openDueEditor();
-            fireEvent.change(screen.getByLabelText('Hours'), {target: {value: '09'}});
+            await openDueOption('Time');
+            fireEvent.change(await screen.findByLabelText('Hours'), {target: {value: '09'}});
             expect(props.tasksService.updateTaskTime).not.toHaveBeenCalled();
 
             await userEvent.click(screen.getByRole('button', {name: 'Set time'}));
@@ -267,24 +287,31 @@ describe('TaskItem', () => {
 
     describe('State emphasis', () => {
         it.each([
-            ['open', {dueDate: laterToday()}, 'var(--mantine-color-default-border)'],
-            ['overdue', {dueDate: dayjs().subtract(1, 'day')}, 'var(--mantine-color-red-filled)'],
-            ['done', {closed: true}, 'var(--mantine-color-green-filled)'],
-        ])('stamps and paints the keyline for a %s task', (state, overrides, color) => {
+            ['open', {dueDate: laterToday()}],
+            ['overdue', {dueDate: dayjs().subtract(1, 'day')}],
+            ['done', {closed: true}],
+        ])('stamps the row and the due button for a %s task', (state, overrides) => {
             renderWithProviders(<TaskItem {...createDefaultProps({task: createMockTask(overrides)})} />);
 
             expect(row()).toHaveAttribute('data-task-state', state);
-            expect(row()).toHaveStyle({borderLeftColor: color});
+            expect(dueControl()).toHaveAttribute('data-due-state', state);
         });
 
-        it('drops the state colour and the late line when showStatusIndicators is false', () => {
+        it('stamps a task carrying no due instant as unset', () => {
+            const task = createMockTask({_dueDateString: undefined, _dueTimeString: undefined});
+            renderWithProviders(<TaskItem {...createDefaultProps({task})} />);
+
+            expect(dueControl()).toHaveAttribute('data-due-state', 'unset');
+        });
+
+        it('drops the state tone and the late line when showStatusIndicators is false', () => {
             const props = createDefaultProps({
                 task: createMockTask({dueDate: dayjs().subtract(2, 'day')}),
                 config: {showStatusIndicators: false},
             });
             renderWithProviders(<TaskItem {...props} />);
 
-            expect(row()).toHaveStyle({borderLeftColor: 'var(--mantine-color-default-border)'});
+            expect(dueControl()).toHaveAttribute('data-due-state', 'open');
             expect(screen.queryByText('2d ago')).not.toBeInTheDocument();
         });
 
@@ -305,16 +332,16 @@ describe('TaskItem', () => {
 
     /** Ink is spent on exceptions only: `low` is the default case and gets no mark. */
     describe('Priority', () => {
-        it.each(['high', 'medium'] as const)('flags %s priority', (priority) => {
+        it.each([['high', 'High'], ['medium', 'Medium']] as const)('names %s priority', (priority, label) => {
             renderWithProviders(<TaskItem {...createDefaultProps({task: createMockTask({priority})})} />);
 
-            expect(screen.getByLabelText(`Priority: ${priority}`)).toBeInTheDocument();
+            expect(meta('priority')).toHaveTextContent('Priority' + label);
         });
 
-        it.each(['low', undefined] as const)('renders no flag for %s priority', (priority) => {
+        it.each(['low', undefined] as const)('renders no priority chip for %s priority', (priority) => {
             renderWithProviders(<TaskItem {...createDefaultProps({task: createMockTask({priority})})} />);
 
-            expect(screen.queryByLabelText(/Priority:/)).not.toBeInTheDocument();
+            expect(meta('priority')).toBeNull();
         });
     });
 
@@ -386,7 +413,7 @@ describe('TaskItem', () => {
             renderWithProviders(<TaskItem {...createDefaultProps({task})} />);
 
             expect(screen.getByText('Assign')).toBeInTheDocument();
-            expect(screen.queryByText('JD')).not.toBeInTheDocument();
+            expect(assigneeControl()).not.toHaveTextContent('Assignee');
         });
 
         it('unassigns from inside the picker without opening the task', async () => {

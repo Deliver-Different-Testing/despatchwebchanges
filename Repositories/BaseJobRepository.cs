@@ -100,7 +100,6 @@ public partial class BaseJobRepository(
             }
 
             query = ApplyGeographicFilters(query, clearListEnvelope, isNeedsDispatchFilter);
-            query = ApplyStatusFilter(query, queryParams.StatusFilter);
             query = ApplySearchTextFilter(query, queryParams.SearchText);
 
             switch (page)
@@ -139,6 +138,12 @@ public partial class BaseJobRepository(
                     };
             }
 
+            // The stats header describes the list as a whole, so its counts come off the query as it
+            // stands before the category tab narrows it — otherwise picking a tab would rewrite the
+            // very numbers it was picked from. Everything else the user asked for still applies.
+            var statsQuery = query;
+            query = ApplyStatusFilter(query, queryParams.StatusFilter);
+
             // Resolve the distinct job IDs for this page up-front. Paginating over distinct IDs
             // keeps page sizes consistent and lets us project only the page's jobs (no duplicate
             // rows). Even when the caller omits Page, the non-paginated path is bounded by a safety
@@ -151,6 +156,11 @@ public partial class BaseJobRepository(
                 requestedPage,
                 pageSize,
                 cancellationToken: cancellationToken);
+
+            // Answered with the first page only; the client keeps it while it scrolls.
+            var statusCounts = requestedPage == 0
+                ? await CountStatusBucketsAsync(statsQuery, cancellationToken)
+                : null;
 
             var allJobs = await Context.TucJobs
                 .Where(j => pageJobIds.Contains(j.UcjbId))
@@ -200,7 +210,8 @@ public partial class BaseJobRepository(
                 Jobs = allJobs,
                 TotalCount = totalCount,
                 HasMore = hasMore,
-                MapItems = page == AppPage.Dispatch ? mapItems : null
+                MapItems = page == AppPage.Dispatch ? mapItems : null,
+                StatusCounts = statusCounts
             };
         }
         catch (Exception e)
@@ -337,6 +348,30 @@ public partial class BaseJobRepository(
         }
     }
 
+
+    /// <summary>
+    /// Tallies the stats header's buckets over every job the query matches.
+    /// </summary>
+    /// <remarks>
+    /// The view the base query joins through fans a job out across rows, so the ids are reduced to
+    /// a distinct set and re-joined before classifying — the same shape the total count uses, so
+    /// the two can never disagree.
+    /// </remarks>
+    private async Task<JobListStatusCounts> CountStatusBucketsAsync(
+        IQueryable<TucJob> query, CancellationToken cancellationToken)
+    {
+        var tallies = await query
+            .Select(j => j.UcjbId)
+            .Distinct()
+            .Join(Context.TucJobs, id => id, j => j.UcjbId, (_, j) => j)
+            .Select(JobListStatusBuckets.Over(JobStatusSnapshots.Live))
+            .GroupBy(bucket => bucket)
+            .Select(g => new JobListBucketTally(g.Key, g.Count()))
+            .TagWith("DespatchQry - Status Counts")
+            .ToListAsync(cancellationToken);
+
+        return JobListStatusCounts.FromBuckets(tallies);
+    }
 
     private static IQueryable<TucJob> ApplyStatusFilter(IQueryable<TucJob> query, string statusFilter)
     {

@@ -221,6 +221,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               onAddStop,
                                                               onJobsLoaded,
                                                               defaultCategory,
+                                                              forcedCategory,
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
@@ -270,7 +271,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // ── UI State ─────────────────────────────────────────────────────
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<JobCategory>(
-        () => loadJobListCategory(storagePrefix) ?? defaultCategory ?? 'all',
+        () => forcedCategory ?? loadJobListCategory(storagePrefix) ?? defaultCategory ?? 'all',
     );
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedRawQuery] = useDebouncedValue(searchQuery, 200);
@@ -393,6 +394,17 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         previousDefaultCategoryRef.current = defaultCategory;
     }, [defaultCategory]);
 
+    // A scope that dictates its own category (the dispatch clear-list) applies it
+    // when it changes too, so the panel need not be remounted to pick it up. On
+    // mount the initialiser has already applied it, hence the same ref guard.
+    const previousForcedCategoryRef = useRef(forcedCategory);
+    useEffect(() => {
+        if (forcedCategory && forcedCategory !== previousForcedCategoryRef.current) {
+            setSelectedCategory(forcedCategory);
+        }
+        previousForcedCategoryRef.current = forcedCategory;
+    }, [forcedCategory]);
+
     // Update lastUpdated when hook data changes (fetchConfig mode)
     useEffect(() => {
         if (hookData && !hookData.isLoading && !hookData.isFetching) {
@@ -401,7 +413,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     }, [hookData?.isLoading, hookData?.isFetching]);
 
     // ── Computed: filtered & sorted jobs ─────────────────────────────
-    const {filteredJobs, stats} = useMemo(() => {
+    const filteredJobs = useMemo(() => {
         let filtered = jobs;
 
         // Category filter
@@ -424,16 +436,24 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         // Sort
         filtered = sortJobs(filtered, sortState, isUsCustomer);
 
-        // Stats from full (unfiltered) jobs — single pass
+        return filtered;
+    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, fetchConfig]);
+
+    // ── Computed: stats header ───────────────────────────────────────
+    // The header describes the whole list, so the server counts it — before any category filter and
+    // across every page, neither of which the loaded rows can answer for. The local pass is the
+    // fallback for the lists that push their jobs in rather than fetching them.
+    const stats = useMemo(() => {
+        if (hookData.statusCounts) return hookData.statusCounts;
+
         const statsResult = {total: jobs.length, active: 0, transit: 0, done: 0};
         for (const j of jobs) {
             if (needsDispatch(j)) statsResult.active++;
             if (isInTransit(j)) statsResult.transit++;
             if (isDelivered(j)) statsResult.done++;
         }
-
-        return {filteredJobs: filtered, stats: statsResult};
-    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, fetchConfig]);
+        return statsResult;
+    }, [jobs, hookData.statusCounts]);
 
     // ── Related job highlighting ────────────────────────────────────
     const relatedJobIds = useMemo(() => {
@@ -804,13 +824,14 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     return (
         <Box
+            data-testid="job-list-panel"
             style={{
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
                 backgroundColor: 'var(--dd-surface-container)',
                 border: '1px solid var(--mantine-color-default-border)',
-                borderRadius: 'var(--mantine-radius-sm)',
+                borderRadius: 0,
                 overflow: 'hidden',
                 position: 'relative',
             }}

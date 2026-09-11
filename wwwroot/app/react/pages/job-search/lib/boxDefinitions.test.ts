@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import JobSearchBoxes from '../../../../components/jobSearch/enums/jobSearchBoxes';
+import JobSearchBoxes from './jobSearchBoxes';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './boxDefinitions';
 
 describe('createJobSearchBoxes', () => {

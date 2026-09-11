@@ -22,6 +22,7 @@ import {Alert, Box, Paper, Radio, Stack, Text} from '@mantine/core';
 import {DateInput} from '@mantine/dates';
 import {Rocket} from 'lucide-react';
 import dayjs, {Dayjs} from 'dayjs';
+import {insertScopeColors} from '../../../theme/designTokens';
 import {recurringJobsApi} from '../../../services/recurringJobsApi';
 import {
     InsertRecurringToLiveResult,
@@ -157,15 +158,24 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
                             value={String(scope)}
                             onChange={(value) => setScope(Number(value) as InsertToLiveScope)}
                         >
+                            {/* Colour here is blast radius, not decoration: blue pushes
+                                one booking, orange pushes everything on the route. The
+                                wording carries the same split for anyone who can't see it. */}
                             <Stack gap="xs" mt="xs">
                                 <Radio
                                     value={String(InsertToLiveScope.Group)}
                                     label="Selected booking (parent + any children)"
+                                    description="Just this one — the booking you picked, plus its children."
+                                    color={insertScopeColors.group}
+                                    data-insert-scope="group"
                                     disabled={isSubmitting}
                                 />
                                 <Radio
                                     value={String(InsertToLiveScope.Route)}
                                     label="All Manual bookings on the same route for that date"
+                                    description="Wider reach — every Manual booking sharing that route and date."
+                                    color={insertScopeColors.route}
+                                    data-insert-scope="route"
                                     disabled={isSubmitting || !job.routeId}
                                 />
                             </Stack>

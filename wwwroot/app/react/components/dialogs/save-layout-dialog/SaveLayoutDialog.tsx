@@ -3,7 +3,7 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Paper, Text, TextInput} from '@mantine/core';
+import {Box, Paper, TextInput} from '@mantine/core';
 import {LayoutGrid, Save} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {
@@ -11,7 +11,6 @@ import {
     DialogHeader,
     DialogShell,
     dialogContentBg,
-    sectionLabelProps,
     sectionPaperProps,
 } from '../shared/mantine';
 
@@ -81,7 +80,6 @@ export const SaveLayoutDialog: React.FC<SaveLayoutDialogProps> = ({
             />
 
             <Box p="lg" style={{backgroundColor: dialogContentBg}}>
-                <Text {...sectionLabelProps}>Layout name</Text>
                 <Paper {...sectionPaperProps}>
                     <TextInput
                         size="sm"

@@ -103,16 +103,30 @@ describe('Mantine dialog primitives', () => {
 });
 
 /**
- * `Modal.Content` is the modal's only scroll container — Mantine caps it at ~90dvh
- * and scrolls it. A shell that clips it instead strands everything past the cap,
- * the footer's confirm button included.
+ * Mantine caps the modal at ~90dvh, and something has to absorb that cap: a shell
+ * that simply clips strands everything past it, the footer's confirm button
+ * included. The body absorbs it, so the scrollbar stays inside the body instead of
+ * running the full height of the dialog beside the solid header bar.
  */
 describe('DialogShell scrolling', () => {
-    it('keeps the modal content scrollable', () => {
-        renderDialog();
+    it('scrolls the body alone, leaving the shell itself clipped', () => {
+        renderWithMantine(
+            <DialogShell opened onClose={jest.fn()}>
+                <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+                <div data-testid="dialog-body">Body</div>
+                <DialogFooter onCancel={jest.fn()} onConfirm={jest.fn()} confirmLabel="Save"/>
+            </DialogShell>,
+        );
+
         // `Modal.Content` is the role="dialog" node.
-        expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'auto'});
-        expect(screen.getByRole('dialog')).not.toHaveStyle({overflow: 'hidden'});
+        expect(screen.getByRole('dialog')).toHaveStyle({overflow: 'hidden', flexDirection: 'column'});
+
+        // Read off the inline style: jsdom's computed style drops `overflow-y`.
+        const scrollRegion = screen.getByRole('dialog').querySelector<HTMLElement>('[data-dialog-scroll]')!;
+        expect(scrollRegion).toContainElement(screen.getByTestId('dialog-body'));
+        expect(scrollRegion.style).toMatchObject({overflowY: 'auto', minHeight: '0', flex: '1 1 auto'});
+        expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Close dialog'}));
+        expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Cancel'}));
     });
 
     it('still lets a caller override the shell styles', () => {
@@ -121,7 +135,8 @@ describe('DialogShell scrolling', () => {
                 <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
             </DialogShell>,
         );
-        expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'scroll'});
+        // …without losing the column layout the scrolling body depends on.
+        expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'scroll', display: 'flex'});
     });
 
     it('pins the header and the footer so the actions stay on screen while the body scrolls', () => {
@@ -174,8 +189,8 @@ describe('DialogShell scrolling', () => {
     });
 
     it('exposes the shell and chrome styles as plain objects', () => {
-        expect(dialogShellStyles.content.overflowY).toBe('auto');
-        expect(dialogShellStyles.body.padding).toBe(0);
+        expect(dialogShellStyles.content).toMatchObject({display: 'flex', overflow: 'hidden'});
+        expect(dialogShellStyles.body).toMatchObject({padding: 0, flex: '1 1 auto', minHeight: 0});
         expect(dialogStickyChromeStyle('top')).toMatchObject({position: 'sticky', top: 0});
         expect(dialogStickyChromeStyle('bottom')).toMatchObject({position: 'sticky', bottom: 0});
     });

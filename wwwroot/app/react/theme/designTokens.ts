@@ -78,3 +78,23 @@ export const driverLocationColors = {
         border: sharedColors.divider,
     },
 } as const;
+
+/**
+ * Pricing-mode identity colours.
+ *
+ * The three pricing modes appear in both the single-job price dialog and the
+ * bulk upload dialog and mean the same thing in each, so the colour is a shared
+ * token rather than a per-dialog literal. Colour is never the only cue: every
+ * mode also carries its own glyph, and selection adds border weight and a tint.
+ */
+export const pricingModeColors = {
+    recalculate: accentPalette[600],
+    base: sharedColors.success.main,
+    gross: grossModeColor,
+} as const;
+
+/** Blast-radius colours for the recurring-job "insert to live" scope choice. */
+export const insertScopeColors = {
+    group: sharedColors.info.main,
+    route: sharedColors.warning.main,
+} as const;

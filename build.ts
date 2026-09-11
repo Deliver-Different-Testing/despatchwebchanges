@@ -78,6 +78,7 @@ type EntryPointName =
     | 'jobSearchJobListReact'
     | 'jobDetailsReact'
     | 'jobSearchReact'
+    | 'nationwideReact'
     | 'dispatchReact'
     | 'dispatchDialogReact';
 type EntryPoints = Record<EntryPointName, string>;
@@ -134,6 +135,7 @@ const entryPoints: EntryPoints = {
     jobSearchJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-search-job-list-react.module.tsx"),
     jobDetailsReact: path.join(rootDir, "wwwroot/app/react/components/common/job-details/job-details-react.module.tsx"),
     jobSearchReact: path.join(rootDir, "wwwroot/app/react/pages/job-search/job-search-react.module.tsx"),
+    nationwideReact: path.join(rootDir, "wwwroot/app/react/pages/nationwide/nationwide-react.module.tsx"),
     dispatchReact: path.join(rootDir, "wwwroot/app/react/pages/dispatch/dispatch-react.module.tsx"),
 };
 
@@ -565,6 +567,7 @@ const bundleBudgets: Partial<Record<EntryPointName, number>> = {
     home: 442_000,
     dispatchReact: 422_000,
     jobSearchReact: 410_000,
+    nationwideReact: 432_000,
     recurringJobsReact: 401_000,
     jobSearch: 395_000,
     taskDashboardReact: 374_000,

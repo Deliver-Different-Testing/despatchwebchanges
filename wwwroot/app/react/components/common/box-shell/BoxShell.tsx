@@ -3,12 +3,12 @@ import {ActionIcon, Badge, Box, Button, Group, Text} from '@mantine/core';
 import {Check, Columns3, Minus, Plus} from 'lucide-react';
 import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
 import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
-import {MAX_COLUMNS, MIN_COLUMNS, parsePercent} from '../lib/columnLayout';
+import {MAX_COLUMNS, MIN_COLUMNS, parsePercent} from './columnLayout';
 import {Icon} from '../../../components/common/icon/Icon';
 import {BoxHeader} from './BoxHeader';
-import classes from './JobSearchShell.module.css';
+import classes from './BoxShell.module.css';
 
-export interface JobSearchShellProps {
+export interface BoxShellProps {
     layout: ILayout;
     /** Bumped on layout switch or box reorder to force a clean PanelGroup remount. */
     layoutVersion: number;
@@ -35,8 +35,10 @@ export interface JobSearchShellProps {
     ) => void;
     /**
      * The Default layout is read-only: no resize gutters, no reorder, no column
-     * stepper, and every panel shown regardless of stored visibility (that record
-     * belongs to a user layout). Users customise by saving a layout of their own.
+     * stepper, and stored visibility is ignored (that record belongs to a user
+     * layout). A panel the definitions ship as `visible: false` still stays
+     * hidden here, so an opt-in panel is opt-in on Default too. Users customise
+     * by saving a layout of their own.
      */
     isDefaultLayout?: boolean;
     /**
@@ -109,7 +111,7 @@ interface DragRef {
     sourceIndex: number;
 }
 
-export const JobSearchShell: React.FC<JobSearchShellProps> = ({
+export const BoxShell: React.FC<BoxShellProps> = ({
     layout,
     layoutVersion,
     boxes,
@@ -272,7 +274,9 @@ export const JobSearchShell: React.FC<JobSearchShellProps> = ({
                             originalIndex,
                             meta: boxes[boxRef.name ?? ''],
                         }))
-                        .filter(item => item.meta && (isDefaultLayout || item.meta.visible));
+                        .filter(item => item.meta && (
+                            isDefaultLayout ? item.meta.visible !== false : item.meta.visible
+                        ));
 
                     const visibleBoxNames = visibleBoxes.map(item => item.boxRef.name ?? '');
 

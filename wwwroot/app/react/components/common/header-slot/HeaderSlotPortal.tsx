@@ -2,7 +2,7 @@ import React from 'react';
 import {createPortal} from 'react-dom';
 
 export interface HeaderSlotPortalProps {
-    /** The card header DOM node to portal into (from JobSearchShell's renderBoxContent). */
+    /** The card header DOM node to portal into (from BoxShell's renderBoxContent). */
     slot: HTMLElement | null | undefined;
     children: React.ReactNode;
 }

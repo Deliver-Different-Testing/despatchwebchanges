@@ -5,7 +5,7 @@
  * reorder by dragging the handle (or arrow keys on it), set an exact width, and
  * toggle visibility. Locked columns are structural and are not listed.
  *
- * Drag/keyboard reordering mirrors the panel shell (JobSearchShell + BoxHeader)
+ * Drag/keyboard reordering mirrors the panel shell (BoxShell + BoxHeader)
  * so the two reorder interactions in the app behave the same way.
  */
 

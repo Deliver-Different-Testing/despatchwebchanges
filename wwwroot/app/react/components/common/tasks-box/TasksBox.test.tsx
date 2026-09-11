@@ -21,7 +21,7 @@ jest.mock('../../../services/tasksApi', () => ({
     tasksApi: {getActiveStaff: jest.fn(), getDeliveryJourney: jest.fn()},
 }));
 
-jest.mock('../../../components/common/task-item/TaskItem', () => ({
+jest.mock('../task-item/TaskItem', () => ({
     TaskItem: ({task, onTaskClick, config}: {
         task: {id: number; title: string; jobId?: number};
         onTaskClick?: (t: {id: number; jobId?: number}) => void;
@@ -33,13 +33,13 @@ jest.mock('../../../components/common/task-item/TaskItem', () => ({
     ),
 }));
 
-import {SupportsBox} from './SupportsBox';
+import {TasksBox} from './TasksBox';
 import {MantineTestProvider} from '../../../__testUtils__';
 
-function renderBox(overrides: Partial<React.ComponentProps<typeof SupportsBox>> = {}) {
+function renderBox(overrides: Partial<React.ComponentProps<typeof TasksBox>> = {}) {
     return render(
         <MantineTestProvider>
-            <SupportsBox showToast={jest.fn()} {...overrides} />
+            <TasksBox appPage={1 as never} showToast={jest.fn()} {...overrides} />
         </MantineTestProvider>,
     );
 }
@@ -49,7 +49,7 @@ const sampleTasks = [
     {id: 2, title: 'Task Two', jobId: 42, assignee: {id: 5, text: 'Other'}},
 ];
 
-describe('SupportsBox', () => {
+describe('TasksBox', () => {
     beforeEach(() => {
         useTasksMock.mockReset();
         useTasksMock.mockReturnValue({data: [], isLoading: false, refetch: jest.fn()});

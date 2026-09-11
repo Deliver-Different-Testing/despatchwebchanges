@@ -2,16 +2,12 @@
     title: string;
     showRefreshInterval?: boolean;
     showDriverLocationRefresh?: boolean;
-    showDashboards?: boolean;
     showAiToggle?: boolean;
     /** Show the "Try the React (BETA) Job Search" toggle. Job Search settings only. */
     showJobSearchBetaToggle?: boolean;
     /** Show the "Try the React (BETA) Dispatch" toggle. Dispatch settings only. */
     showDispatchBetaToggle?: boolean;
-    /** Replace the panels section with a "moved to the Layouts menu" notice. */
-    panelsMovedNotice?: boolean;
-    /** Render the Dashboard panels section at all. Defaults to shown; `false` drops it. */
-    showPanels?: boolean;
+    showNationwideBetaToggle?: boolean;
 }
 
 export default IDashboardSettingsConfig;

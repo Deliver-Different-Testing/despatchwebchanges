@@ -366,7 +366,25 @@ describe('CreateJobDialog', () => {
             fireEvent.click(option);
         }
 
-        it('submits with US-tenant Lb weight, populates addressLine8 from HERE Maps', async () => {
+        /** Fill every required field so the Create Job button will submit. */
+        async function fillRequiredFields(weightLabel: RegExp) {
+            await selectAutocomplete(screen.getByRole('combobox', {name: /client/i}), 'Test', 'Test Client');
+            fireEvent.change(screen.getByLabelText(/charge amount/i), {target: {value: '10'}});
+            fireEvent.change(screen.getByLabelText(weightLabel), {target: {value: '12'}});
+            await selectAutocomplete(screen.getByRole('combobox', {name: /pickup address/i}), '123', /123 Main Street/);
+            await selectAutocomplete(screen.getByRole('combobox', {name: /delivery address/i}), '123', /123 Main Street/);
+            fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
+            fireEvent.change(screen.getByLabelText(/delivery contact/i), {target: {value: 'Jane'}});
+            fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
+            await selectAutocomplete(screen.getByRole('combobox', {name: /vehicle/i}), '', 'Car');
+            await selectAutocomplete(screen.getByRole('combobox', {name: /speed/i}), '', /Standard/);
+        }
+
+        function mockClipboard(writeText: jest.Mock) {
+            Object.defineProperty(navigator, 'clipboard', {value: {writeText}, configurable: true});
+        }
+
+        it('submits with US-tenant Lb weight, copies the job number and names it in the toast', async () => {
             const onSubmit = jest.fn();
             const showToast = jest.fn();
 
@@ -381,22 +399,14 @@ describe('CreateJobDialog', () => {
             });
 
             (addressApi.getLocationDetailsById as jest.Mock).mockResolvedValue(mockLookupResponse);
-            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue(999);
+            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            const writeText = jest.fn().mockResolvedValue(undefined);
+            mockClipboard(writeText);
 
             const props = createMockProps({onSubmit, showToast, isUsTenant: true});
             renderWithAllProviders(<CreateJobDialog {...props} />);
 
-            // Fill all required fields
-            await selectAutocomplete(screen.getByRole('combobox', {name: /client/i}), 'Test', 'Test Client');
-            fireEvent.change(screen.getByLabelText(/charge amount/i), {target: {value: '10'}});
-            fireEvent.change(screen.getByLabelText(/weight \(lb\)/i), {target: {value: '12'}});
-            await selectAutocomplete(screen.getByRole('combobox', {name: /pickup address/i}), '123', /123 Main Street/);
-            await selectAutocomplete(screen.getByRole('combobox', {name: /delivery address/i}), '123', /123 Main Street/);
-            fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
-            fireEvent.change(screen.getByLabelText(/delivery contact/i), {target: {value: 'Jane'}});
-            fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
-            await selectAutocomplete(screen.getByRole('combobox', {name: /vehicle/i}), '', 'Car');
-            await selectAutocomplete(screen.getByRole('combobox', {name: /speed/i}), '', /Standard/);
+            await fillRequiredFields(/weight \(lb\)/i);
 
             // Submit — use fireEvent.click to avoid the slow user-event pointer pipeline
             // (the rest of the test already uses fireEvent for the same reason)
@@ -411,6 +421,46 @@ describe('CreateJobDialog', () => {
             expect(submittedJob.deliveryAddress.addressLine8).toBe('United States');
             expect(submittedJob.weightLb).toBe(12);
             expect(submittedJob.weightKg).toBeNull();
+
+            // The operator gets the job number on the clipboard and named in the toast,
+            // while the host still receives the id so it can open the job.
+            expect(writeText).toHaveBeenCalledWith('ABC123');
+            await waitFor(() => {
+                expect(showToast).toHaveBeenCalledWith(
+                    expect.stringContaining('ABC123'),
+                    'success',
+                );
+            });
+            expect(showToast).toHaveBeenCalledWith(
+                expect.stringContaining('job number copied'),
+                'success',
+            );
+            expect(onSubmit).toHaveBeenCalledWith(999);
+        }, 30000);
+
+        it('still creates the job when the clipboard copy is refused', async () => {
+            const onSubmit = jest.fn();
+            const showToast = jest.fn();
+
+            mockUseClientSearch.mockReturnValue({data: [{id: 1, text: 'Test Client'}], isFetching: false});
+            mockUseAddressSearch.mockReturnValue({data: [mockAddressOption], isFetching: false});
+            (addressApi.getLocationDetailsById as jest.Mock).mockResolvedValue(mockLookupResponse);
+            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            mockClipboard(jest.fn().mockRejectedValue(new Error('not allowed')));
+
+            const props = createMockProps({onSubmit, showToast, isUsTenant: true});
+            renderWithAllProviders(<CreateJobDialog {...props} />);
+
+            await fillRequiredFields(/weight \(lb\)/i);
+            fireEvent.click(screen.getByRole('button', {name: /create job/i}));
+
+            await waitFor(() => {
+                expect(onSubmit).toHaveBeenCalledWith(999);
+            }, {timeout: 3000});
+            expect(showToast).toHaveBeenCalledWith(
+                expect.not.stringContaining('copied'),
+                'success',
+            );
         }, 30000);
 
         it('submits with NZ-tenant Kg weight (label switches to Weight (kg))', async () => {
@@ -424,7 +474,8 @@ describe('CreateJobDialog', () => {
             });
 
             (addressApi.getLocationDetailsById as jest.Mock).mockResolvedValue(mockLookupResponse);
-            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue(999);
+            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            mockClipboard(jest.fn().mockResolvedValue(undefined));
 
             const props = createMockProps({isUsTenant: false});
             renderWithAllProviders(<CreateJobDialog {...props} />);
@@ -432,16 +483,7 @@ describe('CreateJobDialog', () => {
             // Label flips to kg for non-US tenants
             expect(screen.getByLabelText(/weight \(kg\)/i)).toBeInTheDocument();
 
-            await selectAutocomplete(screen.getByRole('combobox', {name: /client/i}), 'Test', 'Test Client');
-            fireEvent.change(screen.getByLabelText(/charge amount/i), {target: {value: '10'}});
-            fireEvent.change(screen.getByLabelText(/weight \(kg\)/i), {target: {value: '5'}});
-            await selectAutocomplete(screen.getByRole('combobox', {name: /pickup address/i}), '123', /123 Main Street/);
-            await selectAutocomplete(screen.getByRole('combobox', {name: /delivery address/i}), '123', /123 Main Street/);
-            fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
-            fireEvent.change(screen.getByLabelText(/delivery contact/i), {target: {value: 'Jane'}});
-            fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
-            await selectAutocomplete(screen.getByRole('combobox', {name: /vehicle/i}), '', 'Car');
-            await selectAutocomplete(screen.getByRole('combobox', {name: /speed/i}), '', /Standard/);
+            await fillRequiredFields(/weight \(kg\)/i);
 
             fireEvent.click(screen.getByRole('button', {name: /create job/i}));
 
@@ -450,7 +492,7 @@ describe('CreateJobDialog', () => {
             }, {timeout: 3000});
 
             const submittedJob = (jobApi.quickCreateJob as jest.Mock).mock.calls[0][0];
-            expect(submittedJob.weightKg).toBe(5);
+            expect(submittedJob.weightKg).toBe(12);
             expect(submittedJob.weightLb).toBeNull();
         }, 30000);
     });

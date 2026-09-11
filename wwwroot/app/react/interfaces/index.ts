@@ -14,6 +14,6 @@ export * from './notes';
 export * from './agent';
 export * from './event';
 export * from './tasks';
-export {default as Task} from './tasks'
+export type {default as Task} from './tasks'
 export * from './driverManagement';
 export * from './dispatchJob';

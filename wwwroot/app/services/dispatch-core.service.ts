@@ -933,8 +933,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async quickCreateJob(job: JobCreateViewModelDto): Promise<number> {
-        const response = await this.$http.post<number>('/job/QuickCreateJob', job);
+    async quickCreateJob(job: JobCreateViewModelDto): Promise<{jobId: number; jobNumber: string}> {
+        const response = await this.$http.post<{jobId: number; jobNumber: string}>('/job/QuickCreateJob', job);
         return response.data;
     }
 

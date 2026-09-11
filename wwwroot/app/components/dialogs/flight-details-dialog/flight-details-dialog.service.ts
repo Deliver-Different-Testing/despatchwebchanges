@@ -1,4 +1,4 @@
-import { IFlightViewModel } from "../../Nationwide/nationwide.interfaces";
+import { IFlightViewModel } from "../../../interfaces/nationwideFlight.interfaces";
 import angular from 'angular';
 
 class FlightDetailsDialogService implements angular.IServiceProvider {

@@ -41,6 +41,12 @@ export interface CreateJobRequest {
     weightLb: number | null;
 }
 
+/** What job/QuickCreateJob returns: the new job's id plus the job number generated for it. */
+export interface QuickCreateJobResult {
+    jobId: number;
+    jobNumber: string;
+}
+
 export interface RelatedJobDto {
     id: number;
     text: string;

@@ -3,7 +3,7 @@ import {LateEventType} from "../enums/late-event-type.enum";
 import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
-import {IFlightSegment, IFlightSegmentDto} from "../components/Nationwide/nationwide.interfaces";
+import {IFlightSegment, IFlightSegmentDto} from "./nationwideFlight.interfaces";
 import {AirportViewModel} from "../react/interfaces";
 import {Dayjs} from "dayjs";
 
@@ -1072,6 +1072,18 @@ export interface IJobSearchResultDto {
     totalCount: number;
     hasMore: boolean;
     mapItems?: IDispatchMapItem[];
+    statusCounts?: IJobListStatusCounts;
+}
+
+/**
+ * The job list's stats header, counted server-side over every match — before any category filter,
+ * so switching tabs cannot move the numbers. Answered with the first page only.
+ */
+export interface IJobListStatusCounts {
+    total: number;
+    active: number;
+    transit: number;
+    done: number;
 }
 
 export interface IJobSearchResult {

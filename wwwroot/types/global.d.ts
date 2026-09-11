@@ -291,13 +291,13 @@ declare global {
         ReactDashboardSettingsDialog?: {
             open: (
                 config: DashboardSettingsConfig,
-                boxes: Record<string, DashboardBox>,
                 selectedRefreshInterval?: RefreshOption,
                 selectedDriverLocationRefreshInterval?: RefreshOption,
                 selectedTaskRefreshInterval?: RefreshOption,
                 aiEnabled?: boolean,
                 jobSearchBetaEnabled?: boolean,
-                dispatchBetaEnabled?: boolean
+                dispatchBetaEnabled?: boolean,
+                nationwideBetaEnabled?: boolean
             ) => Promise<DashboardSettingsResult | null>;
         };
         ReactCustomizePanelsDialog?: {

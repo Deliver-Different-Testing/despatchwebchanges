@@ -49,7 +49,7 @@ import {
     saveBoxVisibility,
     saveLastActiveLayoutName,
     saveLayouts,
-} from "../../react/pages/job-search/lib/layoutPersistence";
+} from "../../react/components/common/box-shell/layoutPersistence";
 import {
     createDefaultJobSearchLayout,
     createJobSearchBoxes,
@@ -1275,20 +1275,14 @@ class JobSearchController extends BaseController {
     }
 
     async openSettingsDialog($event: MouseEvent): Promise<void> {
-        if (!this.boxes) return;
-
         try {
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
-                AppPage.JobSearch,
-                this.currentLayoutName ?? 'Default',
-                this.boxes
+                AppPage.JobSearch
             );
 
             if (!result) return;
 
-            // Panel visibility now lives in the Customize Panels dialog
-            // (openCustomizePanelsDialog); the gear no longer returns boxes.
             if (result.aiEnabled !== undefined) {
                 setAiEnabled(result.aiEnabled);
             }

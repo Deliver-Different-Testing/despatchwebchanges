@@ -14,19 +14,25 @@ const mockPanel: {
     onDownload?: (dates?: SearchActionDates) => void;
     onClientReport?: (dates?: SearchActionDates) => void;
     onBackendFilter?: (column: string, direction: string) => void;
+    onCourierSearch?: (text: string) => Promise<unknown[]>;
+    onSpeedSearch?: (text: string) => Promise<unknown[]>;
     updateParams: Record<string, jest.Mock>;
     onJobSelect: Record<string, (job: unknown) => void>;
 } = {updateParams: {}, onJobSelect: {}};
 
 jest.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', () => ({
-    SearchCriteriaPanel: ({onSearch, onCriteriaChange, onFromDateChange, onToDateChange, onDownload, onClientReport}: {
+    SearchCriteriaPanel: ({onSearch, onCriteriaChange, onFromDateChange, onToDateChange, onDownload, onClientReport, onCourierSearch, onSpeedSearch}: {
         onSearch: (dates?: SearchActionDates) => void;
         onCriteriaChange: (f: string, v: unknown) => void;
         onFromDateChange: (d: Dayjs) => void;
         onToDateChange: (d: Dayjs) => void;
         onDownload: (dates?: SearchActionDates) => void;
         onClientReport: (dates?: SearchActionDates) => void;
+        onCourierSearch?: (text: string) => Promise<unknown[]>;
+        onSpeedSearch?: (text: string) => Promise<unknown[]>;
     }) => {
+        mockPanel.onCourierSearch = onCourierSearch;
+        mockPanel.onSpeedSearch = onSpeedSearch;
         mockPanel.onSearch = onSearch;
         mockPanel.onCriteriaChange = onCriteriaChange;
         mockPanel.onFromDateChange = onFromDateChange;
@@ -55,6 +61,12 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
 jest.mock('../../services/dispatchExecutorApi', () => ({
     ...jest.requireActual('../../services/dispatchExecutorApi'),
     getDispatchJobDetail: jest.fn(() => new Promise(() => {})),
+    searchSpeedOptions: jest.fn(),
+}));
+
+jest.mock('../../services/courierApi', () => ({
+    ...jest.requireActual('../../services/courierApi'),
+    searchActiveCouriers: jest.fn(),
 }));
 
 jest.mock('../../components/common/task-history/TaskHistory', () => ({
@@ -74,6 +86,9 @@ jest.mock('./hooks/useScanDetail', () => ({
 }));
 
 import {JobSearchPage} from './JobSearchPage';
+import type {JobSearchLayoutBridge} from './JobSearchLayoutBridge';
+import {getDispatchJobDetail, searchSpeedOptions} from '../../services/dispatchExecutorApi';
+import {searchActiveCouriers} from '../../services/courierApi';
 import {MantineTestProvider} from '../../__testUtils__';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof JobSearchPage>> = {}) {
@@ -120,6 +135,21 @@ describe('JobSearchPage', () => {
             .find(header => within(header).queryByText('Detail · J7'));
         expect(detailHeader).toBeDefined();
         expect(detailHeader).toContainElement(triggers[0]);
+    });
+
+    it('opens a newly created job in the detail panel via the layout bridge', async () => {
+        (getDispatchJobDetail as jest.Mock).mockResolvedValueOnce({id: 42, jobNo: 'J42'});
+        let bridge: JobSearchLayoutBridge | undefined;
+        renderPage({onLayoutBridgeReady: b => { bridge = b; }});
+
+        await act(async () => {
+            bridge!.jobCreated(42);
+        });
+
+        expect(getDispatchJobDetail).toHaveBeenCalledWith(42);
+        const detailHeader = screen.getAllByTestId('panel-header')
+            .find(header => within(header).queryByText('Detail · J42'));
+        expect(detailHeader).toBeDefined();
     });
 
     it('renders the default layout: panels, lists, map, box headers, and empty placeholders', () => {
@@ -253,5 +283,60 @@ describe('JobSearchPage', () => {
         });
         const mainCall = mockPanel.updateParams.jobSearchJobList.mock.calls.at(-1)?.[0];
         expect(mainCall).toMatchObject({sortColumn: 'jobNo', sortDirection: 'desc'});
+    });
+});
+
+describe('JobSearchPage error feedback', () => {
+    // These three paths used to fail with nothing but a console.error, so an
+    // operator saw a spinner stop or an empty dropdown and no explanation.
+    const suppress = () => jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    beforeEach(() => {
+        mockPanel.onCourierSearch = undefined;
+        mockPanel.onSpeedSearch = undefined;
+        jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('toasts when the full job detail fails to load', async () => {
+        suppress();
+        (getDispatchJobDetail as jest.Mock).mockRejectedValue(new Error('boom'));
+        const showToast = jest.fn();
+        renderPage({showToast});
+
+        await act(async () => {
+            mockPanel.onJobSelect['jobSearchJobList']?.({id: 5, jobNo: 'JOB-5'});
+        });
+
+        expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/job detail/i), 'error');
+    });
+
+    it('toasts when the courier search fails', async () => {
+        suppress();
+        (searchActiveCouriers as jest.Mock).mockRejectedValue(new Error('boom'));
+        const showToast = jest.fn();
+        renderPage({showToast});
+
+        await act(async () => {
+            await mockPanel.onCourierSearch?.('abc');
+        });
+
+        expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/courier/i), 'error');
+    });
+
+    it('toasts when the speed search fails', async () => {
+        suppress();
+        (searchSpeedOptions as jest.Mock).mockRejectedValue(new Error('boom'));
+        const showToast = jest.fn();
+        renderPage({showToast});
+
+        await act(async () => {
+            await mockPanel.onSpeedSearch?.('abc');
+        });
+
+        expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/service|speed/i), 'error');
     });
 });

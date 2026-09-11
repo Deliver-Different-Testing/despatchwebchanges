@@ -447,19 +447,31 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             };
 
             // Create the job
-            const newJobId = await jobApi.quickCreateJob(job);
+            const {jobId: newJobId, jobNumber} = await jobApi.quickCreateJob(job);
+
+            // Hand the operator the job number to paste elsewhere. The job exists either
+            // way, so a clipboard refusal (insecure context, unfocused document) only
+            // changes what the toast says.
+            let copied = false;
+            try {
+                await navigator.clipboard.writeText(jobNumber);
+                copied = true;
+            } catch (clipboardError) {
+                console.warn('[CreateJobDialog] Could not copy the job number:', clipboardError);
+            }
+            const copySuffix = copied ? ' (job number copied)' : '';
 
             // Handle optional courier dispatch
             if (selectedCourier) {
                 try {
                     await jobApi.allocateJobToCourier(selectedCourier.id, [newJobId]);
-                    showToast('Job created and dispatched successfully', 'success');
+                    showToast(`Job ${jobNumber} created and dispatched successfully${copySuffix}`, 'success');
                 } catch (dispatchError) {
                     console.error('[CreateJobDialog] Courier dispatch failed:', dispatchError);
-                    showToast('Job created successfully, but could not be dispatched to the courier. The courier may be offline.', 'warning');
+                    showToast(`Job ${jobNumber} created successfully, but could not be dispatched to the courier. The courier may be offline.`, 'warning');
                 }
             } else {
-                showToast('Job created successfully', 'success');
+                showToast(`Job ${jobNumber} created successfully${copySuffix}`, 'success');
             }
 
             onSubmit(newJobId);

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import {screen, fireEvent} from '@testing-library/react';
+import {setupUser} from '../../../__testUtils__/setupUser';
 import {MapZoomViewControls} from './MapZoomViewControls';
 import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
@@ -40,6 +41,35 @@ describe('MapZoomViewControls', () => {
         expect(screen.getByLabelText('Zoom out')).toBeInTheDocument();
         expect(screen.getByLabelText('Toggle traffic conditions')).toBeInTheDocument();
         expect(screen.getByLabelText('Choose view')).toBeInTheDocument();
+    });
+
+    it.each([
+        ['Zoom in', 'Zoom in'],
+        ['Zoom out', 'Zoom out'],
+        ['Toggle traffic conditions', 'Show traffic conditions'],
+        ['Toggle traffic incidents', 'Show traffic incidents'],
+        ['Choose view', 'Choose view'],
+    ])('shows the %s tooltip on hover', async (ariaLabel, tooltip) => {
+        const user = setupUser();
+        renderWithTheme(<MapZoomViewControls map={createMockMap()} platform={null} defaultLayers={createMockLayers()}/>);
+
+        await user.hover(screen.getByLabelText(ariaLabel));
+        expect(await screen.findByText(tooltip)).toBeInTheDocument();
+    });
+
+    it('anchors the view menu to the rail button rather than the viewport origin', async () => {
+        const user = setupUser();
+        renderWithTheme(<MapZoomViewControls map={createMockMap()} platform={null} defaultLayers={createMockLayers()}/>);
+
+        // Menu.Target measures the ref it hands its child to place the dropdown.
+        // A trigger that drops the ref leaves floating-ui without a reference
+        // element and the menu lands in the top-left corner of the page.
+        const trigger = screen.getByLabelText('Choose view');
+        expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+        await user.click(trigger);
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
     });
 
     it('adds the traffic layer when toggled on and removes it when toggled off', () => {

@@ -5,7 +5,7 @@
  */
 
 import {apiClient} from './apiClient';
-import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest, CreateJobRequest, Suggestion} from '../interfaces';
+import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest, CreateJobRequest, QuickCreateJobResult, Suggestion} from '../interfaces';
 import {RequestOptions} from "./requestOptions";
 
 /**
@@ -41,8 +41,8 @@ export async function voidBulkJob(request: VoidBulkJobRequest): Promise<void> {
 /**
  * Quick create a new job
  */
-export async function quickCreateJob(job: CreateJobRequest): Promise<number> {
-    return apiClient.post<number>('job/QuickCreateJob', job);
+export async function quickCreateJob(job: CreateJobRequest): Promise<QuickCreateJobResult> {
+    return apiClient.post<QuickCreateJobResult>('job/QuickCreateJob', job);
 }
 
 /**

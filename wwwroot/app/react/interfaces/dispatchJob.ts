@@ -267,6 +267,15 @@ export interface JobSearchResult {
     jobs: DispatchJob[];
     totalCount: number;
     hasMore: boolean;
+    /** Stats-header counts over every match. Present on the first page only. */
+    statusCounts?: JobListStatusCounts | null;
+}
+
+export interface JobListStatusCounts {
+    total: number;
+    active: number;
+    transit: number;
+    done: number;
 }
 
 export interface FetchConfig {
@@ -319,6 +328,13 @@ export interface JobListPanelProps {
     /** Called when jobs are fetched/updated (fetchConfig mode) — used to sync map markers */
     onJobsLoaded?: (jobs: DispatchJob[]) => void;
     defaultCategory?: JobCategory;
+    /**
+     * Category that outranks both the stored preference and `defaultCategory`.
+     * For scopes that dictate their own filter -- the dispatch clear-list, which
+     * V1 forced to `needs-dispatch` on area click. Never persisted, so leaving
+     * the scope restores whatever the operator had chosen.
+     */
+    forcedCategory?: JobCategory;
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
     /** If provided, React manages its own data fetching via React Query */
@@ -330,7 +346,7 @@ export interface JobListPanelProps {
     /** Leave "Edit columns" mode from the editor's Done button. */
     onExitColumnEditMode?: () => void;
     /**
-     * Card header DOM node (from JobSearchShell). When provided, the view options
+     * Card header DOM node (from BoxShell). When provided, the view options
      * (density / reset columns / logged-in toggle) are portaled into the header
      * instead of the toolbar.
      */

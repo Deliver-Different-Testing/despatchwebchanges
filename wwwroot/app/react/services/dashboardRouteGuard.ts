@@ -20,6 +20,7 @@ export const dashboardStateFeatureKeys: Readonly<Record<string, string>> = {
     home: dashboardFeatureKeys.dispatch,
     dispatchV2: dashboardFeatureKeys.dispatch,
     nw: dashboardFeatureKeys.nationwide,
+    nwV2: dashboardFeatureKeys.nationwide,
     overview: dashboardFeatureKeys.overview,
     taskDashboard: dashboardFeatureKeys.taskDashboard,
     jobSearch: dashboardFeatureKeys.jobSearch,

@@ -48,5 +48,16 @@ describe('dashboardRouteGuard', () => {
         // A beta opt-out must not become a way past the grant.
         expect(dashboardStateFeatureKeys.home).toBe(dashboardStateFeatureKeys.dispatchV2);
         expect(dashboardStateFeatureKeys.jobSearch).toBe(dashboardStateFeatureKeys.jobSearchV2);
+        expect(dashboardStateFeatureKeys.nw).toBe(dashboardStateFeatureKeys.nwV2);
+    });
+
+    it('blocks and allows nwV2 exactly as it does nw', () => {
+        window.VisibleFeatures = ['dw-dispatch'];
+        expect(resolveDashboardRedirect('nw')).not.toBeNull();
+        expect(resolveDashboardRedirect('nwV2')).not.toBeNull();
+
+        delete window.VisibleFeatures;
+        expect(resolveDashboardRedirect('nw')).toBeNull();
+        expect(resolveDashboardRedirect('nwV2')).toBeNull();
     });
 });

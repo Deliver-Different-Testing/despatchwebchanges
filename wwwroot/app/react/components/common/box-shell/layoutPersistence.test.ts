@@ -3,6 +3,7 @@ import {
     LayoutStorageKeys,
     boxVisibilityKey,
     clearBoxVisibility,
+    addMissingFactoryBoxes,
     importLayoutsFrom,
     loadBoxVisibility,
     loadLastActiveLayoutName,
@@ -73,6 +74,101 @@ describe('loadLayouts', () => {
     it('returns [defaultLayout] if stored JSON is malformed', () => {
         localStorage.setItem(keys.layoutsKey, '{not json');
         expect(loadLayouts(keys, defaultLayout)).toEqual([defaultLayout]);
+    });
+});
+
+describe('loadLayouts panel migration', () => {
+    /*
+     * A stored layout was cloned from whatever arrangement shipped when the user
+     * saved it, so a panel added since has no column slot in it — and toggling
+     * that panel visible would render nothing at all.
+     */
+    const threeColFactory: ILayout = {
+        name: 'Default',
+        layout: {
+            columns: [
+                {id: 'col1', width: '50%', boxes: [{name: 'a', height: '50%'}, {name: 'newOne', height: '50%'}]},
+                {id: 'col2', width: '25%', boxes: [{name: 'b', height: '100%'}]},
+                {id: 'col3', width: '25%', boxes: [{name: 'c', height: '100%'}]},
+            ],
+        },
+    };
+
+    const storedWith = (columns: ILayout['layout']['columns']): ILayout =>
+        ({name: 'Custom', layout: {columns}});
+
+    it("appends a missing factory box into the factory's own column", () => {
+        const stored = storedWith([
+            {id: 'col1', width: '50%', boxes: [{name: 'a', height: '50%'}]},
+            {id: 'col2', width: '25%', boxes: [{name: 'b', height: '100%'}]},
+            {id: 'col3', width: '25%', boxes: [{name: 'c', height: '100%'}]},
+        ]);
+
+        const result = addMissingFactoryBoxes(stored, threeColFactory);
+
+        expect(result.layout.columns[0].boxes).toEqual([
+            {name: 'a', height: '50%'},
+            {name: 'newOne', height: '50%'},
+        ]);
+        expect(result.layout.columns[1].boxes).toEqual([{name: 'b', height: '100%'}]);
+    });
+
+    it('clamps to the last stored column when the stored layout has fewer', () => {
+        const stored = storedWith([{id: 'col1', width: '100%', boxes: [{name: 'a', height: '50%'}]}]);
+
+        const result = addMissingFactoryBoxes(stored, threeColFactory);
+
+        expect(result.layout.columns).toHaveLength(1);
+        expect(result.layout.columns[0].boxes.map(b => b.name)).toEqual(['a', 'newOne', 'b', 'c']);
+    });
+
+    it('returns the same object when every factory box already has a slot', () => {
+        const stored = storedWith([
+            {id: 'col1', width: '50%', boxes: [{name: 'newOne', height: '20%'}, {name: 'a', height: '80%'}]},
+            {id: 'col2', width: '50%', boxes: [{name: 'b'}, {name: 'c'}]},
+        ]);
+
+        // Reference identity, so the no-op path cannot churn layoutVersion or the
+        // remote-push diff on every read.
+        expect(addMissingFactoryBoxes(stored, threeColFactory)).toBe(stored);
+    });
+
+    it('leaves a stored layout with no columns untouched', () => {
+        const stored = storedWith([]);
+
+        expect(addMissingFactoryBoxes(stored, threeColFactory)).toBe(stored);
+    });
+
+    it('keeps a box the factory has since dropped', () => {
+        const stored = storedWith([
+            {id: 'col1', width: '100%', boxes: [{name: 'a'}, {name: 'retired'}, {name: 'newOne'}, {name: 'b'}, {name: 'c'}]},
+        ]);
+
+        expect(addMissingFactoryBoxes(stored, threeColFactory).layout.columns[0].boxes
+            .map(b => b.name)).toContain('retired');
+    });
+
+    it('migrates stored layouts on the way out of loadLayouts', () => {
+        localStorage.setItem(keys.layoutsKey, JSON.stringify([
+            storedWith([{id: 'col1', width: '100%', boxes: [{name: 'a', height: '100%'}]}]),
+        ]));
+
+        const [, custom] = loadLayouts(keys, threeColFactory);
+
+        expect(custom.layout.columns[0].boxes.map(b => b.name)).toEqual(['a', 'newOne', 'b', 'c']);
+    });
+
+    it('does not write the migration back to storage', () => {
+        const raw = JSON.stringify([
+            storedWith([{id: 'col1', width: '100%', boxes: [{name: 'a', height: '100%'}]}]),
+        ]);
+        localStorage.setItem(keys.layoutsKey, raw);
+
+        loadLayouts(keys, threeColFactory);
+
+        // loadLayouts runs inside render-phase state initialisers, so it must stay
+        // side-effect free; the migration lands on the user's next resize.
+        expect(localStorage.getItem(keys.layoutsKey)).toBe(raw);
     });
 });
 

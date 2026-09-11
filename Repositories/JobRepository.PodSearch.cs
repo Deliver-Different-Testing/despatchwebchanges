@@ -47,11 +47,25 @@ public partial class JobRepository
             var (pageLive, pageArchived) = BuildPodSearchQueries(pageContext, data);
 
             // One statement across both sources, so live and archive cannot drift against each other
-            // the way two independently-executed counts could.
-            var countTask = countLive.Select(j => j.UcjbId)
-                .Concat(countArchived.Select(j => j.UcjbId))
-                .TagWith("PodSearch - Total Count")
-                .CountAsync(cancellationToken);
+            // the way two independently-executed counts could. The first page also carries the stats
+            // header's buckets, so the header describes every match rather than the rows loaded so far.
+            var buckets = countLive.Select(JobListStatusBuckets.Over(JobStatusSnapshots.Live))
+                .Concat(countArchived.Select(JobListStatusBuckets.Over(JobStatusSnapshots.Archived)));
+
+            var bucketTalliesTask = page == 0
+                ? buckets
+                    .GroupBy(bucket => bucket)
+                    .Select(g => new JobListBucketTally(g.Key, g.Count()))
+                    .TagWith("PodSearch - Status Counts")
+                    .ToListAsync(cancellationToken)
+                : Task.FromResult(new List<JobListBucketTally>());
+
+            var countTask = page == 0
+                ? Task.FromResult(0)
+                : countLive.Select(j => j.UcjbId)
+                    .Concat(countArchived.Select(j => j.UcjbId))
+                    .TagWith("PodSearch - Total Count")
+                    .CountAsync(cancellationToken);
 
             var pageKeysTask = ApplyPodSearchSorting(
                     pageLive.Select(LiveSortKey).Concat(pageArchived.Select(ArchivedSortKey)),
@@ -62,9 +76,12 @@ public partial class JobRepository
                 .TagWith("PodSearch - Page Keys")
                 .ToListAsync(cancellationToken);
 
-            await Task.WhenAll(countTask, pageKeysTask);
+            await Task.WhenAll(countTask, bucketTalliesTask, pageKeysTask);
 
-            var totalCount = await countTask;
+            var statusCounts = page == 0
+                ? JobListStatusCounts.FromBuckets(await bucketTalliesTask)
+                : null;
+            var totalCount = statusCounts?.Total ?? await countTask;
             var pageKeys = await pageKeysTask;
 
             if (pageKeys.Count == 0)
@@ -73,7 +90,8 @@ public partial class JobRepository
                 {
                     Jobs = [],
                     TotalCount = totalCount,
-                    HasMore = false
+                    HasMore = false,
+                    StatusCounts = statusCounts
                 };
             }
 
@@ -94,7 +112,8 @@ public partial class JobRepository
                 TotalCount = totalCount,
                 // Driven by the page itself rather than the separately-executed count, so a count
                 // that shifted mid-scroll can never cut paging short.
-                HasMore = pageKeys.Count == pageSize
+                HasMore = pageKeys.Count == pageSize,
+                StatusCounts = statusCounts
             };
         }
         catch (Exception e)
@@ -157,12 +176,14 @@ public partial class JobRepository
                     && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
                 );
 
-            if (data.WildSet)
+            if (!data.WildSet)
             {
-                var wildSearch = $"%{data.Wild ?? string.Empty}%";
-                live = live.Where(JobWildcardSearch.LiveJobMatches(wildSearch));
-                archived = archived.Where(JobWildcardSearch.ArchivedJobMatches(wildSearch));
+                return (live, ExcludeLiveDuplicates(archived, context.TucJobs));
             }
+
+            var wildSearch = $"%{data.Wild ?? string.Empty}%";
+            live = live.Where(JobWildcardSearch.LiveJobMatches(wildSearch));
+            archived = archived.Where(JobWildcardSearch.ArchivedJobMatches(wildSearch));
         }
 
         return (live, ExcludeLiveDuplicates(archived, context.TucJobs));
@@ -207,9 +228,11 @@ public partial class JobRepository
             rank[(pageKeys[i].JobId, pageKeys[i].IsArchived)] = i;
         }
 
-        return (await liveTask).Concat(await archivedTask)
+        return
+        [
+            .. (await liveTask).Concat(await archivedTask)
             .OrderBy(j => rank.GetValueOrDefault((j.Id, j.IsArchived), int.MaxValue))
-            .ToList();
+        ];
     }
 
     /// <summary>

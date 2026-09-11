@@ -16,6 +16,39 @@ import {
     ISuggestion
 } from "../../interfaces/job.interface";
 import {Coordinates} from "../../interfaces/coordinates.interface";
+import {calculateMapBounds} from "../../react/pages/nationwide/lib/mapBounds";
+import {deriveWidgetUiState} from "../../react/pages/nationwide/lib/widgetUiState";
+import {STATUS_TO_LIST_MAP, listsAffectedByStatusChange} from "../../react/pages/nationwide/lib/statusListMap";
+import {
+    DISABLED_INTERVAL,
+    buildRefreshIntervalOptions,
+    resolveSavedInterval
+} from "../../react/pages/nationwide/lib/refreshInterval";
+import {
+    applyBoxVisibility,
+    boxVisibilityKey,
+    createNationwideBoxes,
+    toBoxVisibilityState
+} from "../../react/pages/nationwide/lib/boxDefinitions";
+import {StoredDateFilter, loadDateFilterFrom, saveDateFilterTo} from "../../react/utils/dateFilterStorage";
+import {
+    getNationwideBetaEnabled,
+    setNationwideBetaEnabled
+} from "../../react/pages/nationwide/lib/betaPreference";
+import {
+    MINIMUM_LAYOVER_MINUTES,
+    flightResultMessage,
+    flightSearchErrorMessage,
+    flightSearchGuard,
+    nextDayDeparture,
+    resolveDepartureDate
+} from "../../react/pages/nationwide/lib/flightSearch";
+import {
+    filterFlights,
+    formatAirportCodeForDropdown,
+    formatMinutesAsDuration,
+    getConnectionTime
+} from "../../react/pages/nationwide/lib/flightFormatting";
 import {
     AssignFlightToJobRequest,
     IFlightSegment,
@@ -23,7 +56,7 @@ import {
     IGetAgentOptionsResponse,
     IGetFlightOptionsResponse,
     StatusChangeEvent
-} from "./nationwide.interfaces";
+} from "../../interfaces/nationwideFlight.interfaces";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import BaseController from "../base-controller";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -92,6 +125,7 @@ class NationwideControl extends BaseController {
         'autoCompleteDialogService',
         'jobAddStopService',
         '$stateParams',
+        '$state',
         'flightAgentConfirmationDialogService',
         'dispatchDialogService',
         'messagingDialogService',
@@ -109,7 +143,6 @@ class NationwideControl extends BaseController {
     private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
     private readonly BoxVisibilityKey: string = `boxVisibility-${AppPage.Domestic}-${ContactID}`;
 
-    private static readonly FLIGHT_SPEED_ID = 415;
 
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
@@ -248,6 +281,7 @@ class NationwideControl extends BaseController {
         private autoCompleteDialogService: AutoCompleteDialogService,
         private jobAddStopService: JobAddStopService,
         private $stateParams: angular.ui.IStateParamsService,
+        private $state: angular.ui.IStateService,
         private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
         private dispatchDialogService: DispatchDialogService,
         private messagingDialogService: MessagingDialogService,
@@ -296,11 +330,7 @@ class NationwideControl extends BaseController {
         this.initHereMaps();
 
         // Data loading is initiated in $onInit to avoid duplicate calls
-        this.STATUS_TO_LIST_MAP = {
-            1: [JobDataType.NEW],
-            3: [JobDataType.POD],
-            4: [JobDataType.REPRICE]
-        };
+        this.STATUS_TO_LIST_MAP = STATUS_TO_LIST_MAP;
 
         this.nationwideService.getActiveAirlines().then((response: IAirlineSuggestion[]) => {
             this.activeAirlineOptions = response;
@@ -591,92 +621,42 @@ class NationwideControl extends BaseController {
         });
     }
 
+    /**
+     * AngularJS-only `ng-include` paths, kept here rather than in the shared box
+     * definitions: they point at partials that go away with this folder.
+     */
+    private static readonly BOX_TEMPLATE_URLS: Record<string, string> = {
+        [NationwideBoxes.Map]: "app/components/Nationwide/partials/map.html",
+        [NationwideBoxes.NewJobs]: "app/components/Nationwide/partials/jobList.html",
+        [NationwideBoxes.JobDetail]: "app/components/Nationwide/partials/jobDetail.html",
+        [NationwideBoxes.PodJobs]: "app/components/Nationwide/partials/jobListPOD.html",
+        [NationwideBoxes.RepriceJobs]: "app/components/Nationwide/partials/jobListReprice.html",
+        [NationwideBoxes.Tasks]: "app/components/Nationwide/partials/tasksList.html",
+        [NationwideBoxes.FlightAgents]: "app/components/Nationwide/partials/flightAgentDataTableBox.html",
+    };
+
     private initializeBoxes(): void {
-        this.boxes = {
-            [NationwideBoxes.Map]: {
-                name: NationwideBoxes.Map,
-                title: 'Map',
-                icon: "pin_drop",
-                templateUrl: "app/components/Nationwide/partials/map.html",
-                showRefresh: true,
-                visible: true,
-                description: "Geographic view of nationwide job locations and coverage areas"
-            },
-            [NationwideBoxes.NewJobs]: {
-                name: NationwideBoxes.NewJobs,
-                title: 'New Jobs',
-                icon: "new_releases",
-                templateUrl: "app/components/Nationwide/partials/jobList.html",
-                showRefresh: true,
-                visible: true,
-                description: "Recently created jobs requiring assignment or review"
-            },
-            [NationwideBoxes.JobDetail]: {
-                name: NationwideBoxes.JobDetail,
-                title: 'Job Detail',
-                icon: "assignment",
-                templateUrl: "app/components/Nationwide/partials/jobDetail.html",
-                showRefresh: true,
-                showDetailButtons: true,
-                visible: true,
-                description: "Complete job information with management actions"
-            },
-            [NationwideBoxes.PodJobs]: {
-                name: NationwideBoxes.PodJobs,
-                title: 'Awaiting POD',
-                icon: "pending_actions",
-                templateUrl: "app/components/Nationwide/partials/jobListPOD.html",
-                showRefresh: true,
-                visible: true,
-                description: "Jobs pending proof of delivery documentation"
-            },
-            [NationwideBoxes.RepriceJobs]: {
-                name: NationwideBoxes.RepriceJobs,
-                title: 'Reprice',
-                icon: "price_change",
-                templateUrl: "app/components/Nationwide/partials/jobListReprice.html",
-                showRefresh: true,
-                visible: true,
-                description: "Jobs flagged for pricing adjustment or review"
-            },
-            [NationwideBoxes.Tasks]: {
-                name: NationwideBoxes.Tasks,
-                title: 'Tasks',
-                icon: "support",
-                templateUrl: "app/components/Nationwide/partials/tasksList.html",
-                showRefresh: true,
-                visible: true,
-                description: "Administrative tasks and follow-up items"
-            },
-            [NationwideBoxes.FlightAgents]: {
-                name: NationwideBoxes.FlightAgents,
-                title: 'Available',
-                icon: "docs_add_on",
-                templateUrl: "app/components/Nationwide/partials/flightAgentDataTableBox.html",
-                showRefresh: true,
-                visible: true,
-                description: "List of available agents or flights ready for job assignment"
-            },
-        };
+        const boxes = createNationwideBoxes();
+
+        for (const boxName of Object.keys(boxes)) {
+            boxes[boxName].templateUrl = NationwideControl.BOX_TEMPLATE_URLS[boxName];
+        }
+
+        this.boxes = boxes;
     }
 
     private getBoxVisibilityKey(layoutName: string): string {
-        return `${this.BoxVisibilityKey}-${layoutName}`;
+        return boxVisibilityKey(this.BoxVisibilityKey, layoutName);
     }
 
     private saveBoxVisibility(): void {
         if (!this.boxes || !this.currentLayoutName) return;
 
         try {
-            const boxState: Record<string, { visible: boolean; collapsed: boolean }> = {};
-            Object.keys(this.boxes).forEach(boxName => {
-                boxState[boxName] = {
-                    visible: this.boxes![boxName].visible ?? true,
-                    collapsed: this.boxes![boxName].collapsed ?? false
-                };
-            });
-            const key = this.getBoxVisibilityKey(this.currentLayoutName);
-            localStorage.setItem(key, JSON.stringify(boxState));
+            localStorage.setItem(
+                this.getBoxVisibilityKey(this.currentLayoutName),
+                JSON.stringify(toBoxVisibilityState(this.boxes)),
+            );
         } catch (error) {
             console.error('Error saving box visibility to storage:', error);
         }
@@ -686,29 +666,8 @@ class NationwideControl extends BaseController {
         if (!this.boxes || !this.currentLayoutName) return;
 
         try {
-            const key = this.getBoxVisibilityKey(this.currentLayoutName);
-            const savedState = localStorage.getItem(key);
-            if (savedState) {
-                const boxState = JSON.parse(savedState);
-                Object.keys(boxState).forEach(boxName => {
-                    if (this.boxes && this.boxes[boxName]) {
-                        // Handle both old format (boolean) and new format (object)
-                        if (typeof boxState[boxName] === 'boolean') {
-                            this.boxes[boxName].visible = boxState[boxName];
-                            this.boxes[boxName].collapsed = false;
-                        } else {
-                            this.boxes[boxName].visible = boxState[boxName].visible ?? true;
-                            this.boxes[boxName].collapsed = boxState[boxName].collapsed ?? false;
-                        }
-                    }
-                });
-            } else {
-                // No saved state for this layout - reset all boxes to visible and expanded
-                Object.keys(this.boxes).forEach(boxName => {
-                    this.boxes![boxName].visible = true;
-                    this.boxes![boxName].collapsed = false;
-                });
-            }
+            const savedState = localStorage.getItem(this.getBoxVisibilityKey(this.currentLayoutName));
+            applyBoxVisibility(this.boxes, savedState ? JSON.parse(savedState) : null);
         } catch (error) {
             console.error('Error loading box visibility from storage:', error);
         }
@@ -734,12 +693,14 @@ class NationwideControl extends BaseController {
 
     private loadSavedRefreshInterval(): void {
         try {
-            const savedIntervalString = localStorage.getItem(this.refreshDurationIntervalKey);
-            if (savedIntervalString) {
-                const refreshId = parseInt(savedIntervalString, 10) || 0;
-                this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
+            const resolved = resolveSavedInterval(
+                localStorage.getItem(this.refreshDurationIntervalKey),
+                this.refreshIntervalOptions ?? [],
+            );
 
-                if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
+            if (resolved) {
+                this.selectedRefreshInterval = resolved;
+                if (resolved.id > 0) {
                     this.startAutoRefresh();
                 }
             }
@@ -889,12 +850,12 @@ class NationwideControl extends BaseController {
 
     async handleStatusChange(event: StatusChangeEvent): Promise<void> {
         try {
-            const listsToRefresh = new Set([
-                ...(this.STATUS_TO_LIST_MAP[event.previousStatusId] || []),
-                ...(this.STATUS_TO_LIST_MAP[event.newStatusId] || [])
-            ]);
+            const listsToRefresh = listsAffectedByStatusChange(
+                event.previousStatusId,
+                event.newStatusId,
+            );
 
-            await this.getJobList(Array.from(listsToRefresh));
+            await this.getJobList(listsToRefresh);
 
             const refreshedJob = this.findJobInLocalLists(event.jobId);
 
@@ -1143,67 +1104,11 @@ class NationwideControl extends BaseController {
     }
 
     private calculateMapBounds(job: IDispatchJob) {
-        // Early validation
-        if (!job || !job.pickupAddress || !job.deliveryAddress) {
-            console.warn('Invalid job data in calculateMapBounds', {
-                hasJob: !!job,
-                hasPickupAddress: job ? !!job.pickupAddress : false,
-                hasDeliveryAddress: job ? !!job.deliveryAddress : false
-            });
-
-            // Return default map config
-            return {
-                center: this.appConfig.US_Customer ?
-                    this.appConfig.US_Coordinates_Center :
-                    this.appConfig.NZ_Coordinates_Center,
-                zoom: 7,
-                selectedJobIndex: 0
-            };
-        }
-
-        const pickupCoords: Coordinates = {
-            lat: job.pickupAddress?.latitude ?? 0,
-            lng: job.pickupAddress?.longitude ?? 0
-        };
-
-        const deliveryCoords: Coordinates = {
-            lat: job.deliveryAddress?.latitude ?? 0,
-            lng: job.deliveryAddress?.longitude ?? 0
-        };
-
-        // Calculate the center point between pickup and delivery
-        const centerLat = (pickupCoords.lat + deliveryCoords.lat) / 2;
-        const centerLng = (pickupCoords.lng + deliveryCoords.lng) / 2;
-
-        // Calculate the appropriate zoom level
-        const latDiff = Math.abs(pickupCoords.lat - deliveryCoords.lat);
-        const lngDiff = Math.abs(pickupCoords.lng - deliveryCoords.lng);
-
-        // Use the larger difference to determine zoom
-        const maxDiff = Math.max(latDiff, lngDiff);
-
-        // Zoom calculation - adjusted for larger distances
-        let zoom;
-        if (maxDiff > 40) zoom = 3; else if (maxDiff > 20) zoom = 4;
-        else if (maxDiff > 10) zoom = 5; else if (maxDiff > 5) zoom = 6;
-        else if (maxDiff > 2) zoom = 7; else if (maxDiff > 1) zoom = 8;
-        else if (maxDiff > 0.5) zoom = 9; else if (maxDiff > 0.1) zoom = 10; else zoom = 12;
-
-        return {
-            center: {
-                lat: centerLat,
-                lng: centerLng
-            },
-            zoom: zoom,
-            job: {
-                id: job.id,
-                pickup: pickupCoords,
-                delivery: deliveryCoords,
-                childJobs: [],
-                flight: job.speedId === NationwideControl.FLIGHT_SPEED_ID,
-            },
-            selectedJobIndex: 0
-        };
+        return calculateMapBounds(job, {
+            isUsCustomer: this.appConfig.US_Customer,
+            usCentre: this.appConfig.US_Coordinates_Center,
+            nzCentre: this.appConfig.NZ_Coordinates_Center,
+        });
     }
 
     isDeliveryJob(job: IDispatchJob): boolean {
@@ -1242,24 +1147,21 @@ class NationwideControl extends BaseController {
     }
 
     async loadFlights(): Promise<void> {
-        if (!this.currentJob) {
+        const guard = flightSearchGuard({
+            job: this.currentJob,
+            airports: {
+                outbound: this.selectedOutboundAirport,
+                inbound: this.selectedInboundAirport,
+            },
+            loading: !!this.flightsLoading,
+        });
+
+        if (guard.action === 'skip') return;
+
+        if (guard.action === 'block') {
             this.flightOptions = [];
-            this.flightMessage = "Please select a job to view flight options";
-            return;
-        }
-
-        if (this.currentJob.assignedFlight) {
-            return;
-        }
-
-        if (this.flightsLoading) {
-            return;
-        }
-
-        if (!this.selectedOutboundAirport || !this.selectedInboundAirport) {
-            this.flightOptions = [];
-            this.flightMessage = "Please select both outbound and inbound airports to search for flights";
-            this.updateUIState(this.currentJob);
+            this.flightMessage = guard.message;
+            if (this.currentJob) this.updateUIState(this.currentJob);
             return;
         }
 
@@ -1267,47 +1169,33 @@ class NationwideControl extends BaseController {
         this.updateUIState(this.currentJob);
 
         try {
-            let departureDate;
-
-            if (this.lastDepartureTime) {
-                departureDate = dayjs(this.lastDepartureTime);
-            } else if (this.currentJob.booked) {
-                departureDate = dayjs(this.currentJob.booked);
-            } else if (this.currentJob.pickUpTimeZone) {
-                departureDate = dayjs.tz(this.currentJob.pickUpTimeZone.text);
-            } else {
-                departureDate = dayjs.tz(this.timeZone);
-            }
-
-            const airlineId = this.selectedAirline?.id;
-            const departureAirportId = this.selectedOutboundAirport?.id;
-            const arrivalAirportId = this.selectedInboundAirport?.id;
-            const minimumLayoverMinutes = 60;
+            const departureDate = resolveDepartureDate({
+                lastDepartureTime: this.lastDepartureTime,
+                booked: this.currentJob!.booked,
+                jobTimeZone: this.currentJob!.pickUpTimeZone?.text,
+                pageTimeZone: this.timeZone,
+            });
 
             this.flightListPromise = this.nationwideService.getFlightOptions(
-                this.currentJob.id,
+                this.currentJob!.id,
                 departureDate,
-                this.currentJob.pickUpTimeZone?.text ?? this.timeZone,
-                airlineId,
-                departureAirportId,
-                arrivalAirportId,
-                minimumLayoverMinutes,
+                this.currentJob!.pickUpTimeZone?.text ?? this.timeZone,
+                this.selectedAirline?.id,
+                this.selectedOutboundAirport?.id,
+                this.selectedInboundAirport?.id,
+                MINIMUM_LAYOVER_MINUTES,
                 this.includeNearbyAirports
             );
 
             const result = await this.flightListPromise;
 
             this.flightOptions = result.flights || [];
-            this.flightMessage = result.message || (result.flights.length === 0 ?
-                "No flights available for the selected criteria" : undefined);
+            this.flightMessage = flightResultMessage(result);
             this.lastDepartureTime = result.lastDepartureTime;
             this.filteredFlightOptions = this.flightOptions;
         } catch (error: any) {
             console.error("Error loading flights:", error);
-            const serverMessage = error?.data || error?.message;
-            this.flightMessage = serverMessage
-                ? `Flight search failed: ${serverMessage}`
-                : "An error occurred while loading flights. Please try again.";
+            this.flightMessage = flightSearchErrorMessage(error);
             this.flightOptions = [];
         } finally {
             this.flightsLoading = false;
@@ -1322,15 +1210,7 @@ class NationwideControl extends BaseController {
             return;
         }
 
-        if (this.lastDepartureTime) {
-            this.lastDepartureTime = this.lastDepartureTime
-                .add(1, 'day')
-                .startOf('day')
-        } else {
-            this.lastDepartureTime = this.currentJob.booked
-                .add(1, 'day')
-                .startOf('day')
-        }
+        this.lastDepartureTime = nextDayDeparture(this.lastDepartureTime, this.currentJob.booked);
 
         return this.loadFlights();
     }
@@ -1815,30 +1695,11 @@ class NationwideControl extends BaseController {
     }
 
     formatAirportCodeForDropdown(text: string): string {
-        if (!text) return '';
-
-        const spaceIndex = text.indexOf(' ');
-        if (spaceIndex === -1) return text;
-        return text.substring(0, spaceIndex + 1);
+        return formatAirportCodeForDropdown(text);
     }
 
     getConnectionTime(firstSegment: IFlightSegment, secondSegment: IFlightSegment): string {
-        if (!firstSegment || !secondSegment) return '';
-
-        // Calculate time difference in minutes
-        const firstArrival = dayjs(firstSegment.arrivalTime);
-        const secondDeparture = dayjs(secondSegment.departureTime);
-        const diffMinutes = secondDeparture.diff(firstArrival, 'minutes');
-
-        // Format as hours and minutes
-        const hours = Math.floor(diffMinutes / 60);
-        const mins = diffMinutes % 60;
-
-        if (hours > 0) {
-            return hours + 'h ' + (mins < 10 ? '0' + mins : mins) + 'm';
-        } else {
-            return mins + 'm';
-        }
+        return getConnectionTime(firstSegment, secondSegment);
     }
 
     async openAgentSearchDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
@@ -1854,55 +1715,25 @@ class NationwideControl extends BaseController {
     }
 
     private updateUIState(job?: IDispatchJob): void {
-        // Reset all flags first
-        this.resetAllFlags();
-
-        // Use a provided job or fell back to the currentJob
         const activeJob = job || this.currentJob;
 
-        // Determine if this is a delivery job
-        this.isDeliveryJobType = activeJob ? this.isDeliveryJob(activeJob) : false;
+        const state = deriveWidgetUiState(activeJob, {
+            flightsLoading: this.flightsLoading,
+            flightOptions: this.flightOptions,
+            agentsLoading: this.agentsLoading,
+            agentOptions: this.agentOptions,
+        });
 
-        if (!this.isDeliveryJobType) {
-            // Handle flight job UI states
-            if (!activeJob) {
-                this.showNoJobSelectedMessage = true;
-            } else if (activeJob.assignedFlight) {
-                this.showJobHasAssignedFlightMessage = true;
-            } else if (!activeJob.toAirportId || !activeJob.fromAirportId) {
-                this.showMissingAirportInfoMessage = true;
-            } else if (!this.flightsLoading && (!this.flightOptions || this.flightOptions.length === 0)) {
-                this.showNoFlightsAvailableMessage = true;
-            } else if (!this.flightsLoading && this.flightOptions && this.flightOptions.length > 0) {
-                this.showFlightList = true;
-            }
-        } else {
-            // Handle delivery job UI states
-            if (!activeJob) {
-                this.showNoAgentJobSelectedMessage = true;
-            } else if (activeJob.assignedAgent) {
-                this.showJobHasAssignedAgentMessage = true;
-            } else if (!this.agentsLoading && (!this.agentOptions || this.agentOptions.length === 0)) {
-                this.showNoAgentsAvailableMessage = true;
-            } else if (!this.agentsLoading && this.agentOptions && this.agentOptions.length > 0) {
-                this.showAgentList = true;
-            }
-        }
-    }
-
-    private resetAllFlags(): void {
-        // Flight section flags
-        this.showNoJobSelectedMessage = false;
-        this.showJobHasAssignedFlightMessage = false;
-        this.showMissingAirportInfoMessage = false;
-        this.showNoFlightsAvailableMessage = false;
-        this.showFlightList = false;
-
-        // Agent section flags
-        this.showNoAgentJobSelectedMessage = false;
-        this.showJobHasAssignedAgentMessage = false;
-        this.showNoAgentsAvailableMessage = false;
-        this.showAgentList = false;
+        this.isDeliveryJobType = state.isDeliveryJobType;
+        this.showNoJobSelectedMessage = state.showNoJobSelectedMessage;
+        this.showJobHasAssignedFlightMessage = state.showJobHasAssignedFlightMessage;
+        this.showMissingAirportInfoMessage = state.showMissingAirportInfoMessage;
+        this.showNoFlightsAvailableMessage = state.showNoFlightsAvailableMessage;
+        this.showFlightList = state.showFlightList;
+        this.showNoAgentJobSelectedMessage = state.showNoAgentJobSelectedMessage;
+        this.showJobHasAssignedAgentMessage = state.showJobHasAssignedAgentMessage;
+        this.showNoAgentsAvailableMessage = state.showNoAgentsAvailableMessage;
+        this.showAgentList = state.showAgentList;
     }
 
     async refreshAction(boxName: string): Promise<void> {
@@ -2032,12 +1863,7 @@ class NationwideControl extends BaseController {
     }
 
     formatMinutesToTimeReact(minutes: number): string {
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        if (hours > 0) {
-            return `${hours}h ${mins < 10 ? '0' + mins : mins}m`;
-        }
-        return `${mins}m`;
+        return formatMinutesAsDuration(minutes);
     }
 
     refreshMap(): void {
@@ -2107,37 +1933,8 @@ class NationwideControl extends BaseController {
     }
 
     initRefreshIntervalOptions(): void {
-        const disabledOption: ISuggestion = {id: 0, text: "Disabled"};
-        this.selectedRefreshInterval = disabledOption;
-
-        const options: ISuggestion[] = [
-            disabledOption
-        ];
-
-        const maxSeconds = 15 * 60; // 15 minutes in seconds
-
-        for (let seconds = 30; seconds <= maxSeconds; seconds += 30) {
-            options.push({
-                id: seconds,
-                text: NationwideControl.formatDuration(seconds)
-            });
-        }
-
-        this.refreshIntervalOptions = options;
-    }
-
-    private static formatDuration(seconds: number): string {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-
-        if (minutes === 0) {
-            return `${seconds} seconds`;
-        } else if (remainingSeconds === 0) {
-            return minutes === 1 ? `${minutes} min` : `${minutes} mins`;
-        } else {
-            const minText = minutes === 1 ? 'min' : 'mins';
-            return `${minutes} ${minText} ${remainingSeconds} seconds`;
-        }
+        this.refreshIntervalOptions = buildRefreshIntervalOptions();
+        this.selectedRefreshInterval = DISABLED_INTERVAL;
     }
 
     onRefreshIntervalChange(selectedInterval: ISuggestion): void {
@@ -2209,25 +2006,7 @@ class NationwideControl extends BaseController {
     }
 
     filterFlights(): void {
-        if (!this.flightOptions) {
-            this.filteredFlightOptions = [];
-            return;
-        }
-
-        if (!this.flightSearchText || this.flightSearchText.trim() === '') {
-            this.filteredFlightOptions = this.flightOptions;
-            return;
-        }
-
-        const searchTerm = this.flightSearchText.toLowerCase().trim();
-
-        this.filteredFlightOptions = this.flightOptions.filter(flight =>
-            flight.flightNumber?.toLowerCase().includes(searchTerm) ||
-            flight.airline?.toLowerCase().includes(searchTerm) ||
-            flight.departureAirport?.toLowerCase().includes(searchTerm) ||
-            flight.arrivalAirport?.toLowerCase().includes(searchTerm) ||
-            flight.aircraft?.toLowerCase().includes(searchTerm)
-        );
+        this.filteredFlightOptions = filterFlights(this.flightOptions, this.flightSearchText);
     }
 
     async refreshDataTimeSpan(dateFilterData: IDateFilterData) {
@@ -2239,38 +2018,13 @@ class NationwideControl extends BaseController {
 
     private saveDateFilterToStorage(): void {
         if (!this.dateFilterData) return;
-
-        try {
-            localStorage.setItem(this.DateFilterKey, JSON.stringify(this.dateFilterData));
-        } catch (error) {
-            console.error('Error saving date filter to storage:', error);
-        }
+        saveDateFilterTo(this.DateFilterKey, this.dateFilterData as StoredDateFilter);
     }
 
     private loadDateFilterFromStorage(): void {
-        try {
-            const savedDateFilter = localStorage.getItem(this.DateFilterKey);
-            if (savedDateFilter) {
-                const parsedDateFilter = JSON.parse(savedDateFilter);
-                const startDate = dayjs(parsedDateFilter.startDate);
-                let endDate = dayjs(parsedDateFilter.endDate);
+        if (!localStorage.getItem(this.DateFilterKey)) return;
 
-                // If "all time" is selected (startDate is epoch), always recalculate
-                // endDate to be 24 hours from now to include future jobs
-                if (startDate.valueOf() === 0) {
-                    endDate = dayjs().tz(this.timeZone).add(24, 'hours');
-                }
-
-                this.dateFilterData = {
-                    startDate,
-                    endDate,
-                    useTime: parsedDateFilter.useTime ?? false
-                };
-            }
-        } catch (error) {
-            console.error('Error loading date filter from storage:', error);
-            this.dateFilterData = setDateFilterDefaults();
-        }
+        this.dateFilterData = loadDateFilterFrom(this.DateFilterKey, {timeZone: this.timeZone});
     }
 
     async handleJobDispatch(job: IDispatchJob, courierId: number) {
@@ -2354,23 +2108,30 @@ class NationwideControl extends BaseController {
     }
 
     async openSettingsDialog($event: MouseEvent): Promise<void> {
-        if (!this.boxes) return;
-
         try {
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
                 AppPage.Domestic,
-                this.currentLayoutName ?? 'Default',
-                this.boxes,
                 this.selectedRefreshInterval
             );
 
             if (!result) return;
 
-            // Panel visibility now lives in the Customize Panels dialog
-            // (openCustomizePanelsDialog); the gear no longer returns boxes.
             if (result.aiEnabled !== undefined) {
                 setAiEnabled(result.aiEnabled);
+            }
+
+            // Opting back in to the React page: persist and move there, the
+            // same way the Dispatch and Job Search toggles behave.
+            if (result.nationwideBetaEnabled !== undefined
+                && result.nationwideBetaEnabled !== getNationwideBetaEnabled()) {
+                setNationwideBetaEnabled(result.nationwideBetaEnabled);
+                if (result.nationwideBetaEnabled) {
+                    this.$state.go('nwV2').catch((err: unknown) => {
+                        console.error('[Nationwide] Failed to switch to the React page', err);
+                    });
+                    return;
+                }
             }
 
             this.saveCurrentLayout();

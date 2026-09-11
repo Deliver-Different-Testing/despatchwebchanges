@@ -1,4 +1,4 @@
-import DispatchBoxes from '../../../../components/home/enums/DispatchBoxes';
+import DispatchBoxes from './dispatchBoxes';
 import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
 
 /**
@@ -57,6 +57,28 @@ export function createDispatchBoxes(): Record<string, IBox> {
             visible: true,
             description: 'Geographic visualization of job locations',
         },
+        /*
+         * The two Overview panels ship hidden. They are an opt-in addition to the
+         * dispatch board rather than part of its shipped arrangement, so they stay
+         * off until an operator turns them on from Customize panels (which needs a
+         * saved layout — the Default layout is read-only).
+         */
+        [DispatchBoxes.OverviewDeliveries]: {
+            name: DispatchBoxes.OverviewDeliveries,
+            title: 'Deliveries',
+            icon: 'package_2',
+            showRefresh: true,
+            visible: false,
+            description: 'Overview deliveries: parent jobs with their child legs and progress',
+        },
+        [DispatchBoxes.OpenJobs]: {
+            name: DispatchBoxes.OpenJobs,
+            title: 'Open Jobs',
+            icon: 'timeline',
+            showRefresh: true,
+            visible: false,
+            description: 'Outstanding jobs grouped by driver, with completions so far today',
+        },
     };
 }
 
@@ -71,6 +93,11 @@ export function createDefaultDispatchLayout(): ILayout {
                     boxes: [
                         {name: DispatchBoxes.JobsList, height: '50%'},
                         {name: DispatchBoxes.JobDetail, height: '50%'},
+                        // Hidden by default (see createDispatchBoxes). They still need a
+                        // slot here: saving a layout clones this payload, and that clone
+                        // is what gives the panels somewhere to render once enabled.
+                        {name: DispatchBoxes.OverviewDeliveries, height: '50%'},
+                        {name: DispatchBoxes.OpenJobs, height: '50%'},
                     ],
                 },
                 {

@@ -12,7 +12,7 @@ import { ArrowRight, Check, CircleCheck, CirclePlus, Info, Lock, NotebookPen, Re
 import { IconTruck } from '@tabler/icons-react';
 import { DialogShell, DialogHeader, DialogFooter } from '../shared/mantine';
 import { Icon } from '../../common/icon/Icon';
-import { grossModeColor } from '../../../theme/designTokens';
+import { pricingModeColors } from '../../../theme/designTokens';
 
 import { SimplePriceEditDialogProps, PricingMode, ChildPriceUpdate } from './types';
 
@@ -43,18 +43,6 @@ const MODE_OPTIONS: ModeOption[] = [
         icon: <Icon lucide={NotebookPen} size={22} />,
     },
 ];
-
-const SELECTED_ICON_COLOR: Record<PricingMode, string> = {
-    recalculate: 'var(--mantine-color-gray-6)',
-    base: 'var(--mantine-color-green-6)',
-    gross: grossModeColor,
-};
-
-const SELECTED_ICON_BG: Record<PricingMode, string> = {
-    recalculate: alpha('var(--mantine-color-gray-6)', 0.12),
-    base: alpha('var(--mantine-color-green-6)', 0.12),
-    gross: alpha(grossModeColor, 0.12),
-};
 
 const scrim = (opacity: number) => alpha('var(--mantine-color-black)', opacity);
 
@@ -212,50 +200,44 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 {availableModes.map((opt) => {
                     const isSelected = selectedMode === opt.mode;
                     const disabled = isModeDisabled(opt.mode);
+                    const modeColor = pricingModeColors[opt.mode];
                     return (
-                        <Group
+                        <Radio.Card
                             key={opt.mode}
-                            gap={14}
-                            wrap="nowrap"
-                            onClick={() => { if (!disabled && !readOnly) setSelectedMode(opt.mode); }}
+                            value={opt.mode}
+                            radius="lg"
+                            p={14}
+                            disabled={disabled || readOnly}
+                            data-pricing-mode={opt.mode}
                             title={disabled ? 'Not available for bulk jobs' : undefined}
                             style={{
-                                paddingBlock: 14,
-                                paddingInline: 16,
-                                border: `2px solid ${isSelected ? 'var(--mantine-color-gray-6)' : scrim(0.08)}`,
-                                borderRadius: 'var(--mantine-radius-lg)',
+                                '--radio-color': modeColor,
+                                borderWidth: 2,
                                 cursor: (disabled || readOnly) ? 'default' : 'pointer',
                                 opacity: disabled ? 0.5 : 1,
-                                backgroundColor: isSelected
-                                    ? alpha('var(--mantine-color-gray-6)', 0.06)
-                                    : 'var(--mantine-color-white)',
-                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            }}
+                                backgroundColor: isSelected ? alpha(modeColor, 0.06) : 'var(--mantine-color-white)',
+                            } as React.CSSProperties}
                         >
-                            <Radio
-                                value={opt.mode}
-                                disabled={disabled || readOnly}
-                                color="gray.6"
-                                aria-label={opt.title}
-                            />
-                            <ThemeIcon
-                                size={40}
-                                radius="lg"
-                                style={{
-                                    '--ti-bg': isSelected ? SELECTED_ICON_BG[opt.mode] : scrim(0.06),
-                                    '--ti-color': isSelected ? SELECTED_ICON_COLOR[opt.mode] : 'var(--mantine-color-dimmed)',
-                                    transition: 'all 0.2s ease',
-                                } as React.CSSProperties}
-                            >
-                                {opt.icon}
-                            </ThemeIcon>
-                            <Stack gap={2} style={{minWidth: 0}}>
-                                <Text fw={500}>{opt.title}</Text>
-                                <Text size="xs" c="dimmed" style={{lineHeight: 1.4}}>
-                                    {disabled ? 'Not available for bulk jobs' : opt.description}
-                                </Text>
-                            </Stack>
-                        </Group>
+                            <Group gap={14} wrap="nowrap">
+                                <Radio.Indicator/>
+                                <ThemeIcon
+                                    size={40}
+                                    radius="lg"
+                                    style={{
+                                        '--ti-bg': alpha(modeColor, isSelected ? 0.16 : 0.08),
+                                        '--ti-color': modeColor,
+                                    } as React.CSSProperties}
+                                >
+                                    {opt.icon}
+                                </ThemeIcon>
+                                <Stack gap={2} style={{minWidth: 0}}>
+                                    <Text fw={500}>{opt.title}</Text>
+                                    <Text size="xs" c="dimmed" style={{lineHeight: 1.4}}>
+                                        {disabled ? 'Not available for bulk jobs' : opt.description}
+                                    </Text>
+                                </Stack>
+                            </Group>
+                        </Radio.Card>
                     );
                 })}
             </Stack>

@@ -1,8 +1,9 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
+import type {SortState} from '../data-table';
 import {DeliveriesTable} from './DeliveriesTable';
-import type {OverviewTableParentJob, TableSort} from '../OverviewPage.interfaces';
+import type {OverviewTableParentJob} from './DeliveriesTable.types';
 
 
 const renderWithTheme = (ui: React.ReactElement) =>
@@ -27,7 +28,7 @@ function createMockDelivery(overrides: Partial<OverviewTableParentJob> = {}): Ov
 const defaultProps = {
     deliveries: [] as OverviewTableParentJob[],
     isLoading: false,
-    sort: {column: 'jobName', direction: 'asc'} as TableSort,
+    sort: {column: 'jobName', direction: 'asc'} as SortState,
     onSort: jest.fn(),
     page: 1,
     limit: 20,
@@ -210,6 +211,20 @@ describe('DeliveriesTable', () => {
             fireEvent.click(mapButton);
 
             expect(defaultProps.onShowMap).toHaveBeenCalledWith(delivery);
+        });
+
+        /*
+         * Dispatch mounts this table beside a Map panel of its own, so it omits
+         * onShowMap rather than opening a modal map over a board that has one.
+         */
+        it('omits the map action when onShowMap is not supplied', () => {
+            const {onShowMap: _omitted, ...withoutMap} = defaultProps;
+            renderWithTheme(
+                <DeliveriesTable {...withoutMap} deliveries={[createMockDelivery()]} total={1} />,
+            );
+
+            expect(screen.queryByRole('button', {name: 'Open map'})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'View job details'})).toBeInTheDocument();
         });
 
         it('calls onOpenJobDetail when view button is clicked', () => {

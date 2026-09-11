@@ -15,7 +15,7 @@ import {PanelHeader} from '../../components/common/panel-header';
 import {SymbolIcon} from '../../components/common/symbol-icon';
 import {FilterPanel} from './components/FilterPanel';
 import {StatsTabs} from './components/StatsTabs';
-import {DeliveriesTable} from './components/DeliveriesTable';
+import {DeliveriesTable, transformStatus} from '../../components/common/deliveries-table';
 import {OpenJobsWidget} from './components/OpenJobsWidget';
 import {MapDialog} from './components/MapDialog';
 import {OpenJobConfirmDialog} from '../../components/common/recurring-delivery-journey/OpenJobConfirmDialog';
@@ -50,10 +50,6 @@ function saveCollapseState(cardName: string, isCollapsed: boolean): void {
         states[cardName] = isCollapsed;
         localStorage.setItem('cardCollapseStates', JSON.stringify(states));
     } catch { /* localStorage may be unavailable */ }
-}
-
-function transformStatus(status: string): string {
-    return status.toUpperCase().replace(/[\s-]/g, '_');
 }
 
 export const OverviewPage: React.FC<OverviewPageProps> = ({

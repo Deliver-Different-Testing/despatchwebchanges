@@ -1,13 +1,13 @@
 import {act, renderHook, waitFor} from '@testing-library/react';
 
 // Control the remote sync so the mount effect's promise can settle on demand.
-jest.mock('../lib/layoutSync', () => ({
+jest.mock('./layoutSync', () => ({
     loadRemoteIntoLocal: jest.fn(),
     queueRemotePush: jest.fn(),
     readLocalRows: jest.fn(() => []),
 }));
 
-import * as layoutSync from '../lib/layoutSync';
+import * as layoutSync from './layoutSync';
 import {useBoxLayout} from './useBoxLayout';
 import {ILayout} from '../../../../interfaces/layout.interfaces';
 import {IBox} from '../../../../interfaces/layout.interfaces';
@@ -15,7 +15,7 @@ import {
     loadBoxVisibility,
     loadLayouts,
     saveBoxVisibility,
-} from '../lib/layoutPersistence';
+} from './layoutPersistence';
 
 const mockLoadRemoteIntoLocal = layoutSync.loadRemoteIntoLocal as jest.Mock;
 const mockReadLocalRows = layoutSync.readLocalRows as jest.Mock;
@@ -25,6 +25,28 @@ const storageKeys = {
     lastActiveLayoutKey: 'testLastActive',
     boxVisibilityKeyBase: 'testBoxVisibility',
 };
+
+/*
+ * Minimal fixtures. This hook is shared, so its test states its own panels
+ * rather than borrowing a particular page's -- `createBoxes` and
+ * `createDefaultLayout` are required options for the same reason.
+ */
+const createBoxes = (): Record<string, IBox> => ({
+    alpha: {name: 'alpha', title: 'Alpha', visible: true, collapsed: false},
+    beta: {name: 'beta', title: 'Beta', visible: true, collapsed: false},
+});
+
+const createDefaultLayout = (): ILayout => ({
+    name: 'Default',
+    layout: {
+        columns: [
+            {id: '1', width: '50%', boxes: [{name: 'alpha', height: '100%'}]},
+            {id: '2', width: '50%', boxes: [{name: 'beta', height: '100%'}]},
+        ],
+    },
+});
+
+const options = {storageKeys, createBoxes, createDefaultLayout};
 
 function deferred<T>() {
     let resolve!: (value: T) => void;
@@ -48,7 +70,7 @@ describe('useBoxLayout remote sync', () => {
         const remote = deferred<boolean>();
         mockLoadRemoteIntoLocal.mockReturnValue(remote.promise);
 
-        const {unmount} = renderHook(() => useBoxLayout({storageKeys, page: 'JobSearch'}));
+        const {unmount} = renderHook(() => useBoxLayout({...options, page: 'JobSearch'}));
 
         unmount();
 
@@ -68,7 +90,7 @@ describe('useBoxLayout remote sync', () => {
         mockReadLocalRows.mockReturnValue([]);
         mockLoadRemoteIntoLocal.mockResolvedValue(true);
 
-        const {result} = renderHook(() => useBoxLayout({storageKeys, page: 'JobSearch'}));
+        const {result} = renderHook(() => useBoxLayout({...options, page: 'JobSearch'}));
         const initialVersion = result.current.layoutVersion;
 
         await waitFor(() => expect(mockLoadRemoteIntoLocal).toHaveBeenCalled());
@@ -89,7 +111,7 @@ describe('useBoxLayout remote sync', () => {
         ]);
         mockLoadRemoteIntoLocal.mockResolvedValue(true);
 
-        const {result} = renderHook(() => useBoxLayout({storageKeys, page: 'JobSearch'}));
+        const {result} = renderHook(() => useBoxLayout({...options, page: 'JobSearch'}));
         const initialVersion = result.current.layoutVersion;
 
         await waitFor(() => expect(result.current.layoutVersion).toBe(initialVersion + 1));
@@ -100,7 +122,7 @@ describe('useBoxLayout remote sync', () => {
         const remote = deferred<boolean>();
         mockLoadRemoteIntoLocal.mockReturnValue(remote.promise);
 
-        renderHook(() => useBoxLayout({storageKeys, page: 'JobSearch'}));
+        renderHook(() => useBoxLayout({...options, page: 'JobSearch'}));
 
         await act(async () => {
             remote.reject(new Error('Network Error'));
@@ -133,7 +155,7 @@ describe('useBoxLayout layout editing', () => {
         c: {name: 'c', title: 'C', visible: true, collapsed: false},
     });
 
-    const render = () => renderHook(() => useBoxLayout({storageKeys, createBoxes, createDefaultLayout}));
+    const render = () => renderHook(() => useBoxLayout({...options, createBoxes, createDefaultLayout}));
     const storedLayout = (name: string) =>
         loadLayouts(storageKeys, createDefaultLayout()).find(l => l.name === name)!;
 

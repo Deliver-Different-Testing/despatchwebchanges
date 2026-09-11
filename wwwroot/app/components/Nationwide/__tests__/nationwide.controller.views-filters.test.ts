@@ -241,24 +241,10 @@ describe('filterBySupportType', () => {
     });
 });
 
-describe('formatDuration (static)', () => {
-    // Access via ControllerClass since it's static
-    const formatDuration = (ControllerClass as any).formatDuration;
-
-    it('formats seconds only', () => {
-        expect(formatDuration(30)).toBe('30 seconds');
-    });
-
-    it('formats 1 minute', () => {
-        expect(formatDuration(60)).toBe('1 min');
-    });
-
-    it('formats multiple minutes', () => {
-        expect(formatDuration(300)).toBe('5 mins');
-    });
-
-    it('formats minutes and seconds', () => {
-        expect(formatDuration(90)).toBe('1 min 30 seconds');
-        expect(formatDuration(150)).toBe('2 mins 30 seconds');
-    });
-});
+/*
+ * `formatDuration` moved to
+ * `react/pages/nationwide/lib/refreshInterval.formatIntervalDuration`, shared
+ * with the React page. Its table-driven test there is a superset of the four
+ * cases that were here (30 / 60 / 300 / 90 / 150 seconds), and also pins the
+ * singular-only-at-one-minute rule and the 15-minute ceiling.
+ */

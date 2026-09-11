@@ -2,13 +2,13 @@
  * React Dashboard Settings Dialog
  *
  * The gear dialog behind Dispatch, Job Search and the dashboards: refresh
- * cadences, Auto-mate, the classic/new page toggles, and panel visibility.
- * Follows the dialog design language in CLAUDE.md.
+ * cadences, Auto-mate and the classic/new page toggles. Panel visibility is
+ * not here — it lives in the Customize Panels dialog, reached from the Layouts
+ * menu. Follows the dialog design language in CLAUDE.md.
  */
 
-import React, {useState, useMemo} from 'react';
+import React, {useState} from 'react';
 import {
-    Alert,
     Badge,
     Box,
     Divider,
@@ -22,7 +22,7 @@ import {
     Title,
     alpha,
 } from '@mantine/core';
-import {Clock, Info, LayoutDashboard, Settings, Sparkles} from 'lucide-react';
+import {Clock, Settings, Sparkles} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {
     DialogFooter,
@@ -41,6 +41,7 @@ export interface RefreshOption {
     text: string;
 }
 
+/** A dashboard panel. Owned by the Customize Panels dialog, which imports this. */
 export interface DashboardBox {
     name?: string;
     title?: string;
@@ -55,31 +56,19 @@ export interface DashboardSettingsConfig {
     showDriverLocationRefresh?: boolean;
     /** Show the "Tasks" auto-refresh dropdown (its own independent cadence). */
     showTaskRefresh?: boolean;
-    showDashboards?: boolean;
     showAiToggle?: boolean;
     /** Show the "Use the new Job Search" toggle (on by default). Job Search settings only. */
     showJobSearchBetaToggle?: boolean;
     /** Show the "Use the new Dispatch" toggle (on by default). Dispatch settings only. */
     showDispatchBetaToggle?: boolean;
-    /**
-     * Replace the Dashboard panels section with a notice that panel options have
-     * moved to the Layouts menu → Customize panels. Set where the dedicated
-     * Customize Panels dialog owns visibility (currently Job Search).
-     */
-    panelsMovedNotice?: boolean;
-    /**
-     * Render the Dashboard panels section at all. Defaults to shown; set `false`
-     * to drop the section entirely (e.g. Dispatch, where panels are managed only
-     * from the Layouts menu → Customize panels).
-     */
-    showPanels?: boolean;
+    /** Show the "Use the new Nationwide" toggle (on by default). Nationwide settings only. */
+    showNationwideBetaToggle?: boolean;
 }
 
 export interface DashboardSettingsResult {
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
     selectedTaskRefreshInterval?: RefreshOption;
-    boxes?: Record<string, DashboardBox>;
     aiEnabled?: boolean;
     /** When true, the Auto-mate briefing opens expanded automatically instead of click-to-open. */
     aiAutoOpen?: boolean;
@@ -87,12 +76,13 @@ export interface DashboardSettingsResult {
     jobSearchBetaEnabled?: boolean;
     /** Set when `showDispatchBetaToggle` is true; the caller persists + redirects. */
     dispatchBetaEnabled?: boolean;
+    /** Set when `showNationwideBetaToggle` is true; the caller persists + redirects. */
+    nationwideBetaEnabled?: boolean;
 }
 
 export interface DashboardSettingsDialogProps {
     open: boolean;
     config: DashboardSettingsConfig;
-    boxes: Record<string, DashboardBox>;
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
     selectedTaskRefreshInterval?: RefreshOption;
@@ -101,6 +91,7 @@ export interface DashboardSettingsDialogProps {
     aiAutoOpen?: boolean;
     jobSearchBetaEnabled?: boolean;
     dispatchBetaEnabled?: boolean;
+    nationwideBetaEnabled?: boolean;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
 }
@@ -223,7 +214,6 @@ function RefreshIntervalSetting({title, description, value, options, onChange}: 
 export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = ({
     open,
     config,
-    boxes: initialBoxes,
     selectedRefreshInterval: initialRefreshInterval,
     selectedDriverLocationRefreshInterval: initialDriverInterval,
     selectedTaskRefreshInterval: initialTaskInterval,
@@ -232,6 +222,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     aiAutoOpen: initialAiAutoOpen,
     jobSearchBetaEnabled: initialJobSearchBetaEnabled,
     dispatchBetaEnabled: initialDispatchBetaEnabled,
+    nationwideBetaEnabled: initialNationwideBetaEnabled,
     onClose,
     onSave,
 }) => {
@@ -252,235 +243,174 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [dispatchBetaEnabled, setDispatchBetaEnabled] = useState<boolean>(
         initialDispatchBetaEnabled ?? true,
     );
-    const [boxes, setBoxes] = useState<Record<string, DashboardBox>>(() => {
-        // Deep clone the boxes
-        const cloned: Record<string, DashboardBox> = {};
-        for (const key of Object.keys(initialBoxes)) {
-            cloned[key] = {...initialBoxes[key]};
-        }
-        return cloned;
-    });
-
-    const boxList = useMemo(() => {
-        return Object.entries(boxes).map(([key, box]) => ({
-            key,
-            ...box,
-        }));
-    }, [boxes]);
-
-    const handleToggleBox = (boxKey: string) => {
-        setBoxes((prev) => ({
-            ...prev,
-            [boxKey]: {
-                ...prev[boxKey],
-                visible: !prev[boxKey]?.visible,
-            },
-        }));
-    };
+    const [nationwideBetaEnabled, setNationwideBetaEnabled] = useState<boolean>(
+        initialNationwideBetaEnabled ?? true,
+    );
 
     const handleSave = () => {
         onSave({
             selectedRefreshInterval: refreshInterval,
             selectedDriverLocationRefreshInterval: driverLocationInterval,
             selectedTaskRefreshInterval: taskInterval,
-            boxes,
             aiEnabled,
             aiAutoOpen,
             jobSearchBetaEnabled: config.showJobSearchBetaToggle ? jobSearchBetaEnabled : undefined,
             dispatchBetaEnabled: config.showDispatchBetaToggle ? dispatchBetaEnabled : undefined,
+            nationwideBetaEnabled: config.showNationwideBetaToggle ? nationwideBetaEnabled : undefined,
         });
     };
+
+    /* Built as a list so the dividers land strictly between whichever sections
+       a given page turned on — a per-section trailing rule left one dangling at
+       the bottom whenever the last section was switched off. */
+    const sections = [
+        config.showRefreshInterval && (
+            <Box p={24} key="autoRefresh">
+                <SectionHeading icon={<Icon lucide={Clock}/>} title="Auto-refresh"/>
+
+                <Stack gap={16}>
+                    <RefreshIntervalSetting
+                        title="Job list"
+                        description="How often the job list checks for new and updated jobs"
+                        value={refreshInterval}
+                        options={refreshOptions}
+                        onChange={setRefreshInterval}
+                    />
+
+                    {/* Tasks — an independent cadence from the job list's */}
+                    {config.showTaskRefresh && (
+                        <RefreshIntervalSetting
+                            title="Tasks"
+                            description="How often the Tasks panel checks for new and updated tasks"
+                            value={taskInterval}
+                            options={refreshOptions}
+                            onChange={setTaskInterval}
+                        />
+                    )}
+
+                    {config.showDriverLocationRefresh && (
+                        <RefreshIntervalSetting
+                            title="Driver locations"
+                            description="How often driver positions update on the map"
+                            value={driverLocationInterval}
+                            options={refreshOptions}
+                            onChange={setDriverLocationInterval}
+                        />
+                    )}
+                </Stack>
+            </Box>
+        ),
+
+        config.showAiToggle && (
+            <Box p={24} key="autoMate">
+                <SectionHeading
+                    icon={<AutoMateLogo size={28}/>}
+                    title="Auto-mate Settings"
+                    accent={aiAccentColor}
+                />
+
+                <Stack gap={16}>
+                    <SettingRow
+                        title="Show Auto-mate briefings"
+                        badge={
+                            <Badge
+                                size="xs"
+                                c="white"
+                                style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
+                            >
+                                BETA
+                            </Badge>
+                        }
+                        description="Adds a short AI briefing — verdict, what needs attention, and key facts —
+                            to the job details, task dashboard, operations, and driver compliance pages.
+                            Applies to your account only."
+                        accent={aiAccentColor}
+                        checked={aiEnabled}
+                        onToggle={() => setAiEnabled((prev) => !prev)}
+                    />
+
+                    {/* Only meaningful while briefings are on, so the row is
+                        disabled and dimmed when they are off. */}
+                    <SettingRow
+                        title="Open automatically"
+                        description="Opens the Auto-mate briefing expanded instead of waiting for a click.
+                            Applies to your account only."
+                        accent={aiAccentColor}
+                        checked={aiAutoOpen}
+                        disabled={!aiEnabled}
+                        onToggle={() => setAiAutoOpen((prev) => !prev)}
+                    />
+                </Stack>
+            </Box>
+        ),
+
+        /* Job Search version toggle — the React rebuild of /jobSearch is now the
+           default; this switches back to the classic page. Caller persists
+           localStorage and triggers the route redirect after Save. */
+        config.showJobSearchBetaToggle && (
+            <Box p={24} key="jobSearchVersion">
+                <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Job Search version"/>
+                <SettingRow
+                    title="Use the new Job Search"
+                    description="The rebuilt Job Search is now the default — faster filtering, quicker loads,
+                        and modern dialogs. Turn this off to go back to the classic page. Applies to
+                        your account only."
+                    checked={jobSearchBetaEnabled}
+                    onToggle={() => setJobSearchBetaEnabled((prev) => !prev)}
+                />
+            </Box>
+        ),
+
+        /* Nationwide version toggle — opt-in, unlike the other two, because the
+           React Nationwide page is new and unproven. */
+        config.showNationwideBetaToggle && (
+            <Box p={24} key="nationwideVersion">
+                <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Nationwide version"/>
+                <SettingRow
+                    title="Try the new Nationwide"
+                    description="A rebuilt Nationwide page — faster loads, modern dialogs, and saved
+                        layouts that follow your account across browsers and computers. It is still
+                        being proven, so the classic page stays the default: turn this on to try it,
+                        and off again at any time if you hit a problem. Applies to your account only."
+                    checked={nationwideBetaEnabled}
+                    onToggle={() => setNationwideBetaEnabled((prev) => !prev)}
+                />
+            </Box>
+        ),
+
+        /* Dispatch version toggle — same deal for the home/dispatch page. */
+        config.showDispatchBetaToggle && (
+            <Box p={24} key="dispatchVersion">
+                <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Dispatch version"/>
+                <SettingRow
+                    title="Use the new Dispatch"
+                    description="The rebuilt Dispatch is now the default — faster loads, modern dialogs, and
+                        more customisation options like choosing your columns. Saved layouts follow
+                        your account, so they persist across browsers and computers. Turn this off to
+                        go back to the classic page. Applies to your account only."
+                    checked={dispatchBetaEnabled}
+                    onToggle={() => setDispatchBetaEnabled((prev) => !prev)}
+                />
+            </Box>
+        ),
+    ].filter(Boolean);
 
     return (
         <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label={config.title}>
             <DialogHeader
                 icon={<Icon lucide={Settings}/>}
                 title={config.title}
-                subtitle="Choose what appears on your dashboard and how often it updates"
+                subtitle="Choose how often your dashboard updates and which features are on"
                 onClose={onClose}
             />
             {/* Content */}
             <Box bg={dialogContentBg}>
-                {/* Auto-Refresh Section */}
-                {config.showRefreshInterval && (
-                    <Box p={24}>
-                        <SectionHeading icon={<Icon lucide={Clock}/>} title="Auto-refresh"/>
-
-                        <Stack gap={16}>
-                            <RefreshIntervalSetting
-                                title="Job list"
-                                description="How often the job list checks for new and updated jobs"
-                                value={refreshInterval}
-                                options={refreshOptions}
-                                onChange={setRefreshInterval}
-                            />
-
-                            {/* Tasks — an independent cadence from the job list's */}
-                            {config.showTaskRefresh && (
-                                <RefreshIntervalSetting
-                                    title="Tasks"
-                                    description="How often the Tasks panel checks for new and updated tasks"
-                                    value={taskInterval}
-                                    options={refreshOptions}
-                                    onChange={setTaskInterval}
-                                />
-                            )}
-
-                            {config.showDriverLocationRefresh && (
-                                <RefreshIntervalSetting
-                                    title="Driver locations"
-                                    description="How often driver positions update on the map"
-                                    value={driverLocationInterval}
-                                    options={refreshOptions}
-                                    onChange={setDriverLocationInterval}
-                                />
-                            )}
-                        </Stack>
-                    </Box>
-                )}
-
-                {config.showRefreshInterval && <Divider/>}
-
-                {/* AI Features Section */}
-                {config.showAiToggle && (
-                    <Box p={24}>
-                        <SectionHeading
-                            icon={<AutoMateLogo size={28}/>}
-                            title="Auto-mate Settings"
-                            accent={aiAccentColor}
-                        />
-
-                        <Stack gap={16}>
-                            <SettingRow
-                                title="Show Auto-mate briefings"
-                                badge={
-                                    <Badge
-                                        size="xs"
-                                        c="white"
-                                        style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
-                                    >
-                                        BETA
-                                    </Badge>
-                                }
-                                description="Adds a short AI briefing — verdict, what needs attention, and key facts —
-                                    to the job details, task dashboard, operations, and driver compliance pages.
-                                    Applies to your account only."
-                                accent={aiAccentColor}
-                                checked={aiEnabled}
-                                onToggle={() => setAiEnabled((prev) => !prev)}
-                            />
-
-                            {/* Only meaningful while briefings are on, so the row is
-                                disabled and dimmed when they are off. */}
-                            <SettingRow
-                                title="Open automatically"
-                                description="Opens the Auto-mate briefing expanded instead of waiting for a click.
-                                    Applies to your account only."
-                                accent={aiAccentColor}
-                                checked={aiAutoOpen}
-                                disabled={!aiEnabled}
-                                onToggle={() => setAiAutoOpen((prev) => !prev)}
-                            />
-                        </Stack>
-                    </Box>
-                )}
-
-                {config.showAiToggle && <Divider/>}
-
-                {/* Job Search version toggle — the React rebuild of /jobSearch is
-                    now the default; this switches back to the classic page.
-                    Only rendered when the caller (V1/V2 controller) sets
-                    `showJobSearchBetaToggle: true`. Caller persists localStorage
-                    and triggers the route redirect after Save. */}
-                {config.showJobSearchBetaToggle && (
-                    <Box p={24}>
-                        <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Job Search version"/>
-                        <SettingRow
-                            title="Use the new Job Search"
-                            description="The rebuilt Job Search is now the default — faster filtering, quicker loads,
-                                and modern dialogs. Turn this off to go back to the classic page. Applies to
-                                your account only."
-                            checked={jobSearchBetaEnabled}
-                            onToggle={() => setJobSearchBetaEnabled((prev) => !prev)}
-                        />
-                    </Box>
-                )}
-
-                {config.showJobSearchBetaToggle && <Divider/>}
-
-                {/* Dispatch version toggle — the React rebuild of the home/dispatch
-                    page is now the default; this switches back to the classic
-                    page. Only rendered when the caller (home controller /
-                    dispatchV2 route) sets `showDispatchBetaToggle: true`. Caller
-                    persists localStorage and triggers the route redirect after Save. */}
-                {config.showDispatchBetaToggle && (
-                    <Box p={24}>
-                        <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Dispatch version"/>
-                        <SettingRow
-                            title="Use the new Dispatch"
-                            description="The rebuilt Dispatch is now the default — faster loads, modern dialogs, and
-                                more customisation options like choosing your columns. Saved layouts follow
-                                your account, so they persist across browsers and computers. Turn this off to
-                                go back to the classic page. Applies to your account only."
-                            checked={dispatchBetaEnabled}
-                            onToggle={() => setDispatchBetaEnabled((prev) => !prev)}
-                        />
-                    </Box>
-                )}
-
-                {config.showDispatchBetaToggle && config.showPanels !== false && <Divider/>}
-
-                {/* Dashboard Panels Section */}
-                {config.showPanels !== false && (
-                    <Box p={24}>
-                        <SectionHeading icon={<Icon lucide={LayoutDashboard}/>} title="Dashboard panels"/>
-
-                        {config.panelsMovedNotice ? (
-                            <Alert color="blue" variant="light" ml={48}>
-                                Panel options have moved. Use the Layouts menu in the toolbar, then
-                                <strong> Customize panels</strong>, to choose which panels appear.
-                            </Alert>
-                        ) : config.showDashboards ? (
-                            <>
-                                <Text fz="sm" c="dimmed" mb={16} ml={48}>
-                                    Choose which panels appear on your dashboard
-                                </Text>
-
-                                <Stack gap={8}>
-                                    {boxList.map((box) => (
-                                        <SettingRow
-                                            key={box.key}
-                                            title={box.title || box.name || box.key}
-                                            description={box.description}
-                                            checked={box.visible ?? true}
-                                            onToggle={() => handleToggleBox(box.key)}
-                                        />
-                                    ))}
-                                </Stack>
-                            </>
-                        ) : (
-                            /* Empty state when custom layout not available */
-                            <Paper withBorder radius="md" p={32} ta="center">
-                                <ThemeIcon
-                                    color="blue"
-                                    variant="light"
-                                    size={56}
-                                    radius="md"
-                                    mx="auto"
-                                    mb={16}
-                                >
-                                    <Icon lucide={Info} size={28}/>
-                                </ThemeIcon>
-                                <Text c="dimmed">
-                                    Panel visibility is only available with a custom layout.
-                                </Text>
-                                <Text fz="sm" c="dimmed" mt={4}>
-                                    Create a custom layout to choose which panels appear.
-                                </Text>
-                            </Paper>
-                        )}
-                    </Box>
-                )}
+                {sections.map((section, index) => (
+                    <React.Fragment key={(section as React.ReactElement).key}>
+                        {index > 0 && <Divider/>}
+                        {section}
+                    </React.Fragment>
+                ))}
             </Box>
             {/* Actions */}
             <DialogFooter
