@@ -9,7 +9,7 @@ import React from 'react';
 
 import { FlightDetailsDialog } from './FlightDetailsDialog';
 import { FlightData } from './types';
-import { IFlightViewModel } from '../../../../components/Nationwide/nationwide.interfaces';
+import { IFlightViewModel } from '../../../../interfaces/nationwideFlight.interfaces';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 

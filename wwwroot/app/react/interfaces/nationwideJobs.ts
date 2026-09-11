@@ -140,6 +140,39 @@ export interface FlightSearchResponseDto {
 export interface FlightSearchResult {
     flights: FlightViewModel[];
     message?: string;
+    /**
+     * Departure time of the last flight returned — the paging cursor the
+     * widget's "load more" / "next day" actions advance from. Undefined when
+     * the search came back empty.
+     */
+    lastDepartureTime?: Dayjs;
+}
+
+// Flight assignment / lookup types
+
+/**
+ * Body for `POST nationwideJob/AssignFlightToJob`.
+ * Mirrors `Models/AssignFlightToJobRequest.cs`.
+ */
+export interface AssignFlightToJobRequest {
+    jobId: number;
+    fromAirportId?: number | null;
+    toAirportId?: number | null;
+    flightNumber: string;
+    departureDate: string;
+    flightSegments: FlightSegmentDto[];
+    packageReadyTime?: string | null;
+    packageDeliverByTime?: string | null;
+    packageDeliveryNotes?: string;
+}
+
+export interface AirlineSuggestion extends Suggestion {
+    fullAirlineName: string;
+}
+
+export interface AirportSuggestion extends Suggestion {
+    /** Windows timezone id, as stored on the airport record. */
+    timezone: string;
 }
 
 // Recovery Agent Management types

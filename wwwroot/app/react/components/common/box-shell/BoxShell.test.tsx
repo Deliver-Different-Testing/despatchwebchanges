@@ -1,7 +1,7 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
-import {JobSearchShell, JobSearchShellProps} from './JobSearchShell';
+import {BoxShell, BoxShellProps} from './BoxShell';
 import {ILayout} from '../../../../interfaces/layout.interfaces';
 
 
@@ -14,7 +14,7 @@ const layout: ILayout = {
     },
 };
 
-const baseProps: JobSearchShellProps = {
+const baseProps: BoxShellProps = {
     layout,
     layoutVersion: 0,
     boxes: {jobList: {name: 'jobList', title: 'Live Job Data', visible: true}},
@@ -22,10 +22,10 @@ const baseProps: JobSearchShellProps = {
     onRefreshBox: jest.fn(),
 };
 
-const renderShell = (props: Partial<JobSearchShellProps> = {}) =>
+const renderShell = (props: Partial<BoxShellProps> = {}) =>
     render(
         <MantineTestProvider>
-            <JobSearchShell {...baseProps} {...props} />
+            <BoxShell {...baseProps} {...props} />
         </MantineTestProvider>,
     );
 
@@ -47,7 +47,7 @@ const twoBoxBoxes = {
     map: {name: 'map', title: 'Map', visible: false},
 };
 
-describe('JobSearchShell layout affordances', () => {
+describe('BoxShell layout affordances', () => {
     it.each(['Default', 'My Layout'])('offers reorder on the %s layout', (name) => {
         renderShell({layout: {...layout, name}, onMoveBox: jest.fn()});
 
@@ -68,15 +68,52 @@ describe('JobSearchShell layout affordances', () => {
         expect(screen.queryByRole('group', {name: /number of columns/i})).not.toBeInTheDocument();
     });
 
+    /*
+     * `isDefaultLayout` must be threaded through: without it both cases exercise
+     * the user-layout branch, and the Default branch — which deliberately ignores
+     * a stored visibility record — goes uncovered.
+     */
     it.each(['Default', 'My Layout'])('honours hidden panels on the %s layout', (name) => {
-        renderShell({layout: twoBoxLayout(name), boxes: twoBoxBoxes});
+        renderShell({
+            layout: twoBoxLayout(name),
+            boxes: twoBoxBoxes,
+            isDefaultLayout: name === 'Default',
+        });
 
         expect(screen.getByText('Live Job Data')).toBeInTheDocument();
         expect(screen.queryByText('Map')).not.toBeInTheDocument();
     });
+
+    /*
+     * A panel the definitions ship as `visible: false` stays off on the read-only
+     * Default layout too. Only an *absent* visible flag falls back to shown there,
+     * so a stored record cannot turn a panel off for everyone on Default.
+     */
+    it('shows a panel with no visible flag on the Default layout', () => {
+        renderShell({
+            layout: {
+                name: 'Default',
+                layout: {
+                    columns: [{
+                        id: 'col1',
+                        width: '100%',
+                        boxes: [{name: 'jobList'}, {name: 'map'}],
+                    }],
+                },
+            },
+            boxes: {
+                jobList: {name: 'jobList', title: 'Live Job Data'},
+                map: {name: 'map', title: 'Map'},
+            },
+            isDefaultLayout: true,
+        });
+
+        expect(screen.getByText('Live Job Data')).toBeInTheDocument();
+        expect(screen.getByText('Map')).toBeInTheDocument();
+    });
 });
 
-describe('JobSearchShell columns bar', () => {
+describe('BoxShell columns bar', () => {
     const multiCol = (name: string, count: number): ILayout => ({
         name,
         layout: {
@@ -88,7 +125,7 @@ describe('JobSearchShell columns bar', () => {
         },
     });
 
-    const editing = (props: Partial<JobSearchShellProps> = {}) => renderShell({
+    const editing = (props: Partial<BoxShellProps> = {}) => renderShell({
         columnEditMode: true,
         layout: multiCol('My Layout', 2),
         onAddColumn: jest.fn(),
@@ -135,7 +172,7 @@ describe('JobSearchShell columns bar', () => {
     });
 });
 
-describe('JobSearchShell resize persistence', () => {
+describe('BoxShell resize persistence', () => {
     const resized = (name: string, first: string, second: string): ILayout => ({
         name,
         layout: {
@@ -175,7 +212,7 @@ describe('JobSearchShell resize persistence', () => {
         // A drag re-lays-out the same (un-remounted) group with new sizes.
         rerender(
             <MantineTestProvider>
-                <JobSearchShell
+                <BoxShell
                     {...baseProps}
                     layout={resized('Default', '70%', '30%')}
                     boxes={multiColBoxes}
@@ -190,7 +227,7 @@ describe('JobSearchShell resize persistence', () => {
 
 });
 
-describe('JobSearchShell box card chrome', () => {
+describe('BoxShell box card chrome', () => {
     /*
      * A box card is a card: bordered, rounded, and raised above the page. It has
      * to sit on the container surface, not the page one. When it took the page

@@ -9,7 +9,7 @@ import {
     IFlightSearchResponseDto,
     IGetAgentOptionsResponse,
     IGetFlightOptionsResponse
-} from "./nationwide.interfaces";
+} from "../../interfaces/nationwideFlight.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto

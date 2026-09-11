@@ -12,15 +12,14 @@ import {
     saveBoxVisibility,
     saveLastActiveLayoutName,
     saveLayouts,
-} from '../lib/layoutPersistence';
-import {loadRemoteIntoLocal, queueRemotePush, readLocalRows} from '../lib/layoutSync';
-import {createDefaultJobSearchLayout, createJobSearchBoxes} from '../lib/boxDefinitions';
+} from './layoutPersistence';
+import {loadRemoteIntoLocal, queueRemotePush, readLocalRows} from './layoutSync';
 import {
     addColumnToPayload,
     layoutPayloadEquals,
     MAX_COLUMNS,
     removeLastColumnFromPayload,
-} from '../lib/columnLayout';
+} from './columnLayout';
 
 const DEFAULT_LAYOUT_NAME = 'Default';
 
@@ -29,15 +28,12 @@ export {MAX_COLUMNS};
 export interface UseBoxLayoutOptions {
     storageKeys: LayoutStorageKeys;
     /**
-     * Factory for the box metadata map. Defaults to the Job Search boxes so
-     * existing callers are unaffected; the Dispatch page passes its own.
+     * Factory for the box metadata map. Required: this hook is shared, so each
+     * page states its own panels rather than inheriting another page's.
      */
-    createBoxes?: () => Record<string, IBox>;
-    /**
-     * Factory for the read-only Default layout. Defaults to the Job Search
-     * Default layout; the Dispatch page passes its own.
-     */
-    createDefaultLayout?: () => ILayout;
+    createBoxes: () => Record<string, IBox>;
+    /** Factory for the read-only Default layout. Required, for the same reason. */
+    createDefaultLayout: () => ILayout;
     /**
      * Page identifier used to sync layouts to the database (e.g. 'JobSearch',
      * 'Dispatch'). When provided, the layout is pulled from the server on mount
@@ -84,8 +80,8 @@ export interface UseBoxLayoutResult {
 
 export function useBoxLayout({
     storageKeys,
-    createBoxes = createJobSearchBoxes,
-    createDefaultLayout = createDefaultJobSearchLayout,
+    createBoxes,
+    createDefaultLayout,
     page,
     legacyStorageKeys,
 }: UseBoxLayoutOptions): UseBoxLayoutResult {

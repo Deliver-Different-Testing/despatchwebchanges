@@ -12,10 +12,12 @@ import React from 'react';
 import {islandTree} from '../../theme/DfrntMantineProvider';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {JobSearchPage} from './JobSearchPage';
-import type {ImportLayoutsResult} from './lib/layoutPersistence';
+import type {ImportLayoutsResult} from '../../components/common/box-shell/layoutPersistence';
 import {JobSearchPageProps} from "./JobSearchPageProps";
 import {JobSearchLayoutBridge} from "./JobSearchLayoutBridge";
 import {createPageHost} from '../../utils/reactPageHost';
+import {toastService} from '../../services/toastService';
+import type {ShowToastFn} from '../../services/toastTypes';
 
 export interface MountJobSearchPageConfig extends JobSearchPageProps {}
 
@@ -23,12 +25,22 @@ let layoutBridge: JobSearchLayoutBridge | null = null;
 
 // The page itself is still MUI; Mantine wraps it so the already-migrated
 // JobListPanel it renders finds a provider.
+/**
+ * Page toasts render through the same Mantine notification surface the dialogs
+ * already use. The AngularJS host used to inject a `showToast` backed by
+ * `$mdToast`, which meant two toast systems on screen at once; that prop is
+ * ignored now and disappears with the host in Phase 5.
+ */
+const showMantineToast: ShowToastFn = (message, type, action) =>
+    toastService.showToast(message, type, action);
+
 const host = createPageHost<MountJobSearchPageConfig>({
     logName: 'JobSearchReact',
     render: (config) => islandTree(
         <ErrorBoundary>
             <JobSearchPage
                 {...config}
+                showToast={showMantineToast}
                 onLayoutBridgeReady={bridge => {
                     layoutBridge = bridge;
                     config.onLayoutBridgeReady?.(bridge);
@@ -112,6 +124,11 @@ export function setColumnEditMode(enabled: boolean): void {
     layoutBridge?.setColumnEditMode(enabled);
 }
 
+/** Open a job that was just created from the toolbar. No-op if React is not mounted. */
+export function jobCreated(jobId: number): void {
+    layoutBridge?.jobCreated(jobId);
+}
+
 /** Copy the user's V1 layouts into the V2 store from the AngularJS toolbar. */
 export function importLegacyLayouts(): ImportLayoutsResult {
     return layoutBridge?.importLegacyLayouts() ?? {imported: [], skipped: []};
@@ -131,6 +148,7 @@ declare global {
             openInterCourierCharge: typeof openInterCourierCharge;
             resetCurrentLayout: typeof resetCurrentLayout;
             setColumnEditMode: typeof setColumnEditMode;
+            jobCreated: typeof jobCreated;
             importLegacyLayouts: typeof importLegacyLayouts;
         };
     }
@@ -147,6 +165,7 @@ window.ReactJobSearch = {
     openInterCourierCharge,
     resetCurrentLayout,
     setColumnEditMode,
+    jobCreated,
     importLegacyLayouts,
 };
 

@@ -20,6 +20,7 @@ function transformResult(dto: IJobSearchResultDto): JobSearchResult {
         jobs: dto.jobs.map(transformDispatchJobDTO) as any,
         totalCount: dto.totalCount,
         hasMore: dto.hasMore,
+        statusCounts: dto.statusCounts ?? null,
     };
 }
 

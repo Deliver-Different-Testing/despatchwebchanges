@@ -14,36 +14,40 @@ import {Icon} from '../icon/Icon';
 
 const ICON_SIZE = 20;
 
+interface RailButtonProps extends React.ComponentPropsWithoutRef<'button'> {
+    label: string;
+    active?: boolean;
+    children: React.ReactNode;
+}
+
 /**
  * One button in the vertical rail. Square (the theme's pill radius would break a
  * flush-stacked rail into detached lozenges) and 32px, matching the original
  * density. Kept local because the rail is the only thing that wants this shape.
+ *
+ * forwardRef and the `...rest` spread are load-bearing: Tooltip and Menu.Target
+ * both hand their child a ref plus the hover/click handlers that drive them, and
+ * a component that drops either silently renders no tooltip and no menu.
  */
-function RailButton({
-    label,
-    onClick,
-    active,
-    children,
-}: {
-    label: string;
-    onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-    active?: boolean;
-    children: React.ReactNode;
-}) {
+const RailButton = React.forwardRef<HTMLButtonElement, RailButtonProps>(function RailButton(
+    {label, active, children, ...rest},
+    ref,
+) {
     return (
         <ActionIcon
+            ref={ref}
             variant="subtle"
             color={active ? 'brand' : 'gray'}
             size="md"
             radius={0}
-            onClick={onClick}
             aria-label={label}
             {...(active === undefined ? {} : {'data-active': active})}
+            {...rest}
         >
             {children}
         </ActionIcon>
     );
-}
+});
 
 type ViewType = 'roadmap' | 'satellite' | 'terrain';
 
@@ -122,6 +126,7 @@ export function MapZoomViewControls({
     const isLeft = placement === 'left';
     const tooltipPlacement = isLeft ? 'right' : 'left';
     const [activeView, setActiveView] = useState<ViewType>('roadmap');
+    const [viewMenuOpened, setViewMenuOpened] = useState(false);
     const [trafficEnabled, setTrafficEnabled] = useState(false);
     const trafficLayerRef = useRef<any>(null);
     const [incidentsEnabled, setIncidentsEnabled] = useState(false);
@@ -240,10 +245,20 @@ export function MapZoomViewControls({
                     <Divider/>
                     {/* Mantine's Menu anchors to its own Target, so the rail no longer
                         has to carry an anchorEl in state the way MUI's Menu required. */}
-                    <Menu position={isLeft ? 'right-end' : 'left-end'} withinPortal>
+                    <Menu
+                        position={isLeft ? 'right-end' : 'left-end'}
+                        withinPortal
+                        onChange={setViewMenuOpened}
+                    >
                         <Menu.Target>
+                            {/* Tooltip spreads Menu.Target's ARIA onto its own floating
+                                box rather than the trigger, so the button states itself. */}
                             <Tooltip label="Choose view" position={tooltipPlacement}>
-                                <RailButton label="Choose view">
+                                <RailButton
+                                    label="Choose view"
+                                    aria-haspopup="menu"
+                                    aria-expanded={viewMenuOpened}
+                                >
                                     <Icon lucide={Layers} size={ICON_SIZE}/>
                                 </RailButton>
                             </Tooltip>

@@ -2047,6 +2047,14 @@ public class JobController(
             Log.Information(
                 "UpdateJob direct write complete: job {JobId}, field {JobProperty}", jobId, field);
         }
+        catch (ArchivedJobCompletionException e)
+        {
+            Log.Information(
+                "UpdateJob refused: job {JobId}, field {JobProperty}, reason {Reason}",
+                jobId, field, e.Message);
+
+            return BadRequest(new { message = e.Message });
+        }
         catch (Exception e)
         {
             Log.Error(
@@ -2222,10 +2230,10 @@ public class JobController(
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var jobId = await jobCommandRepository.QuickAddJobAsync(request);
+            var created = await jobCommandRepository.QuickAddJobAsync(request);
 
             //Check if jobId is valid before continuing
-            if (jobId == 0)
+            if (created.JobId == 0)
             {
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
@@ -2233,7 +2241,7 @@ public class JobController(
                 );
             }
 
-            return Json(jobId);
+            return Json(new { jobId = created.JobId, jobNumber = created.JobNumber });
         }
         catch (Exception e)
         {

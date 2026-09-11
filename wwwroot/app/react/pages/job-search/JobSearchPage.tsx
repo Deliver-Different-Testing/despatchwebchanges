@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Badge, Box, CloseButton, Group, Text} from '@mantine/core';
+import {Box} from '@mantine/core';
 import dayjs from 'dayjs';
 import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -10,7 +10,7 @@ import {getDispatchJobDetail, searchSpeedOptions} from '../../services/dispatchE
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {IDispatchMapItem, ISuggestion} from '../../../interfaces/job.interface';
 import type {ShowToastFn} from '../../services/toastService';
-import JobSearchBoxes from '../../../components/jobSearch/enums/jobSearchBoxes';
+import JobSearchBoxes from './lib/jobSearchBoxes';
 import {searchActiveClients} from '../../services/jobApi';
 import {searchActiveCouriers} from '../../services/courierApi';
 import {
@@ -29,28 +29,25 @@ import {RestoreConfirmationDialog} from '../../components/dialogs/restore-confir
 import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
 import {Briefcase, Route} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
-
-
-
-
 import {NoData} from '../../components/common/no-data/NoData';
-import {useDismissibleBanner} from '../../hooks/useDismissibleBanner';
 import {SearchCriteriaPanel, SearchActionDates} from '../../components/common/search-criteria-panel/SearchCriteriaPanel';
 import {JobListPanel} from '../../components/job-list/JobListPanel';
+import {JobDetailsMount} from '../../components/common/job-details/JobDetailsMount';
 import {TaskHistory} from '../../components/common/task-history/TaskHistory';
-import {JobSearchShell} from './components/JobSearchShell';
+import {BoxShell} from '../../components/common/box-shell/BoxShell';
 import {JobSearchJobActionsMenu, type JobSearchJobActionId} from './components/JobSearchJobActionsMenu';
 import {ScanList} from './components/ScanList';
 import {useSearchCriteria} from './hooks/useSearchCriteria';
-import {useBoxLayout} from './hooks/useBoxLayout';
+import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
 import {useDeepLinkJob} from './hooks/useDeepLinkJob';
+import {createDefaultJobSearchLayout, createJobSearchBoxes} from './lib/boxDefinitions';
 import {filterCouriersForNumericSearch, normalizeSearchDate} from './lib/searchCriteria';
 import {getClientJobsReportDownloadUrl, getPodJobsDownloadUrl} from './lib/exportUrls';
 import {getPriceDetailReportDownloadUrl} from './lib/priceDetailExport';
 import {
     openInterCourierChargeDialog
 } from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
-import type {LayoutStorageKeys} from './lib/layoutPersistence';
+import type {LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
 import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
 import {useLayoutPrompts} from '../../components/layout-prompts/useLayoutPrompts';
 import {DispatchDialog, type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
@@ -85,7 +82,13 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     }), []);
 
     const searchCriteria = useSearchCriteria({timeZone});
-    const boxLayout = useBoxLayout({storageKeys, legacyStorageKeys, page: 'JobSearch'});
+    const boxLayout = useBoxLayout({
+        storageKeys,
+        legacyStorageKeys,
+        page: 'JobSearch',
+        createBoxes: createJobSearchBoxes,
+        createDefaultLayout: createDefaultJobSearchLayout,
+    });
 
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
     const [currentJobId, setCurrentJobId] = useState<number | undefined>();
@@ -97,7 +100,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         setColumnEditMode(false);
         onExitColumnEditMode?.();
     }, [onExitColumnEditMode]);
-    const betaBanner = useDismissibleBanner(`jobSearchBetaBannerDismissed-${ContactID}`);
     const [sortColumn, setSortColumn] = useState<string | undefined>();
     const [sortDirection, setSortDirection] = useState<string | undefined>();
     const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
@@ -130,8 +132,11 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             .then(full => {
                 if (full && selectedIdRef.current === jobId) setCurrentJob(full);
             })
-            .catch(err => console.error('[JobSearchPage] Failed to load job detail:', err));
-    }, []);
+            .catch(err => {
+                console.error('[JobSearchPage] Failed to load job detail:', err);
+                showToast('Could not load the full job detail. Showing the list row only.', 'error');
+            });
+    }, [showToast]);
 
     const selectJob = useCallback((job: DispatchJob, bulk: boolean) => {
         selectedIdRef.current = job.id;
@@ -154,6 +159,15 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         },
     });
 
+    // A job created from the toolbar won't be in the current results, so open it
+    // by id the same way a deep link does rather than waiting for the list.
+    const jobCreated = useCallback((jobId: number) => {
+        selectedIdRef.current = jobId;
+        setCurrentJobId(jobId);
+        setIsBulkJob(false);
+        loadFullDetail(jobId, false);
+    }, [loadFullDetail]);
+
     const openInterCourierCharge = useCallback(
         () => openInterCourierChargeDialog({showToast}),
         [showToast],
@@ -169,9 +183,10 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             resetCurrentLayout: boxLayout.resetCurrentLayout,
             setColumnEditMode,
             openInterCourierCharge,
+            jobCreated,
             importLegacyLayouts: boxLayout.importLegacyLayouts,
         });
-    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, promptSaveLayout, promptDeleteLayout, promptRenameLayout, openInterCourierCharge]);
+    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, promptSaveLayout, promptDeleteLayout, promptRenameLayout, openInterCourierCharge, jobCreated]);
 
     const fetchConfigMain = useMemo(() => ({
         fetchFn: fetchPodJobs,
@@ -298,9 +313,10 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             return filterCouriersForNumericSearch(results, text) as unknown as ISuggestion[];
         } catch (err) {
             console.error('Error in courier search:', err);
+            showToast('Courier search failed. Please try again.', 'error');
             return [];
         }
-    }, []);
+    }, [showToast]);
     const handleSpeedSearch = useCallback(async (text: string) => {
         if (!text || text.length < 2) return [];
         try {
@@ -308,9 +324,10 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             return results as ISuggestion[];
         } catch (err) {
             console.error('Error in speed search:', err);
+            showToast('Service-level search failed. Please try again.', 'error');
             return [];
         }
-    }, []);
+    }, [showToast]);
 
     const handleCriteriaChange = useCallback(
         (field: string, value: ISuggestion[] | string | number | undefined) => {
@@ -625,8 +642,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     );
                 }
                 return (
-                    <ReactJobDetailsMount
+                    <JobDetailsMount
                         jobId={currentJobId}
+                        containerId="react-job-search-job-detail"
                         isBulkJob={isBulkJob}
                         isUsCustomer={isUsCustomer}
                         showToast={showToast}
@@ -721,39 +739,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
 
     return (
         <Box style={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>
-            {/* BETA banner — dismissible; the opt-out toggle lives in Settings. */}
-            {!betaBanner.dismissed && (
-                <Group
-                    gap="sm"
-                    px="md"
-                    py={6}
-                    wrap="nowrap"
-                    bg="var(--mantine-primary-color-filled)"
-                    c="var(--mantine-primary-color-contrast)"
-                >
-                    {/* The pill sits on the brand fill, so it washes with the header's
-                        own on-colour rather than a literal white. */}
-                    <Badge
-                        variant="white"
-                        h={18}
-                        fw={700}
-                        style={{fontSize: '0.625rem'}}
-                    >
-                        BETA
-                    </Badge>
-                    <Text size="sm" style={{flex: 1}}>
-                        You&apos;re on the rebuilt Job Search. Spot something off? Open Settings and turn the toggle off to
-                        switch back.
-                    </Text>
-                    <CloseButton
-                        aria-label="Dismiss beta notice"
-                        onClick={betaBanner.dismiss}
-                        c="var(--mantine-primary-color-contrast)"
-                    />
-                </Group>
-            )}
             <Box style={{flex: 1, minHeight: 0}}>
-                <JobSearchShell
+                <BoxShell
                     layout={boxLayout.layout}
                     layoutVersion={boxLayout.layoutVersion}
                     boxes={boxLayout.boxes}
@@ -823,26 +810,5 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
 // Adapter for the existing React job-details mount API.
 // Mounts/unmounts via window.ReactJobDetails to keep the existing module
 // boundary; Phase 3 may replace this with a direct JobDetails component import.
-const ReactJobDetailsMount: React.FC<{
-    jobId: number;
-    isBulkJob: boolean;
-    isUsCustomer: boolean;
-    showToast: ShowToastFn;
-}> = ({jobId, isBulkJob, isUsCustomer, showToast}) => {
-    const containerId = 'react-job-search-job-detail';
-    useEffect(() => {
-        const w = window as any;
-        if (!w.ReactJobDetails?.mount) return;
-        w.ReactJobDetails.mount(containerId, {
-            jobId,
-            isBulkJob,
-            isUsCustomer,
-            showToast,
-        });
-        return () => {
-            w.ReactJobDetails?.unmount?.();
-        };
-    }, [jobId, isBulkJob, isUsCustomer, showToast]);
-    return <div id={containerId} style={{height: '100%', overflow: 'auto'}}/>;
-};
+
 

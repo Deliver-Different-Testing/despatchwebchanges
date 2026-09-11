@@ -207,6 +207,60 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             expect(mockRefreshAndNotify).toHaveBeenCalled();
             expect(mockUpdatePod).not.toHaveBeenCalled();
         });
+
+        it('refuses to un-complete an archived job', async () => {
+            const job = createMockJob({done: true, isArchived: true, completedTime: dayjs(), podName: 'Bob'});
+            const {result, mockUpdateField, mockShowToast, mockRefreshAndNotify} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                'J-1001 is archived and completed, so it cannot be marked not done.',
+                'warning',
+            );
+            expect(mockUpdateField).not.toHaveBeenCalled();
+            expect(mockRefreshAndNotify).not.toHaveBeenCalled();
+        });
+
+        it('still completes an archived job that has not been done yet', async () => {
+            mockPodTimeDialog();
+            const job = createMockJob({done: false, isArchived: true, completedTime: null});
+            const {result, mockShowToast} = setup({job});
+
+            act(() => {
+                void result.current.handleDoneClick();
+            });
+            await flushDialogChain();
+
+            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+                .toHaveBeenCalled();
+            expect(mockShowToast).not.toHaveBeenCalledWith(
+                expect.stringContaining('archived'),
+                'warning',
+            );
+        });
+
+        it('does not offer Clear on the POD time of an archived completed job', async () => {
+            mockPodTimeDialog();
+            const job = createMockJob({done: true, isArchived: true, completedTime: dayjs('2026-03-23T11:45:00')});
+            const {result} = setup({job});
+
+            await act(() => result.current.handleEditCompletedTime());
+
+            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+                .toHaveBeenCalledWith(expect.objectContaining({allowClear: false}));
+        });
+
+        it('still offers Clear on the POD time of a live completed job', async () => {
+            mockPodTimeDialog();
+            const job = createMockJob({done: true, completedTime: dayjs('2026-03-23T11:45:00')});
+            const {result} = setup({job});
+
+            await act(() => result.current.handleEditCompletedTime());
+
+            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+                .toHaveBeenCalledWith(expect.objectContaining({allowClear: true}));
+        });
     });
 
     describe('handleDoneClick — completing (guided flow)', () => {

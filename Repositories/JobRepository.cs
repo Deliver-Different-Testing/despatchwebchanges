@@ -1728,8 +1728,8 @@ public partial class JobRepository(
     /// tucJob insert. Pricing is passed through as a fixed amount.
     /// </summary>
     /// <param name="request">Job creation request with addresses, client, and speed.</param>
-    /// <returns>The ID of the newly created job.</returns>
-    public async Task<int> QuickAddJobAsync(JobCreateViewModel request)
+    /// <returns>The ID of the newly created job and the job number generated for it.</returns>
+    public async Task<QuickAddJobResult> QuickAddJobAsync(JobCreateViewModel request)
     {
         try
         {
@@ -1742,7 +1742,7 @@ public partial class JobRepository(
 
             var jobInput = BuildQuickAddInputModel(request, staffInfo, jobNumber, speed.UcjtName, now);
 
-            return await InsertQuickAddJobViaProcAsync(jobInput);
+            return new QuickAddJobResult(await InsertQuickAddJobViaProcAsync(jobInput), jobNumber);
         }
         catch (Exception e)
         {
@@ -2842,7 +2842,8 @@ public partial class JobRepository(
         {
             Jobs = bulkJobs,
             TotalCount = totalCount,
-            HasMore = hasMore
+            HasMore = hasMore,
+            StatusCounts = JobListStatusCounts.FromJobs(distinctResults)
         };
     }
 

@@ -38,7 +38,7 @@ import {CurrentWorkBox} from './CurrentWorkBox';
 import {MantineTestProvider} from '../../../__testUtils__';
 
 // Mimics DispatchPage: currentJob drives selectedJobCourierId, and the box
-// remounts when `layoutBump` changes (JobSearchShell keys boxes by layoutVersion).
+// remounts when `layoutBump` changes (BoxShell keys boxes by layoutVersion).
 function Harness() {
     const [currentJob, setCurrentJob] = useState<any>(undefined);
     const [layoutBump, setLayoutBump] = useState(0);
@@ -107,7 +107,7 @@ describe('CurrentWorkBox — driver switch after search + drill-down', () => {
         backToAllDrivers();
         await drillInto('Bob'); // now viewing Bob (8); selectedJobCourierId still 7
         expect(screen.getByTestId('mock-job-list')).toHaveAttribute('data-courier-id', '8');
-        bumpLayout(); // JobSearchShell-style remount of the box
+        bumpLayout(); // BoxShell-style remount of the box
         await waitFor(() => expect(screen.getByTestId('mock-job-list')).toHaveAttribute('data-courier-id', '8'));
     });
 });

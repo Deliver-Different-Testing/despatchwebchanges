@@ -19,7 +19,7 @@ jest.mock('./components/StatsTabs', () => ({
     ),
 }));
 
-jest.mock('./components/DeliveriesTable', () => ({
+jest.mock('../../components/common/deliveries-table', () => ({
     DeliveriesTable: (props: any) => (
         <div data-testid="deliveries-table">
             DeliveriesTable: loading={String(props.isLoading)} total={props.total}

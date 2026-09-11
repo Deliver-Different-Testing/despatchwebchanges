@@ -1,4 +1,4 @@
-﻿import {IFlightViewModel, IFlightViewModelDto} from "../components/Nationwide/nationwide.interfaces";
+﻿import {IFlightViewModel, IFlightViewModelDto} from "../interfaces/nationwideFlight.interfaces";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../interfaces/flight-cargo-processing.interface";

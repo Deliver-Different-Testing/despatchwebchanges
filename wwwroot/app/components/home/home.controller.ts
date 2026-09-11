@@ -2244,14 +2244,10 @@ class HomeController extends BaseController {
     }
 
     async openSettingsDialog($event: MouseEvent): Promise<void> {
-        if (!this.boxes) return;
-
         try {
             const result = await this.dashboardSettingsDialog.openSettingsDialog(
                 $event,
                 AppPage.Dispatch,
-                this.currentLayoutName ?? 'Default',
-                this.boxes,
                 this.selectedRefreshInterval,
                 this.selectedDriverLocationRefreshInterval
             );

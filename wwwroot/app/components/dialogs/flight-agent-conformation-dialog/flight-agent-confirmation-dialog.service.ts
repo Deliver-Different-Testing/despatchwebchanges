@@ -1,4 +1,4 @@
-import {IFlightViewModel} from "../../Nationwide/nationwide.interfaces";
+import {IFlightViewModel} from "../../../interfaces/nationwideFlight.interfaces";
 import {IDispatchJob, ISuggestion} from "../../../interfaces/job.interface";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import countSubJobs from "../../../functions/countSubJobs";

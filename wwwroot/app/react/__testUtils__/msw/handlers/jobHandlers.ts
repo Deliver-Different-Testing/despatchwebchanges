@@ -102,8 +102,8 @@ export const jobHandlers = [
             return new HttpResponse('Invalid clientId', { status: 400 });
         }
 
-        // Return a mock new job ID
-        return HttpResponse.json(12345);
+        // Return a mock new job id + job number
+        return HttpResponse.json({ jobId: 12345, jobNumber: 'JOB-12345' });
     }),
 
     // Search active clients

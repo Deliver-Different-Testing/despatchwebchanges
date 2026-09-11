@@ -17,7 +17,7 @@ jest.mock('../../../functions/countSubJobs', () => ({
     __esModule: true,
 }));
 
-jest.mock('../../Nationwide/nationwide.interfaces', () => ({}));
+jest.mock('../../../interfaces/nationwideFlight.interfaces', () => ({}));
 jest.mock('../../../interfaces/dialog-result.interfaces', () => ({}));
 
 import FlightAgentConfirmationDialogService from './flight-agent-confirmation-dialog.service';

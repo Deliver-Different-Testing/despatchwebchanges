@@ -2,6 +2,11 @@ import React from 'react';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {act, render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {
+    DRIVER_LOCATION_REFRESH_KEY,
+    REFRESH_INTERVAL_KEY,
+    TASK_REFRESH_KEY,
+} from './lib/dispatchFilters';
 
 const sampleJob = {id: 55, jobNo: 'JOB-55', assignedCourier: undefined};
 
@@ -9,16 +14,32 @@ const sampleJob = {id: 55, jobNo: 'JOB-55', assignedCourier: undefined};
 // the HERE Maps SDK); stub them so the smoke test exercises the shell wiring.
 // The job-list stub exposes a button that fires onJobSelect so tests can drive
 // the page's selection (and the Dispatch affordance that depends on it).
-const jobListFetchConfig: {initialParams?: {despatchViewIds?: number[]; statusFilter?: string}} = {};
+const jobListFetchConfig: {
+    initialParams?: {despatchViewIds?: number[]; statusFilter?: string; selectedClearListId?: number};
+    refetchInterval?: number | false;
+    forcedCategory?: string;
+} = {};
+// What the page pushed into the mounted list instead of remounting it.
+const jobListParamPushes: Record<string, unknown>[] = [];
 jest.mock('../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, onJobSelect, onJobsLoaded, topSlot, fetchConfig}: {
+    JobListPanel: ({storagePrefix, onJobSelect, onJobsLoaded, topSlot, fetchConfig, forcedCategory, setUpdateSearchParamsCallback}: {
         storagePrefix: string;
         onJobSelect?: (j: unknown) => void;
         onJobsLoaded?: (jobs: unknown[]) => void;
         topSlot?: React.ReactNode;
-        fetchConfig?: {initialParams?: {despatchViewIds?: number[]; statusFilter?: string}};
+        fetchConfig?: {
+            initialParams?: {despatchViewIds?: number[]; statusFilter?: string; selectedClearListId?: number};
+            refetchInterval?: number | false;
+        };
+        forcedCategory?: string;
+        setUpdateSearchParamsCallback?: (cb: (params: Record<string, unknown>) => void) => void;
     }) => {
-        if (storagePrefix === 'dispatchJobList') jobListFetchConfig.initialParams = fetchConfig?.initialParams;
+        if (storagePrefix === 'dispatchJobList') {
+            jobListFetchConfig.initialParams = fetchConfig?.initialParams;
+            jobListFetchConfig.refetchInterval = fetchConfig?.refetchInterval;
+            jobListFetchConfig.forcedCategory = forcedCategory;
+            setUpdateSearchParamsCallback?.((params) => { jobListParamPushes.push(params); });
+        }
         return (
             <div data-testid={`mock-job-list-${storagePrefix}`}>
                 {topSlot}
@@ -26,6 +47,50 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
                 <button onClick={() => onJobsLoaded?.([sampleJob])}>load-jobs</button>
             </div>
         );
+    },
+}));
+
+const boxProps: {
+    driverLocations?: {refetchIntervalMs?: number | false; activeAreaId?: number};
+    supports?: {refetchIntervalMs?: number | false};
+    currentWork?: {refetchIntervalMs?: number | false};
+    overviewDeliveries?: {refetchIntervalMs?: number | false};
+    openJobs?: {refetchIntervalMs?: number | false};
+} = {};
+let selectArea: ((id: number) => void) | undefined;
+jest.mock('./components/DriverLocationsBox', () => ({
+    DriverLocationsBox: (props: {refetchIntervalMs?: number | false; activeAreaId?: number; onAreaSelect?: (id: number) => void}) => {
+        boxProps.driverLocations = {refetchIntervalMs: props.refetchIntervalMs, activeAreaId: props.activeAreaId};
+        selectArea = props.onAreaSelect;
+        return <div data-testid="mock-driver-locations"/>;
+    },
+}));
+jest.mock('../../components/common/tasks-box/TasksBox', () => ({
+    TasksBox: (props: {refetchIntervalMs?: number | false}) => {
+        boxProps.supports = {refetchIntervalMs: props.refetchIntervalMs};
+        return <div data-testid="mock-supports"/>;
+    },
+}));
+jest.mock('./components/CurrentWorkBox', () => ({
+    CurrentWorkBox: (props: {refetchIntervalMs?: number | false}) => {
+        boxProps.currentWork = {refetchIntervalMs: props.refetchIntervalMs};
+        return <div data-testid="mock-current-work"/>;
+    },
+}));
+jest.mock('./components/OverviewDeliveriesBox', () => ({
+    OverviewDeliveriesBox: (props: {refetchIntervalMs?: number | false; onSelectJob: (id: number) => void}) => {
+        boxProps.overviewDeliveries = {refetchIntervalMs: props.refetchIntervalMs};
+        return (
+            <div data-testid="mock-overview-deliveries">
+                <button onClick={() => props.onSelectJob(4242)}>select-overview-job</button>
+            </div>
+        );
+    },
+}));
+jest.mock('./components/OpenJobsBox', () => ({
+    OpenJobsBox: (props: {refetchIntervalMs?: number | false}) => {
+        boxProps.openJobs = {refetchIntervalMs: props.refetchIntervalMs};
+        return <div data-testid="mock-open-jobs"/>;
     },
 }));
 
@@ -72,8 +137,9 @@ jest.mock('../../services/dispatchLayoutApi', () => ({
     getLayouts: jest.fn().mockResolvedValue([]),
     saveLayouts: jest.fn().mockResolvedValue(undefined),
 }));
+const getDispatchJobDetailMock = jest.fn().mockResolvedValue({id: 55, jobNo: 'JOB-55'});
 jest.mock('../../services/dispatchExecutorApi', () => ({
-    getDispatchJobDetail: jest.fn().mockResolvedValue({id: 55, jobNo: 'JOB-55'}),
+    getDispatchJobDetail: (...a: unknown[]) => getDispatchJobDetailMock(...a),
 }));
 
 const allocateJobsMock = jest.fn().mockResolvedValue(undefined);
@@ -120,6 +186,7 @@ jest.mock('../../components/dialogs/dispatch-dialog', () => ({
 }));
 
 import {DispatchPage} from './DispatchPage';
+import dayjs from 'dayjs';
 import {SELECTED_VIEWS_KEY} from './lib/dispatchFilters';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 import {MantineTestProvider} from '../../__testUtils__';
@@ -143,6 +210,7 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof DispatchPage>
 describe('DispatchPage', () => {
     beforeEach(() => {
         localStorage.clear();
+        jobListParamPushes.length = 0;
     });
 
     describe('persisted category filter', () => {
@@ -162,11 +230,50 @@ describe('DispatchPage', () => {
             renderPage();
             expect(jobListFetchConfig.initialParams?.statusFilter).toBeUndefined();
         });
+
+        it('forces needs-dispatch when a clear-list area is active, overriding the stored category', async () => {
+            // V1 selectAndActivateArea set queryParams.statusFilter = 'needs-dispatch'
+            // and bounced defaultJobCategory through undefined to force the tab across.
+            // The scope has to win over the operator's stored choice, and the fetch
+            // params and the visible category chip have to agree.
+            localStorage.setItem(categoryKey, 'delivered');
+            renderPage();
+            expect(jobListFetchConfig.initialParams?.statusFilter).toBe('delivered');
+
+            await act(async () => { selectArea?.(7); });
+
+            expect(jobListFetchConfig.initialParams?.selectedClearListId).toBe(7);
+            expect(jobListFetchConfig.initialParams?.statusFilter).toBe('needs-dispatch');
+            expect(jobListFetchConfig.forcedCategory).toBe('needs-dispatch');
+        });
+
+        it('does not force a category outside the clear-list scope', () => {
+            localStorage.setItem(categoryKey, 'delivered');
+            renderPage();
+            expect(jobListFetchConfig.forcedCategory).toBeUndefined();
+        });
     });
 
-    it('renders the BETA banner and the dispatch job list box', () => {
+    describe('refresh interval threading', () => {
+        // Three independent cadences (jobs / driver locations / tasks) are persisted
+        // separately and pushed in via updateRefreshIntervals. Nothing asserted that
+        // they actually reach the queries, so a broken prop would have been silent.
+        it('threads each persisted cadence to the box that owns it', () => {
+            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
+            localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY, '15');
+            localStorage.setItem(TASK_REFRESH_KEY, '60');
+
+            renderPage();
+
+            expect(jobListFetchConfig.refetchInterval).toBe(30_000);
+            expect(boxProps.driverLocations?.refetchIntervalMs).toBe(15_000);
+            expect(boxProps.supports?.refetchIntervalMs).toBe(60_000);
+            expect(boxProps.currentWork?.refetchIntervalMs).toBe(30_000);
+        });
+    });
+
+    it('renders the dispatch job list box', () => {
         renderPage();
-        expect(screen.getByText(/rebuilt Dispatch page/i)).toBeInTheDocument();
         expect(screen.getByTestId('mock-job-list-dispatchJobList')).toBeInTheDocument();
     });
 
@@ -186,22 +293,6 @@ describe('DispatchPage', () => {
                 promptDeleteLayout: expect.any(Function),
             }),
         );
-    });
-
-    describe('beta banner', () => {
-        it('can be dismissed and the dismissal persists', async () => {
-            const user = setupUser();
-            const {unmount} = renderPage();
-            expect(screen.getByText(/rebuilt Dispatch page/i)).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /dismiss beta notice/i}));
-            expect(screen.queryByText(/rebuilt Dispatch page/i)).not.toBeInTheDocument();
-
-            // Persisted: a fresh mount stays dismissed.
-            unmount();
-            renderPage();
-            expect(screen.queryByText(/rebuilt Dispatch page/i)).not.toBeInTheDocument();
-        });
     });
 
     describe('job detail panel mount', () => {
@@ -342,6 +433,52 @@ describe('DispatchPage', () => {
                 .toEqual([11, 22]);
         });
 
+        // The rail scrolls horizontally and lives inside the job list card, so a
+        // remount on every pill click threw away both its scroll position and the
+        // table's. The selection now travels as a params push instead.
+        it('keeps the job list mounted when a view is toggled', async () => {
+            const user = setupUser();
+            renderPage();
+            await screen.findByRole('button', {name: 'Auckland', pressed: true});
+            const listNode = screen.getByTestId('mock-job-list-dispatchJobList');
+
+            await user.click(railPill('Airport'));
+
+            expect(screen.getByTestId('mock-job-list-dispatchJobList')).toBe(listNode);
+        });
+
+        it('pushes the new view selection into the mounted list', async () => {
+            const user = setupUser();
+            renderPage();
+            await screen.findByRole('button', {name: 'Auckland', pressed: true});
+            jobListParamPushes.length = 0;
+
+            await user.click(railPill('Airport'));
+
+            const push = jobListParamPushes.at(-1);
+            expect(push).toMatchObject({despatchViewIds: [11, 22], page: 0});
+            // The category chip owns the status filter; re-pushing the stored
+            // value here would fight the dispatcher's live choice.
+            expect(push).not.toHaveProperty('statusFilter');
+        });
+
+        // The host toolbar hands over a fresh dayjs on every push, so an unchanged
+        // range must not restart the query underneath the operator.
+        it('ignores a filter push that repeats the current date range', async () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            await screen.findByRole('button', {name: 'Auckland', pressed: true});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+            const range = () => ({startDate: dayjs('2025-02-01'), endDate: dayjs('2025-02-02')});
+            jobListParamPushes.length = 0;
+
+            act(() => { bridge.updateFilters(range()); });
+            expect(jobListParamPushes).toHaveLength(1);
+
+            act(() => { bridge.updateFilters(range()); });
+            expect(jobListParamPushes).toHaveLength(1);
+        });
+
         it('clears the selection and keeps it cleared in storage', async () => {
             const user = setupUser();
             renderPage();
@@ -419,6 +556,100 @@ describe('DispatchPage', () => {
 
             expect(allocateJobsMock).toHaveBeenCalledWith(9, [55]);
             expect(reAllocateJobsMock).not.toHaveBeenCalled();
+        });
+    });
+    /*
+     * Both Overview panels ship hidden, and panel visibility is only editable on a
+     * saved layout — so enabling them means seeding a custom layout the way the
+     * Customize-panels dialog would.
+     */
+    describe('Overview panels', () => {
+        // Must match useBoxLayout's keys in DispatchPage (AppPage.Dispatch === 1).
+        const LAYOUTS_KEY = 'layoutV2-0';
+        const LAST_ACTIVE_KEY = 'lastActiveLayoutV2-0';
+        const VISIBILITY_KEY = 'boxVisibilityV2-1-0-Mine';
+
+        const enableOverviewPanels = (visible = true) => {
+            localStorage.setItem(LAYOUTS_KEY, JSON.stringify([{
+                name: 'Mine',
+                layout: {
+                    columns: [{
+                        id: 'col1',
+                        width: '100%',
+                        boxes: [
+                            {name: 'overviewDeliveries', height: '50%'},
+                            {name: 'openJobs', height: '50%'},
+                        ],
+                    }],
+                },
+            }]));
+            localStorage.setItem(LAST_ACTIVE_KEY, 'Mine');
+            localStorage.setItem(VISIBILITY_KEY, JSON.stringify({
+                overviewDeliveries: {visible, collapsed: false},
+                openJobs: {visible, collapsed: false},
+            }));
+        };
+
+        it('leaves both panels off on the shipped Default layout', () => {
+            renderPage();
+
+            expect(screen.queryByTestId('mock-overview-deliveries')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('mock-open-jobs')).not.toBeInTheDocument();
+        });
+
+        it('renders both panels once a saved layout turns them on', () => {
+            enableOverviewPanels();
+            renderPage();
+
+            expect(screen.getByTestId('mock-overview-deliveries')).toBeInTheDocument();
+            expect(screen.getByTestId('mock-open-jobs')).toBeInTheDocument();
+        });
+
+        it('keeps them off when the saved layout has them switched off', () => {
+            enableOverviewPanels(false);
+            renderPage();
+
+            expect(screen.queryByTestId('mock-overview-deliveries')).not.toBeInTheDocument();
+        });
+
+        it('gives both panels the toolbar refresh cadence', () => {
+            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
+            enableOverviewPanels();
+            renderPage();
+
+            expect(boxProps.overviewDeliveries?.refetchIntervalMs).toBe(30000);
+            expect(boxProps.openJobs?.refetchIntervalMs).toBe(30000);
+        });
+
+        /*
+         * These panels read from the 'overview' query key, not 'dispatch', so the
+         * shared fall-through in handleRefreshBox would leave their refresh button
+         * doing nothing at all.
+         */
+        it('refreshes the overview queries, not the dispatch ones', async () => {
+            const invalidate = jest.spyOn(QueryClient.prototype, 'invalidateQueries');
+            enableOverviewPanels();
+            const user = setupUser();
+            renderPage();
+
+            // The seeded layout holds only these two panels, so the refresh buttons
+            // on screen are theirs — Deliveries first.
+            expect(screen.getByText('Deliveries')).toBeInTheDocument();
+            invalidate.mockClear();
+            await user.click(screen.getAllByRole('button', {name: 'Refresh'})[0]);
+
+            expect(invalidate).toHaveBeenCalledWith({queryKey: ['overview']});
+            invalidate.mockRestore();
+        });
+
+        it('selects an overview row into the Job Detail panel', async () => {
+            enableOverviewPanels();
+            const user = setupUser();
+            renderPage();
+
+            await user.click(screen.getByRole('button', {name: 'select-overview-job'}));
+
+            expect(getDispatchJobDetailMock).toHaveBeenCalledWith(4242);
         });
     });
 });

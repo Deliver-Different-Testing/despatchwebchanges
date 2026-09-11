@@ -64,6 +64,8 @@ describe('DateFilterMenu', () => {
             expect(screen.getByLabelText('Time Range')).toBeInTheDocument();
             expect(screen.getByLabelText('Custom Dates')).toBeInTheDocument();
             expect(screen.getByLabelText('Today')).toBeInTheDocument();
+            // The instant presets and the two that open a configurator are separated.
+            expect(screen.getAllByRole('separator').length).toBeGreaterThan(0);
             expect(screen.getByText('Reset')).toBeInTheDocument();
             expect(screen.getByText('Apply')).toBeInTheDocument();
         });

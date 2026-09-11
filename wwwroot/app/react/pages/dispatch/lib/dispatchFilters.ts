@@ -4,6 +4,7 @@ import {AppPage as LegacyAppPage} from '../../../../enums/app-pages.enum';
 import setDateFilterDefaults from '../../../../functions/setDateFilterDefaults';
 import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
 import {DEFAULT_TASK_REFRESH_SECONDS} from '../../task-dashboard/refreshIntervalOptions';
+import {loadDateFilterFrom} from '../../../utils/dateFilterStorage';
 
 /**
  * Dispatch toolbar filters that scope the job list and driver locations:
@@ -159,22 +160,7 @@ export function resolveInitialViewSelection(
  * `setDateFilterDefaults()` when nothing is stored or parsing fails.
  */
 export function loadDateFilter(): {startDate: Dayjs; endDate: Dayjs; useTime: boolean} {
-    const defaults = setDateFilterDefaults();
-    try {
-        const raw = localStorage.getItem(DATE_FILTER_KEY);
-        if (!raw) {
-            return {startDate: defaults.startDate, endDate: defaults.endDate, useTime: defaults.useTime ?? false};
-        }
-        const parsed = JSON.parse(raw) as {startDate: string; endDate: string; useTime?: boolean};
-        const startDate = dayjs(parsed.startDate);
-        let endDate = dayjs(parsed.endDate);
-        if (startDate.valueOf() === 0) {
-            endDate = dayjs().add(24, 'hours');
-        }
-        return {startDate, endDate, useTime: parsed.useTime ?? false};
-    } catch {
-        return {startDate: defaults.startDate, endDate: defaults.endDate, useTime: defaults.useTime ?? false};
-    }
+    return loadDateFilterFrom(DATE_FILTER_KEY);
 }
 
 /** Build the initial filters from persisted view selection + date range. */
@@ -186,14 +172,4 @@ export function loadDispatchFilters(): DispatchFilters {
         endDate: date.endDate,
         useTime: date.useTime,
     };
-}
-
-/** Stable key for remounting data views when the filters change. */
-export function filtersKey(filters: DispatchFilters): string {
-    return [
-        filters.despatchViewIds.join(','),
-        filters.startDate.valueOf(),
-        filters.endDate.valueOf(),
-        filters.useTime ? 1 : 0,
-    ].join('|');
 }

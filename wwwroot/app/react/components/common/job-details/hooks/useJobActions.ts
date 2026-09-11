@@ -755,15 +755,20 @@ export function useJobActions({
     const handleDoneClick = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
-        // Uncompleted: toggle done off
+        // Uncompleted: toggle done off. Not on an archive — Restore only touches live rows,
+        // so there is nothing that could put a half-undone archive right again.
         if (j.done) {
+            if (j.isArchived) {
+                showToast(`${j.jobNo} is archived and completed, so it cannot be marked not done.`, 'warning');
+                return;
+            }
             await updateField({job: j, field: JobProperty.Delivered, value: false, isRecurring: j.preBook});
             await refreshAndNotify();
             return;
         }
         // Completing: enter guided flow
         await markJobAsDone();
-    }, [updateField, refreshAndNotify, markJobAsDone]);
+    }, [updateField, refreshAndNotify, markJobAsDone, showToast]);
 
     const handleTailLiftPuClick = useCallback(async () => {
         const j = jobRef.current;
@@ -943,7 +948,9 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (j.done) {
-            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone, true);
+            // Clearing the POD time on an archived completed job is the same un-completion the
+            // Done toggle refuses, so the dialog doesn't offer Clear there.
+            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone, !j.isArchived);
             return;
         }
         await markJobAsDone('time');

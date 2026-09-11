@@ -18,20 +18,17 @@ import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
 import {openJobInSearch} from './react/services/navigationService';
 import {BELOW_APP_BAR_HEIGHT} from './react/components/common/app-toolbar/appBarMetrics';
+import {getNationwideBetaEnabled} from './react/pages/nationwide/lib/betaPreference';
 import {
     getJobSearchBetaEnabled,
     setJobSearchBetaEnabled,
 } from './react/pages/job-search/lib/betaPreference';
 import {
-    loadLayouts,
-    saveLayouts,
-    loadLastActiveLayoutName,
-    saveLastActiveLayoutName,
     loadBoxVisibility,
     saveBoxVisibility,
     mergeBoxVisibility,
-    renameLayoutInStorage,
-} from './react/pages/job-search/lib/layoutPersistence';
+} from './react/components/common/box-shell/layoutPersistence';
+import {createLayoutToolbarActions} from './functions/layoutToolbarActions';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './react/pages/job-search/lib/boxDefinitions';
 import {
     getDispatchBetaEnabled,
@@ -71,6 +68,7 @@ class RouterConfig {
         this.configureHomeState()
             .configureDispatchV2State()
             .configureNationwideState()
+            .configureNationwideV2State()
             .configureCSState()
             .configureJobSearchState()
             .configureJobSearchV2State()
@@ -274,8 +272,6 @@ class RouterConfig {
                     };
                     const defaultLayout = createDefaultDispatchLayout();
 
-                    const readLayouts = (): ILayout[] => loadLayouts(layoutStorageKeys, defaultLayout);
-
                     // ── Date filter — scopes the job list & driver locations,
                     // pushed into React via window.ReactDispatch.updateFilters.
                     // Persisted under the same key V1 home uses. The view
@@ -366,12 +362,9 @@ class RouterConfig {
                                             showRefreshInterval?: boolean;
                                             showDriverLocationRefresh?: boolean;
                                             showTaskRefresh?: boolean;
-                                            showDashboards?: boolean;
                                             showAiToggle?: boolean;
                                             showDispatchBetaToggle?: boolean;
-                                            panelsMovedNotice?: boolean;
                                         },
-                                        boxes: Record<string, IBox>,
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
@@ -381,7 +374,6 @@ class RouterConfig {
                                     ) => Promise<{
                                         dispatchBetaEnabled?: boolean;
                                         aiEnabled?: boolean;
-                                        boxes?: Record<string, IBox>;
                                         selectedRefreshInterval?: {id: number; text: string};
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string};
                                         selectedTaskRefreshInterval?: {id: number; text: string};
@@ -413,9 +405,7 @@ class RouterConfig {
                                         showTaskRefresh: true,
                                         showAiToggle: true,
                                         showDispatchBetaToggle: true,
-                                        panelsMovedNotice: true,
                                     },
-                                    {},
                                     {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
                                     {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
                                     {id: taskSeedSeconds, text: ''},
@@ -519,82 +509,19 @@ class RouterConfig {
                                 toastrService.showErrorToast('Create job dialog is not loaded.');
                             }
                         },
-
-                        saveLayout: async () => {
-                            const name = await window.ReactDispatch?.promptSaveLayout();
-                            if (!name) return;
-                            const layouts = readLayouts();
-                            const sourceLayout = layouts.find(l => l.name === ctrl.currentLayoutName);
-                            const payload = sourceLayout?.layout ?? defaultLayout.layout;
-                            const next: ILayout = {name, layout: JSON.parse(JSON.stringify(payload))};
-                            const updated = [...layouts, next];
-                            saveLayouts(layoutStorageKeys, updated);
-                            saveLastActiveLayoutName(layoutStorageKeys, name);
-                            ctrl.layouts = readLayouts();
-                            ctrl.currentLayoutName = name;
-                            window.ReactDispatch?.setCurrentLayoutName(name);
-                            window.ReactDispatch?.reloadLayoutsFromStorage();
-                            toastrService.showSuccessToast('Layout saved successfully');
-                        },
-
-                        loadLayout: (index: number) => {
-                            const layouts = readLayouts();
-                            const target = layouts[index];
-                            if (!target) return;
-                            saveLastActiveLayoutName(layoutStorageKeys, target.name);
-                            ctrl.currentLayoutName = target.name;
-                            window.ReactDispatch?.setCurrentLayoutName(target.name);
-                        },
-
-                        deleteLayout: async (index: number) => {
-                            const layouts = readLayouts();
-                            const target = layouts[index];
-                            if (!target) return;
-                            if (target.name === 'Default') return;
-                            const confirmed = await window.ReactDispatch?.promptDeleteLayout(target.name);
-                            if (!confirmed) return;
-                            const updated = layouts.filter((_, i) => i !== index);
-                            saveLayouts(layoutStorageKeys, updated);
-                            saveLastActiveLayoutName(layoutStorageKeys, 'Default');
-                            ctrl.layouts = readLayouts();
-                            ctrl.currentLayoutName = 'Default';
-                            window.ReactDispatch?.setCurrentLayoutName('Default');
-                            window.ReactDispatch?.reloadLayoutsFromStorage();
-                            toastrService.showSuccessToast('Layout deleted successfully');
-                        },
-
-                        importLayouts: () => {
-                            const result = window.ReactDispatch?.importLegacyLayouts();
-                            const imported = result?.imported.length ?? 0;
-                            ctrl.layouts = readLayouts();
-                            if (imported > 0) {
-                                toastrService.showSuccessToast(
-                                    `Imported ${imported} V1 layout${imported === 1 ? '' : 's'}`,
-                                );
-                            } else {
-                                toastrService.showInfoToast('No V1 layouts to import');
-                            }
-                        },
-
-                        renameLayout: async (index: number) => {
-                            const target = readLayouts()[index];
-                            if (!target || target.name === 'Default') return;
-                            const newName = await window.ReactDispatch?.promptRenameLayout(target.name);
-                            if (!newName || newName === target.name) return;
-                            if (!renameLayoutInStorage(layoutStorageKeys, target.name, newName, defaultLayout)) {
-                                toastrService.showErrorToast('Could not rename layout');
-                                return;
-                            }
-                            ctrl.layouts = readLayouts();
-                            ctrl.currentLayoutName = loadLastActiveLayoutName(layoutStorageKeys) ?? 'Default';
-                            window.ReactDispatch?.setCurrentLayoutName(ctrl.currentLayoutName);
-                            window.ReactDispatch?.reloadLayoutsFromStorage();
-                            toastrService.showSuccessToast('Layout renamed successfully');
-                        },
                     };
 
-                    ctrl.layouts = readLayouts();
-                    ctrl.currentLayoutName = loadLastActiveLayoutName(layoutStorageKeys) ?? 'Default';
+                    const layoutToolbar = createLayoutToolbarActions({
+                        getBridge: () => window.ReactDispatch,
+                        host: ctrl,
+                        storageKeys: layoutStorageKeys,
+                        defaultLayout,
+                        toastr: toastrService,
+                    });
+                    // Merged in rather than spread into the literal above so
+                    // `ctrl` stays free of a circular type reference.
+                    Object.assign(ctrl, layoutToolbar);
+                    layoutToolbar.initialize();
 
                     ($scope as angular.IScope & {ctrl: typeof ctrl}).ctrl = ctrl;
 
@@ -651,6 +578,15 @@ class RouterConfig {
         this.$stateProvider.state("nw", {
             url: "/Nationwide?jobId",
             template: '<nationwide-component></nationwide-component>',
+            // Opt-in, unlike /(dispatch) and /jobSearch: the classic AngularJS
+            // page stays the default and this only redirects for operators who
+            // turned the new page on themselves. Handled at the route level so
+            // the React bundle is not fetched for everyone else.
+            redirectTo: (trans: any) => {
+                if (!getNationwideBetaEnabled()) return undefined;
+                const jobId = trans.params()?.jobId;
+                return {state: 'nwV2', params: jobId ? {jobId} : {}};
+            },
             params: {
                 jobId: {
                     value: null,
@@ -690,6 +626,69 @@ class RouterConfig {
                     });
                 }]
             }
+        });
+        return this;
+    }
+
+    /**
+     * Parallel React rebuild of `/Nationwide`, running alongside the AngularJS
+     * page so it can be QA'd against real data before the classic page is
+     * deleted. Per-user opt-out via the dashboard settings dialog
+     * (`react/pages/nationwide/lib/betaPreference.ts`).
+     */
+    private configureNationwideV2State(): this {
+        this.$stateProvider.state("nwV2", {
+            url: "/NationwideV2?jobId",
+            params: {
+                jobId: {value: null, squash: true}
+            },
+            template: `
+                <div style="height: 100%; position: relative;">
+                    <react-app-shell section="Operations" title="Nationwide"></react-app-shell>
+                    <div id="react-nationwide-v2" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
+                </div>
+            `,
+            resolve: {
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for nwV2 state, using fallback names');
+                        return {'nationwideReact.js': 'nationwideReact.js'};
+                    }
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    if (!window.React) {
+                        await $ocLazyLoad.load(`dist/${manifest['vendor-react.js'] || 'vendor-react.js'}`);
+                    }
+                    // islandFiles pairs the JS with its stylesheet; this page
+                    // emits one, so loading the bundle alone would render it
+                    // unstyled.
+                    await $ocLazyLoad.load({
+                        name: 'uDispatch.nationwideReact',
+                        files: islandFiles(manifest, 'nationwideReact')
+                    });
+                }]
+            },
+            controller: ['$scope', '$stateParams', 'APP_CONFIG',
+                function (
+                    $scope: angular.IScope,
+                    $stateParams: IDfrntStateParams,
+                    appConfig: { US_Customer: boolean }
+                ) {
+                    const jobId = $stateParams.jobId ? parseInt($stateParams.jobId, 10) : undefined;
+
+                    window.ReactNationwide?.mount('react-nationwide-v2', {
+                        isUsCustomer: appConfig.US_Customer,
+                        timeZone: window.TimeZone || 'New Zealand Standard Time',
+                        deepLinkJobId: Number.isFinite(jobId) ? jobId : undefined,
+                    } as any);
+
+                    $scope.$on('$destroy', () => {
+                        window.ReactNationwide?.unmount();
+                    });
+                }]
         });
         return this;
     }
@@ -870,11 +869,6 @@ class RouterConfig {
                     };
                     const defaultLayout = createDefaultJobSearchLayout();
 
-                    // Read through the canonical loader so the toolbar's list is
-                    // identical to what React renders — Default is always present
-                    // at index 0, even when localStorage is empty.
-                    const readLayouts = (): ILayout[] => loadLayouts(layoutStorageKeys, defaultLayout);
-
                     const ctrl = {
                         layouts: [] as ILayout[],
                         currentLayoutName: undefined as string | undefined,
@@ -916,12 +910,9 @@ class RouterConfig {
                                             title: string;
                                             showRefreshInterval?: boolean;
                                             showDriverLocationRefresh?: boolean;
-                                            showDashboards?: boolean;
                                             showAiToggle?: boolean;
                                             showJobSearchBetaToggle?: boolean;
-                                            panelsMovedNotice?: boolean;
                                         },
-                                        boxes: Record<string, IBox>,
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
@@ -930,7 +921,6 @@ class RouterConfig {
                                     ) => Promise<{
                                         jobSearchBetaEnabled?: boolean;
                                         aiEnabled?: boolean;
-                                        boxes?: Record<string, IBox>;
                                     } | null>;
                                 };
                             };
@@ -940,17 +930,12 @@ class RouterConfig {
                             }
                             try {
                                 const wasOn = getJobSearchBetaEnabled();
-                                // Panel visibility moved to the dedicated Customize
-                                // Panels dialog (Layouts menu) — the gear now shows a
-                                // notice instead of panel toggles.
                                 const result = await w.ReactDashboardSettingsDialog.open(
                                     {
                                         title: 'Job Search Dashboard Settings',
                                         showAiToggle: true,
                                         showJobSearchBetaToggle: true,
-                                        panelsMovedNotice: true,
                                     },
-                                    {},
                                     undefined,
                                     undefined,
                                     undefined, // selectedTaskRefreshInterval — not used on Job Search
@@ -1031,7 +1016,9 @@ class RouterConfig {
                             };
                             void $event;
                             if (w.ReactCreateJobDialog) {
-                                w.ReactCreateJobDialog.open(appConfig.US_Customer).catch(err =>
+                                w.ReactCreateJobDialog.open(appConfig.US_Customer).then(newJobId => {
+                                    if (newJobId) window.ReactJobSearch?.jobCreated(newJobId);
+                                }).catch(err =>
                                     console.error('[jobSearchV2] create job dialog error', err)
                                 );
                             } else {
@@ -1053,88 +1040,19 @@ class RouterConfig {
                                 toastrService.showErrorToast('Inter-courier dialog is not loaded.');
                             }
                         },
-
-                        saveLayout: async () => {
-                            const name = await window.ReactJobSearch?.promptSaveLayout();
-                            if (!name) return;
-                            const layouts = readLayouts();
-                            const sourceLayout = layouts.find(l => l.name === ctrl.currentLayoutName);
-                            const payload = sourceLayout?.layout ?? defaultLayout.layout;
-                            const next: ILayout = {name, layout: JSON.parse(JSON.stringify(payload))};
-                            // `layouts` already carries Default at index 0, so the
-                            // persisted array stays aligned with React's loadLayouts.
-                            const updated = [...layouts, next];
-                            saveLayouts(layoutStorageKeys, updated);
-                            saveLastActiveLayoutName(layoutStorageKeys, name);
-                            ctrl.layouts = readLayouts();
-                            ctrl.currentLayoutName = name;
-                            window.ReactJobSearch?.setCurrentLayoutName(name);
-                            window.ReactJobSearch?.reloadLayoutsFromStorage();
-                            toastrService.showSuccessToast('Layout saved successfully');
-                        },
-
-                        loadLayout: (index: number) => {
-                            const layouts = readLayouts();
-                            const target = layouts[index];
-                            if (!target) return;
-                            saveLastActiveLayoutName(layoutStorageKeys, target.name);
-                            ctrl.currentLayoutName = target.name;
-                            window.ReactJobSearch?.setCurrentLayoutName(target.name);
-                        },
-
-                        deleteLayout: async (index: number) => {
-                            const layouts = readLayouts();
-                            const target = layouts[index];
-                            if (!target) return;
-                            // Default always lives at index 0 (injected by
-                            // loadLayouts); never delete it.
-                            if (target.name === 'Default') return;
-                            const confirmed = await window.ReactJobSearch?.promptDeleteLayout(target.name);
-                            if (!confirmed) return;
-                            const updated = layouts.filter((_, i) => i !== index);
-                            saveLayouts(layoutStorageKeys, updated);
-                            saveLastActiveLayoutName(layoutStorageKeys, 'Default');
-                            ctrl.layouts = readLayouts();
-                            ctrl.currentLayoutName = 'Default';
-                            window.ReactJobSearch?.setCurrentLayoutName('Default');
-                            window.ReactJobSearch?.reloadLayoutsFromStorage();
-                            toastrService.showSuccessToast('Layout deleted successfully');
-                        },
-
-                        importLayouts: () => {
-                            const result = window.ReactJobSearch?.importLegacyLayouts();
-                            const imported = result?.imported.length ?? 0;
-                            ctrl.layouts = readLayouts();
-                            if (imported > 0) {
-                                toastrService.showSuccessToast(
-                                    `Imported ${imported} V1 layout${imported === 1 ? '' : 's'}`,
-                                );
-                            } else {
-                                toastrService.showInfoToast('No V1 layouts to import');
-                            }
-                        },
-
-                        renameLayout: async (index: number) => {
-                            const target = readLayouts()[index];
-                            if (!target || target.name === 'Default') return;
-                            const newName = await window.ReactJobSearch?.promptRenameLayout(target.name);
-                            if (!newName || newName === target.name) return;
-                            if (!renameLayoutInStorage(layoutStorageKeys, target.name, newName, defaultLayout)) {
-                                toastrService.showErrorToast('Could not rename layout');
-                                return;
-                            }
-                            ctrl.layouts = readLayouts();
-                            ctrl.currentLayoutName = loadLastActiveLayoutName(layoutStorageKeys) ?? 'Default';
-                            window.ReactJobSearch?.setCurrentLayoutName(ctrl.currentLayoutName);
-                            window.ReactJobSearch?.reloadLayoutsFromStorage();
-                            toastrService.showSuccessToast('Layout renamed successfully');
-                        },
                     };
 
-                    // Seed the toolbar from localStorage on mount. `readLayouts`
-                    // guarantees Default at index 0, so it's always selectable.
-                    ctrl.layouts = readLayouts();
-                    ctrl.currentLayoutName = loadLastActiveLayoutName(layoutStorageKeys) ?? 'Default';
+                    const layoutToolbar = createLayoutToolbarActions({
+                        getBridge: () => window.ReactJobSearch,
+                        host: ctrl,
+                        storageKeys: layoutStorageKeys,
+                        defaultLayout,
+                        toastr: toastrService,
+                    });
+                    // Merged in rather than spread into the literal above so
+                    // `ctrl` stays free of a circular type reference.
+                    Object.assign(ctrl, layoutToolbar);
+                    layoutToolbar.initialize();
 
                     ($scope as angular.IScope & {ctrl: typeof ctrl}).ctrl = ctrl;
 

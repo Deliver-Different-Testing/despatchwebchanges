@@ -1,5 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -148,6 +149,74 @@ public class JobRepositoryStatusCoherenceTests : IAsyncDisposable
         Assert.NotNull(updated.UcjbComplTime);
     }
 
+    [Fact]
+    public async Task UpdateJobAsync_UnTickingDelivered_OnArchivedCompletedJob_IsRefused()
+    {
+        // Arrange - an archived job that has already been completed
+        await using (var context = _db.CreateContext())
+        {
+            context.TucJobArchives.Add(CreateArchive(1, done: true));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act / Assert - Restore only touches live rows, so there is no way back from a
+        // half-undone archive: refuse the edit rather than write the incoherent pair
+        await Assert.ThrowsAsync<ArchivedJobCompletionException>(
+            () => repository.UpdateJobAsync(1, JobProperty.Delivered, "false"));
+
+        await using var assertContext = _db.CreateContext();
+        var untouched = await assertContext.TucJobArchives.FirstAsync(j => j.UcjbId == 1, TestContext.Current.CancellationToken);
+        Assert.True(untouched.UcjbJobDone);
+        Assert.Equal((int)JobStatus.Completed, untouched.UcjbStatus);
+        Assert.NotNull(untouched.UcjbComplTime);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_UnTickingDelivered_OnArchivedJobThatWasNeverDone_IsAllowed()
+    {
+        // Arrange
+        await using (var context = _db.CreateContext())
+        {
+            context.TucJobArchives.Add(CreateArchive(1, done: false));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act - nothing to undo, so nothing to protect
+        await repository.UpdateJobAsync(1, JobProperty.Delivered, "false");
+
+        // Assert
+        await using var assertContext = _db.CreateContext();
+        var updated = await assertContext.TucJobArchives.FirstAsync(j => j.UcjbId == 1, TestContext.Current.CancellationToken);
+        Assert.False(updated.UcjbJobDone);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_TickingDelivered_OnArchivedJob_StillCompletesIt()
+    {
+        // Arrange
+        await using (var context = _db.CreateContext())
+        {
+            context.TucJobArchives.Add(CreateArchive(1, done: false));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateJobAsync(1, JobProperty.Delivered, "true");
+
+        // Assert - completing an archived job is unchanged
+        await using var assertContext = _db.CreateContext();
+        var updated = await assertContext.TucJobArchives.FirstAsync(j => j.UcjbId == 1, TestContext.Current.CancellationToken);
+        Assert.True(updated.UcjbJobDone);
+        Assert.Equal((int)JobStatus.Completed, updated.UcjbStatus);
+        Assert.NotNull(updated.UcjbComplTime);
+    }
+
     private static TucJob CreateJob(int id) =>
         new()
         {
@@ -156,5 +225,17 @@ public class JobRepositoryStatusCoherenceTests : IAsyncDisposable
             UcjbDate = TestDates.Now.Date,
             UcjbTime = TestDates.Now.Date.AddHours(9),
             UcjbStatus = (int)JobStatus.New
+        };
+
+    private static TucJobArchive CreateArchive(int id, bool done) =>
+        new()
+        {
+            UcjbId = id,
+            UcjbNumber = $"JOB-{id:D3}",
+            UcjbDate = TestDates.Now.Date,
+            UcjbTime = TestDates.Now.Date.AddHours(9),
+            UcjbJobDone = done,
+            UcjbStatus = done ? (int)JobStatus.Completed : (int)JobStatus.New,
+            UcjbComplTime = done ? TestDates.Now : null
         };
 }

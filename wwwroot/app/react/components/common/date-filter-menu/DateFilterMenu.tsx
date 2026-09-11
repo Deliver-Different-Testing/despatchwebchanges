@@ -422,9 +422,13 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                         value={selectedRangeOption}
                         onChange={(value) => handleRangeOptionChange(value as DateRangeOption)}
                     >
+                        {/* Deliberately uncoloured: four date presets carry no meaning
+                            for a colour to encode. The split that does exist — pick and
+                            go, versus pick and then configure — is the divider. */}
                         <Stack gap="xs">
                             <Radio value="all_time" label="All Time"/>
                             <Radio value="today" label="Today"/>
+                            <Divider my={2}/>
                             <Radio value="custom_minutes" label="Time Range"/>
                             <Radio value="custom_date" label="Custom Dates"/>
                         </Stack>

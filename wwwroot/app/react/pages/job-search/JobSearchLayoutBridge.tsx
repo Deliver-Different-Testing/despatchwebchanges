@@ -1,4 +1,4 @@
-import type {ImportLayoutsResult} from "./lib/layoutPersistence";
+import type {ImportLayoutsResult} from "../../components/common/box-shell/layoutPersistence";
 
 export interface JobSearchLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
@@ -14,6 +14,8 @@ export interface JobSearchLayoutBridge {
     setColumnEditMode: (enabled: boolean) => void;
     /** Opens the Inter-Courier Charge dialog, wired to this page's toast. */
     openInterCourierCharge: () => Promise<void>;
+    /** Open a job that was just created, in the detail panel. */
+    jobCreated: (jobId: number) => void;
     /** Copy the user's V1 layouts into this page's (V2) layout store. */
     importLegacyLayouts: () => ImportLayoutsResult;
 }

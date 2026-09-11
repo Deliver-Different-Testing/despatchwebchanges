@@ -1,5 +1,20 @@
-import {Dayjs} from "dayjs";
-import {IAgent} from "../../interfaces/job.interface";
+/**
+ * Flight and flight-segment types for the Nationwide/air-freight domain.
+ *
+ * Lived in `components/Nationwide/nationwide.interfaces.ts` until that folder
+ * became scheduled for removal with the AngularJS page. Both sides depend on
+ * these — the AngularJS flight dialogs and `functions/dtoMappings`, and the
+ * React flight-details dialog and `job-details` — so they belong in the shared
+ * `interfaces/` folder that outlives the migration.
+ *
+ * Distinct from `react/interfaces/nationwideJobs.ts`, which carries the
+ * React-side shapes with `Dayjs` fields; these are the DTO-facing ones.
+ */
+
+import type {Dayjs} from "dayjs";
+// Type-only both ways: `job.interface` imports IFlightSegment back from here,
+// and erased imports keep that cycle harmless.
+import type {IAgent} from "./job.interface";
 
 export interface IFlightViewModel {
     airline: string;

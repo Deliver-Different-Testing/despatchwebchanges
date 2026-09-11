@@ -5,7 +5,7 @@
     </PropertyGroup>
     <ItemGroup>
         <PackageVersion Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.3"/>
-        <PackageVersion Include="Anthropic" Version="12.46.0"/>
+        <PackageVersion Include="Anthropic" Version="12.47.0"/>
         <PackageVersion Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0"/>
         <PackageVersion Include="AWSSDK.S3" Version="4.0.103.1"/>
         <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.100.13"/>

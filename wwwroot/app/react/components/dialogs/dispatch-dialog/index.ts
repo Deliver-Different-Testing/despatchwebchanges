@@ -8,4 +8,4 @@ export type {
     DispatchJobFlags,
 } from './types';
 
-export {PartnerRatePanelProps} from "./PartnerRatePanelProps";
+export type {PartnerRatePanelProps} from "./PartnerRatePanelProps";

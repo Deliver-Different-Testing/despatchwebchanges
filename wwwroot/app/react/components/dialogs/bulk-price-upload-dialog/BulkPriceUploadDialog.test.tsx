@@ -8,6 +8,7 @@ import { setupUser } from '../../../__testUtils__/setupUser';
 import {renderWithMantine} from '../../../__testUtils__';
 import {BulkPriceUploadDialog} from './BulkPriceUploadDialog';
 import {BulkPricePreviewResponse} from './types';
+import {pricingModeColors} from '../../../theme/designTokens';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
@@ -280,6 +281,23 @@ describe('BulkPriceUploadDialog', () => {
 
             await userEvent.click(screen.getByRole('radio', {name: /Base Price/}));
             expect(screen.getByRole('radio', {name: /Base Price/})).toBeChecked();
+        });
+
+        it('gives each mode its own colour from the shared pricing-mode token', async () => {
+            const props = createMockProps();
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            const colours = ['recalculate', 'base', 'gross'].map((mode) =>
+                (document.querySelector(`[data-pricing-mode="${mode}"]`) as HTMLElement | null)
+                    ?.style.getPropertyValue('--radio-color').trim());
+
+            expect(colours).toEqual([
+                pricingModeColors.recalculate,
+                pricingModeColors.base,
+                pricingModeColors.gross,
+            ]);
+            expect(new Set(colours).size).toBe(3);
         });
 
         it('should display Back and Apply buttons', async () => {
@@ -679,3 +697,4 @@ describe('BulkPriceUploadDialog', () => {
         });
     });
 });
+

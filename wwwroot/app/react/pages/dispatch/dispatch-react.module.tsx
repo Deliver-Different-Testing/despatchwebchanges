@@ -15,8 +15,10 @@ import {ErrorBoundary} from '../../components/common/error-boundary';
 import {DispatchPage, DispatchPageProps, DispatchLayoutBridge} from './DispatchPage';
 import type {DispatchFilters, DispatchRefreshIntervals} from './lib/dispatchFilters';
 import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
-import type {ImportLayoutsResult} from '../job-search/lib/layoutPersistence';
+import type {ImportLayoutsResult} from '../../components/common/box-shell/layoutPersistence';
 import {createPageHost} from '../../utils/reactPageHost';
+import {toastService} from '../../services/toastService';
+import type {ShowToastFn} from '../../services/toastTypes';
 
 export interface MountDispatchPageConfig extends DispatchPageProps {}
 
@@ -32,12 +34,22 @@ let pendingViewsListener: ((views: DfrntPageViewModel[]) => void) | null = null;
 let unregisterViewsListener: (() => void) | null = null;
 
 // ErrorBoundary is a shared MUI leaf still used by unmigrated islands.
+/**
+ * Page toasts render through the same Mantine notification surface the dialogs
+ * already use. The AngularJS host used to inject a `showToast` backed by
+ * `$mdToast`, which meant two toast systems on screen at once; that prop is
+ * ignored now and disappears with the host in Phase 5.
+ */
+const showMantineToast: ShowToastFn = (message, type, action) =>
+    toastService.showToast(message, type, action);
+
 const host = createPageHost<MountDispatchPageConfig>({
     logName: 'DispatchReact',
     render: (config) => islandTree(
         <ErrorBoundary>
             <DispatchPage
                 {...config}
+                showToast={showMantineToast}
                 onLayoutBridgeReady={bridge => {
                     layoutBridge = bridge;
                     if (pendingFilters) {

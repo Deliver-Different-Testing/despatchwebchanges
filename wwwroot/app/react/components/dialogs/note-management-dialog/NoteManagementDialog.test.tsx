@@ -212,10 +212,10 @@ describe('NoteManagementDialog', () => {
         expect(await screen.findByText('Create New Note Type')).toBeInTheDocument();
 
         // jsdom does no layout, so this asserts the wiring rather than the pixels:
-        // the modal keeps its scroll container and the footer pins to it.
-        expect(screen.getByRole('dialog')).toHaveStyle({overflowY: 'auto'});
-        expect(screen.getByRole('button', {name: 'Save Note'}).parentElement)
-            .toHaveStyle({position: 'sticky', bottom: '0px'});
+        // the body scrolls and the footer sits outside it, always on screen.
+        const scrollRegion = screen.getByRole('dialog').querySelector<HTMLElement>('[data-dialog-scroll]')!;
+        expect(scrollRegion.style.overflowY).toBe('auto');
+        expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Save Note'}));
     });
 
     // ── Note content: type text, toggle important, save enabled (single render) ─

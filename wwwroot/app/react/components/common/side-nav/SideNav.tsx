@@ -24,6 +24,7 @@ import {Icon} from '../icon/Icon';
 import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 import {getDispatchBetaEnabled} from '../../../pages/dispatch/lib/betaPreference';
 import {getJobSearchBetaEnabled} from '../../../pages/job-search/lib/betaPreference';
+import {getNationwideBetaEnabled} from '../../../pages/nationwide/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
 import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
 import classes from './SideNav.module.css';
@@ -105,7 +106,10 @@ export const SideNav: React.FC<SideNavProps> = ({
                 id: 'shipping',
                 label: isUsCustomer ? 'Domestic' : 'Nationwide',
                 icon: <Icon tabler={IconTruck} size={NAV_ICON_SIZE} />,
-                state: 'nw',
+                // As above: link straight at the React page so the nav skips
+                // the classic route's redirect hop.
+                state: getNationwideBetaEnabled() ? 'nwV2' : 'nw',
+                matchStates: ['nw', 'nwV2'],
                 featureKey: dashboardFeatureKeys.nationwide,
             },
             {

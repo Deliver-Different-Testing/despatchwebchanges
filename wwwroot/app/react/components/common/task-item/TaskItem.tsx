@@ -1,18 +1,24 @@
 /**
  * React Task Item Component
  *
- * A dispatch task as a run-sheet line. Anatomy: state keyline, completion checkbox,
- * **due rail** (bold tabular time over a day / "how late" line), headline, plain-text
- * metadata, and a trailing assignee control.
+ * A dispatch task as a flat two-line row. Line one is the checkbox, the headline and
+ * the **due button** (top right); line two is the task's facts as filled key/value
+ * chips, with the assignee control trailing.
  *
- * Two rules hold the design together:
+ * Three rules hold the design together:
  *
- * 1. **A control shape means "you can change this."** Only the due instant and the
- *    assignee are editable, so only those two are buttons; the job number, event
- *    type, courier and client are plain text. Everything used to be an identical
- *    `Badge`, which made the controls invisible and the facts look clickable.
- * 2. **Ink is spent on exceptions.** No status word (the keyline and the rail carry
- *    state), no day line on a task due today, no mark for `low` priority.
+ * 1. **Every fact names its own type.** `Job 100482`, `Courier ABC123 — John Smith`,
+ *    `Client ACME` — the key word is in the chip, not implied by an icon. Four
+ *    unlabelled grey strings in a row are unreadable at a glance, which is what the
+ *    icon-led version was.
+ * 2. **One hue vocabulary, and it means one thing.** Grey carries facts; red means
+ *    late or high priority, orange medium, green done. Nothing else in the row is
+ *    coloured — no per-assignee avatar hue, no state keyline competing with the due
+ *    button. A row of ordinary tasks is monochrome, so an exception is visible from
+ *    across the list.
+ * 3. **Fill for facts, hover for controls.** Every chip is filled; the two editable
+ *    things — the due instant and the assignee — are the only ones that repaint on
+ *    approach. Fill no longer implies clickable; hover does.
  *
  * **Wall-clock only.** The date editor is Mantine's string-valued `DatePicker`
  * (`YYYY-MM-DD`) and the time editor its `TimePicker` (`HH:mm`), so neither builds
@@ -24,11 +30,11 @@
 
 import React, {useState, useMemo, useCallback} from 'react';
 import {
-    Avatar, Box, Button, Checkbox, Divider, Group, Loader, NavLink, Popover, Stack, Text,
-    TextInput, Tooltip, UnstyledButton,
+    Badge, Box, Button, Checkbox, Divider, Group, Loader, NavLink, Popover, SegmentedControl,
+    Stack, Text, TextInput, UnstyledButton,
 } from '@mantine/core';
 import {DatePicker, TimePicker} from '@mantine/dates';
-import {Building2, Flag, Search, Truck, User, UserMinus} from 'lucide-react';
+import {Clock, Search, User, UserMinus, UserPlus} from 'lucide-react';
 import dayjs from 'dayjs';
 import {TaskItemProps, TaskItemConfig, Task} from './TaskItem.interfaces';
 import {
@@ -40,7 +46,17 @@ import classes from './TaskItem.module.css';
 /** The string forms the two editors exchange values in. */
 const ISO_DATE = 'YYYY-MM-DD';
 const TIME_24H = 'HH:mm';
-/** The rail's second line for a task due on another day, e.g. "Thu 11". */
+
+/**
+ * The row's type scale, published by the stylesheet so a container query can
+ * re-scale it for the narrow dispatch Supports box. A Mantine `fz` prop lands as an
+ * inline style, which a container query cannot override — hence the variables. The
+ * fallbacks cover Jest, where CSS modules are mocked to `{}`.
+ */
+const FZ_TITLE = 'var(--task-fz-title, var(--mantine-font-size-sm))';
+const FZ_BODY = 'var(--task-fz-body, var(--mantine-font-size-sm))';
+const FZ_CHIP = 'var(--task-fz-chip, var(--mantine-font-size-xs))';
+/** The due button's qualifier for a task due on another day, e.g. "Thu 11". */
 const DAY_LABEL = 'ddd D';
 
 const defaultConfig: TaskItemConfig = {
@@ -57,37 +73,34 @@ const defaultConfig: TaskItemConfig = {
 
 type PopoverType = 'due' | 'assignee' | null;
 type TaskState = 'open' | 'overdue' | 'done';
+/** What the due button is painted as. `unset` is a task with no due instant at all. */
+type DueState = TaskState | 'unset';
+type DueTab = 'date' | 'time';
 
-/** The 4px leading keyline that carries the task's state. */
-const NEUTRAL_KEYLINE = 'var(--mantine-color-default-border)';
-const keylineColor: Record<TaskState, string> = {
-    done: 'var(--mantine-color-green-filled)',
-    overdue: 'var(--mantine-color-red-filled)',
-    // `open` is the 90% case: a colour here would compete with the two exceptions.
-    open: NEUTRAL_KEYLINE,
-};
-
-/** `low` is the default case and gets no mark — only escalations are flagged. */
+/**
+ * `low` is the default case and gets no chip — only escalations are called out. The
+ * two that do share the row's one hue scale rather than introducing colours of
+ * their own.
+ */
 const priorityColor: Partial<Record<NonNullable<Task['priority']>, string>> = {
-    high: 'var(--mantine-color-red-filled)',
-    medium: 'var(--mantine-color-orange-filled)',
+    high: 'red',
+    medium: 'orange',
 };
 
-/** First letters of up to two name words, e.g. "John Doe" -> "JD". */
-const getInitials = (name: string): string => {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return '';
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-};
-
-/** Deterministic, readable avatar background derived from the assignee name. */
-const getAvatarColor = (name: string): string => {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return `hsl(${Math.abs(hash) % 360}, 42%, 42%)`;
+/**
+ * Chips are filled, not tinted. Mantine's `light` variant is a ~10% wash, which on a
+ * white row reads as plain text with a faint halo — the thing this row was rebuilt to
+ * stop doing.
+ *
+ * The shade differs per ramp because the theme's ramps do not share a lightness
+ * curve: the neutral is a warm near-white family (`gray.2` is `#f4f2f1`, invisible on
+ * a white row) while `red`/`orange` reach a real tint two steps in. Picking one shade
+ * number for all three is what makes a "filled" chip disappear.
+ */
+const factTone: Record<string, {bg: string; fg: string}> = {
+    gray: {bg: 'gray.3', fg: 'gray.8'},
+    red: {bg: 'red.2', fg: 'red.9'},
+    orange: {bg: 'orange.2', fg: 'orange.9'},
 };
 
 /**
@@ -96,13 +109,49 @@ const getAvatarColor = (name: string): string => {
  */
 const hasValidDate = (s?: string): boolean => Boolean(s) && s !== 'Invalid Date';
 
-/** Metadata is plain text — the leading icon is the label, so the value carries none. */
-const metaTextProps = {fz: 'xs', c: 'dimmed'} as const;
-const metaIconColor = 'var(--mantine-color-dimmed)';
-
 // Compute timezone abbreviation once at module level (it doesn't change per-render)
 const ianaTimeZone = getIanaTimezone(getTenantTimezone());
 const timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
+
+interface FactProps {
+    /** The datum's type, e.g. "Courier". Omitted where the value is self-naming. */
+    label?: string;
+    /** Suppresses `label` — the compact row has no width for the key words. */
+    hideLabel?: boolean;
+    value: string;
+    /** Test/QA hook — Lucide and Tabler emit none of their own. */
+    stamp: string;
+    color?: string;
+    maw?: number;
+}
+
+/**
+ * One filled key/value chip. Mantine's `Badge` is uppercase 700 by default, which is
+ * both a shouted label and the "bold" half of the old row's flat/bold mix — hence
+ * the explicit `tt`/`fw`.
+ */
+const Fact = ({label, value, stamp, hideLabel, color = 'gray', maw}: FactProps) => (
+    <Badge
+        variant="light"
+        color={color}
+        size="sm"
+        radius="sm"
+        tt="none"
+        fz={FZ_CHIP}
+        fw={500}
+        bg={(factTone[color] ?? factTone.gray).bg}
+        c={(factTone[color] ?? factTone.gray).fg}
+        maw={maw}
+        data-task-meta={stamp}
+    >
+        {label && !hideLabel && (
+            <Text span inherit fw={400} mr={5} style={{opacity: 0.72}}>
+                {label}
+            </Text>
+        )}
+        <Text span inherit fw={600}>{value}</Text>
+    </Badge>
+);
 
 export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const {
@@ -123,6 +172,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
 
     // State
     const [popoverType, setPopoverType] = useState<PopoverType>(null);
+    const [dueTab, setDueTab] = useState<DueTab>('date');
     const [timeDraft, setTimeDraft] = useState('');
     const [staffList, setStaffList] = useState<Array<{id: number; text: string}>>([]);
     const [staffSearchText, setStaffSearchText] = useState('');
@@ -148,20 +198,26 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const hasAssignee = Boolean(task.assignee?.id);
 
     const hasDueTime = hasValidDate(task._dueTimeString);
+    const hasDueInstant = hasDueTime || hasValidDate(task._dueDateString);
+
+    const dueState: DueState = !hasDueInstant ? 'unset'
+        : stateEmphasis ? taskState
+        : 'open';
 
     /**
-     * The rail's second line. A bare time already means "today", so a label appears
-     * only when the time alone would mislead — which is also what keeps the rail from
-     * echoing the task dashboard's sticky Today/Tomorrow/Overdue group headers.
+     * The due button's second segment. The time alone already means "today", so a
+     * qualifier appears only where it would otherwise mislead — which is also what
+     * keeps the button from echoing the task dashboard's sticky Today / Tomorrow /
+     * Overdue group headers.
      */
-    const dueDayLabel = useMemo(() => {
-        if (compact || !task.dueDate?.isValid()) return null;
+    const dueQualifier = useMemo(() => {
+        if (!task.dueDate?.isValid()) return null;
         if (taskState === 'overdue' && stateEmphasis) return formatRelativeTime(task.dueDate.toDate());
-        if (task.dueDate.isSame(dayjs(), 'day')) return null;
+        if (compact || task.dueDate.isSame(dayjs(), 'day')) return null;
         return task.dueDate.format(DAY_LABEL);
     }, [compact, task.dueDate, taskState, stateEmphasis]);
 
-    /** The absolute due instant, kept on the control rather than repeated in the row. */
+    /** The absolute due instant, named in full for the control and the popover head. */
     const dueSummary = useMemo(() => {
         const parts = [task._dueDateString, task._dueTimeString].filter(hasValidDate);
         return parts.length ? `${parts.join(' ')} ${timeZoneShort}`.trim() : 'not set';
@@ -230,10 +286,11 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         }
     }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
 
-    /** One control, one popover: the time editor is seeded as the popover opens. */
+    /** One control, two named options: the time editor is seeded as the popover opens. */
     const openDuePopover = useCallback((event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
         setTimeDraft(task.dueDate?.isValid() ? task.dueDate.format(TIME_24H) : '');
+        setDueTab('date');
         setPopoverType('due');
     }, [task.dueDate]);
 
@@ -255,8 +312,8 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     }, [dispatchService, showErrorToast]);
 
     /**
-     * Moves only the calendar fields of the task's existing due date. The popover
-     * stays open afterwards so date-then-time is one visit.
+     * Moves only the calendar fields of the task's existing due date, then advances to
+     * the Time option so date-then-time is still one visit.
      */
     const handleDateSelect = useCallback(async (value: string | null) => {
         const picked = value ? dayjs(value) : null;
@@ -268,6 +325,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             await tasksService.updateTaskDate(task.id, newDate);
             showSuccessToast?.('Task date updated successfully');
             onTaskUpdated?.();
+            setDueTab('time');
         } catch (error) {
             showErrorToast?.('Error updating task date');
             console.error('Error updating task date:', error);
@@ -312,7 +370,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const titleText = (
         <Text
             className={classes.title}
-            size="sm"
+            fz={FZ_TITLE}
             fw={600}
             truncate
             title={task.title}
@@ -323,75 +381,98 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         </Text>
     );
 
-    /** The loudest thing in the row, and the only one: the due time. */
-    const dueRail = config.showDateTime === false ? null : (
+    const titleNode = config.onTaskClick ? (
+        <UnstyledButton
+            onClick={handleTaskClick}
+            aria-label={`Open task: ${task.title}`}
+            style={{textAlign: 'left', flex: 1, minWidth: 0}}
+        >
+            {titleText}
+        </UnstyledButton>
+    ) : <Box style={{flex: 1, minWidth: 0}}>{titleText}</Box>;
+
+    /** Top right, and the only place a colour appears on an ordinary row. */
+    const dueControl = config.showDateTime === false ? null : (
         <Popover
             opened={popoverType === 'due'}
             onDismiss={closePopover}
-            position="bottom-start"
+            position="bottom-end"
+            width={272}
             shadow="md"
             withinPortal
         >
             <Popover.Target>
                 <UnstyledButton
-                    className={classes.dueRail}
+                    className={classes.due}
+                    data-due-state={dueState}
                     onClick={openDuePopover}
                     aria-label={`Due ${dueSummary} — edit date and time`}
                     title={dueSummary}
-                    w={96}
-                    px={6}
-                    ta="right"
+                    px={7}
+                    py={3}
                     style={{flexShrink: 0}}
                 >
-                    <Text
-                        fz={hasDueTime && !compact ? 'md' : 'sm'}
-                        fw={700}
-                        c={hasDueTime ? (taskState === 'overdue' && stateEmphasis ? 'red' : undefined) : 'dimmed'}
-                        style={{fontVariantNumeric: 'tabular-nums', lineHeight: 1.2, whiteSpace: 'nowrap'}}
-                    >
-                        {hasDueTime ? task._dueTimeString : 'Set due'}
-                    </Text>
-                    {dueDayLabel && (
+                    <Group gap={5} wrap="nowrap">
+                        <Icon lucide={Clock} size={13}/>
                         <Text
-                            fz="xs"
-                            c={taskState === 'overdue' && stateEmphasis ? 'red' : 'dimmed'}
-                            style={{lineHeight: 1.3}}
+                            span
+                            fz={FZ_CHIP}
+                            fw={600}
+                            style={{fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'}}
                         >
-                            {dueDayLabel}
+                            {hasDueTime ? task._dueTimeString : (hasDueInstant ? task._dueDateString : 'Set due')}
                         </Text>
-                    )}
+                        {dueQualifier && (
+                            <Text span fz={FZ_CHIP} fw={400} style={{whiteSpace: 'nowrap', opacity: 0.78}}>
+                                {dueQualifier}
+                            </Text>
+                        )}
+                    </Group>
                 </UnstyledButton>
             </Popover.Target>
-            <Popover.Dropdown>
-                <Stack gap="sm">
-                    {/* `defaultDate` is load-bearing: a Mantine calendar does not
-                        navigate to its `value`, so without it the editor opens on
-                        the current month rather than the task's due month. */}
-                    <DatePicker
-                        aria-label="Task due date"
-                        value={task.dueDate?.isValid() ? task.dueDate.format(ISO_DATE) : null}
-                        defaultDate={task.dueDate?.isValid() ? task.dueDate.format(ISO_DATE) : undefined}
-                        onChange={handleDateSelect}
+            <Popover.Dropdown p="xs">
+                <Stack gap="xs">
+                    <Text fz="xs" c="dimmed">{`Due ${dueSummary}`}</Text>
+                    <SegmentedControl
+                        size="xs"
+                        fullWidth
+                        value={dueTab}
+                        onChange={(value) => setDueTab(value as DueTab)}
+                        data={[{label: 'Date', value: 'date'}, {label: 'Time', value: 'time'}]}
                     />
-                    <Divider/>
-                    <TimePicker
-                        label="Task due time"
-                        format="24h"
-                        value={timeDraft}
-                        onChange={setTimeDraft}
-                        hoursInputLabel="Hours"
-                        minutesInputLabel="Minutes"
-                        withDropdown
-                    />
-                    <Button size="xs" onClick={handleTimeApply} disabled={!timeDraft}>
-                        Set time
-                    </Button>
+                    {dueTab === 'date' ? (
+                        /* `defaultDate` is load-bearing: a Mantine calendar does not
+                           navigate to its `value`, so without it the editor opens on
+                           the current month rather than the task's due month. */
+                        <DatePicker
+                            aria-label="Task due date"
+                            size="sm"
+                            value={task.dueDate?.isValid() ? task.dueDate.format(ISO_DATE) : null}
+                            defaultDate={task.dueDate?.isValid() ? task.dueDate.format(ISO_DATE) : undefined}
+                            onChange={handleDateSelect}
+                        />
+                    ) : (
+                        <>
+                            <TimePicker
+                                label="Task due time"
+                                format="24h"
+                                value={timeDraft}
+                                onChange={setTimeDraft}
+                                hoursInputLabel="Hours"
+                                minutesInputLabel="Minutes"
+                                withDropdown
+                            />
+                            <Button size="xs" onClick={handleTimeApply} disabled={!timeDraft}>
+                                Set time
+                            </Button>
+                        </>
+                    )}
                 </Stack>
             </Popover.Dropdown>
         </Popover>
     );
 
-    /** Trailing content, and the home of the unassign action. */
+    /** Trailing content on the fact line, and the home of the unassign action. */
     const assigneeControl = config.showAssignee === false ? null : (
         <Popover
             opened={popoverType === 'assignee'}
@@ -404,40 +485,22 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             <Popover.Target>
                 <UnstyledButton
                     className={classes.assignee}
+                    data-assigned={hasAssignee ? true : undefined}
                     onClick={openAssigneePopover}
                     aria-label={hasAssignee ? `Assigned to ${assigneeName} — change assignee` : 'Assign task'}
-                    px={8}
+                    px={7}
                     py={3}
-                    maw={148}
-                    mt={compact ? 0 : 1}
+                    maw={compact ? 132 : 200}
                     style={{flexShrink: 0}}
                 >
-                    <Group gap={6} wrap="nowrap">
-                        {hasAssignee ? (
-                            <Avatar
-                                size={22}
-                                radius="xl"
-                                color="white"
-                                style={{backgroundColor: getAvatarColor(assigneeName)}}
-                            >
-                                {getInitials(assigneeName)}
-                            </Avatar>
-                        ) : (
-                            <Avatar
-                                size={22}
-                                radius="xl"
-                                c="dimmed"
-                                style={{border: `1px dashed ${metaIconColor}`, backgroundColor: 'transparent'}}
-                            >
-                                <Icon lucide={User} size={13}/>
-                            </Avatar>
+                    <Group gap={5} wrap="nowrap">
+                        <Icon lucide={hasAssignee ? User : UserPlus} size={13}/>
+                        {hasAssignee && (
+                            <Text span fz={FZ_CHIP} fw={400} className={classes.assigneeKey} style={{opacity: 0.72}}>
+                                Assignee
+                            </Text>
                         )}
-                        <Text
-                            className={classes.assigneeName}
-                            fz="xs"
-                            c={hasAssignee ? undefined : 'dimmed'}
-                            truncate
-                        >
+                        <Text span fz={FZ_CHIP} fw={600} truncate>
                             {hasAssignee ? assigneeName : 'Assign'}
                         </Text>
                     </Group>
@@ -494,25 +557,62 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         </Popover>
     );
 
+    /** Every datum the task carries, each chip naming its own type. */
+    const facts = (
+        <>
+            {task.priority && priorityColor[task.priority] && (
+                <Fact
+                    stamp="priority"
+                    hideLabel={compact}
+                    color={priorityColor[task.priority]}
+                    label="Priority"
+                    value={task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                />
+            )}
+
+            {config.showJobId !== false && (
+                <Fact stamp="jobNumber"
+                    hideLabel={compact} label="Job" value={task.jobNumber}/>
+            )}
+
+            {config.showJobType !== false && task.eventType && (
+                <Fact
+                    stamp="jobType"
+                    hideLabel={compact}
+                    value={task.eventType.charAt(0).toUpperCase() + task.eventType.slice(1)}
+                />
+            )}
+
+            {config.showCourierCode !== false && task.courierCode && (
+                <Fact
+                    stamp="courier"
+                    hideLabel={compact}
+                    label="Courier"
+                    maw={compact ? 150 : 260}
+                    value={`${task.courierCode}${task.courierName ? ` — ${task.courierName}` : ''}`}
+                />
+            )}
+
+            {config.showClientCode !== false && task.clientCode && (
+                <Fact stamp="client"
+                    hideLabel={compact} label="Client" maw={compact ? 120 : 200} value={task.clientCode}/>
+            )}
+        </>
+    );
+
     return (
         <Box
             className={classes.row}
             data-task-state={taskState}
             data-clickable={config.onTaskClick ? true : undefined}
             onClick={handleTaskClick}
-            py={compact ? 6 : 'xs'}
+            py={compact ? 7 : 'xs'}
             px="sm"
             mb={2}
-            bg={task.closed ? 'var(--mantine-color-default)' : 'var(--mantine-color-body)'}
-            c={task.closed ? 'dimmed' : undefined}
+            bg={task.closed ? 'var(--mantine-color-gray-0)' : 'var(--mantine-color-body)'}
             style={{
                 gap: 8,
-                alignItems: compact ? 'center' : 'flex-start',
-                // Longhands, not the `border-left` shorthand: the class sets `border`,
-                // and jsdom drops a shorthand carrying a `var()` (so tests can read it).
-                borderLeftWidth: 4,
-                borderLeftStyle: 'solid',
-                borderLeftColor: stateEmphasis ? keylineColor[taskState] : NEUTRAL_KEYLINE,
+                alignItems: 'flex-start',
                 cursor: config.onTaskClick ? 'pointer' : 'default',
             }}
         >
@@ -523,89 +623,34 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                     onClick={(e) => e.stopPropagation()}
                     disabled={isCompleting}
                     aria-label={`Mark "${task.title}" complete`}
-                    mt={compact ? 0 : 3}
+                    color="green"
+                    mt={compact ? 2 : 3}
                     style={{flexShrink: 0}}
                 />
             )}
 
-            {dueRail}
-
-            <Box style={{flex: 1, minWidth: 0}}>
-                {/* Headline: priority + title */}
-                <Group gap={6} wrap="nowrap" align="center" style={{minWidth: 0}}>
-                    {task.priority && priorityColor[task.priority] && (
-                        <Tooltip label={`Priority: ${task.priority}`}>
-                            <Icon
-                                lucide={Flag}
-                                size={15}
-                                color={priorityColor[task.priority]}
-                                aria-label={`Priority: ${task.priority}`}
-                            />
-                        </Tooltip>
-                    )}
-
-                    {config.onTaskClick ? (
-                        <UnstyledButton
-                            onClick={handleTaskClick}
-                            aria-label={`Open task: ${task.title}`}
-                            style={{textAlign: 'left', flex: 1, minWidth: 0}}
-                        >
-                            {titleText}
-                        </UnstyledButton>
-                    ) : titleText}
+            {/* One anatomy at both densities. `compact` tightens the padding and drops
+                the description, the day qualifier and the chips' key words — it does
+                not get a layout of its own, because a single-line variant either
+                clips every chip to two characters or wraps anyway. */}
+            <Stack gap={compact ? 4 : 6} style={{flex: 1, minWidth: 0}}>
+                <Group gap={8} wrap="nowrap" align="center">
+                    {titleNode}
+                    {dueControl}
                 </Group>
 
                 {/* Supporting text — often the actual instruction, so two lines of it. */}
                 {config.showDescription !== false && !compact && task.description && (
-                    <Text size="sm" c="dimmed" lineClamp={2} mt={2}>
+                    <Text fz={FZ_BODY} c="dimmed" lineClamp={2}>
                         {task.description}
                     </Text>
                 )}
 
-                {/* Metadata: plain text, icon-led, no label prefixes. */}
-                <Group
-                    className={classes.metaLine}
-                    gap={12}
-                    wrap={compact ? 'nowrap' : 'wrap'}
-                    mt={compact ? 0 : 3}
-                    style={compact ? {overflow: 'hidden'} : undefined}
-                >
-                    {config.showJobId !== false && (
-                        <Text
-                            {...metaTextProps}
-                            data-task-meta="jobNumber"
-                            fw={600}
-                            style={{fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'}}
-                        >
-                            {`#${task.jobNumber}`}
-                        </Text>
-                    )}
-
-                    {config.showJobType !== false && task.eventType && (
-                        <Text {...metaTextProps} data-task-meta="jobType" style={{whiteSpace: 'nowrap'}}>
-                            {task.eventType.charAt(0).toUpperCase() + task.eventType.slice(1)}
-                        </Text>
-                    )}
-
-                    {config.showCourierCode !== false && task.courierCode && (
-                        <Group gap={4} wrap="nowrap" data-task-meta="courier" style={{minWidth: 0}}>
-                            <Icon lucide={Truck} size={13} color={metaIconColor}/>
-                            <Text {...metaTextProps} truncate>
-                                {`${task.courierCode}${task.courierName ? ` — ${task.courierName}` : ''}`}
-                            </Text>
-                        </Group>
-                    )}
-
-                    {config.showClientCode !== false && task.clientCode && (
-                        <Group gap={4} wrap="nowrap" data-task-meta="client" style={{minWidth: 0}}>
-                            <Icon lucide={Building2} size={13} color={metaIconColor}/>
-                            <Text {...metaTextProps} truncate>{task.clientCode}</Text>
-                        </Group>
-                    )}
+                <Group className={classes.factLine} gap={5} wrap="wrap" align="center" style={{minWidth: 0}}>
+                    {facts}
+                    {assigneeControl}
                 </Group>
-            </Box>
-
-            {assigneeControl}
+            </Stack>
         </Box>
     );
 });

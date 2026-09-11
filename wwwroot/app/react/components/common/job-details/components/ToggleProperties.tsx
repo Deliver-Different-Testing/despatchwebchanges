@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {ActionIcon, Box, Checkbox, Collapse, Divider, Group, Paper, Text, UnstyledButton} from '@mantine/core';
+import {ActionIcon, Box, Checkbox, Collapse, Divider, Group, Paper, Text, Tooltip, UnstyledButton} from '@mantine/core';
 import {Eye, EyeOff, SlidersHorizontal} from 'lucide-react';
 import {Icon} from '../../icon/Icon';
 import type {IJob} from '../JobDetails.types';
@@ -38,15 +38,17 @@ function PropertyCheckbox({
     checked,
     onChange,
     disabled,
+    disabledReason,
     dense,
 }: {
     label: string;
     checked: boolean;
     onChange: () => void;
     disabled?: boolean;
+    disabledReason?: string;
     dense?: boolean;
 }) {
-    return (
+    const checkbox = (
         <Checkbox
             size={dense ? 'xs' : 'sm'}
             label={label}
@@ -56,6 +58,15 @@ function PropertyCheckbox({
             styles={{label: {fontSize: '0.8125rem', paddingInlineStart: 6}}}
             mr={16}
         />
+    );
+
+    if (!disabled || !disabledReason) return checkbox;
+
+    // A disabled input fires no pointer events, so the tooltip has to sit on a wrapper.
+    return (
+        <Tooltip label={disabledReason} withArrow>
+            <Box>{checkbox}</Box>
+        </Tooltip>
     );
 }
 
@@ -131,7 +142,10 @@ export const ToggleProperties = React.memo(({
                             <PropertyCheckbox
                                 label="Done" checked={!!job.done} dense={dense}
                                 onChange={() => onDoneClick?.()}
-                                disabled={locked}
+                                disabled={locked || (job.isArchived && !!job.done)}
+                                disabledReason={job.isArchived && job.done
+                                    ? "Archived completed jobs can't be marked not done"
+                                    : undefined}
                             />
                         )}
                         {!isRecurringJob && (

@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import DispatchBoxes from '../../../../components/home/enums/DispatchBoxes';
+import DispatchBoxes from './dispatchBoxes';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './boxDefinitions';
 
 describe('createDispatchBoxes', () => {
@@ -20,14 +20,31 @@ describe('createDispatchBoxes', () => {
         expect(b[DispatchBoxes.JobDetail].visible).toBe(true);
     });
 
-    it('marks JobsList / JobDetail / CurrentWork as refreshable; others not', () => {
+    it('marks the data panels as refreshable; the rest not', () => {
         const boxes = createDispatchBoxes();
         expect(boxes[DispatchBoxes.JobsList].showRefresh).toBe(true);
         expect(boxes[DispatchBoxes.JobDetail].showRefresh).toBe(true);
         expect(boxes[DispatchBoxes.CurrentWork].showRefresh).toBe(true);
+        expect(boxes[DispatchBoxes.OverviewDeliveries].showRefresh).toBe(true);
+        expect(boxes[DispatchBoxes.OpenJobs].showRefresh).toBe(true);
         expect(boxes[DispatchBoxes.Supports].showRefresh).toBe(false);
         expect(boxes[DispatchBoxes.DriverLocations].showRefresh).toBe(false);
         expect(boxes[DispatchBoxes.Map].showRefresh).toBe(false);
+    });
+
+    /*
+     * The two Overview panels ship hidden: they are an opt-in addition to the
+     * dispatch board, not part of its shipped arrangement. Every other panel is
+     * on, so a bare `visible` check would not catch a regression here.
+     */
+    it('defaults the Overview panels to hidden and everything else to visible', () => {
+        const boxes = createDispatchBoxes();
+        expect(boxes[DispatchBoxes.OverviewDeliveries].visible).toBe(false);
+        expect(boxes[DispatchBoxes.OpenJobs].visible).toBe(false);
+        for (const value of Object.values(DispatchBoxes)) {
+            if (value === DispatchBoxes.OverviewDeliveries || value === DispatchBoxes.OpenJobs) continue;
+            expect(boxes[value].visible).toBe(true);
+        }
     });
 });
 
@@ -59,6 +76,8 @@ describe('createDefaultDispatchLayout', () => {
             [
                 {name: DispatchBoxes.JobsList, height: '50%'},
                 {name: DispatchBoxes.JobDetail, height: '50%'},
+                {name: DispatchBoxes.OverviewDeliveries, height: '50%'},
+                {name: DispatchBoxes.OpenJobs, height: '50%'},
             ],
             [
                 {name: DispatchBoxes.CurrentWork, height: '50%'},

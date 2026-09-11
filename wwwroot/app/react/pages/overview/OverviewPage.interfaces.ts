@@ -1,3 +1,5 @@
+import type {Dayjs} from 'dayjs';
+
 // ── Mount config (passed from AngularJS controller) ──
 
 export interface MountOverviewConfig {
@@ -29,8 +31,13 @@ export interface OverviewQueryParams {
     page: number;
     limit: number;
     search?: string;
-    startDate?: Date;
-    endDate?: Date;
+    /*
+     * Dayjs is accepted alongside Date so the Dispatch panels can pass the
+     * toolbar's range through unconverted — a fresh Date per render would change
+     * the React Query key every time. `formatDateForApi` treats both identically.
+     */
+    startDate?: Date | Dayjs;
+    endDate?: Date | Dayjs;
     orderBy?: string;
     orderDirection?: string;
     regions?: number[];
@@ -44,29 +51,15 @@ export interface OverviewStatsViewModel {
     completed: number;
 }
 
-export interface OverviewTableChildJob {
-    jobId: number;
-    jobName: string;
-    status: string;
-    completion: number;
-    pickup: string;
-    delivery: string;
-    driver: string;
-    region: string;
-}
-
-export interface OverviewTableParentJob {
-    jobId: number;
-    jobName: string;
-    status: string;
-    completion: number;
-    pickup: string;
-    delivery: string;
-    driver: string;
-    region: string;
-    childJobs: OverviewTableChildJob[];
-    expanded?: boolean;
-}
+/*
+ * The list view-models live with the components that own them, now that Dispatch
+ * mounts the same lists as panels. Re-exported here so this module stays the one
+ * import site for the Overview page and its API layer.
+ */
+export type {
+    OverviewTableChildJob,
+    OverviewTableParentJob,
+} from '../../components/common/deliveries-table';
 
 export interface PaginatedResponse<T> {
     items: T[];
@@ -189,7 +182,5 @@ export interface ViewJob {
 
 // ── Table types ──
 
-export interface TableSort {
-    column: string;
-    direction: 'asc' | 'desc';
-}
+/** Structurally the shared data-table sort state — one type, not a twin. */
+export type {SortState as TableSort} from '../../components/common/data-table';

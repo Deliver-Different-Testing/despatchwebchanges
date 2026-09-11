@@ -5,8 +5,8 @@
 import React from 'react';
 import {ActionIcon, Badge, Box, Group, Loader, Menu, Select, Text, Tooltip} from '@mantine/core';
 import {
-    Check, FileSpreadsheet, FileText, Handshake, LayoutGrid, Lock, LockOpen, Mail,
-    EllipsisVertical, Rows2, Rows4, Columns3,
+    Check, FileSpreadsheet, FileText, Files, Handshake, LayoutGrid, Lock, LockOpen, Mail,
+    Rows2, Rows4, Columns3,
 } from 'lucide-react';
 import {Icon} from '../../icon/Icon';
 import {resolvedStatusLabel, resolvedStatusTone, type StatusTone} from '../../../../utils/jobStatus';
@@ -259,7 +259,7 @@ export function JobDetailHeader({
                     <Menu.Target>
                         <Tooltip label="Documents">
                             <ActionIcon variant="subtle" color="gray" size="md" aria-label="Documents">
-                                <Icon lucide={EllipsisVertical} size={ICON_SIZE}/>
+                                <Icon lucide={Files} size={ICON_SIZE}/>
                             </ActionIcon>
                         </Tooltip>
                     </Menu.Target>

@@ -11,6 +11,7 @@ import {
 import {
     getDispatchBetaEnabled,
 } from "../../../react/pages/dispatch/lib/betaPreference";
+import {getNationwideBetaEnabled} from "../../../react/pages/nationwide/lib/betaPreference";
 import angular from 'angular';
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
@@ -74,8 +75,8 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openSettingsDialog(_$event: MouseEvent, appPage: AppPage, currentLayoutName: string,
-                             boxes: Record<string, IBox>, selectedRefreshInterval?: ISuggestion,
+    async openSettingsDialog(_$event: MouseEvent, appPage: AppPage,
+                             selectedRefreshInterval?: ISuggestion,
                              selectedDriverLocationRefreshInterval?: ISuggestion): Promise<ISettingsDialogResult | undefined> {
         let title: string;
         switch (appPage) {
@@ -92,30 +93,16 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 title = "Dashboard Settings";
         }
 
-        const isValidPage = appPage === AppPage.Dispatch
-            || appPage === AppPage.Domestic
-            || appPage === AppPage.JobSearch;
-        // Panel visibility now lives in its own Customize Panels dialog, reached
-        // from the Layouts menu — so the gear shows a "moved" notice instead.
-        const panelsMovedNotice = appPage === AppPage.JobSearch
-            || appPage === AppPage.Dispatch
-            || appPage === AppPage.Domestic;
-        const canShowDashboards = isValidPage && !panelsMovedNotice && !isDefaultLayout(currentLayoutName);
-
-        console.log('DashboardSettingsDialog: Opening with layout', currentLayoutName, 'isDefault:', isDefaultLayout(currentLayoutName), 'canShowDashboards:', canShowDashboards);
-
+        // Panel visibility is not here: it lives in its own Customize Panels
+        // dialog, reached from the Layouts menu.
         const config: IDashboardSettingsConfig = {
             title,
             showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
             showDriverLocationRefresh: appPage === AppPage.Dispatch,
-            showDashboards: canShowDashboards,
             showAiToggle: true,
             showJobSearchBetaToggle: appPage === AppPage.JobSearch,
             showDispatchBetaToggle: appPage === AppPage.Dispatch,
-            panelsMovedNotice,
-            // Dispatch manages panels only from the Layouts menu → Customize
-            // panels, so the settings gear drops the panels section entirely.
-            showPanels: appPage !== AppPage.Dispatch,
+            showNationwideBetaToggle: appPage === AppPage.Domestic,
         };
 
         if (!selectedRefreshInterval) {
@@ -137,13 +124,13 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             // Open the React dialog
             const result = await window.ReactDashboardSettingsDialog.open(
                 config,
-                boxes,
                 selectedRefreshInterval,
                 selectedDriverLocationRefreshInterval,
                 undefined, // selectedTaskRefreshInterval — V1 dispatch has no separate Tasks cadence
                 isAiEnabled(),
                 appPage === AppPage.JobSearch ? getJobSearchBetaEnabled() : undefined,
                 appPage === AppPage.Dispatch ? getDispatchBetaEnabled() : undefined,
+                appPage === AppPage.Domestic ? getNationwideBetaEnabled() : undefined,
             );
 
             console.debug('DashboardSettingsDialogService: Dialog closed!');

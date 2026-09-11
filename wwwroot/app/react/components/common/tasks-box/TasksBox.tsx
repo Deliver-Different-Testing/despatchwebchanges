@@ -17,13 +17,13 @@ import {
     UserX,
 } from 'lucide-react';
 import type {Dayjs} from 'dayjs';
-import {Icon} from '../../../components/common/icon/Icon';
-import {NoData} from '../../../components/common/no-data/NoData';
-import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
-import {HeaderMenuButton, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
-import {SegmentedToggle} from '../../../components/common/segmented-toggle';
+import {Icon} from '../icon/Icon';
+import {NoData} from '../no-data/NoData';
+import {HeaderSlotPortal} from '../header-slot/HeaderSlotPortal';
+import {HeaderMenuButton, PANEL_CONTROL_GLYPH_SIZE} from '../panel-controls';
+import {SegmentedToggle} from '../segmented-toggle';
 import type {ShowToastFn} from '../../../services/toastService';
-import {TaskItem} from '../../../components/common/task-item/TaskItem';
+import {TaskItem} from '../task-item/TaskItem';
 import {
     buildFilterRequest,
     getTasksStatusCount,
@@ -47,9 +47,15 @@ import {
 } from '../../../hooks/useTasksApi';
 import {tasksApi} from '../../../services/tasksApi';
 
-export interface SupportsBoxProps {
+export interface TasksBoxProps {
     /** The selected job whose tasks to show. Tasks only load when a job is selected. */
     jobId?: number;
+    /**
+     * Which page's task filters to read and write. Required rather than
+     * defaulted: the staff and event-type choices persist per page, and
+     * silently inheriting another page's is hard to spot.
+     */
+    appPage: TasksAppPage;
     showToast: ShowToastFn;
     /** Auto-refresh interval in ms (React Query refetchInterval); false/undefined = off. */
     refetchIntervalMs?: number | false;
@@ -82,7 +88,7 @@ const FILTER_CHIPS: FilterChip[] = [
  * component and the `useTasks` / task-mutation hooks (same wiring as
  * TaskDashboardPage) rather than the AngularJS data-push bridge.
  */
-export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refetchIntervalMs = false, onSelectJob, headerSlot}) => {
+export const TasksBox: React.FC<TasksBoxProps> = ({jobId, appPage, showToast, refetchIntervalMs = false, onSelectJob, headerSlot}) => {
     const [filterType, setFilterType] = useState<TaskFilterType>('all');
     const [filtersOpen, setFiltersOpen] = useState(false);
     // 'current' scopes tasks to the selected job; 'all' drops the jobId so the
@@ -96,7 +102,7 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
 
     // Staff + event-type filters (persisted per page, mirror V1 filterByStaff /
     // filterBySupportType). Options come from the shared task hooks.
-    const initialFilters = useMemo(() => initializePageFilters(TasksAppPage.Dispatch), []);
+    const initialFilters = useMemo(() => initializePageFilters(appPage), [appPage]);
     const [staffFilter, setStaffFilter] = useState(initialFilters.staffFilter);
     const [eventTypeFilter, setEventTypeFilter] = useState(initialFilters.eventTypeFilter);
 
@@ -105,11 +111,11 @@ export const SupportsBox: React.FC<SupportsBoxProps> = ({jobId, showToast, refet
 
     const handleStaffChange = (value: string) => {
         setStaffFilter(value);
-        saveStaffFilter(value, TasksAppPage.Dispatch);
+        saveStaffFilter(value, appPage);
     };
     const handleEventTypeChange = (value: string) => {
         setEventTypeFilter(value);
-        saveEventTypeFilter(value, TasksAppPage.Dispatch);
+        saveEventTypeFilter(value, appPage);
     };
 
     const filterRequest = useMemo(

@@ -259,6 +259,12 @@ describe('JobListPanel', () => {
             expect(row).toHaveAttribute('data-variant', 'selected');
         });
 
+        it('flattens its outer corners so it sits flush inside its host box', () => {
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps()}/>);
+
+            expect(screen.getByTestId('job-list-panel')).toHaveStyle({borderRadius: '0'});
+        });
+
         it('renders topSlot content above the stats header', () => {
             renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
@@ -483,6 +489,36 @@ describe('JobListPanel', () => {
 
             expect(screen.getByText('DONE-1')).toBeInTheDocument();
             expect(screen.queryByText('NEW-1')).not.toBeInTheDocument();
+        });
+
+        it('lets forcedCategory outrank the stored category', () => {
+            // The clear-list scope on the dispatch page has to win over whatever the
+            // operator last picked -- V1 forced 'needs-dispatch' when an area was
+            // clicked. `defaultCategory` deliberately loses to storage on mount, so
+            // this needs its own prop.
+            localStorage.setItem(key('selectedCategory'), 'delivered');
+            renderAndPushJobs(
+                [
+                    createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
+                    createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
+                ],
+                {storagePrefix, defaultCategory: 'in-progress', forcedCategory: 'needs-dispatch'},
+            );
+
+            expect(screen.getByText('NEW-1')).toBeInTheDocument();
+            expect(screen.queryByText('DONE-1')).not.toBeInTheDocument();
+        });
+
+        it('does not persist forcedCategory over the stored choice', () => {
+            // Leaving the clear-list scope must restore what the operator had picked,
+            // so the forced value must not be written to storage on mount.
+            localStorage.setItem(key('selectedCategory'), 'delivered');
+            renderAndPushJobs(
+                [createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0})],
+                {storagePrefix, forcedCategory: 'needs-dispatch'},
+            );
+
+            expect(localStorage.getItem(key('selectedCategory'))).toBe('delivered');
         });
 
         it('persists the category filter and ignores an unrecognised stored value', () => {
@@ -806,6 +842,48 @@ describe('JobListPanel', () => {
                 ...overrides,
             };
         }
+
+        it('keeps the stats header still while the category tab filters the rows', async () => {
+            // The tab is a server filter, so the rows come back narrowed. The header describes the
+            // whole list, so the server answers it before that filter and the numbers must not move.
+            const unassigned = createMockDispatchJob({id: 1, jobNo: 'UNASSIGNED-1', statusId: 0});
+            const delivered = createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6});
+            const statusCounts = {total: 2, active: 1, transit: 0, done: 1};
+
+            const fetchConfig = createMockFetchConfig({
+                fetchFn: jest.fn().mockImplementation((params: JobListSearchParams) =>
+                    Promise.resolve({
+                        jobs: params.statusFilter === 'delivered' ? [delivered] : [unassigned, delivered],
+                        totalCount: params.statusFilter === 'delivered' ? 1 : 2,
+                        hasMore: false,
+                        statusCounts,
+                    } as JobSearchResult)),
+            });
+
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({fetchConfig})} />);
+
+            expect(await screen.findByText('UNASSIGNED-1')).toBeInTheDocument();
+            const statsArea = screen.getByText('Total').closest('div')!.parentElement!;
+            const statValue = (label: string) =>
+                within(within(statsArea).getByText(label).closest('div')!).getByText(/^\d+$/).textContent;
+
+            expect([statValue('Total'), statValue('Active'), statValue('Transit'), statValue('Done')])
+                .toEqual(['2', '1', '0', '1']);
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
+
+            // The tab starts a fresh query, and the header holds its numbers over the gap.
+            expect([statValue('Total'), statValue('Active'), statValue('Transit'), statValue('Done')])
+                .toEqual(['2', '1', '0', '1']);
+
+            // The list narrows to the one delivered row...
+            expect(await screen.findByText(/Showing 1/)).toBeInTheDocument();
+            expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
+
+            // ...and the header did not follow it, nor blink to zero while the query was in flight.
+            expect([statValue('Total'), statValue('Active'), statValue('Transit'), statValue('Done')])
+                .toEqual(['2', '1', '0', '1']);
+        });
 
         it('fetches jobs via React Query, skips setJobsCallback, and registers updateSearchParams', async () => {
             const fetchConfig = createMockFetchConfig();

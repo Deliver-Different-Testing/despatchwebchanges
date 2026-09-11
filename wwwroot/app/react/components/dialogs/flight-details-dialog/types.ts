@@ -7,7 +7,7 @@
 import { Dayjs } from 'dayjs';
 
 // Re-export types from nationwide interfaces for convenience
-export type { IFlightViewModel, IFlightSegment } from '../../../../components/Nationwide/nationwide.interfaces';
+export type { IFlightViewModel, IFlightSegment } from '../../../../interfaces/nationwideFlight.interfaces';
 
 /**
  * Props for the main FlightDetailsDialog component

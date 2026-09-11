@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 
 import {InsertToLiveDialog, InsertToLiveDialogProps} from './InsertToLiveDialog';
 import {InsertRecurringToLiveResult, InsertToLiveScope, PrebookListModel} from '../../../interfaces';
+import {insertScopeColors} from '../../../theme/designTokens';
 import {AddressViewModel} from '../../../interfaces/address';
 
 jest.mock('../../../services/recurringJobsApi', () => ({
@@ -201,5 +202,28 @@ describe('InsertToLiveDialog', () => {
         expect(onSuccess).not.toHaveBeenCalled();
 
         consoleError.mockRestore();
+    });
+});
+
+describe('InsertToLiveDialog scope colours', () => {
+    it('separates the two scopes by blast radius, colour plus wording', async () => {
+        renderDialog(createProps());
+
+        // Mantine puts --radio-color on the Radio root while data-* rides the input,
+        // so walk up from the stamped input to whichever ancestor carries the colour.
+        const colourOf = (scope: string) => {
+            let node = document.querySelector(`[data-insert-scope="${scope}"]`) as HTMLElement | null;
+            while (node) {
+                const value = node.style.getPropertyValue('--radio-color').trim();
+                if (value) return value;
+                node = node.parentElement;
+            }
+            return undefined;
+        };
+
+        expect(colourOf('group')).toBe(insertScopeColors.group);
+        expect(colourOf('route')).toBe(insertScopeColors.route);
+        expect(screen.getByText(/Just this one/)).toBeInTheDocument();
+        expect(screen.getByText(/Wider reach/)).toBeInTheDocument();
     });
 });

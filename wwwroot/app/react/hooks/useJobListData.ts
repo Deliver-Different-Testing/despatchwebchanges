@@ -9,13 +9,20 @@
  * Uses useInfiniteQuery for automatic page accumulation (infinite scroll).
  */
 
-import {useState, useCallback, useMemo} from 'react';
+import {useState, useCallback, useMemo, useRef} from 'react';
 import {useInfiniteQuery, useQueryClient} from '@tanstack/react-query';
-import type {FetchConfig, DispatchJob, JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
+import type {
+    FetchConfig,
+    DispatchJob,
+    JobListSearchParams,
+    JobListStatusCounts,
+    JobSearchResult,
+} from '../interfaces/dispatchJob';
 
 export interface UseJobListDataResult {
     jobs: DispatchJob[];
     totalCount: number;
+    statusCounts: JobListStatusCounts | null;
     isLoading: boolean;
     isFetching: boolean;
     hasMore: boolean;
@@ -30,6 +37,7 @@ export interface UseJobListDataResult {
 const emptyResult: UseJobListDataResult = {
     jobs: [],
     totalCount: 0,
+    statusCounts: null,
     isLoading: false,
     isFetching: false,
     hasMore: false,
@@ -56,7 +64,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         [fetchConfig, params],
     );
 
-    const {data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage} = useInfiniteQuery<JobSearchResult>({
+    const {data, isLoading, isFetching, isPlaceholderData, hasNextPage, fetchNextPage, isFetchingNextPage} = useInfiniteQuery<JobSearchResult>({
         queryKey,
         queryFn: ({signal, pageParam}) => fetchConfig!.fetchFn({...params, page: pageParam as number}, {signal}),
         initialPageParam: 0,
@@ -64,6 +72,11 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         staleTime: 15_000,
         refetchInterval: fetchConfig?.refetchInterval ?? false,
         enabled: !!fetchConfig && !isDisabled,
+        // Changing a param swaps the query key, so the list would otherwise blank out
+        // until the new page landed — which unmounts the table's scroll container and
+        // loses the operator's horizontal position. Hold the last results instead; the
+        // panel already shows an indeterminate bar while `isFetching`.
+        placeholderData: (previous) => previous,
     });
 
     // Flatten all pages into a single jobs array
@@ -75,6 +88,17 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
     // The first page's count, not the last: the server re-counts on every page fetch, so
     // reading the newest one made the footer total jitter mid-scroll.
     const totalCount = data?.pages[0]?.totalCount ?? 0;
+
+    // Same reasoning, and the server only answers it once — later pages carry nothing to replace it
+    // with. The last answer is also held across a params change, because changing the category tab
+    // starts a whole new query and the header would otherwise blink to zero while it runs. Only the
+    // disabled branch below clears it, by never reaching here.
+    const lastStatusCountsRef = useRef<JobListStatusCounts | null>(null);
+    const pageStatusCounts = data?.pages[0]?.statusCounts ?? null;
+    if (pageStatusCounts) {
+        lastStatusCountsRef.current = pageStatusCounts;
+    }
+    const statusCounts = pageStatusCounts ?? lastStatusCountsRef.current;
 
     const refresh = useCallback(() => {
         if (!fetchConfig) return;
@@ -96,10 +120,14 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
     }, []);
 
     const fetchNextPageSafe = useCallback(() => {
+        // While the held-over results are on screen the new query has not returned its
+        // first page, so the table's infinite scroll is reacting to the *previous*
+        // list's length — paging here would fetch against the wrong baseline.
+        if (isPlaceholderData) return;
         if (hasNextPage && !isFetchingNextPage) {
             fetchNextPage();
         }
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    }, [isPlaceholderData, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     // When disabled, return empty results immediately — ignores any cached query data
     if (isDisabled) {
@@ -109,6 +137,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
     return {
         jobs,
         totalCount,
+        statusCounts,
         isLoading,
         isFetching,
         hasMore: hasNextPage ?? false,

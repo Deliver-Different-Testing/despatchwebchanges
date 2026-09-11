@@ -121,6 +121,7 @@ const rootStyles = {
         padding: dense ? 12 : 16,
     }),
     readStatusBar: {
+        borderRadius: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -386,7 +387,11 @@ export function JobDetails({config}: JobDetailsProps) {
     return (
         <Box style={rootStyles.container(isDense)}>
             {/* Main card */}
-            <Paper withBorder radius="lg" style={{overflow: 'hidden', position: 'relative'}}>
+            <Paper
+                withBorder
+                data-testid="job-details-card"
+                style={{overflow: 'hidden', position: 'relative', borderRadius: 0}}
+            >
                 {/*
                   * Progress indicator. Mantine has no indeterminate bar, so the
                   * activity is carried by an animated full-width section.
@@ -639,7 +644,7 @@ export function JobDetails({config}: JobDetailsProps) {
             </Paper>
             {/* Read Status Bar */}
             <Paper
-                radius="lg"
+                data-testid="job-details-read-status"
                 className={classes.readStatusBar}
                 style={rootStyles.readStatusBar}
                 onClick={handleToggleReadStatus}

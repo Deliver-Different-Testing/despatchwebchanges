@@ -220,7 +220,8 @@ describe('tasksService', () => {
 
         describe('getSavedEventTypeFilter', () => {
             it('should return saved filter value', () => {
-                const key = `selectedSupportTypeDispatchFilter-${mockContactId}`;
+                // Its own key, separate from the staff filter's.
+                const key = `selectedSupportTypeDispatchEventTypeFilter-${mockContactId}`;
                 localStorageMock.setItem(key, '99');
 
                 const result = getSavedEventTypeFilter(AppPage.Dispatch);
@@ -232,6 +233,40 @@ describe('tasksService', () => {
                 const result = getSavedEventTypeFilter(AppPage.Dispatch);
 
                 expect(result).toBe('all');
+            });
+        });
+
+        describe('the two filters are stored independently', () => {
+            // They shared one localStorage key per page, so setting a staff
+            // filter silently wiped the event-type filter and vice versa.
+            it.each([
+                ['Dispatch', AppPage.Dispatch],
+                ['Domestic', AppPage.Domestic],
+                ['Tasks', AppPage.Tasks],
+                ['JobSearch', AppPage.JobSearch],
+            ])('keeps both filters on the %s page', (_name, page) => {
+                saveStaffFilter('55', page);
+                saveEventTypeFilter('taskType', page);
+
+                const filters = initializePageFilters(page);
+
+                expect(filters.staffFilter).toBe('55');
+                expect(filters.eventTypeFilter).toBe('taskType');
+            });
+
+            it('does not let a staff change clobber an existing event-type choice', () => {
+                saveEventTypeFilter('followup', AppPage.Domestic);
+                saveStaffFilter('12', AppPage.Domestic);
+
+                expect(initializePageFilters(AppPage.Domestic).eventTypeFilter).toBe('followup');
+            });
+
+            it('keeps pages separate from each other', () => {
+                saveStaffFilter('1', AppPage.Dispatch);
+                saveStaffFilter('2', AppPage.Domestic);
+
+                expect(initializePageFilters(AppPage.Dispatch).staffFilter).toBe('1');
+                expect(initializePageFilters(AppPage.Domestic).staffFilter).toBe('2');
             });
         });
 
@@ -248,20 +283,30 @@ describe('tasksService', () => {
             it('should save filter to localStorage', () => {
                 saveEventTypeFilter('77', AppPage.Dispatch);
 
-                const key = `selectedSupportTypeDispatchFilter-${mockContactId}`;
+                const key = `selectedSupportTypeDispatchEventTypeFilter-${mockContactId}`;
                 expect(localStorageMock.setItem).toHaveBeenCalledWith(key, '77');
             });
         });
 
         describe('initializePageFilters', () => {
             it('should return both filters for a page', () => {
+                // This previously read the event-type filter back off the staff
+                // key, which is exactly the conflation that was the bug.
                 const staffKey = `selectedSupportTypeTasksFilter-${mockContactId}`;
+                const eventTypeKey = `selectedSupportTypeTasksEventTypeFilter-${mockContactId}`;
                 localStorageMock.setItem(staffKey, '10');
+                localStorageMock.setItem(eventTypeKey, 'followup');
 
                 const result = initializePageFilters(AppPage.Tasks);
 
                 expect(result.staffFilter).toBe('10');
-                expect(result.eventTypeFilter).toBe('10');
+                expect(result.eventTypeFilter).toBe('followup');
+            });
+
+            it('defaults the event-type filter when only staff was stored', () => {
+                localStorageMock.setItem(`selectedSupportTypeTasksFilter-${mockContactId}`, '10');
+
+                expect(initializePageFilters(AppPage.Tasks).eventTypeFilter).toBe('all');
             });
 
             it('should return "all" for both when nothing saved', () => {

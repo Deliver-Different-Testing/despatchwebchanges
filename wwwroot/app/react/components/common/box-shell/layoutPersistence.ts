@@ -6,6 +6,9 @@ export interface LayoutStorageKeys {
     boxVisibilityKeyBase: string;
 }
 
+/** A box's placement inside a layout column: its name plus its stored height. */
+type IBoxRef = ILayout['layout']['columns'][number]['boxes'][number];
+
 export interface BoxVisibilityRecord {
     visible: boolean;
     collapsed: boolean;
@@ -40,11 +43,68 @@ export function loadLayouts(keys: LayoutStorageKeys, defaultLayout: ILayout): IL
         const stored = raw ? JSON.parse(raw) as ILayout[] : [];
         if (!Array.isArray(stored) || stored.length === 0) return [defaultLayout];
 
-        return [defaultLayout, ...stored.filter(l => l?.name !== defaultLayout.name)];
+        return [
+            defaultLayout,
+            ...stored
+                .filter(l => l?.name !== defaultLayout.name)
+                .map(l => addMissingFactoryBoxes(l, defaultLayout)),
+        ];
     } catch (error) {
         console.error('Error loading stored layouts:', error);
         return [defaultLayout];
     }
+}
+
+/**
+ * Give a stored layout a slot for any panel shipped since it was saved. A user
+ * layout is a clone of whatever arrangement was current when they saved it, so a
+ * panel added later has no `{name, height}` ref in it — and toggling that panel
+ * visible would render nothing, with no affordance to explain why.
+ *
+ * A missing panel lands in the column the shipped arrangement puts it in, clamped
+ * to the stored layout's column count, so it reproduces the intended placement
+ * rather than wherever there happened to be room. Additive only: a box the
+ * factory has since retired is left alone (BoxShell already skips one with no
+ * metadata).
+ *
+ * Read-time and idempotent — the caller is `loadLayouts`, which runs inside
+ * render-phase state initialisers, so nothing is written back. The migration
+ * persists on the user's next resize or reorder, via the normal save path.
+ * Returns the input unchanged (by reference) when there is nothing to add, so a
+ * no-op read cannot churn the remote-sync diff.
+ */
+export function addMissingFactoryBoxes(stored: ILayout, factory: ILayout): ILayout {
+    const columns = stored?.layout?.columns;
+    // No columns at all means no sensible slot, and BoxShell renders nothing for
+    // such a layout either way.
+    if (!Array.isArray(columns) || columns.length === 0) return stored;
+
+    const present = new Set(
+        columns.flatMap(col => (col.boxes ?? []).map(box => box.name)).filter(Boolean),
+    );
+    const additions = new Map<number, IBoxRef[]>();
+
+    (factory.layout?.columns ?? []).forEach((col, factoryIndex) => {
+        for (const box of col.boxes ?? []) {
+            if (!box.name || present.has(box.name)) continue;
+            present.add(box.name);
+            const target = Math.min(factoryIndex, columns.length - 1);
+            additions.set(target, [...(additions.get(target) ?? []), {...box}]);
+        }
+    });
+
+    if (additions.size === 0) return stored;
+
+    return {
+        ...stored,
+        layout: {
+            ...stored.layout,
+            columns: columns.map((col, index) => {
+                const extra = additions.get(index);
+                return extra ? {...col, boxes: [...(col.boxes ?? []), ...extra]} : col;
+            }),
+        },
+    };
 }
 
 export function saveLayouts(keys: LayoutStorageKeys, layouts: ILayout[]): void {

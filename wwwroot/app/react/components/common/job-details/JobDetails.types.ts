@@ -19,7 +19,7 @@ export type {
     IAssignedFlight,
 } from '../../../../interfaces/job.interface';
 
-export type {IFlightSegment} from '../../../../components/Nationwide/nationwide.interfaces';
+export type {IFlightSegment} from '../../../../interfaces/nationwideFlight.interfaces';
 export type {PodPhoto} from '../pod-photo-viewer/pod-photo-viewer.types';
 export type {UpdatePodDetailsRequest} from '../../../../interfaces/requests.interfaces';
 export type {Is3PhotoInfo} from '../../../../interfaces/aws.interfaces';

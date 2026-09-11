@@ -100,6 +100,31 @@ describe('ToggleProperties', () => {
         });
     });
 
+    it('disables Done only for an archived job that is already done', () => {
+        const cases = [
+            {overrides: {isArchived: true, done: true}, expectDisabled: true},
+            {overrides: {isArchived: true, done: false}, expectDisabled: false},
+            {overrides: {isArchived: false, done: true}, expectDisabled: false},
+        ];
+
+        cases.forEach(({overrides, expectDisabled}) => {
+            const {unmount} = renderWithTheme(
+                <ToggleProperties {...createDefaultProps({job: createMockJob(overrides)})} />
+            );
+
+            const done = screen.getByLabelText('Done');
+            if (expectDisabled) {
+                expect(done).toBeDisabled();
+            } else {
+                expect(done).not.toBeDisabled();
+            }
+            // Only completion is protected — the rest of an archived job's properties still edit
+            expect(screen.getByLabelText('Void')).not.toBeDisabled();
+
+            unmount();
+        });
+    });
+
     it('shows truck options when truck is checked', () => {
         const job = createMockJob({truck: true});
         renderWithTheme(

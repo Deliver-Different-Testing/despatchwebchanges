@@ -2,6 +2,7 @@ using System.Globalization;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -892,6 +893,14 @@ public partial class JobRepository
                 break;
             case JobProperty.Delivered:
                 var delivered = bool.Parse(value);
+                // Restore only touches live rows, so a half-undone archive can never be put
+                // right: refuse rather than leave the job done=false, status=Completed.
+                if (!delivered && archive.UcjbJobDone)
+                {
+                    throw new ArchivedJobCompletionException(
+                        $"Job {archive.UcjbNumber} is archived and completed, so it can't be marked not done.");
+                }
+
                 archive.UcjbJobDone = delivered;
                 if (delivered)
                 {
@@ -902,6 +911,13 @@ public partial class JobRepository
                 break;
             case JobProperty.CompletedTime:
                 // An empty value clears the POD time (nullable column); a value parses as usual.
+                // Clearing it on a completed archive is the same un-completion as above.
+                if (string.IsNullOrWhiteSpace(value) && archive.UcjbJobDone)
+                {
+                    throw new ArchivedJobCompletionException(
+                        $"Job {archive.UcjbNumber} is archived and completed, so its POD time can't be cleared.");
+                }
+
                 archive.UcjbComplTime = string.IsNullOrWhiteSpace(value)
                     ? null
                     : DateTimeOffset.Parse(value).DateTime;

@@ -1,20 +1,22 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import {ActionIcon, Badge, Box, Group, Stack, Text} from '@mantine/core';
+import {Box, Stack} from '@mantine/core';
 import {useDisclosure} from '@mantine/hooks';
-import {Briefcase, X} from 'lucide-react';
+import {Briefcase} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
 
-/** Translucent washes for content sitting on the beta banner's brand fill. */
-const BANNER_SCRIM = 'color-mix(in srgb, currentColor 18%, transparent)';
-const BANNER_HOVER_SCRIM = 'color-mix(in srgb, currentColor 12%, transparent)';
+/**
+ * A driver-location area scopes the job list to its clear list, and V1 forced the
+ * category to Unassigned when the area was clicked (`selectAndActivateArea`).
+ */
+const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
+
 import {NoData} from '../../components/common/no-data/NoData';
-import {useDismissibleBanner} from '../../hooks/useDismissibleBanner';
 import {ContactID} from '../../../contants';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 import {AppPage} from '../../interfaces/dispatchJob';
-import type {DispatchJob} from '../../interfaces/dispatchJob';
+import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
 import {IDispatchMapItem, ISuggestion} from '../../../interfaces/job.interface';
 import type {ShowToastFn} from '../../services/toastService';
 import {fetchDispatchJobs, fetchClearListJobs, fetchCurrentWorkJobs} from '../../services/jobSearchApi';
@@ -30,6 +32,7 @@ import {
 import {getDispatchJobDetail} from '../../services/dispatchExecutorApi';
 import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 import {JobListPanel} from '../../components/job-list/JobListPanel';
+import {JobDetailsMount} from '../../components/common/job-details/JobDetailsMount';
 import {loadJobListCategory, toStatusFilter} from '../../components/job-list/jobListPreferences';
 import {DispatchDialog, type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
 import {
@@ -40,12 +43,12 @@ import {executeDispatchConfirmation} from '../../components/dialogs/dispatch-dia
 import {openInterCourierChargeDialog} from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
 import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {DispatchJobActionsMenu, DispatchJobActionId} from './components/DispatchJobActionsMenu';
-import {JobSearchShell} from '../job-search/components/JobSearchShell';
-import {useBoxLayout} from '../job-search/hooks/useBoxLayout';
-import type {ImportLayoutsResult, LayoutStorageKeys} from '../job-search/lib/layoutPersistence';
+import {BoxShell} from '../../components/common/box-shell/BoxShell';
+import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
+import type {ImportLayoutsResult, LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
 import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
 import {useLayoutPrompts} from '../../components/layout-prompts/useLayoutPrompts';
-import DispatchBoxes from '../../../components/home/enums/DispatchBoxes';
+import DispatchBoxes from './lib/dispatchBoxes';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './lib/boxDefinitions';
 import {computeMapJobs, selectedCourierId} from './lib/mapJobs';
 import {computeMapView} from './lib/mapView';
@@ -59,7 +62,6 @@ import {
     hasStoredViewSelection,
     persistSelectedViews,
     resolveInitialViewSelection,
-    filtersKey,
     DispatchRefreshIntervals,
     loadRefreshIntervals,
 } from './lib/dispatchFilters';
@@ -67,8 +69,10 @@ import {useDispatchViews} from './hooks/useDispatchViews';
 import {ViewsRail} from './components/ViewsRail';
 import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import {CurrentWorkBox} from './components/CurrentWorkBox';
-import {SupportsBox} from './components/SupportsBox';
+import {TasksBox} from '../../components/common/tasks-box/TasksBox';
 import {DriverLocationsBox} from './components/DriverLocationsBox';
+import {OverviewDeliveriesBox} from './components/OverviewDeliveriesBox';
+import {OpenJobsBox} from './components/OpenJobsBox';
 import {TruckModeMenu} from './components/TruckModeMenu';
 import type {TruckMode} from '../../components/common/driver-locations/DriverLocations.types';
 
@@ -117,53 +121,6 @@ export interface DispatchPageProps {
     onLayoutBridgeReady?: (bridge: DispatchLayoutBridge) => void;
 }
 
-// Adapter for the existing React job-details mount API. Keeps the existing
-// module boundary (window.ReactJobDetails) so the dispatch detail box reuses
-// the same job-details bundle the rest of the app already loads.
-const ReactJobDetailsMount: React.FC<{
-    jobId: number;
-    isUsCustomer: boolean;
-    showToast: ShowToastFn;
-    /** Navigate to a related job picked inside the detail panel (V1 jobChanged). */
-    onRelatedJobChange?: (jobId: number) => void;
-    /** Detail edited a job — refresh the dispatch list. */
-    onJobUpdate?: () => void;
-}> = ({jobId, isUsCustomer, showToast, onRelatedJobChange, onJobUpdate}) => {
-    const containerId = 'react-dispatch-job-detail';
-
-    // Keep the latest callbacks in refs so a DispatchPage re-render that hands us
-    // new inline callbacks does not churn the mount. The detail panel is its own
-    // React root and must stay continuously mounted across re-renders (auto-refresh,
-    // related-job tab clicks) so its internal tab state — and the smooth MUI tab
-    // indicator slide — survive; a remount would reset the selected tab to 0.
-    const onRelatedJobChangeRef = useRef(onRelatedJobChange);
-    const onJobUpdateRef = useRef(onJobUpdate);
-    onRelatedJobChangeRef.current = onRelatedJobChange;
-    onJobUpdateRef.current = onJobUpdate;
-
-    useEffect(() => {
-        const w = window as any;
-        if (!w.ReactJobDetails?.mount) return;
-        // mount() reuses the existing root for the same container, so this
-        // re-renders JobDetails with the new props instead of remounting it.
-        w.ReactJobDetails.mount(containerId, {
-            jobId,
-            isBulkJob: false,
-            isUsCustomer,
-            showToast,
-            onRelatedJobChange: (id: number) => onRelatedJobChangeRef.current?.(id),
-            onJobUpdate: () => onJobUpdateRef.current?.(),
-        });
-    }, [jobId, isUsCustomer, showToast]);
-
-    // Unmount only when this adapter itself leaves the tree (box removed / page torn down).
-    useEffect(() => () => {
-        (window as any).ReactJobDetails?.unmount?.();
-    }, []);
-
-    return <div id={containerId} style={{height: '100%', overflow: 'auto'}} />;
-};
-
 export const DispatchPage: React.FC<DispatchPageProps> = ({
     showToast,
     isUsCustomer,
@@ -209,7 +166,6 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         setColumnEditMode(false);
         onExitColumnEditMode?.();
     }, [onExitColumnEditMode]);
-    const betaBanner = useDismissibleBanner(`dispatchBetaBannerDismissed-${ContactID}`);
 
     // Toolbar filters (selected views + date range). Seeded from localStorage so
     // the list/driver-locations honour the dispatcher's persisted selection on
@@ -248,6 +204,31 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     }, [applyViewSelection]);
 
     const clearViews = useCallback(() => applyViewSelection([]), [applyViewSelection]);
+
+    /*
+     * Filter changes are pushed into the mounted list rather than re-keying it. The
+     * views rail lives inside that panel (`topSlot`) and scrolls horizontally, so a
+     * remount threw away both its scroll position and the table's. Same channel
+     * JobSearchPage uses. `statusFilter` is deliberately absent: the panel's category
+     * chip owns it, and re-pushing the stored value would fight the live choice.
+     *
+     * The dates are compared by value because the host toolbar hands us a fresh dayjs
+     * on every push — by identity, an unchanged range would restart the query.
+     */
+    const pushListParams = useRef<((params: Partial<JobListSearchParams>) => void) | null>(null);
+    const filtersRef = useRef(filters);
+    filtersRef.current = filters;
+    const listParamsSeededRef = useRef(false);
+    const startDateMs = filters.startDate.valueOf();
+    const endDateMs = filters.endDate.valueOf();
+    useEffect(() => {
+        if (!listParamsSeededRef.current) {
+            listParamsSeededRef.current = true;
+            return;
+        }
+        const {startDate, endDate, useTime, despatchViewIds} = filtersRef.current;
+        pushListParams.current?.({startDate, endDate, useTime, despatchViewIds, page: 0});
+    }, [startDateMs, endDateMs, filters.useTime, filters.despatchViewIds]);
 
     // Resolve the starting selection once the server list lands: restore what
     // was stored, drop views that no longer exist, and only fall back to the
@@ -415,17 +396,25 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             isInternal: window.ClientInternal ?? false,
             page: 0,
             pageSize: 50,
-            // The list is remounted on every filter change, so re-seed the dispatcher's
-            // Unassigned/Active choice — useJobListData only reads initialParams once.
+            // Seeds the dispatcher's Unassigned/Active choice on mount; from then on the
+            // panel's own category chip owns it — useJobListData only reads initialParams
+            // once, and later filter changes are pushed in (see `pushListParams`).
             statusFilter: toStatusFilter(loadJobListCategory('dispatchJobList')),
         };
         // When a driver-location area is active, scope the list to that clear
         // list (V1 getJobList → selectedClearListId via the clear-list endpoint).
+        // V1 also forced the category to `needs-dispatch` on area click
+        // (selectAndActivateArea), so the scope overrides the stored choice —
+        // `forcedCategory` below keeps the visible chip in step with this filter.
         if (clearListId) {
             return {
                 fetchFn: fetchClearListJobs,
                 queryKeyFn: (params: any) => queryKeys.dispatch.clearList(params),
-                initialParams: {...baseParams, selectedClearListId: clearListId},
+                initialParams: {
+                    ...baseParams,
+                    statusFilter: toStatusFilter(CLEAR_LIST_CATEGORY),
+                    selectedClearListId: clearListId,
+                },
                 refetchInterval: refreshIntervals.jobsMs,
             };
         }
@@ -448,6 +437,12 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         }
         if (boxName === DispatchBoxes.Supports) {
             void queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
+            return;
+        }
+        // The Overview panels read from their own key space, so the shared
+        // 'dispatch' invalidation below would leave their refresh button inert.
+        if (boxName === DispatchBoxes.OverviewDeliveries || boxName === DispatchBoxes.OpenJobs) {
+            void queryClient.invalidateQueries({queryKey: queryKeys.overview.all});
             return;
         }
         void queryClient.invalidateQueries({queryKey: queryKeys.dispatch.all});
@@ -597,16 +592,22 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     <JobListPanel
                         columnEditMode={columnEditMode}
                         onExitColumnEditMode={handleExitColumnEditMode}
-                        // Remount when filters or the clear-list scope change so fetchConfig re-seeds.
-                        key={`${filtersKey(filters)}|${clearListId ?? ''}`}
+                        // Only the clear-list scope remounts: it swaps fetchFn/queryKeyFn and
+                        // forces its own category. View and date changes are pushed in below.
+                        key={clearListId ?? 'all'}
                         showToast={showToast}
                         isUsCustomer={isUsCustomer}
                         appPage={AppPage.Dispatch}
                         storagePrefix="dispatchJobList"
+                        // Keeps the visible category chip in step with the clear-list
+                        // scope's forced status filter, without persisting over the
+                        // operator's own choice.
+                        forcedCategory={clearListId ? CLEAR_LIST_CATEGORY : undefined}
                         fetchConfig={fetchConfigMain as any}
                         onJobSelect={selectJob}
                         onJobsLoaded={handleJobsLoaded}
                         setSelectJobCallback={(cb) => { selectInListRef.current = cb; }}
+                        setUpdateSearchParamsCallback={(cb) => { pushListParams.current = cb; }}
                         headerSlot={headerSlot}
                         topSlot={
                             <ViewsRail
@@ -632,8 +633,9 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     );
                 }
                 return (
-                    <ReactJobDetailsMount
+                    <JobDetailsMount
                         jobId={currentJobId}
+                        containerId="react-dispatch-job-detail"
                         isUsCustomer={isUsCustomer}
                         showToast={showToast}
                         onRelatedJobChange={(jobId) => void selectJobById(jobId)}
@@ -691,7 +693,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
 
             case DispatchBoxes.Supports:
                 return (
-                    <SupportsBox
+                    <TasksBox
+                        appPage={LegacyAppPage.Dispatch}
                         jobId={currentJobId}
                         showToast={showToast}
                         refetchIntervalMs={refreshIntervals.tasksMs}
@@ -712,6 +715,28 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         onAreaSelect={setClearListId}
                         onClearArea={() => setClearListId(undefined)}
                         truckMode={truckMode}
+                    />
+                );
+
+            case DispatchBoxes.OverviewDeliveries:
+                return (
+                    <OverviewDeliveriesBox
+                        startDate={filters.startDate}
+                        endDate={filters.endDate}
+                        refetchIntervalMs={refreshIntervals.jobsMs}
+                        onSelectJob={(jobId) => void selectJobById(jobId)}
+                        headerSlot={headerSlot}
+                    />
+                );
+
+            case DispatchBoxes.OpenJobs:
+                return (
+                    <OpenJobsBox
+                        startDate={filters.startDate}
+                        endDate={filters.endDate}
+                        refetchIntervalMs={refreshIntervals.jobsMs}
+                        onSelectJob={(jobId) => void selectJobById(jobId)}
+                        headerSlot={headerSlot}
                     />
                 );
 
@@ -742,48 +767,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
 
     return (
         <Stack h="100%" w="100%" gap={0} style={{minHeight: 0}}>
-            {/* BETA banner — dismissible; the opt-out toggle lives in Settings. */}
-            {!betaBanner.dismissed && (
-                <Group
-                    align="center"
-                    gap="sm"
-                    px="md"
-                    py={6}
-                    wrap="nowrap"
-                    style={{
-                        backgroundColor: 'var(--mantine-color-brand-filled)',
-                        color: 'var(--mantine-primary-color-contrast)',
-                    }}
-                >
-                    {/*
-                      * The banner sits on the tenant primary fill, whose on-colour differs
-                      * per tenant, so the chip and the hover wash are mixed from
-                      * `currentColor` rather than pinned to white.
-                      */}
-                    <Badge
-                        size="xs"
-                        radius="sm"
-                        variant="transparent"
-                        styles={{root: {backgroundColor: BANNER_SCRIM, color: 'inherit'}}}
-                    >
-                        BETA
-                    </Badge>
-                    <Text size="sm" style={{flex: 1}}>
-                        You&apos;re on the rebuilt Dispatch page. Spot something off? Open Settings and turn the toggle off to switch back.
-                    </Text>
-                    <ActionIcon
-                        size="md"
-                        variant="subtle"
-                        aria-label="Dismiss beta notice"
-                        onClick={betaBanner.dismiss}
-                        style={{color: 'inherit', '--ai-hover': BANNER_HOVER_SCRIM} as React.CSSProperties}
-                    >
-                        <Icon lucide={X} size={16}/>
-                    </ActionIcon>
-                </Group>
-            )}
             <Box style={{flex: 1, minHeight: 0, position: 'relative'}}>
-                <JobSearchShell
+                <BoxShell
                     layout={boxLayout.layout}
                     layoutVersion={boxLayout.layoutVersion}
                     boxes={boxLayout.boxes}

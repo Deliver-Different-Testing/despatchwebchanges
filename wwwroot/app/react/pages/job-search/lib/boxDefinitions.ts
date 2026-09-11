@@ -1,4 +1,4 @@
-import JobSearchBoxes from '../../../../components/jobSearch/enums/jobSearchBoxes';
+import JobSearchBoxes from './jobSearchBoxes';
 import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
 
 export function createJobSearchBoxes(): Record<string, IBox> {

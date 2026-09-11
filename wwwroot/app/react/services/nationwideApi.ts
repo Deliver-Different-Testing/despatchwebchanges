@@ -15,8 +15,10 @@ import {
     FlightCargoProcessingDto
 } from '../components/dialogs/flight-agent-confirmation-dialog/types';
 import {parseDateFromApi} from '../utils/dateUtils';
+import type {Agent} from '../interfaces/agent';
 import {
     AddAgentRecoveryRequest,
+    AirlineSuggestion, AirportSuggestion, AssignFlightToJobRequest,
     FlightSearchResponseDto, FlightSearchResult, FlightViewModel,
     FlightViewModelDto, GetFlightOptionsParams, GetRecurringFlightOptionsParams, NationwideSuggestion,
     RecoveryAgentJobViewModel, RemoveAgentRecoveryRequest, UpdateAgentRecoveryRequest
@@ -91,10 +93,14 @@ export class NationwideApiService {
             );
 
             const flightDtos = response.flights ?? [];
+            const flights = flightDtos.map((dto) => this.transformFlightDto(dto));
 
             return {
-                flights: flightDtos.map((dto) => this.transformFlightDto(dto)),
+                flights,
                 message: response.message,
+                lastDepartureTime: flights.length > 0
+                    ? flights[flights.length - 1].departureTime
+                    : undefined,
             };
         } catch (error) {
             console.error('Error fetching scheduled flight options:', error);
@@ -189,6 +195,54 @@ export class NationwideApiService {
     async removeAgentRecoveryJob(recoveryId: number): Promise<void> {
         const request: RemoveAgentRecoveryRequest = {recoveryId};
         await apiClient.post<void>('nationwideJob/RemoveAgentRecoveryJob', request);
+    }
+
+    /**
+     * Assign a scheduled flight to a job.
+     *
+     * `POST nationwideJob/AssignFlightToJob` takes the request `[FromBody]`.
+     */
+    async assignFlightToJob(request: AssignFlightToJobRequest): Promise<void> {
+        await apiClient.post<void>('nationwideJob/AssignFlightToJob', request);
+    }
+
+    /**
+     * Airlines available for the flight-search airline filter.
+     */
+    async getActiveAirlines(): Promise<AirlineSuggestion[]> {
+        return apiClient.get<AirlineSuggestion[]>('nationwideJob/GetActiveAirlines');
+    }
+
+    /**
+     * Airports near a job, for the inbound/outbound airport pickers.
+     *
+     * `usePickup` defaults to true to match the AngularJS `NWData.getNearbyAirports`
+     * signature the page was built against.
+     */
+    async getNearbyAirports(jobId: number, usePickup: boolean = true): Promise<AirportSuggestion[]> {
+        return apiClient.get<AirportSuggestion[]>('nationwideJob/GetNearbyAirports', {jobId, usePickup});
+    }
+
+    /**
+     * Agents that apply to a specific job (distinct from
+     * {@link getAgentOptionsByAirport}, which lists recovery agents at an airport).
+     *
+     * Normalises a missing/empty payload to `[]`; V1 folded an "we couldn't find
+     * any agents" message into the service, but that copy belongs in the UI.
+     */
+    async getAgentsForJob(jobId: number): Promise<Agent[]> {
+        const agents = await apiClient.get<Agent[]>('nationwideJob/GetAgentsForJob', {jobId});
+        return agents ?? [];
+    }
+
+    /**
+     * Email a quote request to an agent for a job.
+     *
+     * The server binds `AgentJobRequestModel` `[FromBody]`; the remaining fields
+     * on that model are optional and stay unset for a quote.
+     */
+    async sendAgentQuote(jobId: number, agentId: number): Promise<void> {
+        await apiClient.post<void>('nationwideJob/SendAgentQuote', {jobId, agentId});
     }
 
     /**

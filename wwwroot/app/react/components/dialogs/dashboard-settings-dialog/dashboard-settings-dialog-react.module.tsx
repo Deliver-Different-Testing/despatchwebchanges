@@ -20,7 +20,6 @@ import {createDialogHost} from '../../../utils/reactDialogHost';
 
 interface DashboardSettingsPayload {
     config: DashboardSettingsConfig;
-    boxes: Record<string, DashboardBox>;
     selectedRefreshInterval: RefreshOption;
     selectedDriverLocationRefreshInterval: RefreshOption;
     selectedTaskRefreshInterval: RefreshOption;
@@ -29,6 +28,7 @@ interface DashboardSettingsPayload {
     aiAutoOpen?: boolean;
     jobSearchBetaEnabled?: boolean;
     dispatchBetaEnabled?: boolean;
+    nationwideBetaEnabled?: boolean;
 }
 
 const DISABLED_REFRESH: RefreshOption = {id: 0, text: 'Disabled'};
@@ -75,7 +75,6 @@ const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSetting
         <DashboardSettingsDialog
             open={open}
             config={payload.config}
-            boxes={payload.boxes}
             selectedRefreshInterval={payload.selectedRefreshInterval}
             selectedDriverLocationRefreshInterval={payload.selectedDriverLocationRefreshInterval}
             selectedTaskRefreshInterval={payload.selectedTaskRefreshInterval}
@@ -84,6 +83,7 @@ const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSetting
             aiAutoOpen={payload.aiAutoOpen}
             jobSearchBetaEnabled={payload.jobSearchBetaEnabled}
             dispatchBetaEnabled={payload.dispatchBetaEnabled}
+            nationwideBetaEnabled={payload.nationwideBetaEnabled}
             onClose={() => close(null)}
             onSave={(result: DashboardSettingsResult) => {
                 // The "Open automatically" preference is owned by this bridge: seeded
@@ -100,17 +100,16 @@ const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSetting
 
 export function openDashboardSettingsDialog(
     config: DashboardSettingsConfig,
-    boxes: Record<string, DashboardBox>,
     selectedRefreshInterval?: RefreshOption,
     selectedDriverLocationRefreshInterval?: RefreshOption,
     selectedTaskRefreshInterval?: RefreshOption,
     aiEnabled?: boolean,
     jobSearchBetaEnabled?: boolean,
     dispatchBetaEnabled?: boolean,
+    nationwideBetaEnabled?: boolean,
 ): Promise<DashboardSettingsResult | null> {
     return settingsHost.open({
         config,
-        boxes: {...boxes}, // Clone the boxes
         selectedRefreshInterval: selectedRefreshInterval ?? DISABLED_REFRESH,
         selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? DISABLED_REFRESH,
         selectedTaskRefreshInterval: selectedTaskRefreshInterval ?? DISABLED_REFRESH,
@@ -119,6 +118,7 @@ export function openDashboardSettingsDialog(
         aiAutoOpen: isAiAutoOpenEnabled(),
         jobSearchBetaEnabled,
         dispatchBetaEnabled,
+        nationwideBetaEnabled,
     });
 }
 

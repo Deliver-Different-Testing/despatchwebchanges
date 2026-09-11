@@ -5,9 +5,8 @@
  */
 
 import React from 'react';
-import {screen, within} from '@testing-library/react';
+import {screen} from '@testing-library/react';
 import {
-    DashboardBox,
     DashboardSettingsConfig,
     DashboardSettingsDialog,
     DashboardSettingsDialogProps,
@@ -23,28 +22,15 @@ const mockRefreshOptions: RefreshOption[] = [
     {id: 300, text: '5 minutes'},
 ];
 
-const mockBoxes: Record<string, DashboardBox> = {
-    pendingJobs: {name: 'pendingJobs', title: 'Pending Jobs', description: 'Shows all pending jobs', visible: true},
-    activeJobs: {name: 'activeJobs', title: 'Active Jobs', description: 'Shows active jobs in progress', visible: true},
-    completedJobs: {
-        name: 'completedJobs',
-        title: 'Completed Jobs',
-        description: 'Shows completed jobs',
-        visible: false
-    },
-};
-
 const mockConfig: DashboardSettingsConfig = {
     title: 'Dashboard Settings',
     showRefreshInterval: true,
     showDriverLocationRefresh: true,
-    showDashboards: true,
 };
 
 const defaultProps: DashboardSettingsDialogProps = {
     open: true,
     config: mockConfig,
-    boxes: mockBoxes,
     selectedRefreshInterval: mockRefreshOptions[1],
     selectedDriverLocationRefreshInterval: mockRefreshOptions[2],
     refreshOptions: mockRefreshOptions,
@@ -56,31 +42,53 @@ const createMockProps = (overrides?: Partial<DashboardSettingsDialogProps>) =>
     createProps(defaultProps, overrides);
 
 describe('DashboardSettingsDialog', () => {
-    describe('panelsMovedNotice', () => {
-        it('shows a moved notice instead of panel toggles when set', () => {
+    // ── Dashboard panels — removed; visibility lives in Customize Panels ──
+    describe('Dashboard panels', () => {
+        it('renders no panels section, panel toggles or moved notice', () => {
             renderWithTheme(
                 <DashboardSettingsDialog
-                    {...createMockProps({
-                        config: {...mockConfig, showDashboards: false, panelsMovedNotice: true},
-                    })}
+                    {...createMockProps({config: {...mockConfig, showJobSearchBetaToggle: true}})}
                 />,
             );
 
-            expect(screen.getByText(/Panel options have moved/)).toBeInTheDocument();
-            // The per-panel visibility switches are gone.
-            expect(screen.queryByText('Pending Jobs')).not.toBeInTheDocument();
+            expect(screen.queryByText('Dashboard panels')).not.toBeInTheDocument();
+            expect(screen.queryByText(/Panel options have moved/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/choose which panels appear/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/panel visibility is only available/i)).not.toBeInTheDocument();
+        });
+    });
+
+    // ── Section separators ──────────────────────────────────────────
+    describe('Section separators', () => {
+        it('renders dividers between sections only, never trailing', () => {
+            const {unmount} = renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({
+                        config: {title: 'Dashboard Settings', showAiToggle: true},
+                    })}
+                />,
+            );
+            expect(screen.queryAllByRole('separator')).toHaveLength(0);
+            unmount();
+
+            renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({config: {...mockConfig, showAiToggle: true}})}
+                />,
+            );
+            expect(screen.getAllByRole('separator')).toHaveLength(1);
         });
     });
 
     // ── Default render (single render for all read-only checks) ─────
     describe('Default render', () => {
-        it('renders dialog with all sections, panels, switches and refresh options', () => {
+        it('renders dialog with all sections, switches and refresh options', () => {
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
             // Dialog chrome
             expect(screen.getByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Dashboard Settings')).toBeInTheDocument();
-            expect(screen.getByText('Choose what appears on your dashboard and how often it updates')).toBeInTheDocument();
+            expect(screen.getByText('Choose how often your dashboard updates and which features are on')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /save/i})).toBeInTheDocument();
 
@@ -91,22 +99,6 @@ describe('DashboardSettingsDialog', () => {
             expect(screen.getByRole('combobox', {name: 'Job list'})).toHaveValue('30 seconds');
             expect(screen.getByText('Driver locations')).toBeInTheDocument();
             expect(screen.getByText('How often driver positions update on the map')).toBeInTheDocument();
-
-            // Dashboard Panels section
-            expect(screen.getByText('Dashboard panels')).toBeInTheDocument();
-            expect(screen.getByText('Pending Jobs')).toBeInTheDocument();
-            expect(screen.getByText('Active Jobs')).toBeInTheDocument();
-            expect(screen.getByText('Completed Jobs')).toBeInTheDocument();
-            expect(screen.getByText('Shows all pending jobs')).toBeInTheDocument();
-            expect(screen.getByText('Shows active jobs in progress')).toBeInTheDocument();
-            expect(screen.getByText('Shows completed jobs')).toBeInTheDocument();
-            expect(screen.getByText(/choose which panels appear/i)).toBeInTheDocument();
-
-            // Switches
-            const switches = screen.getAllByRole('switch');
-            expect(switches.length).toBeGreaterThanOrEqual(3);
-            const checkedSwitches = switches.filter(s => (s as HTMLInputElement).checked);
-            expect(checkedSwitches.length).toBeGreaterThanOrEqual(2);
         });
     });
 
@@ -145,49 +137,6 @@ describe('DashboardSettingsDialog', () => {
                 }
             })} />);
             expect(screen.queryByText('Driver locations')).not.toBeInTheDocument();
-        });
-
-        it('shows empty state when showDashboards is false', () => {
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps({
-                config: {
-                    ...mockConfig,
-                    showDashboards: false
-                }
-            })} />);
-            expect(screen.getByText(/panel visibility is only available/i)).toBeInTheDocument();
-        });
-
-        it('drops the Dashboard panels section entirely when showPanels is false', () => {
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps({
-                config: {
-                    ...mockConfig,
-                    showPanels: false
-                }
-            })} />);
-            expect(screen.queryByText('Dashboard panels')).not.toBeInTheDocument();
-            expect(screen.queryByText('Pending Jobs')).not.toBeInTheDocument();
-            expect(screen.queryByText(/panel visibility is only available/i)).not.toBeInTheDocument();
-            // Other sections still render.
-            expect(screen.getByText('Auto-refresh')).toBeInTheDocument();
-        });
-    });
-
-    // ── Toggle Box Visibility ───────────────────────────────────────
-    describe('Toggle Box Visibility', () => {
-        it('toggles via switch and via row click', async () => {
-            const user = setupUser();
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
-
-            const toggle = screen.getByRole('switch', {name: 'Pending Jobs'});
-            const pendingJobsRow = screen.getByText('Shows all pending jobs').closest('[data-setting-row]') as HTMLElement;
-
-            const initialState = (toggle as HTMLInputElement).checked;
-            await user.click(toggle);
-            expect((toggle as HTMLInputElement).checked).toBe(!initialState);
-
-            // Toggle back via row click
-            await user.click(pendingJobsRow);
-            expect((toggle as HTMLInputElement).checked).toBe(initialState);
         });
     });
 
@@ -264,14 +213,10 @@ describe('DashboardSettingsDialog', () => {
     });
 
     describe('Save Functionality', () => {
-        it('calls onSave with current settings including toggled box visibility', async () => {
+        it('calls onSave with the current settings and no boxes', async () => {
             const user = setupUser();
             const onSave = jest.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onSave})} />);
-
-            // Toggle a box first
-            const pendingJobsRow = screen.getByText('Shows all pending jobs').closest('[data-setting-row]');
-            await user.click(pendingJobsRow!);
 
             await user.click(screen.getByRole('button', {name: /save/i}));
 
@@ -279,11 +224,9 @@ describe('DashboardSettingsDialog', () => {
                 expect.objectContaining({
                     selectedRefreshInterval: expect.any(Object),
                     selectedDriverLocationRefreshInterval: expect.any(Object),
-                    boxes: expect.objectContaining({
-                        pendingJobs: expect.objectContaining({visible: false}),
-                    }),
                 })
             );
+            expect(onSave.mock.calls[0][0]).not.toHaveProperty('boxes');
         });
     });
 
@@ -391,21 +334,6 @@ describe('DashboardSettingsDialog', () => {
             expect(onSave).toHaveBeenCalledWith(
                 expect.objectContaining({aiEnabled: true, aiAutoOpen: true}),
             );
-        });
-    });
-
-    // ── Edge Cases ──────────────────────────────────────────────────
-    describe('Edge Cases', () => {
-        it('renders without error when boxes is empty', () => {
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps({boxes: {}})} />);
-            expect(screen.getByText('Dashboard panels')).toBeInTheDocument();
-        });
-
-        it('displays name when title is not provided', () => {
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps({
-                boxes: {myPanel: {name: 'My Panel Name', visible: true}},
-            })} />);
-            expect(screen.getByText('My Panel Name')).toBeInTheDocument();
         });
     });
 });
