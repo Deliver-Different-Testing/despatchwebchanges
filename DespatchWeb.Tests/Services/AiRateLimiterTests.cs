@@ -96,7 +96,7 @@ public class AiRateLimiterTests
         var service = CreateService();
 
         // Act & Assert - should complete without error (logging only)
-        await service.RecordTokenUsageAsync(1, "nz",
+        await service.RecordTokenUsageAsync(1, "nz", "SummarizeJob", AiTaskClass.Judgment,
             new AiUsageInfo { InputTokens = 100, OutputTokens = 50 });
     }
 }

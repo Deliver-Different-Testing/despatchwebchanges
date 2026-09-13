@@ -2289,6 +2289,135 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Equal(25.00m, lines.Where(l => l.ChildJobId == subDeliveryId).Sum(l => l.ChargeAmount));
     }
 
+    [Fact]
+    public async Task SplitJobAsync_LeavesTheParentsHeaderUntouched()
+    {
+        // Splitting is an internal dispatch operation. Whatever the two legs turn out to cover,
+        // the customer-facing ticket must be charged exactly what it was charged before.
+        SeedJob(configure: j =>
+        {
+            j.UcjbAmount = 89.00m;
+            j.FuelSurchargeAmount = 16.00m;
+            j.CourierPayment = 44.50m;
+            j.TotalDistance = 12.5m;
+        });
+        SeedParentPricingLines();
+
+        // Legs that together cover four times the original route - the case Victor reported.
+        _rateJobServiceMock
+            .GetRoadDistanceMilesAsync(Arg.Any<decimal?>(), Arg.Any<decimal?>(), Arg.Any<decimal?>(),
+                Arg.Any<decimal?>())
+            .Returns(25d);
+
+        var service = CreateService();
+
+        await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var parent = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 100,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(89.00m, parent.UcjbAmount);
+        Assert.Equal(16.00m, parent.FuelSurchargeAmount);
+        Assert.Equal(44.50m, parent.CourierPayment);
+        Assert.Equal(12.5m, parent.TotalDistance);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_LegAmountsSumExactlyToTheParentAmount()
+    {
+        // A total that cannot be divided cleanly by the shares: rounding both legs independently
+        // would leave the parts a cent short of the invoice.
+        SeedJob(configure: j =>
+        {
+            j.UcjbAmount = 100.01m;
+            j.PickUpLatitude = -37.00m;
+            j.PickUpLongitude = 174.76m;
+        });
+        SeedParentPricingLines(baseAmount: 100.01m, fuelAmount: 0m, congestionAmount: 0m);
+
+        // One third / two thirds.
+        _rateJobServiceMock
+            .GetRoadDistanceMilesAsync(Arg.Any<decimal?>(), Arg.Any<decimal?>(), Arg.Any<decimal?>(),
+                Arg.Any<decimal?>())
+            .Returns(call => call.ArgAt<decimal?>(0) == -37.00m ? 1d : 2d);
+
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var legs = await verifyCtx.TucJobs
+            .Where(j => j.UcjbId == pickupId || j.UcjbId == deliveryId)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        var parent = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 100,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(100.01m, legs.Sum(l => l.UcjbAmount ?? 0m));
+        Assert.Equal(parent.UcjbAmount, legs.Sum(l => l.UcjbAmount ?? 0m));
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ParentPricingDriftsDuringSplit_IsRestoredBeforeCommit()
+    {
+        // The split deletes the parent's PricingBreakdown rows and re-inserts them as per-leg rows
+        // under the same JobID, which fires TR_PricingBreakdown_tucJob_Sync and friends. Their
+        // bodies are not in source control, so stand in for one that re-derives the parent's header
+        // from the rewritten rows and prove the parent is put back before the split commits.
+        SeedJob(configure: j =>
+        {
+            j.UcjbAmount = 89.00m;
+            j.FuelSurchargeAmount = 16.00m;
+            j.CourierPayment = 44.50m;
+            j.TotalDistance = 12.5m;
+        });
+        SeedParentPricingLines();
+        StubMarsConsolidationToDriftParentPricing(amount: 137.40m, distance: 31.2m);
+        var service = CreateServiceCapturingSplitContext();
+
+        await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var parent = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 100,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(89.00m, parent.UcjbAmount);
+        Assert.Equal(12.5m, parent.TotalDistance);
+        Assert.Equal(16.00m, parent.FuelSurchargeAmount);
+        Assert.Equal(44.50m, parent.CourierPayment);
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToChildrenAsync_SplitParent_LeavesTheParentsHeaderUntouched()
+    {
+        // Re-pricing after a parent edit redistributes the parent's total across the legs. The
+        // total itself is the input, never an output.
+        SeedSplitLegsWithPricingLines();
+        await _seedContext.TucJobs
+            .Where(j => j.UcjbId == 100)
+            .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.FuelSurchargeAmount, 16.00m)
+                    .SetProperty(x => x.CourierPayment, 44.50m)
+                    .SetProperty(x => x.TotalDistance, 12.5m),
+                TestContext.Current.CancellationToken);
+        var service = CreateService();
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Size, "2",
+            TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var parent = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 100,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(89.00m, parent.UcjbAmount);
+        Assert.Equal(16.00m, parent.FuelSurchargeAmount);
+        Assert.Equal(44.50m, parent.CourierPayment);
+        Assert.Equal(12.5m, parent.TotalDistance);
+    }
+
     /// <summary>
     /// An already-split job in its post-KT1314V state: a 89.00/50.00 parent divided 65/35 across
     /// legs 101 and 102, with the congestion charge pinned wholly to leg A the way the split
@@ -2501,6 +2630,31 @@ public class SplitJobServiceTests : IAsyncDisposable
     /// a single shared connection, so a write from any other context is rejected for not carrying
     /// the connection's active transaction.
     /// </summary>
+    /// <summary>
+    /// As <see cref="StubMarsConsolidationToRebaseLegs"/>, but stands in for a database object that
+    /// re-derives the PARENT's price and mileage from the breakdown rows the split rewrote.
+    /// </summary>
+    private void StubMarsConsolidationToDriftParentPricing(decimal amount, decimal distance) =>
+        _proceduresMock
+            .DES_stpJob_ColsolidateMarsInformationAsync(Arg.Any<int?>(), Arg.Any<bool?>(), Arg.Any<string>(),
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(_ => DriftParentAsync(amount, distance));
+
+    private async Task<List<DES_stpJob_ColsolidateMarsInformationResult>> DriftParentAsync(
+        decimal amount, decimal distance)
+    {
+        // ExecuteUpdate bypasses the change tracker, so the split cannot see this without
+        // re-reading - exactly like a trigger writing behind EF's back.
+        await _splitContext!.TucJobs
+            .Where(j => j.UcjbId == 100)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.UcjbAmount, amount)
+                .SetProperty(x => x.TotalDistance, distance)
+                .SetProperty(x => x.FuelSurchargeAmount, 0m)
+                .SetProperty(x => x.CourierPayment, 0m));
+        return [];
+    }
+
     private void StubMarsConsolidationToRebaseLegs(DateTime date, DateTime time) =>
         _proceduresMock
             .DES_stpJob_ColsolidateMarsInformationAsync(Arg.Any<int?>(), Arg.Any<bool?>(), Arg.Any<string>(),

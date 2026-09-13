@@ -1,4 +1,6 @@
+using Anthropic.Exceptions;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,13 +31,24 @@ public class AiController(
 
             var response = await summarizationService.SummarizeJobNotesAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(SummarizeJobNotes), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -59,13 +72,24 @@ public class AiController(
 
             var response = await summarizationService.SummarizeJobEventsAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(SummarizeJobEvents), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -89,13 +113,24 @@ public class AiController(
 
             var response = await summarizationService.SummarizeTaskDashboardAsync(ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(SummarizeTaskDashboard), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -119,13 +154,24 @@ public class AiController(
 
             var response = await summarizationService.SummarizeJobAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(SummarizeJob), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -149,13 +195,24 @@ public class AiController(
 
             var response = await summarizationService.SummarizeOperationsAsync(ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(SummarizeOperations), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -179,13 +236,24 @@ public class AiController(
 
             var response = await summarizationService.SummarizeComplianceAsync(ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(SummarizeCompliance), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -209,13 +277,24 @@ public class AiController(
 
             var response = await draftingService.DraftCourierMessageAsync(request, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(DraftMessage), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -239,13 +318,24 @@ public class AiController(
 
             var response = await draftingService.DraftEmailAsync(request, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(DraftEmail), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -269,13 +359,24 @@ public class AiController(
 
             var response = await draftingService.DraftPodEmailAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(DraftPodEmail), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -299,13 +400,24 @@ public class AiController(
 
             var response = await draftingService.DraftNoteAsync(request, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(DraftNote), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -329,13 +441,24 @@ public class AiController(
 
             var response = await insightsService.ExtractBlockersAsync(jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(ExtractBlockers), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -359,13 +482,24 @@ public class AiController(
 
             var response = await insightsService.AnalyzePricingAsync(jobId, accessorialChargeGroupId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(AnalyzePricing), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {
@@ -389,13 +523,24 @@ public class AiController(
 
             var response = await insightsService.TriageChangeRequestAsync(requestId, jobId, ct);
 
-            await rateLimiter.RecordTokenUsageAsync(staffId, tenantId, response.Usage);
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(TriageChangeRequest), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
         }
         catch (Exception e)
         {

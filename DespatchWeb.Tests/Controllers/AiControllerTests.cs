@@ -1,5 +1,6 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using JetBrains.Annotations;
@@ -29,9 +30,8 @@ public class AiControllerTests
 
         _rateLimiter
             .RecordTokenUsageAsync(
-                Arg.Any<int>(),
-                Arg.Any<string>(),
-                Arg.Any<AiUsageInfo>())
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<AiTaskClass>(), Arg.Any<AiUsageInfo>())
             .Returns(Task.CompletedTask);
     }
 
@@ -145,7 +145,7 @@ public class AiControllerTests
 
         await _rateLimiter
             .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland",
+            .RecordTokenUsageAsync(1, "Pacific/Auckland", "SummarizeTaskDashboard", AiTaskClass.Judgment,
                 Arg.Is<AiUsageInfo>(u => u.InputTokens == 100 && u.OutputTokens == 25));
     }
 
@@ -262,7 +262,7 @@ public class AiControllerTests
 
         await _rateLimiter
             .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland",
+            .RecordTokenUsageAsync(1, "Pacific/Auckland", "SummarizeOperations", AiTaskClass.Judgment,
                 Arg.Is<AiUsageInfo>(u => u.InputTokens == 90 && u.OutputTokens == 15));
     }
 
@@ -363,7 +363,8 @@ public class AiControllerTests
         var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
 
         Assert.IsType<JsonResult>(result);
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland",
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(
+            1, "Pacific/Auckland", "DraftMessage", AiTaskClass.Drafting,
             Arg.Is<AiUsageInfo>(u => u.InputTokens == 70 && u.OutputTokens == 18));
     }
 
@@ -502,7 +503,8 @@ public class AiControllerTests
         var result = await controller.ExtractBlockers(1, TestContext.Current.CancellationToken);
 
         Assert.IsType<JsonResult>(result);
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland",
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(
+            1, "Pacific/Auckland", "ExtractBlockers", AiTaskClass.Judgment,
             Arg.Is<AiUsageInfo>(u => u.InputTokens == 90 && u.OutputTokens == 25));
     }
 

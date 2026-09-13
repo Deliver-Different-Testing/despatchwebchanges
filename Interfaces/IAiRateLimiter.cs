@@ -1,3 +1,4 @@
+using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 
 namespace DespatchWeb.Interfaces;
@@ -5,5 +6,10 @@ namespace DespatchWeb.Interfaces;
 public interface IAiRateLimiter
 {
     Task<bool> TryAcquireAsync(int staffId, string tenantId);
-    Task RecordTokenUsageAsync(int staffId, string tenantId, AiUsageInfo usage);
+    /// <summary>
+    /// Records what one AI call cost. <paramref name="feature"/> is the controller action
+    /// name, so spend and cache effectiveness stay attributable per feature and per model.
+    /// </summary>
+    Task RecordTokenUsageAsync(
+        int staffId, string tenantId, string feature, AiTaskClass taskClass, AiUsageInfo usage);
 }

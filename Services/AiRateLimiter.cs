@@ -40,23 +40,35 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
         return false;
     }
 
-    public Task RecordTokenUsageAsync(int staffId, string tenantId, AiUsageInfo usage)
+    public Task RecordTokenUsageAsync(
+        int staffId, string tenantId, string feature, AiTaskClass taskClass, AiUsageInfo usage)
     {
-        var costUsd =
-            usage.InputTokens / 1_000_000m * _settings.InputPricePerMillion +
-            usage.OutputTokens / 1_000_000m * _settings.OutputPricePerMillion +
-            usage.CacheReadInputTokens / 1_000_000m * _settings.CacheReadPricePerMillion +
-            usage.CacheCreationInputTokens / 1_000_000m * _settings.CacheWritePricePerMillion;
+        var profile = _settings.For(taskClass);
 
+        var costUsd = CostUsd(profile, usage);
+
+        // Feature and model are separate properties, not interpolated into the message,
+        // so cost and cache effectiveness stay groupable per feature and per model in
+        // the log sink. CacheReadInputTokens sitting at zero across repeated briefings
+        // means the prompt-cache breakpoint is below the minimum cacheable prefix and
+        // is doing nothing.
         Log.Information(
-            "AI token usage - Staff: {StaffId}, Tenant: {TenantId}, Model: {Model}, " +
+            "AI token usage - Feature: {Feature}, TaskClass: {TaskClass}, Model: {Model}, " +
+            "Staff: {StaffId}, Tenant: {TenantId}, " +
             "Input: {InputTokens}, Output: {OutputTokens}, CacheRead: {CacheReadTokens}, " +
             "CacheWrite: {CacheCreationTokens}, CostUsd: {CostUsd:F6}",
-            staffId, tenantId, _settings.Model,
+            feature, taskClass.ToString(), profile.Model,
+            staffId, tenantId,
             usage.InputTokens, usage.OutputTokens,
             usage.CacheReadInputTokens, usage.CacheCreationInputTokens, costUsd);
         return Task.CompletedTask;
     }
+
+    internal static decimal CostUsd(AiModelProfile profile, AiUsageInfo usage) =>
+        usage.InputTokens / 1_000_000m * profile.InputPricePerMillion +
+        usage.OutputTokens / 1_000_000m * profile.OutputPricePerMillion +
+        usage.CacheReadInputTokens / 1_000_000m * profile.CacheReadPricePerMillion +
+        usage.CacheCreationInputTokens / 1_000_000m * profile.CacheWritePricePerMillion;
 
     private async Task<int> IncrementCounterAsync(string key)
     {

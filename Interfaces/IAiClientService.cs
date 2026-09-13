@@ -1,3 +1,5 @@
+using DespatchWeb.Models;
+
 namespace DespatchWeb.Interfaces;
 
 public class AiMessage
@@ -38,6 +40,24 @@ public class AiClientResponse
 
     /// <summary>True when this response was served from the dedup response cache (zero API cost).</summary>
     public bool ServedFromCache { get; init; }
+
+    /// <summary>
+    /// Raw API stop reason ("end_turn", "tool_use", "max_tokens", "refusal", ...).
+    /// Null on a response-cache hit, where no request was made.
+    /// </summary>
+    public string StopReason { get; init; }
+
+    /// <summary>
+    /// The model hit <c>MaxTokens</c> mid-answer. A forced tool call truncated this way
+    /// yields malformed arguments JSON, so callers must not report it as a parse failure.
+    /// </summary>
+    public bool WasTruncated => StopReason == "max_tokens";
+
+    /// <summary>A safety classifier declined the request; there is no content to read.</summary>
+    public bool WasRefused => StopReason == "refusal";
+
+    /// <summary>Refusal category from the API, when <see cref="WasRefused"/>.</summary>
+    public string RefusalCategory { get; init; }
 }
 
 public interface IAiResponseCache
@@ -61,6 +81,7 @@ public interface IAiResponseCache
 public interface IAiClientService
 {
     Task<AiClientResponse> SendMessageAsync(
+        AiTaskClass taskClass,
         string systemPrompt,
         List<AiMessage> messages,
         int maxTokens,
@@ -68,10 +89,5 @@ public interface IAiClientService
         string forceToolName = null,
         bool enableCaching = false,
         bool cacheResponse = false,
-        CancellationToken ct = default);
-
-    IAsyncEnumerable<string> StreamMessageAsync(
-        string systemPrompt,
-        List<AiMessage> messages,
         CancellationToken ct = default);
 }

@@ -322,7 +322,7 @@ public sealed class PodReportService(
 
     // Mirrors the count the job-details panel shows: pallet quantities win, then parcel rows, then
     // the job's own item count.
-    internal static int? ResolveItemCount(JobViewModel job)
+    private static int? ResolveItemCount(JobViewModel job)
     {
         var palletQuantity = job.PalletInfo?.Sum(p => p.Quantity) ?? 0;
         if (palletQuantity > 0)
@@ -345,7 +345,7 @@ public sealed class PodReportService(
     /// The POD job projection never populates <see cref="DispatchJobViewModel.From"/>, so a blank
     /// name falls back to the suburb.
     /// </summary>
-    internal static string? ComposeTopLine(string? name, AddressViewModel? address, bool isUsTenant)
+    private static string? ComposeTopLine(string? name, AddressViewModel? address, bool isUsTenant)
     {
         var city = isUsTenant ? address?.AddressLine5 : address?.AddressLine6;
         var lead = !string.IsNullOrWhiteSpace(name)

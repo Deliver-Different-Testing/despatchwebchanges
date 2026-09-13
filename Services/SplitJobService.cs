@@ -96,6 +96,11 @@ public class SplitJobService(
                 var bookedTime = job.UcjbTime;
                 var bookedSpeed = job.UcjbSpeed;
 
+                // Same reasoning for what the customer is charged: splitting is an internal
+                // dispatch operation, so the parent's headline price and mileage are frozen here
+                // and put back below if anything on the insert path moved them.
+                var parentPricing = ParentPricing.From(job);
+
                 // Determine root parent ID - preserve existing if job is already a child
                 var rootParentId = job.RootParentId ?? job.UcjbId;
 
@@ -249,6 +254,9 @@ public class SplitJobService(
                 await ReassertLegBookingAsync(context, jobId, bookedDate, bookedTime, bookedSpeed,
                     [pickupJob.UcjbId, deliveryJob.UcjbId], ct);
 
+                // Last thing before commit, so it sees the net effect of every leg write above.
+                await ReassertParentPricingAsync(context, jobId, parentPricing, ct);
+
                 await transaction.CommitAsync(ct);
 
                 Log.Information("Successfully split job {JobId} into pickup {PickupId} and delivery {DeliveryId}",
@@ -301,8 +309,9 @@ public class SplitJobService(
             {
                 j.JobRelationshipTypeId,
                 j.RootParentId,
-                j.UcjbAmount,
-                j.UcjbVoid
+                j.UcjbVoid,
+                Pricing = new ParentPricing(
+                    j.UcjbAmount, j.FuelSurchargeAmount, j.CourierPayment, j.TotalDistance)
             })
             .FirstOrDefaultAsync(ct);
 
@@ -319,7 +328,7 @@ public class SplitJobService(
             case (int)JobRelationshipTypes.SplitParent:
                 // Split job: one fixed total divided across the legs.
                 await PropagateUpdateToSplitChildrenAsync(
-                    context, parentJobId, parentInfo.RootParentId, parentInfo.UcjbAmount ?? 0m, field, value, ct);
+                    context, parentJobId, parentInfo.RootParentId, parentInfo.Pricing, field, value, ct);
                 break;
             case (int)JobRelationshipTypes.Multi:
                 // Multi-drop: each part is priced on its own, so the total moves with the change.
@@ -473,7 +482,7 @@ public class SplitJobService(
         DespatchContext context,
         int parentJobId,
         int? rootParentIdRaw,
-        decimal parentAmount,
+        ParentPricing parentPricing,
         JobProperty field,
         string value,
         CancellationToken ct)
@@ -518,7 +527,11 @@ public class SplitJobService(
             parentJobId, field, childJobIds.Count - failures, childJobIds.Count);
 
         // Redistribute the parent's current amount across its immediate children
-        await RedistributeSplitJobAmountsAsync(context, parentJobId, parentAmount, ct);
+        await RedistributeSplitJobAmountsAsync(context, parentJobId, parentPricing.Amount ?? 0m, ct);
+
+        // Rewriting the legs' breakdown rows hits the same parent-keyed rows the split does, so the
+        // parent needs the same guard here.
+        await ReassertParentPricingAsync(context, parentJobId, parentPricing, ct);
     }
 
     /// <summary>
@@ -1290,6 +1303,108 @@ public class SplitJobService(
         catch (Exception ex)
         {
             Log.Warning(ex, "Failed to consolidate MARS information for job {JobId}.", jobId);
+        }
+    }
+
+    /// <summary>
+    /// The parent's customer-facing figures, captured before a split or re-price touches anything.
+    /// </summary>
+    internal readonly record struct ParentPricing(
+        decimal? Amount,
+        decimal Fuel,
+        decimal? Cost,
+        decimal? Distance)
+    {
+        public static ParentPricing From(TucJob job) =>
+            new(job.UcjbAmount, job.FuelSurchargeAmount, job.CourierPayment, job.TotalDistance);
+    }
+
+    /// <summary>
+    /// Verifies the parent job still carries the price and mileage it had before the split, and
+    /// restores them if it does not. Returns the number of rows corrected.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Splitting is an internal dispatch operation: it must never change what the customer is
+    /// charged, however the two legs' mileage compares to the original route. No C# on this path
+    /// writes these columns — but the split deletes the parent's <c>PricingBreakdown</c> rows and
+    /// re-inserts them as per-leg rows under the same <c>JobID</c>, which fires the legacy sync and
+    /// recalculate triggers on that table and on <c>tucJob</c>. Their bodies live only on the
+    /// server, so the parent is held to its snapshot rather than to an assumption about what they
+    /// do, and any drift is logged by column so the culprit can be identified from production.
+    /// </para>
+    /// <para>
+    /// Reads on <paramref name="context"/> — the split transaction's own connection — and
+    /// <c>AsNoTracking</c>, for the same two reasons as <see cref="ReassertLegBookingAsync"/>: a
+    /// tracked read is served from the identity map and could never observe a write made behind
+    /// EF's back, and any other connection blocks on the uncommitted transaction (SQL error 258).
+    /// </para>
+    /// <para>
+    /// Nothing is written when the parent is intact, which is the normal case — restoring only on
+    /// drift keeps <c>tucJob_Update_UpdateBaggageJobFromPickupJob</c> (which mirrors columns onto
+    /// related jobs for relationship types 8 and 11) out of the healthy path entirely. Once there
+    /// is drift the columns go back in one statement; writing an undrifted column back to its own
+    /// value is a no-op and is not worth a second round trip to avoid.
+    /// </para>
+    /// </remarks>
+    internal static async Task<int> ReassertParentPricingAsync(
+        DespatchContext context,
+        int parentJobId,
+        ParentPricing expected,
+        CancellationToken ct)
+    {
+        try
+        {
+            // ToList rather than FirstOrDefault: a record struct has no null, so a parent that is
+            // no longer there would come back as an all-default value and read as drift.
+            var rows = await context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbId == parentJobId)
+                .Select(j => new ParentPricing(
+                    j.UcjbAmount, j.FuelSurchargeAmount, j.CourierPayment, j.TotalDistance))
+                .Take(1)
+                .ToListAsync(ct);
+
+            if (rows.Count == 0 || rows[0] == expected)
+            {
+                return 0;
+            }
+
+            var observed = rows[0];
+
+            var drifted = new List<string>(4);
+            Note(drifted, "ucjbAmount", expected.Amount, observed.Amount);
+            Note(drifted, "FuelSurchargeAmount", expected.Fuel, observed.Fuel);
+            Note(drifted, "CourierPayment", expected.Cost, observed.Cost);
+            Note(drifted, "TotalDistance", expected.Distance, observed.Distance);
+
+            Log.Warning(
+                "Split {ParentJobId}: the parent's pricing drifted during the split — {Drift}. "
+                + "Restoring. Splitting must not change what the customer is charged.",
+                parentJobId, string.Join("; ", drifted));
+
+            return await context.TucJobs
+                .Where(j => j.UcjbId == parentJobId)
+                .ExecuteUpdateAsync(j => j
+                    .SetProperty(x => x.UcjbAmount, expected.Amount)
+                    .SetProperty(x => x.FuelSurchargeAmount, expected.Fuel)
+                    .SetProperty(x => x.CourierPayment, expected.Cost)
+                    .SetProperty(x => x.TotalDistance, expected.Distance), ct);
+        }
+        catch (Exception ex)
+        {
+            // A failing guard must not turn a completed split into a failed one — the worst case is
+            // the behaviour we already had. Same posture as ReassertLegBookingAsync.
+            Log.Warning(ex, "Failed to verify the pricing on the parent of split {ParentJobId}.", parentJobId);
+            return 0;
+        }
+
+        static void Note(List<string> into, string column, decimal? expected, decimal? observed)
+        {
+            if (expected != observed)
+            {
+                into.Add($"{column} {observed} (was {expected})");
+            }
         }
     }
 

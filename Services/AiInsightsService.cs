@@ -27,6 +27,18 @@ public sealed class AiInsightsService(
 
     private const string EmitBlockersTool = "emit_blockers";
 
+    private const string EmitBlockersDescription =
+        "Returns the delivery and pickup blockers found in this job's notes, rendered as tag chips on the "
+        + "job card with the quoted note text behind each. A blocker is anything the dispatcher or courier "
+        + "must know or act on before pickup or delivery: call-before-delivery, access or gate codes, "
+        + "tail-lift and equipment needs, hazards on site, dangerous-goods handling, signature and "
+        + "leave-unattended rules, time-window restrictions. `tag` is a short kebab-case name reused across "
+        + "jobs, so prefer a wording that would match other jobs over a novel one. `evidence` quotes the "
+        + "supporting note text verbatim, [PHONE]/[EMAIL] placeholders included, because it is shown to the "
+        + "dispatcher as the justification. `actionRequired` is true only when someone must do something "
+        + "before the job can proceed, not merely be aware of it. Return an empty list and severity Ok when "
+        + "the notes contain no real blocker.";
+
     private const string EmitBlockersSchema = """
                                               {
                                                 "type": "object",
@@ -55,6 +67,16 @@ public sealed class AiInsightsService(
 
     private const string EmitSuggestionsTool = "emit_accessorial_suggestions";
 
+    private const string EmitSuggestionsDescription =
+        "Returns accessorial charges to propose adding to this job. The dispatcher sees each as a suggestion "
+        + "they accept or dismiss, so a wrong suggestion costs their attention and a missed one costs revenue. "
+        + "`accessorialChargeId` must come from the catalog supplied in this request; ids outside it are "
+        + "discarded before the dispatcher ever sees them. `reason` cites the specific job flag or note phrase "
+        + "that triggers the charge, because that text is displayed next to the suggestion. "
+        + "`suggestedInputValue` carries the quantity for per-unit or quoted charges when the notes imply one "
+        + "(waiting minutes, flights of stairs), and is null otherwise. Return an empty list when nothing in "
+        + "the job clearly supports a charge.";
+
     private const string EmitSuggestionsSchema = """
                                                  {
                                                    "type": "object",
@@ -80,6 +102,15 @@ public sealed class AiInsightsService(
     // ---- Change-request triage -------------------------------------------
 
     private const string EmitTriageTool = "emit_triage";
+
+    private const string EmitTriageDescription =
+        "Returns an advisory recommendation on one pending job change request, shown as a badge beside the "
+        + "request in the approval queue. A human approver always makes the final decision and clicks approve "
+        + "or reject; this only pre-sorts their queue. `recommendedAction` is approve, reject, or clarify (ask "
+        + "the requester for more information). `confidence` runs 0.0 to 1.0 and should fall when the stated "
+        + "reason is thin or the commercial impact is large and unexplained. `rationale` is the single sentence "
+        + "the approver reads. `riskFactors` name what could go wrong if this were approved; return an empty "
+        + "array when there are none.";
 
     private const string EmitTriageSchema = """
                                             {
@@ -129,7 +160,6 @@ public sealed class AiInsightsService(
              - severity: Urgent = safety/legal/time-critical; Caution = access/special handling; Info = optional instruction.
              - evidence MUST quote the supporting note text. Phone/email are redacted as [PHONE]/[EMAIL]; leave them.
              - If there are no real blockers, return an empty list and severity Ok.
-             You MUST call the tool `{EmitBlockersTool}`.
              """;
 
         var sb = new StringBuilder();
@@ -138,7 +168,8 @@ public sealed class AiInsightsService(
         AppendNotes(sb, notes);
 
         var (json, usage) =
-            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitBlockersTool, EmitBlockersSchema, ct);
+            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitBlockersTool, EmitBlockersDescription,
+                EmitBlockersSchema, ct);
         if (json == null)
         {
             return new ExtractBlockersResponse
@@ -189,7 +220,7 @@ public sealed class AiInsightsService(
              - Suggest a charge only when a job flag or note clearly supports it (e.g. tail-lift flag, "waited 40 min",
                "up three flights of stairs", private residence). Cite the trigger in `reason`.
              - Do not suggest charges already marked applied. When unsure, omit it.
-             - You MUST call the tool `{EmitSuggestionsTool}`. Return an empty list if nothing clearly applies.
+             - Return an empty list if nothing clearly applies.
              """;
 
         var sb = new StringBuilder();
@@ -203,7 +234,8 @@ public sealed class AiInsightsService(
         }
 
         var (json, usage) =
-            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitSuggestionsTool, EmitSuggestionsSchema, ct);
+            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitSuggestionsTool, EmitSuggestionsDescription,
+                EmitSuggestionsSchema, ct);
 
         var suggestions = new List<AccessorialSuggestion>();
         if (json == null)
@@ -258,7 +290,7 @@ public sealed class AiInsightsService(
              Consider: whether the requested change is reasonable for the field, the size of any rate change,
              whether the stated reason justifies it, and the request's age. Be conservative on commercial (rate)
              changes — recommend clarify if the reason is thin or the rate move is large and unexplained.
-             Do not invent facts. You MUST call the tool `{EmitTriageTool}`.
+             Do not invent facts.
              """;
 
         var sb = new StringBuilder();
@@ -285,7 +317,8 @@ public sealed class AiInsightsService(
         }
 
         var (json, usage) =
-            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitTriageTool, EmitTriageSchema, ct);
+            await SendToolRequestAsync(systemPrompt, sb.ToString(), EmitTriageTool, EmitTriageDescription,
+                EmitTriageSchema, ct);
         if (json == null)
         {
             return new ChangeRequestTriageResponse
@@ -363,20 +396,19 @@ public sealed class AiInsightsService(
     // ---- Helpers ----------------------------------------------------------
 
     private async Task<(string? Json, AiUsageInfo Usage)> SendToolRequestAsync(
-        string systemPrompt, string userMessage, string toolName, string schema, CancellationToken ct)
+        string systemPrompt, string userMessage, string toolName, string toolDescription, string schema,
+        CancellationToken ct)
     {
         var tools = new List<AiToolDefinition>
         {
-            new()
-            {
-                Name = toolName, Description = $"Emit the structured result for {toolName}.", InputSchemaJson = schema
-            }
+            new() { Name = toolName, Description = toolDescription, InputSchemaJson = schema }
         };
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Judgment,
             systemPrompt,
             [new AiMessage { Role = "user", Content = userMessage }],
-            settings.Value.MaxTokensPerSummary,
+            settings.Value.Judgment.MaxTokens,
             tools,
             forceToolName: toolName,
             enableCaching: true,
@@ -384,6 +416,21 @@ public sealed class AiInsightsService(
             ct: ct);
 
         var usage = AiUsageInfo.From(response);
+
+        if (response.WasTruncated)
+        {
+            Log.Warning("AI {ToolName} hit the {MaxTokens}-token ceiling before finishing",
+                toolName, settings.Value.Judgment.MaxTokens);
+            return (null, usage);
+        }
+
+        if (response.WasRefused)
+        {
+            Log.Warning("AI {ToolName} declined by the model ({Category})",
+                toolName, response.RefusalCategory ?? "unspecified");
+            return (null, usage);
+        }
+
         var toolCall = response.ToolCalls.FirstOrDefault(t => t.ToolName == toolName);
         return (toolCall?.ArgumentsJson, usage);
     }
