@@ -19,7 +19,7 @@ public class AiDraftingServiceTests
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
     {
-        MaxTokensPerDraft = 512
+        Drafting = new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 512 }
     });
 
     private AiDraftingService CreateService() => new(
@@ -31,6 +31,7 @@ public class AiDraftingServiceTests
 
     private void StubTextResponse(string text, int inputTokens = 50, int outputTokens = 10) =>
         _aiClientMock.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
                 Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
@@ -52,6 +53,7 @@ public class AiDraftingServiceTests
         });
 
         _aiClientMock.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
                 Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
@@ -80,16 +82,20 @@ public class AiDraftingServiceTests
     }
 
     [Fact]
-    public async Task DraftCourierMessageAsync_CallsClientWithoutTools()
+    public async Task DraftCourierMessageAsync_CallsClientWithoutToolsOrPromptCaching()
     {
         StubTextResponse("ok");
         var service = CreateService();
 
         await service.DraftCourierMessageAsync(new DraftMessageRequest { Seed = "hi" }, TestContext.Current.CancellationToken);
 
+        // A draft runs on the cheap tier, carries no tool, and does not ask for prompt
+        // caching: this system prompt is a few hundred tokens, well under the ~1024-token
+        // minimum cacheable prefix, so a breakpoint here would be a silent no-op.
         await _aiClientMock.Received(1).SendMessageAsync(
+            AiTaskClass.Drafting,
             Arg.Any<string>(), Arg.Any<List<AiMessage>>(), 512,
-            null, null, true, false, Arg.Any<CancellationToken>());
+            null, null, false, false, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -97,6 +103,7 @@ public class AiDraftingServiceTests
     {
         string? capturedUserMessage = null;
         _aiClientMock.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
                 Arg.Any<string>(),
                 Arg.Do<List<AiMessage>>(m => capturedUserMessage = m[0].Content),
                 Arg.Any<int>(), Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
@@ -123,6 +130,7 @@ public class AiDraftingServiceTests
         _tenantInfoMock.IsUsTenant().Returns(true);
         string? capturedSystem = null;
         _aiClientMock.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
                 Arg.Do<string>(s => capturedSystem = s),
                 Arg.Any<List<AiMessage>>(), Arg.Any<int>(), Arg.Any<List<AiToolDefinition>>(),
                 Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
@@ -142,6 +150,7 @@ public class AiDraftingServiceTests
     {
         string? capturedSystem = null;
         _aiClientMock.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
                 Arg.Do<string>(s => capturedSystem = s),
                 Arg.Any<List<AiMessage>>(), Arg.Any<int>(), Arg.Any<List<AiToolDefinition>>(),
                 Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
@@ -192,6 +201,7 @@ public class AiDraftingServiceTests
 
         Assert.Equal("Job not found.", result.Body);
         await _aiClientMock.DidNotReceiveWithAnyArgs().SendMessageAsync(
+            Arg.Any<AiTaskClass>(),
             null!, null!, 0, null, null, false, false, CancellationToken.None);
     }
 

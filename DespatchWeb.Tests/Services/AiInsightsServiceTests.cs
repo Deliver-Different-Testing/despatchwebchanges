@@ -21,7 +21,10 @@ public class AiInsightsServiceTests
     private readonly IJobChangeRequestService _changeRequestService = Substitute.For<IJobChangeRequestService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
 
-    private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings { MaxTokensPerSummary = 1024 });
+    private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
+    {
+        Judgment = new AiModelProfile { Model = "claude-sonnet-5", Effort = "low", MaxTokens = 1024 }
+    });
     private static readonly string[] StringArray = ["3% below rate card"];
 
     private AiInsightsService CreateService() => new(
@@ -39,6 +42,7 @@ public class AiInsightsServiceTests
         });
 
         _aiClient.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(response);
@@ -56,7 +60,8 @@ public class AiInsightsServiceTests
 
         Assert.Empty(result.Blockers);
         Assert.Equal(SummarySeverity.Ok, result.Severity);
-        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(null!, null!, 0, null, null, false, false, CancellationToken.None);
+        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(
+            default, null!, null!, 0, null, null, false, false, CancellationToken.None);
     }
 
     [Fact]
@@ -181,6 +186,7 @@ public class AiInsightsServiceTests
         var result = await service.TriageChangeRequestAsync(42, 1, TestContext.Current.CancellationToken);
 
         Assert.Equal("clarify", result.RecommendedAction);
-        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(null!, null!, 0, null, null, false, false, CancellationToken.None);
+        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(
+            default, null!, null!, 0, null, null, false, false, CancellationToken.None);
     }
 }

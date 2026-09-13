@@ -83,7 +83,6 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                                                                   isUsCustomer,
                                                                   timeZone,
                                                                   deepLinkJobId,
-                                                                  onLayoutBridgeReady,
                                                               }) => {
     /*
      * V2 keys, with V1's as the import source -- the same arrangement Dispatch

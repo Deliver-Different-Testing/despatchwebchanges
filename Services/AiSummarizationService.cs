@@ -8,6 +8,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace DespatchWeb.Services;
 
@@ -41,50 +42,52 @@ public sealed class AiSummarizationService(
       "properties": {
         "verdict": {
           "type": "string",
-          "description": "One-sentence headline the reader sees first. ≤120 chars. Lead with the most urgent fact and an optional severity emoji (🚨 ⚠️ ✅)."
+          "maxLength": 120,
+          "description": "Single-sentence headline rendered first and largest on the card."
         },
         "severity": {
           "type": "string",
           "enum": ["Ok", "Info", "Caution", "Urgent", "Critical"],
-          "description": "Overall severity. MUST be ≥ the highest severity tag in the SIGNAL lines."
+          "description": "Overall severity, which colours the whole card. Ok=healthy, Info=informational, Caution=worth knowing, Urgent=acting within the hour, Critical=immediate."
         },
         "keyFacts": {
           "type": "array",
           "items": { "type": "string", "maxLength": 25 },
           "maxItems": 6,
-          "description": "At-a-glance chips. Each chip is a single short value. Omit chips for missing data."
+          "description": "At-a-glance chips rendered in a fixed-width row; one short value each, no label prefix."
         },
         "attention": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "headline": { "type": "string", "description": "Problem stated with concrete numbers/times/names." },
-              "action":   { "type": "string", "description": "Specific next action. MUST start with an imperative verb (Call, Reassign, Update, Cancel, Escalate, etc.)." },
+              "headline": { "type": "string", "description": "The problem." },
+              "action":   { "type": "string", "description": "The next step, phrased as an instruction." },
               "severity": { "type": "string", "enum": ["Ok", "Info", "Caution", "Urgent", "Critical"] }
             },
             "required": ["headline", "action", "severity"]
           },
-          "description": "Items needing dispatcher action. Most urgent first. Empty array if nothing needs attention."
+          "description": "Items needing dispatcher action, most urgent first. Empty array if nothing needs attention."
         },
         "timeline": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "label":  { "type": "string", "description": "Milestone name (e.g. 'Booked', 'Dispatched', 'Picked up', 'Delivery')." },
-              "detail": { "type": "string", "description": "Computed delta, NOT an absolute timestamp (e.g. '4h ago', 'on time', 'overdue 2h')." },
-              "status": { "type": "string", "enum": ["Ok", "Pending", "Warning", "Late"] }
+              "label":  { "type": "string", "description": "Milestone name." },
+              "detail": { "type": "string", "description": "Elapsed or remaining time relative to now (e.g. '4h ago', 'on time', 'overdue 2h'), never an absolute timestamp." },
+              "status": { "type": "string", "enum": ["Ok", "Pending", "Warning", "Late"], "description": "Ok=on plan, Pending=upcoming, Warning=at risk, Late=missed." }
             },
             "required": ["label", "detail", "status"]
           },
-          "description": "Chronological milestones with computed deltas. Empty array if not applicable."
+          "maxItems": 4,
+          "description": "Chronological milestones, oldest first. Empty array if not applicable."
         },
         "highlights": {
           "type": "array",
           "items": { "type": "string" },
           "maxItems": 4,
-          "description": "Optional notable observations. Skip if nothing useful."
+          "description": "Notable observations that did not warrant an attention item. Empty array if nothing is notable."
         }
       },
       "required": ["verdict", "severity", "keyFacts", "attention", "timeline", "highlights"]
@@ -97,120 +100,154 @@ public sealed class AiSummarizationService(
 
     private string CurrencyExample => tenantInfo.IsUsTenant() ? "$145" : "$145 NZD";
 
+    /// <summary>
+    /// Rules every structured briefing needs. Each briefing is its own independent
+    /// request, so a prompt that only says "rules: same as the job briefing" is
+    /// referring to text the model never sees — this block has to be concatenated in.
+    /// </summary>
+    private const string SharedBriefingRules =
+        """
+        Shared rules:
+        - The SIGNAL: lines in the user message are computed by the application and are the
+          source of truth for every count, deadline and elapsed time. Trust them over your
+          own reading of the raw data beneath them.
+        - Never state a fact the data does not contain, and never soften one it does.
+        - Omit anything whose data is missing rather than writing "Unknown" or "-".
+        - Phone numbers and emails arrive already redacted as [PHONE] and [EMAIL]. Leave
+          the placeholders exactly as they are.
+        - Every action is an imperative verb plus who or what it applies to, concrete
+          enough for the dispatcher to carry out without reopening the job.
+        """;
+
     private string SummarizationSystemPrompt =>
         $"""
          You are a logistics data summarizer for {RegionContext}.
-         Provide concise, actionable summaries. Write in clear, professional language suitable for busy dispatchers.
+         Your reader is a dispatcher skimming this between phone calls, so answer only
+         what the notes or events actually say and stop there.
 
-         Format rules:
-         - Use **bold** to highlight key information (job numbers, statuses, names)
-         - Use bullet points for multiple items
-         - Focus on: current status, key issues, timeline of important events, and pending actions
-         - Keep to 2-4 sentences unless bullet points are needed
+         - Use **bold** for job numbers, statuses and names.
+         - Use bullet points when there are genuinely several separate items.
+         - Cover current status, open issues, the order important things happened in,
+           and anything still outstanding.
          """;
 
     private string JobBriefingSystemPrompt =>
         $"""
          You are a logistics job briefing assistant for {RegionContext}.
-         Your audience is a busy dispatcher who has FIVE SECONDS to decide what to do next on this job.
-         You MUST call the tool `{EmitSummaryToolName}` to return your output. Do not write prose outside the tool call.
+         Your audience is a busy dispatcher who has FIVE SECONDS to decide what to do
+         next on this job.
 
-         How to fill each field of `{EmitSummaryToolName}`:
+         How to choose the content of each field:
 
-         VERDICT — One sentence the reader sees first. Lead with the most urgent fact and a severity emoji (🚨 ⚠️ ✅).
-           Examples: "🚨 Overdue for delivery by 2h — courier assigned, no recent update", "✅ On track — picked up 10m ago", "⚠️ No courier assigned and pickup due in 20m".
+         VERDICT — Lead with the most urgent fact and a severity emoji (🚨 ⚠️ ✅).
+           Examples: "🚨 Overdue for delivery by 2h — courier assigned, no recent update",
+           "✅ On track — picked up 10m ago", "⚠️ No courier assigned and pickup due in 20m".
 
-         SEVERITY — Map to the highest SIGNAL severity in the user message; never lower it.
+         SEVERITY — Match the highest SIGNAL severity in the user message; never lower it.
            Critical = deadline missed >1h or money/safety at risk.
            Urgent   = deadline missed <1h or will be missed within the hour.
            Caution  = problem worth knowing about, not yet urgent.
            Info     = informational only.
            Ok       = healthy / complete.
 
-         KEY FACTS — ≤6 chips, each ≤25 chars. Recommended order: Client • Speed • From→To • Charge • Courier • Ref.
-           Use "→" between origin and destination. Use the local currency format (e.g. {CurrencyExample}).
-           Omit a chip when its data is missing — do NOT write "Unknown" or "-".
+         KEY FACTS — Pick the chips that matter most, in this order where the data exists:
+           Client • Speed • From→To • Charge • Courier • Ref.
+           Use "→" between origin and destination, and the local currency format
+           (e.g. {CurrencyExample}).
 
-         ATTENTION — Things the dispatcher must DO. Each item:
-           - headline = the problem, with concrete numbers/times/names
-           - action = imperative verb + WHO/WHAT. Banned vague phrasing: "review", "look into", "investigate".
-           - severity = matches the underlying signal
-           Order most urgent first. Empty list when nothing needs action.
+         ATTENTION — Things the dispatcher must DO, most urgent first. Give each item a
+           headline carrying the concrete number, time or name, and an action they can
+           execute as written. Leave empty when nothing needs doing.
 
-         TIMELINE — ≤4 milestones, oldest first. Each:
-           - label = "Booked" / "Dispatched" / "Picked up" / "Delivery" (use the actual milestone name from data)
-           - detail = COMPUTED DELTA (e.g. "4h ago", "30m later", "on time", "overdue 2h") — never an absolute timestamp
-           - status: Ok = on plan, Pending = upcoming, Warning = at risk, Late = missed
-           Skip milestones that haven't happened and aren't due soon.
+         TIMELINE — Milestones oldest first, labelled with the actual milestone name from
+           the data ("Booked", "Dispatched", "Picked up", "Delivery"). Skip milestones that
+           have not happened and are not due soon.
 
-         HIGHLIGHTS — Optional. ≤4 short bullets summarising the most useful observations from notes/events
-           (e.g. "Customer requested call before delivery", "Tail-lift unavailable at PU"). Skip if nothing notable.
+         HIGHLIGHTS — The most useful observations from the notes and events
+           (e.g. "Customer requested call before delivery", "Tail-lift unavailable at PU").
+           Skip when nothing is notable.
 
-         Rules:
-         - SIGNAL: lines in the user message are the source of truth for numbers. Trust them.
-         - Do not invent facts. If a field isn't present in the data, do not mention it.
-         - Phone numbers and emails are already redacted as [PHONE] and [EMAIL] — keep them that way.
-         - If the job is healthy or completed cleanly: verdict ≈ "✅ Delivered — no action needed", severity = Ok, attention = [].
+         If the job is healthy or completed cleanly: verdict ≈ "✅ Delivered — no action
+         needed", severity = Ok, attention = [].
+
+         {SharedBriefingRules}
          """;
 
     private string TaskBriefingSystemPrompt =>
         $"""
          You are a dispatch shift-briefing assistant for {RegionContext}.
-         Your audience: a dispatcher arriving for their shift. They want to know in FIVE SECONDS how their queue looks.
-         You MUST call the tool `{EmitSummaryToolName}`.
+         Your audience: a dispatcher arriving for their shift. They want to know in FIVE
+         SECONDS how their queue looks.
 
          VERDICT — One sentence describing the SHIFT POSTURE.
-           Examples: "🚨 Heavy load: 12 open tasks, 5 overdue", "✅ Light morning: 3 tasks, all due later".
+           Examples: "🚨 Heavy load: 12 open tasks, 5 overdue", "✅ Light morning: 3 tasks,
+           all due later".
 
-         SEVERITY — Map from SIGNAL severities. Critical/Urgent only if there are overdue items.
+         SEVERITY — Match the highest SIGNAL severity. Critical or Urgent only when
+           something is already overdue.
 
-         KEY FACTS — ≤4 chips: e.g. "12 open", "5 overdue", "4 due today", "3 upcoming".
+         KEY FACTS — The queue counts, e.g. "12 open", "5 overdue", "4 due today".
 
-         ATTENTION — TOP 3 PRIORITIES the dispatcher should action first. Each:
-           - headline = specific Job # and the problem ("Job J12345 — pickup overdue 45m")
-           - action = imperative ("Reassign", "Call courier", "Escalate", "Cancel")
-           - severity = matches signal
-           Limit to 3 items. Order by urgency.
+         ATTENTION — The three things to action first, ordered by urgency. Each headline
+           names the specific job ("Job J12345 — pickup overdue 45m").
 
-         TIMELINE — return [] (empty array).
+         TIMELINE — Return an empty array; a queue has no single chronology.
 
-         HIGHLIGHTS — ≤3 patterns worth noting (e.g. "Most overdue are 3rd-party deliveries", "Smith has 4 open tasks").
+         HIGHLIGHTS — Patterns across the queue (e.g. "Most overdue are 3rd-party
+           deliveries", "Smith has 4 open tasks").
 
-         Rules: same as the job briefing — trust SIGNAL lines, no fabrication, no banned phrasing.
+         {SharedBriefingRules}
          """;
 
     private string OperationsSystemPrompt =>
         $"""
          You are a dispatch operations health analyst for {RegionContext}.
-         Audience: the ops lead. They want a one-line read on whether the fleet is healthy right now.
-         You MUST call `{EmitSummaryToolName}`.
+         Audience: the ops lead. They want a one-line read on whether the fleet is healthy
+         right now.
 
-         VERDICT — One sentence health summary ("✅ Operations running normally with N active jobs", "⚠️ Inactive count unusually high").
-         SEVERITY — Critical only if something demands immediate intervention.
-         KEY FACTS — ≤4 chips: "X active", "Y inactive", "Z completed", "Total N".
-         ATTENTION — anomalies a human should decide about. Concrete numbers + actions ("Investigate why inactive count is 35% of active"). Empty if normal.
-         TIMELINE — return [].
-         HIGHLIGHTS — comparative observations vs the typical pattern, time-of-day context.
+         VERDICT — One sentence on overall health ("✅ Operations running normally with N
+           active jobs", "⚠️ Inactive count unusually high").
 
-         Rules: same.
+         SEVERITY — Critical only when something demands immediate intervention.
+
+         KEY FACTS — The headline counts: "X active", "Y inactive", "Z completed",
+           "Total N".
+
+         ATTENTION — Anomalies a human should decide about, each with the number that
+           makes it an anomaly and the action to take ("Audit the 35% of jobs sitting
+           inactive for stuck dispatches"). Empty when the numbers look normal.
+
+         TIMELINE — Return an empty array.
+
+         HIGHLIGHTS — How this compares with the typical pattern, and time-of-day context.
+
+         {SharedBriefingRules}
          """;
 
     private string ComplianceSystemPrompt =>
         $"""
          You are a fleet compliance risk briefing assistant for {RegionContext}.
          Audience: a fleet manager. They want to know which drivers to chase TODAY.
-         You MUST call `{EmitSummaryToolName}`.
 
-         VERDICT — Risk level + headline number ("🚨 12 drivers with expired compliance items", "✅ Fleet compliant").
-         SEVERITY — Critical if any expired; Urgent if ≥1 expires within 7 days; Caution if ≥1 within 30 days; Ok otherwise.
-         KEY FACTS — chips: "X expired", "Y expiring ≤7d", "Z expiring ≤30d".
-         ATTENTION — one bullet per at-risk item, most critical first (top 8).
-           Each headline: driver name + item type + how long expired/until expiry.
-           Each action: "Suspend until renewed" / "Email reminder" / "Block dispatch" etc.
-         TIMELINE — return [].
-         HIGHLIGHTS — patterns ("3 drivers have multiple expired items", "All expiries are in the same compliance category").
+         VERDICT — Risk level plus the headline number ("🚨 12 drivers with expired
+           compliance items", "✅ Fleet compliant").
 
-         Rules: same.
+         SEVERITY — Critical if anything is expired; Urgent if anything expires within
+           7 days; Caution if anything expires within 30 days; Ok otherwise.
+
+         KEY FACTS — "X expired", "Y expiring ≤7d", "Z expiring ≤30d".
+
+         ATTENTION — One item per at-risk record, most critical first, up to eight. Each
+           headline gives the driver name, the item type, and how long it has been expired
+           or how long until it expires. Each action is the control to apply
+           ("Suspend until renewed", "Email reminder", "Block dispatch").
+
+         TIMELINE — Return an empty array.
+
+         HIGHLIGHTS — Patterns ("3 drivers have multiple expired items", "All expiries are
+           in the same compliance category").
+
+         {SharedBriefingRules}
          """;
 
     // ---------------------------------------------------------------------
@@ -236,10 +273,10 @@ public sealed class AiSummarizationService(
         AppendNotes(sb, notes);
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Drafting,
             SummarizationSystemPrompt,
             [new AiMessage { Role = "user", Content = sb.ToString() }],
-            settings.Value.MaxTokensPerSummary,
-            enableCaching: true,
+            settings.Value.Drafting.MaxTokens,
             cacheResponse: true,
             ct: ct);
 
@@ -270,10 +307,10 @@ public sealed class AiSummarizationService(
         AppendEvents(sb, events);
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Drafting,
             SummarizationSystemPrompt,
             [new AiMessage { Role = "user", Content = sb.ToString() }],
-            settings.Value.MaxTokensPerSummary,
-            enableCaching: true,
+            settings.Value.Drafting.MaxTokens,
             cacheResponse: true,
             ct: ct);
 
@@ -502,15 +539,23 @@ public sealed class AiSummarizationService(
             new()
             {
                 Name = EmitSummaryToolName,
-                Description = "Emit the structured summary that will be rendered as the dispatcher's briefing card.",
+                Description =
+                    "Returns the dispatcher briefing card for the data in this request. The card renders as "
+                    + "a coloured headline (verdict + severity), a row of short fact chips, a list of items "
+                    + "needing action, a milestone timeline, and closing observations. This is the only way to "
+                    + "return a result; there is no prose channel. Populate every field, using an empty array "
+                    + "for any list that does not apply to this briefing type rather than omitting it. "
+                    + "Severity drives the card's colour and the dispatcher's triage order, so it must not sit "
+                    + "below the highest severity present in the request's SIGNAL lines.",
                 InputSchemaJson = EmitSummarySchema
             }
         };
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Judgment,
             systemPrompt,
             [new AiMessage { Role = "user", Content = userMessage }],
-            settings.Value.MaxTokensPerSummary,
+            settings.Value.Judgment.MaxTokens,
             tools,
             forceToolName: EmitSummaryToolName,
             enableCaching: true,
@@ -518,6 +563,19 @@ public sealed class AiSummarizationService(
             ct: ct);
 
         var usage = AiUsageInfo.From(response);
+
+        if (response.WasTruncated)
+        {
+            Log.Warning("AI summary hit the {MaxTokens}-token ceiling before finishing the tool call",
+                settings.Value.Judgment.MaxTokens);
+            return EmptyResponse("Summary was cut short — try again.", SummarySeverity.Info) with { Usage = usage };
+        }
+
+        if (response.WasRefused)
+        {
+            Log.Warning("AI summary declined by the model ({Category})", response.RefusalCategory ?? "unspecified");
+            return EmptyResponse("Unable to generate summary.", SummarySeverity.Info) with { Usage = usage };
+        }
 
         var toolCall = response.ToolCalls.FirstOrDefault(t => t.ToolName == EmitSummaryToolName);
         if (toolCall == null || string.IsNullOrWhiteSpace(toolCall.ArgumentsJson))

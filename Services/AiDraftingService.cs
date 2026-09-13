@@ -20,6 +20,14 @@ public sealed class AiDraftingService(
 {
     private const string EmitEmailDraftToolName = "emit_email_draft";
 
+    private const string EmitEmailDraftDescription =
+        "Returns a drafted email for the dispatcher to review and edit in the send dialog. Nothing is sent "
+        + "automatically, so the draft should read as finished work rather than a suggestion. `subject` is a "
+        + "single line with no greeting and no quotation marks. `body` is plain text with line breaks only - "
+        + "no markdown, no HTML - and ends with a sign-off, ready to send unedited. Carry any [PHONE] and "
+        + "[EMAIL] placeholders through from the source text exactly as they appear; they are redactions, not "
+        + "missing data to fill in.";
+
     private static readonly JsonSerializerOptions ToolJsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -81,10 +89,10 @@ public sealed class AiDraftingService(
         AppendRecentMessages(sb, request.RecentMessages);
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Drafting,
             systemPrompt,
             [new AiMessage { Role = "user", Content = sb.ToString() }],
-            settings.Value.MaxTokensPerDraft,
-            enableCaching: true,
+            settings.Value.Drafting.MaxTokens,
             ct: ct);
 
         return new AiDraftResponse
@@ -103,7 +111,6 @@ public sealed class AiDraftingService(
         var systemPrompt =
             $"""
              You are a dispatcher at {RegionContext} composing an email to one or more couriers (drivers).
-             You MUST call the tool `{EmitEmailDraftToolName}` with a subject and body.
 
              Rewrite the dispatcher's rough draft into a polished, professional email.
              - Preserve the intent and any specific facts exactly. Do not invent details.
@@ -147,7 +154,6 @@ public sealed class AiDraftingService(
         var systemPrompt =
             $"""
              You are writing a Proof of Delivery (POD) notification email from {RegionContext} to a customer.
-             You MUST call the tool `{EmitEmailDraftToolName}` with a subject and body.
 
              Write a brief, professional email confirming the delivery, using only the facts below.
              - Reference the job/booking number and any client reference.
@@ -235,10 +241,10 @@ public sealed class AiDraftingService(
         await AppendJobContextAsync(sb, request.JobId);
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Drafting,
             systemPrompt,
             [new AiMessage { Role = "user", Content = sb.ToString() }],
-            settings.Value.MaxTokensPerDraft,
-            enableCaching: true,
+            settings.Value.Drafting.MaxTokens,
             ct: ct);
 
         return new AiDraftResponse
@@ -259,18 +265,18 @@ public sealed class AiDraftingService(
             new()
             {
                 Name = EmitEmailDraftToolName,
-                Description = "Emit the drafted email subject and body.",
+                Description = EmitEmailDraftDescription,
                 InputSchemaJson = EmitEmailDraftSchema
             }
         };
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Drafting,
             systemPrompt,
             [new AiMessage { Role = "user", Content = userMessage }],
-            settings.Value.MaxTokensPerDraft,
+            settings.Value.Drafting.MaxTokens,
             tools,
             forceToolName: EmitEmailDraftToolName,
-            enableCaching: true,
             ct: ct);
 
         var usage = ToUsage(response);

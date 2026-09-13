@@ -1,6 +1,6 @@
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Anthropic;
+using Anthropic.Core;
 using Anthropic.Models.Messages;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -15,6 +15,7 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
     private readonly AnthropicSettings _settings = settings.Value;
 
     public async Task<AiClientResponse> SendMessageAsync(
+        AiTaskClass taskClass,
         string systemPrompt,
         List<AiMessage> messages,
         int maxTokens,
@@ -24,10 +25,12 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
         bool cacheResponse = false,
         CancellationToken ct = default)
     {
+        var profile = _settings.For(taskClass);
+
         string cacheKey = null;
         if (cacheResponse && responseCache.Enabled)
         {
-            cacheKey = responseCache.BuildKey(_settings.Model, systemPrompt, messages, maxTokens, forceToolName, tools);
+            cacheKey = responseCache.BuildKey(profile.Model, systemPrompt, messages, maxTokens, forceToolName, tools);
             var cached = await responseCache.GetAsync(cacheKey, ct);
             if (cached != null)
             {
@@ -41,16 +44,21 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
             }
         }
 
-        var messageParams = BuildMessageParameters(systemPrompt, messages, maxTokens, tools, forceToolName, enableCaching);
+        var messageParams = BuildMessageParameters(
+            profile, systemPrompt, messages, maxTokens, tools, forceToolName, enableCaching);
 
         var response = await _client.Messages.Create(messageParams, ct);
+
+        var stopReason = ToWireValue(response.StopReason);
 
         var result = new AiClientResponse
         {
             InputTokens = (int)response.Usage.InputTokens,
             OutputTokens = (int)response.Usage.OutputTokens,
             CacheReadInputTokens = (int)(response.Usage.CacheReadInputTokens ?? 0),
-            CacheCreationInputTokens = (int)(response.Usage.CacheCreationInputTokens ?? 0)
+            CacheCreationInputTokens = (int)(response.Usage.CacheCreationInputTokens ?? 0),
+            StopReason = stopReason,
+            RefusalCategory = stopReason == "refusal" ? Unquote(response.StopDetails?.Category?.ToString()) : null
         };
 
         foreach (var block in response.Content)
@@ -70,7 +78,9 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
             }
         }
 
-        if (cacheKey != null)
+        // A truncated or refused answer is not a result worth replaying to the next
+        // caller for the life of the cache window.
+        if (cacheKey != null && !result.WasTruncated && !result.WasRefused)
         {
             await responseCache.SetAsync(cacheKey, result, ct);
         }
@@ -78,28 +88,8 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
         return result;
     }
 
-    public async IAsyncEnumerable<string> StreamMessageAsync(
-        string systemPrompt,
-        List<AiMessage> messages,
-        [EnumeratorCancellation] CancellationToken ct = default)
-    {
-        var messageParams = BuildMessageParameters(systemPrompt, messages, _settings.MaxTokensPerRequest);
-
-        await foreach (var rawEvent in _client.Messages.CreateStreaming(messageParams, ct))
-        {
-            if (!rawEvent.TryPickContentBlockDelta(out var delta))
-            {
-                continue;
-            }
-
-            if (delta.Delta.TryPickText(out var textDelta))
-            {
-                yield return textDelta.Text;
-            }
-        }
-    }
-
-    private MessageCreateParams BuildMessageParameters(
+    private static MessageCreateParams BuildMessageParameters(
+        AiModelProfile profile,
         string systemPrompt,
         List<AiMessage> messages,
         int maxTokens,
@@ -117,6 +107,8 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
         // tools -> system -> messages, so a breakpoint on the system block
         // caches the whole stable prefix (tool schemas + system prompt) for
         // reuse across calls, rather than the volatile trailing user message.
+        // Below the ~1024-token minimum cacheable prefix this is a silent no-op,
+        // so callers only set enableCaching where the prefix is large enough to pay.
         MessageCreateParamsSystem system = systemPrompt;
         if (enableCaching)
         {
@@ -128,10 +120,13 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
 
         return new MessageCreateParams
         {
-            Model = _settings.Model,
+            Model = profile.Model,
             MaxTokens = maxTokens,
             System = system,
             Messages = anthropicMessages,
+            OutputConfig = string.IsNullOrEmpty(profile.Effort)
+                ? null
+                : new OutputConfig { Effort = profile.Effort },
             Tools = tools is { Count: > 0 }
                 ? tools.Select(t => (ToolUnion)new Tool
                 {
@@ -149,6 +144,16 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
                 : new ToolChoiceTool { Name = forceToolName }
         };
     }
+
+    /// <summary>
+    /// ApiEnum.ToString() JSON-serialises, so it renders the wire value already wrapped
+    /// in quotes ("\"max_tokens\"") whichever way the value was constructed. Comparing
+    /// it to a bare wire string silently never matches, so strip the quotes here.
+    /// </summary>
+    internal static string ToWireValue(ApiEnum<string, StopReason>? stopReason) =>
+        Unquote(stopReason?.ToString());
+
+    private static string Unquote(string value) => value?.Trim('"');
 
     internal static Dictionary<string, JsonElement> ParseToolProperties(string inputSchemaJson)
     {

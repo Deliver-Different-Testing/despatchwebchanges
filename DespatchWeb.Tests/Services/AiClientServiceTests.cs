@@ -1,5 +1,6 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -13,8 +14,7 @@ public class AiClientServiceTests
 {
     private readonly IAiResponseCache _responseCache = Substitute.For<IAiResponseCache>();
 
-    private readonly IOptions<AnthropicSettings> _settings =
-        Options.Create(new AnthropicSettings { Model = "claude-haiku-4-5" });
+    private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings());
 
     public AiClientServiceTests()
     {
@@ -41,6 +41,7 @@ public class AiClientServiceTests
         var service = new AiClientService(_settings, _responseCache);
 
         var result = await service.SendMessageAsync(
+            AiTaskClass.Drafting,
             "system",
             [new AiMessage { Role = "user", Content = "hi" }],
             1024,
