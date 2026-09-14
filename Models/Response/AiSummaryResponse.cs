@@ -17,3 +17,9 @@ public readonly record struct AiUsageInfo
         CacheCreationInputTokens = response.CacheCreationInputTokens
     };
 }
+
+public sealed record AiSummaryResponse
+{
+    public string Summary { get; init; }
+    public AiUsageInfo Usage { get; init; }
+}

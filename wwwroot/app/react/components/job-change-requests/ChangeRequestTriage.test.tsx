@@ -4,20 +4,22 @@ import { setupUser } from '../../__testUtils__/setupUser';
 import {renderWithMantine as render} from '../../__testUtils__';
 import {ChangeRequestTriage} from './ChangeRequestTriage';
 import {triageChangeRequest} from '../../services/aiAssistantApi';
-import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../__testUtils__/aiPreferences';
+import {isAiEnabled} from '../../../functions/aiSettings';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
 jest.mock('../../services/aiAssistantApi', () => ({triageChangeRequest: jest.fn()}));
+jest.mock('../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));
 
 const mockTriage = triageChangeRequest as jest.Mock;
+const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 describe('ChangeRequestTriage', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('renders no trigger when AI is disabled', () => {
-        disableAutoMate();
+        mockIsAiEnabled.mockReturnValue(false);
 
         render(<ChangeRequestTriage requestId={42} jobId={7} />);
 
@@ -25,7 +27,7 @@ describe('ChangeRequestTriage', () => {
     });
 
     it('shows the advisory recommendation after clicking', async () => {
-        enableAutoMate();
+        mockIsAiEnabled.mockReturnValue(true);
         mockTriage.mockResolvedValueOnce({
             recommendedAction: 'approve',
             confidence: 0.8,

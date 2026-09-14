@@ -105,8 +105,6 @@ public partial class TucStaff
 
     public virtual ICollection<StaffDispatchLayout> StaffDispatchLayouts { get; set; } = new List<StaffDispatchLayout>();
 
-    public virtual ICollection<StaffPreference> StaffPreferences { get; set; } = new List<StaffPreference>();
-
     public virtual ICollection<TblBulkJobNote> TblBulkJobNoteCreatedByNavigations { get; set; } = new List<TblBulkJobNote>();
 
     public virtual ICollection<TblBulkJobNote> TblBulkJobNoteUpdatedByNavigations { get; set; } = new List<TblBulkJobNote>();

@@ -2,8 +2,7 @@ import React from 'react';
 import {Button} from '@mantine/core';
 import {Sparkles} from 'lucide-react';
 import {Icon} from '../../icon/Icon';
-import {useAiFeature, useAutoMateEnabled} from '../../../../hooks/useAiFeature';
-import {AiFeatureCategory} from '../../../../services/aiPreferenceStore';
+import {isAiEnabled} from '../../../../../functions/aiSettings';
 
 interface AiDraftButtonProps {
     onClick: () => void;
@@ -11,18 +10,12 @@ interface AiDraftButtonProps {
     disabled?: boolean;
     label?: string;
     size?: string;
-    /**
-     * Which Auto-mate category this button belongs to. Omitted means the master
-     * switch alone, which is the right answer only for a button whose owner has
-     * already gated itself on a category.
-     */
-    category?: AiFeatureCategory;
 }
 
 /**
- * "Draft with Auto-Mate" button (Mantine). Renders nothing when the user has this
- * category of Auto-mate switched off, so callers can drop it in unconditionally.
- * Shows a spinner while drafting.
+ * "Draft with Auto-Mate" button (Mantine). Renders nothing when the user hasn't
+ * opted into AI, so callers can drop it in unconditionally. Shows a spinner
+ * while drafting.
  */
 export const AiDraftButton: React.FC<AiDraftButtonProps> = ({
     onClick,
@@ -30,12 +23,8 @@ export const AiDraftButton: React.FC<AiDraftButtonProps> = ({
     disabled = false,
     label = 'Draft',
     size = 'xs',
-    category,
 }) => {
-    const categoryEnabled = useAiFeature(category ?? 'writing');
-    const masterEnabled = useAutoMateEnabled();
-
-    if (!(category ? categoryEnabled : masterEnabled)) {
+    if (!isAiEnabled()) {
         return null;
     }
 

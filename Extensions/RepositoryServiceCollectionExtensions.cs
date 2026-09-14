@@ -1,4 +1,4 @@
-﻿using DespatchWeb.Interfaces;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using DespatchWeb.Services;
 
@@ -22,7 +22,6 @@ public static class RepositoryServiceCollectionExtensions
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IAccessorialChargeRepository, AccessorialChargeRepository>();
         services.AddScoped<IDispatchLayoutRepository, DispatchLayoutRepository>();
-        services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
 
         return services;
     }

@@ -53,6 +53,19 @@ public class AiSummarizationServiceTests
             highlights = highlights ?? []
         });
 
+    private void StubMarkdownResponse(string text, int inputTokens = 50, int outputTokens = 10) =>
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
+            {
+                TextContent = text,
+                InputTokens = inputTokens,
+                OutputTokens = outputTokens
+            });
+
     private void StubStructuredResponse(string toolJson, int inputTokens = 100, int outputTokens = 20)
     {
         var response = new AiClientResponse
@@ -74,6 +87,79 @@ public class AiSummarizationServiceTests
                 Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(response);
     }
+
+    // ----- Markdown summaries (notes / events) ------------------------------
+
+    [Fact]
+    public async Task SummarizeJobNotesAsync_NoNotes_ReturnsDefaultMessage()
+    {
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns([]);
+
+        var result = await CreateService().SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.Equal("No notes found for this job.", result.Summary);
+        Assert.Equal(0, result.Usage.InputTokens);
+    }
+
+    [Fact]
+    public async Task SummarizeJobNotesAsync_WithNotes_ReturnsSummaryFromClient()
+    {
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns([
+            new TucNoteViewModel
+            {
+                NoteId = 1, NoteText = "Driver arrived", NoteTypeName = "Status",
+                CreatedByName = "Admin", CreatedDate = DateTimeOffset.UtcNow
+            }
+        ]);
+        StubMarkdownResponse("Driver arrived and collected.", 150, 30);
+
+        var result = await CreateService().SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.Equal("Driver arrived and collected.", result.Summary);
+        Assert.Equal(150, result.Usage.InputTokens);
+    }
+
+    [Fact]
+    public async Task SummarizeJobNotesAsync_SanitizesPii()
+    {
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns([
+            new TucNoteViewModel
+            {
+                NoteId = 1, NoteText = "Contact driver@test.com for details",
+                NoteTypeName = "Note", CreatedByName = "Admin",
+                CreatedDate = DateTimeOffset.UtcNow
+            }
+        ]);
+        List<AiMessage>? captured = null;
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                captured = call.ArgAt<List<AiMessage>>(2);
+                return new AiClientResponse { TextContent = "ok", InputTokens = 1, OutputTokens = 1 };
+            });
+
+        await CreateService().SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        Assert.Contains("[EMAIL]", captured![0].Content);
+        Assert.DoesNotContain("driver@test.com", captured[0].Content);
+    }
+
+    [Fact]
+    public async Task SummarizeJobEventsAsync_NoEvents_ReturnsDefaultMessage()
+    {
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>()).Returns([]);
+
+        var result = await CreateService().SummarizeJobEventsAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.Equal("No events found for this job.", result.Summary);
+    }
+
+    // ----- Structured summaries: job ----------------------------------------
 
     [Fact]
     public async Task SummarizeJobAsync_NoJob_ReturnsJobNotFoundResponse()
@@ -118,8 +204,8 @@ public class AiSummarizationServiceTests
         Assert.Equal("✅ On track — picked up 10m ago", result.Verdict);
         Assert.Equal(SummarySeverity.Ok, result.Severity);
         Assert.Equal(3, result.KeyFacts.Count);
-        var item = Assert.Single(result.Timeline);
-        Assert.Equal("Booked", item.Label);
+        Assert.Single(result.Timeline);
+        Assert.Equal("Booked", result.Timeline[0].Label);
         Assert.Equal(TimelineStatus.Ok, result.Timeline[0].Status);
         Assert.Single(result.Highlights);
     }
@@ -401,6 +487,35 @@ public class AiSummarizationServiceTests
     }
 
     // ----- Region context ---------------------------------------------------
+
+    [Fact]
+    public async Task SummarizeJobNotesAsync_NzTenant_UsesNzRegion()
+    {
+        _tenantInfoMock.IsUsTenant().Returns(false);
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns([
+            new TucNoteViewModel
+            {
+                NoteId = 1, NoteText = "Test", NoteTypeName = "Note",
+                CreatedByName = "Admin", CreatedDate = DateTimeOffset.UtcNow
+            }
+        ]);
+
+        string? capturedSystemPrompt = null;
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(),
+                Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                capturedSystemPrompt = call.ArgAt<string>(1);
+                return new AiClientResponse { TextContent = "ok", InputTokens = 1, OutputTokens = 1 };
+            });
+
+        await CreateService().SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.Contains("New Zealand", capturedSystemPrompt);
+    }
 
     [Fact]
     public async Task SummarizeJobAsync_UsTenant_UsesUsRegionInJobBriefingPrompt()

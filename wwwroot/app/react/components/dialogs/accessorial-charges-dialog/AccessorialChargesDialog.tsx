@@ -850,12 +850,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                         {/* Auto-Mate pricing assist — hidden unless AI is enabled */}
                         <Box>
                             <Group gap="xs" wrap="nowrap" mb={pricingResult ? 'xs' : 0}>
-                                <AiDraftButton
-                                    category="pricing"
-                                    onClick={handleSuggestCharges}
-                                    isDrafting={isSuggesting}
-                                    label="Suggest charges"
-                                />
+                                <AiDraftButton onClick={handleSuggestCharges} isDrafting={isSuggesting} label="Suggest charges" />
                                 <Text size="xs" c="dimmed">
                                     Auto-Mate reviews this job&apos;s notes &amp; flags and checks the price.
                                 </Text>

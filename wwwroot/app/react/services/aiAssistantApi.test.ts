@@ -2,12 +2,13 @@
 /**
  * AI Summary API Service Tests
  *
- * Tests the AI API functions: summarizeJob, summarizeTaskDashboard,
- * summarizeOperations, summarizeCompliance (structured), the drafting
- * helpers and the insight helpers.
+ * Tests the AI summarization API functions: summarizeJobNotes (markdown),
+ * summarizeJob, summarizeTaskDashboard, summarizeOperations,
+ * summarizeCompliance (structured).
  */
 
 import {
+    summarizeJobNotes,
     summarizeJob,
     summarizeOperations,
     summarizeCompliance,
@@ -19,10 +20,6 @@ import {
     extractBlockers,
     analyzePricing,
     triageChangeRequest,
-    extractJobIntake,
-    parseSearchQuery,
-    triageInbox,
-    explainPrice,
 } from './aiAssistantApi';
 import {apiClient} from './apiClient';
 
@@ -49,6 +46,23 @@ const structuredResponse = {
 describe('aiAssistantApi', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+    });
+
+    describe('summarizeJobNotes (markdown)', () => {
+        it('calls correct endpoint with jobId', async () => {
+            mockApiClient.post.mockResolvedValueOnce({
+                summary: 'Test summary',
+                usage: {inputTokens: 100, outputTokens: 20},
+            });
+
+            await summarizeJobNotes(42);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeJobNotes',
+                null,
+                {params: {jobId: 42}}
+            );
+        });
     });
 
     describe('summarizeJob (structured)', () => {
@@ -212,38 +226,6 @@ describe('aiAssistantApi', () => {
                 '/Ai/TriageChangeRequest',
                 null,
                 {params: {requestId: 42, jobId: 7}}
-            );
-        });
-    });
-
-    describe('intake', () => {
-        it('extractJobIntake posts the pasted text', async () => {
-            mockApiClient.post.mockResolvedValueOnce({});
-            await extractJobIntake({text: 'Collect from Acme'});
-            expect(mockApiClient.post).toHaveBeenCalledWith(
-                '/Ai/ExtractJobIntake', {text: 'Collect from Acme'}, undefined,
-            );
-        });
-
-        it('parseSearchQuery posts the query', async () => {
-            mockApiClient.post.mockResolvedValueOnce({});
-            await parseSearchQuery({query: 'Smith last week'});
-            expect(mockApiClient.post).toHaveBeenCalledWith(
-                '/Ai/ParseSearchQuery', {query: 'Smith last week'}, undefined,
-            );
-        });
-
-        it('triageInbox takes no parameters — one call covers the whole inbox', async () => {
-            mockApiClient.post.mockResolvedValueOnce({});
-            await triageInbox();
-            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/TriageInbox', null, undefined);
-        });
-
-        it('explainPrice passes the job and its prebook/archived flags', async () => {
-            mockApiClient.post.mockResolvedValueOnce({});
-            await explainPrice(7, true, true);
-            expect(mockApiClient.post).toHaveBeenCalledWith(
-                '/Ai/ExplainPrice', null, {params: {jobId: 7, isPrebook: true, isArchived: true}},
             );
         });
     });

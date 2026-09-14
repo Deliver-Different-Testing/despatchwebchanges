@@ -46,6 +46,7 @@ import utc from "dayjs/plugin/utc";
 import {getMinsSelectionOptions} from "../../functions/MinsSelectionOptions";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import {setAiEnabled} from "../../functions/aiSettings";
 import CurrentWorkLists from "./enums/CurrentWorkLists";
 import {fetchClearListJobs, fetchDispatchJobs} from "../../react/services/jobSearchApi";
 import {
@@ -2266,6 +2267,10 @@ class HomeController extends BaseController {
 
             // Panel visibility now lives in the Customize Panels dialog
             // (openCustomizePanelsDialog); the gear no longer returns boxes.
+            if (result.aiEnabled !== undefined) {
+                setAiEnabled(result.aiEnabled);
+            }
+
             // Beta opt-in changed: persist and (if turned on) flip to the new
             // route immediately. Operators staying on V1 stay put.
             if (result.dispatchBetaEnabled !== undefined

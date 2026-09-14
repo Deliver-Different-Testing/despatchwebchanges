@@ -36,7 +36,6 @@ export function SearchSelect<T>({
     options: controlledOptions,
     onSearchChange,
     loading: controlledLoading,
-    seedSearch,
     getOptionKey,
     getOptionLabel,
     renderOption,
@@ -70,27 +69,12 @@ export function SearchSelect<T>({
     searchChangeRef.current = onSearchChange;
     const labelRef = useRef(getOptionLabel);
     labelRef.current = getOptionLabel;
-    const onChangeRef = useRef(onChange);
-    onChangeRef.current = onChange;
 
     useEffect(() => {
         if (value === emittedRef.current) return;
         emittedRef.current = value;
         setInputValue(value ? labelRef.current(value) : '');
     }, [value]);
-
-    // A seed is a one-shot: applied when it changes to something new, then left
-    // alone so a parent re-render never stamps over what the operator has typed.
-    const seededRef = useRef<string | undefined>(seedSearch);
-    useEffect(() => {
-        if (!seedSearch || seedSearch === seededRef.current) return;
-        seededRef.current = seedSearch;
-        setInputValue(seedSearch);
-        if (emittedRef.current !== null) {
-            emittedRef.current = null;
-            onChangeRef.current(null);
-        }
-    }, [seedSearch]);
 
     useEffect(() => {
         if (inputValue.length < minSearchLength) {

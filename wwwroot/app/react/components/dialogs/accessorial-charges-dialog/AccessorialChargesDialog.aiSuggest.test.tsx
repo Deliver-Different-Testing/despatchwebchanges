@@ -5,7 +5,7 @@ import { setupUser } from '../../../__testUtils__/setupUser';
 import {AccessorialChargesDialog} from './AccessorialChargesDialog';
 import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
 import {analyzePricing} from '../../../services/aiAssistantApi';
-import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../../__testUtils__/aiPreferences';
+import {isAiEnabled} from '../../../../functions/aiSettings';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
@@ -21,9 +21,11 @@ jest.mock('../../../services/accessorialChargesApi', () => ({
     },
 }));
 jest.mock('../../../services/aiAssistantApi', () => ({analyzePricing: jest.fn()}));
+jest.mock('../../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));
 
 const api = accessorialChargesApi as jest.Mocked<typeof accessorialChargesApi>;
 const mockAnalyze = analyzePricing as jest.Mock;
+const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 const job = {id: 123, accessorialChargeGroupId: 5, amount: 100, weight: 10, quantity: 1};
 
@@ -44,7 +46,7 @@ describe('AccessorialChargesDialog — Auto-Mate suggest', () => {
     });
 
     it('hides the Suggest button when AI is disabled', async () => {
-        disableAutoMate();
+        mockIsAiEnabled.mockReturnValue(false);
 
         renderDialog();
 
@@ -54,7 +56,7 @@ describe('AccessorialChargesDialog — Auto-Mate suggest', () => {
     });
 
     it('shows the anomaly alert and pre-selects suggested charges', async () => {
-        resetAiPreferences();
+        mockIsAiEnabled.mockReturnValue(true);
         mockAnalyze.mockResolvedValueOnce({
             anomaly: {storedCharge: 95, recomputedRate: 145, deltaPercent: -34.5, isOutlier: true},
             suggestions: [{accessorialChargeId: 5, name: 'Tail-lift', reason: 'tail-lift flag', suggestedInputValue: null}],

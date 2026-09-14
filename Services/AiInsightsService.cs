@@ -18,7 +18,6 @@ public sealed class AiInsightsService(
     IAccessorialChargeService accessorialChargeService,
     IRateJobService rateJobService,
     IJobChangeRequestService changeRequestService,
-    IMessageRepository messageRepository,
     ITenantInfoService tenantInfo,
     IOptions<AnthropicSettings> settings) : IAiInsightsService
 {
@@ -396,27 +395,20 @@ public sealed class AiInsightsService(
 
     // ---- Helpers ----------------------------------------------------------
 
-    /// <summary>
-    /// Insights default to the judgment tier because they drive money and safety. The
-    /// exception is inbox triage, which is classification firing on every inbox open —
-    /// hence the task class being a parameter rather than a constant.
-    /// </summary>
     private async Task<(string? Json, AiUsageInfo Usage)> SendToolRequestAsync(
         string systemPrompt, string userMessage, string toolName, string toolDescription, string schema,
-        CancellationToken ct, AiTaskClass taskClass = AiTaskClass.Judgment)
+        CancellationToken ct)
     {
         var tools = new List<AiToolDefinition>
         {
             new() { Name = toolName, Description = toolDescription, InputSchemaJson = schema }
         };
 
-        var profile = settings.Value.For(taskClass);
-
         var response = await aiClient.SendMessageAsync(
-            taskClass,
+            AiTaskClass.Judgment,
             systemPrompt,
             [new AiMessage { Role = "user", Content = userMessage }],
-            profile.MaxTokens,
+            settings.Value.Judgment.MaxTokens,
             tools,
             forceToolName: toolName,
             enableCaching: true,
@@ -428,7 +420,7 @@ public sealed class AiInsightsService(
         if (response.WasTruncated)
         {
             Log.Warning("AI {ToolName} hit the {MaxTokens}-token ceiling before finishing",
-                toolName, profile.MaxTokens);
+                toolName, settings.Value.Judgment.MaxTokens);
             return (null, usage);
         }
 
@@ -513,351 +505,6 @@ public sealed class AiInsightsService(
 
         sb.AppendLine(flags.Count > 0 ? "Flags: " + string.Join(", ", flags) : "Flags: none");
         sb.AppendLine();
-    }
-
-    // ---- Inbox triage -----------------------------------------------------
-
-    private const string EmitInboxTriageTool = "emit_inbox_triage";
-
-    /// <summary>Enough to judge a message; beyond it the sender is telling a story.</summary>
-    private const int MaxMessageCharacters = 400;
-
-    private const string EmitInboxTriageDescription =
-        "Returns one triage row per open conversation in the courier and staff message inbox, rendered as a "
-        + "chip in a list the dispatcher is about to work down. Its only job is ordering their attention — "
-        + "they read every message themselves before replying. `suggestedResponseId` must be an id from the "
-        + "quick-response catalog in this request; ids outside it are discarded before the dispatcher sees "
-        + "them, and null is always a better answer than a near-miss. Return one entry per conversation index "
-        + "supplied, in the same order, none added and none dropped.";
-
-    private const string EmitInboxTriageSchema = """
-                                                 {
-                                                   "type": "object",
-                                                   "properties": {
-                                                     "conversations": {
-                                                       "type": "array",
-                                                       "items": {
-                                                         "type": "object",
-                                                         "properties": {
-                                                           "conversationIndex": { "type": "integer", "description": "The [n] index the conversation was supplied under. One row per index, in the same order." },
-                                                           "intent": { "type": "string", "enum": ["jobQuery", "statusUpdate", "problem", "availability", "pay", "admin", "other"], "description": "What the sender wants. Choose 'other' rather than forcing a poor fit." },
-                                                           "urgency": { "type": "string", "enum": ["critical", "urgent", "soon", "routine"], "description": "critical = someone is stuck, goods are at risk, or a deadline passes within the hour. routine = no reply is needed today." },
-                                                           "summary": { "type": "string", "maxLength": 80, "description": "At most twelve words, the ask itself. 'Needs gate code for Wiri drop', not 'The driver is asking about access'." },
-                                                           "jobReferences": { "type": "array", "items": { "type": "string" }, "description": "Job numbers or ids the message names, copied exactly. Empty when it names none." },
-                                                           "suggestedResponseId": { "type": ["integer", "null"], "description": "An id from the supplied quick-response catalog that answers this message as written, or null." }
-                                                         },
-                                                         "required": ["conversationIndex", "intent", "urgency", "summary", "jobReferences", "suggestedResponseId"]
-                                                       }
-                                                     }
-                                                   },
-                                                   "required": ["conversations"]
-                                                 }
-                                                 """;
-
-    private string InboxTriageSystemPrompt =>
-        $"""
-         You triage a courier and staff message inbox for {RegionContext}.
-
-         You are given the most recent message in each open conversation. The dispatcher
-         sees your output as one chip per conversation in a list they are about to work
-         down, so your only job is ordering their attention.
-
-         Per conversation:
-           intent — what the sender wants, from the fixed list. Choose `other` rather
-             than forcing a poor fit.
-           urgency — how long this can wait. Critical means someone is stuck, goods are
-             at risk, or a deadline passes within the hour. Routine means no reply is
-             needed today.
-           summary — at most twelve words, the ask itself. Write "Needs gate code for
-             Wiri drop", not "The driver is asking about access".
-           jobReferences — the job numbers or ids the message names, copied exactly.
-             Empty when it names none.
-           suggestedResponseId — the id of a quick response from the catalog in the user
-             message that answers this message as written, or null.
-
-         Rules:
-         - One entry per conversation index supplied, in the same order, none added or
-           dropped.
-         - Judge only the message text supplied. Do not assume history you were not
-           given.
-         - Phone numbers and emails are redacted as [PHONE] and [EMAIL]. Leave them.
-         - A message you cannot read confidently gets intent `other`, urgency `routine`,
-           and a summary naming what is unclear.
-         """;
-
-    public async Task<InboxTriageResponse> TriageInboxAsync(CancellationToken ct = default)
-    {
-        var conversations = await messageRepository.GetRecentListAsync();
-        if (conversations is not { Count: > 0 })
-        {
-            return new InboxTriageResponse { Conversations = [], Usage = new AiUsageInfo() };
-        }
-
-        var catalog = await messageRepository.GetSavedQuickResponsesAsync() ?? [];
-
-        var sb = new StringBuilder();
-        sb.AppendLine("--- Open conversations (one row per index) ---");
-        for (var i = 0; i < conversations.Count; i++)
-        {
-            var c = conversations[i];
-            var message = AiDataSanitizer.Sanitize(c.LastMessage ?? string.Empty);
-            if (message.Length > MaxMessageCharacters)
-            {
-                message = message[..MaxMessageCharacters];
-            }
-
-            sb.AppendLine(
-                $"[{i}] from {c.OtherPartyName} ({c.OtherPartyType}), {c.UnreadCount} unread, " +
-                $"last {FormatAge(c.LastMessageTime)}: {message}");
-        }
-
-        sb.AppendLine();
-        sb.AppendLine("--- Quick response catalog (suggest only from these ids) ---");
-        if (catalog.Count == 0)
-        {
-            sb.AppendLine("(none saved — always return null for suggestedResponseId)");
-        }
-        else
-        {
-            foreach (var r in catalog)
-            {
-                sb.AppendLine($"[id {r.Id}] {r.Text}");
-            }
-        }
-
-        var (json, usage) = await SendToolRequestAsync(
-            InboxTriageSystemPrompt, sb.ToString(), EmitInboxTriageTool, EmitInboxTriageDescription,
-            EmitInboxTriageSchema, ct, AiTaskClass.Drafting);
-
-        if (json == null)
-        {
-            return new InboxTriageResponse { Conversations = [], Usage = usage };
-        }
-
-        InboxTriageWrapper wrapper;
-        try
-        {
-            wrapper = JsonSerializer.Deserialize<InboxTriageWrapper>(json, ToolJsonOptions);
-        }
-        catch (JsonException e)
-        {
-            Log.Warning(e, "Failed to parse inbox triage");
-            return new InboxTriageResponse { Conversations = [], Usage = usage };
-        }
-
-        var allowedResponseIds = catalog.Select(r => r.Id).ToHashSet();
-
-        var rows = new List<InboxTriageItem>();
-        foreach (var row in wrapper?.Conversations ?? [])
-        {
-            // A row pointing outside the list we supplied belongs to no conversation, so
-            // there is nowhere on screen to render it.
-            if (row.ConversationIndex < 0 || row.ConversationIndex >= conversations.Count)
-            {
-                continue;
-            }
-
-            var conversation = conversations[row.ConversationIndex];
-
-            rows.Add(new InboxTriageItem
-            {
-                OtherPartyId = conversation.OtherPartyId,
-                OtherPartyType = conversation.OtherPartyType,
-                Intent = row.Intent,
-                Urgency = row.Urgency,
-                Summary = row.Summary,
-                JobReferences = row.JobReferences ?? [],
-                // Guard: a near-miss id would pre-select the wrong canned reply.
-                SuggestedResponseId = allowedResponseIds.Contains(row.SuggestedResponseId ?? 0)
-                    ? row.SuggestedResponseId
-                    : null
-            });
-        }
-
-        return new InboxTriageResponse { Conversations = rows, Usage = usage };
-    }
-
-    // ---- Price explanation ------------------------------------------------
-
-    private const string EmitPriceExplanationTool = "emit_price_explanation";
-
-    private const string EmitPriceExplanationDescription =
-        "Returns a plain-English account of why one courier job cost what it did, read by a dispatcher who is "
-        + "on the phone to the customer asking. Every number is supplied in this request — this turns rate "
-        + "lines into sentences and never recalculates. `lines` carries the component name verbatim and the "
-        + "amount exactly as given. `queryRisks` names the components a customer is most likely to dispute "
-        + "together with the evidence in this job that answers the dispute. `caveats` is for anything the "
-        + "data does not let you explain, such as a manual override or a component with no matching job "
-        + "detail.";
-
-    private const string EmitPriceExplanationSchema = """
-                                                      {
-                                                        "type": "object",
-                                                        "properties": {
-                                                          "headline": { "type": "string", "maxLength": 160, "description": "One sentence giving the total and the single biggest reason it is that size." },
-                                                          "lines": {
-                                                            "type": "array",
-                                                            "items": {
-                                                              "type": "object",
-                                                              "properties": {
-                                                                "name": { "type": "string", "description": "The component name from the data, verbatim." },
-                                                                "amount": { "type": "number", "description": "Copied exactly from the data. Never recomputed and never rounded." },
-                                                                "explanation": { "type": "string", "description": "What the customer was charged for and what drove it, in words they would recognise." }
-                                                              },
-                                                              "required": ["name", "amount", "explanation"]
-                                                            },
-                                                            "description": "One entry per charge component, largest amount first."
-                                                          },
-                                                          "queryRisks": {
-                                                            "type": "array",
-                                                            "maxItems": 3,
-                                                            "items": {
-                                                              "type": "object",
-                                                              "properties": {
-                                                                "component": { "type": "string", "description": "The component a customer is most likely to dispute." },
-                                                                "evidence": { "type": "string", "description": "The evidence in this job that answers the dispute, e.g. 'driver on site 10:05, signed 10:50'." }
-                                                              },
-                                                              "required": ["component", "evidence"]
-                                                            },
-                                                            "description": "Empty when the price is unremarkable."
-                                                          },
-                                                          "caveats": {
-                                                            "type": "array",
-                                                            "items": { "type": "string" },
-                                                            "description": "Anything the data does not let you explain. Empty when none."
-                                                          }
-                                                        },
-                                                        "required": ["headline", "lines", "queryRisks", "caveats"]
-                                                      }
-                                                      """;
-
-    private string CurrencyExample => tenantInfo.IsUsTenant() ? "$145" : "$145 NZD";
-
-    private string PriceExplanationSystemPrompt =>
-        $"""
-         You explain a courier job's price to the dispatcher who has to defend it, for
-         {RegionContext}.
-
-         They are on the phone to a customer asking why this job cost what it did. Every
-         number you need is in the user message. You are turning rate lines into
-         sentences, not recalculating anything.
-
-         FIELDS
-           headline — one sentence giving the total and the single biggest reason it is
-             that size, e.g. "{CurrencyExample} — a 42 km urgent run, with waiting time
-             the largest add-on".
-           lines — one entry per charge component, largest amount first. `name` is the
-             component name from the data, verbatim. `amount` is copied exactly.
-             `explanation` says in plain words what the customer was charged for and what
-             drove it.
-           queryRisks — the components a customer is most likely to dispute, each with
-             the evidence in this job that answers the dispute ("Waiting 45 min — driver
-             on site 10:05, signed 10:50"). Empty when the price is unremarkable.
-           caveats — anything the data does not let you explain: a manual override, a
-             component with no matching job detail, a zero-amount line. Empty when none.
-
-         Rules:
-         - Never state a number the data does not contain, never round one it does, and
-           never add the components up yourself. The total is given.
-         - Write currency as {CurrencyExample}.
-         - Say "manually priced" rather than inventing a rationale when a component is
-           flagged as an override.
-         - Write for reading aloud: no markdown, no jargon a customer would not
-           recognise, no sentence longer than one breath.
-         """;
-
-    public async Task<PriceExplanationResponse> ExplainPriceAsync(
-        int jobId, bool isPrebook = false, bool isArchived = false, CancellationToken ct = default)
-    {
-        var components = await jobRepository.GetJobPriceBreakdownAsync(jobId, isPrebook, isArchived);
-        if (components is not { Count: > 0 })
-        {
-            return new PriceExplanationResponse
-            {
-                Headline = "This job has no price breakdown to explain.",
-                Usage = new AiUsageInfo()
-            };
-        }
-
-        var job = await jobRepository.GetSingleJobById(jobId);
-
-        var sb = new StringBuilder();
-        if (job != null)
-        {
-            AppendPricingContext(sb, job);
-        }
-
-        sb.AppendLine("--- Price components ---");
-        foreach (var c in components.OrderByDescending(c => c.Amount))
-        {
-            var cost = c.CostAmount is { } costAmount ? $", cost {costAmount:0.00}" : string.Empty;
-            sb.AppendLine($"{c.Name}: {c.Amount:0.00}{cost}");
-        }
-
-        sb.AppendLine($"Total: {components.Sum(c => c.Amount):0.00}");
-        sb.AppendLine();
-
-        var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
-        AppendNotes(sb, notes);
-
-        var (json, usage) = await SendToolRequestAsync(
-            PriceExplanationSystemPrompt, sb.ToString(), EmitPriceExplanationTool,
-            EmitPriceExplanationDescription, EmitPriceExplanationSchema, ct);
-
-        if (json == null)
-        {
-            return new PriceExplanationResponse
-            {
-                Headline = "Auto-mate could not explain this price.",
-                Usage = usage
-            };
-        }
-
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<PriceExplanationResponse>(json, ToolJsonOptions);
-            return (parsed ?? new PriceExplanationResponse()) with { Usage = usage };
-        }
-        catch (JsonException e)
-        {
-            Log.Warning(e, "Failed to parse price explanation for job {JobId}", jobId);
-            return new PriceExplanationResponse
-            {
-                Headline = "Auto-mate returned an answer that could not be read.",
-                Usage = usage
-            };
-        }
-    }
-
-    /// <summary>
-    /// Elapsed wording rather than a timestamp: the model is ranking urgency, and a
-    /// clock time makes it do date arithmetic it has no reliable way to get right.
-    /// </summary>
-    private string FormatAge(DateTime when)
-    {
-        var age = tenantInfo.GetCurrentTenantTime() - when;
-        if (age < TimeSpan.Zero)
-        {
-            return "just now";
-        }
-
-        return age.TotalMinutes < 60
-            ? $"{(int)age.TotalMinutes}m ago"
-            : age.TotalHours < 48
-                ? $"{(int)age.TotalHours}h ago"
-                : $"{(int)age.TotalDays}d ago";
-    }
-
-    private sealed record InboxTriageWrapper(List<InboxTriageRow> Conversations);
-
-    private sealed record InboxTriageRow
-    {
-        public int ConversationIndex { get; init; }
-        public MessageIntent Intent { get; init; }
-        public MessageUrgency Urgency { get; init; }
-        public string Summary { get; init; }
-        public List<string> JobReferences { get; init; }
-        public int? SuggestedResponseId { get; init; }
     }
 
     private sealed record SuggestionWrapper(List<AccessorialSuggestion> Suggestions);

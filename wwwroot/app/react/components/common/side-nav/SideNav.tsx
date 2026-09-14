@@ -1,4 +1,4 @@
-﻿/**
+/**
  * React Side Nav Component
  *
  * A modern replacement for the AngularJS side-nav component using a Mantine Drawer.
@@ -26,7 +26,6 @@ import {getDispatchBetaEnabled} from '../../../pages/dispatch/lib/betaPreference
 import {getJobSearchBetaEnabled} from '../../../pages/job-search/lib/betaPreference';
 import {getNationwideBetaEnabled} from '../../../pages/nationwide/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
-import {SideNavAiControls} from './SideNavAiControls';
 import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
 import classes from './SideNav.module.css';
 
@@ -62,7 +61,6 @@ export const SideNav: React.FC<SideNavProps> = ({
     onNavigate,
     onMouseEnter,
     onMouseLeave,
-    onOpenAiSettings,
 }) => {
     const theme = useMantineTheme();
     const shell = theme.other.shell;
@@ -312,10 +310,6 @@ export const SideNav: React.FC<SideNavProps> = ({
                         })}
                     </Box>
                 </ScrollArea>
-
-                {/* Auto-mate reaches every page, so its switch sits where every page
-                    can reach it. Its own component so the nav above stays a list. */}
-                <SideNavAiControls onOpenSettings={onOpenAiSettings}/>
 
                 {/* Footer */}
                 <Stack gap={4} px="md" py={16} ta="center" style={{borderTop: '1px solid var(--mantine-color-default-border)'}}>

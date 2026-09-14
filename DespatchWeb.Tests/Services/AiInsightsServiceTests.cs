@@ -2,7 +2,6 @@ using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Accessorial;
-using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
@@ -20,13 +19,7 @@ public class AiInsightsServiceTests
     private readonly IAccessorialChargeService _accessorialService = Substitute.For<IAccessorialChargeService>();
     private readonly IRateJobService _rateJobService = Substitute.For<IRateJobService>();
     private readonly IJobChangeRequestService _changeRequestService = Substitute.For<IJobChangeRequestService>();
-    private readonly IMessageRepository _messageRepository = Substitute.For<IMessageRepository>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
-
-    private string? _capturedSystemPrompt;
-    private string? _capturedUserMessage;
-    private string? _capturedForcedTool;
-    private AiTaskClass _capturedTaskClass;
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
     {
@@ -36,7 +29,7 @@ public class AiInsightsServiceTests
 
     private AiInsightsService CreateService() => new(
         _aiClient, _noteRepository, _jobRepository, _accessorialService,
-        _rateJobService, _changeRequestService, _messageRepository, _tenantInfo, _settings);
+        _rateJobService, _changeRequestService, _tenantInfo, _settings);
 
     private void StubToolResponse(string toolName, object payload, int inputTokens = 80, int outputTokens = 25)
     {
@@ -52,14 +45,7 @@ public class AiInsightsServiceTests
                 Arg.Any<AiTaskClass>(),
                 Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
                 Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns(call =>
-            {
-                _capturedTaskClass = call.ArgAt<AiTaskClass>(0);
-                _capturedSystemPrompt = call.ArgAt<string>(1);
-                _capturedUserMessage = call.ArgAt<List<AiMessage>>(2)[0].Content;
-                _capturedForcedTool = call.ArgAt<string>(5);
-                return response;
-            });
+            .Returns(response);
     }
 
     // ---- Blockers ---------------------------------------------------------
@@ -202,251 +188,5 @@ public class AiInsightsServiceTests
         Assert.Equal("clarify", result.RecommendedAction);
         await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(
             default, null!, null!, 0, null, null, false, false, CancellationToken.None);
-    }
-
-    // ---- Inbox triage -----------------------------------------------------
-
-    private void StubInbox(params RecentMessageViewModel[] conversations) =>
-        _messageRepository.GetRecentListAsync().Returns(conversations);
-
-    private static RecentMessageViewModel Conversation(
-        int id, string name, string lastMessage, OtherMessagePartyType type = OtherMessagePartyType.Courier) =>
-        new()
-        {
-            OtherPartyId = id,
-            OtherPartyType = type,
-            OtherPartyName = name,
-            UnreadCount = 1,
-            LastMessage = lastMessage,
-            LastMessageTime = new DateTime(2026, 9, 14, 8, 30, 0)
-        };
-
-    [Fact]
-    public async Task TriageInboxAsync_NoConversations_ReturnsEmptyWithoutCallingAi()
-    {
-        StubInbox();
-
-        var result = await CreateService().TriageInboxAsync(TestContext.Current.CancellationToken);
-
-        Assert.Empty(result.Conversations);
-        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(
-            default, null!, null!, 0, null, null, false, false, CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task TriageInboxAsync_TriagesTheWholeListInOneCall()
-    {
-        StubInbox(
-            Conversation(4, "Dave", "Stuck at the gate on J1234, need the code"),
-            Conversation(9, "Sam", "All done for today"));
-        StubToolResponse("emit_inbox_triage", new
-        {
-            conversations = new object[]
-            {
-                new
-                {
-                    conversationIndex = 0, intent = "problem", urgency = "urgent",
-                    summary = "Needs gate code for J1234", jobReferences = new[] { "J1234" },
-                    suggestedResponseId = (int?)null
-                },
-                new
-                {
-                    conversationIndex = 1, intent = "statusUpdate", urgency = "routine",
-                    summary = "Finished for the day", jobReferences = Array.Empty<string>(),
-                    suggestedResponseId = (int?)null
-                }
-            }
-        });
-
-        var result = await CreateService().TriageInboxAsync(TestContext.Current.CancellationToken);
-
-        await _aiClient.Received(1).SendMessageAsync(
-            Arg.Any<AiTaskClass>(), Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
-            Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(),
-            Arg.Any<CancellationToken>());
-
-        Assert.Equal(2, result.Conversations.Count);
-        Assert.Equal(4, result.Conversations[0].OtherPartyId);
-        Assert.Equal(OtherMessagePartyType.Courier, result.Conversations[0].OtherPartyType);
-        Assert.Equal(MessageIntent.Problem, result.Conversations[0].Intent);
-        Assert.Equal(MessageUrgency.Urgent, result.Conversations[0].Urgency);
-        Assert.Equal("J1234", Assert.Single(result.Conversations[0].JobReferences));
-        Assert.Equal(9, result.Conversations[1].OtherPartyId);
-        Assert.Equal(MessageIntent.StatusUpdate, result.Conversations[1].Intent);
-    }
-
-    [Fact]
-    public async Task TriageInboxAsync_RunsOnTheDraftingTierBecauseItFiresOnEveryInboxOpen()
-    {
-        StubInbox(Conversation(1, "Dave", "hi"));
-        StubToolResponse("emit_inbox_triage", new { conversations = Array.Empty<object>() });
-
-        await CreateService().TriageInboxAsync(TestContext.Current.CancellationToken);
-
-        Assert.Equal(AiTaskClass.Drafting, _capturedTaskClass);
-    }
-
-    [Fact]
-    public async Task TriageInboxAsync_DiscardsAQuickResponseIdOutsideTheCatalog()
-    {
-        StubInbox(Conversation(1, "Dave", "When am I paid?"));
-        _messageRepository.GetSavedQuickResponsesAsync()
-            .Returns([new Suggestion { Id = 5, Text = "Pay runs Wednesday" }]);
-        StubToolResponse("emit_inbox_triage", new
-        {
-            conversations = new[]
-            {
-                new
-                {
-                    conversationIndex = 0, intent = "pay", urgency = "routine",
-                    summary = "Asking when pay lands", jobReferences = Array.Empty<string>(),
-                    suggestedResponseId = 99
-                }
-            }
-        });
-
-        var result = await CreateService().TriageInboxAsync(TestContext.Current.CancellationToken);
-
-        Assert.Null(Assert.Single(result.Conversations).SuggestedResponseId);
-    }
-
-    [Fact]
-    public async Task TriageInboxAsync_KeepsAQuickResponseIdFromTheCatalog()
-    {
-        StubInbox(Conversation(1, "Dave", "When am I paid?"));
-        _messageRepository.GetSavedQuickResponsesAsync()
-            .Returns([new Suggestion { Id = 5, Text = "Pay runs Wednesday" }]);
-        StubToolResponse("emit_inbox_triage", new
-        {
-            conversations = new[]
-            {
-                new
-                {
-                    conversationIndex = 0, intent = "pay", urgency = "routine",
-                    summary = "Asking when pay lands", jobReferences = Array.Empty<string>(),
-                    suggestedResponseId = 5
-                }
-            }
-        });
-
-        var result = await CreateService().TriageInboxAsync(TestContext.Current.CancellationToken);
-
-        Assert.Equal(5, Assert.Single(result.Conversations).SuggestedResponseId);
-    }
-
-    [Fact]
-    public async Task TriageInboxAsync_DropsARowPointingAtNoConversation()
-    {
-        StubInbox(Conversation(1, "Dave", "hi"));
-        StubToolResponse("emit_inbox_triage", new
-        {
-            conversations = new[]
-            {
-                new
-                {
-                    conversationIndex = 7, intent = "other", urgency = "routine",
-                    summary = "invented", jobReferences = Array.Empty<string>(),
-                    suggestedResponseId = (int?)null
-                }
-            }
-        });
-
-        var result = await CreateService().TriageInboxAsync(TestContext.Current.CancellationToken);
-
-        Assert.Empty(result.Conversations);
-    }
-
-    [Fact]
-    public async Task TriageInboxAsync_RedactsPiiBeforeTheMessageReachesThePrompt()
-    {
-        StubInbox(Conversation(1, "Dave", "Ring the site on 021-555-1234 or jo@acme.co.nz"));
-        StubToolResponse("emit_inbox_triage", new { conversations = Array.Empty<object>() });
-
-        await CreateService().TriageInboxAsync(TestContext.Current.CancellationToken);
-
-        Assert.DoesNotContain("021-555-1234", _capturedUserMessage);
-        Assert.DoesNotContain("jo@acme.co.nz", _capturedUserMessage);
-    }
-
-    // ---- Price explanation ------------------------------------------------
-
-    [Fact]
-    public async Task ExplainPriceAsync_NoComponents_SaysSoWithoutCallingAi()
-    {
-        _jobRepository.GetJobPriceBreakdownAsync(1, false).Returns([]);
-
-        var result = await CreateService().ExplainPriceAsync(1, ct: TestContext.Current.CancellationToken);
-
-        Assert.Contains("no price breakdown", result.Headline);
-        await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(
-            default, null!, null!, 0, null, null, false, false, CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task ExplainPriceAsync_PassesEveryComponentAndTheTotalToThePrompt()
-    {
-        _jobRepository.GetJobPriceBreakdownAsync(1, false).Returns([
-            new ChargeViewModel { ChargeId = 1, Name = "Base rate", Amount = 100m },
-            new ChargeViewModel { ChargeId = 2, Name = "Waiting time", Amount = 45.50m }
-        ]);
-        StubToolResponse("emit_price_explanation", new
-        {
-            headline = "$145.50 NZD — a 42 km urgent run",
-            lines = new[]
-            {
-                new { name = "Base rate", amount = 100.0, explanation = "The standard charge for the distance." },
-                new { name = "Waiting time", amount = 45.5, explanation = "The driver waited 45 minutes on site." }
-            },
-            queryRisks = new[] { new { component = "Waiting time", evidence = "on site 10:05, signed 10:50" } },
-            caveats = Array.Empty<string>()
-        });
-
-        var result = await CreateService().ExplainPriceAsync(1, ct: TestContext.Current.CancellationToken);
-
-        Assert.Equal("emit_price_explanation", _capturedForcedTool);
-        Assert.Equal(AiTaskClass.Judgment, _capturedTaskClass);
-        Assert.Contains("Base rate: 100.00", _capturedUserMessage);
-        Assert.Contains("Waiting time: 45.50", _capturedUserMessage);
-        Assert.Contains("Total: 145.50", _capturedUserMessage);
-        Assert.Equal(2, result.Lines.Count);
-        Assert.Equal(45.5m, result.Lines[1].Amount);
-        Assert.Equal("Waiting time", Assert.Single(result.QueryRisks).Component);
-    }
-
-    [Fact]
-    public async Task ExplainPriceAsync_UsTenant_UsesTheUsCurrencyExample()
-    {
-        _tenantInfo.IsUsTenant().Returns(true);
-        _jobRepository.GetJobPriceBreakdownAsync(1, false).Returns([
-            new ChargeViewModel { ChargeId = 1, Name = "Base rate", Amount = 100m }
-        ]);
-        StubToolResponse("emit_price_explanation", new
-        {
-            headline = "$100", lines = Array.Empty<object>(),
-            queryRisks = Array.Empty<object>(), caveats = Array.Empty<string>()
-        });
-
-        await CreateService().ExplainPriceAsync(1, ct: TestContext.Current.CancellationToken);
-
-        Assert.Contains("US-based", _capturedSystemPrompt);
-        Assert.DoesNotContain("NZD", _capturedSystemPrompt);
-    }
-
-    [Fact]
-    public async Task ExplainPriceAsync_TruncatedAnswer_ReportsItRatherThanThrowing()
-    {
-        _jobRepository.GetJobPriceBreakdownAsync(1, false).Returns([
-            new ChargeViewModel { ChargeId = 1, Name = "Base rate", Amount = 100m }
-        ]);
-        _aiClient.SendMessageAsync(
-                Arg.Any<AiTaskClass>(), Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
-                Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(),
-                Arg.Any<CancellationToken>())
-            .Returns(new AiClientResponse { InputTokens = 5, OutputTokens = 0, StopReason = "max_tokens" });
-
-        var result = await CreateService().ExplainPriceAsync(1, ct: TestContext.Current.CancellationToken);
-
-        Assert.Contains("could not explain", result.Headline);
-        Assert.Empty(result.Lines);
     }
 }

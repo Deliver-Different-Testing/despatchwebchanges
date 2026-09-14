@@ -20,12 +20,10 @@ import {ChevronDown, Download, FileText, ReceiptText, Upload} from 'lucide-react
 import {Icon} from '../icon/Icon';
 import {criteriaFieldProps, groupLabelProps} from '../filter-fields';
 import classes from './SearchCriteriaPanel.module.css';
-import dayjs, {Dayjs} from 'dayjs';
+import {Dayjs} from 'dayjs';
 import {DateRangePicker} from '../date-range-picker/DateRangePicker';
 import {ChipsAutocomplete} from './ChipsAutocomplete';
 import {ISuggestion} from '../../../../interfaces/job.interface';
-import {SearchCriteriaResponse} from '../../../interfaces/ai';
-import {AskAutoMateField} from './AskAutoMateField';
 
 /**
  * The dates a date-driven action was fired with. Handed to the action directly
@@ -170,42 +168,6 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
         onCriteriaChange('wild', value || undefined);
     }, [onCriteriaChange]);
 
-    /**
-     * Writes Auto-mate's reading of a shorthand query into the criteria below.
-     * Only criteria it actually returned are touched, so asking again — or asking
-     * over a search the dispatcher has already part-filled — never silently
-     * clears their work. It fills; the dispatcher presses Search.
-     */
-    const applyAiCriteria = useCallback((criteria: SearchCriteriaResponse) => {
-        if (criteria.clients.length > 0) handleClientsChange(criteria.clients);
-        if (criteria.couriers.length > 0) handleCouriersChange(criteria.couriers);
-        if (criteria.speeds.length > 0) handleSpeedsChange(criteria.speeds);
-
-        if (criteria.jobId != null) {
-            setJobId(String(criteria.jobId));
-            onCriteriaChange('jobId', criteria.jobId);
-        }
-        if (criteria.bulkJobId != null) {
-            setBulkJobId(String(criteria.bulkJobId));
-            onCriteriaChange('bulkJobId', criteria.bulkJobId);
-        }
-        if (criteria.jobNumber) {
-            setJobNumber(criteria.jobNumber);
-            onCriteriaChange('job', criteria.jobNumber);
-        }
-        if (criteria.wildcard) {
-            setGeneralSearch(criteria.wildcard);
-            onCriteriaChange('wild', criteria.wildcard);
-        }
-
-        /* Dates stay local like every other date edit here: they are flushed
-           upward when the dispatcher fires an action, not on every keystroke. */
-        const from = criteria.fromDate ? dayjs(criteria.fromDate) : null;
-        const to = criteria.toDate ? dayjs(criteria.toDate) : null;
-        if (from?.isValid()) setLocalFromDate(from);
-        if (to?.isValid()) setLocalToDate(to);
-    }, [handleClientsChange, handleCouriersChange, handleSpeedsChange, onCriteriaChange]);
-
     // Enter key triggers search
     const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
@@ -215,8 +177,6 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
 
     return (
         <Stack gap={16} p={16} h="100%" style={{boxSizing: 'border-box', overflowY: 'auto'}}>
-            <AskAutoMateField onParsed={applyAiCriteria}/>
-
             {/* Date Range */}
             <Stack gap={6} miw={0}>
                 <Text {...groupLabelProps}>Date Range</Text>
