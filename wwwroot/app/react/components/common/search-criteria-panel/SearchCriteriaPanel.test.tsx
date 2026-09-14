@@ -11,6 +11,8 @@ import dayjs from 'dayjs';
 import {SearchCriteriaPanel, SearchCriteriaPanelProps} from './SearchCriteriaPanel';
 import { renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
+import {parseSearchQuery} from '../../../services/aiAssistantApi';
+import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../../__testUtils__/aiPreferences';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
@@ -18,6 +20,13 @@ const userEvent = setupUser();
 // The dates the stub picker reports when its buttons are clicked.
 const mockPickedFrom = dayjs('2026-08-12');
 const mockPickedTo = dayjs('2026-08-20');
+
+jest.mock('../../../services/aiAssistantApi', () => ({
+    parseSearchQuery: jest.fn(),
+}));
+
+
+const mockParseSearchQuery = parseSearchQuery as jest.MockedFunction<typeof parseSearchQuery>;
 
 // Mock DateRangePicker to avoid LocalizationProvider/DatePicker complexity.
 // The stub still drives the panel's local date state, so tests can verify the
@@ -354,5 +363,73 @@ describe('SearchCriteriaPanel', () => {
         await user.paste('99');
         expect(jobIdInput).toBeDisabled();
         expect(bulkJobIdInput).toBeEnabled();
+    });
+});
+
+describe('SearchCriteriaPanel — Auto-mate fill', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        resetAiPreferences();
+    });
+
+    async function ask(query: string) {
+        const user = setupUser();
+        await user.type(screen.getByLabelText('Ask Auto-mate'), query);
+        await user.click(screen.getByRole('button', {name: /fill the search from this/i}));
+    }
+
+    it('writes the resolved criteria into the form without searching', async () => {
+        mockParseSearchQuery.mockResolvedValue({
+            clients: [{id: 11, text: 'Smith & Co'}],
+            couriers: [],
+            speeds: [{id: 3, text: 'Urgent'}],
+            jobId: null,
+            bulkJobId: null,
+            jobNumber: null,
+            wildcard: 'Wiri',
+            fromDate: '2026-09-07',
+            toDate: '2026-09-13',
+            ignored: [],
+            unmatchedNames: [],
+            usage: {inputTokens: 5, outputTokens: 3},
+        });
+        const props = createDefaultProps();
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
+
+        await ask('Smith urgent Wiri last week');
+
+        await waitFor(() =>
+            expect(props.onCriteriaChange).toHaveBeenCalledWith('clients', [{id: 11, text: 'Smith & Co'}]));
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('speeds', [{id: 3, text: 'Urgent'}]);
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('wild', 'Wiri');
+
+        // It fills; the dispatcher searches.
+        expect(props.onSearch).not.toHaveBeenCalled();
+    });
+
+    it('leaves criteria the query did not mention alone', async () => {
+        mockParseSearchQuery.mockResolvedValue({
+            clients: [],
+            couriers: [],
+            speeds: [],
+            jobId: 48213,
+            bulkJobId: null,
+            jobNumber: null,
+            wildcard: null,
+            fromDate: null,
+            toDate: null,
+            ignored: [],
+            unmatchedNames: [],
+            usage: {inputTokens: 5, outputTokens: 3},
+        });
+        const props = createDefaultProps();
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
+
+        await ask('job 48213');
+
+        await waitFor(() => expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', 48213));
+        const touched = (props.onCriteriaChange as jest.Mock).mock.calls.map(call => call[0]);
+        expect(touched).not.toContain('clients');
+        expect(touched).not.toContain('wild');
     });
 });

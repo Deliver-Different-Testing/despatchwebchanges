@@ -8,7 +8,7 @@ import {ComplianceFilter, CourierCompliance, FleetOption, PaginatedRequest} from
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {summarizeCompliance} from '../../../services/aiAssistantApi';
 import {AiSummaryCard} from '../../../components/common/ai-summary-card/AiSummaryCard';
-import {isAiEnabled} from '../../../../functions/aiSettings';
+import {useAiFeature} from '../../../hooks/useAiFeature';
 import {
     DataTable,
     DataTableColumn,
@@ -78,6 +78,7 @@ const columns: DataTableColumn<CourierCompliance>[] = [
 ];
 
 export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToast, fleetOptions}) => {
+    const aiBriefingsEnabled = useAiFeature('briefings');
     const [query, setQuery] = useState<PaginatedRequest>({
         orderBy: 'code', pageSize: 100, page: 1, searchTerm: '', sortDescending: false,
     });
@@ -185,7 +186,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
             </Group>
 
             {/* AI Compliance Risk Summary */}
-            {isAiEnabled() && (
+            {aiBriefingsEnabled && (
                 <AiSummaryCard
                     title="Auto-mate Compliance Risk Summary"
                     fetchSummary={(signal) => summarizeCompliance({signal})}

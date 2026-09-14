@@ -453,6 +453,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     <Group justify="space-between" mb="sm" wrap="nowrap">
                         <Text fw={600}>Note Content</Text>
                         <AiDraftButton
+                            category="writing"
                             onClick={handleDraftNote}
                             isDrafting={isDrafting}
                             disabled={noteTypeId <= 0}

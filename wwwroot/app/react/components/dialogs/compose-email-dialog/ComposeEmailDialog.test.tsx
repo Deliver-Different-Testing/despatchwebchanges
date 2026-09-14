@@ -12,13 +12,11 @@ import { renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
 import {draftEmail} from '../../../services/aiAssistantApi';
-import {isAiEnabled} from '../../../../functions/aiSettings';
+import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../../__testUtils__/aiPreferences';
 
 jest.mock('../../../services/aiAssistantApi', () => ({draftEmail: jest.fn()}));
-jest.mock('../../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));
 
 const mockDraftEmail = draftEmail as jest.Mock;
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 const createMockCouriers = (): DriverEmail[] => [
     {courierId: 1, code: 'C01', name: 'Alice Smith', email: 'alice@test.com', phone: '111', fleet: 'Alpha'},
@@ -395,7 +393,7 @@ describe('ComposeEmailDialog', () => {
         beforeEach(() => jest.clearAllMocks());
 
         it('hides the Draft button when AI is disabled', () => {
-            mockIsAiEnabled.mockReturnValue(false);
+        disableAutoMate();
 
             renderDialog();
 
@@ -403,7 +401,7 @@ describe('ComposeEmailDialog', () => {
         });
 
         it('fills subject and body from the AI draft', async () => {
-            mockIsAiEnabled.mockReturnValue(true);
+        enableAutoMate();
             mockDraftEmail.mockResolvedValueOnce({
                 subject: 'Drafted subject',
                 body: 'Drafted body',

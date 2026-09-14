@@ -119,18 +119,6 @@ public sealed class AiSummarizationService(
           enough for the dispatcher to carry out without reopening the job.
         """;
 
-    private string SummarizationSystemPrompt =>
-        $"""
-         You are a logistics data summarizer for {RegionContext}.
-         Your reader is a dispatcher skimming this between phone calls, so answer only
-         what the notes or events actually say and stop there.
-
-         - Use **bold** for job numbers, statuses and names.
-         - Use bullet points when there are genuinely several separate items.
-         - Cover current status, open issues, the order important things happened in,
-           and anything still outstanding.
-         """;
-
     private string JobBriefingSystemPrompt =>
         $"""
          You are a logistics job briefing assistant for {RegionContext}.
@@ -249,77 +237,6 @@ public sealed class AiSummarizationService(
 
          {SharedBriefingRules}
          """;
-
-    // ---------------------------------------------------------------------
-    //  Markdown summaries (notes / events) — unchanged contract
-    // ---------------------------------------------------------------------
-
-    public async Task<AiSummaryResponse> SummarizeJobNotesAsync(int jobId, CancellationToken ct = default)
-    {
-        var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
-
-        if (notes == null || notes.Count == 0)
-        {
-            return new AiSummaryResponse
-            {
-                Summary = "No notes found for this job.",
-                Usage = new AiUsageInfo()
-            };
-        }
-
-        var sb = new StringBuilder();
-        sb.AppendLine("Summarize the following job notes:");
-        sb.AppendLine();
-        AppendNotes(sb, notes);
-
-        var response = await aiClient.SendMessageAsync(
-            AiTaskClass.Drafting,
-            SummarizationSystemPrompt,
-            [new AiMessage { Role = "user", Content = sb.ToString() }],
-            settings.Value.Drafting.MaxTokens,
-            cacheResponse: true,
-            ct: ct);
-
-        return new AiSummaryResponse
-        {
-            Summary = response.TextContent ?? "Unable to generate summary.",
-            Usage = AiUsageInfo.From(response)
-        };
-    }
-
-    public async Task<AiSummaryResponse> SummarizeJobEventsAsync(int jobId, CancellationToken ct = default)
-    {
-        var filters = new TaskTableFiltersRequest { JobId = jobId, ShowCompleted = true };
-        var events = await taskRepository.GetAllTasksAsync(filters);
-
-        if (events == null || events.Count == 0)
-        {
-            return new AiSummaryResponse
-            {
-                Summary = "No events found for this job.",
-                Usage = new AiUsageInfo()
-            };
-        }
-
-        var sb = new StringBuilder();
-        sb.AppendLine("Summarize the following job event history:");
-        sb.AppendLine();
-        AppendEvents(sb, events);
-
-        var response = await aiClient.SendMessageAsync(
-            AiTaskClass.Drafting,
-            SummarizationSystemPrompt,
-            [new AiMessage { Role = "user", Content = sb.ToString() }],
-            settings.Value.Drafting.MaxTokens,
-            cacheResponse: true,
-            ct: ct);
-
-        return new AiSummaryResponse
-        {
-            Summary = response.TextContent ?? "Unable to generate summary.",
-            Usage = AiUsageInfo.From(response)
-        };
-    }
 
     // ---------------------------------------------------------------------
     //  Structured summaries

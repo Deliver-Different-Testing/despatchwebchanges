@@ -46,7 +46,12 @@ export const ChangeRequestTriage: React.FC<ChangeRequestTriageProps> = ({request
 
     return (
         <Box style={{flexBasis: '100%', width: '100%'}}>
-            <AiDraftButton onClick={handleClick} isDrafting={isDrafting} label="Auto-Mate recommendation"/>
+            <AiDraftButton
+                category="triage"
+                onClick={handleClick}
+                isDrafting={isDrafting}
+                label="Auto-Mate recommendation"
+            />
             {result && tone && (
                 <Alert
                     color={tone.color}

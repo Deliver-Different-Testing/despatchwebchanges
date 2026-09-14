@@ -22,6 +22,7 @@ public static class AiServiceCollectionExtensions
         services.AddScoped<IAiSummarizationService, AiSummarizationService>();
         services.AddScoped<IAiDraftingService, AiDraftingService>();
         services.AddScoped<IAiInsightsService, AiInsightsService>();
+        services.AddScoped<IAiIntakeService, AiIntakeService>();
     }
 
     internal static bool ValidateProfiles(AnthropicSettings settings) =>

@@ -29,6 +29,13 @@ export interface SearchSelectProps<T> {
     onSearchChange?: (term: string) => void;
     /** Caller-managed mode: whether a fetch is in flight. */
     loading?: boolean;
+    /**
+     * Text to drop into the input and search for, as if the operator had typed it.
+     * Applied whenever it changes to a new non-empty value and never again, so it
+     * seeds a field (Auto-mate filling an address it read out of a booking) without
+     * fighting what the operator types afterwards.
+     */
+    seedSearch?: string;
     getOptionKey: (option: T) => string | number;
     getOptionLabel: (option: T) => string;
     /** Option row content; defaults to `getOptionLabel`. */

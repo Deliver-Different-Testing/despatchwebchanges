@@ -4,7 +4,6 @@ import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
-import {isAiEnabled} from "../../../functions/aiSettings";
 import {
     getJobSearchBetaEnabled,
 } from "../../../react/pages/job-search/lib/betaPreference";
@@ -99,7 +98,6 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             title,
             showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
             showDriverLocationRefresh: appPage === AppPage.Dispatch,
-            showAiToggle: true,
             showJobSearchBetaToggle: appPage === AppPage.JobSearch,
             showDispatchBetaToggle: appPage === AppPage.Dispatch,
             showNationwideBetaToggle: appPage === AppPage.Domestic,
@@ -127,7 +125,6 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 selectedRefreshInterval,
                 selectedDriverLocationRefreshInterval,
                 undefined, // selectedTaskRefreshInterval — V1 dispatch has no separate Tasks cadence
-                isAiEnabled(),
                 appPage === AppPage.JobSearch ? getJobSearchBetaEnabled() : undefined,
                 appPage === AppPage.Dispatch ? getDispatchBetaEnabled() : undefined,
                 appPage === AppPage.Domestic ? getNationwideBetaEnabled() : undefined,

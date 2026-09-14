@@ -13,7 +13,6 @@ import {
     Button,
     Checkbox,
     Group,
-    Loader,
     Paper,
     Stack,
     Table,
@@ -28,7 +27,6 @@ import {
     Briefcase,
     CircleCheck,
     DollarSign,
-    Fuel,
     Lock,
     Pencil,
     PiggyBank,
@@ -44,6 +42,7 @@ import {formatCurrency} from '../../../utils/currencyUtils';
 import type {ShowToastFn} from '../../../services/toastService';
 import {Icon} from '../../common/icon/Icon';
 import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, dialogSize} from '../shared/mantine';
+import {PriceExplanationCard} from './PriceExplanationCard';
 
 export interface PriceBreakdown {
     chargeId: number;
@@ -714,6 +713,11 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     submitting={isDeleting !== null}
                 />
             </DialogShell>
+
+            {/* Auto-mate — the sentence to say to a customer querying the price. */}
+            {!isEditing && (
+                <PriceExplanationCard jobId={jobId} isPrebook={isPrebook} isArchived={isArchived}/>
+            )}
 
             {/* Footer Actions */}
             {!isEditing && (

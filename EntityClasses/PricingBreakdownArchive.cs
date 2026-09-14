@@ -25,7 +25,7 @@ public partial class PricingBreakdownArchive
 
     public decimal? CostAmount { get; set; }
 
-    public int? ChildJobId { get; set; }
-
     public bool IsAccessorial { get; set; }
+
+    public int? ChildJobId { get; set; }
 }

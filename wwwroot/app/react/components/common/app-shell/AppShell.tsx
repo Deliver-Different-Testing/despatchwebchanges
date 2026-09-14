@@ -1,4 +1,4 @@
-/**
+﻿/**
  * React App Shell Component
  *
  * Combines the AppToolbar and SideNav into a single shell component
@@ -11,6 +11,9 @@ import {useDisclosure} from '@mantine/hooks';
 import {AppToolbar} from '../app-toolbar/AppToolbar';
 import {SideNav} from '../side-nav/SideNav';
 import {AppShellProps} from './app-shell.types';
+import {AiSettingsDialog} from '../../dialogs/ai-settings-dialog/AiSettingsDialog';
+import {AiRolloutNotice} from '../ai-rollout-notice/AiRolloutNotice';
+import {startAiPreferenceSync} from '../../../services/aiPreferenceSync';
 
 export const AppShell: React.FC<AppShellProps> = ({
     title,
@@ -28,7 +31,15 @@ export const AppShell: React.FC<AppShellProps> = ({
     beta,
 }) => {
     const [sidenavOpen, {open: openSidenav, close: closeSidenav}] = useDisclosure(false);
+    const [aiSettingsOpen, {open: openAiSettings, close: closeAiSettings}] = useDisclosure(false);
     const closeTimeoutRef = useRef<number | null>(null);
+
+    /* The shell is the one component on every route, so it is where the Auto-mate
+       preferences reconcile with the server. The store has already seeded itself
+       from the local cache synchronously, so this only corrects it. */
+    useEffect(() => {
+        void startAiPreferenceSync();
+    }, []);
 
     useEffect(() => {
         return () => {
@@ -85,7 +96,11 @@ export const AppShell: React.FC<AppShellProps> = ({
                 onNavigate={onNavigate}
                 onMouseEnter={handleSidenavMouseEnter}
                 onMouseLeave={handleSidenavMouseLeave}
+                onOpenAiSettings={openAiSettings}
             />
+
+            <AiSettingsDialog opened={aiSettingsOpen} onClose={closeAiSettings}/>
+            <AiRolloutNotice onOpenSettings={openAiSettings}/>
         </Stack>
     );
 };

@@ -46,7 +46,6 @@ import type {DfrntPageViewModel} from './interfaces/dfrnt-page-view-model.interf
 import type IDateFilterData from './interfaces/date-filter-data.interface';
 import type {IBox, ILayout} from './interfaces/layout.interfaces';
 import {AppPage} from './enums/app-pages.enum';
-import {isAiEnabled, setAiEnabled} from './functions/aiSettings';
 import isDefaultLayout from './functions/isDefaultLayout';
 
 class RouterConfig {
@@ -362,18 +361,15 @@ class RouterConfig {
                                             showRefreshInterval?: boolean;
                                             showDriverLocationRefresh?: boolean;
                                             showTaskRefresh?: boolean;
-                                            showAiToggle?: boolean;
                                             showDispatchBetaToggle?: boolean;
                                         },
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
-                                        aiEnabled?: boolean,
                                         jobSearchBetaEnabled?: boolean,
                                         dispatchBetaEnabled?: boolean,
                                     ) => Promise<{
                                         dispatchBetaEnabled?: boolean;
-                                        aiEnabled?: boolean;
                                         selectedRefreshInterval?: {id: number; text: string};
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string};
                                         selectedTaskRefreshInterval?: {id: number; text: string};
@@ -403,21 +399,15 @@ class RouterConfig {
                                         showRefreshInterval: true,
                                         showDriverLocationRefresh: true,
                                         showTaskRefresh: true,
-                                        showAiToggle: true,
                                         showDispatchBetaToggle: true,
                                     },
                                     {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
                                     {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
                                     {id: taskSeedSeconds, text: ''},
-                                    isAiEnabled(),
                                     undefined,
                                     wasOn,
                                 );
                                 if (!result) return;
-
-                                if (result.aiEnabled !== undefined) {
-                                    setAiEnabled(result.aiEnabled);
-                                }
 
                                 // Persist + apply auto-refresh intervals (seconds in
                                 // storage; React Query uses ms, 0 = off).
@@ -910,17 +900,14 @@ class RouterConfig {
                                             title: string;
                                             showRefreshInterval?: boolean;
                                             showDriverLocationRefresh?: boolean;
-                                            showAiToggle?: boolean;
                                             showJobSearchBetaToggle?: boolean;
                                         },
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
-                                        aiEnabled?: boolean,
                                         jobSearchBetaEnabled?: boolean,
                                     ) => Promise<{
                                         jobSearchBetaEnabled?: boolean;
-                                        aiEnabled?: boolean;
                                     } | null>;
                                 };
                             };
@@ -933,20 +920,14 @@ class RouterConfig {
                                 const result = await w.ReactDashboardSettingsDialog.open(
                                     {
                                         title: 'Job Search Dashboard Settings',
-                                        showAiToggle: true,
                                         showJobSearchBetaToggle: true,
                                     },
                                     undefined,
                                     undefined,
                                     undefined, // selectedTaskRefreshInterval — not used on Job Search
-                                    isAiEnabled(),
                                     wasOn,
                                 );
                                 if (!result) return;
-
-                                if (result.aiEnabled !== undefined) {
-                                    setAiEnabled(result.aiEnabled);
-                                }
 
                                 if (result.jobSearchBetaEnabled !== undefined
                                     && result.jobSearchBetaEnabled !== wasOn) {

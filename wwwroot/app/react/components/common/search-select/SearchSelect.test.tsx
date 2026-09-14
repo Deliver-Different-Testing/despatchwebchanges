@@ -234,4 +234,60 @@ describe('SearchSelect', () => {
 
         expect(screen.getByLabelText('Courier')).toHaveFocus();
     });
+
+    describe('seedSearch', () => {
+        function SeedHarness({seed}: {seed?: string}) {
+            const [value, setValue] = useState<Courier | null>(null);
+            return (
+                <SearchSelect<Courier>
+                    label="Courier"
+                    placeholder="Search Courier..."
+                    value={value}
+                    onChange={setValue}
+                    seedSearch={seed}
+                    search={(term, options) => mockSearch(term, options)}
+                    getOptionKey={(o) => o.id}
+                    getOptionLabel={(o) => o.text}
+                />
+            );
+        }
+
+        it('fills the input and searches for it', async () => {
+            mockSearch.mockResolvedValue(couriers);
+            const {rerender} = renderWithMantine(<SeedHarness/>);
+
+            rerender(<SeedHarness seed="Courier Alpha"/>);
+            await flushDebounce();
+
+            expect(screen.getByLabelText(/courier/i)).toHaveValue('Courier Alpha');
+            expect(mockSearch).toHaveBeenCalledWith('Courier Alpha', expect.anything());
+        });
+
+        it('does not fight the operator once they edit the seeded text', async () => {
+            renderWithMantine(<SeedHarness seed="Courier Alpha"/>);
+            await flushDebounce();
+
+            typeSearch('Beta');
+            await flushDebounce();
+
+            expect(screen.getByLabelText(/courier/i)).toHaveValue('Beta');
+        });
+
+        it('ignores an empty or unchanged seed', async () => {
+            const {rerender} = renderWithMantine(<SeedHarness seed="Courier Alpha"/>);
+            await flushDebounce();
+
+            typeSearch('Beta');
+            await flushDebounce();
+
+            // Same seed again: a re-render must not stamp over what they typed.
+            rerender(<SeedHarness seed="Courier Alpha"/>);
+            await flushDebounce();
+            expect(screen.getByLabelText(/courier/i)).toHaveValue('Beta');
+
+            rerender(<SeedHarness seed=""/>);
+            await flushDebounce();
+            expect(screen.getByLabelText(/courier/i)).toHaveValue('Beta');
+        });
+    });
 });

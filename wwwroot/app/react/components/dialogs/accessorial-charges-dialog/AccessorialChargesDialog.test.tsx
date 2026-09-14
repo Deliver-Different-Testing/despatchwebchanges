@@ -11,7 +11,7 @@ import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {renderWithMantine} from '../../../__testUtils__';
 import {AccessorialChargesDialog} from './AccessorialChargesDialog';
 import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
-import {isAiEnabled} from '../../../../functions/aiSettings';
+import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../../__testUtils__/aiPreferences';
 import type {
     AccessorialChargeDto,
     AccessorialChargesDialogProps,
@@ -30,10 +30,8 @@ jest.mock('../../../services/accessorialChargesApi', () => ({
     },
 }));
 jest.mock('../../../services/aiAssistantApi', () => ({analyzePricing: jest.fn()}));
-jest.mock('../../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));
 
 const api = accessorialChargesApi as jest.Mocked<typeof accessorialChargesApi>;
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 const job: AccessorialChargesJob = {id: 123, accessorialChargeGroupId: 5, amount: 100, weight: 10, quantity: 1};
 
@@ -102,7 +100,7 @@ async function appliedRow(name: string): Promise<HTMLElement> {
 
 beforeEach(() => {
     jest.clearAllMocks();
-    mockIsAiEnabled.mockReturnValue(false);
+        disableAutoMate();
     (api.getAvailableCharges as jest.Mock).mockResolvedValue([flatCharge, perUnitCharge]);
     (api.getAppliedCharges as jest.Mock).mockResolvedValue([]);
     (api.getJobAmount as jest.Mock).mockResolvedValue(100);

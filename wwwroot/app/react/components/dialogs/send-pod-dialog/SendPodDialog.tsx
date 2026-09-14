@@ -304,7 +304,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                 <Box>
                     <Group justify="space-between" align="center" mb="xs">
                         <Text {...sectionLabelProps} mb={0}>Email preview</Text>
-                        <AiDraftButton onClick={handleDraft} isDrafting={isDrafting}/>
+                        <AiDraftButton category="writing" onClick={handleDraft} isDrafting={isDrafting}/>
                     </Group>
                     <Paper {...sectionPaperProps} p={0} style={{overflow: 'hidden'}}>
                         {/* Subject */}
