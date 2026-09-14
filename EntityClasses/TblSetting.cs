@@ -347,9 +347,5 @@ public partial class TblSetting
 
     public bool ConsolidateFuel { get; set; }
 
-    public decimal PpdDefault { get; set; }
-
-    public bool OpenforceConsolidateCommission { get; set; }
-
     public virtual TucStaff InternetJobStaff { get; set; }
 }

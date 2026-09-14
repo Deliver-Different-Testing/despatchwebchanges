@@ -1,5 +1,3 @@
-using System.Net;
-using Anthropic.Exceptions;
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -19,7 +17,6 @@ public class AiControllerTests
     private readonly IAiSummarizationService _summarizationService = Substitute.For<IAiSummarizationService>();
     private readonly IAiDraftingService _draftingService = Substitute.For<IAiDraftingService>();
     private readonly IAiInsightsService _insightsService = Substitute.For<IAiInsightsService>();
-    private readonly IAiIntakeService _intakeService = Substitute.For<IAiIntakeService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
 
     public AiControllerTests()
@@ -42,9 +39,66 @@ public class AiControllerTests
         _summarizationService,
         _draftingService,
         _insightsService,
-        _intakeService,
         _rateLimiter,
         _tenantInfo);
+
+    [Fact]
+    public async Task SummarizeJobNotes_RateLimited_Returns429()
+    {
+        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
+        var controller = CreateController();
+
+        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(429, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task SummarizeJobNotes_ValidRequest_ReturnsJson()
+    {
+        _summarizationService.SummarizeJobNotesAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        {
+            Summary = "Job had two pickups.",
+            Usage = new AiUsageInfo { InputTokens = 80, OutputTokens = 15 }
+        });
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task SummarizeJobEvents_ValidRequest_ReturnsJson()
+    {
+        _summarizationService.SummarizeJobEventsAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        {
+            Summary = "Late alert resolved.",
+            Usage = new AiUsageInfo { InputTokens = 60, OutputTokens = 10 }
+        });
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task SummarizeJobEvents_ServiceThrows_Returns500()
+    {
+        _summarizationService.SummarizeJobEventsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("DB error"));
+
+        var controller = CreateController();
+
+        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(500, statusResult!.StatusCode);
+    }
 
     [Fact]
     public async Task SummarizeTaskDashboard_RateLimited_Returns429()
@@ -516,131 +570,5 @@ public class AiControllerTests
 
         var statusResult = result as ObjectResult;
         Assert.Equal(499, statusResult!.StatusCode);
-    }
-
-    // ---- Intake -----------------------------------------------------------
-
-    [Fact]
-    public async Task ExtractJobIntake_RateLimited_Returns429()
-    {
-        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
-
-        var result = await CreateController().ExtractJobIntake(
-            new ExtractJobIntakeRequest { Text = "x" }, TestContext.Current.CancellationToken);
-
-        Assert.Equal(429, (result as ObjectResult)!.StatusCode);
-        await _intakeService.DidNotReceiveWithAnyArgs()
-            .ExtractJobIntakeAsync(null!, CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task ExtractJobIntake_ValidRequest_ReturnsJsonAndRecordsJudgmentUsage()
-    {
-        _intakeService.ExtractJobIntakeAsync(Arg.Any<ExtractJobIntakeRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new JobIntakeResponse { Confidence = 0.9, Usage = new AiUsageInfo { InputTokens = 30 } });
-
-        var result = await CreateController().ExtractJobIntake(
-            new ExtractJobIntakeRequest { Text = "book a job" }, TestContext.Current.CancellationToken);
-
-        Assert.IsType<JsonResult>(result);
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(
-            Arg.Any<int>(), Arg.Any<string>(), "ExtractJobIntake",
-            AiTaskClass.Judgment, Arg.Any<AiUsageInfo>());
-    }
-
-    [Fact]
-    public async Task ExtractJobIntake_AnthropicRateLimit_Returns429()
-    {
-        _intakeService.ExtractJobIntakeAsync(Arg.Any<ExtractJobIntakeRequest>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new AnthropicRateLimitException(new HttpRequestException("busy"))
-            {
-                StatusCode = HttpStatusCode.TooManyRequests, ResponseBody = "busy"
-            });
-
-        var result = await CreateController().ExtractJobIntake(
-            new ExtractJobIntakeRequest { Text = "x" }, TestContext.Current.CancellationToken);
-
-        Assert.Equal(429, (result as ObjectResult)!.StatusCode);
-    }
-
-    [Fact]
-    public async Task ParseSearchQuery_ValidRequest_ReturnsJsonAndRecordsDraftingUsage()
-    {
-        _intakeService.ParseSearchQueryAsync(Arg.Any<ParseSearchQueryRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new SearchCriteriaResponse { Wildcard = "Wiri", Usage = new AiUsageInfo() });
-
-        var result = await CreateController().ParseSearchQuery(
-            new ParseSearchQueryRequest { Query = "Wiri" }, TestContext.Current.CancellationToken);
-
-        Assert.IsType<JsonResult>(result);
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(
-            Arg.Any<int>(), Arg.Any<string>(), "ParseSearchQuery",
-            AiTaskClass.Drafting, Arg.Any<AiUsageInfo>());
-    }
-
-    [Fact]
-    public async Task ParseSearchQuery_ServiceFails_Returns503OnAnthropic5xx()
-    {
-        _intakeService.ParseSearchQueryAsync(Arg.Any<ParseSearchQueryRequest>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Anthropic5xxException(new HttpRequestException("down"))
-            {
-                StatusCode = HttpStatusCode.InternalServerError, ResponseBody = "down"
-            });
-
-        var result = await CreateController().ParseSearchQuery(
-            new ParseSearchQueryRequest { Query = "x" }, TestContext.Current.CancellationToken);
-
-        Assert.Equal(503, (result as ObjectResult)!.StatusCode);
-    }
-
-    [Fact]
-    public async Task TriageInbox_ValidRequest_ReturnsJsonAndRecordsDraftingUsage()
-    {
-        _insightsService.TriageInboxAsync(Arg.Any<CancellationToken>())
-            .Returns(new InboxTriageResponse { Usage = new AiUsageInfo() });
-
-        var result = await CreateController().TriageInbox(TestContext.Current.CancellationToken);
-
-        Assert.IsType<JsonResult>(result);
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(
-            Arg.Any<int>(), Arg.Any<string>(), "TriageInbox",
-            AiTaskClass.Drafting, Arg.Any<AiUsageInfo>());
-    }
-
-    [Fact]
-    public async Task TriageInbox_RateLimited_Returns429()
-    {
-        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
-
-        var result = await CreateController().TriageInbox(TestContext.Current.CancellationToken);
-
-        Assert.Equal(429, (result as ObjectResult)!.StatusCode);
-        await _insightsService.DidNotReceiveWithAnyArgs().TriageInboxAsync(CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task ExplainPrice_ValidRequest_ReturnsJsonAndRecordsJudgmentUsage()
-    {
-        _insightsService.ExplainPriceAsync(7, false, false, Arg.Any<CancellationToken>())
-            .Returns(new PriceExplanationResponse { Headline = "$145 NZD", Usage = new AiUsageInfo() });
-
-        var result = await CreateController().ExplainPrice(7, false, false, TestContext.Current.CancellationToken);
-
-        Assert.IsType<JsonResult>(result);
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(
-            Arg.Any<int>(), Arg.Any<string>(), "ExplainPrice",
-            AiTaskClass.Judgment, Arg.Any<AiUsageInfo>());
-    }
-
-    [Fact]
-    public async Task ExplainPrice_ServiceThrows_Returns500()
-    {
-        _insightsService.ExplainPriceAsync(
-                Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("boom"));
-
-        var result = await CreateController().ExplainPrice(7, false, false, TestContext.Current.CancellationToken);
-
-        Assert.Equal(500, (result as ObjectResult)!.StatusCode);
     }
 }

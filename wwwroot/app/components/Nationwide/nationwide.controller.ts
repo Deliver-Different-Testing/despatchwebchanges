@@ -101,6 +101,7 @@ import {transformFlightToDTO} from "../../functions/toDtoMappings";
 import utc from "dayjs/plugin/utc";
 import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import {setAiEnabled} from "../../functions/aiSettings";
 import angular from 'angular';
 import ITaskItemConfig from "../../interfaces/task-item-config";
 
@@ -2115,6 +2116,10 @@ class NationwideControl extends BaseController {
             );
 
             if (!result) return;
+
+            if (result.aiEnabled !== undefined) {
+                setAiEnabled(result.aiEnabled);
+            }
 
             // Opting back in to the React page: persist and move there, the
             // same way the Dispatch and Job Search toggles behave.

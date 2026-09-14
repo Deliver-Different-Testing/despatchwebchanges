@@ -1,5 +1,4 @@
 using Anthropic.Exceptions;
-using DespatchWeb.Attributes;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -10,15 +9,95 @@ using Serilog;
 namespace DespatchWeb.Controllers;
 
 [Authorize]
-[AiFeatureGate]
 public class AiController(
     IAiSummarizationService summarizationService,
     IAiDraftingService draftingService,
     IAiInsightsService insightsService,
-    IAiIntakeService intakeService,
     IAiRateLimiter rateLimiter,
     ITenantInfoService tenantInfo) : Controller
 {
+    [HttpPost]
+    public async Task<IActionResult> SummarizeJobNotes(int jobId, CancellationToken ct)
+    {
+        try
+        {
+            var staffId = tenantInfo.GetStaffId();
+            var tenantId = tenantInfo.GetTenantTimeZone();
+
+            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
+                return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
+
+            var response = await summarizationService.SummarizeJobNotesAsync(jobId, ct);
+
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(SummarizeJobNotes), AiTaskClass.Drafting, response.Usage);
+
+            return Json(response);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error summarizing job notes for job {JobId}: {Error}", jobId, e.Message);
+            return StatusCode(500, "An error occurred generating the summary");
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SummarizeJobEvents(int jobId, CancellationToken ct)
+    {
+        try
+        {
+            var staffId = tenantInfo.GetStaffId();
+            var tenantId = tenantInfo.GetTenantTimeZone();
+
+            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
+                return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
+
+            var response = await summarizationService.SummarizeJobEventsAsync(jobId, ct);
+
+            await rateLimiter.RecordTokenUsageAsync(
+                staffId, tenantId, nameof(SummarizeJobEvents), AiTaskClass.Drafting, response.Usage);
+
+            return Json(response);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499, "Request cancelled");
+        }
+        catch (AnthropicRateLimitException e)
+        {
+            Log.Warning(e, "Anthropic rate limit hit");
+            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
+        }
+        catch (Anthropic5xxException e)
+        {
+            Log.Warning(e, "Anthropic service error");
+            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error summarizing job events for job {JobId}: {Error}", jobId, e.Message);
+            return StatusCode(500, "An error occurred generating the summary");
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> SummarizeTaskDashboard(CancellationToken ct)
     {
@@ -467,173 +546,6 @@ public class AiController(
         {
             Log.Error(e, "Error triaging change request {RequestId}: {Error}", requestId, e.Message);
             return StatusCode(500, "An error occurred triaging the change request");
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> ExtractJobIntake(
-        [FromBody] ExtractJobIntakeRequest request, CancellationToken ct)
-    {
-        try
-        {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
-
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
-            {
-                return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
-            }
-
-            var response = await intakeService.ExtractJobIntakeAsync(request, ct);
-
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(ExtractJobIntake), AiTaskClass.Judgment, response.Usage);
-
-            return Json(response);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(499, "Request cancelled");
-        }
-        catch (AnthropicRateLimitException e)
-        {
-            Log.Warning(e, "Anthropic rate limit hit");
-            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
-        }
-        catch (Anthropic5xxException e)
-        {
-            Log.Warning(e, "Anthropic service error");
-            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error extracting job intake: {Error}", e.Message);
-            return StatusCode(500, "An error occurred reading the pasted text");
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> ParseSearchQuery(
-        [FromBody] ParseSearchQueryRequest request, CancellationToken ct)
-    {
-        try
-        {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
-
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
-            {
-                return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
-            }
-
-            var response = await intakeService.ParseSearchQueryAsync(request, ct);
-
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(ParseSearchQuery), AiTaskClass.Drafting, response.Usage);
-
-            return Json(response);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(499, "Request cancelled");
-        }
-        catch (AnthropicRateLimitException e)
-        {
-            Log.Warning(e, "Anthropic rate limit hit");
-            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
-        }
-        catch (Anthropic5xxException e)
-        {
-            Log.Warning(e, "Anthropic service error");
-            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error parsing search query: {Error}", e.Message);
-            return StatusCode(500, "An error occurred reading the search query");
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> TriageInbox(CancellationToken ct)
-    {
-        try
-        {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
-
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
-            {
-                return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
-            }
-
-            var response = await insightsService.TriageInboxAsync(ct);
-
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(TriageInbox), AiTaskClass.Drafting, response.Usage);
-
-            return Json(response);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(499, "Request cancelled");
-        }
-        catch (AnthropicRateLimitException e)
-        {
-            Log.Warning(e, "Anthropic rate limit hit");
-            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
-        }
-        catch (Anthropic5xxException e)
-        {
-            Log.Warning(e, "Anthropic service error");
-            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error triaging the message inbox: {Error}", e.Message);
-            return StatusCode(500, "An error occurred triaging the inbox");
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> ExplainPrice(
-        int jobId, bool isPrebook, bool isArchived, CancellationToken ct)
-    {
-        try
-        {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
-
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
-            {
-                return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
-            }
-
-            var response = await insightsService.ExplainPriceAsync(jobId, isPrebook, isArchived, ct);
-
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(ExplainPrice), AiTaskClass.Judgment, response.Usage);
-
-            return Json(response);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(499, "Request cancelled");
-        }
-        catch (AnthropicRateLimitException e)
-        {
-            Log.Warning(e, "Anthropic rate limit hit");
-            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
-        }
-        catch (Anthropic5xxException e)
-        {
-            Log.Warning(e, "Anthropic service error");
-            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error explaining price for job {JobId}: {Error}", jobId, e.Message);
-            return StatusCode(500, "An error occurred explaining the price");
         }
     }
 }

@@ -148,7 +148,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
 
         await CreateService().GeneratePodReportAsync(11);
 
-        await _jobRepositoryMock.DidNotReceiveWithAnyArgs().GetLinkedJobIdForBulkJobAsync(0);
+        await _jobRepositoryMock.DidNotReceiveWithAnyArgs().GetLinkedJobIdForBulkJobAsync(default);
     }
 
     [Fact]
@@ -290,7 +290,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         await service.SendPodEmailAsync(1, recipients, "Your POD", "Line 1\nLine 2");
 
         await using var context = _db.CreateContext();
-        var queued = await context.TucManualMessages.OrderBy(m => m.SendToEmailAddress).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var queued = await context.TucManualMessages.OrderBy(m => m.SendToEmailAddress).ToListAsync();
 
         Assert.Equal(recipients, queued.Select(m => m.SendToEmailAddress));
         Assert.All(queued, message =>
@@ -318,7 +318,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         await service.SendPodEmailAsync(1, ["a@example.com"], "Your POD", "Body");
 
         await using var context = _db.CreateContext();
-        var queued = await context.TucManualMessages.SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var queued = await context.TucManualMessages.SingleAsync();
 
         // A real PDF, not a placeholder — the drainer attaches these bytes verbatim.
         Assert.Equal("%PDF"u8.ToArray(), queued.FileContent.Take(4));
@@ -336,7 +336,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         await service.SendPodEmailAsync(1, ["a@example.com"], "Your POD", null!);
 
         await using var context = _db.CreateContext();
-        var queued = await context.TucManualMessages.SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var queued = await context.TucManualMessages.SingleAsync();
 
         Assert.Equal(string.Empty, queued.UcmmMessage);
     }
@@ -354,8 +354,8 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
 
         var result = PodReportService.MapPhotoCategories(photos);
 
-        var item = Assert.Single(result);
-        Assert.Single(item.Photos);
+        Assert.Single(result);
+        Assert.Single(result[0].Photos);
         Assert.Equal("valid.jpg", result[0].Photos[0].Caption);
     }
 

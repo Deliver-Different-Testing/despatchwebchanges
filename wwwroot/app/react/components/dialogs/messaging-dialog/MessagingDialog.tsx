@@ -85,10 +85,6 @@ import {
  * not rebuilt per render. Mantine props are plain attributes, so nearly all of
  * them simply disappear; what is left is the two the message bubble reuses.
  */
-import {useInboxTriage, triageKey} from '../../../hooks/useInboxTriage';
-import {TriageChip} from './TriageChip';
-import {InboxTriageItem} from '../../../interfaces/ai';
-
 const MESSAGE_BODY_STYLE = {whiteSpace: 'pre-wrap', wordBreak: 'break-word'} as const;
 const EMPTY_GLYPH_SIZE = 48;
 
@@ -137,9 +133,6 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         quickResponses,
         loadQuickResponses,
     } = useQuickResponses();
-
-    /* One Auto-mate pass over the whole inbox when it opens, not one per thread. */
-    const {triage} = useInboxTriage(open, conversations.length > 0);
 
     const {
         searchTerm,
@@ -520,7 +513,6 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                             {/* Conversations Panel */}
                             <ConversationsPanel
                                 conversations={conversations}
-                                triage={triage}
                                 selectedConversation={selectedConversation}
                                 isLoading={isConversationsLoading}
                                 totalUnreadCount={getTotalUnreadCount()}
@@ -636,8 +628,6 @@ function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: Dialog
 
 interface ConversationsPanelProps {
     conversations: RecentConversation[];
-    /** Auto-mate's read of each conversation, keyed by id-and-type. Empty when off. */
-    triage: Map<string, InboxTriageItem>;
     selectedConversation: RecentConversation | null;
     isLoading: boolean;
     totalUnreadCount: number;
@@ -649,7 +639,6 @@ interface ConversationsPanelProps {
 
 function ConversationsPanel({
                                 conversations,
-                                triage,
                                 selectedConversation,
                                 isLoading,
                                 totalUnreadCount,
@@ -806,11 +795,6 @@ function ConversationsPanel({
                                             </Badge>
                                         )}
                                     </Group>
-                                    {(() => {
-                                        const item = triage.get(
-                                            triageKey(conv.otherPartyId, conv.otherPartyType));
-                                        return item ? <TriageChip item={item}/> : null;
-                                    })()}
                                 </Box>
 
                                 {conv.unreadCount > 0 && (
@@ -1078,7 +1062,7 @@ function ChatPanel({
                     onChange={(e) => onMessageChange(e.currentTarget.value)}
                     onKeyDown={onKeyPress}
                 />
-                <AiDraftButton category="writing" onClick={onDraft} isDrafting={isDrafting} />
+                <AiDraftButton onClick={onDraft} isDrafting={isDrafting} />
                 {selectedConversation.otherPartyType === OtherMessagePartyType.Courier && (
                     <Select
                         size="sm"

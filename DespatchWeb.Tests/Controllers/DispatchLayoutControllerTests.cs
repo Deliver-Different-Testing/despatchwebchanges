@@ -76,7 +76,7 @@ public class DispatchLayoutControllerTests
             new SaveDispatchLayoutsRequest { Page = "Nope", Layouts = [Layout("Wide")] });
 
         Assert.IsType<BadRequestObjectResult>(result);
-        await _repositoryMock.DidNotReceiveWithAnyArgs().ReplaceLayoutsAsync(null!, null!);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().ReplaceLayoutsAsync(default!, default!);
     }
 
     [Fact]
@@ -88,6 +88,6 @@ public class DispatchLayoutControllerTests
             Request(new DispatchLayoutDto { Name = "Wide", LayoutJson = "" }));
 
         Assert.IsType<BadRequestObjectResult>(result);
-        await _repositoryMock.DidNotReceiveWithAnyArgs().ReplaceLayoutsAsync(null!, null!);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().ReplaceLayoutsAsync(default!, default!);
     }
 }

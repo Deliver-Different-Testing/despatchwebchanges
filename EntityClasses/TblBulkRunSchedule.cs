@@ -59,8 +59,6 @@ public partial class TblBulkRunSchedule
 
     public bool? IsRecurringSchedule { get; set; }
 
-    public int ScheduleId { get; set; }
-
     public virtual TucClient Client { get; set; }
 
     public virtual TucJobType ParentSpeed { get; set; }

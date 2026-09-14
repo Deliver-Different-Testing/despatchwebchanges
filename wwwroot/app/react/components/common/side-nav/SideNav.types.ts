@@ -28,6 +28,4 @@ export interface SideNavProps {
     onNavigate: (state: string) => void;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
-    /** Opens the Auto-mate settings dialog from the side menu's AI block. */
-    onOpenAiSettings: () => void;
 }

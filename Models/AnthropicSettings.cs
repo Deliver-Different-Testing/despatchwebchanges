@@ -75,14 +75,6 @@ public sealed class AnthropicSettings
         CacheWritePricePerMillion = 2.50m
     };
 
-    /// <summary>
-    /// Deployment-wide kill switch for every Auto-mate endpoint, enforced by
-    /// <c>AiFeatureGateAttribute</c> on <c>AiController</c>. On by default, and set
-    /// explicitly in <c>appsettings.json</c> so it is findable — an ops brake nobody
-    /// can discover is not a brake.
-    /// </summary>
-    public bool Enabled { get; init; } = true;
-
     public int RateLimitPerUserPerMinute { get; init; } = 5;
     public int RateLimitPerTenantPerMinute { get; init; } = 20;
 

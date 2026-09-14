@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SideNav Component Tests
  */
 
@@ -8,7 +8,6 @@ import {renderWithMantine} from '../../../__testUtils__';
 import {SideNav} from './SideNav';
 import {createDfrntTheme} from '../../../theme/dfrntMantineTheme';
 import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
-import {setupUser} from '../../../__testUtils__/setupUser';
 
 describe('SideNav', () => {
     const defaultProps = {
@@ -18,7 +17,6 @@ describe('SideNav', () => {
         currentState: 'home',
         onClose: jest.fn(),
         onNavigate: jest.fn(),
-        onOpenAiSettings: jest.fn(),
     };
 
     describe('Rendering', () => {
@@ -337,23 +335,6 @@ describe('SideNav', () => {
         it('should not show "Made with aroha" for non-US customers', () => {
             renderWithMantine(<SideNav {...defaultProps} isUsCustomer={false} />);
             expect(screen.queryByText(/Made with aroha/)).not.toBeInTheDocument();
-        });
-    });
-
-    describe('Auto-mate controls', () => {
-        it('carries the Auto-mate switch, so AI is reachable from every page', () => {
-            renderWithMantine(<SideNav {...defaultProps} />);
-
-            expect(screen.getByRole('switch', {name: 'Auto-mate'})).toBeInTheDocument();
-        });
-
-        it('opens the category settings from the menu', async () => {
-            const onOpenAiSettings = jest.fn();
-            renderWithMantine(<SideNav {...defaultProps} onOpenAiSettings={onOpenAiSettings} />);
-
-            await setupUser().click(screen.getByText('Choose what it does'));
-
-            expect(onOpenAiSettings).toHaveBeenCalledTimes(1);
         });
     });
 });

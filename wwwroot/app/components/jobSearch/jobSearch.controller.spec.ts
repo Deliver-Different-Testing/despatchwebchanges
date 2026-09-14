@@ -62,6 +62,11 @@ jest.mock('../../react/query/queryClient', () => ({
     },
 }));
 
+jest.mock('../../functions/aiSettings', () => ({
+    setAiEnabled: jest.fn(),
+    isAiEnabled: jest.fn(() => false),
+}));
+
 jest.mock('../../filters', () => ({
     timezoneShortFilter: jest.fn(() => 'NZST'),
 }));

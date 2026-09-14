@@ -56,9 +56,6 @@ import {dayjs, formatDateForApi, getIanaTimezone, getInputDateFormat} from '../.
 import {getStateByAbbreviation} from '../../../utils/usStates';
 import type {Dayjs} from 'dayjs';
 import type {ShowToastFn} from '../../../services/toastService';
-import type {JobIntakeResponse} from '../../../interfaces/ai';
-import {PasteBookingPanel} from './PasteBookingPanel';
-import {intakeAddressToSearchText} from './jobIntake';
 import {
     DialogFooter,
     DialogHeader,
@@ -232,13 +229,6 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
     const [refB, setRefB] = useState('');
     const [jobNotes, setJobNotes] = useState('');
 
-    /* What Auto-mate read out of a pasted booking, typed into the two address
-       pickers for the operator to choose the match. A picked HERE result is the
-       only thing that carries lat/long, so an extracted address seeds the search
-       rather than becoming the value. */
-    const [pickupAddressSeed, setPickupAddressSeed] = useState('');
-    const [deliveryAddressSeed, setDeliveryAddressSeed] = useState('');
-
     // UI state
     const [isLoading, setIsLoading] = useState(false);
     const [touched, setTouched] = useState(false);
@@ -295,62 +285,11 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             setJobNotes('');
             setPickupNotes('');
             setDeliveryNotes('');
-            setPickupAddressSeed('');
-            setDeliveryAddressSeed('');
             setIsLoading(false);
             setTouched(false);
             setSubmitAttempt(0);
         }
     }, [open]);
-
-    /**
-     * Writes an Auto-mate extraction into the form. Only fields the extraction
-     * actually carries are touched, so running it twice — or running it over a
-     * form the operator has already started — never blanks their work.
-     */
-    const applyIntake = useCallback((intake: JobIntakeResponse) => {
-        const fill = (value: string | null | undefined, set: (next: string) => void) => {
-            if (value && value.trim()) set(value.trim());
-        };
-
-        fill(intakeAddressToSearchText(intake.pickupAddress), setPickupAddressSeed);
-        fill(intakeAddressToSearchText(intake.deliveryAddress), setDeliveryAddressSeed);
-
-        fill(intake.fromContactName, setPickupContact);
-        fill(intake.deliverToContact, setDeliveryContact);
-        fill(intake.podName || intake.deliverToContact, setPodName);
-        fill(intake.pickupNotes, setPickupNotes);
-        fill(intake.deliveryNotes, setDeliveryNotes);
-        fill(intake.jobNotes, setJobNotes);
-        fill(intake.refA, setRefA);
-        fill(intake.refB, setRefB);
-
-        if (intake.weight != null) setWeight(String(intake.weight));
-
-        if (intake.date) {
-            const parsed = dayjs(intake.date, ISO_DATE, true);
-            if (parsed.isValid()) setJobDate(parsed.tz(getIanaTimezone(), true));
-        }
-
-        /* Only a resolved id is written. An unmatched name is already reported in
-           the panel's `unresolved` list, and guessing here would be worse than
-           leaving the picker for the operator. */
-        if (intake.client.id != null) {
-            setSelectedClient({id: intake.client.id, text: intake.client.name ?? intake.client.text ?? ''});
-        }
-        if (intake.speed.id != null) {
-            setSelectedSpeed(findById(speedOptions, String(intake.speed.id)) ?? {
-                id: intake.speed.id,
-                text: intake.speed.name ?? '',
-            });
-        }
-        if (intake.vehicle.id != null) {
-            setSelectedVehicle(findById(vehicleSizes, String(intake.vehicle.id)) ?? {
-                id: intake.vehicle.id,
-                text: intake.vehicle.name ?? '',
-            });
-        }
-    }, [speedOptions, vehicleSizes]);
 
     // Map HERE Maps lookup response to AddressViewModel
     const processAddress = useCallback(async (
@@ -604,8 +543,6 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                         </Alert>
                     )}
 
-                    <PasteBookingPanel onFilled={applyIntake} disabled={isLoading}/>
-
                     <Section title="Job">
                         <Stack gap="md">
                             {/*
@@ -692,7 +629,6 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                         options={fromAddressOptions}
                                         loading={isSearchingFromAddress}
                                         onSearchChange={setFromAddressSearchText}
-                                        seedSearch={pickupAddressSeed}
                                         getOptionKey={(o) => o.id}
                                         getOptionLabel={(o) => o.address.label}
                                         error={touched && !selectedPickupAddress ? 'Pickup address is required.' : undefined}
@@ -736,7 +672,6 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                         options={toAddressOptions}
                                         loading={isSearchingToAddress}
                                         onSearchChange={setToAddressSearchText}
-                                        seedSearch={deliveryAddressSeed}
                                         getOptionKey={(o) => o.id}
                                         getOptionLabel={(o) => o.address.label}
                                         error={touched && !selectedDeliveryAddress ? 'Delivery address is required.' : undefined}
