@@ -11,8 +11,10 @@ import {dayjs} from '../../../utils/dateUtils';
 import {messagingApi} from '../../../services/messagingApi';
 import { suppressConsoleError } from '../../../__testUtils__';
 import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
+import {triageInbox} from '../../../services/aiAssistantApi';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
+import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../../__testUtils__/aiPreferences';
 
 jest.mock('../../../services/messagingApi', () => {
     const methods = {
@@ -33,7 +35,13 @@ jest.mock('../../../services/messagingApi', () => {
     };
 });
 
+jest.mock('../../../services/aiAssistantApi', () => ({
+    triageInbox: jest.fn(),
+}));
+
+
 const mockApi = messagingApi as jest.Mocked<typeof messagingApi>;
+const mockTriageInbox = triageInbox as jest.MockedFunction<typeof triageInbox>;
 const defaultProps = {
     open: true,
     onClose: jest.fn(),
@@ -515,5 +523,50 @@ describe('isNearBottom', () => {
         expect(isNearBottom({scrollHeight: 1000, scrollTop: 850, clientHeight: 100})).toBe(true);
         expect(isNearBottom({scrollHeight: 1000, scrollTop: 800, clientHeight: 100})).toBe(false);
         expect(isNearBottom({scrollHeight: 1000, scrollTop: 0, clientHeight: 100})).toBe(false);
+    });
+});
+
+describe('MessagingDialog — Auto-mate triage', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        resetAiPreferences();
+    });
+
+    it('triages the whole inbox in one call and chips each row it covers', async () => {
+        setupApiDefaults([
+            createConversation({otherPartyId: 1, otherPartyName: 'John Driver'}),
+            createConversation({otherPartyId: 2, otherPartyName: 'Sam Runner'}),
+        ]);
+        mockTriageInbox.mockResolvedValue({
+            conversations: [{
+                otherPartyId: 1,
+                otherPartyType: OtherMessagePartyType.Courier,
+                intent: 'Problem',
+                urgency: 'Urgent',
+                summary: 'Needs gate code for Wiri drop',
+                jobReferences: ['J1234'],
+                suggestedResponseId: null,
+            }],
+            usage: {inputTokens: 40, outputTokens: 12},
+        });
+
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        expect(await screen.findByText('Needs gate code for Wiri drop')).toBeInTheDocument();
+        expect(mockTriageInbox).toHaveBeenCalledTimes(1);
+
+        // The row Auto-mate said nothing about is left exactly as it was.
+        expect(screen.getByText('Sam Runner')).toBeInTheDocument();
+        expect(screen.getAllByText('Urgent')).toHaveLength(1);
+    });
+
+    it('does not triage when the user has not opted into Auto-mate', async () => {
+        disableAutoMate();
+        setupApiDefaults([createConversation()]);
+
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        expect(await screen.findByText('John Driver')).toBeInTheDocument();
+        expect(mockTriageInbox).not.toHaveBeenCalled();
     });
 });

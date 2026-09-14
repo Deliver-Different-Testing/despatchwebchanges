@@ -79,7 +79,7 @@ import {
 } from './refreshIntervalOptions';
 import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
 import {AiSummaryCard} from '../../components/common/ai-summary-card/AiSummaryCard';
-import {isAiEnabled, isAiAutoOpenEnabled} from '../../../functions/aiSettings';
+import {useAiAutoOpen, useAiFeature} from '../../hooks/useAiFeature';
 
 // Local storage keys
 const getViewPreferenceKey = () => {
@@ -165,6 +165,9 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     const isCompact = useMediaQuery(`(max-width: ${em(992)})`, false, {
         getInitialValueInEffect: false,
     }) ?? false;
+
+    const aiBriefingsEnabled = useAiFeature('briefings');
+    const aiAutoOpen = useAiAutoOpen();
 
     // View state (initialized from localStorage to avoid flash of default state)
     const [showFullCalendar, setShowFullCalendar] = useState(() => {
@@ -644,13 +647,13 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             {/* AI Briefing — collapsible so the task queue leads the scan.
                 Starts collapsed (deferring the fetch) unless the user has opted
                 into "open automatically" via their Auto-mate settings. */}
-            {isAiEnabled() && !tasksLoading && tasks.length > 0 && (
+            {aiBriefingsEnabled && !tasksLoading && tasks.length > 0 && (
                 <Box style={{flexShrink: 0}}>
                     <AiSummaryCard
                         title="Auto-mate Daily Briefing"
                         fetchSummary={(signal) => summarizeTaskDashboard({signal})}
                         collapsible
-                        autoOpen={isAiAutoOpenEnabled()}
+                        autoOpen={aiAutoOpen}
                     />
                 </Box>
             )}

@@ -14,7 +14,6 @@ import {
     RefreshOption,
 } from './DashboardSettingsDialog';
 import {CustomizePanelsDialog} from '../customize-panels-dialog/CustomizePanelsDialog';
-import {isAiAutoOpenEnabled, setAiAutoOpenEnabled} from '../../../../functions/aiSettings';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
@@ -79,21 +78,11 @@ const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSetting
             selectedDriverLocationRefreshInterval={payload.selectedDriverLocationRefreshInterval}
             selectedTaskRefreshInterval={payload.selectedTaskRefreshInterval}
             refreshOptions={payload.refreshOptions}
-            aiEnabled={payload.aiEnabled}
-            aiAutoOpen={payload.aiAutoOpen}
             jobSearchBetaEnabled={payload.jobSearchBetaEnabled}
             dispatchBetaEnabled={payload.dispatchBetaEnabled}
             nationwideBetaEnabled={payload.nationwideBetaEnabled}
             onClose={() => close(null)}
-            onSave={(result: DashboardSettingsResult) => {
-                // The "Open automatically" preference is owned by this bridge: seeded
-                // from localStorage and persisted here so the AngularJS callers don't
-                // need to know about it.
-                if (result.aiAutoOpen !== undefined) {
-                    setAiAutoOpenEnabled(result.aiAutoOpen);
-                }
-                close(result);
-            }}
+            onSave={(result: DashboardSettingsResult) => close(result)}
         />
     ),
 });
@@ -103,7 +92,6 @@ export function openDashboardSettingsDialog(
     selectedRefreshInterval?: RefreshOption,
     selectedDriverLocationRefreshInterval?: RefreshOption,
     selectedTaskRefreshInterval?: RefreshOption,
-    aiEnabled?: boolean,
     jobSearchBetaEnabled?: boolean,
     dispatchBetaEnabled?: boolean,
     nationwideBetaEnabled?: boolean,
@@ -114,8 +102,6 @@ export function openDashboardSettingsDialog(
         selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? DISABLED_REFRESH,
         selectedTaskRefreshInterval: selectedTaskRefreshInterval ?? DISABLED_REFRESH,
         refreshOptions: [DISABLED_REFRESH, ...getMinsSelectionOptions()],
-        aiEnabled,
-        aiAutoOpen: isAiAutoOpenEnabled(),
         jobSearchBetaEnabled,
         dispatchBetaEnabled,
         nationwideBetaEnabled,

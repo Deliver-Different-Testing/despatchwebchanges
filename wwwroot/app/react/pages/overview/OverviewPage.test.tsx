@@ -3,6 +3,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {MantineTestProvider} from '../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {OverviewPage} from './OverviewPage';
+import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../__testUtils__/aiPreferences';
 
 // ContactID and FirstName are defined in setup.ts as 0 and 'Test'
 
@@ -57,9 +58,6 @@ jest.mock('../../hooks/useOverviewApi', () => ({
     useCourierSearch: jest.fn(),
 }));
 
-jest.mock('../../../functions/aiSettings', () => ({
-    isAiEnabled: jest.fn(() => false),
-}));
 
 import {
     useOverviewJobs,

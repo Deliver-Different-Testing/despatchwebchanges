@@ -190,7 +190,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                                 {t.label}
                             </Button>
                         ))}
-                        <AiDraftButton onClick={handleDraft} isDrafting={isDrafting} />
+                        <AiDraftButton category="writing" onClick={handleDraft} isDrafting={isDrafting} />
                     </Group>
                 </Box>
 

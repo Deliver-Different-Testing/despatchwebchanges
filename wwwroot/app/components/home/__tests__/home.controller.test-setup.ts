@@ -37,7 +37,6 @@ jest.mock('../../../react/services/jobSearchApi', () => ({
     fetchClearListJobs: jest.fn(),
 }));
 jest.mock('../../../react/query/queryClient', () => ({queryKeys: {}}));
-jest.mock('../../../functions/aiSettings', () => ({setAiEnabled: jest.fn()}));
 jest.mock('../../../functions/setDateFilterDefaults', () => jest.fn().mockReturnValue({
     startDate: {format: () => ''}, endDate: {format: () => ''},
 }));

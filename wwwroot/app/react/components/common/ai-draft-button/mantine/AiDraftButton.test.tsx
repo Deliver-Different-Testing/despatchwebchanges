@@ -3,22 +3,18 @@ import {screen} from '@testing-library/react';
 import { setupUser } from '../../../../__testUtils__/setupUser';
 import { renderWithMantine } from '../../../../__testUtils__';
 import {AiDraftButton} from './AiDraftButton';
-import {isAiEnabled} from '../../../../../functions/aiSettings';
+import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../../../__testUtils__/aiPreferences';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-jest.mock('../../../../../functions/aiSettings', () => ({
-    isAiEnabled: jest.fn(),
-}));
 
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 describe('AiDraftButton (Mantine)', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('renders nothing when AI is disabled', () => {
-        mockIsAiEnabled.mockReturnValue(false);
+        disableAutoMate();
 
         renderWithMantine(<AiDraftButton onClick={jest.fn()} isDrafting={false} />);
 
@@ -26,7 +22,7 @@ describe('AiDraftButton (Mantine)', () => {
     });
 
     it('renders and fires onClick when AI is enabled', async () => {
-        mockIsAiEnabled.mockReturnValue(true);
+        enableAutoMate();
         const onClick = jest.fn();
 
         renderWithMantine(<AiDraftButton onClick={onClick} isDrafting={false} />);
@@ -36,7 +32,7 @@ describe('AiDraftButton (Mantine)', () => {
     });
 
     it('is disabled and shows the loader while drafting', () => {
-        mockIsAiEnabled.mockReturnValue(true);
+        enableAutoMate();
 
         renderWithMantine(<AiDraftButton onClick={jest.fn()} isDrafting={true} />);
 
@@ -45,7 +41,7 @@ describe('AiDraftButton (Mantine)', () => {
     });
 
     it('respects the disabled prop', () => {
-        mockIsAiEnabled.mockReturnValue(true);
+        enableAutoMate();
 
         renderWithMantine(<AiDraftButton onClick={jest.fn()} isDrafting={false} disabled />);
 

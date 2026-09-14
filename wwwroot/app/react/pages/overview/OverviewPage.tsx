@@ -10,7 +10,7 @@ import {
     useOverviewStats,
     useOverviewOpenJobs,
 } from '../../hooks/useOverviewApi';
-import {isAiEnabled} from '../../../functions/aiSettings';
+import {useAiFeature} from '../../hooks/useAiFeature';
 import {PanelHeader} from '../../components/common/panel-header';
 import {SymbolIcon} from '../../components/common/symbol-icon';
 import {FilterPanel} from './components/FilterPanel';
@@ -58,6 +58,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                                                           }) => {
     const queryClient = useQueryClient();
     const aiContainerRef = useRef<HTMLDivElement>(null);
+    const aiBriefingsEnabled = useAiFeature('briefings');
 
     // ── State ──
     const [activeTab, setActiveTab] = useState(0);
@@ -165,7 +166,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     // ── AI Insights panel ──
     useEffect(() => {
         const container = aiContainerRef.current;
-        if (isAiEnabled() && container && window.ReactAiAssistant) {
+        if (aiBriefingsEnabled && container && window.ReactAiAssistant) {
             window.ReactAiAssistant.renderOperationsInsightsPanel(container);
             return () => {
                 if (container && window.ReactAiAssistant) {
@@ -173,7 +174,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 }
             };
         }
-    }, []);
+        // Re-runs when the user toggles briefings, so the panel appears and
+        // disappears without a reload.
+    }, [aiBriefingsEnabled]);
 
     // ── Filter handlers ──
     const allRegionsSelected = regions.length > 0 && selectedRegionIds.size === regions.length;
@@ -397,7 +400,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                         />
                         <Box px={16} pb={16}>
                             {/* AI Operations Insights */}
-                            {isAiEnabled() && <Box ref={aiContainerRef} mb={16}/>}
+                            {aiBriefingsEnabled && <Box ref={aiContainerRef} mb={16}/>}
 
                             {/* Deliveries Table */}
                             <DeliveriesTable

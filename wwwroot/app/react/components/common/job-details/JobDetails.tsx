@@ -32,7 +32,7 @@ import {JobDetailHeader} from './components/JobDetailHeader';
 import {AiSummaryCard} from '../ai-summary-card/AiSummaryCard';
 import {AiBlockersCard} from '../ai-blockers-card/AiBlockersCard';
 import {summarizeJob, extractBlockers} from '../../../services/aiAssistantApi';
-import {isAiAutoOpenEnabled, isAiEnabled} from '../../../../functions/aiSettings';
+import {useAiAutoOpen, useAiFeature} from '../../../hooks/useAiFeature';
 import {MetricsGrid} from './components/MetricsGrid';
 import {RateAcceptanceBanner} from './components/RateAcceptanceBanner';
 import {AddressSection} from './components/AddressSection';
@@ -185,11 +185,12 @@ export function JobDetails({config}: JobDetailsProps) {
     // Track which job tab is selected
     const [selectedTabIndex, setSelectedTabIndex] = useState(0);
 
-    // AI briefing — per-user opt-in via dashboard settings. The card lives
-    // below MetricsGrid and renders in collapsible mode so it stays closed
-    // until the user expands it (first expand triggers summarizeJob).
-    const aiEnabled = useMemo(() => isAiEnabled(), []);
-    const aiAutoOpen = useMemo(() => isAiAutoOpenEnabled(), []);
+    // AI briefing. The card lives below MetricsGrid and renders collapsed, so
+    // it only calls summarizeJob once the user expands it. Read through the hook
+    // rather than at mount, so toggling Auto-mate in the side menu takes effect
+    // here without a reload.
+    const aiEnabled = useAiFeature('briefings');
+    const aiAutoOpen = useAiAutoOpen();
     // Keep jobRef synchronously current so handlers never read a stale job
     const job: IJob | undefined = sortedRelatedJobs[selectedTabIndex] ?? sortedRelatedJobs[0];
 

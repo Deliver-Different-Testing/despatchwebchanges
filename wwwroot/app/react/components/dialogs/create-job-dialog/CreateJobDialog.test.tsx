@@ -15,6 +15,9 @@ import { setupUser } from '../../../__testUtils__/setupUser';
 import {addressApi} from '../../../services/addressApi';
 import {jobApi} from '../../../services/jobApi';
 import type {HereMapsLookupResponse} from '../../../interfaces';
+import {extractJobIntake} from '../../../services/aiAssistantApi';
+import type {JobIntakeResponse} from '../../../interfaces/ai';
+import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../../__testUtils__/aiPreferences';
 
 // Mock the hooks - must match the import paths used by the component
 const mockUseClientSearch = jest.fn(() => ({data: [] as any[], isFetching: false}));
@@ -54,6 +57,11 @@ jest.mock('../../../services/addressApi', () => ({
     },
 }));
 
+jest.mock('../../../services/aiAssistantApi', () => ({
+    extractJobIntake: jest.fn(),
+}));
+
+
 jest.mock('../../../services/jobApi', () => ({
     jobApi: {
         quickCreateJob: jest.fn(),
@@ -76,6 +84,8 @@ jest.mock('../../../utils/dateUtils', () => {
         dayjs: actualDayjs,
     };
 });
+
+const mockExtractJobIntake = extractJobIntake as jest.MockedFunction<typeof extractJobIntake>;
 
 const defaultProps: CreateJobDialogProps = {
     open: true,
@@ -495,5 +505,93 @@ describe('CreateJobDialog', () => {
             expect(submittedJob.weightKg).toBe(12);
             expect(submittedJob.weightLb).toBeNull();
         }, 30000);
+    });
+
+    describe('Auto-mate intake', () => {
+        const emptyAddress = {
+            addressLine1: '', addressLine2: '', addressLine3: '', addressLine4: '',
+            addressLine5: '', addressLine6: '', addressLine7: '', addressLine8: '',
+        };
+
+        const intake = (overrides: Partial<JobIntakeResponse> = {}): JobIntakeResponse => ({
+            pickupAddress: {...emptyAddress, addressLine3: '12', addressLine4: 'Queen Street', addressLine5: 'Newmarket'},
+            deliveryAddress: {...emptyAddress, addressLine4: 'Dock Road', addressLine5: 'Wiri'},
+            client: {text: 'Acme', id: null, name: null},
+            speed: {text: 'Express', id: 2, name: 'Express'},
+            vehicle: {text: 'van', id: 2, name: 'Van'},
+            fromContactName: 'Jo Sender',
+            deliverToContact: 'Pat Receiver',
+            podName: '',
+            date: null,
+            refA: 'PO-8891',
+            refB: '',
+            pickupNotes: '',
+            deliveryNotes: 'Call before delivery',
+            jobNotes: '',
+            weight: 12.5,
+            weightUnit: 'kg' as const,
+            confidence: 0.8,
+            unresolved: [],
+            usage: {inputTokens: 10, outputTokens: 5},
+            ...overrides,
+        });
+
+        async function pasteAndFill(user: ReturnType<typeof setupUser>) {
+            await user.click(screen.getByRole('button', {name: /paste the email or phone note/i}));
+            await user.type(await screen.findByLabelText(/booking request/i), 'Collect from Acme');
+            await user.click(screen.getByRole('button', {name: /fill from text/i}));
+        }
+
+        it('writes what Auto-mate read into the form, addresses included', async () => {
+            mockExtractJobIntake.mockResolvedValue(intake());
+            renderWithAllProviders(<CreateJobDialog {...createMockProps()} />);
+            const user = setupUser();
+
+            await pasteAndFill(user);
+
+            await waitFor(() =>
+                expect(screen.getByLabelText(/pickup contact/i)).toHaveValue('Jo Sender'));
+            expect(screen.getByLabelText(/delivery contact/i)).toHaveValue('Pat Receiver');
+            // No POD name was extracted, so the delivery contact stands in for it.
+            expect(screen.getByLabelText(/pod name/i)).toHaveValue('Pat Receiver');
+            expect(screen.getByLabelText(/delivery notes/i)).toHaveValue('Call before delivery');
+            expect(screen.getByLabelText(/reference a/i)).toHaveValue('PO-8891');
+            expect(screen.getByLabelText(/weight/i)).toHaveValue('12.5');
+
+            // Addresses are typed into the pickers, not set as values: only a picked
+            // HERE result carries the lat/long the job needs.
+            expect(screen.getByLabelText(/pickup address/i))
+                .toHaveValue('12 Queen Street, Newmarket');
+            expect(screen.getByLabelText(/delivery address/i)).toHaveValue('Dock Road, Wiri');
+        });
+
+        it('sets only the lookups the server resolved, leaving the rest to the operator', async () => {
+            mockExtractJobIntake.mockResolvedValue(intake());
+            renderWithAllProviders(<CreateJobDialog {...createMockProps()} />);
+            const user = setupUser();
+
+            await pasteAndFill(user);
+
+            await waitFor(() => expect(screen.getByLabelText(/^speed/i)).toHaveValue('Express'));
+            expect(screen.getByLabelText(/^vehicle/i)).toHaveValue('Van');
+            // The client came back unmatched, so its picker stays empty.
+            expect(screen.getByLabelText(/^client/i)).toHaveValue('');
+        });
+
+        it('leaves fields the extraction did not carry alone', async () => {
+            mockExtractJobIntake.mockResolvedValue(intake({
+                deliveryNotes: '', refA: '', weight: null, fromContactName: '',
+            }));
+            renderWithAllProviders(<CreateJobDialog {...createMockProps()} />);
+            const user = setupUser();
+
+            await user.type(screen.getByLabelText(/pickup contact/i), 'Typed by hand');
+            await pasteAndFill(user);
+
+            await waitFor(() =>
+                expect(screen.getByLabelText(/delivery contact/i)).toHaveValue('Pat Receiver'));
+            expect(screen.getByLabelText(/pickup contact/i)).toHaveValue('Typed by hand');
+            expect(screen.getByLabelText(/reference a/i)).toHaveValue('');
+        });
     });
 });

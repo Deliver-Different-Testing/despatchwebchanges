@@ -33,7 +33,6 @@ import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import {getIanaTimezone} from "../../react/utils/dateUtils";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
-import {setAiEnabled} from "../../functions/aiSettings";
 import {fetchPodJobs, fetchBulkJobs} from "../../react/services/jobSearchApi";
 import {queryKeys} from "../../react/query/queryClient";
 import {
@@ -1282,10 +1281,6 @@ class JobSearchController extends BaseController {
             );
 
             if (!result) return;
-
-            if (result.aiEnabled !== undefined) {
-                setAiEnabled(result.aiEnabled);
-            }
 
             // Beta opt-in changed: persist and (if turned on) flip to the new
             // route immediately. Operators staying on V1 see a toast confirming

@@ -1,30 +1,17 @@
+/**
+ * The pre-2026-09 Auto-mate flags.
+ *
+ * Auto-mate is now on by default with five category toggles, all owned by
+ * `react/services/aiPreferenceStore.ts` and persisted per user on the server.
+ * These keys survive only so that migration can read them: `getItem` tells
+ * "never touched it" apart from "turned it off", which is what lets an explicit
+ * opt-out be honoured rather than silently reversed.
+ *
+ * Nothing should read these to decide whether to show an AI feature — use
+ * `useAiFeature(category)`.
+ */
+
 import {ContactID} from '../contants';
 
-const STORAGE_KEY = `aiEnabled_${ContactID}`;
-const AUTO_OPEN_STORAGE_KEY = `aiAutoOpen_${ContactID}`;
-
-/**
- * Returns true when the signed-in user has opted in to AI features via
- * the dashboard settings dialog. Per-user only — there is no server-side
- * gate. Defaults to false: users have to turn it on themselves.
- */
-export function isAiEnabled(): boolean {
-    return localStorage.getItem(STORAGE_KEY) === 'true';
-}
-
-export function setAiEnabled(enabled: boolean): void {
-    localStorage.setItem(STORAGE_KEY, String(enabled));
-}
-
-/**
- * Returns true when the user wants the Auto-mate briefing to open expanded
- * automatically, rather than starting collapsed (click-to-open). Per-user
- * only. Defaults to false, preserving the click-to-open behaviour.
- */
-export function isAiAutoOpenEnabled(): boolean {
-    return localStorage.getItem(AUTO_OPEN_STORAGE_KEY) === 'true';
-}
-
-export function setAiAutoOpenEnabled(enabled: boolean): void {
-    localStorage.setItem(AUTO_OPEN_STORAGE_KEY, String(enabled));
-}
+export const LEGACY_AI_ENABLED_KEY = `aiEnabled_${ContactID}`;
+export const LEGACY_AI_AUTO_OPEN_KEY = `aiAutoOpen_${ContactID}`;

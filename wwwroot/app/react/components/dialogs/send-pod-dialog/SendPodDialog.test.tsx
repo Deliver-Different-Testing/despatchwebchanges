@@ -4,16 +4,14 @@ import {SendPodDialog, SendPodJobData} from './SendPodDialog';
 import { renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {draftPodEmail} from '../../../services/aiAssistantApi';
-import {isAiEnabled} from '../../../../functions/aiSettings';
+import {disableAutoMate, enableAutoMate, resetAiPreferences} from '../../../__testUtils__/aiPreferences';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
 jest.mock('../../../services/aiAssistantApi', () => ({draftPodEmail: jest.fn()}));
-jest.mock('../../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));
 
 const mockDraftPodEmail = draftPodEmail as jest.Mock;
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 const jobData: SendPodJobData = {
     jobId: 1,
@@ -40,7 +38,7 @@ describe('SendPodDialog — AI draft', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('seeds an editable body from the template', () => {
-        mockIsAiEnabled.mockReturnValue(false);
+        disableAutoMate();
 
         renderDialog();
 
@@ -48,7 +46,7 @@ describe('SendPodDialog — AI draft', () => {
     });
 
     it('hides the Draft button when AI is disabled', () => {
-        mockIsAiEnabled.mockReturnValue(false);
+        disableAutoMate();
 
         renderDialog();
 
@@ -56,7 +54,7 @@ describe('SendPodDialog — AI draft', () => {
     });
 
     it('replaces subject and body with the AI draft', async () => {
-        mockIsAiEnabled.mockReturnValue(true);
+        enableAutoMate();
         mockDraftPodEmail.mockResolvedValueOnce({
             subject: 'POD delivered J123',
             body: 'Your shipment was delivered.',
@@ -75,7 +73,7 @@ describe('SendPodDialog — AI draft', () => {
 describe('SendPodDialog — recipients and sending', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockIsAiEnabled.mockReturnValue(false);
+        disableAutoMate();
     });
 
     it('closes via the shared header close button', async () => {
@@ -132,7 +130,7 @@ describe('SendPodDialog — recipients and sending', () => {
 describe('SendPodDialog — send failures', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockIsAiEnabled.mockReturnValue(false);
+        disableAutoMate();
     });
 
     it('shows the server error and keeps the entered recipients so the send can be retried', async () => {

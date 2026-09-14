@@ -120,4 +120,40 @@ public class AnthropicSettingsBindingTests
 
         Assert.Throws<OptionsValidationException>(() => options.Value);
     }
+
+    [Fact]
+    public void EnabledDefaultsToOn_SoAnAbsentSectionDoesNotSilentlyKillAutoMate()
+    {
+        Assert.True(Bind([]).Enabled);
+    }
+
+    [Fact]
+    public void EnabledCanBeTurnedOff_WhichIsTheWholePointOfTheOpsBrake()
+    {
+        Assert.False(Bind(new Dictionary<string, string> { ["Anthropic:Enabled"] = "false" }).Enabled);
+    }
+
+    [Fact]
+    public void AppSettingsJsonDeclaresEnabled_SoTheBrakeIsFindable()
+    {
+        // It binds from Anthropic__Enabled either way; declaring it in the shipped
+        // config is what makes it greppable by whoever needs it during an incident.
+        var appSettings = File.ReadAllText(Path.Combine(FindSolutionRoot(), "appsettings.json"));
+
+        using var document = System.Text.Json.JsonDocument.Parse(appSettings);
+        Assert.True(document.RootElement.TryGetProperty("Anthropic", out var anthropic));
+        Assert.True(anthropic.TryGetProperty("Enabled", out var enabled));
+        Assert.True(enabled.GetBoolean());
+    }
+
+    private static string FindSolutionRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Dockerfile")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new InvalidOperationException("Could not find solution root");
+    }
 }

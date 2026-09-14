@@ -1,17 +1,18 @@
 /**
  * AI Summary API Service
  *
- * Handles communication with the AI summarization backend endpoints.
- * Notes/events summaries return free-form markdown; the four briefing-style
+ * Handles communication with the AI backend endpoints. The briefing-style
  * summaries (job, task dashboard, operations, compliance) return a structured
  * shape that the AiSummaryCard component renders directly.
  */
 
 import {
-    AiDraftResponse,  AiEmailDraftResponse, AiSummaryResponse,
+    AiDraftResponse, AiEmailDraftResponse,
     ChangeRequestTriageResponse,
     DraftEmailRequest, DraftMessageRequest, DraftNoteRequest, ExtractBlockersResponse,
-    PricingAnalysisResponse, StructuredSummaryResponse
+    ExtractJobIntakeRequest, InboxTriageResponse, JobIntakeResponse,
+    ParseSearchQueryRequest, PriceExplanationResponse, PricingAnalysisResponse,
+    SearchCriteriaResponse, StructuredSummaryResponse
 } from "../interfaces/ai";
 import {apiClient} from './apiClient';
 import {RequestOptions} from "./requestOptions";
@@ -19,16 +20,6 @@ import {RequestOptions} from "./requestOptions";
 
 export type SummarySeverity = 'Ok' | 'Info' | 'Caution' | 'Urgent' | 'Critical';
 export type TimelineStatus = 'Ok' | 'Pending' | 'Warning' | 'Late';
-
-/** Summarize notes for a job (markdown) */
-export function summarizeJobNotes(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobNotes', null, {params: {jobId}});
-}
-
-/** Summarize event history for a job (markdown) */
-export function summarizeJobEvents(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobEvents', null, {params: {jobId}});
-}
 
 /** Structured task dashboard briefing */
 export function summarizeTaskDashboard(options?: RequestOptions): Promise<StructuredSummaryResponse> {
@@ -110,5 +101,44 @@ export function triageChangeRequest(
         '/Ai/TriageChangeRequest',
         null,
         {params: {requestId, jobId}, ...options},
+    );
+}
+
+
+/**
+ * Read a pasted booking request into the Create Job form. Fills fields only — the
+ * operator reviews every one and submits the job themselves.
+ */
+export function extractJobIntake(
+    request: ExtractJobIntakeRequest,
+    options?: RequestOptions,
+): Promise<JobIntakeResponse> {
+    return apiClient.post<JobIntakeResponse>('/Ai/ExtractJobIntake', request, options);
+}
+
+/** Turn one line of dispatcher shorthand into search criteria. Fills the form; does not search. */
+export function parseSearchQuery(
+    request: ParseSearchQueryRequest,
+    options?: RequestOptions,
+): Promise<SearchCriteriaResponse> {
+    return apiClient.post<SearchCriteriaResponse>('/Ai/ParseSearchQuery', request, options);
+}
+
+/** Triage every open message conversation in a single call. */
+export function triageInbox(options?: RequestOptions): Promise<InboxTriageResponse> {
+    return apiClient.post<InboxTriageResponse>('/Ai/TriageInbox', null, options);
+}
+
+/** Plain-English account of why a job cost what it did, for a customer price query. */
+export function explainPrice(
+    jobId: number,
+    isPrebook = false,
+    isArchived = false,
+    options?: RequestOptions,
+): Promise<PriceExplanationResponse> {
+    return apiClient.post<PriceExplanationResponse>(
+        '/Ai/ExplainPrice',
+        null,
+        {params: {jobId, isPrebook, isArchived}, ...options},
     );
 }

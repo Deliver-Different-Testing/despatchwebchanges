@@ -2,8 +2,8 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Accessorial;
+using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
-using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -23,8 +23,10 @@ public class AiPromptContractTests
     private readonly ICourierRepository _courierRepository = Substitute.For<ICourierRepository>();
     private readonly IJobQueryRepository _jobRepository = Substitute.For<IJobQueryRepository>();
     private readonly INoteRepository _noteRepository = Substitute.For<INoteRepository>();
+    private readonly IClientRepository _clientRepository = Substitute.For<IClientRepository>();
     private readonly IRateJobService _rateJobService = Substitute.For<IRateJobService>();
     private readonly ITaskRepository _taskRepository = Substitute.For<ITaskRepository>();
+    private readonly IMessageRepository _messageRepository = Substitute.For<IMessageRepository>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings());
@@ -58,6 +60,16 @@ public class AiPromptContractTests
         _jobRepository.GetOverviewStatsAsync().Returns(new OverviewStatsViewModel { Active = 5, Inactive = 1, Completed = 2 });
         _changeRequestService.ListForJobAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new List<JobChangeRequestDto> { new() { Id = 1, JobId = 1, FieldName = "Charge" } });
+        _messageRepository.GetRecentListAsync().Returns([
+            new RecentMessageViewModel
+            {
+                OtherPartyId = 1, OtherPartyName = "Dave", LastMessage = "Stuck at the gate",
+                LastMessageTime = DateTime.UtcNow.AddMinutes(-10)
+            }
+        ]);
+        _messageRepository.GetSavedQuickResponsesAsync().Returns([new Suggestion { Id = 5, Text = "On my way" }]);
+        _jobRepository.GetJobPriceBreakdownAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<bool>())
+            .Returns([new ChargeViewModel { ChargeId = 1, Name = "Base rate", Amount = 100m }]);
         _accessorialService.GetAvailableChargesAsync(Arg.Any<int>(), Arg.Any<int>())
             .Returns(new List<AccessorialChargeDto>
             {
@@ -71,16 +83,17 @@ public class AiPromptContractTests
     private AiDraftingService Drafting() => new(
         _aiClient, _jobRepository, _noteRepository, _tenantInfo, _settings);
 
+    private AiIntakeService Intake() => new(
+        _aiClient, _clientRepository, _jobRepository, _courierRepository, _tenantInfo, _settings);
+
     private AiInsightsService Insights() => new(
         _aiClient, _noteRepository, _jobRepository, _accessorialService, _rateJobService,
-        _changeRequestService, _tenantInfo, _settings);
+        _changeRequestService, _messageRepository, _tenantInfo, _settings);
 
     private async Task CaptureEveryPromptAsync()
     {
         var ct = TestContext.Current.CancellationToken;
         var s = Summarization();
-        await s.SummarizeJobNotesAsync(1, ct);
-        await s.SummarizeJobEventsAsync(1, ct);
         await s.SummarizeJobAsync(1, ct);
         await s.SummarizeOperationsAsync(ct);
         await s.SummarizeComplianceAsync(ct);
@@ -94,8 +107,14 @@ public class AiPromptContractTests
         await Insights().ExtractBlockersAsync(1, ct);
         await Insights().TriageChangeRequestAsync(1, 1, ct);
         await Insights().AnalyzePricingAsync(1, 5, ct);
+        await Insights().TriageInboxAsync(ct);
+        await Insights().ExplainPriceAsync(1, ct: ct);
 
         await s.SummarizeTaskDashboardAsync(ct);
+
+        var i = Intake();
+        await i.ExtractJobIntakeAsync(new ExtractJobIntakeRequest { Text = "Collect from Acme tomorrow" }, ct);
+        await i.ParseSearchQueryAsync(new ParseSearchQueryRequest { Query = "Acme last week" }, ct);
     }
 
     [Fact]
@@ -171,7 +190,11 @@ public class AiPromptContractTests
 
         // All four forced-output tools must be exercised, or this guard is vacuous.
         Assert.Equal(
-            ["emit_accessorial_suggestions", "emit_blockers", "emit_email_draft", "emit_summary", "emit_triage"],
+            [
+                "emit_accessorial_suggestions", "emit_blockers", "emit_email_draft", "emit_inbox_triage",
+                "emit_job_intake", "emit_price_explanation", "emit_search_criteria", "emit_summary",
+                "emit_triage"
+            ],
             _tools.Select(t => t.Name).Distinct().Order());
 
         foreach (var tool in _tools.DistinctBy(t => t.Name))
@@ -203,5 +226,54 @@ public class AiPromptContractTests
         // post-filter that enforces it is invisible to the model.
         Assert.Contains("catalog", byName["emit_accessorial_suggestions"]);
         Assert.Contains("accessorialChargeId", byName["emit_accessorial_suggestions"]);
+    }
+
+    [Fact]
+    public async Task EveryToolSchemaParsesAndRequiresOnlyFieldsItDeclares()
+    {
+        await CaptureEveryPromptAsync();
+
+        foreach (var tool in _tools.DistinctBy(t => t.Name))
+        {
+            var properties = AiClientService.ParseToolProperties(tool.InputSchemaJson).Keys.ToHashSet();
+            var required = AiClientService.ParseToolRequired(tool.InputSchemaJson);
+
+            Assert.NotEmpty(properties);
+            foreach (var key in required)
+            {
+                Assert.True(properties.Contains(key),
+                    $"{tool.Name} requires '{key}', which its properties do not declare");
+            }
+        }
+    }
+
+    [Fact]
+    public async Task IntakeToolDescriptionsCarryTheConstraintTheirPostFilterEnforces()
+    {
+        await CaptureEveryPromptAsync();
+
+        var byName = _tools.DistinctBy(t => t.Name).ToDictionary(t => t.Name, t => t.Description);
+
+        // Both intake tools resolve names server-side. The model returning an id at all
+        // is the failure mode, and only the description can head it off.
+        Assert.Contains("never return an id", byName["emit_job_intake"], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("unresolved", byName["emit_job_intake"]);
+        Assert.Contains("Never an id", byName["emit_search_criteria"], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ignored", byName["emit_search_criteria"]);
+    }
+
+    [Theory]
+    [InlineData("booking-intake extractor", "operator", "approve")]
+    [InlineData("dispatcher shorthand", "dispatcher", "press Search themselves")]
+    public async Task EachIntakePromptNamesTheHumanWhoActsOnItsOutput(
+        string marker, string reviewer, string theAct)
+    {
+        await CaptureEveryPromptAsync();
+
+        // Neither feature acts on its own output. A prompt that forgets who does drifts
+        // toward filling gaps confidently instead of reporting them.
+        var prompt = Assert.Single(_systemPrompts.Where(p => p.Contains(marker)));
+        Assert.Contains(reviewer, prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(theAct, prompt, StringComparison.OrdinalIgnoreCase);
     }
 }
