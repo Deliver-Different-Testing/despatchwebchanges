@@ -754,7 +754,10 @@ public sealed class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            ArgumentNullException.ThrowIfNull(jobDetails.ClientId);
+            if (!jobDetails.ClientId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            }
 
             // Generate DFRNT Api Token
             var connectionString =
@@ -776,13 +779,10 @@ public sealed class RateJobService(
 
             var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
 
-            // Call DFRNT API
             var baseUrl = Environment.GetEnvironmentVariable("WebAPIUrl");
-
             var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/rates/getRerateAmount");
             request.Headers.Add("Authorization", $"Bearer {requestToken}");
 
-            // Map Job Object
             var jobObject = MapToUrgentRerateObject(jobDetails, clock.TenantNow);
             request.Content = JsonContent.Create(jobObject);
 
@@ -808,20 +808,6 @@ public sealed class RateJobService(
         }
     }
 
-    /// <summary>
-    /// Maps job rating details DTO to the DFRNT API request object format.
-    /// </summary>
-    /// <param name="dto">The job rating details DTO.</param>
-    /// <param name="tenantNow">
-    /// Current tenant-local time. For bulk-schedule jobs this is sent instead of the job's own
-    /// booked/created date, because the schedule-availability lookup on the rates side
-    /// (<c>UTL_fncJob_GetClientAvailableBulkRunSchedule</c>) filters out any schedule whose cutoff
-    /// has passed relative to the current time — which is always true for a historical date once a
-    /// completed job is repriced later. The schedule match itself is date-of-week based and finds
-    /// the next matching occurrence from whatever date it's given, so passing "now" lets an
-    /// already-completed bulk-schedule job still resolve a valid rate instead of getting rejected.
-    /// </param>
-    /// <returns>An UrgentRerateObject ready for the DFRNT API.</returns>
     private static UrgentRerateObject MapToUrgentRerateObject(JobRatingDetailsDtoNz dto, DateTime tenantNow)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -876,11 +862,6 @@ public sealed class RateJobService(
         };
     }
 
-    /// <summary>
-    /// Maps package details DTOs to the DFRNT API package object format.
-    /// </summary>
-    /// <param name="packages">The list of package details.</param>
-    /// <returns>A collection of UrgentPackageObjects, or empty if packages is null/empty.</returns>
     private static IEnumerable<UrgentPackageObject> MapPackages(IReadOnlyList<PackageDetailsDto> packages)
     {
         if (packages == null || packages.Count == 0)
@@ -902,11 +883,6 @@ public sealed class RateJobService(
         });
     }
 
-    /// <summary>
-    /// Creates a truck object for the DFRNT API request with tail lift and timing details.
-    /// </summary>
-    /// <param name="dto">The job rating details DTO containing truck-specific fields.</param>
-    /// <returns>An UrgentTruckObject with truck delivery options.</returns>
     private static UrgentTruckObject CreateTruckObject(JobRatingDetailsDtoNz dto) =>
         new()
         {
@@ -918,11 +894,6 @@ public sealed class RateJobService(
             TruckHours = ResolveTruckHours(dto)
         };
 
-    /// <summary>
-    /// Falls back to the job's recorded waiting minutes when no explicit truck duration was
-    /// booked. Both legs count — a delivery-only waiting correction must move the price just
-    /// as a pickup one does.
-    /// </summary>
     internal static int? ResolveTruckHours(JobRatingDetailsDtoNz dto)
     {
         if (dto.TruckHours.HasValue)
@@ -934,17 +905,11 @@ public sealed class RateJobService(
         return waitMinutes > 0 ? waitMinutes : null;
     }
 
-    /// <summary>
-    /// Internal method to recalculate job rate based on tenant type.
-    /// </summary>
     private async Task RecalculateJobRateInternalAsync(int jobId, bool isBooking)
     {
         var isArchived = !isBooking && await jobQueryRepository.IsJobArchived(jobId);
         var isUsCustomer = infoService.IsUsTenant();
 
-        // Same mechanism as the single-job Recalculate button: this produces a genuine
-        // system-computed rate and pricing breakdown from the rating engine, not a manual
-        // override, so clear the flag first (bypassing the auto-rate guard) and leave it cleared.
         await jobCommandRepository.SetJobRatedManuallyAsync(jobId, isBooking, false);
 
         if (isUsCustomer)

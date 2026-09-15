@@ -59,6 +59,12 @@ public partial class HomeController(
             if (int.TryParse(contactId, out var parsedContactId))
             {
                 var clientDetail = await clientRepository.ValidateClientAsync(parsedContactId);
+                if (clientDetail == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Contact {parsedContactId} has no tucClientContact row in this tenant's database.");
+                }
+
                 ViewBag.FirstName = clientDetail.FirstName;
                 ViewBag.FullName = clientDetail.FullName;
                 ViewBag.Email = clientDetail.Email;
@@ -71,12 +77,16 @@ public partial class HomeController(
                 // Which dashboards DF Admin has exposed to this session, or null
                 // when the session is not gated. Resolved after the tenant
                 // connection is set, since the catalogue lives in that database.
-                var visibleDashboards = await featureVisibilityService.GetVisibleDashboardsAsync();
+                // Both lookups are optional enrichment — a failure must not
+                // bounce an authenticated session to the login page.
+                var visibleDashboards = await TryResolveAsync(
+                    featureVisibilityService.GetVisibleDashboardsAsync, "Dashboard visibility lookup");
                 ViewBag.VisibleFeatures = visibleDashboards?.ToArray();
 
                 // Network partners open their maps on their own address; null for
                 // everyone else, which leaves the tenant country centre in place.
-                ViewBag.NpMapCenter = await networkPartnerContextService.GetMapCentreAsync();
+                ViewBag.NpMapCenter = await TryResolveAsync(
+                    networkPartnerContextService.GetMapCentreAsync, "Network partner map centre lookup");
             }
             else
             {
@@ -100,6 +110,19 @@ public partial class HomeController(
         var staffId = infoService.GetStaffId();
         var viewOptions = await viewsRepository.GetViewsByUserAndPageAsync(staffId, page);
         return Json(viewOptions);
+    }
+
+    private static async Task<T?> TryResolveAsync<T>(Func<Task<T?>> resolve, string description)
+    {
+        try
+        {
+            return await resolve();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "{Description} failed; continuing without it", description);
+            return default;
+        }
     }
 
     private static string MaskSensitiveInfo(string connectionString)

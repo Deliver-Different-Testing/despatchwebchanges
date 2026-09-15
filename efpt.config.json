@@ -583,11 +583,23 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[UTL_stpJob_Insert_JobNumber]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[UTL_stpJob_InsertFromTblBulkJob]",
          "ObjectType": 1
       },
       {
          "Name": "[dbo].[UTL_stpJob_RestoreDevice]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpJobBooking_InsertJobAndChildren]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpJobBooking_InsertSchedule]",
          "ObjectType": 1
       },
       {

@@ -89,7 +89,7 @@ public sealed class ScopeProvider(
             catch (Exception ex)
             {
                 Log.Warning(ex,
-                    "ScopeProvider transitional tucClient lookup failed for ClientID={ClientId}. Falling back to Unscoped (deny).",
+                    "ScopeProvider transitional tucClient lookup failed for ClientID={ClientId}. Falling back to Unscoped (deny)",
                     clientId.Value);
             }
         }

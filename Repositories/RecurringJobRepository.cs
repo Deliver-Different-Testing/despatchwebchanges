@@ -6,7 +6,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -446,8 +445,6 @@ public class RecurringJobRepository(
 
         var parentUcbkId = await Context.GetEffectiveJobBookingIdAsync(request.JobId);
 
-        // Bundle the metadata we need for the target-match check into one
-        // round-trip so preview stays snappy even for a wide window.
         var meta = await (
             from jb in Context.TucJobBookings
             where jb.UcbkId == parentUcbkId
@@ -477,10 +474,7 @@ public class RecurringJobRepository(
         var today = DateOnly.FromDateTime(_clock.TenantNow);
         var windowStart = today.AddDays(request.OldValue + 1);
         var windowEnd = today.AddDays(request.NewValue);
-
-        // Preload existing tucJob rows for the whole family in the window
-        // (parent + child templates). Dup guard uses BookingParentID ties
-        // back to the specific ucbkID of a template, so we fetch all of them.
+        
         var familyTemplateIds = await Context.TucJobBookings
             .Where(b => b.UcbkId == parentUcbkId || b.BookingParentId == parentUcbkId)
             .Select(b => b.UcbkId)
@@ -501,10 +495,7 @@ public class RecurringJobRepository(
         var existingDateSet = existingLiveDates
             .Select(DateOnly.FromDateTime)
             .ToHashSet();
-
-        // Load holidays for the window. Matches uspPrebookSet's
-        // UTL_IsHoliday(date, siteId, 'local') filter shape (SiteID +
-        // JobEntryType = 'Local').
+        
         var holidayDates = await Context.TblHolidays
             .Where(h => h.SiteId == siteId
                         && h.JobEntryType == "Local"
@@ -514,10 +505,7 @@ public class RecurringJobRepository(
             .ToListAsync();
 
         var holidaySet = holidayDates.Select(DateOnly.FromDateTime).ToHashSet();
-
-        // Load schedule-active DOWs once when the template is schedule-bound
-        // so we don't hit the DB per candidate day. TblBulkRunSchedule.DayOfWeek
-        // is a short, cast up so the ISO-DOW comparison stays in one type.
+        
         HashSet<int> scheduleActiveDows = [];
         if ((meta.ScheduleId ?? 0) > 0 && !string.IsNullOrEmpty(meta.ScheduleName))
         {
@@ -537,8 +525,6 @@ public class RecurringJobRepository(
 
         for (var d = windowStart; d <= windowEnd; d = d.AddDays(1))
         {
-            // Dup guard first — a date with an existing live job is not a
-            // candidate regardless of pattern / holiday state.
             if (existingDateSet.Contains(d))
             {
                 already.Add(d);
@@ -557,8 +543,6 @@ public class RecurringJobRepository(
                     patternMatch = MaskMatches(daysMask, patternDow);
                     break;
                 case 2:
-                    // Fortnightly: same DATEDIFF(WEEK, ucbkFirstDue, target) % 2
-                    // parity check the SP uses.
                     patternMatch = MaskMatches(daysMask, patternDow)
                                    && meta.UcbkFirstDue.HasValue
                                    && WeeksBetween(DateOnly.FromDateTime(meta.UcbkFirstDue.Value), d) % 2 == 0;
@@ -592,11 +576,8 @@ public class RecurringJobRepository(
                 continue;
             }
 
-            // Schedule-active check (only for schedule-bound templates).
             if ((meta.ScheduleId ?? 0) > 0)
             {
-                // ISO day-of-week for tblBulkRunSchedule.DayOfWeek — matches
-                // uspPrebookSet's DATEPART(WEEKDAY, DATEADD(DAY, -1, target)).
                 var isoDow = ((int)d.DayOfWeek + 6) % 7 + 1;
                 if (!scheduleActiveDows.Contains(isoDow))
                 {
@@ -869,138 +850,137 @@ public class RecurringJobRepository(
 
     private async Task ExecuteMaterialiseParentAsync(int parentUcbkId, DateTime insertDate, bool useSchedule)
     {
-        var spName = useSchedule
-            ? "dbo.UTL_stpJobBooking_InsertSchedule"
-            : "dbo.UTL_stpJobBooking_InsertJobAndChildren";
+        var parent = await Context.TucJobBookings.AsTracking()
+            .FirstOrDefaultAsync(b => b.UcbkId == parentUcbkId);
 
-        var sql = $"""
+        if (parent?.UcbkTime is null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot push booking {parentUcbkId} — parent has NULL ucbkTime. Set a time on the parent before pushing.");
+        }
 
-                               -- Snapshot originals so we can restore on success/CATCH.
-                               -- Parent template:
-                               DECLARE @origParentDate datetime,
-                                       @origParentInitialDays int,
-                                       @origParentTime datetime,
-                                       @origParentJobNumber nvarchar(50),
-                                       @origParentSpeed int;
-                               SELECT @origParentDate = ucbkDate,
-                                      @origParentInitialDays = RecurringInitialDays,
-                                      @origParentTime = ucbkTime,
-                                      @origParentJobNumber = ucbkJobNumber,
-                                      @origParentSpeed = ucbkSpeed
-                               FROM dbo.tucJobBooking
-                               WHERE ucbkID = @parentUcbkId;
+        var children = await Context.TucJobBookings.AsTracking()
+            .Where(b => b.BookingParentId == parentUcbkId && b.UcbkId != parentUcbkId)
+            .ToListAsync();
 
-                               IF @origParentTime IS NULL
-                               BEGIN
-                                   DECLARE @msg nvarchar(400) = N'Cannot push booking '
-                                       + CAST(@parentUcbkId AS nvarchar(20))
-                                       + N' — parent has NULL ucbkTime. Set a time on the parent before pushing.';
-                                   ;THROW 50010, @msg, 1;
-                               END
+        // Snapshot originals so we can restore on success/failure — the booking
+        // templates must never carry the temp-stamped state past this call.
+        var origParentDate = parent.UcbkDate;
+        var origParentInitialDays = parent.RecurringInitialDays;
+        var origParentTime = parent.UcbkTime;
+        var origParentJobNumber = parent.UcbkJobNumber;
 
-                               -- Children snapshot table for restore.
-                               DECLARE @ChildSnapshot TABLE (
-                                   ucbkID int PRIMARY KEY,
-                                   origDate datetime,
-                                   origInitialDays int,
-                                   origTime datetime,
-                                   origJobNumber nvarchar(50)
-                               );
-                               INSERT INTO @ChildSnapshot (ucbkID, origDate, origInitialDays, origTime, origJobNumber)
-                               SELECT ucbkID, ucbkDate, RecurringInitialDays, ucbkTime, ucbkJobNumber
-                               FROM dbo.tucJobBooking
-                               WHERE BookingParentID = @parentUcbkId
-                                 AND ucbkID <> @parentUcbkId;
+        var childSnapshots = children.ToDictionary(
+            c => c.UcbkId,
+            c => (Date: c.UcbkDate, InitialDays: c.RecurringInitialDays, Time: c.UcbkTime, JobNumber: c.UcbkJobNumber));
 
-                               BEGIN TRY
-                                   -- Mint fresh @JobNo via the same SP uspPrebookSet calls.
-                                   DECLARE @PrebookStaffId int;
-                                   SELECT @PrebookStaffId = ucstID FROM tucStaff WHERE ucstFirstName = 'Prebooks';
-                                   IF @PrebookStaffId IS NULL
-                                       SET @PrebookStaffId = 0;
+        void Restore(bool selfHealChildTime)
+        {
+            parent.UcbkDate = origParentDate;
+            parent.RecurringInitialDays = origParentInitialDays;
+            parent.UcbkTime = origParentTime;
+            parent.UcbkJobNumber = origParentJobNumber;
 
-                                   DECLARE @JobNo varchar(50);
-                                   EXEC UTL_stpJob_Insert_JobNumber @PrebookStaffId, @origParentSpeed, @JobNo OUTPUT;
+            foreach (var child in children)
+            {
+                var orig = childSnapshots[child.UcbkId];
+                child.UcbkDate = orig.Date;
+                child.RecurringInitialDays = orig.InitialDays;
+                child.UcbkTime = selfHealChildTime ? orig.Time ?? child.UcbkTime : orig.Time;
+                child.UcbkJobNumber = orig.JobNumber;
+            }
+        }
 
-                                   -- Stamp parent: fresh job number, chosen date, reset
-                                   -- RecurringInitialDays so the materialiser uses the date
-                                   -- as-is (no rolling-window offset).
-                                   UPDATE dbo.tucJobBooking
-                                   SET ucbkDate = @insertDate,
-                                       RecurringInitialDays = 0,
-                                       ucbkJobNumber = @JobNo
-                                   WHERE ucbkID = @parentUcbkId;
+        try
+        {
+            // Mint fresh job number via the same SP uspPrebookSet calls.
+            var prebookStaffId = await Context.TucStaffs
+                .Where(s => s.UcstFirstName == "Prebooks")
+                .Select(s => (int?)s.UcstId)
+                .FirstOrDefaultAsync() ?? 0;
 
-                                   -- Stamp children: same date, parent's time (inherited),
-                                   -- @JobNo + suffix from the child's current ucbkJobNumber
-                                   -- shape. CASE matches uspPrebookSet verbatim.
-                                   UPDATE dbo.tucJobBooking
-                                   SET ucbkDate = @insertDate,
-                                       RecurringInitialDays = 0,
-                                       ucbkTime = @origParentTime,
-                                       ucbkJobNumber = @JobNo
-                                           + CASE
-                                               WHEN JobRelationshipTypeID = 13 AND ucbkJobNumber LIKE '%[0-9]'
-                                                   THEN RIGHT(ucbkJobNumber, 1)
-                                               WHEN RIGHT(ucbkJobNumber, 3) = 'LHP' THEN 'LHP'
-                                               WHEN RIGHT(ucbkJobNumber, 3) = 'DEL' THEN 'DEL'
-                                               WHEN LEFT(RIGHT(ucbkJobNumber, 3), 2) = 'LH' THEN RIGHT(ucbkJobNumber, 3)
-                                               ELSE ''
-                                             END
-                                   WHERE BookingParentID = @parentUcbkId
-                                     AND ucbkID <> @parentUcbkId
-                                     AND JobRelationshipTypeID IN (13, 20);
+            var jobNo = new OutputParameter<string>();
+            await Context.Procedures.UTL_stpJob_Insert_JobNumberAsync(prebookStaffId, parent.UcbkSpeed, jobNo);
 
-                                   EXEC {spName} @JobBookingID = @parentUcbkId;
+            // Stamp parent: fresh job number, chosen date, reset
+            // RecurringInitialDays so the materialiser uses the date as-is
+            // (no rolling-window offset).
+            parent.UcbkDate = insertDate;
+            parent.RecurringInitialDays = 0;
+            parent.UcbkJobNumber = jobNo.Value;
 
-                                   -- Restore parent.
-                                   UPDATE dbo.tucJobBooking
-                                   SET ucbkDate = @origParentDate,
-                                       RecurringInitialDays = @origParentInitialDays,
-                                       ucbkTime = @origParentTime,
-                                       ucbkJobNumber = @origParentJobNumber
-                                   WHERE ucbkID = @parentUcbkId;
+            // Stamp children: same date, parent's time (inherited), fresh job
+            // number + suffix derived from the child's current number shape.
+            foreach (var child in children)
+            {
+                if (child.JobRelationshipTypeId is not (13 or 20))
+                {
+                    continue;
+                }
 
-                                   -- Restore children from snapshot — BUT self-heal
-                                   -- ucbkTime: if the original was NULL, keep the parent's
-                                   -- time we stamped (so the child template no longer has
-                                   -- a NULL time after a successful push). Same idea would
-                                   -- apply to ucbkJobNumber, except the daily cron rotates
-                                   -- those, so leaving them suffixed would confuse the
-                                   -- next cron — so jobNumber always restores.
-                                   UPDATE jb
-                                   SET jb.ucbkDate = cs.origDate,
-                                       jb.RecurringInitialDays = cs.origInitialDays,
-                                       jb.ucbkTime = ISNULL(cs.origTime, jb.ucbkTime),
-                                       jb.ucbkJobNumber = cs.origJobNumber
-                                   FROM dbo.tucJobBooking jb
-                                   INNER JOIN @ChildSnapshot cs ON cs.ucbkID = jb.ucbkID;
-                               END TRY
-                               BEGIN CATCH
-                                   -- Mirror restore on failure so the booking templates
-                                   -- never carry the temp-stamped state past this call.
-                                   UPDATE dbo.tucJobBooking
-                                   SET ucbkDate = @origParentDate,
-                                       RecurringInitialDays = @origParentInitialDays,
-                                       ucbkTime = @origParentTime,
-                                       ucbkJobNumber = @origParentJobNumber
-                                   WHERE ucbkID = @parentUcbkId;
+                var suffix = BuildChildJobNumberSuffix(child.JobRelationshipTypeId, child.UcbkJobNumber);
+                child.UcbkDate = insertDate;
+                child.RecurringInitialDays = 0;
+                child.UcbkTime = origParentTime;
+                child.UcbkJobNumber = jobNo.Value + suffix;
+            }
 
-                                   UPDATE jb
-                                   SET jb.ucbkDate = cs.origDate,
-                                       jb.RecurringInitialDays = cs.origInitialDays,
-                                       jb.ucbkTime = cs.origTime,
-                                       jb.ucbkJobNumber = cs.origJobNumber
-                                   FROM dbo.tucJobBooking jb
-                                   INNER JOIN @ChildSnapshot cs ON cs.ucbkID = jb.ucbkID;
-                                   THROW;
-                               END CATCH;
-                   """;
+            await Context.SaveChangesAsync();
 
-        await Context.Database.ExecuteSqlRawAsync(
-            sql,
-            new SqlParameter("@parentUcbkId", parentUcbkId),
-            new SqlParameter("@insertDate", insertDate));
+            if (useSchedule)
+            {
+                await Context.Procedures.UTL_stpJobBooking_InsertScheduleAsync(parentUcbkId);
+            }
+            else
+            {
+                await Context.Procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(parentUcbkId);
+            }
+
+            // Restore — BUT self-heal ucbkTime: if a child's original was NULL,
+            // keep the parent's time we stamped (so the child template no longer
+            // has a NULL time after a successful push). Same idea would apply to
+            // ucbkJobNumber, except the daily cron rotates those, so leaving them
+            // suffixed would confuse the next cron — so jobNumber always restores.
+            Restore(selfHealChildTime: true);
+            await Context.SaveChangesAsync();
+        }
+        catch
+        {
+            // Mirror restore on failure so the booking templates never carry
+            // the temp-stamped state past this call.
+            Restore(selfHealChildTime: false);
+            await Context.SaveChangesAsync();
+            throw;
+        }
+    }
+
+    // Mirrors the job-number suffix CASE uspPrebookSet stamps on child bookings
+    // (SQL's default collation is case-insensitive, hence OrdinalIgnoreCase).
+    internal static string BuildChildJobNumberSuffix(int? relationshipTypeId, string currentJobNumber)
+    {
+        if (string.IsNullOrEmpty(currentJobNumber))
+        {
+            return string.Empty;
+        }
+
+        if (relationshipTypeId == 13 && char.IsAsciiDigit(currentJobNumber[^1]))
+        {
+            return currentJobNumber[^1].ToString();
+        }
+
+        var last3 = currentJobNumber.Length <= 3 ? currentJobNumber : currentJobNumber[^3..];
+
+        if (string.Equals(last3, "LHP", StringComparison.OrdinalIgnoreCase))
+        {
+            return "LHP";
+        }
+
+        if (string.Equals(last3, "DEL", StringComparison.OrdinalIgnoreCase))
+        {
+            return "DEL";
+        }
+
+        return last3.StartsWith("LH", StringComparison.OrdinalIgnoreCase) ? last3 : string.Empty;
     }
 
     private async Task<List<int>> ResolveParentBookingScopeAsync(int startBookingId, InsertToLiveScope scope)

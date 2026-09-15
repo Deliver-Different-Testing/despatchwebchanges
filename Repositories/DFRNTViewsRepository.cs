@@ -18,11 +18,7 @@ public class DfrntViewsRepository(
         try
         {
             var pageInt = (int)page;
-
-            // Views are an audience list, not a per-user one: NULL is the standard
-            // tenant-staff set, and a Network Partner gets only the NP-audience
-            // views. Landing an NP on a tenant zone view would scope their Driver
-            // Locations panel to that zone's clear lists.
+            
             var audienceClientTypeId = scopeProvider.Scope?.IsNetworkPartner == true
                 ? (int?)ClientType.NetworkPartner
                 : null;

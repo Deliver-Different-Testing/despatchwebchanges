@@ -148,7 +148,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
 
         await CreateService().GeneratePodReportAsync(11);
 
-        await _jobRepositoryMock.DidNotReceiveWithAnyArgs().GetLinkedJobIdForBulkJobAsync(default);
+        await _jobRepositoryMock.DidNotReceiveWithAnyArgs().GetLinkedJobIdForBulkJobAsync(0);
     }
 
     [Fact]
@@ -290,7 +290,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         await service.SendPodEmailAsync(1, recipients, "Your POD", "Line 1\nLine 2");
 
         await using var context = _db.CreateContext();
-        var queued = await context.TucManualMessages.OrderBy(m => m.SendToEmailAddress).ToListAsync();
+        var queued = await context.TucManualMessages.OrderBy(m => m.SendToEmailAddress).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(recipients, queued.Select(m => m.SendToEmailAddress));
         Assert.All(queued, message =>
@@ -318,10 +318,10 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         await service.SendPodEmailAsync(1, ["a@example.com"], "Your POD", "Body");
 
         await using var context = _db.CreateContext();
-        var queued = await context.TucManualMessages.SingleAsync();
+        var queued = await context.TucManualMessages.SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // A real PDF, not a placeholder — the drainer attaches these bytes verbatim.
-        Assert.Equal("%PDF"u8.ToArray(), queued.FileContent.Take(4));
+        Assert.Equal([.. "%PDF"u8], queued.FileContent.Take(4));
     }
 
     [Fact]
@@ -336,7 +336,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         await service.SendPodEmailAsync(1, ["a@example.com"], "Your POD", null!);
 
         await using var context = _db.CreateContext();
-        var queued = await context.TucManualMessages.SingleAsync();
+        var queued = await context.TucManualMessages.SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(string.Empty, queued.UcmmMessage);
     }

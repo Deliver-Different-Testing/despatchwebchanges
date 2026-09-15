@@ -81,6 +81,25 @@ export async function reAllocateJobs(courierId: number, jobIds: number[]): Promi
     await apiClient.post('job/ReAllocate', {courierId, jobIds});
 }
 
+// ── Change paid courier (archived jobs) ──────────────────────────────
+
+export interface CourierChangeEligibility {
+    canChange: boolean;
+    /** Why the change is blocked; null when changeable. */
+    reason: 'invoiced' | 'settled' | 'notArchived' | null;
+    currentCourierId?: number;
+    currentCourierName?: string;
+}
+
+export async function getCourierChangeEligibility(jobId: number): Promise<CourierChangeEligibility> {
+    const result = await apiClient.get<CourierChangeEligibility>('job/CourierChangeEligibility', {jobId});
+    return result ?? {canChange: false, reason: 'notArchived'};
+}
+
+export async function changeArchivedJobCourier(jobId: number, courierId: number): Promise<void> {
+    await apiClient.post('job/ChangeArchivedJobCourier', {jobId, courierId});
+}
+
 // ── Restore ──────────────────────────────────────────────────────────
 
 export async function restoreJobs(jobIds: number[], removeCapturedImages = false): Promise<void> {

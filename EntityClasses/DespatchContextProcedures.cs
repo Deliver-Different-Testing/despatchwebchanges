@@ -1771,6 +1771,48 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<int> UTL_stpJob_Insert_JobNumberAsync(int? staffID, int? jobTypeID, OutputParameter<string> jobNumber, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterJobNumber = new SqlParameter
+            {
+                ParameterName = "JobNumber",
+                Size = 50,
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = jobNumber?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.VarChar,
+            };
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "StaffID",
+                    Value = staffID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "JobTypeID",
+                    Value = jobTypeID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterJobNumber,
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[UTL_stpJob_Insert_JobNumber] @StaffID = @StaffID, @JobTypeID = @JobTypeID, @JobNumber = @JobNumber OUTPUT", sqlParameters, cancellationToken);
+
+            jobNumber?.SetValue(parameterJobNumber.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<UTL_stpJob_InsertFromTblBulkJobResult>> UTL_stpJob_InsertFromTblBulkJobAsync(int? bulkJobID, string runName, int? courierID, int? runStatus, int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -1842,6 +1884,58 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[UTL_stpJob_RestoreDevice] @JobID = @JobID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<UTL_stpJobBooking_InsertJobAndChildrenResult>> UTL_stpJobBooking_InsertJobAndChildrenAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobBookingID",
+                    Value = jobBookingID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<UTL_stpJobBooking_InsertJobAndChildrenResult>("EXEC @returnValue = [dbo].[UTL_stpJobBooking_InsertJobAndChildren] @JobBookingID = @JobBookingID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<UTL_stpJobBooking_InsertScheduleResult>> UTL_stpJobBooking_InsertScheduleAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobBookingID",
+                    Value = jobBookingID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<UTL_stpJobBooking_InsertScheduleResult>("EXEC @returnValue = [dbo].[UTL_stpJobBooking_InsertSchedule] @JobBookingID = @JobBookingID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

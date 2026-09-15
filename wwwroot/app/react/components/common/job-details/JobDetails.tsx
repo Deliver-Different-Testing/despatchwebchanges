@@ -44,6 +44,7 @@ import {ToggleProperties} from './components/ToggleProperties';
 import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
 import {DispatchDialog, type DispatchMode} from '../../dialogs/dispatch-dialog';
+import {useChangeCourierFlow} from '../../dialogs/change-courier-dialog';
 import {isNetworkPartnerSession, stopJobCountFor} from '../../dialogs/dispatch-dialog/dispatchSession';
 import {getActivePartnerOptions, getPartnerRateForJob} from '../../../services/jobListApi';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
@@ -290,6 +291,12 @@ export function JobDetails({config}: JobDetailsProps) {
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
     const showInfoToast = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
 
+    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    const {openChangeCourier, changeCourierDialogs} = useChangeCourierFlow({
+        showToast,
+        onChanged: refreshAndNotify,
+    });
+
     // All job action handlers
     const actions = useJobActions({
         job,
@@ -315,6 +322,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 value: initialValue ?? '',
                 locked: locked ?? false,
             }),
+        onChangeArchivedCourier: (j) => void openChangeCourier(j),
     });
 
     // Initialize the tab to show the originally-selected job. Only runs once per jobId change -
@@ -795,6 +803,9 @@ export function JobDetails({config}: JobDetailsProps) {
                 fetchRate={getPartnerRateForJob}
                 getPartnerOptions={getActivePartnerOptions}
             />
+
+            {/* Change Paid Courier (archived jobs) + its blocked popup */}
+            {changeCourierDialogs}
 
             {/* Saved-flight picker for recurring flight bookings. */}
             <EditSavedFlightDialog

@@ -134,6 +134,12 @@ public interface IJobQueryRepository
     Task<IReadOnlyList<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);
     Task<bool> IsJobArchived(int jobId);
+
+    /// <summary>
+    /// Reports whether the paid courier on an archived job can still be changed.
+    /// Returns null when the job is not in the archive.
+    /// </summary>
+    Task<ArchivedCourierChangeEligibility?> GetArchivedCourierChangeEligibilityAsync(int jobId);
     Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
     Task<bool> JobNumberExistsAsync(string jobNumber);
 

@@ -43,6 +43,7 @@ import {DispatchDialog, type DispatchConfirmation, type DispatchType} from '../d
 import {isNetworkPartnerSession, stopJobCountFor} from '../dialogs/dispatch-dialog/dispatchSession';
 import {SendToLiveConfirmationDialog} from '../dialogs/send-to-live-confirmation-dialog';
 import {RestoreConfirmationDialog} from '../dialogs/restore-confirmation-dialog';
+import {useChangeCourierFlow} from '../dialogs/change-courier-dialog';
 import type {RestorePodImpactSummary} from '../dialogs/restore-confirmation-dialog';
 import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
 import {SplitJobProgressDialog} from '../dialogs/split-job-progress-dialog';
@@ -138,7 +139,13 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || restoreConfirm !== null || splitJobLoading || dispatchDialog.open || sendToLiveTarget !== null;
+    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    const {openChangeCourier, changeCourierDialogs, changeCourierActive} = useChangeCourierFlow({
+        showToast,
+        onChanged: refresh,
+    });
+
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || restoreConfirm !== null || splitJobLoading || dispatchDialog.open || sendToLiveTarget !== null || changeCourierActive;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -718,6 +725,14 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         onClick: handleRedispatch,
                     })}
 
+                    {/* Change Paid Courier — archived, completed jobs only. Invoiced/settled
+                        jobs are refused by the eligibility pre-check, which explains why. */}
+                    {activeJob.isArchived && activeJob.done && !activeJob.isBulkJob && menuItem('change-courier', {
+                        icon: <Icon tabler={IconTruck} size={16}/>,
+                        label: 'Change Paid Courier',
+                        onClick: () => void openChangeCourier({id: activeJob.id, jobNo: activeJob.jobNo}),
+                    })}
+
                     {/* Restore — disabled for archived jobs: restore only operates on live
                         (tucJob) rows, so restoring an archived job silently does nothing. */}
                     {menuItem('restore', {
@@ -831,6 +846,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 />
                 {/* Split Job Loading Dialog */}
                 <SplitJobProgressDialog open={splitJobLoading} jobNo={activeJob.jobNo}/>
+                {/* Change Paid Courier (archived jobs) + its blocked popup */}
+                {changeCourierDialogs}
                 {/* Universal Dispatch Dialog */}
                 <DispatchDialog
                     open={dispatchDialog.open}

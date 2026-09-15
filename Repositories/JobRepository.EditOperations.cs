@@ -1316,6 +1316,51 @@ public partial class JobRepository
         Log.Debug("Changes saved: {ChangeCount}", changeCount);
     }
 
+    public async Task ChangeArchivedJobCourierAsync(int jobId, int newCourierId)
+    {
+        var archive = await Context.TucJobArchives.AsTracking()
+            .Include(j => j.InvoiceProcess)
+            .Include(j => j.UcjbCourier)
+            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+
+        if (archive == null)
+        {
+            throw new ArchivedCourierChangeException($"Job {jobId} was not found in the archive.");
+        }
+
+        if (archive.UcjbInvoiceNo.HasValue || archive.InvoiceProcess is { UcipDone: true })
+        {
+            throw new ArchivedCourierChangeException(
+                "This job has already been invoiced and the courier can no longer be changed.");
+        }
+
+        if (archive.CourierSettlementBatchId != null)
+        {
+            throw new ArchivedCourierChangeException(
+                "The courier on this job has already been paid in a settlement run and can no longer be changed.");
+        }
+
+        var newCourierCode = await Context.TucCouriers
+            .Where(c => c.UccrId == newCourierId && c.Active)
+            .Select(c => c.Code)
+            .FirstOrDefaultAsync();
+
+        if (newCourierCode == null)
+        {
+            throw new ArchivedCourierChangeException("The selected courier was not found or is inactive.");
+        }
+
+        var oldCourierCode = archive.UcjbCourier?.Code ?? "unassigned";
+        archive.UcjbCourierId = newCourierId;
+
+        await JobUpdateAddNoteAsync(jobId, false,
+            $"Paid courier changed from {oldCourierCode} to {newCourierCode}");
+        await Context.SaveChangesAsync();
+
+        Log.Information("Archived job {JobId} paid courier changed from {OldCourier} to {NewCourier}",
+            jobId, oldCourierCode, newCourierCode);
+    }
+
     private async Task JobUpdateAddNoteAsync(int jobId, bool isLiveJob, string updateNote)
     {
         var staffId = _infoService.GetStaffId();

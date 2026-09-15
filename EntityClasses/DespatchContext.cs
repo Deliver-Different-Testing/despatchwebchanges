@@ -1330,7 +1330,13 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.PricingBreakdownId).HasName("PK__PricingBreakdownArchive");
 
-            entity.ToTable("PricingBreakdownArchive", tb => tb.HasTrigger("TR_PricingBreakdownArchive_tucJobArchive_Sync"));
+            entity.ToTable("PricingBreakdownArchive", tb =>
+                {
+                    tb.HasTrigger("TR_PricingBreakdownArchive_tucJobArchive_Sync");
+                    tb.HasTrigger("trg_PricingBreakdownArchive_Delete");
+                    tb.HasTrigger("trg_PricingBreakdownArchive_Insert");
+                    tb.HasTrigger("trg_PricingBreakdownArchive_Update");
+                });
 
             entity.Property(e => e.PricingBreakdownId).HasColumnName("PricingBreakdownID");
             entity.Property(e => e.ChargeAmount).HasColumnType("money");
@@ -1338,6 +1344,7 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.Charged).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.ChildJobId).HasColumnName("ChildJobID");
             entity.Property(e => e.CostAmount).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Included).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.JobId).HasColumnName("JobID");
@@ -1613,6 +1620,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ClientRefb).HasMaxLength(100);
             entity.Property(e => e.ClientRefc).HasMaxLength(100);
             entity.Property(e => e.Contact).HasMaxLength(50);
+            entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
@@ -1926,6 +1934,8 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.BulkRunScheduleId);
 
             entity.ToTable("tblBulkRunSchedule");
+
+            entity.HasIndex(e => new { e.ScheduleId, e.DayOfWeek }, "IX_tblBulkRunSchedule_ScheduleId_DayOfWeek");
 
             entity.HasIndex(e => e.ClientId, "idx_ClientId");
 
@@ -3856,6 +3866,7 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.PpdCode).HasMaxLength(50);
+            entity.Property(e => e.PpdDefault).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.PpdDescription)
                 .IsRequired()
                 .HasMaxLength(50);
@@ -4289,7 +4300,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.OversizeRateCodeId).HasColumnName("OversizeRateCodeID");
             entity.Property(e => e.PpdgraceDays).HasColumnName("PPDGraceDays");
             entity.Property(e => e.Ppdrate)
-                .HasDefaultValue(0.05m, "DF_tucClient_PPDRate")
                 .HasColumnType("decimal(18, 4)")
                 .HasColumnName("PPDRate");
             entity.Property(e => e.PrivateAddressSurchargeRateCodeId).HasColumnName("PrivateAddressSurchargeRateCodeID");
@@ -6000,6 +6010,7 @@ public partial class DespatchContext : DbContext
             entity.ToTable("tucJobArchive", tb =>
                 {
                     tb.HasTrigger("AutomaticSpeedUpdate_Archive");
+                    tb.HasTrigger("TR_tucJobArchive_PricingBreakdownArchive_Sync");
                     tb.HasTrigger("trg_TucJobArchive_Notes_Update");
                     tb.HasTrigger("tucJobArchive_Update_AddPickupAmountToNationwideAmount");
                     tb.HasTrigger("tucJobArchive_Update_AutomaticSpeedUpdate");

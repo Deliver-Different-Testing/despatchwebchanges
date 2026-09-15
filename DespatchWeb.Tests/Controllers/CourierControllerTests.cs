@@ -40,7 +40,7 @@ public class CourierControllerTests
         var model = Assert.IsType<ClearListViewModel>(jsonResult.Value);
         Assert.Empty(model.Areas);
         await _courierRepository.DidNotReceiveWithAnyArgs()
-            .GetClearListsAsync(default!, default, default, default);
+            .GetClearListsAsync(null!, null, null, CancellationToken.None);
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class CourierControllerTests
         var jsonResult = Assert.IsType<JsonResult>(result);
         Assert.IsType<ClearListViewModel>(jsonResult.Value);
         await _courierRepository.DidNotReceiveWithAnyArgs()
-            .GetClearListsAsync(default!, default, default, default);
+            .GetClearListsAsync(null!, null, null, CancellationToken.None);
     }
 
     [Fact]

@@ -3924,6 +3924,108 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task ChangeArchivedJobCourier_Eligible_CallsCommandAndReturnsOk()
+    {
+        var controller = CreateController();
+
+        var result = await controller.ChangeArchivedJobCourier(
+            new ChangeArchivedJobCourierRequest { JobId = 1, CourierId = 20 });
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).ChangeArchivedJobCourierAsync(1, 20);
+    }
+
+    [Fact]
+    public async Task ChangeArchivedJobCourier_CommandRefuses_ReturnsBadRequestWithMessage()
+    {
+        var controller = CreateController();
+        _jobCommandRepositoryMock.ChangeArchivedJobCourierAsync(1, 20)
+            .ThrowsAsync(new ArchivedCourierChangeException(
+                "This job has already been invoiced and the courier can no longer be changed."));
+
+        var result = await controller.ChangeArchivedJobCourier(
+            new ChangeArchivedJobCourierRequest { JobId = 1, CourierId = 20 });
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("already been invoiced", JsonConvert.SerializeObject(badRequest.Value));
+    }
+
+    [Fact]
+    public async Task ChangeArchivedJobCourier_RejectsOutboundPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1, Arg.Any<string?>()).Returns(true);
+
+        var result = await controller.ChangeArchivedJobCourier(
+            new ChangeArchivedJobCourierRequest { JobId = 1, CourierId = 20 });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().ChangeArchivedJobCourierAsync(0, 0);
+    }
+
+    [Fact]
+    public async Task CourierChangeEligibility_CleanArchivedJob_CanChange()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.GetArchivedCourierChangeEligibilityAsync(1)
+            .Returns(new ArchivedCourierChangeEligibility(false, false, true, 10, "Olive Old"));
+
+        var result = await controller.CourierChangeEligibility(1);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ArchivedCourierChangeEligibilityResponse>(ok.Value);
+        Assert.True(response.CanChange);
+        Assert.Null(response.Reason);
+        Assert.Equal(10, response.CurrentCourierId);
+        Assert.Equal("Olive Old", response.CurrentCourierName);
+    }
+
+    [Fact]
+    public async Task CourierChangeEligibility_Invoiced_ReportsReason()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.GetArchivedCourierChangeEligibilityAsync(1)
+            .Returns(new ArchivedCourierChangeEligibility(true, false, true, 10, "Olive Old"));
+
+        var result = await controller.CourierChangeEligibility(1);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ArchivedCourierChangeEligibilityResponse>(ok.Value);
+        Assert.False(response.CanChange);
+        Assert.Equal("invoiced", response.Reason);
+    }
+
+    [Fact]
+    public async Task CourierChangeEligibility_Settled_ReportsReason()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.GetArchivedCourierChangeEligibilityAsync(1)
+            .Returns(new ArchivedCourierChangeEligibility(false, true, true, 10, "Olive Old"));
+
+        var result = await controller.CourierChangeEligibility(1);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ArchivedCourierChangeEligibilityResponse>(ok.Value);
+        Assert.False(response.CanChange);
+        Assert.Equal("settled", response.Reason);
+    }
+
+    [Fact]
+    public async Task CourierChangeEligibility_NotArchived_ReportsReason()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.GetArchivedCourierChangeEligibilityAsync(1)
+            .Returns((ArchivedCourierChangeEligibility)null);
+
+        var result = await controller.CourierChangeEligibility(1);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ArchivedCourierChangeEligibilityResponse>(ok.Value);
+        Assert.False(response.CanChange);
+        Assert.Equal("notArchived", response.Reason);
+    }
+
+    [Fact]
     public async Task Allocate_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
