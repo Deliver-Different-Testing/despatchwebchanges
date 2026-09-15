@@ -33,7 +33,8 @@ public class DispatchLayoutRepositoryTests : IAsyncDisposable
 
     private DispatchLayoutRepository CreateRepository() => new(
         _contextFactoryMock,
-        _tenantInfoServiceMock);
+        _tenantInfoServiceMock,
+        new FakeTenantClock(TestDates.Now));
 
     private static DispatchLayoutDto Layout(string name, string json = "{}", bool isActive = false) =>
         new() { Name = name, LayoutJson = json, IsActive = isActive };

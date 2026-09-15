@@ -33,8 +33,11 @@ namespace DespatchWeb.EntityClasses
         Task<int> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspReDespatchJobByCourierIDAsync(int? courierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> uspRestoreJobsAsync(string jobIDs, bool? forceRestoreCompleted, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> UTL_stpJob_Insert_JobNumberAsync(int? staffID, int? jobTypeID, OutputParameter<string> jobNumber, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<UTL_stpJob_InsertFromTblBulkJobResult>> UTL_stpJob_InsertFromTblBulkJobAsync(int? bulkJobID, string runName, int? courierID, int? runStatus, int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> UTL_stpJob_RestoreDeviceAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<UTL_stpJobBooking_InsertJobAndChildrenResult>> UTL_stpJobBooking_InsertJobAndChildrenAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<UTL_stpJobBooking_InsertScheduleResult>> UTL_stpJobBooking_InsertScheduleAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? clientID, decimal? amount, OutputParameter<decimal?> pPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }
 }

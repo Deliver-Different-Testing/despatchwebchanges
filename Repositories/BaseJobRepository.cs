@@ -216,7 +216,7 @@ public partial class BaseJobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error occurred getting jobs for dispatch page with pagination. Please see exception.");
+            Log.Error(e, "Error occurred getting jobs for dispatch page with pagination. Please see exception");
             throw;
         }
     }
@@ -661,7 +661,7 @@ public partial class BaseJobRepository(
         {
             Log.Warning(
                 "DespatchQry returned {Returned} of {Total} jobs without pagination; capped at {Cap}. " +
-                "The caller should request paged results.",
+                "The caller should request paged results",
                 cappedIds.Count, totalCount, nonPaginatedCap);
         }
 

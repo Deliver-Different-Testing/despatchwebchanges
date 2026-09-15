@@ -161,6 +161,12 @@ interface UseJobActionsOptions {
      * a read-only summary and the user only fills in the reason.
      */
     onRequestPartnerChange?: (field: string, initialValue?: string, locked?: boolean) => void;
+    /**
+     * Open the change-paid-courier flow for an archived job. The dispatch/allocate
+     * path only touches live rows, so the courier click routes here instead of the
+     * dispatch dialog when the job is archived.
+     */
+    onChangeArchivedCourier?: (job: {id: number; jobNo: string}) => void;
 }
 
 export function useJobActions({
@@ -181,6 +187,7 @@ export function useJobActions({
     relatedJobs,
     onStatusChange,
     onRequestPartnerChange,
+    onChangeArchivedCourier,
 }: UseJobActionsOptions) {
     const {
         ensureSelectDialog,
@@ -814,10 +821,17 @@ export function useJobActions({
     // ── Field-Specific Handlers ────────────────────────────────────
 
     const handleCourierClick = useCallback(() => {
+        // Archived jobs can't be re-dispatched — the allocate path only touches
+        // live rows — so the courier click routes to the change-paid-courier flow.
+        const j = jobRef.current;
+        if (j?.isArchived && onChangeArchivedCourier) {
+            onChangeArchivedCourier({id: j.id, jobNo: j.jobNo});
+            return;
+        }
         // Opens the universal DispatchDialog. JobDetails owns the render —
         // we just toggle state and supply the confirm callbacks below.
         setDispatchDialog({open: true, initialType: 'Courier'});
-    }, []);
+    }, [onChangeArchivedCourier]);
 
     // Confirm: Courier / Agent / NP picked in the dispatch dialog. Routes the
     // write to the right server path:

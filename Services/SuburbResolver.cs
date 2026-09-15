@@ -29,13 +29,15 @@ public class SuburbResolver(IDbContextFactory<DespatchContext> contextFactory) :
 
             var resolved = await LookupAsync(context, suburbName, parsedPostCode, ct);
 
-            if (IsUnresolved(resolved, unknownId))
+            if (!IsUnresolved(resolved, unknownId))
             {
-                var abbreviated = Abbreviate(suburbName);
-                if (!string.Equals(abbreviated, suburbName, StringComparison.Ordinal))
-                {
-                    resolved = await LookupAsync(context, abbreviated, parsedPostCode, ct);
-                }
+                return IsUnresolved(resolved, unknownId) ? null : resolved;
+            }
+
+            var abbreviated = Abbreviate(suburbName);
+            if (!string.Equals(abbreviated, suburbName, StringComparison.Ordinal))
+            {
+                resolved = await LookupAsync(context, abbreviated, parsedPostCode, ct);
             }
 
             return IsUnresolved(resolved, unknownId) ? null : resolved;

@@ -149,8 +149,6 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
         ];
     }
 
-    // Which AccessorialChargeIds are AlwaysApply members of this job's current
-    // AccessorialChargeGroupId - used to lock the "remove" action in the dialog.
     private async Task<HashSet<int>> GetAlwaysApplyChargeIdsAsync(int jobId)
     {
         var groupId = await Context.TucJobs

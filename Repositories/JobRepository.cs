@@ -1579,7 +1579,7 @@ public partial class JobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "An error occured updating Job {jobId}", jobId);
+            Log.Error(e, "An error occured updating Job {JobId}", jobId);
             throw;
         }
     }
@@ -4085,7 +4085,7 @@ public partial class JobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
+            Log.Error(e, "Error occurred getting job {JobId}. Please see exception", jobId);
             throw;
         }
     }
@@ -4104,7 +4104,7 @@ public partial class JobRepository(
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
+            Log.Error(e, "Error occurred getting job {JobId}. Please see exception", jobId);
             throw;
         }
     }
@@ -4438,6 +4438,17 @@ public partial class JobRepository(
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
 
+    public async Task<ArchivedCourierChangeEligibility> GetArchivedCourierChangeEligibilityAsync(int jobId)
+        => await Context.TucJobArchives
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new ArchivedCourierChangeEligibility(
+                j.UcjbInvoiceNo.HasValue || (j.InvoiceProcess != null && j.InvoiceProcess.UcipDone),
+                j.CourierSettlementBatchId != null,
+                j.UcjbJobDone,
+                j.UcjbCourierId,
+                j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null))
+            .FirstOrDefaultAsync();
+
     public new async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
         bool isBulkJob = false)
         => await base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
@@ -4520,7 +4531,7 @@ public partial class JobRepository(
         }
 
         Log.Information(
-            "RestoreJobsCore starting for {RequestedCount} requested job(s) {RequestedJobIds}.",
+            "RestoreJobsCore starting for {RequestedCount} requested job(s) {RequestedJobIds}",
             jobIds.Count, string.Join(",", jobIds));
 
         var jobs = await Context.TucJobs
@@ -4541,11 +4552,11 @@ public partial class JobRepository(
         if (missingJobIds.Count > 0)
         {
             Log.Warning(
-                "RestoreJobsCore: {MissingCount} requested job(s) {MissingJobIds} were not found in TucJobs and will be skipped (likely archived).",
+                "RestoreJobsCore: {MissingCount} requested job(s) {MissingJobIds} were not found in TucJobs and will be skipped (likely archived)",
                 missingJobIds.Count, string.Join(",", missingJobIds));
         }
 
-        Log.Information("RestoreJobsCore loaded {FoundCount} job(s) from TucJobs to evaluate for restore.",
+        Log.Information("RestoreJobsCore loaded {FoundCount} job(s) from TucJobs to evaluate for restore",
             jobs.Count);
 
         foreach (var job in jobs)
@@ -4603,7 +4614,7 @@ public partial class JobRepository(
                     .SetProperty(j => j.UcjbPodname, (string)null));
 
             Log.Information(
-                "RestoreJobsCore restored job {JobId} to New/NewJobs (courier cleared, completion/dispatch state reset; POD name cleared so the job re-enters the dispatch view).",
+                "RestoreJobsCore restored job {JobId} to New/NewJobs (courier cleared, completion/dispatch state reset; POD name cleared so the job re-enters the dispatch view)",
                 job.UcjbId);
 
             // Recompute the (former) courier's clear-list area ordering now the job is gone.
@@ -4613,7 +4624,7 @@ public partial class JobRepository(
             }
         }
 
-        Log.Information("RestoreJobsCore finished for requested job(s) {RequestedJobIds}.",
+        Log.Information("RestoreJobsCore finished for requested job(s) {RequestedJobIds}",
             string.Join(",", jobIds));
     }
 

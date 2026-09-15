@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
@@ -133,6 +134,60 @@ public class HomeControllerTests : IDisposable
         var view = Assert.IsType<ViewResult>(result);
         Assert.Null(view.ViewData["VisibleFeatures"]);
         Assert.Null(view.ViewData["NpMapCenter"]);
+    }
+
+    [Fact]
+    public async Task Index_DashboardVisibilityLookupThrows_StillReturnsViewUngated()
+    {
+        // An NP-only enrichment failure must never bounce an authenticated
+        // session to the login page — the session just renders ungated.
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        _clientRepoMock.ValidateClientAsync(100).Returns(new ClientViewModel {IsNetworkPartner = true, StaffID = 5});
+        _featureVisibilityMock.GetVisibleDashboardsAsync()
+            .ThrowsAsync(new InvalidOperationException("Invalid object name 'Feature'."));
+        _networkPartnerContextMock.GetMapCentreAsync().Returns(new MapCentre(-36.8485m, 174.7633m));
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Null(view.ViewData["VisibleFeatures"]);
+        Assert.Equal(new MapCentre(-36.8485m, 174.7633m), view.ViewData["NpMapCenter"]);
+    }
+
+    [Fact]
+    public async Task Index_MapCentreLookupThrows_StillReturnsViewWithNullMapCentre()
+    {
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        _clientRepoMock.ValidateClientAsync(100).Returns(new ClientViewModel {IsNetworkPartner = true, StaffID = 5});
+        _featureVisibilityMock.GetVisibleDashboardsAsync()
+            .Returns(new HashSet<string> {"dw-dispatch"});
+        _networkPartnerContextMock.GetMapCentreAsync()
+            .ThrowsAsync(new InvalidOperationException("Invalid column name 'Latitude'."));
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal(["dw-dispatch"], Assert.IsType<string[]>(view.ViewData["VisibleFeatures"]));
+        Assert.Null(view.ViewData["NpMapCenter"]);
+    }
+
+    [Fact]
+    public async Task Index_ContactMissingFromTenantDb_RedirectsToPublicPath()
+    {
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        Environment.SetEnvironmentVariable("PublicPath", "https://public.test.com");
+        _clientRepoMock.ValidateClientAsync(100).Returns((ClientViewModel?)null);
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var redirect = Assert.IsType<RedirectResult>(result);
+        Assert.Equal("https://public.test.com", redirect.Url);
     }
 
     [Fact]

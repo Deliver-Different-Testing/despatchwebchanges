@@ -170,7 +170,7 @@ public class NationwideJobController(
                 "Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights",
                 stopwatch.ElapsedMilliseconds, jobId, flights.Count);
 
-            return Json(new FlightSearchResponse { Flights = flights.ToList() });
+            return Json(new FlightSearchResponse { Flights = [.. flights] });
         }
         catch (ArgumentException e)
         {
@@ -201,11 +201,7 @@ public class NationwideJobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-
-    // Lightweight flight search for a recurring booking's "saved flight"
-    // picker. Unlike GetScheduledFlightOptions this takes the route airports
-    // directly (a recurring booking is not a live job) and skips per-flight
-    // rate calculation — the dialog only needs to pick a flight number.
+    
     public async Task<IActionResult> GetRecurringFlightOptions(
         DateTimeOffset departureDate,
         int bookingId,
@@ -248,7 +244,7 @@ public class NationwideJobController(
                 });
             }
 
-            return Json(new FlightSearchResponse { Flights = flights.ToList() });
+            return Json(new FlightSearchResponse { Flights = [.. flights] });
         }
         catch (ArgumentException e)
         {

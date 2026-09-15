@@ -9,7 +9,6 @@ import {fetchBulkJobs, fetchDispatchBulkJobDetail, fetchPodJobs} from '../../ser
 import {getDispatchJobDetail, searchSpeedOptions} from '../../services/dispatchExecutorApi';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {IDispatchMapItem, ISuggestion} from '../../../interfaces/job.interface';
-import type {ShowToastFn} from '../../services/toastService';
 import JobSearchBoxes from './lib/jobSearchBoxes';
 import {searchActiveClients} from '../../services/jobApi';
 import {searchActiveCouriers} from '../../services/courierApi';
@@ -26,6 +25,7 @@ import {
 } from '../../services/jobListApi';
 import type {RestorePodImpactSummary} from '../../components/dialogs/restore-confirmation-dialog';
 import {RestoreConfirmationDialog} from '../../components/dialogs/restore-confirmation-dialog';
+import {useChangeCourierFlow} from '../../components/dialogs/change-courier-dialog';
 import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
 import {Briefcase, Route} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
@@ -407,6 +407,15 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
 
+    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    const {openChangeCourier, changeCourierDialogs} = useChangeCourierFlow({
+        showToast,
+        onChanged: (jobId) => Promise.all([
+            queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all}),
+            queryClient.invalidateQueries({queryKey: queryKeys.jobs.detail(jobId, 'standard')}),
+        ]).then(() => undefined),
+    });
+
     const jobAction = useCallback(async (actionId: JobSearchJobActionId, job: DispatchJob) => {
         const w = window as any;
         const invalidateDetail = () => queryClient.invalidateQueries({
@@ -440,6 +449,10 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     // Open the same universal DispatchDialog the job-list context
                     // menu uses (courier / agent / NP / partner picker).
                     setDispatchDialogOpen(true);
+                    return;
+
+                case 'changeCourier':
+                    await openChangeCourier(job);
                     return;
 
                 case 'restore': {
@@ -529,7 +542,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             console.error(`[JobSearchPage] Job action "${actionId}" failed:`, error);
             showToast(`Failed to ${actionId}: ${error instanceof Error ? error.message : 'unknown error'}`, 'error');
         }
-    }, [showToast]);
+    }, [showToast, openChangeCourier]);
 
     // ── Job-actions dispatch (DispatchDialog) ─────────────────────────
     // Single-job dispatch from the job-detail actions menu. Courier path allocates (or
@@ -763,6 +776,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 prompts={layoutPrompts}
                 layoutNames={boxLayout.layouts.map(l => l.name)}
             />
+            {changeCourierDialogs}
             <RestoreConfirmationDialog
                 open={restoreConfirm !== null}
                 count={restoreConfirm?.job.done ? 1 : 0}
@@ -806,9 +820,3 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         </Box>
     );
 };
-
-// Adapter for the existing React job-details mount API.
-// Mounts/unmounts via window.ReactJobDetails to keep the existing module
-// boundary; Phase 3 may replace this with a direct JobDetails component import.
-
-

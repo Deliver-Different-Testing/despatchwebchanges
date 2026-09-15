@@ -72,6 +72,21 @@ describe('JobSearchJobActionsMenu', () => {
         expect(screen.queryByRole('menuitem', {name: 'Restore Job'})).not.toBeInTheDocument();
     });
 
+    it('offers Change Paid Courier only for an archived, completed job', async () => {
+        await openMenu(makeJob({isArchived: true, done: true}));
+        expect(screen.getByRole('menuitem', {name: 'Change Paid Courier'})).toBeInTheDocument();
+    });
+
+    it('does not offer Change Paid Courier for a live or incomplete job', async () => {
+        await openMenu(makeJob({isArchived: false, done: true}));
+        expect(screen.queryByRole('menuitem', {name: 'Change Paid Courier'})).not.toBeInTheDocument();
+    });
+
+    it('does not offer Change Paid Courier for an archived job that is not done', async () => {
+        await openMenu(makeJob({isArchived: true, done: false}));
+        expect(screen.queryByRole('menuitem', {name: 'Change Paid Courier'})).not.toBeInTheDocument();
+    });
+
     it('offers Split for a splittable job', async () => {
         await openMenu(makeJob({allowSplit: true}));
         expect(screen.getByRole('menuitem', {name: 'Split Job'})).toBeInTheDocument();

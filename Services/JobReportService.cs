@@ -459,7 +459,7 @@ public sealed class JobReportService(
         var bucketName = Environment.GetEnvironmentVariable(bucketEnvVar);
         if (string.IsNullOrEmpty(bucketName))
         {
-            Log.Warning("{BucketEnvVar} environment variable not set. Skipping S3 upload.", bucketEnvVar);
+            Log.Warning("{BucketEnvVar} environment variable not set. Skipping S3 upload", bucketEnvVar);
             return;
         }
 

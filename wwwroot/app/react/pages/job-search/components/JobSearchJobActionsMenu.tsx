@@ -13,6 +13,7 @@ export type JobSearchJobActionId =
     | 'accessorialCharges'
     | 'attachments'
     | 'dispatch'
+    | 'changeCourier'
     | 'restore'
     | 'swapPod'
     | 'sendPod'
@@ -33,6 +34,11 @@ const ACTIONS: JobAction<JobSearchJobActionId>[] = [
         available: () => true},
     {id: 'dispatch', label: 'Dispatch to Courier', icon: 'send_to_mobile',
         available: job => !job.bulkJob && !job.preBook && job.assignedCourier == null},
+    {id: 'changeCourier', label: 'Change Paid Courier', icon: 'swap_horiz',
+        // Only for archived, completed jobs — the live-job path is a normal re-dispatch.
+        // Invoiced/settled jobs are refused by the server pre-check (DispatchJob rows
+        // don't carry a populated invoiced flag), which shows an explanatory popup.
+        available: job => !job.bulkJob && !job.preBook && !!job.isArchived && !!job.done},
     {id: 'restore', label: 'Restore Job', icon: 'undo',
         // Archived jobs live only in the archive tables; restore operates on live (tucJob)
         // rows, so restoring an archived job silently no-ops — don't offer it.

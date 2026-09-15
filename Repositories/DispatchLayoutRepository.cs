@@ -7,7 +7,8 @@ namespace DespatchWeb.Repositories;
 
 public class DispatchLayoutRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService) : BaseRepository(contextFactory), IDispatchLayoutRepository
+    ITenantInfoService infoService,
+    ITenantClock tenantClock) : BaseRepository(contextFactory), IDispatchLayoutRepository
 {
     public async Task<IReadOnlyList<DispatchLayoutDto>> GetLayoutsAsync(string page)
     {
@@ -28,7 +29,7 @@ public class DispatchLayoutRepository(
     public async Task ReplaceLayoutsAsync(string page, IReadOnlyList<DispatchLayoutDto> layouts)
     {
         var staffId = infoService.GetStaffId();
-        var now = DateTime.UtcNow;
+        var now = tenantClock.UtcNow;
 
         var existing = await Context.StaffDispatchLayouts
             .AsTracking()
@@ -38,17 +39,15 @@ public class DispatchLayoutRepository(
         var incomingNames = layouts.Select(l => l.Name).ToHashSet();
 
         // Delete layouts the user has removed.
-        foreach (var row in existing.Where(e => !incomingNames.Contains(e.Name)))
-        {
-            Context.StaffDispatchLayouts.Remove(row);
-        }
+        var toRemove = existing.Where(l => !incomingNames.Contains(l.Name));
+        Context.StaffDispatchLayouts.RemoveRange(toRemove);
 
         foreach (var input in layouts)
         {
             var row = existing.FirstOrDefault(e => e.Name == input.Name);
             if (row is null)
             {
-                await Context.StaffDispatchLayouts.AddAsync(new StaffDispatchLayout
+                var layout = new StaffDispatchLayout
                 {
                     StaffId = staffId,
                     Page = page,
@@ -57,7 +56,8 @@ public class DispatchLayoutRepository(
                     IsActive = input.IsActive,
                     CreatedUtc = now,
                     LastModifiedUtc = now
-                });
+                };
+                await Context.StaffDispatchLayouts.AddAsync(layout);
             }
             else
             {

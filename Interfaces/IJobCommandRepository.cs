@@ -49,6 +49,13 @@ public interface IJobCommandRepository
     Task RestoreJobsAsync(IReadOnlyList<int> jobIds);
     Task VoidJobAsync(VoidJobRequest data);
     Task VoidArchivedJobAsync(VoidJobRequest data);
+
+    /// <summary>
+    /// Reassigns the paid courier on an archived job, leaving payment amounts untouched.
+    /// Throws <see cref="Exceptions.ArchivedCourierChangeException"/> when the job is missing,
+    /// already invoiced, already settled, or the courier is unknown/inactive.
+    /// </summary>
+    Task ChangeArchivedJobCourierAsync(int jobId, int newCourierId);
     Task VoidBulkJobAsync(VoidBulkJobRequest data);
     Task<string> UnSplitJobAsync(int jobId);
 

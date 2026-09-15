@@ -190,7 +190,7 @@ public class JobController(
     {
         try
         {
-            Log.Information("Getting price breakdown for job {JobId} (prebook: {isPrebook}, archived: {isArchived})",
+            Log.Information("Getting price breakdown for job {JobId} (prebook: {IsPrebook}, archived: {IsArchived})",
                 jobId, isPrebook, isArchived);
             var priceComponents = await jobQueryRepository.GetJobPriceBreakdownAsync(jobId, isPrebook, isArchived);
             return Json(priceComponents);
@@ -1422,6 +1422,53 @@ public class JobController(
         }
     }
 
+    /// <summary>
+    /// Reassigns the paid courier on an archived job. The repository re-checks the
+    /// invoiced/settled guards, so a stale client can't slip a change past the
+    /// <see cref="CourierChangeEligibility"/> pre-check.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ChangeArchivedJobCourier([FromBody] ChangeArchivedJobCourierRequest request)
+    {
+        var partnerGuard = await RejectIfOutboundPartnerJobAsync(request.JobId);
+        if (partnerGuard != null)
+        {
+            return partnerGuard;
+        }
+
+        try
+        {
+            await jobCommandRepository.ChangeArchivedJobCourierAsync(request.JobId, request.CourierId);
+            return Ok();
+        }
+        catch (ArchivedCourierChangeException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error changing archived courier on job {JobId}", request.JobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CourierChangeEligibility(int jobId)
+    {
+        var eligibility = await jobQueryRepository.GetArchivedCourierChangeEligibilityAsync(jobId);
+
+        return Ok(new ArchivedCourierChangeEligibilityResponse
+        {
+            CanChange = eligibility?.CanChange ?? false,
+            Reason = eligibility == null ? "notArchived"
+                : eligibility.IsInvoiced ? "invoiced"
+                : eligibility.IsSettled ? "settled"
+                : null,
+            CurrentCourierId = eligibility?.CurrentCourierId,
+            CurrentCourierName = eligibility?.CurrentCourierName
+        });
+    }
+
     [HttpPost]
     public async Task<IActionResult> VoidBulkJob([FromBody] VoidBulkJobRequest request)
     {
@@ -1497,7 +1544,7 @@ public class JobController(
             }
             
             Log.Information(
-                "RestoreJobs request received for {JobCount} job(s) {JobIds} (RemoveCapturedImages={RemoveCapturedImages}).",
+                "RestoreJobs request received for {JobCount} job(s) {JobIds} (RemoveCapturedImages={RemoveCapturedImages})",
                 data.JobIds.Count,
                 string.Join(",", data.JobIds),
                 data.RemoveCapturedImages);
@@ -1561,7 +1608,7 @@ public class JobController(
             if (!probeImages)
             {
                 Log.Information(
-                    "GetRestorePodImpact skipped the S3 image probe for {JobCount} job(s) (cap is {Cap}).",
+                    "GetRestorePodImpact skipped the S3 image probe for {JobCount} job(s) (cap is {Cap})",
                     data.JobIds.Count, MaxRestorePodImageProbeJobs);
 
                 return Json(details
@@ -1639,7 +1686,7 @@ public class JobController(
                     jobId, completed.Year, completed.Month);
 
                 Log.Information(
-                    "Archived {Successful}/{Total} captured image(s) for restored job {JobId} ({Failed} failed).",
+                    "Archived {Successful}/{Total} captured image(s) for restored job {JobId} ({Failed} failed)",
                     result.SuccessfulFiles, result.TotalFiles, jobId, result.FailedFiles);
             }
             catch (Exception ex)

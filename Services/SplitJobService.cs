@@ -1110,7 +1110,7 @@ public class SplitJobService(
     {
         if (parentAmount == 0m)
         {
-            Log.Information("Parent job {ParentJobId} has zero amount. Skipping redistribution.", parentJobId);
+            Log.Information("Parent job {ParentJobId} has zero amount. Skipping redistribution", parentJobId);
             return;
         }
 
@@ -1142,7 +1142,7 @@ public class SplitJobService(
 
         if (children.Count == 0)
         {
-            Log.Warning("No non-void child jobs found for parent {ParentJobId}. Skipping redistribution.",
+            Log.Warning("No non-void child jobs found for parent {ParentJobId}. Skipping redistribution",
                 parentJobId);
             return;
         }
@@ -1156,7 +1156,7 @@ public class SplitJobService(
         if (childJobIds.Count == 0)
         {
             Log.Information(
-                "All split children of parent {ParentJobId} are manually rated. Skipping redistribution.",
+                "All split children of parent {ParentJobId} are manually rated. Skipping redistribution",
                 parentJobId);
             return;
         }
@@ -1184,7 +1184,7 @@ public class SplitJobService(
         }
 
         Log.Information(
-            "Redistributed {ParentAmount} across {Count} split children of parent {ParentJobId}.",
+            "Redistributed {ParentAmount} across {Count} split children of parent {ParentJobId}",
             parentAmount, childJobIds.Count, parentJobId);
     }
 
@@ -1215,7 +1215,7 @@ public class SplitJobService(
         {
             Log.Information(
                 "Leg {LegJobId} of parent {ParentJobId} has no attributed pricing lines — "
-                + "writing the header amount only.",
+                + "writing the header amount only",
                 legJobId, effectiveParentId);
 
             await context.TucJobs
@@ -1302,7 +1302,7 @@ public class SplitJobService(
         }
         catch (Exception ex)
         {
-            Log.Warning(ex, "Failed to consolidate MARS information for job {JobId}.", jobId);
+            Log.Warning(ex, "Failed to consolidate MARS information for job {JobId}", jobId);
         }
     }
 
@@ -1380,7 +1380,7 @@ public class SplitJobService(
 
             Log.Warning(
                 "Split {ParentJobId}: the parent's pricing drifted during the split — {Drift}. "
-                + "Restoring. Splitting must not change what the customer is charged.",
+                + "Restoring. Splitting must not change what the customer is charged",
                 parentJobId, string.Join("; ", drifted));
 
             return await context.TucJobs
@@ -1395,7 +1395,7 @@ public class SplitJobService(
         {
             // A failing guard must not turn a completed split into a failed one — the worst case is
             // the behaviour we already had. Same posture as ReassertLegBookingAsync.
-            Log.Warning(ex, "Failed to verify the pricing on the parent of split {ParentJobId}.", parentJobId);
+            Log.Warning(ex, "Failed to verify the pricing on the parent of split {ParentJobId}", parentJobId);
             return 0;
         }
 
@@ -1455,7 +1455,7 @@ public class SplitJobService(
                 {
                     Log.Warning(
                         "Split {ParentJobId}: leg {LegJobId} ({LegJobNumber}) ucjbSpeed drifted after insert "
-                        + "— observed {ObservedSpeed}, parent booked {ExpectedSpeed}. Left as-is.",
+                        + "— observed {ObservedSpeed}, parent booked {ExpectedSpeed}. Left as-is",
                         parentJobId, leg.UcjbId, leg.UcjbNumber, leg.UcjbSpeed, bookedSpeed);
                 }
 
@@ -1467,7 +1467,7 @@ public class SplitJobService(
                 Log.Warning(
                     "Split {ParentJobId}: leg {LegJobId} ({LegJobNumber}) booked window drifted after insert "
                     + "— observed {ObservedDate} {ObservedTime}, parent booked {ExpectedDate} {ExpectedTime}. "
-                    + "Restoring.",
+                    + "Restoring",
                     parentJobId, leg.UcjbId, leg.UcjbNumber, leg.UcjbDate, leg.UcjbTime, bookedDate, bookedTime);
                 drifted.Add(leg.UcjbId);
             }
@@ -1487,7 +1487,7 @@ public class SplitJobService(
         {
             // A failing guard must not turn a completed split into a failed one — the worst case is
             // the behaviour we already had. Same posture as ConsolidateMarsInformationAsync.
-            Log.Warning(ex, "Failed to verify the booked window on the new legs of split {ParentJobId}.",
+            Log.Warning(ex, "Failed to verify the booked window on the new legs of split {ParentJobId}",
                 parentJobId);
             return 0;
         }

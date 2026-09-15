@@ -128,7 +128,7 @@ public partial class JobRepository
 
         if (isRatedManually)
         {
-            Log.Information("Job {Job} is manually rated. Skipping automatic rate update.", dto.JobId);
+            Log.Information("Job {Job} is manually rated. Skipping automatic rate update", dto.JobId);
             return;
         }
 
@@ -213,7 +213,7 @@ public partial class JobRepository
 
             if (isRatedManually)
             {
-                Log.Information("Job {JobId} is manually rated. Skipping automatic rate update.", jobId);
+                Log.Information("Job {JobId} is manually rated. Skipping automatic rate update", jobId);
                 return;
             }
 

@@ -112,7 +112,7 @@ public sealed class CreateJobService(
         sql.Append(string.Join(", ", paramNames));
         sql.Append("); SET @identity = SCOPE_IDENTITY();");
 
-        await context.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray<object>(), ct);
+        await context.Database.ExecuteSqlRawAsync(sql.ToString(), [.. parameters], ct);
         return (int)identityParam.Value!;
     }
 

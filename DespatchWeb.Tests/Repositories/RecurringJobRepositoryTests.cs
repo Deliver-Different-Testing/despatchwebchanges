@@ -2086,11 +2086,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     [Fact]
     public async Task CreateCreateAheadBackfill_DupGuard_SkipsExistingLiveJobDate()
     {
-        // ExecuteMaterialiseParentAsync calls a stored proc that SQLite
-        // doesn't have; the dup guard fires FIRST so if we prepopulate a
-        // live tucJob for the requested date the SP is never invoked and
-        // the test can complete cleanly, exercising the dup-guard branch
-        // that a double-click would hit in production.
+        // ExecuteMaterialiseParentAsync mints a job number through
+        // Context.Procedures (unstubbed here, so it would fail against SQLite
+        // and land in Errors); the dup guard fires FIRST so if we prepopulate
+        // a live tucJob for the requested date the procs are never invoked and
+        // the test can complete cleanly, exercising the dup-guard branch that
+        // a double-click would hit in production.
         const int jobId = 821;
         _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
         _context.TucJobs.Add(new TucJob
@@ -2115,6 +2116,273 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         Assert.Empty(result.Errors);
     }
 
+    // ------------------------------------------------------------------
+    // ExecuteMaterialiseParentAsync (driven via CreateCreateAheadBackfillAsync,
+    // stored procs substituted through Context.Procedures)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task MaterialiseParent_UsesInsertJobAndChildren_WhenNoSchedule()
+    {
+        const int jobId = 830;
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        await procedures.Received(1).UTL_stpJobBooking_InsertJobAndChildrenAsync(
+            jobId, Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertScheduleAsync(null);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_UsesInsertSchedule_WhenScheduleIdSet()
+    {
+        const int jobId = 831;
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId, scheduleId: 7));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        await procedures.Received(1).UTL_stpJobBooking_InsertScheduleAsync(
+            jobId, Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertJobAndChildrenAsync(null);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_StampsParentForProc_AndRestoresAfter()
+    {
+        const int jobId = 832;
+        var insertDate = BackfillRequest(jobId).Dates[0].ToDateTime(TimeOnly.MinValue);
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        (DateTime? Date, int? InitialDays, string JobNumber)? stamped = null;
+        procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                using var ctx = _db.CreateContext();
+                var row = ctx.TucJobBookings.Single(b => b.UcbkId == jobId);
+                stamped = (row.UcbkDate, row.RecurringInitialDays, row.UcbkJobNumber);
+                return new List<UTL_stpJobBooking_InsertJobAndChildrenResult>();
+            });
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        Assert.True(stamped.HasValue);
+        Assert.Equal(insertDate, stamped.Value.Date);
+        Assert.Equal(0, stamped.Value.InitialDays);
+        Assert.Equal("JOB999", stamped.Value.JobNumber);
+
+        await using var verify = _db.CreateContext();
+        var restored = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(new DateTime(2024, 5, 1), restored.UcbkDate);
+        Assert.Equal(5, restored.RecurringInitialDays);
+        Assert.Equal($"JOB{jobId}", restored.UcbkJobNumber);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_StampsLegChildWithSuffix_LeavesOtherChildrenAlone()
+    {
+        const int parentId = 834;
+        const int legChildId = 835;
+        const int otherChildId = 836;
+        var parent = CreateMaterialiseParentFixture(parentId);
+        var legChild = CreateMaterialiseParentFixture(legChildId);
+        legChild.BookingParentId = parentId;
+        legChild.JobRelationshipTypeId = 13;
+        legChild.UcbkJobNumber = "JOB8351";
+        legChild.UcbkTime = null;
+        var otherChild = CreateMaterialiseParentFixture(otherChildId);
+        otherChild.BookingParentId = parentId;
+        otherChild.JobRelationshipTypeId = 5;
+        _context.TucJobBookings.AddRange(parent, legChild, otherChild);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        (string LegNumber, DateTime? LegTime, int? LegInitialDays, string OtherNumber, DateTime? OtherDate)? stamped = null;
+        procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                using var ctx = _db.CreateContext();
+                var leg = ctx.TucJobBookings.Single(b => b.UcbkId == legChildId);
+                var other = ctx.TucJobBookings.Single(b => b.UcbkId == otherChildId);
+                stamped = (leg.UcbkJobNumber, leg.UcbkTime, leg.RecurringInitialDays, other.UcbkJobNumber, other.UcbkDate);
+                return new List<UTL_stpJobBooking_InsertJobAndChildrenResult>();
+            });
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(parentId));
+
+        Assert.Empty(result.Errors);
+        Assert.True(stamped.HasValue);
+        // Leg child: minted number + trailing-digit suffix, parent's time, offset reset.
+        Assert.Equal("JOB9991", stamped.Value.LegNumber);
+        Assert.Equal(parent.UcbkTime, stamped.Value.LegTime);
+        Assert.Equal(0, stamped.Value.LegInitialDays);
+        // Non-13/20 child untouched while the proc ran.
+        Assert.Equal($"JOB{otherChildId}", stamped.Value.OtherNumber);
+        Assert.Equal(new DateTime(2024, 5, 1), stamped.Value.OtherDate);
+
+        await using var verify = _db.CreateContext();
+        var restoredLeg = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == legChildId, TestContext.Current.CancellationToken);
+        Assert.Equal("JOB8351", restoredLeg.UcbkJobNumber);
+        Assert.Equal(5, restoredLeg.RecurringInitialDays);
+        // Self-heal: the leg child's original NULL time keeps the parent's
+        // stamped time after a successful push.
+        Assert.Equal(parent.UcbkTime, restoredLeg.UcbkTime);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_NullParentTime_ReportsErrorWithoutCallingProcs()
+    {
+        const int jobId = 837;
+        var parent = CreateMaterialiseParentFixture(jobId);
+        parent.UcbkTime = null;
+        _context.TucJobBookings.Add(parent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("NULL ucbkTime", error.Message);
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJob_Insert_JobNumberAsync(null, null, null, cancellationToken: TestContext.Current.CancellationToken);
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertJobAndChildrenAsync(null, cancellationToken: TestContext.Current.CancellationToken);
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertScheduleAsync(null, cancellationToken: TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_ProcFailure_RestoresTemplatesExactly()
+    {
+        const int parentId = 838;
+        const int childId = 839;
+        var parent = CreateMaterialiseParentFixture(parentId);
+        var child = CreateMaterialiseParentFixture(childId);
+        child.BookingParentId = parentId;
+        child.JobRelationshipTypeId = 13;
+        child.UcbkJobNumber = "JOB8391";
+        child.UcbkTime = null;
+        _context.TucJobBookings.AddRange(parent, child);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+        procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<List<UTL_stpJobBooking_InsertJobAndChildrenResult>>(
+                new InvalidOperationException("materialise boom")));
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(parentId));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("materialise boom", error.Message);
+
+        await using var verify = _db.CreateContext();
+        var restoredParent = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == parentId, TestContext.Current.CancellationToken);
+        Assert.Equal(new DateTime(2024, 5, 1), restoredParent.UcbkDate);
+        Assert.Equal(5, restoredParent.RecurringInitialDays);
+        Assert.Equal($"JOB{parentId}", restoredParent.UcbkJobNumber);
+        var restoredChild = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == childId, TestContext.Current.CancellationToken);
+        Assert.Equal("JOB8391", restoredChild.UcbkJobNumber);
+        // Failure path restores exactly — including the original NULL time.
+        Assert.Null(restoredChild.UcbkTime);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_MintsWithPrebooksStaffAndParentSpeed()
+    {
+        const int jobId = 840;
+        _context.TucStaffs.Add(new TucStaff
+        {
+            UcstId = 55, UcstFirstName = "Prebooks", UcstLastName = "Cron",
+            CreatedBy = "test", LastModifiedBy = "test"
+        });
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        await procedures.Received(1).UTL_stpJob_Insert_JobNumberAsync(
+            55, 3, Arg.Any<OutputParameter<string>>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_MintsWithStaffZero_WhenPrebooksStaffMissing()
+    {
+        const int jobId = 841;
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        await procedures.Received(1).UTL_stpJob_Insert_JobNumberAsync(
+            0, 3, Arg.Any<OutputParameter<string>>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(13, "ABC1", "1")] // trailing digit, relType 13 only
+    [InlineData(20, "ABC1", "")]
+    [InlineData(13, "ABC", "")]
+    [InlineData(20, "JOBLHP", "LHP")]
+    [InlineData(13, "JOBDEL", "DEL")] // LHP/DEL/LH branches apply to both relTypes
+    [InlineData(20, "joblhp", "LHP")] // SQL collation is case-insensitive
+    [InlineData(20, "JOBLH2", "LH2")]
+    [InlineData(20, "LH", "LH")] // RIGHT(n,3) of a short string is the whole string
+    [InlineData(20, "AB", "")]
+    [InlineData(20, null, "")]
+    [InlineData(20, "", "")]
+    public void BuildChildJobNumberSuffix_MirrorsSqlCase(int relationshipTypeId, string jobNumber, string expected)
+    {
+        Assert.Equal(expected, RecurringJobRepository.BuildChildJobNumberSuffix(relationshipTypeId, jobNumber));
+    }
+
+    private IDespatchContextProcedures StubProcedures(string mintedJobNumber = "JOB999")
+    {
+        var procedures = Substitute.For<IDespatchContextProcedures>();
+        procedures.UTL_stpJob_Insert_JobNumberAsync(
+                Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<OutputParameter<string>>(),
+                Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(x =>
+            {
+                x.Arg<OutputParameter<string>>().SetValue(mintedJobNumber);
+                return 1;
+            });
+        _context.Procedures = procedures;
+        return procedures;
+    }
+
+    // Parent template ready for the materialise path: fixed date/time/speed so
+    // the stamp-and-restore assertions have known originals.
+    private TucJobBooking CreateMaterialiseParentFixture(int id, int? scheduleId = null)
+    {
+        var parent = CreateRecurringInitialDaysFixture(id, currentValue: 5, frequency: 1);
+        parent.UcbkDate = new DateTime(2024, 5, 1);
+        parent.UcbkTime = new DateTime(2024, 5, 1, 9, 30, 0);
+        parent.UcbkSpeed = 3;
+        parent.ScheduleId = scheduleId;
+        return parent;
+    }
+
+    private static CreateCreateAheadBackfillRequest BackfillRequest(int jobId) => new()
+    {
+        JobId = jobId,
+        Dates = [new DateOnly(2024, 6, 18)]
+    };
+
     // Fixture helper: minimal recurring parent template that satisfies
     // PreviewCreateAheadBackfillAsync's SELECT (metadata + client site).
     // frequency=1 (weekly) avoids the fortnightly re-seed SP entirely.
@@ -2126,7 +2394,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Client row is needed so the LEFT JOIN in the preview SELECT
         // resolves without returning null-only metadata.
-        if (!_context.TucClients.Any(c => c.UcclId == 1))
+        if (!_context.TucClients.Local.Any(c => c.UcclId == 1)
+            && !_context.TucClients.Any(c => c.UcclId == 1))
         {
             _context.TucClients.Add(CreateClient(1, "TESTCLIENT"));
         }
