@@ -36,6 +36,7 @@ async function getAllJobs(
             regions: params.regions,
             speeds: params.speeds,
             couriers: params.couriers,
+            despatchViewIds: params.despatchViewIds,
         } as Record<string, unknown>,
         options,
     );
@@ -58,7 +59,7 @@ async function getParentJobMap(jobId: number, options?: RequestOptions): Promise
 }
 
 async function getOpenJobs(
-    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers'>,
+    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers' | 'despatchViewIds'>,
     options?: RequestOptions,
 ): Promise<IOpenJobResponse[]> {
     const dtos = await apiClient.get<IOpenJobResponseDto[]>(
@@ -69,6 +70,7 @@ async function getOpenJobs(
             regions: params.regions,
             speeds: params.speeds,
             couriers: params.couriers,
+            despatchViewIds: params.despatchViewIds,
         } as Record<string, unknown>,
         options,
     );

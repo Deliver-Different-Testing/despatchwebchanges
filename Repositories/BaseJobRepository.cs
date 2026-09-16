@@ -221,7 +221,7 @@ public partial class BaseJobRepository(
         }
     }
 
-    private async Task<IQueryable<TucJob>> BuildBaseQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    protected async Task<IQueryable<TucJob>> BuildBaseQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
     {
         var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant);
 

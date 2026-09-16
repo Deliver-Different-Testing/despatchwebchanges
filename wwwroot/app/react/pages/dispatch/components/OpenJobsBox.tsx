@@ -23,6 +23,8 @@ const SORT_KEY = `dispatchOpenJobsSort-${ContactID}`;
 const LIMIT_KEY = `dispatchOpenJobsLimit-${ContactID}`;
 
 export interface OpenJobsBoxProps {
+    /** Selected dispatch view ids; jobs are scoped to these, matching the main Jobs List. */
+    despatchViewIds: number[];
     startDate: Dayjs;
     endDate: Dayjs;
     /** Auto-refresh interval in ms (React Query refetchInterval); false/undefined = off. */
@@ -41,6 +43,7 @@ export interface OpenJobsBoxProps {
  * 600px+ to lay out two-up and a dashboard column does not have it.
  */
 export const OpenJobsBox: React.FC<OpenJobsBoxProps> = ({
+    despatchViewIds,
     startDate,
     endDate,
     refetchIntervalMs = false,
@@ -70,7 +73,7 @@ export const OpenJobsBox: React.FC<OpenJobsBoxProps> = ({
     );
 
     const {data = [], isLoading} = useOverviewOpenJobs(
-        {startDate: range.startDate, endDate: range.endDate},
+        {startDate: range.startDate, endDate: range.endDate, despatchViewIds},
         refetchIntervalMs || undefined,
     );
 

@@ -30,6 +30,8 @@ type StatusGroup = 'active' | 'inactive' | 'completed';
 const STATUS_GROUPS: StatusGroup[] = ['active', 'inactive', 'completed'];
 
 export interface OverviewDeliveriesBoxProps {
+    /** Selected dispatch view ids; jobs are scoped to these, matching the main Jobs List. */
+    despatchViewIds: number[];
     startDate: Dayjs;
     endDate: Dayjs;
     /** Auto-refresh interval in ms (React Query refetchInterval); false/undefined = off. */
@@ -53,6 +55,7 @@ export interface OverviewDeliveriesBoxProps {
  * panel), so there is no confirmation step and no per-row map action.
  */
 export const OverviewDeliveriesBox: React.FC<OverviewDeliveriesBoxProps> = ({
+    despatchViewIds,
     startDate,
     endDate,
     refetchIntervalMs = false,
@@ -99,6 +102,7 @@ export const OverviewDeliveriesBox: React.FC<OverviewDeliveriesBoxProps> = ({
             endDate: range.endDate,
             orderBy: sort.column,
             orderDirection: sort.direction,
+            despatchViewIds,
         },
         refetchIntervalMs || undefined,
     );

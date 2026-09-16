@@ -54,8 +54,8 @@ const boxProps: {
     driverLocations?: {refetchIntervalMs?: number | false; activeAreaId?: number};
     supports?: {refetchIntervalMs?: number | false};
     currentWork?: {refetchIntervalMs?: number | false};
-    overviewDeliveries?: {refetchIntervalMs?: number | false};
-    openJobs?: {refetchIntervalMs?: number | false};
+    overviewDeliveries?: {refetchIntervalMs?: number | false; despatchViewIds?: number[]};
+    openJobs?: {refetchIntervalMs?: number | false; despatchViewIds?: number[]};
 } = {};
 let selectArea: ((id: number) => void) | undefined;
 jest.mock('./components/DriverLocationsBox', () => ({
@@ -78,8 +78,8 @@ jest.mock('./components/CurrentWorkBox', () => ({
     },
 }));
 jest.mock('./components/OverviewDeliveriesBox', () => ({
-    OverviewDeliveriesBox: (props: {refetchIntervalMs?: number | false; onSelectJob: (id: number) => void}) => {
-        boxProps.overviewDeliveries = {refetchIntervalMs: props.refetchIntervalMs};
+    OverviewDeliveriesBox: (props: {refetchIntervalMs?: number | false; despatchViewIds?: number[]; onSelectJob: (id: number) => void}) => {
+        boxProps.overviewDeliveries = {refetchIntervalMs: props.refetchIntervalMs, despatchViewIds: props.despatchViewIds};
         return (
             <div data-testid="mock-overview-deliveries">
                 <button onClick={() => props.onSelectJob(4242)}>select-overview-job</button>
@@ -88,8 +88,8 @@ jest.mock('./components/OverviewDeliveriesBox', () => ({
     },
 }));
 jest.mock('./components/OpenJobsBox', () => ({
-    OpenJobsBox: (props: {refetchIntervalMs?: number | false}) => {
-        boxProps.openJobs = {refetchIntervalMs: props.refetchIntervalMs};
+    OpenJobsBox: (props: {refetchIntervalMs?: number | false; despatchViewIds?: number[]}) => {
+        boxProps.openJobs = {refetchIntervalMs: props.refetchIntervalMs, despatchViewIds: props.despatchViewIds};
         return <div data-testid="mock-open-jobs"/>;
     },
 }));
@@ -619,6 +619,16 @@ describe('DispatchPage', () => {
 
             expect(boxProps.overviewDeliveries?.refetchIntervalMs).toBe(30000);
             expect(boxProps.openJobs?.refetchIntervalMs).toBe(30000);
+        });
+
+        it('scopes both panels to the selected despatch views, matching the main Jobs List', async () => {
+            enableOverviewPanels();
+            renderPage();
+
+            await screen.findByRole('button', {name: 'Auckland', pressed: true});
+
+            expect(boxProps.overviewDeliveries?.despatchViewIds).toEqual([11]);
+            expect(boxProps.openJobs?.despatchViewIds).toEqual([11]);
         });
 
         /*

@@ -43,6 +43,7 @@ export interface OverviewQueryParams {
     regions?: number[];
     speeds?: number[];
     couriers?: number[];
+    despatchViewIds?: number[];
 }
 
 export interface OverviewStatsViewModel {

@@ -27,7 +27,7 @@ public partial class JobRepository
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        var query = Context.TucJobs
+        var query = (await BuildBaseQueryAsync(parameters.DespatchViewIds, isUsCustomer))
             .Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
 
         // Apply status group - filter early
@@ -244,8 +244,9 @@ public partial class JobRepository
         var tenantTimeZone = _infoService.GetTenantTimeZone();
         var currentDate = now.Date;
         var nextDate = currentDate.AddDays(1);
+        var isUsTenant = _infoService.IsUsTenant();
 
-        var query = Context.TucJobs
+        var query = (await BuildBaseQueryAsync(parameters.DespatchViewIds, isUsTenant))
             .Where(j =>
                 j.UcjbStatus != (int)JobStatus.Completed &&
                 j.UcjbStatus != (int)JobStatus.Rejected &&

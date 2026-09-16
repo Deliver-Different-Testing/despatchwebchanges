@@ -721,6 +721,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             case DispatchBoxes.OverviewDeliveries:
                 return (
                     <OverviewDeliveriesBox
+                        despatchViewIds={filters.despatchViewIds}
                         startDate={filters.startDate}
                         endDate={filters.endDate}
                         refetchIntervalMs={refreshIntervals.jobsMs}
@@ -732,6 +733,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             case DispatchBoxes.OpenJobs:
                 return (
                     <OpenJobsBox
+                        despatchViewIds={filters.despatchViewIds}
                         startDate={filters.startDate}
                         endDate={filters.endDate}
                         refetchIntervalMs={refreshIntervals.jobsMs}

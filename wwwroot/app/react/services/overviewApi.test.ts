@@ -110,6 +110,22 @@ describe('overviewApi', () => {
             );
         });
 
+        it('passes despatchViewIds, matching the main Jobs List scoping', async () => {
+            mockApiClient.get.mockResolvedValueOnce({items: [], total: 0, page: 1, pages: 0});
+
+            await overviewApi.getAllJobs({
+                page: 1,
+                limit: 20,
+                despatchViewIds: [11, 22],
+            });
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                '/overview',
+                expect.objectContaining({despatchViewIds: [11, 22]}),
+                undefined,
+            );
+        });
+
         it('passes abort signal via options', async () => {
             mockApiClient.get.mockResolvedValueOnce({items: [], total: 0, page: 1, pages: 0});
             const controller = new AbortController();
@@ -262,6 +278,18 @@ describe('overviewApi', () => {
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
                 }),
+                undefined,
+            );
+        });
+
+        it('passes despatchViewIds, matching the main Jobs List scoping', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            await overviewApi.getOpenJobs({despatchViewIds: [11, 22]});
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                '/overview/GetOpenJobs',
+                expect.objectContaining({despatchViewIds: [11, 22]}),
                 undefined,
             );
         });
