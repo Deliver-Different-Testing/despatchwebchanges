@@ -297,6 +297,17 @@ export function JobDetails({config}: JobDetailsProps) {
         onChanged: refreshAndNotify,
     });
 
+    // Switches the panel to another job in the same family — e.g. the "view parent
+    // breakdown" link a split child's Price Breakdown shows. Shared with handleTabChange
+    // below, which is the same "select this family member" behaviour driven by tab click
+    // rather than a target job id.
+    const navigateToRelatedJob = useCallback((targetJobId: number) => {
+        const idx = sortedRelatedJobs.findIndex(j => j.id === targetJobId);
+        if (idx < 0) return;
+        setSelectedTabIndex(idx);
+        onRelatedJobChange?.(targetJobId);
+    }, [sortedRelatedJobs, onRelatedJobChange]);
+
     // All job action handlers
     const actions = useJobActions({
         job,
@@ -323,6 +334,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 locked: locked ?? false,
             }),
         onChangeArchivedCourier: (j) => void openChangeCourier(j),
+        onNavigateToJob: navigateToRelatedJob,
     });
 
     // Initialize the tab to show the originally-selected job. Only runs once per jobId change -
@@ -344,12 +356,13 @@ export function JobDetails({config}: JobDetailsProps) {
     }, [jobId, sortedRelatedJobs]);
 
     const handleTabChange = useCallback((index: number) => {
-        setSelectedTabIndex(index);
         const selectedJob = sortedRelatedJobs[index];
         if (selectedJob?.id) {
-            onRelatedJobChange?.(selectedJob.id);
+            navigateToRelatedJob(selectedJob.id);
+        } else {
+            setSelectedTabIndex(index);
         }
-    }, [sortedRelatedJobs, onRelatedJobChange]);
+    }, [sortedRelatedJobs, navigateToRelatedJob]);
 
     const handleResetFieldVisibility = useCallback(() => {
         resetToDefaults();

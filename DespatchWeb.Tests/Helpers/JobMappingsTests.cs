@@ -1038,6 +1038,27 @@ public class JobMappingsTests
     }
 
     [Fact]
+    public void JobArchiveMapping_MapsJobRelationshipTypeId()
+    {
+        // Mirrors JobMappingCore_MapsJobRelationshipTypeId — an archived split leg's Price
+        // Breakdown must be able to read this after archiving too, not just while live.
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 123,
+            UcjbNumber = "ARCH-123",
+            UcjbDate = new DateTime(2024, 6, 15),
+            UcjbTime = new DateTime(2024, 6, 15, 14, 30, 0),
+            JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild,
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>()
+        };
+
+        var result = JobMappings.JobArchiveMapping.Compile()(archivedJob);
+
+        Assert.Equal((int)JobRelationshipTypes.SplitChild, result.JobRelationshipTypeId);
+    }
+
+    [Fact]
     public void JobArchiveMapping_MapsAddressesCorrectly()
     {
         // Arrange
@@ -2754,6 +2775,31 @@ public class JobMappingsTests
         var result = JobMappings.JobMappingCore(false).Compile()(job);
 
         Assert.Equal(7, result.PartnerPairingId);
+    }
+
+    [Fact]
+    public void JobMappingCore_MapsJobRelationshipTypeId()
+    {
+        // The split-parent Price Breakdown grid keys its read-only/edit-mode gating on this
+        // field (SplitParent = 8, SplitChild = 9) — if the mapping drops it, the frontend has
+        // no signal a job is part of a split at all.
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent,
+            TucJobChangeRequests = new List<TucJobChangeRequest>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        var result = JobMappings.JobMappingCore(false).Compile()(job);
+
+        Assert.Equal((int)JobRelationshipTypes.SplitParent, result.JobRelationshipTypeId);
     }
 
     [Fact]

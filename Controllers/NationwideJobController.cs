@@ -24,11 +24,6 @@ public class NationwideJobController(
     IScopeProvider scopeProvider)
     : Controller
 {
-    /// <summary>
-    /// A network-partner-scoped session may only dispatch to its own couriers, so the
-    /// agent and network-partner lanes are closed to it. The dialog hides those options,
-    /// but that is presentation — the endpoint has to refuse a crafted request too.
-    /// </summary>
     private bool CallerIsNetworkPartner => scopeProvider.Scope?.IsNetworkPartner ?? false;
 
     public async Task<IActionResult> NationwideJobListNew([FromQuery] NationwideJobsRequestModel data)
@@ -118,7 +113,7 @@ public class NationwideJobController(
         int? airlineId,
         int? departureAirportId,
         int? arrivalAirportId,
-        int minimumLayoverMinutes = 60, //minimumLayover allowed
+        int minimumLayoverMinutes = 60,
         bool includeNearbyAirports = false)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -152,10 +147,8 @@ public class NationwideJobController(
                 });
             }
 
-            // Get the rates
             foreach (var flight in flights)
             {
-                // Get amount from stored proc
                 var amount = await flightRateService.GetCarrierFlightRateByJobIdAsync(
                     jobId,
                     flight.AirlineCode,
@@ -201,7 +194,7 @@ public class NationwideJobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     public async Task<IActionResult> GetRecurringFlightOptions(
         DateTimeOffset departureDate,
         int bookingId,
@@ -306,7 +299,6 @@ public class NationwideJobController(
                 return Json(new { active = false });
             }
 
-            // Check all webhook rules in parallel
             var tasks = webhookIds.Select(flightService.IsFlightRuleActiveAsync);
             var results = await Task.WhenAll(tasks);
 
@@ -533,20 +525,17 @@ public class NationwideJobController(
         }
     }
 
-
     [HttpPost]
     public async Task<IActionResult> RestoreJob([FromBody] RestoreJobRequest request)
     {
         try
         {
-            // Step 1: Disconnect from webhook alerts
             var webhookIds = await repository.GetFlightWebhookIdByJobIdAsync(request.JobId);
             foreach (var webhookId in webhookIds)
             {
                 await flightService.DeleteFlightRuleById(webhookId);
             }
 
-            // Step 2: Restore Job
             await repository.RestoreNationwideJobAsync(request.JobId);
             return Ok();
         }
@@ -559,11 +548,6 @@ public class NationwideJobController(
         }
     }
 
-    // isNetworkPartner: null = all agents (existing behaviour, no break for
-    // the Nationwide flow), false = regular agents only, true = NPs only.
-    // The 3-way Assign Route picker (HANDOVER-KEVIN-2026-05-26.md) passes
-    // false for the "Agent" radio and true for the "NP" radio so the same
-    // endpoint can drive both filtered lists.
     public async Task<IActionResult> GetAllAgentsSearch(string searchTerm, bool? isNetworkPartner = null)
     {
         try

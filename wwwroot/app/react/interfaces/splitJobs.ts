@@ -21,6 +21,8 @@ export interface SplitPricingLineAllocationItem {
     pricingBreakdownId: number;
     sequence: number;
     sharePercent: number;
+    /** This leg's cost for this line, set directly rather than derived from sharePercent. */
+    costOverride?: number;
 }
 
 /**
@@ -83,4 +85,78 @@ export interface SplitPricingPreview {
 export interface SplitPricingPreviewRequest {
     jobId: number;
     meetingPointAddress: AddressViewModel;
+}
+
+// ── The persistent split-parent grid (job/GetSplitPricingBreakdown, edit mode) ─────────────
+// Mirrors Models/Dto/SplitPricingBreakdownDto.cs. Reuses SplitPricingParentLine/SplitPricingLeg's
+// field names above rather than inventing parallel ones, per docs/pricing §8.
+
+export interface SplitPricingLockState {
+    revenueLocked: boolean;
+    revenueLockReason: string | null;
+    shareLocked: boolean;
+    shareLockReason: string | null;
+}
+
+export interface SplitPriceBreakdownAllocation {
+    legJobId: number;
+    sharePercent: number;
+    revenue: number;
+    cost: number | null;
+    costOverride: number | null;
+    /** What `cost` would be without `costOverride` — shown as "was X" and what reset reverts to. */
+    derivedCost: number | null;
+}
+
+export interface SplitPriceBreakdownItem {
+    pricingBreakdownId: number;
+    name: string;
+    revenue: number;
+    isAccessorial: boolean;
+    allocations: SplitPriceBreakdownAllocation[];
+}
+
+export interface SplitPriceBreakdownLeg {
+    jobId: number;
+    jobNumber: string;
+    /** Null renders as "Unassigned" — never blank (spec §3). */
+    driverName: string | null;
+    sharePercent: number;
+    revenue: number;
+    cost: number;
+    marginPercent: number;
+    costLocked: boolean;
+    costLockReason: string | null;
+}
+
+/** Null response means: not a live split parent, or one with no allocation rows yet (pre-feature
+ * split) — the caller falls back to the flat PriceBreakdownDialog, not an error state. */
+export interface SplitPriceBreakdown {
+    jobId: number;
+    totalRevenue: number;
+    totalCost: number;
+    grossProfit: number;
+    marginPercent: number;
+    items: SplitPriceBreakdownItem[];
+    legs: SplitPriceBreakdownLeg[];
+    locks: SplitPricingLockState;
+}
+
+export interface SplitPricingItemRevenueUpdate {
+    pricingBreakdownId: number;
+    revenue: number;
+}
+
+export interface SplitPricingAllocationUpdate {
+    pricingBreakdownId: number;
+    legJobId: number;
+    sharePercent?: number;
+    costOverride?: number;
+    resetCostOverride?: boolean;
+}
+
+export interface UpdateSplitPricingBreakdownRequest {
+    jobId: number;
+    itemRevenues: SplitPricingItemRevenueUpdate[];
+    allocations: SplitPricingAllocationUpdate[];
 }

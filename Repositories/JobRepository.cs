@@ -8,6 +8,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using DespatchWeb.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -28,6 +29,13 @@ public partial class JobRepository(
         IJobCommandRepository
 {
     private const decimal PriceEqualityTolerance = 0.0001m;
+
+    /// <summary>
+    /// Stateless — no constructor dependencies to inject, so a single shared instance avoids
+    /// widening JobRepository's constructor (and every test file that builds one) for this alone.
+    /// </summary>
+    private static readonly PricingBreakdownAllocationService PricingBreakdownAllocation =
+        new PricingBreakdownAllocationService();
 
     /// <summary>Dispatcher id that marks a multi-leg job whose siblings share a dispatcher.</summary>
     private const int MultiLegDispatcherId = 148;
@@ -1203,6 +1211,13 @@ public partial class JobRepository(
 
             var isPrebook = viewModel.PrebookJobId.HasValue;
 
+            if (!isPrebook && viewModel.ChildJobId.HasValue
+                && await IsSplitChildAsync(viewModel.ChildJobId.Value, isArchived))
+            {
+                throw new InvalidOperationException(
+                    $"Job {viewModel.ChildJobId} is a split child — pricing is managed on its parent job.");
+            }
+
             int effectiveJobId;
             if (!isPrebook && viewModel.ChildJobId.HasValue)
             {
@@ -1254,7 +1269,11 @@ public partial class JobRepository(
                 JobId = !isPrebook ? effectiveJobId : null,
                 PrebookJobId = isPrebook ? effectiveJobId : null,
                 CostAmount = viewModel.CostAmount,
-                ChildJobId = viewModel.ChildJobId
+                // ChildJobId only means something when it names a DIFFERENT job than the one the
+                // item lives on (legacy per-leg attribution, see PriceDetail.cs's identical check) —
+                // storing it equal to the effective job id would make a split parent's own new item
+                // look like a legacy attributed row and hide it from PricingBreakdownAllocationService.
+                ChildJobId = !isPrebook && viewModel.ChildJobId == effectiveJobId ? null : viewModel.ChildJobId
             };
 
             switch (isPrebook)
@@ -1274,8 +1293,17 @@ public partial class JobRepository(
             await Context.PricingBreakdowns.AddAsync(item);
             await Context.SaveChangesAsync();
 
-            await RecalculateJobAmountFromBreakdownAsync(
-                item.JobId, item.PrebookJobId, item.ChildJobId, isArchived: false);
+            // §7.1: adding an item on a split parent creates a zero-cost allocation row on every
+            // current leg. The single write path both the split flow and every per-cell edit share.
+            if (await IsLiveSplitParentAsync(item.JobId, isArchived: false))
+            {
+                await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, item.JobId!.Value);
+            }
+            else
+            {
+                await RecalculateJobAmountFromBreakdownAsync(
+                    item.JobId, item.PrebookJobId, item.ChildJobId, isArchived: false);
+            }
 
             return item.PricingBreakdownId;
         }
@@ -1305,6 +1333,14 @@ public partial class JobRepository(
         if (viewModel.JobId is null && viewModel.PrebookJobId is null)
         {
             return;
+        }
+
+        var targetJobId = viewModel.ChildJobId ?? viewModel.JobId;
+        if (viewModel.PrebookJobId is null && targetJobId.HasValue
+            && await IsSplitChildAsync(targetJobId.Value, isArchived))
+        {
+            throw new InvalidOperationException(
+                $"Job {targetJobId} is a split child — pricing is managed on its parent job.");
         }
 
         int rowsAffected;
@@ -1347,8 +1383,15 @@ public partial class JobRepository(
             await SetArchiveJobAsManuallyPriceAsync(viewModel.JobId.Value);
         }
 
-        await RecalculateJobAmountFromBreakdownAsync(
-            viewModel.JobId, viewModel.PrebookJobId, viewModel.ChildJobId, isArchived);
+        if (await IsLiveSplitParentAsync(viewModel.JobId, isArchived))
+        {
+            await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, viewModel.JobId!.Value);
+        }
+        else
+        {
+            await RecalculateJobAmountFromBreakdownAsync(
+                viewModel.JobId, viewModel.PrebookJobId, viewModel.ChildJobId, isArchived);
+        }
     }
 
     /// <summary>
@@ -1365,6 +1408,13 @@ public partial class JobRepository(
             if (archiveBreakdown == null)
             {
                 return;
+            }
+
+            var archiveTargetJobId = archiveBreakdown.ChildJobId ?? archiveBreakdown.JobId;
+            if (archiveTargetJobId.HasValue && await IsSplitChildAsync(archiveTargetJobId.Value, isArchived: true))
+            {
+                throw new InvalidOperationException(
+                    $"Job {archiveTargetJobId} is a split child — pricing is managed on its parent job.");
             }
 
             var archiveJobId = archiveBreakdown.JobId;
@@ -1386,6 +1436,13 @@ public partial class JobRepository(
         if (breakdown == null)
         {
             return;
+        }
+
+        var deleteTargetJobId = breakdown.ChildJobId ?? breakdown.JobId;
+        if (deleteTargetJobId.HasValue && await IsSplitChildAsync(deleteTargetJobId.Value, isArchived: false))
+        {
+            throw new InvalidOperationException(
+                $"Job {deleteTargetJobId} is a split child — pricing is managed on its parent job.");
         }
 
         var note = $"Deleted {chargeId} - {breakdown.ChargeName} - {breakdown.ChargeAmount}";
@@ -1416,8 +1473,18 @@ public partial class JobRepository(
         Context.PricingBreakdowns.Remove(breakdown);
         await Context.SaveChangesAsync();
 
-        await RecalculateJobAmountFromBreakdownAsync(
-            deletedJobId, deletedPrebookId, deletedChildJobId, isArchived: false);
+        // §7.1: removing an item cascades to every leg's allocation row for it (FK ON DELETE
+        // CASCADE) — the remaining items' shares are untouched, but every current leg's header sum
+        // must still be refreshed to exclude the removed item's contribution.
+        if (await IsLiveSplitParentAsync(deletedJobId, isArchived: false))
+        {
+            await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, deletedJobId!.Value);
+        }
+        else
+        {
+            await RecalculateJobAmountFromBreakdownAsync(
+                deletedJobId, deletedPrebookId, deletedChildJobId, isArchived: false);
+        }
     }
 
     /// <summary>
@@ -1826,30 +1893,38 @@ public partial class JobRepository(
         var staffId = _infoService.GetStaffId();
         var shouldMarkAsRead = data.ShouldMarkAsRead;
 
-        var parameterPlaceholders = string.Join(",", jobIds.Select((_, i) => $"@p{i + 3}"));
+        await Context.TucJobReadTrackers
+            .Where(t => jobIds.Contains(t.JobId))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(t => t.HasBeenRead, shouldMarkAsRead)
+                .SetProperty(t => t.ReadTimestamp, currentTenantTime)
+                .SetProperty(t => t.ReadByStaffId, staffId));
 
-        var parameters = new List<object> { shouldMarkAsRead, currentTenantTime, staffId };
-        parameters.AddRange(jobIds.Cast<object>());
+        var existingTrackerJobIds = await Context.TucJobReadTrackers
+            .Where(t => jobIds.Contains(t.JobId))
+            .Select(t => t.JobId)
+            .ToListAsync();
 
-        var sql = """
-                  -- Update existing tracker records
-                  UPDATE tucJobReadTracker
-                  SET HasBeenRead = @p0, ReadTimestamp = @p1, ReadByStaffId = @p2
-                  WHERE JobId IN (
-                  """ + parameterPlaceholders + """
-                                                );
+        var jobIdsNeedingTracker = await Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId) && !existingTrackerJobIds.Contains(j.UcjbId))
+            .Select(j => j.UcjbId)
+            .ToListAsync();
 
-                                                -- Insert new tracker records only for jobs that exist in tucJob and don't have a tracker yet
-                                                -- Uses NOT EXISTS to prevent PK violation race condition
-                                                INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
-                                                SELECT j.UcjbId, @p0, @p2, @p1
-                                                FROM tucJob j
-                                                WHERE j.UcjbId IN (
-                                                """ + parameterPlaceholders + """
-                                                                              )
-                                                                                AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker t WHERE t.JobId = j.UcjbId);
-                                                                              """;
-        await Context.Database.ExecuteSqlRawAsync(sql, [.. parameters]);
+        foreach (var jobId in jobIdsNeedingTracker)
+        {
+            Context.TucJobReadTrackers.Add(new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = shouldMarkAsRead,
+                ReadByStaffId = staffId,
+                ReadTimestamp = currentTenantTime
+            });
+        }
+
+        if (jobIdsNeedingTracker.Count > 0)
+        {
+            await Context.SaveChangesAsync();
+        }
     }
 
     /// <summary>
@@ -2087,10 +2162,7 @@ public partial class JobRepository(
         }
     }
 
-
-    /// <summary>
-    /// Adds new package items to a job with sequential item IDs.
-    /// </summary>
+    
     public async Task AddPackagesToJobAsync(int effectiveJobId,
         List<TucJobItem> items)
     {
@@ -3511,6 +3583,29 @@ public partial class JobRepository(
             // the original parent fallback rather than rendering an empty breakdown.
             if (pricingBreakdowns.Count == 0 && effectiveJobId != jobId)
             {
+                // New-model split (docs/pricing/job-splitting-price-breakdown.md §5): the parent's
+                // own items never carry a ChildJobId any more, so a leg's derived figures live in
+                // PricingBreakdownAllocation instead. Checked first — it takes priority over the
+                // legacy ChildJobId fallback below whenever this leg actually has allocation rows.
+                pricingBreakdowns = await Context.PricingBreakdownAllocations
+                    .Where(a => a.LegJobId == jobId)
+                    .Join(Context.PricingBreakdowns,
+                        a => a.ParentPricingBreakdownId, p => p.PricingBreakdownId,
+                        (a, p) => new ChargeViewModel
+                        {
+                            ChargeId = p.PricingBreakdownId,
+                            Amount = a.ChargeAmount,
+                            Name = p.ChargeName,
+                            JobId = p.JobId,
+                            PrebookJobId = p.PrebookJobId,
+                            CostAmount = a.CostAmount,
+                            ChildJobId = jobId
+                        })
+                    .ToListAsync();
+            }
+
+            if (pricingBreakdowns.Count == 0 && effectiveJobId != jobId)
+            {
                 var hasAttributedRows = await Context.PricingBreakdowns
                     .AnyAsync(p => p.JobId == effectiveJobId && p.ChildJobId != null);
 
@@ -4448,6 +4543,202 @@ public partial class JobRepository(
                 j.UcjbCourierId,
                 j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null))
             .FirstOrDefaultAsync();
+
+    /// <summary>
+    /// Which editable surfaces of a split parent's price breakdown are still open
+    /// (docs/pricing/job-splitting-price-breakdown.md §7.5). Invoiced-ness and
+    /// per-leg settlement both live only on TucJobArchive, never live TucJob — a leg
+    /// with no archive row yet is structurally never settled, so it's simply unlocked.
+    /// </summary>
+    public async Task<SplitPricingLockState> GetSplitPricingLockStateAsync(int parentJobId)
+    {
+        var legIds = await Context.TucJobs
+            .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
+            .Select(j => j.UcjbId)
+            .Union(Context.TucJobArchives
+                .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId)
+                .Select(j => j.UcjbId))
+            .ToListAsync();
+
+        var isParentInvoiced = await Context.TucJobArchives
+            .Where(j => j.UcjbId == parentJobId)
+            .Select(j => (bool?)(j.UcjbInvoiceNo.HasValue || (j.InvoiceProcess != null && j.InvoiceProcess.UcipDone)))
+            .FirstOrDefaultAsync() ?? false;
+
+        var revenueLockReason = isParentInvoiced ? "Invoiced" : null;
+        var shareLocked = isParentInvoiced;
+        var shareLockReason = revenueLockReason;
+
+        var perLegCostLocks = new Dictionary<int, SplitPricingLegCostLock>();
+        if (legIds.Count > 0)
+        {
+            var legSettlements = await Context.TucJobArchives
+                .Where(j => legIds.Contains(j.UcjbId))
+                .Select(j => new { j.UcjbId, j.CourierSettlementBatchId })
+                .ToListAsync();
+
+            var batchIds = legSettlements
+                .Where(l => l.CourierSettlementBatchId.HasValue)
+                .Select(l => l.CourierSettlementBatchId!.Value)
+                .Distinct()
+                .ToList();
+
+            var batchDates = batchIds.Count > 0
+                ? await Context.CourierSettlementBatches
+                    .Where(b => batchIds.Contains(b.Id))
+                    .ToDictionaryAsync(b => b.Id, b => b.Created)
+                : new Dictionary<int, DateTime>();
+
+            foreach (var legId in legIds)
+            {
+                var batchId = legSettlements.FirstOrDefault(l => l.UcjbId == legId)?.CourierSettlementBatchId;
+                if (batchId is not { } settledBatchId)
+                {
+                    perLegCostLocks[legId] = new SplitPricingLegCostLock(false, null);
+                    continue;
+                }
+
+                var reason = batchDates.TryGetValue(settledBatchId, out var settledOn)
+                    ? $"Settled {settledOn.ToString("d MMM", System.Globalization.CultureInfo.InvariantCulture)}"
+                    : "Settled";
+                perLegCostLocks[legId] = new SplitPricingLegCostLock(true, reason);
+                shareLocked = true;
+                shareLockReason ??= reason;
+            }
+        }
+
+        return new SplitPricingLockState(
+            isParentInvoiced, revenueLockReason, shareLocked, shareLockReason, perLegCostLocks);
+    }
+
+    /// <summary>
+    /// The parent's own price items plus every leg's derived allocation, for the split-parent
+    /// grid (docs/pricing/job-splitting-price-breakdown.md §3). Returns null when the job isn't
+    /// a live split parent, or is one with no PricingBreakdownAllocation rows yet — a job split
+    /// before this feature shipped, which the caller falls back to the old flat dialog for.
+    /// </summary>
+    public async Task<SplitPricingBreakdownDto> GetSplitPricingBreakdownAsync(int jobId)
+    {
+        if (!await IsLiveSplitParentAsync(jobId, isArchived: false))
+        {
+            return null;
+        }
+
+        var parentItems = await Context.PricingBreakdowns
+            .Where(p => p.JobId == jobId && p.ChildJobId == null)
+            .OrderBy(p => p.PricingBreakdownId)
+            .ToListAsync();
+
+        if (parentItems.Count == 0)
+        {
+            return null;
+        }
+
+        var itemIds = parentItems.Select(p => p.PricingBreakdownId).ToList();
+        var allocations = await Context.PricingBreakdownAllocations
+            .Where(a => itemIds.Contains(a.ParentPricingBreakdownId))
+            .ToListAsync();
+
+        if (allocations.Count == 0)
+        {
+            return null;
+        }
+
+        var legIds = allocations.Select(a => a.LegJobId).Distinct().ToList();
+        var legJobs = await Context.TucJobs
+            .Where(j => legIds.Contains(j.UcjbId))
+            .OrderBy(j => j.Sequence)
+            .Select(j => new
+            {
+                j.UcjbId,
+                j.UcjbNumber,
+                DriverName = j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null
+            })
+            .ToListAsync();
+
+        var lockState = await GetSplitPricingLockStateAsync(jobId);
+
+        var allocationsByItem = allocations.ToLookup(a => a.ParentPricingBreakdownId);
+        var allocationsByLeg = allocations.ToLookup(a => a.LegJobId);
+
+        var items = parentItems.Select(item =>
+        {
+            var itemAllocations = allocationsByItem[item.PricingBreakdownId].ToList();
+
+            // What each leg's cost would be without its CostOverride — recomputed here (not
+            // stored) purely for the grid's "was X" + reset display; the write path already
+            // knows this at rewrite time but doesn't persist it, since only the effective Cost
+            // is ever needed downstream (Accounts, settlement).
+            var derivedCosts = item.CostAmount.HasValue
+                ? PricingBreakdownAllocationCalculator.DistributeAmount(
+                    item.CostAmount.Value, [.. itemAllocations.Select(a => a.SharePercent / 100m)])
+                : null;
+
+            return new SplitPricingBreakdownItemDto
+            {
+                PricingBreakdownId = item.PricingBreakdownId,
+                Name = item.ChargeName,
+                Revenue = item.ChargeAmount,
+                IsAccessorial = item.IsAccessorial,
+                Allocations =
+                [
+                    .. itemAllocations
+                        .Select((a, i) => new SplitPricingBreakdownAllocationDto
+                        {
+                            LegJobId = a.LegJobId,
+                            SharePercent = a.SharePercent,
+                            Revenue = a.ChargeAmount,
+                            Cost = a.CostAmount,
+                            CostOverride = a.CostOverride,
+                            DerivedCost = derivedCosts?[i]
+                        })
+                ]
+            };
+        }).ToList();
+
+        var totalRevenue = parentItems.Sum(p => p.ChargeAmount);
+        var totalCost = allocations.Sum(a => a.CostAmount ?? 0m);
+        var grossProfit = totalRevenue - totalCost;
+
+        var legs = legJobs.Select(leg =>
+        {
+            var legAllocations = allocationsByLeg[leg.UcjbId].ToList();
+            var legRevenue = legAllocations.Sum(a => a.ChargeAmount);
+            var legCost = legAllocations.Sum(a => a.CostAmount ?? 0m);
+            var costLock = lockState.PerLegCostLocks.GetValueOrDefault(leg.UcjbId, new SplitPricingLegCostLock(false, null));
+
+            return new SplitPricingBreakdownLegDto
+            {
+                JobId = leg.UcjbId,
+                JobNumber = leg.UcjbNumber,
+                DriverName = leg.DriverName,
+                SharePercent = totalRevenue > 0 ? legRevenue / totalRevenue * 100m : 0m,
+                Revenue = legRevenue,
+                Cost = legCost,
+                MarginPercent = legRevenue > 0 ? (legRevenue - legCost) / legRevenue * 100m : 0m,
+                CostLocked = costLock.Locked,
+                CostLockReason = costLock.Reason
+            };
+        }).ToList();
+
+        return new SplitPricingBreakdownDto
+        {
+            JobId = jobId,
+            TotalRevenue = totalRevenue,
+            TotalCost = totalCost,
+            GrossProfit = grossProfit,
+            MarginPercent = totalRevenue > 0 ? grossProfit / totalRevenue * 100m : 0m,
+            Items = items,
+            Legs = legs,
+            Locks = new SplitPricingLockStateDto
+            {
+                RevenueLocked = lockState.RevenueLocked,
+                RevenueLockReason = lockState.RevenueLockReason,
+                ShareLocked = lockState.ShareLocked,
+                ShareLockReason = lockState.ShareLockReason
+            }
+        };
+    }
 
     public new async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
         bool isBulkJob = false)
@@ -5465,6 +5756,154 @@ public partial class JobRepository(
     }
 
     /// <summary>
+    /// True when <paramref name="jobId"/> is a split child (docs/pricing/job-splitting-price-
+    /// breakdown.md §6) — its price is derived from its parent and must never be edited directly,
+    /// live or archived. Checked server-side so no caller (bulk import, partner sync, a stale UI)
+    /// can bypass the invariant the way a UI-only gate could.
+    /// </summary>
+    private async Task<bool> IsSplitChildAsync(int jobId, bool isArchived) =>
+        (int?)(isArchived
+            ? await Context.TucJobArchives.Where(j => j.UcjbId == jobId)
+                .Select(j => j.JobRelationshipTypeId).FirstOrDefaultAsync()
+            : await Context.TucJobs.Where(j => j.UcjbId == jobId)
+                .Select(j => j.JobRelationshipTypeId).FirstOrDefaultAsync())
+        == (int)JobRelationshipTypes.SplitChild;
+
+    /// <summary>
+    /// True when <paramref name="jobId"/> is a split parent whose PricingBreakdownAllocation rows
+    /// (if any) need rewriting after this edit — false for a job split before that table existed
+    /// (§5: no backfill, no allocation rows to rewrite) or for any non-split job.
+    /// </summary>
+    /// <remarks>
+    /// Archived split parents are out of scope for now: PricingBreakdownAllocationService only
+    /// operates on the live tables, so an archived split parent's item edit still falls back to
+    /// <see cref="RecalculateJobAmountFromBreakdownAsync"/>'s plain sum, exactly as before this
+    /// feature — a known, called-out gap, not a silent regression.
+    /// </remarks>
+    private async Task<bool> IsLiveSplitParentAsync(int? jobId, bool isArchived)
+    {
+        if (isArchived || !jobId.HasValue)
+        {
+            return false;
+        }
+
+        var relType = await Context.TucJobs.Where(j => j.UcjbId == jobId)
+            .Select(j => j.JobRelationshipTypeId).FirstOrDefaultAsync();
+        return relType == (int)JobRelationshipTypes.SplitParent;
+    }
+
+    /// <summary>
+    /// Applies one batched Save & Close from the split-parent grid: revenue edits, share edits,
+    /// and cost overrides, each checked against the §7.5 lock state before anything is written.
+    /// One call to RewriteAllocationsForParentAsync at the end re-derives every downstream figure
+    /// (leg ChargeAmount/CostAmount, header totals) — this method only ever touches the raw
+    /// inputs (ChargeAmount, SharePercent, CostOverride).
+    /// </summary>
+    public async Task UpdateSplitPricingBreakdownAsync(UpdateSplitPricingBreakdownRequest request)
+    {
+        if (!await IsLiveSplitParentAsync(request.JobId, isArchived: false))
+        {
+            throw new InvalidOperationException($"Job {request.JobId} is not a live split parent.");
+        }
+
+        if (request.ItemRevenues.Count == 0 && request.Allocations.Count == 0)
+        {
+            return;
+        }
+
+        var lockState = await GetSplitPricingLockStateAsync(request.JobId);
+
+        if (request.ItemRevenues.Count > 0 && lockState.RevenueLocked)
+        {
+            throw new InvalidOperationException(
+                $"Job {request.JobId}'s revenue is locked: {lockState.RevenueLockReason}.");
+        }
+
+        if (request.Allocations.Any(a => a.SharePercent.HasValue) && lockState.ShareLocked)
+        {
+            throw new InvalidOperationException(
+                $"Job {request.JobId}'s share is locked: {lockState.ShareLockReason}.");
+        }
+
+        foreach (var allocation in request.Allocations.Where(a => a.CostOverride.HasValue || a.ResetCostOverride))
+        {
+            var legLock = lockState.PerLegCostLocks.GetValueOrDefault(
+                allocation.LegJobId, new SplitPricingLegCostLock(false, null));
+            if (legLock.Locked)
+            {
+                throw new InvalidOperationException($"Leg {allocation.LegJobId}'s cost is locked: {legLock.Reason}.");
+            }
+        }
+
+        // A share update must name every current leg of that item, summing to 100 — a real
+        // data-integrity check (§4 rule 6), not just UI politeness, even though the grid's own
+        // client-side normalization should make this unreachable in practice.
+        var currentLegIds = await Context.TucJobs
+            .Where(j => j.ParentId == request.JobId && j.UcjbId != request.JobId && !j.UcjbVoid)
+            .Select(j => j.UcjbId)
+            .ToListAsync();
+
+        foreach (var group in request.Allocations.Where(a => a.SharePercent.HasValue).GroupBy(a => a.PricingBreakdownId))
+        {
+            var legIdsInGroup = group.Select(a => a.LegJobId).ToList();
+            if (legIdsInGroup.Count != currentLegIds.Count || legIdsInGroup.Except(currentLegIds).Any())
+            {
+                throw new ArgumentException(
+                    $"Share update for item {group.Key} must include every current leg ({string.Join(",", currentLegIds)}).");
+            }
+
+            var total = group.Sum(a => a.SharePercent!.Value);
+            if (Math.Abs(total - 100m) > 0.01m)
+            {
+                throw new ArgumentException($"Shares for item {group.Key} must sum to 100 (got {total}).");
+            }
+        }
+
+        foreach (var itemRevenue in request.ItemRevenues)
+        {
+            await Context.PricingBreakdowns
+                .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.ChargeAmount, itemRevenue.Revenue));
+        }
+
+        if (request.Allocations.Count > 0)
+        {
+            var itemIds = request.Allocations.Select(a => a.PricingBreakdownId).Distinct().ToList();
+            var allocationRows = await Context.PricingBreakdownAllocations
+                .AsTracking()
+                .Where(a => itemIds.Contains(a.ParentPricingBreakdownId))
+                .ToListAsync();
+            var allocationsByKey = allocationRows.ToDictionary(a => (a.ParentPricingBreakdownId, a.LegJobId));
+
+            foreach (var update in request.Allocations)
+            {
+                if (!allocationsByKey.TryGetValue((update.PricingBreakdownId, update.LegJobId), out var row))
+                {
+                    continue;
+                }
+
+                if (update.SharePercent.HasValue)
+                {
+                    row.SharePercent = update.SharePercent.Value;
+                }
+
+                if (update.ResetCostOverride)
+                {
+                    row.CostOverride = null;
+                }
+                else if (update.CostOverride.HasValue)
+                {
+                    row.CostOverride = update.CostOverride.Value;
+                }
+            }
+
+            await Context.SaveChangesAsync();
+        }
+
+        await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, request.JobId);
+    }
+
+    /// <summary>
     /// Recalculates a job's total amount from the sum of its current breakdown lines and
     /// writes the result back to TucJob.UcjbAmount / TucJobArchive.UcjbAmount /
     /// TucJobBooking.UcbkAmount. Keeps the job's displayed price in lock-step with the
@@ -5747,7 +6186,7 @@ public partial class JobRepository(
     }
 
 
-    private async Task MarkJobAsReadAsync(int jobId)
+    internal async Task MarkJobAsReadAsync(int jobId)
     {
         try
         {
@@ -5756,12 +6195,28 @@ public partial class JobRepository(
 
             // Uses a separate context since this runs concurrently with the read queries
             await using var markReadContext = await _contextFactory.CreateDbContextAsync();
-            await markReadContext.Database.ExecuteSqlInterpolatedAsync($"""
-                                                                        INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
-                                                                        SELECT {jobId}, 1, {staffId}, {currentTenantTime}
-                                                                        WHERE EXISTS (SELECT 1 FROM tucJob WHERE ucjbId = {jobId})
-                                                                          AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker WHERE JobId = {jobId})
-                                                                        """);
+
+            var jobExists = await markReadContext.TucJobs.AnyAsync(j => j.UcjbId == jobId);
+            if (!jobExists)
+            {
+                return;
+            }
+
+            var alreadyTracked = await markReadContext.TucJobReadTrackers.AnyAsync(t => t.JobId == jobId);
+            if (alreadyTracked)
+            {
+                return;
+            }
+
+            markReadContext.TucJobReadTrackers.Add(new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = true,
+                ReadByStaffId = staffId,
+                ReadTimestamp = currentTenantTime
+            });
+
+            await markReadContext.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -5893,7 +6348,6 @@ public partial class JobRepository(
         var now = _clock.TenantNow;
         try
         {
-            // Batch query 1: Get job counts per courier (jobs not void and not done)
             var jobCountsByCourier = await Context.TucJobs
                 .Where(j => j.UcjbDate.Date == now.Date
                             && !j.UcjbVoid
@@ -5904,7 +6358,6 @@ public partial class JobRepository(
                 .Select(g => new { CourierId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.CourierId, x => x.Count);
 
-            // Batch query 2: Get counts of jobs NOT picked up or late delivery per courier
             var nonPickedUpCountsByCourier = await Context.TucJobs
                 .Where(j => j.UcjbDate.Date == now.Date
                             && !j.UcjbVoid

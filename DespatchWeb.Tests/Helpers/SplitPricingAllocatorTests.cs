@@ -80,6 +80,57 @@ public class SplitPricingAllocatorTests
     }
 
     [Fact]
+    public void Allocate_CarriesTheShareUsedForEachLine_AsAPercent()
+    {
+        // 70 miles / 30 miles => 70%/30%, needed by the split-job Price Breakdown grid to persist
+        // per (item, leg) shares rather than re-deriving them later.
+        var allocated = Allocate(Kt1314VLines(), Legs(7m, 3m));
+
+        Assert.All(allocated.Where(l => l.LetterSuffix == "A"), l => Assert.Equal(70m, l.SharePercent));
+        Assert.All(allocated.Where(l => l.LetterSuffix == "B"), l => Assert.Equal(30m, l.SharePercent));
+    }
+
+    [Fact]
+    public void Allocate_CarriesThePerLineOverrideShare_WhenOneWasGiven()
+    {
+        var lines = Kt1314VLines();
+        var overrides = new List<LineShareOverride> { new(Congestion.PricingBreakdownId, 1, 100m) };
+        var allocated = Allocate(lines, Legs(7m, 3m), overrides);
+
+        var congestion = allocated.Where(l => l.PricingBreakdownId == Congestion.PricingBreakdownId).ToList();
+        Assert.Equal(100m, congestion.Single(l => l.LetterSuffix == "A").SharePercent);
+        Assert.Equal(0m, congestion.Single(l => l.LetterSuffix == "B").SharePercent);
+    }
+
+    [Fact]
+    public void Allocate_UsesACostOverride_ForThatLegOnly()
+    {
+        // Both legs' current 70/30 share are re-sent unchanged (matching how a caller always sends
+        // every leg of a touched line) — only leg A's cost is set directly.
+        var lines = Kt1314VLines();
+        var overrides = new List<LineShareOverride>
+        {
+            new(Congestion.PricingBreakdownId, 1, 70m, CostOverride: 1.00m),
+            new(Congestion.PricingBreakdownId, 2, 30m)
+        };
+        var allocated = Allocate(lines, Legs(7m, 3m), overrides);
+
+        var congestion = allocated.Where(l => l.PricingBreakdownId == Congestion.PricingBreakdownId).ToList();
+        var legA = congestion.Single(l => l.LetterSuffix == "A");
+        var legB = congestion.Single(l => l.LetterSuffix == "B");
+
+        Assert.Equal(1.00m, legA.CostAmount);
+        Assert.Equal(1.00m, legA.CostOverride);
+        // The sibling leg is unaffected — it still derives from the line's own cost by share.
+        Assert.Equal(1.80m, legB.CostAmount); // 6.00 - 4.20 (remainder-absorbing leg)
+        Assert.Null(legB.CostOverride);
+
+        // Revenue is untouched by the cost override — it still follows the unchanged 70/30 share.
+        Assert.Equal(6.30m, legA.ChargeAmount);
+        Assert.Equal(2.70m, legB.ChargeAmount);
+    }
+
+    [Fact]
     public void Allocate_PreservesEachLinesTotal_SoTheParentTotalIsUnchanged()
     {
         // The invoice guarantee: the legs of every line sum back to the original line exactly, so

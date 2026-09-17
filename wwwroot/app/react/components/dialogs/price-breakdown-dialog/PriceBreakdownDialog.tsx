@@ -8,6 +8,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
     ActionIcon,
+    Alert,
     Badge,
     Box,
     Button,
@@ -43,7 +44,7 @@ import {IconPackage} from '@tabler/icons-react';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import type {ShowToastFn} from '../../../services/toastService';
 import {Icon} from '../../common/icon/Icon';
-import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, dialogSize} from '../shared/mantine';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, dialogSize, SummaryCard} from '../shared/mantine';
 
 export interface PriceBreakdown {
     chargeId: number;
@@ -75,6 +76,9 @@ export interface PriceBreakdownDialogProps {
     /** When true the dialog opens in view-only mode: the breakdown table stays
      * visible, but all add/edit/delete/save controls are removed or disabled. */
     readOnly?: boolean;
+    /** Split children: pricing is edited on the parent job, not here. Shows a
+     * message + link back to the parent above the table; pair with readOnly. */
+    managedElsewhere?: {parentJobNumber: string; onNavigateToParent: () => void};
     onClose: () => void;
     onSave: (totalAmount: number) => void;
     onAddItem: (item: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
@@ -119,6 +123,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     isArchived = false,
     isUsCustomer = false,
     readOnly = false,
+    managedElsewhere,
     onClose,
     onSave,
     onAddItem,
@@ -329,10 +334,29 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             <DialogHeader
                 icon={<Icon lucide={readOnly ? Lock : ReceiptText}/>}
                 title="Price Breakdown"
-                subtitle={readOnly ? 'View only — this job is locked' : 'Manage pricing components for this job'}
+                subtitle={
+                    managedElsewhere ? 'Managed on the parent job'
+                        : readOnly ? 'View only — this job is locked'
+                        : 'Manage pricing components for this job'
+                }
                 onClose={onClose}
             />
             <Box>
+                {managedElsewhere && !isEditing && (
+                    <Box p="lg" pb={0} style={{backgroundColor: dialogContentBg}}>
+                        <Alert icon={<Icon lucide={Briefcase}/>} color="gray" variant="light">
+                            Pricing is managed on the parent job — no per-row edit, delete, or
+                            Add Item here.{' '}
+                            <Button
+                                variant="subtle"
+                                size="compact-sm"
+                                onClick={managedElsewhere.onNavigateToParent}
+                            >
+                                {managedElsewhere.parentJobNumber}
+                            </Button>
+                        </Alert>
+                    </Box>
+                )}
                 {/* Summary Cards */}
                 {!isEditing && priceBreakdowns.length > 0 && (
                     <Box p="lg" style={{backgroundColor: dialogContentBg}}>
@@ -757,43 +781,5 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
         </DialogShell>
     );
 };
-
-/** One of the three revenue/cost/profit tiles above the table. */
-function SummaryCard({color, icon, label, value, footer}: {
-    color: string;
-    icon: React.ReactNode;
-    label: string;
-    value: string;
-    footer?: React.ReactNode;
-}): React.ReactElement {
-    const accent = `var(--mantine-color-${color}-6)`;
-    return (
-        <Paper
-            p="md"
-            radius="lg"
-            style={{
-                border: `1px solid ${alpha(accent, 0.2)}`,
-                backgroundColor: alpha(accent, 0.04),
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--mantine-spacing-md)',
-            }}
-        >
-            <ThemeIcon
-                size={52}
-                radius="md"
-                c={`${color}.6`}
-                style={{'--ti-bg': alpha(accent, 0.12)} as React.CSSProperties}
-            >
-                {icon}
-            </ThemeIcon>
-            <Box>
-                <Text size="sm" c="dimmed" fw={500}>{label}</Text>
-                <Text fz="h3" fw={700} c={`${color}.8`}>{value}</Text>
-                {footer}
-            </Box>
-        </Paper>
-    );
-}
 
 export default PriceBreakdownDialog;

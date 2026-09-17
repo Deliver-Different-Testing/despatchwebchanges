@@ -48,6 +48,7 @@ type EntryPointName =
     | 'courierMapReact'
     | 'dateRangeDialogReact'
     | 'priceBreakdownDialogReact'
+    | 'splitPricingBreakdownDialogReact'
     | 'dashboardSettingsDialogReact'
     | 'autoCompleteDialogReact'
     | 'voidJobConfirmationDialogReact'
@@ -104,6 +105,7 @@ const entryPoints: EntryPoints = {
     courierMapReact: path.join(rootDir, "wwwroot/app/react/pages/courier-map/courier-map-react.module.tsx"),
     dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),
     priceBreakdownDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/price-breakdown-dialog/price-breakdown-dialog-react.module.tsx"),
+    splitPricingBreakdownDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/split-pricing-breakdown-dialog/split-pricing-breakdown-dialog-react.module.tsx"),
     dashboardSettingsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/dashboard-settings-dialog/dashboard-settings-dialog-react.module.tsx"),
     autoCompleteDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/auto-complete-dialog/auto-complete-dialog-react.module.tsx"),
     voidJobConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog-react.module.tsx"),
@@ -558,24 +560,27 @@ function generateSimpleManifest(): Record<string, string> {
 // historically worth megabytes, and invisible until someone looks at the dist folder.
 // Raise a number deliberately when a bundle legitimately grows; don't raise it to make
 // a build go green.
-const TOTAL_JS_BUDGET = 9_200_000;
+// Raised from 9_200_000 for the new splitPricingBreakdownDialogReact bundle (2026-09-17), then
+// again from 9_260_000 when SplitPricingBreakdownDialog grew a split/edit mode + cost overrides,
+// which also grows every bundle below that pulls in the split-job flow directly (2026-09-17).
+const TOTAL_JS_BUDGET = 9_320_000;
 const bundleBudgets: Partial<Record<EntryPointName, number>> = {
     "vendor-react": 1_075_000,
     "vendor-core": 995_000,
     app: 551_000,
     nationwide: 424_000,
     home: 442_000,
-    dispatchReact: 422_000,
+    dispatchReact: 433_000,
     jobSearchReact: 410_000,
-    nationwideReact: 432_000,
+    nationwideReact: 442_000,
     recurringJobsReact: 401_000,
     jobSearch: 395_000,
     taskDashboardReact: 374_000,
     jobDetailsReact: 335_000,
-    currentWorkJobListReact: 255_000,
-    jobListReact: 255_000,
-    jobSearchJobListReact: 254_000,
-    nationwideJobListReact: 254_000,
+    currentWorkJobListReact: 257_000,
+    jobListReact: 257_000,
+    jobSearchJobListReact: 256_000,
+    nationwideJobListReact: 256_000,
 };
 
 // Fails the build when an output exceeds its budget, so a size regression surfaces here

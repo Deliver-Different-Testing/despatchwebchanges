@@ -227,7 +227,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DD_stpGetCarrierFlightRateResult>> DD_stpGetCarrierFlightRateAsync(int? clientID, string fromCity, string fromState, string toCity, string toState, string carrierCode, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DD_stpGetCarrierFlightRateResult>> DD_stpGetCarrierFlightRateAsync(int? clientID, string fromCity, string fromState, string toCity, string toState, string carrierCode, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, string cubicList, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -351,9 +351,16 @@ namespace DespatchWeb.EntityClasses
                     Value = deliveryWaitTime ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "CubicList",
+                    Size = 800,
+                    Value = cubicList ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DD_stpGetCarrierFlightRateResult>("EXEC @returnValue = [dbo].[DD_stpGetCarrierFlightRate] @ClientID = @ClientID, @FromCity = @FromCity, @FromState = @FromState, @ToCity = @ToCity, @ToState = @ToState, @CarrierCode = @CarrierCode, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DD_stpGetCarrierFlightRateResult>("EXEC @returnValue = [dbo].[DD_stpGetCarrierFlightRate] @ClientID = @ClientID, @FromCity = @FromCity, @FromState = @FromState, @ToCity = @ToCity, @ToState = @ToState, @CarrierCode = @CarrierCode, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime, @CubicList = @CubicList", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -1950,6 +1957,32 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.SqlQueryAsync<UTL_stpJobBooking_InsertScheduleResult>("EXEC @returnValue = [dbo].[UTL_stpJobBooking_InsertSchedule] @JobBookingID = @JobBookingID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> UTL_stpJobBooking_RecomputeFirstDueOnEditAsync(int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobBookingID",
+                    Value = jobBookingID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[UTL_stpJobBooking_RecomputeFirstDueOnEdit] @JobBookingID = @JobBookingID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

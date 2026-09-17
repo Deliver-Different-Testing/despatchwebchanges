@@ -10,6 +10,7 @@ import type {Dayjs} from 'dayjs';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS, podMediaJobId} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
+import JobRelationshipType from '../../../../../enums/job-relationship-type.enum';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {AddressType} from '../../../../../enums/address-type.enum';
 import {useDialogLoader} from './useDialogLoader';
@@ -17,6 +18,7 @@ import {formatDateForApi, formatLongDate} from '../../../../utils/dateUtils';
 import type {DateCascadeFamilyMember} from '../../../../services/jobDetailApi';
 import type {CascadeChoice} from '../../../dialogs/cascade-date-confirm-dialog';
 import {getPriceBreakdowns} from '../../../../services/pricingBreakdownApi';
+import {getSplitPricingBreakdown} from '../../../../services/splitPriceBreakdownApi';
 import {
     getSpeedList,
     getVehicleSizes,
@@ -167,6 +169,11 @@ interface UseJobActionsOptions {
      * dispatch dialog when the job is archived.
      */
     onChangeArchivedCourier?: (job: {id: number; jobNo: string}) => void;
+    /**
+     * Switch the Job Details panel to another job in the same family (e.g. the
+     * "view parent breakdown" link a split child's Price Breakdown shows).
+     */
+    onNavigateToJob?: (jobId: number) => void;
 }
 
 export function useJobActions({
@@ -188,6 +195,7 @@ export function useJobActions({
     onStatusChange,
     onRequestPartnerChange,
     onChangeArchivedCourier,
+    onNavigateToJob,
 }: UseJobActionsOptions) {
     const {
         ensureSelectDialog,
@@ -196,6 +204,7 @@ export function useJobActions({
         ensureAddressDialog,
         ensureVoidDialog,
         ensurePriceBreakdownDialog,
+        ensureSplitPricingBreakdownDialog,
         ensureSimplePriceEditDialog,
         ensureParcelDimensionsDialog,
         ensureSendPodDialog,
@@ -1006,6 +1015,21 @@ export function useJobActions({
             onRequestPartnerChange('PartnerAgreedRate', newRate.trim(), true);
             return;
         }
+        // A split parent gets the per-leg grid instead of the flat dialog, unless it was split
+        // before this feature shipped (no PricingBreakdownAllocation rows exist yet) — that
+        // falls through to the flat dialog below exactly as it always has (docs/pricing/
+        // job-splitting-price-breakdown.md §5, "existing split jobs are out of scope").
+        if (j.jobRelationshipTypeId === JobRelationshipType.SplitParent) {
+            const splitBreakdown = await getSplitPricingBreakdown(j.id);
+            if (splitBreakdown) {
+                await ensureSplitPricingBreakdownDialog();
+                window.ReactSplitPricingBreakdownDialog?.setToastService({showToast});
+                await window.ReactSplitPricingBreakdownDialog?.open(splitBreakdown);
+                await refreshAndNotify();
+                return;
+            }
+        }
+
         const breakdowns = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
         const isUsingOldAmountMethod = !isUsCustomer && breakdowns.length === 0;
         if (isUsingOldAmountMethod) {
@@ -1021,12 +1045,26 @@ export function useJobActions({
                 readOnly: !!j.locked,
             });
         } else {
+            // A split child's pricing is derived from the parent (docs/pricing/job-splitting-price-breakdown.md
+            // §6) — force read-only regardless of lock state, and point back at the parent.
+            const isSplitChild = j.jobRelationshipTypeId === JobRelationshipType.SplitChild;
+            const parentJob = isSplitChild && j.rootParentId != null
+                ? relatedJobs.find(rj => rj.id === j.rootParentId)
+                : undefined;
+            const managedElsewhere = parentJob
+                ? {parentJobNumber: parentJob.jobNo, onNavigateToParent: () => onNavigateToJob?.(parentJob.id)}
+                : undefined;
+
             await ensurePriceBreakdownDialog();
             window.ReactPriceBreakdownDialog?.setToastService({showToast});
-            await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived, isUsCustomer, !!j.locked);
+            await window.ReactPriceBreakdownDialog?.open(
+                breakdowns, j.id, j.preBook, j.isArchived, isUsCustomer,
+                isSplitChild ? true : !!j.locked,
+                managedElsewhere,
+            );
         }
         await refreshAndNotify();
-    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync]);
+    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, ensureSplitPricingBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync, relatedJobs, onNavigateToJob]);
 
     const handleStatusClick = useCallback(async () => {
         const j = jobRef.current;

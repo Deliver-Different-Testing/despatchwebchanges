@@ -1,0 +1,31 @@
+/*
+ * Sticky Item + Revenue columns once the items grid scrolls horizontally (3+ legs) —
+ * same position:sticky + inset-shadow technique as wwwroot/css/data-table.less's
+ * .sticky-left, expressed per-column since the grid has two frozen columns, not one.
+ */
+.scrollArea {
+    overflow-x: auto;
+}
+
+.itemCell,
+.revenueCell {
+    position: sticky;
+    z-index: 2;
+    background: var(--mantine-color-body);
+}
+
+.itemCell {
+    left: 0;
+    min-width: 200px;
+}
+
+.revenueCell {
+    left: 200px;
+    min-width: 110px;
+    box-shadow: 1px 0 0 var(--mantine-color-default-border);
+}
+
+.headerCell {
+    z-index: 3;
+    background: var(--mantine-color-gray-0);
+}

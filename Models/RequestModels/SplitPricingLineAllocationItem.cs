@@ -15,4 +15,11 @@ public sealed class SplitPricingLineAllocationItem
 
     /// <summary>This line's share for this leg, as a percentage. Shares are normalised server-side.</summary>
     public decimal SharePercent { get; init; }
+
+    /// <summary>
+    /// This leg's cost for this line, set directly rather than derived from
+    /// <see cref="SharePercent"/> — a driver paid a fixed amount regardless of the revenue split.
+    /// Null means derived (the default).
+    /// </summary>
+    public decimal? CostOverride { get; init; }
 }

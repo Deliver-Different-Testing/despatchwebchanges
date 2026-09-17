@@ -17,6 +17,7 @@ public class DispatchJobViewModel
     public bool HasBeenRead { get; set; }
     public bool IsParentOrSingle { get; set; }
     public int? ParentId { get; set; }
+    public int? JobRelationshipTypeId { get; set; }
 
     /// <summary>
     /// The live tucJob id behind this row when <see cref="Id"/> is not one — a bulk row carries a

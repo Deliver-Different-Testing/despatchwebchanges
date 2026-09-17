@@ -61,7 +61,13 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
 
+    public virtual DbSet<PricingBreakdownAllocation> PricingBreakdownAllocations { get; set; }
+
+    public virtual DbSet<PricingBreakdownAllocationArchive> PricingBreakdownAllocationArchives { get; set; }
+
     public virtual DbSet<PricingBreakdownArchive> PricingBreakdownArchives { get; set; }
+
+    public virtual DbSet<CourierSettlementBatch> CourierSettlementBatches { get; set; }
 
     public virtual DbSet<Route> Routes { get; set; }
 
@@ -1326,6 +1332,49 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK__PricingBr__Prebo__1C5DEA11");
         });
 
+        modelBuilder.Entity<PricingBreakdownAllocation>(entity =>
+        {
+            entity.ToTable("PricingBreakdownAllocation");
+
+            entity.HasIndex(e => e.LegJobId, "IX_PricingBreakdownAllocation_LegJobID");
+
+            entity.HasIndex(e => new { e.ParentPricingBreakdownId, e.LegJobId }, "UQ_PricingBreakdownAllocation_Parent_Leg").IsUnique();
+
+            entity.Property(e => e.PricingBreakdownAllocationId).HasColumnName("PricingBreakdownAllocationID");
+            entity.Property(e => e.ChargeAmount).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CostAmount).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CostOverride).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.LegJobId).HasColumnName("LegJobID");
+            entity.Property(e => e.ParentPricingBreakdownId).HasColumnName("ParentPricingBreakdownID");
+            entity.Property(e => e.SharePercent).HasColumnType("decimal(9, 6)");
+
+            entity.HasOne(d => d.LegJob).WithMany(p => p.PricingBreakdownAllocations)
+                .HasForeignKey(d => d.LegJobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PricingBreakdownAllocation_tucJob");
+
+            entity.HasOne(d => d.ParentPricingBreakdown).WithMany(p => p.PricingBreakdownAllocations)
+                .HasForeignKey(d => d.ParentPricingBreakdownId)
+                .HasConstraintName("FK_PricingBreakdownAllocation_PricingBreakdown");
+        });
+
+        modelBuilder.Entity<PricingBreakdownAllocationArchive>(entity =>
+        {
+            entity.HasKey(e => e.PricingBreakdownAllocationId);
+
+            entity.ToTable("PricingBreakdownAllocationArchive");
+
+            entity.HasIndex(e => new { e.ParentPricingBreakdownId, e.LegJobId }, "UQ_PricingBreakdownAllocationArchive_Parent_Leg").IsUnique();
+
+            entity.Property(e => e.PricingBreakdownAllocationId).HasColumnName("PricingBreakdownAllocationID");
+            entity.Property(e => e.ChargeAmount).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CostAmount).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.CostOverride).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.LegJobId).HasColumnName("LegJobID");
+            entity.Property(e => e.ParentPricingBreakdownId).HasColumnName("ParentPricingBreakdownID");
+            entity.Property(e => e.SharePercent).HasColumnType("decimal(9, 6)");
+        });
+
         modelBuilder.Entity<PricingBreakdownArchive>(entity =>
         {
             entity.HasKey(e => e.PricingBreakdownId).HasName("PK__PricingBreakdownArchive");
@@ -1350,6 +1399,13 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.PrebookJobId).HasColumnName("PrebookJobID");
             entity.Property(e => e.Total).HasColumnType("decimal(18, 4)");
+        });
+
+        modelBuilder.Entity<CourierSettlementBatch>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<Route>(entity =>

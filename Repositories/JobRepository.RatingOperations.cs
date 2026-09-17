@@ -163,6 +163,15 @@ public partial class JobRepository
                 pricingBreakdown: description,
                 returnValue: returnValue
             );
+
+            // DD_InsertPricingBreakdown deletes and re-inserts every non-accessorial row for this
+            // job, so a split parent's PricingBreakdownAllocation rows cascade away with the old
+            // items and must be reseeded against the new ones — otherwise every leg's header keeps
+            // showing figures derived from the pre-re-rate breakdown.
+            if (await IsLiveSplitParentAsync(effectiveJobId, isArchived: false))
+            {
+                await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, effectiveJobId);
+            }
         }
 
         var printableRate = rate ?? 0;

@@ -481,6 +481,41 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task GetSplitPricingBreakdown_ValidJobId_ReturnsBreakdown()
+    {
+        const int jobId = 4071;
+        var expected = new SplitPricingBreakdownDto
+        {
+            JobId = jobId,
+            Items = [],
+            Legs = [],
+            Locks = new SplitPricingLockStateDto()
+        };
+        _jobQueryRepositoryMock.GetSplitPricingBreakdownAsync(jobId).Returns(expected);
+
+        var controller = CreateController();
+
+        var result = await controller.GetSplitPricingBreakdown(jobId);
+
+        Assert.IsType<JsonResult>(result);
+        Assert.Same(expected, ((JsonResult)result).Value);
+    }
+
+    [Fact]
+    public async Task GetSplitPricingBreakdown_NotASplitParent_ReturnsNullJson()
+    {
+        const int jobId = 1;
+        _jobQueryRepositoryMock.GetSplitPricingBreakdownAsync(jobId).Returns((SplitPricingBreakdownDto?)null);
+
+        var controller = CreateController();
+
+        var result = await controller.GetSplitPricingBreakdown(jobId);
+
+        Assert.IsType<JsonResult>(result);
+        Assert.Null(((JsonResult)result).Value);
+    }
+
+    [Fact]
     public async Task AddPriceComponent_ValidRequest_ReturnsChargeId()
     {
         // Arrange
@@ -661,6 +696,39 @@ public class JobControllerTests : IDisposable
         // Assert
         await _taskRepositoryMock.DidNotReceive().AddEventAsync(
             Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdown_ValidRequest_ReturnsOkAndAddsEvent()
+    {
+        var request = new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = 1,
+            ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 1, Revenue = 200m }]
+        };
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateSplitPricingBreakdown(request);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).UpdateSplitPricingBreakdownAsync(request);
+        await _taskRepositoryMock.Received(1).AddEventAsync(1, "Manually rated price", (int)EventType.ChangePrice);
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdown_LockRejection_Returns409()
+    {
+        var request = new UpdateSplitPricingBreakdownRequest { JobId = 1 };
+        _jobCommandRepositoryMock.UpdateSplitPricingBreakdownAsync(request)
+            .Returns(Task.FromException(new InvalidOperationException("locked")));
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateSplitPricingBreakdown(request);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, statusResult.StatusCode);
     }
 
     [Fact]

@@ -34,6 +34,7 @@ public static partial class JobMappings
         Time = j.UcjbTime,
         ParentId = j.ParentId,
         RootParentId = j.RootParentId,
+        JobRelationshipTypeId = j.JobRelationshipTypeId,
         Date = FormatDate(j.UcjbDate),
         Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
         // UcjbDispTime is a datetime that legacy create-flows pre-fill with the

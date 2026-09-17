@@ -27,6 +27,7 @@ interface PriceBreakdownPayload {
     isArchived: boolean;
     isUsCustomer: boolean;
     readOnly: boolean;
+    managedElsewhere?: {parentJobNumber: string; onNavigateToParent: () => void};
     apiService: ApiService;
 }
 
@@ -41,6 +42,7 @@ const host = createDialogHost<PriceBreakdownPayload, number | null>({
             isArchived={payload.isArchived}
             isUsCustomer={payload.isUsCustomer}
             readOnly={payload.readOnly}
+            managedElsewhere={payload.managedElsewhere}
             onClose={() => close(null)}
             onSave={close}
             onAddItem={(item) => payload.apiService.addPriceBreakdown(item)}
@@ -83,6 +85,7 @@ export function openPriceBreakdownDialog(
     isArchived: boolean,
     isUsCustomer: boolean = false,
     readOnly: boolean = false,
+    managedElsewhere?: {parentJobNumber: string; onNavigateToParent: () => void},
     apiService?: ApiService
 ): Promise<number | null> {
     return host.open({
@@ -92,6 +95,7 @@ export function openPriceBreakdownDialog(
         isArchived,
         isUsCustomer,
         readOnly,
+        managedElsewhere,
         apiService: apiService ?? createDefaultApiService(),
     });
 }

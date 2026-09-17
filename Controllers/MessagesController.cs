@@ -22,8 +22,8 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
             Log.Error(e, "Error getting unread message count: {Error}", e.Message);
             return StatusCode(500, e.Message);
         }
-    }    
-    
+    }
+
     public async Task<IActionResult> GetRecentList()
     {
         try
@@ -71,7 +71,6 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
     {
         try
         {
-            // Validate that exactly one recipient is specified
             if ((request.SendToCourierId.HasValue ? 1 : 0) + (request.SendToStaffId.HasValue ? 1 : 0) != 1)
             {
                 return BadRequest("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)");
@@ -86,7 +85,7 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
             return StatusCode(500, e.Message);
         }
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> SendMultiMessage([FromBody] SendMultipleMessageRequest request)
     {

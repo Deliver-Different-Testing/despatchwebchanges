@@ -20,21 +20,13 @@ public class JobLegRolesTests
     [InlineData("KT2103CRT", JobLegRole.None)]
     [InlineData("", JobLegRole.None)]
     [InlineData(null, JobLegRole.None)]
-    public void FromJobNumber_ReadsTheSuffixConvention(string jobNumber, JobLegRole expected)
-    {
-        Assert.Equal(expected, JobLegRoles.FromJobNumber(jobNumber));
-    }
+    public void FromJobNumber_ReadsTheSuffixConvention(string? jobNumber, JobLegRole expected) => Assert.Equal(expected, JobLegRoles.FromJobNumber(jobNumber));
 
     [Theory]
     [InlineData("KT2103CRTLH", JobLegRole.None)]
     [InlineData("KT2103CRT1", JobLegRole.None)]
     [InlineData("LH1", JobLegRole.None)]
-    public void FromJobNumber_DoesNotMistakeANearMissForALinehaulSegment(string jobNumber, JobLegRole expected)
-    {
-        // "LH" with no number is not a segment, and a bare number is not one either. "LH1" on its own
-        // has no parent prefix, so there is nothing for it to be a leg of.
-        Assert.Equal(expected, JobLegRoles.FromJobNumber(jobNumber));
-    }
+    public void FromJobNumber_DoesNotMistakeANearMissForALinehaulSegment(string jobNumber, JobLegRole expected) => Assert.Equal(expected, JobLegRoles.FromJobNumber(jobNumber));
 
     [Fact]
     public void IsLinehaul_CoversThePickupAndTheSegmentsButNotTheFinalMile()

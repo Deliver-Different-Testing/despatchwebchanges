@@ -102,7 +102,7 @@ public class SplitJobServiceTests : IAsyncDisposable
         _seedContext.TblJobRelationshipTypes.AddRange(
             new TblJobRelationshipType
             {
-                JobRelationshipTypeId = 1,
+                JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent,
                 SystemName = "SplitParent",
                 Name = "Split Parent",
                 Created = TestDates.Now,
@@ -113,7 +113,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             },
             new TblJobRelationshipType
             {
-                JobRelationshipTypeId = 2,
+                JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild,
                 SystemName = "SplitChild",
                 Name = "Split Child",
                 Created = TestDates.Now,
@@ -223,7 +223,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         _rateJobServiceMock,
         _jobRepositoryMock,
         _jobCommandRepositoryMock,
-        new CreateJobService(_contextFactoryMock));
+        new CreateJobService(_contextFactoryMock),
+        new PricingBreakdownAllocationService());
 
     private static AddressViewModel CreateMeetingPointAddress() => new(
         addressLine1: "100 Meeting Point Rd",
@@ -408,11 +409,11 @@ public class SplitJobServiceTests : IAsyncDisposable
         await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
             ct: TestContext.Current.CancellationToken);
 
-        // Verify the original job's relationship type was set to SplitParent (ID=1)
+        // Verify the original job's relationship type was set to SplitParent
         await using var verifyCtx = new DespatchContext(_db.Options);
         var parentJob = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 100,
             cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(1, parentJob.JobRelationshipTypeId);
+        Assert.Equal((int)JobRelationshipTypes.SplitParent, parentJob.JobRelationshipTypeId);
     }
 
     [Fact]
@@ -579,9 +580,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        // SplitChild relationship type ID = 2
-        Assert.Equal(2, pickup.JobRelationshipTypeId);
-        Assert.Equal(2, delivery.JobRelationshipTypeId);
+        Assert.Equal((int)JobRelationshipTypes.SplitChild, pickup.JobRelationshipTypeId);
+        Assert.Equal((int)JobRelationshipTypes.SplitChild, delivery.JobRelationshipTypeId);
     }
 
     [Fact]
@@ -1554,6 +1554,123 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Equal(60.00m, leg102.UcjbAmount);
     }
 
+    // The allocation-backed counterpart to the PropagateUpdateToChildrenAsync_SplitParent_* group
+    // above — for a job actually split under the new model (docs/pricing/job-splitting-price-
+    // breakdown.md), which has real PricingBreakdownAllocation rows instead of ChildJobId-attributed
+    // PricingBreakdown rows. Seeded via a real SplitJobAsync call rather than a hand-rolled fixture,
+    // so the shape matches production exactly.
+
+    [Fact]
+    public async Task PropagateUpdateToChildrenAsync_SplitParent_ViaAllocations_RescalesEachItemsAmount()
+    {
+        SeedJob(configure: j => j.UcjbAmount = 89.00m);
+        SeedParentPricingLines();
+        var service = CreateService();
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        // A rate-affecting edit re-priced the parent from 89.00 to 100.00.
+        await _seedContext.TucJobs.Where(j => j.UcjbId == 100)
+            .ExecuteUpdateAsync(j => j.SetProperty(x => x.UcjbAmount, 100.00m),
+                TestContext.Current.CancellationToken);
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Van, "true",
+            TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var parentLines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        // The parent's own items absorb the new total, in their existing proportions — 64:16:9.
+        Assert.Equal(100.00m, parentLines.Sum(l => l.ChargeAmount));
+
+        // Both legs were auto and originally 50/50 — that division survives the re-price, within a
+        // cent: 71.91 (Base's new share of the 100.00 total) doesn't halve evenly, so independently
+        // rounding each leg's per-item share can land a cent off the exact midpoint on either side —
+        // ordinary currency-rounding behaviour, not a defect. The total is still exact.
+        Assert.InRange(pickup.UcjbAmount ?? 0m, 49.99m, 50.01m);
+        Assert.InRange(delivery.UcjbAmount ?? 0m, 49.99m, 50.01m);
+        Assert.Equal(100.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToChildrenAsync_SplitParent_ViaAllocations_LeavesManualLegsDollarAmountFixed()
+    {
+        SeedJob(configure: j => j.UcjbAmount = 89.00m);
+        SeedParentPricingLines();
+        var service = CreateService();
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        // The dispatcher hand-priced the pickup leg after the split (its 50% share of 89.00 = 44.50).
+        await _seedContext.TucJobs.Where(j => j.UcjbId == pickupId)
+            .ExecuteUpdateAsync(j => j.SetProperty(x => x.RatedManually, true),
+                TestContext.Current.CancellationToken);
+        await _seedContext.TucJobs.Where(j => j.UcjbId == 100)
+            .ExecuteUpdateAsync(j => j.SetProperty(x => x.UcjbAmount, 100.00m),
+                TestContext.Current.CancellationToken);
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Van, "true",
+            TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var allocations = await verifyCtx.PricingBreakdownAllocations.ToListAsync(TestContext.Current.CancellationToken);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // The hand-priced leg's dollar amount — for every item, not just the total — is untouched.
+        Assert.Equal(44.50m, pickup.UcjbAmount);
+        Assert.True(pickup.RatedManually);
+        Assert.Equal(32.00m, allocations.Single(a => a.LegJobId == pickupId
+            && parentLineNamed(a.ParentPricingBreakdownId) == "Base").ChargeAmount);
+        Assert.Equal(8.00m, allocations.Single(a => a.LegJobId == pickupId
+            && parentLineNamed(a.ParentPricingBreakdownId) == "Base Fuel").ChargeAmount);
+        Assert.Equal(4.50m, allocations.Single(a => a.LegJobId == pickupId
+            && parentLineNamed(a.ParentPricingBreakdownId) == "Congestion").ChargeAmount);
+
+        // Only the remaining 55.50 goes to the auto leg.
+        Assert.Equal(55.50m, delivery.UcjbAmount);
+        Assert.Equal(100.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
+        return;
+
+        string parentLineNamed(int id) => _seedContext.PricingBreakdowns
+            .AsNoTracking().Single(p => p.PricingBreakdownId == id).ChargeName ?? string.Empty;
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToChildrenAsync_SplitParent_ViaAllocations_AllLegsManual_SkipsEntirely()
+    {
+        SeedJob(configure: j => j.UcjbAmount = 89.00m);
+        SeedParentPricingLines();
+        var service = CreateService();
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await _seedContext.TucJobs.Where(j => j.UcjbId == pickupId || j.UcjbId == deliveryId)
+            .ExecuteUpdateAsync(j => j.SetProperty(x => x.RatedManually, true),
+                TestContext.Current.CancellationToken);
+        await _seedContext.TucJobs.Where(j => j.UcjbId == 100)
+            .ExecuteUpdateAsync(j => j.SetProperty(x => x.UcjbAmount, 100.00m),
+                TestContext.Current.CancellationToken);
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Van, "true",
+            TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Both legs untouched — nothing left to redistribute once every leg is manual.
+        Assert.Equal(44.50m, pickup.UcjbAmount);
+        Assert.Equal(44.50m, delivery.UcjbAmount);
+    }
+
     [Fact]
     public async Task PropagateUpdateToChildrenAsync_SingleJob_DoesNotPropagate()
     {
@@ -1996,21 +2113,24 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var parentLines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var allocations = await verifyCtx.PricingBreakdownAllocations.ToListAsync(TestContext.Current.CancellationToken);
 
-        // Every line now exists per part — "Base Part A", "Base Part B", "Congestion Part A/B" —
-        // rather than the parent's three lines being re-read by both legs.
-        Assert.Equal(6, lines.Count);
-        Assert.All(lines, l => Assert.Equal(100, l.JobId));
-        Assert.Equal(
-            ["Base Fuel Part A", "Base Part A", "Congestion Part A"],
-            lines.Where(l => l.ChildJobId == pickupId).Select(l => l.ChargeName).Order());
-        Assert.Equal(
-            ["Base Fuel Part B", "Base Part B", "Congestion Part B"],
-            lines.Where(l => l.ChildJobId == deliveryId).Select(l => l.ChargeName).Order());
+        // The parent keeps its own three rows exactly as seeded — splitting no longer deletes or
+        // renames them (docs/pricing/job-splitting-price-breakdown.md §5).
+        Assert.Equal(3, parentLines.Count);
+        Assert.All(parentLines, l => Assert.Equal(100, l.JobId));
+        Assert.All(parentLines, l => Assert.Null(l.ChildJobId));
+        Assert.Equal(["Base", "Base Fuel", "Congestion"], parentLines.Select(l => l.ChargeName).Order());
 
-        // No unattributed rows survive — otherwise the parent total would double.
-        Assert.DoesNotContain(lines, l => l.ChildJobId == null);
+        // Every parent item gets one allocation row per leg.
+        Assert.Equal(6, allocations.Count);
+        foreach (var item in parentLines)
+        {
+            Assert.Equal(2, allocations.Count(a => a.ParentPricingBreakdownId == item.PricingBreakdownId));
+            Assert.Contains(allocations, a => a.ParentPricingBreakdownId == item.PricingBreakdownId && a.LegJobId == pickupId);
+            Assert.Contains(allocations, a => a.ParentPricingBreakdownId == item.PricingBreakdownId && a.LegJobId == deliveryId);
+        }
     }
 
     [Fact]
@@ -2043,7 +2163,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var parentLines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var allocations = await verifyCtx.PricingBreakdownAllocations.ToListAsync(TestContext.Current.CancellationToken);
+        var chargeNameByItem = parentLines.ToDictionary(l => l.PricingBreakdownId, l => l.ChargeName ?? string.Empty);
         var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
         var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
@@ -2051,15 +2173,15 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         foreach (var (leg, legId) in new[] { (pickup, pickupId), (delivery, deliveryId) })
         {
-            var legLines = lines.Where(l => l.ChildJobId == legId).ToList();
+            var legRows = allocations.Where(a => a.LegJobId == legId).ToList();
 
-            // The tile and the modal now agree: the header is the sum of the leg's own lines.
-            Assert.Equal(legLines.Sum(l => l.ChargeAmount), leg.UcjbAmount);
+            // The tile and the modal now agree: the header is the sum of the leg's own rows.
+            Assert.Equal(legRows.Sum(a => a.ChargeAmount), leg.UcjbAmount);
             // Driver pay is attributed per leg instead of all sitting on the parent.
-            Assert.Equal(legLines.Sum(l => l.CostAmount ?? 0m), leg.CourierPayment);
+            Assert.Equal(legRows.Sum(a => a.CostAmount ?? 0m), leg.CourierPayment);
             // Fuel no longer vanishes at part level.
             Assert.Equal(
-                legLines.Where(l => l.ChargeName!.Contains("Fuel")).Sum(l => l.ChargeAmount),
+                legRows.Where(a => chargeNameByItem[a.ParentPricingBreakdownId].Contains("Fuel")).Sum(a => a.ChargeAmount),
                 leg.FuelSurchargeAmount);
             Assert.True(leg.FuelSurchargeAmount > 0m);
         }
@@ -2207,17 +2329,18 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var parentLines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var allocations = await verifyCtx.PricingBreakdownAllocations.ToListAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(9.00m, Amount(pickupId, "Congestion Part A"));
-        Assert.Equal(0.00m, Amount(deliveryId, "Congestion Part B"));
-        Assert.Equal(41.60m, Amount(pickupId, "Base Part A"));
-        Assert.Equal(22.40m, Amount(deliveryId, "Base Part B"));
-        Assert.Equal(10.40m, Amount(pickupId, "Base Fuel Part A"));
+        Assert.Equal(9.00m, Amount(pickupId, "Congestion"));
+        Assert.Equal(0.00m, Amount(deliveryId, "Congestion"));
+        Assert.Equal(41.60m, Amount(pickupId, "Base"));
+        Assert.Equal(22.40m, Amount(deliveryId, "Base"));
+        Assert.Equal(10.40m, Amount(pickupId, "Base Fuel"));
 
         // The parent's line total — and therefore the client invoice — is still untouched.
-        Assert.Equal(89.00m, lines.Sum(l => l.ChargeAmount));
-        Assert.Equal(50.00m, lines.Sum(l => l.CostAmount ?? 0m));
+        Assert.Equal(89.00m, parentLines.Sum(l => l.ChargeAmount));
+        Assert.Equal(50.00m, parentLines.Sum(l => l.CostAmount ?? 0m));
 
         // Each leg's header follows its own rows, not the headline percentage.
         var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
@@ -2233,8 +2356,56 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Equal(5.60m, delivery.FuelSurchargeAmount);
         return;
 
-        decimal Amount(int legJobId, string chargeName) =>
-            lines.Single(l => l.ChildJobId == legJobId && l.ChargeName == chargeName).ChargeAmount;
+        decimal Amount(int legJobId, string chargeName)
+        {
+            var itemId = parentLines.Single(l => l.ChargeName == chargeName).PricingBreakdownId;
+            return allocations.Single(a => a.LegJobId == legJobId && a.ParentPricingBreakdownId == itemId).ChargeAmount;
+        }
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_HonoursAPerLineCostOverride_AtSplitTime()
+    {
+        // The overall trip divides 65/35, but the driver on leg A is only paid a flat $5 for the
+        // congestion charge regardless of the revenue split.
+        SeedJob(configure: j => j.UcjbAmount = 89.00m);
+        SeedParentPricingLines();
+        var congestionId = _seedContext.PricingBreakdowns.Single(p => p.ChargeName == "Congestion")
+            .PricingBreakdownId;
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            pricingAllocation:
+            [
+                new SplitPricingAllocationItem { Sequence = 1, SharePercent = 65m },
+                new SplitPricingAllocationItem { Sequence = 2, SharePercent = 35m }
+            ],
+            lineAllocation:
+            [
+                new SplitPricingLineAllocationItem
+                {
+                    PricingBreakdownId = congestionId, Sequence = 1, SharePercent = 65m, CostOverride = 5.00m
+                },
+                new SplitPricingLineAllocationItem
+                {
+                    PricingBreakdownId = congestionId, Sequence = 2, SharePercent = 35m
+                }
+            ],
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var allocations = await verifyCtx.PricingBreakdownAllocations.ToListAsync(TestContext.Current.CancellationToken);
+        var pickupCongestion = allocations.Single(a => a.LegJobId == pickupId && a.ParentPricingBreakdownId == congestionId);
+        var deliveryCongestion = allocations.Single(a => a.LegJobId == deliveryId && a.ParentPricingBreakdownId == congestionId);
+
+        Assert.Equal(5.00m, pickupCongestion.CostAmount);
+        Assert.Equal(5.00m, pickupCongestion.CostOverride);
+        // The sibling leg derives its cost normally — the override never touches it.
+        Assert.Null(deliveryCongestion.CostOverride);
+        Assert.NotEqual(5.00m, deliveryCongestion.CostAmount);
+
+        // Persisted as CostOverride (not just a one-off CostAmount) — PricingBreakdownAllocationServiceTests
+        // covers that an existing row's own CostOverride survives a later re-price/reseed.
     }
 
     [Fact]
@@ -2253,15 +2424,20 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var parentLines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var allocations = await verifyCtx.PricingBreakdownAllocations.ToListAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(2, lines.Count);
-        Assert.Equal(
-            ["Manually Rated Part A", "Manually Rated Part B"],
-            lines.Select(l => l.ChargeName).Order());
-        Assert.Equal(100.00m, lines.Sum(l => l.ChargeAmount));
-        Assert.Equal(60.00m, lines.Sum(l => l.CostAmount ?? 0m));
-        Assert.Equal(50.00m, lines.First(l => l.ChildJobId == pickupId).ChargeAmount);
+        // A real "Manually Rated" row is written on the parent — PricingBreakdownAllocation is a
+        // hard FK, so there's no such thing as a synthesised line that was never actually written.
+        Assert.Single(parentLines);
+        Assert.Equal("Manually Rated", parentLines[0].ChargeName);
+        Assert.Equal(100.00m, parentLines[0].ChargeAmount);
+        Assert.Equal(60.00m, parentLines[0].CostAmount);
+
+        Assert.Equal(2, allocations.Count);
+        Assert.Equal(100.00m, allocations.Sum(a => a.ChargeAmount));
+        Assert.Equal(60.00m, allocations.Sum(a => a.CostAmount ?? 0m));
+        Assert.Equal(50.00m, allocations.Single(a => a.LegJobId == pickupId).ChargeAmount);
     }
 
     [Fact]
@@ -2277,16 +2453,21 @@ public class SplitJobServiceTests : IAsyncDisposable
             CreateMeetingPointAddress(), ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var lines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var parentLines = await verifyCtx.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken);
+        var allocations = await verifyCtx.PricingBreakdownAllocations.ToListAsync(TestContext.Current.CancellationToken);
 
-        // The first split's surviving sibling keeps its own rows; only the re-split leg's rows are
-        // replaced. Every row still hangs off the root, so the invoice total is still 100.
-        Assert.All(lines, l => Assert.Equal(100, l.JobId));
-        Assert.Equal(100.00m, lines.Sum(l => l.ChargeAmount));
-        Assert.Equal(50.00m, lines.Where(l => l.ChildJobId == pickupId).Sum(l => l.ChargeAmount));
-        Assert.DoesNotContain(lines, l => l.ChildJobId == deliveryId);
-        Assert.Equal(25.00m, lines.Where(l => l.ChildJobId == subPickupId).Sum(l => l.ChargeAmount));
-        Assert.Equal(25.00m, lines.Where(l => l.ChildJobId == subDeliveryId).Sum(l => l.ChargeAmount));
+        // The parent's own three rows are untouched throughout, including by the re-split — every
+        // allocation, at any nesting depth, still points back to one of these same three rows.
+        Assert.Equal(3, parentLines.Count);
+        Assert.All(parentLines, l => Assert.Equal(100, l.JobId));
+        Assert.Equal(100.00m, parentLines.Sum(l => l.ChargeAmount));
+
+        // The first split's surviving sibling keeps its allocation; only the re-split leg's rows are
+        // replaced by its two new sub-legs.
+        Assert.Equal(50.00m, allocations.Where(a => a.LegJobId == pickupId).Sum(a => a.ChargeAmount));
+        Assert.DoesNotContain(allocations, a => a.LegJobId == deliveryId);
+        Assert.Equal(25.00m, allocations.Where(a => a.LegJobId == subPickupId).Sum(a => a.ChargeAmount));
+        Assert.Equal(25.00m, allocations.Where(a => a.LegJobId == subDeliveryId).Sum(a => a.ChargeAmount));
     }
 
     [Fact]
@@ -2684,7 +2865,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         factory.CreateDbContextAsync(Arg.Any<CancellationToken>()).Returns(_ => Create());
 
         return new SplitJobService(factory, _tenantInfoServiceMock, _fakeTenantClock, _rateJobServiceMock,
-            _jobRepositoryMock, _jobCommandRepositoryMock, new CreateJobService(factory));
+            _jobRepositoryMock, _jobCommandRepositoryMock, new CreateJobService(factory),
+            new PricingBreakdownAllocationService());
 
         DespatchContext Create()
         {
