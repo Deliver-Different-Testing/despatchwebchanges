@@ -299,23 +299,25 @@ This also interacts with §5's open question 6 ("when should consolidated Invoic
 
 ---
 
-## 5. Partner Pricing Modes (shipped 27 May 2026) — What It Settles
+## 5. Partner Pricing Modes (shipped 27 May 2026) — Context and Precedent
 
 Source: *Release Notes — Partner Pricing Modes, 2026-05-27*. The shipped code is on GitLab; the local `integration-manager` clone predates it and contains none of it, so this section is written from the release notes, not from source.
 
-### 5.1 There are two partner mechanisms, not one — and this is now the pivotal question
+### 5.1 Two partner mechanisms — this one is the in-tenant agent path
 
-| | **Cross-tenant partner dispatch** | **In-tenant agent / NP allocation** |
+*Answered by Steve, 17 Sep 2026: **the right-hand column**. Golden Black Taxis is an in-tenant agent / network partner, **not** a paired DFRNT tenant.*
+
+| | Cross-tenant partner dispatch | **In-tenant agent / NP allocation** ← **this** |
 |---|---|---|
 | Who the partner is | Another **DFRNT tenant** | An **agent / NP** on this tenant |
-| Linkage | Partner pairing + Partner Service Mappings | `tucJob.AgentID` → `tucAgents`, `MasterCourierId` |
-| Rate source | Pricing Mode on the service mapping (Agreed / Percentage / Cost Plus) | `AgentVehicleRate` / `AgentCourierRate` / percentage cascade |
-| Partner-facing surface | Send-to-Partner dialog (A side), B's own dispatch board | Agent Portal (InboundAgent) encrypted link, NP board |
+| Linkage | Partner pairing + Partner Service Mappings | NP agent field on `tucJob` → `tucAgents` (§2.5) |
+| Rate source | Pricing Mode on the service mapping (Agreed / Percentage / Cost Plus) | `tucAgents` rate card + percentage cascade (§2.4, §2.7) |
+| Partner-facing surface | Send-to-Partner dialog (A side), B's own dispatch board | NP dispatch board, Agent Portal (InboundAgent) |
 | Transport | Partner outbox, HMAC-signed events | Internal — same DB |
 
-**§4 of this document assumes the second mechanism, and §2's cascade is written for it.** That assumption needs confirming before anything is built.
+**So §2 and §3 apply as written.** There is no Pricing Mode shortcut here: the fix is the build described in §2 (populate `CourierPayment` / `CourierFuel` at allocation) plus the display substitution in §3.
 
-Golden Black Taxis is a Palmerston North taxi operator and almost certainly **not a DFRNT tenant**, which points to the agent/NP path. But it must be checked — if they are in fact a paired tenant, most of §2 is aimed at the wrong mechanism and the fix is a Pricing Mode configuration, not a build. **This now outranks Q1.**
+The rest of §5 is retained as **context and reusable precedent** from the cross-tenant work — not as a live alternative.
 
 ### 5.2 Partner pay derived from client revenue is sanctioned, not a bug
 
@@ -362,7 +364,7 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 
 | # | Question | Where |
 |---|---|---|
-| **Q0** | **Which mechanism carries Golden Black Taxis — a paired DFRNT tenant, or an in-tenant agent/NP?** Answer this before anything else; it decides whether §2 and §4 apply at all (see §5.1). If they are a paired tenant, the fix is likely a Pricing Mode setting on the service mapping, not a build. | Partner pairings / Partner Service Mappings vs `tucAgents` / `tucCourier` |
+| ~~Q0~~ | **Answered (Steve, 17 Sep 2026): in-tenant agent / NP allocation**, not cross-tenant partner dispatch. §2 and §3 apply as written; there is no Pricing Mode shortcut. (§5.1) | — |
 | Q1 | Which field does the **Agent Portal (InboundAgent)** render as the money figure — and **does its data source still resolve?** Test the `IntMgrPartnerRateCard` failure shape (§5.3): a dead endpoint falling back to `ucjbAmount`. | `inboundagent` job view model / view; check for 404s in logs |
 | Q2 | Which field does the **NP dispatch board** render — same or different? | `despatchweb` NP board, `courierportal` |
 | Q3 | Does `AgentVehicleRate` **already exist in the live DB** (per `AgentVehicleService.cs`)? Does deployed `AgentCourierRate` match the C# model, migration 005, or neither? | Live DB `INFORMATION_SCHEMA` |
@@ -456,8 +458,7 @@ Inferred — confirm against GitLab before estimating.
 5. **Path A (§2.3) is the cheaper half and can go first.** Where an agent rate priced the delivery — nationwide flight delivery portion, local nationwide speed — the rate is already the pre-markup number on `tucAgents` (§2.7) and is stamped into `CourierPayment` at creation. Confirm the speed/job-type set (Q13).
 6. **Lock `CourierPayment` when the partner assigns their own courier (§2.6d).** That is the one moment the trigger fires on an NP job — and it would resolve the percentage from the *partner's* driver, collapsing the tenant→partner and partner→driver layers into one field and silently corrupting tenant GP. Lock it there, but keep weight / items / cubic re-rates flowing. Not a permanent flag.
 7. **Settle §2.6 (a)–(c)** — whether cascade levels 1–3 apply to NP jobs, whether the 40% fallback is acceptable for a partner, and that the percentage multiplies `RawBaseAmount`.
-8. **Answer Q0 in parallel.** If Golden Black Taxis is a paired DFRNT tenant rather than an in-tenant agent, this is a Pricing Mode setting and none of §2 applies (§5.1).
-9. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§2.1).
+8. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§2.1).
 
 ---
 
