@@ -73,7 +73,13 @@ The point is to avoid **retrospectively back-calculating** the partner's pay at 
 **Path B — everything else (resolve at assignment).**
 Where no agent rate priced the delivery, there is nothing to stamp at creation, so `CourierPayment` is resolved when the partner is assigned, via the percentage cascade in §2.4.
 
-**Precedence: Path A wins.** A stamped agent rate is the agreed number and must not be overwritten by the percentage cascade when the partner is later assigned — nor by `tucJob_InsertUpdate_CalculateCourierPayment` on any subsequent update (§2.6d). This is the same shape as **Cost Plus (Mode 3)** on the cross-tenant side (§5), where the partner is quoted live for cost and *"you stamp cost as their agreed rate"* — worth keeping the two consistent.
+**Precedence: Path A wins — but the lock is event-scoped, not permanent.**
+
+*Steve, 17 Sep 2026.* The rule is:
+
+> **A populated `CourierPayment` is not overwritten simply because the delivery is assigned to a network partner.** It *is* recalculated when the fundamentals of the job change — additional weight, additional items, additional cubic — which typically happens at pickup, when those are added.
+
+So this is **not** "stamp it and freeze it". Assignment must not touch an existing value; a genuine re-rate must still flow through. A permanent lock flag would be the wrong fix — it would hold a partner on a rate that no longer matches the job they actually carried (§2.6d). This is the same shape as **Cost Plus (Mode 3)** on the cross-tenant side (§5), where the partner is quoted live for cost and *"you stamp cost as their agreed rate"* — worth keeping the two consistent.
 
 **Where this lands in code.** The nationwide rating/insert path is `DD_stpGetNationwideRates` → `UTL_stpJob_NationWide_Insert`, with `NationwideJobRepository.cs` as the C# entry point. Note from `extra-charges-deep-dive.md`: **`UTL_stpJob_NationWide_Insert` has its `DD_InsertPricingBreakdown` call commented out** — the nationwide insert path does not populate PricingBreakdown today. Further reason the carrier here is `CourierPayment`, not breakdown rows (§2.1).
 
@@ -126,8 +132,17 @@ The trigger falls back to **40%**. §2.4 says `CourierPayment` is populated in a
 **(c) Which base amount does the percentage multiply?**
 The trigger uses **`RawBaseAmount`** (base only, no extras, no fuel), which is consistent with fuel passing through separately. Earlier framing said "the full amount" — 57% of `ucjbAmount` and 57% of `RawBaseAmount` are materially different numbers. Confirm `RawBaseAmount` (Q11).
 
-**(d) Protecting the Path A stamp — the highest risk in this document.**
-A Path A job has its agent rate written into `CourierPayment` at creation, but `tucJob_InsertUpdate_CalculateCourierPayment` fires on **every** insert and update and will recompute that field from the percentage cascade. Without a guard the stamped agent rate is silently overwritten on the next touch of the job, and the partner is paid a percentage of the charge instead of the rate the charge was built from — with nothing to show it happened. `tucJob.CourierPaymentManualOverride` (bit) looks like the existing guard; confirm that is its purpose and that the Path A stamp sets it (Q12).
+**(d) Making recalculation conditional — the highest risk in this document.**
+`tucJob_InsertUpdate_CalculateCourierPayment` fires on **every** insert and update and recomputes `CourierPayment` from the percentage cascade. It does not distinguish *why* the row changed. Two failures fall out of that, in opposite directions:
+
+| If the trigger… | Result |
+|---|---|
+| recalculates on **assignment** | a stamped agent rate (Path A), or a rate already correctly set, is silently replaced by a percentage of the charge — partner paid the wrong number, nothing to show it happened |
+| does **not** recalculate on a **weight / items / cubic** change | partner paid against the original job, not the heavier or larger one they actually carried |
+
+The fix is therefore **not a permanent lock flag.** `tucJob.CourierPaymentManualOverride` (bit) would freeze the value through legitimate re-rates and cause the second failure. What is needed is recalculation gated on *what changed*: skip when the change is an assignment, run when a rating input changed.
+
+Check what already exists before building new machinery — `tucJob.Reprice` (bit), `tucJob.RatedManually` (bit) and the `tucJob_Update_RecalculateAmount` / `tucJob_Update_RecalculateRawBaseAmount_And_CourierBonus` triggers all sit in this space and may already carry the signal (Q12).
 
 ---
 
@@ -319,7 +334,7 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q13 | Exactly which speeds / job types are **Path A** (§2.3) — i.e. where an agent rate calculates the headline delivery rate? Steve names nationwide flight delivery portion and local nationwide speed; confirm the full set so Path B is not applied to a Path A job or vice versa. | `DD_stpGetNationwideRates`, `tucJobType.NationwideEntry`, Steve |
 | Q10 | *(Largely answered — §2.4 confirms the client-level field `tucClient.CourierPercentage`, not a nationwide-speed row.)* Remaining: do cascade levels 1–3 apply to NP jobs, and is the 40% fallback acceptable for a partner? (§2.6a, §2.6b) | Steve + `sp_helptext` on the trigger |
 | Q11 | Does the NP percentage multiply `RawBaseAmount` or `ucjbAmount` (§2.6b)? | Steve / live data |
-| Q12 | Is `tucJob.CourierPaymentManualOverride` the guard that stops `tucJob_InsertUpdate_CalculateCourierPayment` overwriting a directly-written `CourierPayment` (§2.6d)? | Live DB `sp_helptext` on the trigger |
+| Q12 | What signal can gate `tucJob_InsertUpdate_CalculateCourierPayment` so it skips **assignment** but still runs on a **weight / items / cubic** change (§2.6d)? Check `tucJob.Reprice`, `RatedManually`, `CourierPaymentManualOverride` and the existing recalculate triggers before adding anything new. | Live DB `sp_helptext` on the trigger |
 | Q9 | On schedule-created jobs, is `UcjbAmount` reliably populated at dispatch time? Mode 2 falls back to **manual entry** when it is missing (§5.6) — a silent fallback is how a wrong number reaches a partner. | Live DB + Send-to-Partner dialog behaviour |
 
 ### Verification queries — SELECT only, read-only
@@ -394,7 +409,7 @@ Inferred — confirm against GitLab before estimating.
 3. **Ship the display change (§3) regardless of both.** NP dispatch view shows courier amount + total, never job revenue — across *every* NP-facing surface, not just the screen where it was noticed. On the most likely outcome this is the entire fix.
 4. **Confirm `CourierFuel` populates on NP assignment before binding the view to it (Q14).** Evidence in `CourierPayCalculationIssues.md` shows it sitting at $0.00 on a job carrying $18.50 of fuel. Showing a partner no fuel is a worse failure than showing them too much — they are less likely to query it (§3.3).
 5. **Path A is the only place new calculation code is clearly needed (§2.3).** Where an agent rate prices the delivery — nationwide flight delivery portion, local nationwide speed — stamp that rate into `CourierPayment` at creation rather than back-calculating later. Confirm the exact speed/job-type set first (Q13).
-6. **Guard the Path A stamp before writing it (§2.6d).** The trigger fires on every update and will overwrite a stamped agent rate from the percentage cascade unless `CourierPaymentManualOverride` (or equivalent) prevents it. A silent overwrite pays the partner the wrong number with no trace. Highest-risk item here.
+6. **Gate recalculation on what changed, before stamping anything (§2.6d).** A populated `CourierPayment` must survive assignment to a network partner, but must still be recalculated when weight, items or cubic change — usually at pickup. Not a permanent lock: that would hold the partner on a rate that no longer matches the job they carried. Highest-risk item here, and it fails silently in both directions.
 7. **Settle §2.6 (a)–(c)** — whether cascade levels 1–3 apply to NP jobs, whether the 40% fallback is acceptable for a partner, and that the percentage multiplies `RawBaseAmount`.
 8. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§2.1).
 
