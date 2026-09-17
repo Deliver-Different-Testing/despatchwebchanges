@@ -7,6 +7,8 @@
 
 > **Start at §3 and §4.** §3 is how network partner pay actually works in production (confirmed by Steve, 17 Sep 2026) — note §3.3, which splits the work into two paths with different timing; §4 is the change being asked for. §5 onward is supporting analysis, and §7 records where earlier revisions of this doc were wrong.
 >
+> **The implementation deliverable for Karen is the copy in the `Dispatch` repo** (`Deliver-Different-Testing/Dispatch`), which is where Dispatch specs live. This copy sits with the supporting analysis — keep them in step if either changes.
+>
 > Companion doc: `pricing-breakdown-gap-analysis.md` §6 covers the three-leg nationwide model and the `Purpose` / `ChildJobID` invoice-consolidation proposal. **This issue does not depend on it landing** — see §2.
 
 ---
