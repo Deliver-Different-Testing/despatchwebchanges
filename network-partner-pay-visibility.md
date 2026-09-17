@@ -96,34 +96,41 @@ So this is **not** "stamp it and freeze it". Assignment must not touch an existi
 
 The 57% mentioned earlier is the typical value held against a network partner, not a platform constant — it comes from rule 2, not a hardcoded default.
 
-### 2.5 How much of this the existing trigger already does — and where it stops
+### 2.5 How the partner is attached — and why the existing trigger cannot help
 
-`tucJob_InsertUpdate_CalculateCourierPayment` computes `CourierPayment = RawBaseAmount × CourierPercentage` from a six-level cascade (`CourierPayCalculationIssues.md` §3):
+*Steve, 17 Sep 2026. This answers Q6/Q7 and is the most consequential fact in this document.*
 
-| Level | Source | Against §2.4 |
+> **When a network partner is assigned to a job, `ucjbCourierID` stays blank.** The partner is recorded in the **NP agent field** (`NpagentID` — see naming note below).
+>
+> The job is deliberately **not** assigned to a courier. It goes to the **network partner's own dispatch board**, and *they* assign it to one of their couriers.
+
+That is two-stage dispatch: tenant → partner, then partner → their driver. `ucjbCourierID` is reserved for the tenant's own couriers, so it must stay empty.
+
+**What this rules out.** `tucJob_InsertUpdate_CalculateCourierPayment` computes `CourierPayment = RawBaseAmount × CourierPercentage` from a six-level cascade (`CourierPayCalculationIssues.md` §3):
+
+| Level | Source | On an NP job |
 |---|---|---|
 | 1 | `CourierPercentageOverride` on the job | — |
 | 2 | `tblClientAvailableSpeed.CourierPercentage` (client + speed) | — |
 | 3 | `tucJobType.CourierPercentage` (speed default) | — |
-| **4** | **`tucClient.CourierPercentage`** (client default) | ✅ **matches rule 1** |
-| 5 | `tucCourier.uccrPercentage` (the courier's own rate) | ❌ **not rule 2** — see below |
+| 4 | `tucClient.CourierPercentage` (client default) | matches §2.4 rule 1 |
+| 5 | `tucCourier.uccrPercentage` (the courier's own rate) | **no courier row to read** |
 | 6 | Fallback `0.4` (40%) | — |
 
-**Rule 1 maps onto level 4. Rule 2 does not map onto level 5.**
+With no courier assigned, the trigger does not produce a partner payment — and separately, §2.4 rule 2 calls for the **agent's default percentage** to substitute for `uccrPercentage` anyway, which the trigger has no way to do.
 
-*Steve, 17 Sep 2026:* for a job going to a network partner, `uccrPercentage` is **substituted by the agent's default percentage**. Level 5 reads the courier's own rate off `tucCourier`; the partner's default is an agent-level value, not a courier-level one.
+**Conclusion: this is not a display-only fix.** Both halves are required:
 
-**So Path B is not free.** An earlier revision of this document claimed the existing trigger already implements §2.4 in full, which would have made Path B a no-op. That was wrong on rule 2. The substitution of the agent default for `uccrPercentage` is real work, wherever the percentage is resolved.
+1. **Data** — populate `CourierPayment` (and `CourierFuel`, §3.3) when the network partner is assigned, via the §2.4 cascade with the agent default substituted. Nothing does this today.
+2. **Display** — render those fields to the partner in place of revenue (§3).
 
-The `ucjbCourierID` vs `AgentID` question (Q6/Q7) still matters, but its consequence is narrower than previously stated:
+Shipping only the display change would show the partner **zero**.
 
-> If the partner is attached as **`ucjbCourierID`**, the trigger fires and populates `CourierPayment` — but at level 5 it uses that courier row's `uccrPercentage`, **not** the agent default. The field is populated; the number may still be wrong.
->
-> If attached via **`AgentID` only**, the trigger never fires and `CourierPayment` is null or zero.
+**The existing evidence now reads as proof, not warning.** Job KT672V in `CourierPayCalculationIssues.md` §2 carries `FuelSurchargeAmount` **$18.50** with `CourierPayment` **$0.00** and `CourierFuel` **$0.00** — explicitly "no courier assigned yet". That is the exact state every NP job sits in.
 
-Either way the display change (§3) is needed. Q6/Q7 decide whether the data work is "substitute the agent default" or "substitute the agent default *and* make it fire at all".
+> **Naming note (Q15).** Steve refers to the field as **`NpagentID`**. The EF model (`TucJob.cs`) and the schema dump both show only **`AgentID`** (`int NULL` → `tucAgents.ucagID`) on `tucJob`, with no `NpAgentID`. Either they are the same column under a working name, or `NpAgentID` is newer than the dump. This is the **third** NP field name in this spec that does not match the dump — alongside `NPcourierAmount` vs `NpCourierPayment` (§2.2). **Confirm all three against the live DB before writing code.**
 
-> **Where does the agent's default percentage live?** Not on `tucAgents` — its full column list (§2.7) contains no percentage. The candidates are `tblSetting.DefaultCourierPercentage` (float, tenant-wide — plausibly where 57% sits) and, in the NP-redesign C# layer only, `Agent.DefaultCourierPaymentPercent`. **Confirm before building (Q16).**
+**Still open:** once the partner assigns one of *their* couriers on their board, does `ucjbCourierID` then get populated with that courier, or does it stay blank for the life of the job? That determines whether the trigger fires late and overwrites `CourierPayment` — exactly the failure §2.6d guards against (Q17).
 
 ### 2.6 Decisions that need Steve
 
@@ -196,20 +203,11 @@ At Urgent the whole fuel surcharge is passed to the network partner, so `Courier
 
 **Bind to `CourierFuel` anyway.** Other jurisdictions do not pass all the fuel on, and `CourierFuel` is the field that carries the partner's actual share. Binding to `FuelSurchargeAmount` produces a correct-looking display at Urgent that silently over-reports the partner's fuel everywhere else — the kind of defect that ships because it tests clean in the one place it was tested.
 
-### 3.3 `CourierFuel` must actually be populated — confirm this first
+### 3.3 `CourierFuel` must be populated first — confirmed gap
 
-`CourierFuel` is calculated **when a courier is assigned** — and in this case, when the **network partner** is assigned. The display change depends on that happening.
+`CourierFuel` is calculated when a courier is assigned. **This is now confirmed, not a risk.** Per §2.5, a network partner job has no courier assigned — `ucjbCourierID` stays blank — so the trigger never sets `CourierFuel`, which only populates when `CourierPayment > 0`. Job KT672V in `CourierPayCalculationIssues.md` §2 is the proof: `FuelSurchargeAmount` **$18.50**, `CourierFuel` **$0.00**, no courier assigned.
 
-**There is direct evidence it does not always happen.** In `CourierPayCalculationIssues.md` §2, both sampled jobs show `CourierFuel = $0.00`:
-
-- **KT670V** — `CourierPayment` $41.69, `FuelSurchargeAmount` $0.00, `CourierFuel` **$0.00**
-- **KT672V** — `FuelSurchargeAmount` **$18.50**, `CourierPayment` $0.00 (no courier assigned), `CourierFuel` **$0.00**
-
-KT672V is the warning: a job carrying $18.50 of fuel with `CourierFuel` sitting at zero. Bind the NP view to `CourierFuel` while it is unpopulated and the partner sees **no fuel at all**. That is a worse failure than the current one — currently they see a number that is too big; this would show them a number that is too small, which they may not query.
-
-The existing trigger sets `CourierFuel = FuelSurchargeAmount` only when `CourierPayment > 0`, which is consistent with both samples. So the fuel population question is bound to the same one as §2.5: **if the partner is attached via `AgentID` rather than `ucjbCourierID`, neither `CourierPayment` nor `CourierFuel` is calculated for them.**
-
-**Sequence the work accordingly: confirm `CourierFuel` populates on NP assignment (Q14) before binding the view to it.**
+**So `CourierFuel` must be populated as part of the assignment work (§2.5), before or with the view change.** Binding the view to it first would show the partner no fuel at all — worse than the current over-statement, because a partner who is shown too little is less likely to query it.
 
 ### 3.4 Scope
 
@@ -220,7 +218,7 @@ Apply the substitution to **every** NP-facing surface, not only the screen where
 - Agent Portal (InboundAgent) per-job encrypted link
 - Any NP-visible export, report or emailed summary
 
-A field masked in one place and leaked in another is the same bug. This is a **view-layer change** — no schema change — provided §2.5 and Q14 confirm `CourierPayment` and `CourierFuel` are populated.
+A field masked in one place and leaked in another is the same bug. The substitution itself is a **view-layer change** with no schema change — but it is **not sufficient on its own**. Per §2.5 neither `CourierPayment` nor `CourierFuel` is populated on an NP job today, so the assignment-time data work must land first or the partner sees zero.
 
 ---
 
@@ -357,7 +355,8 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q16 | Where does the **agent's default percentage** live (§2.5)? `tblSetting.DefaultCourierPercentage`, `Agent.DefaultCourierPaymentPercent` (NP-redesign C# only), or somewhere else? `tucAgents` has no percentage column. | Live DB + Steve |
 | Q4 | *(Answered — see §2.7.)* Full column list for **`tucAgents`** — referenced by `tucJob.AgentID`, absent from `DB-SCHEMA.md` | Live DB |
 | Q5 | Body of `tucJob_Update_AddPickupAmountToNationwideAmount` — firing conditions, what it writes | Live DB `sp_helptext` |
-| Q6 | On a live PN schedule job: actual values of `CourierPayment`, `CourierFuel`, `CourierPercentage`, `ucjbCourierID`, `AgentID`, `ParentId` | Live DB, SELECT only |
+| Q6 | *(Answered — §2.5: `ucjbCourierID` stays blank, partner goes in the agent field.)* On a live PN schedule job: actual values of `CourierPayment`, `CourierFuel`, `CourierPercentage`, `ucjbCourierID`, `AgentID`, `ParentId` | Live DB, SELECT only |
+| Q17 | Once the partner assigns their own courier on their board, does `ucjbCourierID` get populated — firing the trigger late and overwriting `CourierPayment` (§2.5, §2.6d)? | Live DB + `despatchweb` NP board |
 | Q7 | Is Golden Black Taxis an **agent** (`tucAgents`), a **courier/fleet** (`tucCourier`), or both? | Live DB |
 | Q8 | Does the schedule path produce child legs, or one flat job with the partner on the whole job? | `despatchweb` `NationwideJobRepository.cs` + live data |
 | Q15 | What is the **deployed column name** for the NP→courier amount — `NPcourierAmount` or `NpCourierPayment` (Migration M6)? Is it deployed at all? And is the `AgentRate`/`CourierPayment`-NULL model in `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` superseded on the record, not just in conversation? (§2.2) | Live DB + Steve |
@@ -435,14 +434,15 @@ Inferred — confirm against GitLab before estimating.
 
 ## 9. Recommendation
 
-1. **Run Q6/Q7 first — one SELECT sizes the data work.** If the partner is attached as `ucjbCourierID` the trigger fires and populates `CourierPayment`, but at level 5 it uses that courier row's `uccrPercentage` rather than the agent default — populated, possibly wrong. If attached via `AgentID` only it never fires at all. Either way the agent-default substitution is real work (§2.5).
-2. **Answer Q0 alongside it.** If Golden Black Taxis is a paired DFRNT tenant rather than an in-tenant agent, this is a Pricing Mode setting on the service mapping and none of §2 applies (§5.1).
-3. **Ship the display change (§3) regardless of both.** NP dispatch view shows courier amount + total, never job revenue — across *every* NP-facing surface, not just the screen where it was noticed. On the most likely outcome this is the entire fix.
-4. **Confirm `CourierFuel` populates on NP assignment before binding the view to it (Q14).** Evidence in `CourierPayCalculationIssues.md` shows it sitting at $0.00 on a job carrying $18.50 of fuel. Showing a partner no fuel is a worse failure than showing them too much — they are less likely to query it (§3.3).
-5. **Path A is the only place new calculation code is clearly needed (§2.3).** Where an agent rate prices the delivery — nationwide flight delivery portion, local nationwide speed — stamp that rate into `CourierPayment` at creation rather than back-calculating later. Confirm the exact speed/job-type set first (Q13).
-6. **Gate recalculation on what changed, before stamping anything (§2.6d).** A populated `CourierPayment` must survive assignment to a network partner, but must still be recalculated when weight, items or cubic change — usually at pickup. Not a permanent lock: that would hold the partner on a rate that no longer matches the job they carried. Highest-risk item here, and it fails silently in both directions.
+1. **Treat this as two pieces of work, not one.** §2.5 settles it: on an NP job `ucjbCourierID` stays blank, so the existing trigger never populates `CourierPayment` or `CourierFuel`. The display substitution (§3) on its own would show the partner **zero**.
+2. **Data first — populate `CourierPayment` and `CourierFuel` on partner assignment.** Use the §2.4 cascade: client `CourierPercentage`, else the **agent's default percentage** substituted for the courier percentage the trigger would normally use. Fuel passes through to `CourierFuel`.
+3. **Resolve the three field names before writing code (Q15, Q16).** `NpagentID` vs `AgentID`, `NPcourierAmount` vs `NpCourierPayment`, and where the agent default percentage actually lives — `tucAgents` has no percentage column. Three of the names in this spec do not match the schema dump; none of them should be guessed.
+4. **Then ship the display substitution (§3)** — `CourierPayment` as the revenue line, `CourierFuel` as the fuel line, across *every* NP-facing surface, not just the screen where it was noticed.
+5. **Path A (§2.3) is the cheaper half and can go first.** Where an agent rate priced the delivery — nationwide flight delivery portion, local nationwide speed — the rate is already the pre-markup number on `tucAgents` (§2.7) and is stamped into `CourierPayment` at creation. Confirm the speed/job-type set (Q13).
+6. **Gate recalculation on what changed (§2.6d).** A populated `CourierPayment` must survive assignment but still be recalculated on weight / items / cubic changes. Not a permanent lock. Check Q17 — if `ucjbCourierID` gets filled when the partner assigns their own driver, the trigger fires late and overwrites everything.
 7. **Settle §2.6 (a)–(c)** — whether cascade levels 1–3 apply to NP jobs, whether the 40% fallback is acceptable for a partner, and that the percentage multiplies `RawBaseAmount`.
-8. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§2.1).
+8. **Answer Q0 in parallel.** If Golden Black Taxis is a paired DFRNT tenant rather than an in-tenant agent, this is a Pricing Mode setting and none of §2 applies (§5.1).
+9. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§2.1).
 
 ---
 
