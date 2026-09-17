@@ -38,15 +38,26 @@ Network partner payment is written to **`tucJob.CourierPayment`** (and `tucJobAr
 
 ### 2.2 The NP's own courier is a separate, second layer
 
-When the network partner then pays *their* courier a lower percentage, that is the **network partner courier amount** — already modelled on `tucCourier` (the NP's own row) and stamped onto the job:
+When the network partner pays *their* courier, that amount is stored in **`NPcourierAmount`** — a distinct field from `CourierPayment`.
 
-| Field | On | Purpose |
+Two layers, two fields, two payers:
+
+| Layer | Payer → payee | Field |
 |---|---|---|
-| `SubContractorPercentage` | `tucCourier`, `tucJob` | What the NP pays their courier |
-| `SubContractorBonusPercentage` | `tucCourier`, `tucJob` | Bonus component |
-| `SubContractorFuelPercentage` | `tucCourier`, `tucJob` | Fuel component |
+| Tenant → network partner | the tenant pays the NP | **`CourierPayment`** (§2.1) |
+| NP → their own courier | the NP pays their driver | **`NPcourierAmount`** |
 
-Two distinct layers: **tenant → NP** (`CourierPayment`) and **NP → their courier** (`SubContractor*`). Don't conflate them.
+**`SubContractorPercentage` / `SubContractorBonusPercentage` / `SubContractorFuelPercentage` are not this.** Those fields exist for contractors who have subcontractors working below them, and are unrelated to the network partner layer. An earlier revision of this document wrongly identified them as the NP-courier mechanism — do not build against them.
+
+> ⚠️ **Two naming and design conflicts to resolve before building (Q15).**
+>
+> **Name.** `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` Migration M6 adds the field as **`NpCourierPayment`** (`MONEY NULL`, on `tucJob`, `tucJobArchive`, `tucJobBooking`, `tblBulkJob`). Steve refers to it as **`NPcourierAmount`**. Confirm the deployed column name before writing code against either.
+>
+> **Which field carries tenant → NP.** That same plan states the opposite of §2.1: it adds a separate **`AgentRate`** column for what the tenant pays the NP, and says *"On NP jobs, `CourierPayment` should be NULL (tenant isn't paying a courier directly)"*, on the grounds that mixing payers in one field creates accounting ambiguity.
+>
+> **Steve's current decision supersedes that:** tenant → NP goes in `CourierPayment`, precisely so tenant GP falls out of the existing revenue − `CourierPayment` calculation with no second pass (§2.1). The plan's concern is real but the cost of a second GP calculation is higher.
+>
+> This matters because the marketplace plan is a written, plausible-looking design that says the reverse. Anyone reading it while implementing this spec will build the opposite. **The decision needs recording somewhere the next person will find it.**
 
 ### 2.3 Two paths — and the agent-rate path wins
 
@@ -303,6 +314,7 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q6 | On a live PN schedule job: actual values of `CourierPayment`, `CourierFuel`, `CourierPercentage`, `ucjbCourierID`, `AgentID`, `ParentId` | Live DB, SELECT only |
 | Q7 | Is Golden Black Taxis an **agent** (`tucAgents`), a **courier/fleet** (`tucCourier`), or both? | Live DB |
 | Q8 | Does the schedule path produce child legs, or one flat job with the partner on the whole job? | `despatchweb` `NationwideJobRepository.cs` + live data |
+| Q15 | What is the **deployed column name** for the NP→courier amount — `NPcourierAmount` or `NpCourierPayment` (Migration M6)? Is it deployed at all? And is the `AgentRate`/`CourierPayment`-NULL model in `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` superseded on the record, not just in conversation? (§2.2) | Live DB + Steve |
 | Q14 | Is **`CourierFuel`** populated when a network partner is assigned? Both jobs sampled in `CourierPayCalculationIssues.md` show `CourierFuel = $0.00`, one of them on a job carrying $18.50 of fuel. Binding the NP view to an unpopulated field shows the partner no fuel at all (§3.3). | Live DB, same SELECT as Q6 |
 | Q13 | Exactly which speeds / job types are **Path A** (§2.3) — i.e. where an agent rate calculates the headline delivery rate? Steve names nationwide flight delivery portion and local nationwide speed; confirm the full set so Path B is not applied to a Path A job or vice versa. | `DD_stpGetNationwideRates`, `tucJobType.NationwideEntry`, Steve |
 | Q10 | *(Largely answered — §2.4 confirms the client-level field `tucClient.CourierPercentage`, not a nationwide-speed row.)* Remaining: do cascade levels 1–3 apply to NP jobs, and is the 40% fallback acceptable for a partner? (§2.6a, §2.6b) | Steve + `sp_helptext` on the trigger |
