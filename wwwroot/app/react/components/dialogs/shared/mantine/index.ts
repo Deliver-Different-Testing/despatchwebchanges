@@ -25,6 +25,8 @@ export {
 export type {HeaderVariant} from './styles';
 export {PriceDelta} from './PriceDelta';
 export type {PriceDeltaProps} from './PriceDelta';
+export {SummaryCard} from './SummaryCard';
+export type {SummaryCardProps} from './SummaryCard';
 export {AgentEmailFields} from './AgentEmailFields';
 export type {AgentEmailState} from './AgentEmailFields';
 export type {DialogFooterProps} from "./DialogFooterProps";

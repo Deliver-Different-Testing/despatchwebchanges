@@ -168,7 +168,6 @@ public class JobController(
                 await clientAccessValidator.ValidateClientAccessAsync(staffId, clientIds);
             }
 
-            // Get jobs
             var jobs = await jobQueryRepository.JobListAsync(
                 queryParams,
                 isInternal,
@@ -200,6 +199,20 @@ public class JobController(
         {
             Log.Error(ex, "Error getting price breakdown for job {JobId}",
                 jobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    public async Task<IActionResult> GetSplitPricingBreakdown(int jobId)
+    {
+        try
+        {
+            var breakdown = await jobQueryRepository.GetSplitPricingBreakdownAsync(jobId);
+            return Json(breakdown);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting split pricing breakdown for job {JobId}", jobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -242,14 +255,12 @@ public class JobController(
                 return partnerGuard;
             }
 
-            // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to modify price breakdowns");
             }
 
-            // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(jobId.Value);
 
             Log.Information("Adding price breakdown for job {JobId} (archived: {IsArchived})", jobId,
@@ -300,14 +311,12 @@ public class JobController(
                 return partnerGuard;
             }
 
-            // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to modify price breakdowns");
             }
 
-            // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(jobId.Value);
 
             Log.Information("Updating price breakdown for job {JobId} (archived: {IsArchived})",
@@ -350,14 +359,12 @@ public class JobController(
                 return partnerGuard;
             }
 
-            // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to modify price breakdowns");
             }
 
-            // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(request.JobId);
 
             Log.Information("Deleting price breakdown for charge {ChargeId} (archived: {IsArchived})",
@@ -388,10 +395,55 @@ public class JobController(
         }
     }
 
-    // Manual-mode operator push of a recurring booking into live tucJob for
-    // a specific service date. The source booking stays on RecurringMode =
-    // Manual after the push so subsequent days do not auto-materialise —
-    // operator must explicitly Activate to opt into the nightly cron.
+    [HttpPost]
+    public async Task<IActionResult> UpdateSplitPricingBreakdown([FromBody] UpdateSplitPricingBreakdownRequest request)
+    {
+        try
+        {
+            var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
+
+            if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
+            {
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    "You do not have permission to modify price breakdowns");
+            }
+
+            await pricingPermissionService.ValidateJobAccessAsync(request.JobId);
+
+            Log.Information("Updating split pricing breakdown for job {JobId}", request.JobId);
+
+            await jobCommandRepository.UpdateSplitPricingBreakdownAsync(request);
+
+            await taskRepository.AddEventAsync(request.JobId, "Manually rated price", (int)EventType.ChangePrice);
+
+            return Ok();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Warning(ex, "Unauthorized access to update split pricing breakdown for job {JobId}", request.JobId);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Log.Warning(ex, "Rejected split pricing breakdown update for job {JobId}", request.JobId);
+            return StatusCode(StatusCodes.Status409Conflict, ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            Log.Warning(ex, "Invalid split pricing breakdown update for job {JobId}", request.JobId);
+            return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating split pricing breakdown for job {JobId}", request.JobId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> InsertRecurringToLive([FromBody] InsertRecurringToLiveRequest request)
     {
@@ -399,9 +451,6 @@ public class JobController(
         {
             var result = await recurringJobRepository.InsertRecurringToLiveAsync(request);
 
-            // Best-effort: auto-assign saved flights onto the freshly
-            // materialised jobs. Failures here never fail the push — they're
-            // surfaced as the unmatched count for the operator to action.
             var flightSummary = await flightAssignmentService.AutoAssignSavedFlightsAsync(result.InsertedJobIds);
             result.FlightsAutoAssigned = flightSummary.Assigned;
             result.FlightsUnmatched = flightSummary.Unmatched;
@@ -410,10 +459,6 @@ public class JobController(
         }
         catch (InvalidOperationException ex)
         {
-            // Scope-validation failures (e.g. Single scope on a grouped row,
-            // booking not Manual, missing RouteId) are user-correctable —
-            // surface them as 400 so the React modal can show the toast
-            // verbatim.
             Log.Warning(ex, "InsertRecurringToLive rejected: {Message}", ex.Message);
             return BadRequest(ex.Message);
         }
@@ -425,10 +470,6 @@ public class JobController(
         }
     }
 
-    // Read-only preview for the CreateAheadDays backfill dialog. Returns the
-    // interim service dates that would be materialised if the operator raises
-    // RecurringInitialDays from OldValue to NewValue on this parent template.
-    // Never writes — safe to call from the confirmation dialog before commit.
     [HttpPost]
     public async Task<IActionResult> PreviewCreateAheadBackfill(
         [FromBody] PreviewCreateAheadBackfillRequest request)
@@ -456,10 +497,6 @@ public class JobController(
         }
     }
 
-    // Executes the operator-confirmed CreateAheadDays backfill for the
-    // provided dates. Each date is materialised via the same SP path the
-    // nightly cron uses (fresh ucbkJobNumber family per date). Per-date
-    // dup guard ensures double-click yields JobsCreated=0 on the second call.
     [HttpPost]
     public async Task<IActionResult> CreateCreateAheadBackfill(
         [FromBody] CreateCreateAheadBackfillRequest request)
@@ -776,7 +813,6 @@ public class JobController(
         }
     }
 
-
     public async Task<IActionResult> ClientJobsReportDownload([FromQuery] ClientJobsReportRequest request)
     {
         try
@@ -802,14 +838,9 @@ public class JobController(
     {
         try
         {
-            // Prefer the customer's PDF Overlay template if one is active for this client; otherwise
-            // fall back to the built-in report. The overlay call is safe-by-design — it returns null
-            // (never throws) for "no template" or any failure, so this can't break the existing button.
             var overlayPdf = await pdfOverlay.TryRenderJobAsync(jobId, "ProofOfDelivery", HttpContext.RequestAborted);
             if (overlayPdf is not null)
             {
-                // The overlay template stamps job fields but can't fetch the S3 delivery
-                // photos/signature — append them so the download matches the built-in report.
                 var overlayWithPhotos = await podReportService.AppendDeliveryPhotosAsync(overlayPdf, jobId);
                 return File(overlayWithPhotos, "application/pdf", $"POD-{jobId}.pdf");
             }
@@ -838,17 +869,9 @@ public class JobController(
         }
     }
 
-    /// <summary>
-    /// Lists the extra overlay documents (invoices, manifests, etc.) configured for this job's tenant,
-    /// each flagged with whether a template resolves for the job's client. The export menu renders every
-    /// entry, disabling the unavailable ones. Returns an empty list when the overlay feature isn't
-    /// configured or none are set up — never errors, so it can't break the menu.
-    /// </summary>
     public async Task<IActionResult> OverlayDocuments(int jobId)
     {
         var docs = await pdfOverlay.ListJobDocumentsAsync(jobId, HttpContext.RequestAborted);
-        // Project to camelCase keys — the app's Newtonsoft config serializes property names verbatim
-        // (no camel-case resolver), so PascalCase record properties would not match the SPA's contract.
         return Json((docs ?? []).Select(d => new
         {
             documentType = d.DocumentType,
@@ -857,10 +880,6 @@ public class JobController(
         }));
     }
 
-    /// <summary>
-    /// Renders a single overlay document for a job by document type and returns the PDF. Unlike
-    /// <see cref="PodReport"/>, this does not append S3 delivery photos — those are POD-specific.
-    /// </summary>
     public async Task<IActionResult> OverlayDocument(int jobId, string documentType)
     {
         if (string.IsNullOrWhiteSpace(documentType))
@@ -870,8 +889,6 @@ public class JobController(
 
         try
         {
-            // RenderJobAsync (not TryRenderJobAsync) so a real render failure throws and hits the catch
-            // below as a 500 with the actual cause, instead of being mislabelled "no template available".
             var pdf = await pdfOverlay.RenderJobAsync(jobId, documentType, HttpContext.RequestAborted);
             if (pdf is null)
             {
@@ -897,7 +914,6 @@ public class JobController(
                 return BadRequest("At least one recipient is required.");
             }
 
-            // Flatten any semicolon/comma-separated entries into individual addresses
             var allRecipients = request.Recipients
                 .SelectMany(r => r.Split([';', ','], StringSplitOptions.RemoveEmptyEntries))
                 .Select(r => r.Trim())
@@ -910,7 +926,6 @@ public class JobController(
                 return BadRequest("No valid recipients provided.");
             }
 
-            // Validate each recipient is a well-formed email address
             var validRecipients = new List<string>();
             foreach (var recipient in allRecipients)
             {
@@ -935,8 +950,6 @@ public class JobController(
         }
         catch (PodEmailException e)
         {
-            // Authored, user-safe text — returned verbatim so the failure is diagnosable from the
-            // dialog alone. Everything else stays sanitised below.
             Log.Warning(e, "POD email rejected for job {JobId}: {Message}", request.JobId, e.Message);
             return StatusCode(500, e.Message);
         }
@@ -967,25 +980,19 @@ public class JobController(
         }
     }
 
-    /// <summary>
-    /// Applies bulk price updates from an uploaded spreadsheet and returns the results.
-    /// </summary>
     [HttpPost]
     public async Task<IActionResult> ApplyBulkPriceUpdate(IFormFile file, [FromQuery] string pricingMode)
     {
         try
         {
-            // Validate pricing mode is a valid value
             pricingPermissionService.ValidatePricingMode(pricingMode);
 
-            // Permission check: user must have bulk update permission
             if (!await pricingPermissionService.CanBulkUpdatePricesAsync())
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to perform bulk price updates");
             }
 
-            // Permission check: user must have permission for the specific pricing mode
             if (!await pricingPermissionService.CanUsePricingModeAsync(pricingMode))
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
@@ -1031,10 +1038,6 @@ public class JobController(
     {
         await jobCommandRepository.SwapPodAsync(job1, job2);
 
-        // Mirror the legacy Job Search behaviour: after swapping the POD, push the
-        // corrected delivery data back out — re-send the second job, then
-        // re-assign + re-send the first job. Best-effort: the swap has already
-        // committed, so a downstream re-send/re-assign failure is logged, not fatal.
         try
         {
             var firstJobId = await jobQueryRepository.GetJobIdByNumberAsync(job1);
@@ -1047,8 +1050,6 @@ public class JobController(
 
             if (firstJobId is { } firstId)
             {
-                // Don't re-assign a job dispatched to a partner — that would diverge
-                // from the partner-side view (see ReAssignSelected). Re-send is safe.
                 if (!await jobQueryRepository.IsOutboundPartnerJobAsync(firstId, infoService.GetCurrentTenantId()))
                 {
                     await jobCommandRepository.ReAssignSelectedJobsAsync([firstId]);
@@ -1169,7 +1170,6 @@ public class JobController(
     {
         const int latePickupStatus = (int)JobStatus.LatePickup;
 
-        // Don't create an event if AlertLatePickup is negative
         if (alertLatePickup < 0)
         {
             return new LateStatusResult
@@ -1194,7 +1194,6 @@ public class JobController(
         const int lateDeliveryStatus = (int)EventType.LateDelivery;
         var adjustedLateTime = lateTime + deliveryTime;
 
-        // Don't create event if AlertLateDelivery is negative
         if (alertLateDelivery < 0)
         {
             return new LateStatusResult
@@ -1303,11 +1302,6 @@ public class JobController(
             .Select(id => int.Parse(id.Trim()))
             .ToList();
 
-        // Auto-dispatch reassignment swaps the courier on each job. On the *sender*
-        // side of a partner pairing UcjbCourierId is the pairing's placeholder
-        // courier; changing it locally would diverge from the partner's view of
-        // who owns the job. The receiver-side mirror has no JobPartnerDispatch row
-        // and falls through to a normal reassignment.
         foreach (var jobId in parsedIds)
         {
             var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
@@ -1324,10 +1318,6 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> SetFirstJob(int jobId, int courierId)
     {
-        // Set-first-job re-orders the courier's clear list. On the *sender* side of
-        // a partner pairing the courier is a pairing placeholder, so reordering it
-        // would corrupt the partner-side view. The receiver side has a real local
-        // courier and may reorder freely.
         var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
         if (partnerGuard != null)
         {
@@ -1343,9 +1333,6 @@ public class JobController(
     {
         try
         {
-            // PartnerJobGate classifies Void as LocalOnly — each tenant owns its
-            // own copy's lifecycle. Block only the sender side, where voiding here
-            // would orphan the dispatched-out job from the partner's perspective.
             var partnerGuard = await RejectIfOutboundPartnerJobAsync(request.JobId);
             if (partnerGuard != null)
             {
@@ -1360,23 +1347,19 @@ public class JobController(
                 return Ok();
             }
 
-            // Get the parent ID before voiding (if this is a child job)
             var parentId = await jobQueryRepository.GetJobParentIdAsync(request.JobId);
 
-            // Determine if the parent is being voided too
             var isParentBeingVoided = parentId.HasValue &&
                                       request.SelectedJobIds is { Count: > 0 } &&
                                       request.SelectedJobIds.Contains(parentId.Value);
 
             await jobCommandRepository.VoidJobAsync(request);
 
-            // Rerate the parent job if a child was voided but the parent was not
             if (!parentId.HasValue || isParentBeingVoided)
             {
                 return Ok();
             }
 
-            // Don't re-rate if debugging
             if (Debugger.IsAttached)
             {
                 return Ok();
@@ -1423,11 +1406,6 @@ public class JobController(
         }
     }
 
-    /// <summary>
-    /// Reassigns the paid courier on an archived job. The repository re-checks the
-    /// invoiced/settled guards, so a stale client can't slip a change past the
-    /// <see cref="CourierChangeEligibility"/> pre-check.
-    /// </summary>
     [HttpPost]
     public async Task<IActionResult> ChangeArchivedJobCourier([FromBody] ChangeArchivedJobCourierRequest request)
     {
@@ -1543,15 +1521,12 @@ public class JobController(
             {
                 throw new ArgumentException("JobIds cannot be empty", nameof(data));
             }
-            
             Log.Information(
                 "RestoreJobs request received for {JobCount} job(s) {JobIds} (RemoveCapturedImages={RemoveCapturedImages})",
                 data.JobIds.Count,
                 string.Join(",", data.JobIds),
                 data.RemoveCapturedImages);
 
-            // Capture completion months before the restore clears UcjbComplTime, which is the anchor
-            // used to locate the job's photos in S3.
             var completionTimes = data.RemoveCapturedImages
                 ? await jobQueryRepository.GetJobCompletionTimesAsync(data.JobIds)
                 : null;
@@ -1577,20 +1552,10 @@ public class JobController(
         }
     }
 
-    /// <summary>
-    /// Above this many jobs the S3 probe is skipped wholesale — one listing per job would make a
-    /// large bulk selection wait on S3 before the confirmation dialog could even open.
-    /// </summary>
     public const int MaxRestorePodImageProbeJobs = 50;
 
-    /// <summary>How many jobs are probed against S3 at once.</summary>
     private const int RestorePodImageProbeConcurrency = 8;
 
-    /// <summary>
-    /// Reports what proof of delivery a restore of these jobs would destroy — the POD name (always
-    /// cleared) and how many captured photos/signatures are held against each job. Read-only; the
-    /// UI calls this to decide whether to warn the operator, so it degrades rather than fails.
-    /// </summary>
     [HttpPost]
     public async Task<IActionResult> GetRestorePodImpact([FromBody] RestorePodImpactRequest data)
     {
@@ -1667,11 +1632,6 @@ public class JobController(
         }
     }
 
-    /// <summary>
-    /// Archives (soft-deletes) the captured images for each restored job. Best-effort: the restore
-    /// has already committed, so a failure to archive is logged but never fails the request. Jobs
-    /// with no recorded completion time are skipped (nothing to locate in S3).
-    /// </summary>
     private async Task ArchiveRestoredJobImagesAsync(IReadOnlyDictionary<int, DateTime?> completionTimes)
     {
         foreach (var (jobId, completedTime) in completionTimes)
@@ -1699,10 +1659,6 @@ public class JobController(
         }
     }
 
-    /// <summary>
-    /// Proposes how the job's pricing lines would divide across the two legs of a split, so the user
-    /// can confirm before anything is written. Read-only.
-    /// </summary>
     [HttpPost]
     public async Task<IActionResult> PreviewSplitPricing([FromBody] SplitPricingPreviewRequest request)
     {
@@ -1764,8 +1720,6 @@ public class JobController(
         }
         catch (SplitJobException e)
         {
-            // Authored, user-safe text — returned verbatim so the failure is diagnosable from the
-            // toast alone. Everything else stays sanitised below.
             Log.Warning(e, "Split rejected for job {JobId}: {Message}", request.JobId, e.Message);
             return StatusCode(500, e.Message);
         }
@@ -1856,7 +1810,6 @@ public class JobController(
         var un = Environment.GetEnvironmentVariable("ExsalerateAPIUsername");
         var pw = Environment.GetEnvironmentVariable("ExsalerateAPIPW");
 
-        // Set up HttpClient
         httpClient.BaseAddress = new Uri(baseUrl ?? string.Empty);
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue(
@@ -1976,13 +1929,11 @@ public class JobController(
         {
             await recurringJobRepository.UpdateRecurringJobAsync(jobId, field, value);
 
-            // Skip re-reate if debugging
             if (Debugger.IsAttached)
             {
                 return Ok();
             }
 
-            // Recalculate the job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate)
             {
@@ -2023,12 +1974,6 @@ public class JobController(
         }
     }
 
-    // Atomically save a recurring booking's route airports + saved flight
-    // number. Used by the "add flight" flow for recurring bookings created
-    // without airports — all three are needed together for push-to-live flight
-    // auto-assign to match, so they're written in one call rather than via
-    // three UpdateRecurringJob round-trips. No rate recalc: airports/flight
-    // don't affect pricing.
     [HttpPost]
     public async Task<IActionResult> SaveRecurringFlight(
         int jobId,
@@ -2065,11 +2010,6 @@ public class JobController(
 
         try
         {
-            // Route through the partner-job gate. For non-partner jobs and LocalOnly
-            // fields this is a no-op and we fall through to the direct write. For
-            // Manual / Auto fields on a partner job the gate files a change request
-            // (auto-applying or queueing for counterparty approval) and we short-circuit
-            // with the gate's outcome instead of writing directly.
             var gateResult = await partnerJobGate.EvaluateAsync(jobId, field, value, ct);
             switch (gateResult)
             {
@@ -2088,7 +2028,6 @@ public class JobController(
                         "UpdateJob gate=Blocked: job {JobId}, field {JobProperty}, reason {Reason}",
                         jobId, field, blocked.Message);
                     return BadRequest(new { message = blocked.Message });
-                // NotPartner / LocalOnly → fall through to the direct write below.
             }
 
             await jobCommandRepository.UpdateJobAsync(jobId, field, value);
@@ -2114,9 +2053,6 @@ public class JobController(
             return StatusCode(500, e.Message + e.InnerException?.Message);
         }
 
-        // Date edits take the confirmed-cascade path instead of the silent rate propagation:
-        // the user has already been shown which linked jobs will move, and any resulting price
-        // change is surfaced separately for them to accept or decline.
         if (IsDateCascadeField(field))
         {
             if (!cascadeToChildren)
@@ -2138,8 +2074,6 @@ public class JobController(
             }
             catch (Exception e)
             {
-                // The parent's date is already written and correct — a failing cascade must not
-                // turn that into an error the user reads as "nothing happened".
                 Log.Error(e,
                     "Failed to cascade {JobProperty} from job {JobId} to its family. Error: {Message}",
                     field, jobId, e.Message);
@@ -2147,9 +2081,6 @@ public class JobController(
             }
         }
 
-        // An arrival correction is a waiting-time correction: derive the waited minutes it
-        // implies and let the normal rerate path reprice the job, so ops no longer has to fix
-        // the timestamp and the wait charge as two separate actions.
         await arrivalWaitRerateService.HandleArrivalEditAsync(jobId, field, ct);
 
         if (!ShouldRecalculateRate(field))
@@ -2160,7 +2091,6 @@ public class JobController(
             return Ok();
         }
 
-        // Propagate field update and re-rate split children (best effort)
         try
         {
             await splitJobService.PropagateUpdateToChildrenAsync(jobId, field, value, ct);
@@ -2175,10 +2105,6 @@ public class JobController(
         return Ok();
     }
 
-    /// <summary>
-    /// Lists the linked jobs a date change would cascade to, so the UI can confirm the blast
-    /// radius before writing anything.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetFamilyForDateChange(int jobId, CancellationToken ct)
     {
@@ -2215,7 +2141,6 @@ public class JobController(
         property is JobProperty.Date or JobProperty.BookedTime;
 
     internal static bool ShouldRecalculateRate(JobProperty property) =>
-        // Properties that affect job rating
         property switch
         {
             JobProperty.AirportOnly => true,
@@ -2280,7 +2205,6 @@ public class JobController(
 
             var created = await jobCommandRepository.QuickAddJobAsync(request);
 
-            //Check if jobId is valid before continuing
             if (created.JobId == 0)
             {
                 return StatusCode(
@@ -2410,7 +2334,7 @@ public class JobController(
             Environment.GetEnvironmentVariable("SMTPPass")
         );
         var smtpPortEnv = Environment.GetEnvironmentVariable("SMTP_Port");
-        smtp.Port = int.TryParse(smtpPortEnv, out var smtpPort) ? smtpPort : 587; // Default to 587 (TLS)
+        smtp.Port = int.TryParse(smtpPortEnv, out var smtpPort) ? smtpPort : 587;
         smtp.Send(message);
     }
 
@@ -2452,7 +2376,6 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-
 
     [HttpPost]
     public async Task<IActionResult> UploadFile([FromForm] FileUploadRequest request)
@@ -2511,7 +2434,6 @@ public class JobController(
     {
         if (Debugger.IsAttached)
         {
-            // Return a 1x1 transparent PNG as placeholder
             var png = Convert.FromBase64String(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
             var fileName = key.Contains('/') ? key[(key.LastIndexOf('/') + 1)..] : key;
@@ -2565,7 +2487,6 @@ public class JobController(
         }
     }
 
-
     [HttpPost]
     public async Task<IActionResult> UpdateNote(int jobId, string note, CancellationToken ct)
     {
@@ -2583,9 +2504,6 @@ public class JobController(
             return BadRequest(new { message = "Note cannot be empty" });
         }
 
-        // Notes is an Auto-apply field on partner jobs: the gate writes UcjbNotes on
-        // our side via the change-request flow AND forwards the same change to the peer
-        // so both mirrors stay in sync. Non-partner jobs fall through to the direct write.
         var gateResult = await partnerJobGate.EvaluateAsync(jobId, JobChangeField.Notes, note, reason: null, ct);
         switch (gateResult)
         {
@@ -2595,7 +2513,6 @@ public class JobController(
                 return Accepted(new { pending = true, requestId = pending.RequestId });
             case PartnerJobGateResult.Blocked blocked:
                 return BadRequest(new { message = blocked.Message });
-            // NotPartner / LocalOnly → fall through to direct write below.
         }
 
         try
@@ -2621,16 +2538,12 @@ public class JobController(
         }
     }
 
-
     [HttpPost]
     public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request,
         CancellationToken ct)
     {
         try
         {
-            // Serialise just the apply-payload fields (Parcels + Weight + CalculateDimsOncePerJob) —
-            // not JobId, which lives on the change-request row. The peer applies against its own
-            // mirror by reading the row's UjcrJobId, not the JSON.
             var payload = JsonSerializer.Serialize(
                 new { request.Parcels, request.Weight, request.CalculateDimsOncePerJob },
                 CompoundPayloadJsonOptions);
@@ -2797,7 +2710,6 @@ public class JobController(
     {
         try
         {
-            // First update the address
             await updateAddressAction(request);
             return Ok();
         }
@@ -2811,12 +2723,8 @@ public class JobController(
 
     private async Task RecalculateJobRateAsync(int jobId, bool isBooking)
     {
-        // Skip if a job is archived
         var isArchived = !isBooking && await jobQueryRepository.IsJobArchived(jobId);
-        //if (isArchived) return;
 
-        // Explicit user-initiated recalculation: clear the manual-pricing flag so the rate
-        // engine is allowed to overwrite the price, and so the job is left as system-rated.
         await jobCommandRepository.SetJobRatedManuallyAsync(jobId, isBooking, false);
 
         var isUsCustomer = infoService.IsUsTenant();
@@ -2886,13 +2794,8 @@ public class JobController(
     {
         try
         {
-            // The journey converts timestamps server-side via the tenant timezone. When the
-            // server-side TimeZone claim is missing/empty the conversion silently degrades to
-            // UTC, so the client passes its known-good window.TimeZone as a fallback. The claim
-            // still wins when present; this only fills the gap (see SetTenantTimeZoneOverride).
             infoService.SetTenantTimeZoneOverride(timeZone);
 
-            // Auto-apply any pending external qty changes before returning the journey
             await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
             var deliveryJourney = await deliveryJourneyService.GetDeliveryJourneyForJobAsync(jobId);
             return Json(deliveryJourney);
@@ -2908,9 +2811,6 @@ public class JobController(
     {
         try
         {
-            // Same as GetDeliveryJourney: the client passes its known-good window.TimeZone so
-            // server-side conversion doesn't silently degrade to UTC when the TimeZone claim is
-            // missing on this request. The claim still wins when present.
             infoService.SetTenantTimeZoneOverride(timeZone);
 
             var journey = await deliveryJourneyService.GetDeliveryJourneyForRecurringBookingAsync(bookingId);
@@ -2960,7 +2860,6 @@ public class JobController(
         }
     }
 
-
     public async Task<IActionResult> ScanJobDetail(DateTimeOffset runDate, int jobId, bool isBulkJob = false)
     {
         try
@@ -2981,13 +2880,11 @@ public class JobController(
     {
         try
         {
-            // Permission check: user must have modified prices permission
             if (!await pricingPermissionService.CanModifyPricesAsync())
             {
                 return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to modify job prices");
             }
 
-            // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(data.JobId);
 
             await jobCommandRepository.SimpleRepriceJobManualAsync(data);
@@ -3011,13 +2908,11 @@ public class JobController(
     {
         try
         {
-            // Permission check: user must have base amount permission
             if (!await pricingPermissionService.CanUsePricingModeAsync("base"))
             {
                 return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to set base amounts");
             }
 
-            // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(data.JobId);
 
             var newRate = await jobCommandRepository.RepriceJobWithBaseAmountAsync(data);
@@ -3042,14 +2937,12 @@ public class JobController(
     {
         try
         {
-            // Permission check: user must have recalculated permission
             if (!await pricingPermissionService.CanUsePricingModeAsync("recalculate"))
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to recalculate job prices");
             }
 
-            // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(jobId);
 
             var newRate = await GetJobRateAsync(jobId, false);
@@ -3068,11 +2961,6 @@ public class JobController(
         }
     }
 
-    /// <summary>
-    /// Previews recalculated rates for a whole family in one call, so a date cascade can show the
-    /// user every price it would change in a single dialog. One permission check covers the batch;
-    /// a job that fails to rate is reported as failed rather than aborting the rest.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> RecalculateJobRates(string jobIds)
     {
@@ -3099,7 +2987,6 @@ public class JobController(
             var currentAmounts = await jobQueryRepository.GetJobCurrentAmountsAsync(ids);
             var results = new List<object>(ids.Count);
 
-            // Sequential on purpose — rating runs stored procs on a single context.
             foreach (var id in ids)
             {
                 currentAmounts.TryGetValue(id, out var current);
@@ -3169,7 +3056,6 @@ public class JobController(
 
     private async Task<ApiRerate> GetJobRateAsync(int jobId, bool isBooking)
     {
-        // Don't skip if a job is archived (should skip if invoiced tho)
         var isArchived = !isBooking && await jobQueryRepository.IsJobArchived(jobId);
 
         var isUsCustomer = infoService.IsUsTenant();
@@ -3209,9 +3095,6 @@ public class JobController(
         return result;
     }
 
-    /// <summary>
-    /// Gets the current user's pricing permissions.
-    /// </summary>
     public async Task<IActionResult> GetPricingPermissions()
     {
         try
@@ -3330,11 +3213,6 @@ public class JobController(
         return null;
     }
 
-    // Narrower partner guard for endpoints that only need to protect the *sender*
-    // side of a partner pairing. A job is "outbound" iff the linked
-    // IntMgrPartnerPairing.OwnerTenantId is this tenant — the receiving tenant's
-    // mirror is tied to a pairing owned by the originating partner, so it slips
-    // past this check and can dispatch/void normally.
     private async Task<IActionResult> RejectIfOutboundPartnerJobAsync(int jobId)
     {
         if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId, infoService.GetCurrentTenantId()))
@@ -3371,12 +3249,6 @@ public class JobController(
 
     private static readonly JsonSerializerOptions CompoundPayloadJsonOptions = new(JsonSerializerDefaults.Web);
 
-    /// <summary>
-    /// Translate a partner-job gate result into an IActionResult and tell the caller
-    /// whether to short-circuit. Returns true when the gate handled the request (Auto
-    /// applied, Manual queued, or Blocked); false when the caller should fall through
-    /// to the existing direct-write path (NotPartner / LocalOnly).
-    /// </summary>
     private static bool TryHandleGateResult(PartnerJobGateResult result, out IActionResult earlyResponse)
     {
         switch (result)

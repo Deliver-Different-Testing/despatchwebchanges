@@ -1746,9 +1746,7 @@ public class RecurringJobRepository(
                 // repository tests SQL-Server-independent).
                 if (newInitialDays != oldInitialDays && isFortnightly)
                 {
-                    await Context.Database.ExecuteSqlRawAsync(
-                        "EXEC dbo.UTL_stpJobBooking_RecomputeFirstDueOnEdit @JobBookingID = {0}",
-                        effectiveBookingId);
+                    await Context.Procedures.UTL_stpJobBooking_RecomputeFirstDueOnEditAsync(effectiveBookingId);
                 }
 
                 return $"Create-ahead days changed from {oldInitialDays} to {newInitialDays}";

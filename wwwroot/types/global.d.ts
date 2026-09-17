@@ -48,6 +48,7 @@ import type {Suggestion} from '../app/react/components/dialogs/auto-complete-dia
 import type {DashboardSettingsConfig, DashboardBox, RefreshOption, DashboardSettingsResult} from '../app/react/components/dialogs/dashboard-settings-dialog/DashboardSettingsDialog';
 import type {DateRange} from '../app/react/components/dialogs/date-range-dialog/DateRangeDialog';
 import type {PriceBreakdown} from '../app/react/components/dialogs/price-breakdown-dialog/PriceBreakdownDialog';
+import type {SplitPriceBreakdown, UpdateSplitPricingBreakdownRequest} from '../app/react/interfaces/splitJobs';
 import type {IFlightViewModel} from '../app/components/Nationwide/nationwide.interfaces';
 
 // App shell types
@@ -358,6 +359,7 @@ declare global {
                 isArchived: boolean,
                 isUsCustomer?: boolean,
                 readOnly?: boolean,
+                managedElsewhere?: {parentJobNumber: string; onNavigateToParent: () => void},
                 apiService?: {
                     addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
                     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
@@ -373,6 +375,17 @@ declare global {
         };
         ReactSimplePriceEditDialog?: {
             open: (options: SimplePriceEditDialogOptions) => Promise<PriceEditResult | null>;
+            setToastService: (service: ToastService) => void;
+        };
+        ReactSplitPricingBreakdownDialog?: {
+            open: (
+                breakdown: SplitPriceBreakdown,
+                apiService?: {
+                    save: (request: UpdateSplitPricingBreakdownRequest) => Promise<void>;
+                    addItem: (jobId: number, name: string, revenue: number) => Promise<SplitPriceBreakdown>;
+                    deleteItem: (jobId: number, pricingBreakdownId: number) => Promise<SplitPriceBreakdown>;
+                }
+            ) => Promise<null>;
             setToastService: (service: ToastService) => void;
         };
         ReactSwapPodsDialog?: {

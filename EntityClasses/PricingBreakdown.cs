@@ -38,4 +38,6 @@ public partial class PricingBreakdown
     public virtual TucJob Job { get; set; }
 
     public virtual TucJobBooking PrebookJob { get; set; }
+
+    public virtual ICollection<PricingBreakdownAllocation> PricingBreakdownAllocations { get; set; } = new List<PricingBreakdownAllocation>();
 }

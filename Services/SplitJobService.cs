@@ -25,7 +25,8 @@ public class SplitJobService(
     IRateJobService rateJobService,
     IJobQueryRepository jobRepository,
     IJobCommandRepository jobCommandRepository,
-    ICreateJobService createJobService) : ISplitJobService
+    ICreateJobService createJobService,
+    IPricingBreakdownAllocationService pricingBreakdownAllocationService) : ISplitJobService
 {
     private const string ParentSystemName = "SplitParent";
     private const string ChildSystemName = "SplitChild";
@@ -804,14 +805,15 @@ public class SplitJobService(
         string DeliverySuffix);
 
     /// <summary>
-    /// Divides the parent's pricing breakdown lines across the two new legs, attributing each new
-    /// row to its leg via <c>PricingBreakdown.ChildJobId</c>, then sets each leg's header totals
-    /// from its own rows.
+    /// Divides the parent's pricing breakdown lines across the two new legs by writing
+    /// <c>PricingBreakdownAllocation</c> rows against the root's own (never-deleted) items, then
+    /// sets each leg's header totals from the result.
     /// </summary>
     /// <remarks>
-    /// The parent's line total is unchanged — each source line is replaced by per-leg rows summing
-    /// back to it — so a split never flows through to the client invoice. Runs on the caller's
-    /// context so it participates in the split transaction.
+    /// The root's items are never touched — only allocation rows are written or replaced — so a
+    /// split never flows through to the client invoice (docs/pricing/job-splitting-price-breakdown.md
+    /// §5: splitting stops deleting the parent's price items). Runs on the caller's context so it
+    /// participates in the split transaction.
     /// </remarks>
     private async Task AllocateSplitPricingAsync(
         DespatchContext context,
@@ -824,25 +826,33 @@ public class SplitJobService(
     {
         var parentAmount = parent.UcjbAmount ?? 0m;
 
-        // Breakdown lines always hang off the effective (root) job. When a leg is itself being
-        // re-split, the rows to divide are that leg's own child-attributed rows, not the root's.
+        // Allocation always anchors to the root's own items. When a leg is itself being re-split,
+        // that leg has no PricingBreakdown rows of its own to divide — only the root does — so the
+        // leg's EXISTING share of each root item is what gets divided further, not the root's items
+        // as a fresh 100%.
         var effectiveParentId = parent.ParentId ?? parent.UcjbId;
-        var sourceChildJobId = effectiveParentId == parent.UcjbId ? (int?)null : parent.UcjbId;
+        var isResplit = effectiveParentId != parent.UcjbId;
 
-        var sourceRows = await context.PricingBreakdowns
-            .Where(p => p.JobId == effectiveParentId && p.ChildJobId == sourceChildJobId)
+        var rootItems = await context.PricingBreakdowns
+            .Where(p => p.JobId == effectiveParentId && p.ChildJobId == null)
             .ToListAsync(ct);
 
-        var sourceLines = sourceRows
-            .Select(p => new SplitPricingAllocator.ParentLine(
-                p.PricingBreakdownId, p.ChargeName ?? string.Empty, p.ChargeAmount, p.CostAmount,
-                p.IsAccessorial))
-            .ToList();
-
-        // A flat or manually-priced parent has nothing itemised to divide — synthesise a single
-        // line so each leg still gets a row and a self-consistent header.
-        var linesToDivide = SplitPricingAllocator.EnsureLines(
-            sourceLines, parentAmount, parent.CourierPayment);
+        // A flat or manually-priced parent has nothing itemised yet — give it one real row before
+        // allocating, since PricingBreakdownAllocation.ParentPricingBreakdownId is a hard FK and the
+        // old synthesised-line fallback (a line that was never actually written) can't be pointed to.
+        if (rootItems.Count == 0)
+        {
+            var manualItem = new PricingBreakdown
+            {
+                JobId = effectiveParentId,
+                ChargeName = SplitPricingAllocator.ManuallyRatedChargeName,
+                ChargeAmount = parentAmount,
+                CostAmount = parent.CourierPayment,
+            };
+            context.PricingBreakdowns.Add(manualItem);
+            await context.SaveChangesAsync(ct);
+            rootItems = [manualItem];
+        }
 
         var legJobs = new[] { pickup, delivery };
         var (legWeights, basis) = await ResolveLegWeightsAsync(
@@ -852,44 +862,90 @@ public class SplitJobService(
         // a congestion charge only one leg's route incurred shouldn't follow the overall percentage.
         var lineOverrides = confirmedLineAllocation?
             .Select(a => new SplitPricingAllocator.LineShareOverride(
-                a.PricingBreakdownId, a.Sequence, a.SharePercent))
+                a.PricingBreakdownId, a.Sequence, a.SharePercent, a.CostOverride))
             .ToList();
 
-        var allocated = SplitPricingAllocator.Allocate(linesToDivide, legWeights, lineOverrides);
+        // Only .SharePercent is used from here — the dollar amount fed in is a neutral probe, since
+        // Allocate's per-leg share of a line never depends on the amount being divided.
+        var probeLines = rootItems
+            .Select(p => new SplitPricingAllocator.ParentLine(p.PricingBreakdownId, p.ChargeName ?? string.Empty, 1m, null, p.IsAccessorial))
+            .ToList();
+        var resolvedShares = SplitPricingAllocator.Allocate(probeLines, legWeights, lineOverrides);
 
-        if (sourceRows.Count > 0)
-        {
-            context.PricingBreakdowns.RemoveRange(sourceRows);
-        }
+        var seeds = new Dictionary<(int, int), decimal>();
+        // A cost override is an absolute dollar amount, not a share, so it has no clean scaling rule
+        // across a re-split (see below) — only ever seeded on a first split.
+        var costOverrideSeeds = new Dictionary<(int, int), decimal>();
+        IReadOnlyList<int>? currentLegIds = null;
 
-        foreach (var line in allocated)
+        if (!isResplit)
         {
-            var legJob = legJobs.First(l => l.Suffix == line.LetterSuffix).Job;
-            context.PricingBreakdowns.Add(new PricingBreakdown
+            foreach (var line in resolvedShares)
             {
-                JobId = effectiveParentId,
-                PrebookJobId = null,
-                ChildJobId = legJob.UcjbId,
-                ChargeName = line.ChargeName,
-                ChargeAmount = line.ChargeAmount,
-                CostAmount = line.CostAmount,
-                IsAccessorial = line.IsAccessorial
-            });
+                var legJob = legJobs.First(l => l.Suffix == line.LetterSuffix).Job;
+                seeds[(line.PricingBreakdownId, legJob.UcjbId)] = line.SharePercent;
+                if (line.CostOverride.HasValue)
+                {
+                    costOverrideSeeds[(line.PricingBreakdownId, legJob.UcjbId)] = line.CostOverride.Value;
+                }
+            }
+        }
+        else
+        {
+            // The leg being re-split (parent.UcjbId) holds its own share of every root item already —
+            // each new sub-leg's share of the ROOT item is that prior share scaled by the confirmed
+            // sub-split's own share. The other direct children of the root are unaffected and stay.
+            var priorShareByItem = await context.PricingBreakdownAllocations
+                .Where(a => a.LegJobId == parent.UcjbId)
+                .ToDictionaryAsync(a => a.ParentPricingBreakdownId, a => a.SharePercent, ct);
+
+            foreach (var line in resolvedShares)
+            {
+                if (!priorShareByItem.TryGetValue(line.PricingBreakdownId, out var priorShare))
+                {
+                    continue; // The leg being split had no share of this item — nothing to redivide.
+                }
+
+                var legJob = legJobs.First(l => l.Suffix == line.LetterSuffix).Job;
+                seeds[(line.PricingBreakdownId, legJob.UcjbId)] = priorShare * line.SharePercent / 100m;
+            }
+
+            // The root's own ParentId is set to itself once it becomes a split parent (see the top
+            // of SplitJobAsync), so it must be excluded explicitly alongside the leg being replaced.
+            var siblingLegIds = await context.TucJobs
+                .Where(j => j.ParentId == effectiveParentId && j.UcjbId != effectiveParentId
+                    && !j.UcjbVoid && j.UcjbId != parent.UcjbId)
+                .Select(j => j.UcjbId)
+                .ToListAsync(ct);
+            currentLegIds = [.. siblingLegIds, pickup.Job.UcjbId, delivery.Job.UcjbId];
         }
 
-        await context.SaveChangesAsync(ct);
+        await pricingBreakdownAllocationService.RewriteAllocationsForParentAsync(
+            context, effectiveParentId, seeds, currentLegIds, costOverrideSeeds, ct);
 
+        // RatedManually=false and TotalDistance are both one-time, new-leg-only writes;
+        // RewriteAllocationsForParentAsync deliberately never touches either (it also serves the
+        // ongoing re-price path, where a leg may since have been marked RatedManually and there is
+        // no basis to justify a new distance) — a road-miles basis is the only one that writes a
+        // real distance value here.
         foreach (var leg in legJobs)
         {
             var weight = legWeights.First(w => w.LetterSuffix == leg.Suffix);
-            var legLines = allocated.Where(l => l.LetterSuffix == leg.Suffix).ToList();
-            await ApplyNewLegHeaderAsync(context, leg.Job.UcjbId, legLines, weight.Miles, basis, ct);
+            var distance = basis == SplitPricingAllocator.AllocationBasis.RoadMiles && weight.Miles > 0m
+                ? weight.Miles
+                : (decimal?)null;
+
+            await context.TucJobs
+                .Where(j => j.UcjbId == leg.Job.UcjbId)
+                .ExecuteUpdateAsync(j => j
+                    .SetProperty(x => x.RatedManually, false)
+                    .SetProperty(x => x.TotalDistance, distance), ct);
         }
 
         Log.Information(
-            "Allocated {LineCount} pricing lines across the legs of parent {ParentJobId} on a {Basis} basis. "
+            "Allocated {ItemCount} root pricing items across the legs of parent {ParentJobId} on a {Basis} basis. "
             + "Parent amount: {ParentAmount}",
-            allocated.Count, parent.UcjbId, basis, parentAmount);
+            rootItems.Count, parent.UcjbId, basis, parentAmount);
     }
 
     /// <summary>A leg's header figures, derived from the lines attributed to it.</summary>
@@ -912,45 +968,10 @@ public class SplitJobService(
                 : null);
 
     /// <summary>
-    /// Writes a newly created leg's header from the lines just allocated to it: amount, client fuel,
-    /// driver pay, and — when the shares came from real road miles — the leg's distance.
-    /// </summary>
-    /// <remarks>
-    /// The distance is written unconditionally so a child never keeps the distance it inherited from
-    /// the parent it was copied from. Re-pricing an existing leg uses
-    /// <see cref="ApplyLegHeaderFromRowsAsync"/> instead, which leaves the column alone.
-    /// </remarks>
-    private static async Task ApplyNewLegHeaderAsync(
-        DespatchContext context,
-        int legJobId,
-        IReadOnlyList<SplitPricingAllocator.AllocatedLine> legLines,
-        decimal legMiles,
-        SplitPricingAllocator.AllocationBasis basis,
-        CancellationToken ct)
-    {
-        var totals = SummariseLegLines(
-            [.. legLines.Select(l => (l.ChargeName, l.ChargeAmount, l.CostAmount))]);
-
-        // TotalDistance is a road-miles column — only populate it from a road-miles basis, never
-        // from a straight-line estimate.
-        var distance = basis == SplitPricingAllocator.AllocationBasis.RoadMiles && legMiles > 0m
-            ? legMiles
-            : (decimal?)null;
-
-        await context.TucJobs
-            .Where(j => j.UcjbId == legJobId)
-            .ExecuteUpdateAsync(j => j
-                .SetProperty(x => x.RatedManually, false)
-                .SetProperty(x => x.UcjbAmount, totals.Revenue)
-                .SetProperty(x => x.FuelSurchargeAmount, totals.Fuel)
-                .SetProperty(x => x.CourierPayment, totals.Cost)
-                .SetProperty(x => x.TotalDistance, distance), ct);
-    }
-
-    /// <summary>
-    /// Writes an existing leg's header from its current breakdown rows. Unlike
-    /// <see cref="ApplyNewLegHeaderAsync"/> this leaves <c>TotalDistance</c> untouched — re-pricing
-    /// a leg doesn't change how far it travels, and there is no basis here to justify a new value.
+    /// Writes an existing leg's header from its current breakdown rows. Leaves <c>TotalDistance</c>
+    /// untouched — re-pricing a leg doesn't change how far it travels, and there is no basis here to
+    /// justify a new value. (A newly created leg's distance is written separately, once, right after
+    /// <see cref="AllocateSplitPricingAsync"/> — see its own TotalDistance step.)
     /// </summary>
     private static async Task ApplyLegHeaderFromRowsAsync(
         DespatchContext context,
@@ -1102,7 +1123,7 @@ public class SplitJobService(
     /// Runs on the caller's context. On the propagate path that context has no transaction, so each
     /// leg is committed as it is written.
     /// </remarks>
-    private static async Task RedistributeSplitJobAmountsAsync(
+    private async Task RedistributeSplitJobAmountsAsync(
         DespatchContext context,
         int parentJobId,
         decimal parentAmount,
@@ -1147,6 +1168,23 @@ public class SplitJobService(
             return;
         }
 
+        // A job split under the new model (docs/pricing/job-splitting-price-breakdown.md) has real
+        // PricingBreakdownAllocation rows for its legs; a pre-existing split from before that change
+        // has none (§5: no backfill) and falls through to the legacy ChildJobId-attributed-row path
+        // below, exactly as it did before this feature existed.
+        var childJobIdsAll = children.Select(c => c.UcjbId).ToList();
+        var hasAllocationRows = await context.PricingBreakdownAllocations
+            .AnyAsync(a => childJobIdsAll.Contains(a.LegJobId), ct);
+
+        if (hasAllocationRows)
+        {
+            await RedistributeSplitJobAmountsViaAllocationsAsync(
+                context, effectiveParentId,
+                children.Select(c => (c.UcjbId, c.RatedManually)).ToList(),
+                parentAmount, ct);
+            return;
+        }
+
         // Manually-priced legs keep their existing amount and are excluded from redistribution —
         // only the remaining amount (parent total minus what's already fixed manually) is spread
         // across the auto-rated legs.
@@ -1186,6 +1224,107 @@ public class SplitJobService(
         Log.Information(
             "Redistributed {ParentAmount} across {Count} split children of parent {ParentJobId}",
             parentAmount, childJobIds.Count, parentJobId);
+    }
+
+    /// <summary>
+    /// The allocation-backed counterpart to <see cref="RedistributeSplitJobAmountsAsync"/>, for a
+    /// job split under the new model (real PricingBreakdownAllocation rows exist).
+    /// </summary>
+    /// <remarks>
+    /// A manually-rated leg's DOLLAR amount for every item is kept exactly as it is — matching the
+    /// legacy path's "leave its rows alone" behaviour — by recomputing that leg's SharePercent for
+    /// each item so its ChargeAmount doesn't move even though the item's own total does. The
+    /// remaining (auto) legs absorb <paramref name="parentAmount"/> minus the manual total, spread
+    /// across items proportional to the auto legs' own existing per-item weight, and across multiple
+    /// auto legs (if more than one) proportional to their existing relative shares of that item.
+    /// Once every row's SharePercent is set, <see cref="IPricingBreakdownAllocationService"/> is the
+    /// one thing that actually recomputes ChargeAmount/CostAmount and writes leg headers from it —
+    /// this method only ever changes shares, never derives dollar amounts itself.
+    /// </remarks>
+    private async Task RedistributeSplitJobAmountsViaAllocationsAsync(
+        DespatchContext context,
+        int effectiveParentId,
+        IReadOnlyList<(int LegJobId, bool RatedManually)> legs,
+        decimal parentAmount,
+        CancellationToken ct)
+    {
+        var manualLegIds = legs.Where(l => l.RatedManually).Select(l => l.LegJobId).ToHashSet();
+        var autoLegIds = legs.Where(l => !l.RatedManually).Select(l => l.LegJobId).ToList();
+
+        if (autoLegIds.Count == 0)
+        {
+            Log.Information(
+                "All split legs of parent {ParentJobId} are manually rated. Skipping redistribution",
+                effectiveParentId);
+            return;
+        }
+
+        var items = await context.PricingBreakdowns
+            .AsTracking()
+            .Where(p => p.JobId == effectiveParentId && p.ChildJobId == null)
+            .ToListAsync(ct);
+        var itemIds = items.Select(i => i.PricingBreakdownId).ToList();
+
+        var rows = await context.PricingBreakdownAllocations
+            .AsTracking()
+            .Where(a => itemIds.Contains(a.ParentPricingBreakdownId))
+            .ToListAsync(ct);
+
+        var manualAmount = rows.Where(r => manualLegIds.Contains(r.LegJobId)).Sum(r => r.ChargeAmount);
+        var amountToDistribute = parentAmount - manualAmount;
+
+        // Each item's weight for dividing amountToDistribute is the auto legs' own CURRENT combined
+        // amount for it — the same "keep the existing division" philosophy as the legacy path, just
+        // applied per item instead of per whole leg.
+        var itemWeights = items
+            .Select(item => rows
+                .Where(r => r.ParentPricingBreakdownId == item.PricingBreakdownId && autoLegIds.Contains(r.LegJobId))
+                .Sum(r => r.ChargeAmount))
+            .ToList();
+
+        var newAutoItemTotals = PricingBreakdownAllocationCalculator.DistributeAmount(
+            amountToDistribute, SplitPricingAllocator.SharesFromWeights(itemWeights));
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var itemRows = rows.Where(r => r.ParentPricingBreakdownId == item.PricingBreakdownId).ToList();
+
+            var manualItemAmount = itemRows.Where(r => manualLegIds.Contains(r.LegJobId)).Sum(r => r.ChargeAmount);
+            var newItemAmount = manualItemAmount + newAutoItemTotals[i];
+            item.ChargeAmount = newItemAmount;
+
+            foreach (var row in itemRows.Where(r => manualLegIds.Contains(r.LegJobId)))
+            {
+                row.SharePercent = newItemAmount > 0m ? row.ChargeAmount / newItemAmount * 100m : 0m;
+            }
+
+            var autoItemRows = itemRows.Where(r => autoLegIds.Contains(r.LegJobId)).ToList();
+            if (autoItemRows.Count == 0)
+            {
+                continue;
+            }
+
+            var autoWeights = autoItemRows.Select(r => r.ChargeAmount).ToList();
+            var autoAmounts = PricingBreakdownAllocationCalculator.DistributeAmount(
+                newAutoItemTotals[i], SplitPricingAllocator.SharesFromWeights(autoWeights));
+
+            for (var j = 0; j < autoItemRows.Count; j++)
+            {
+                autoItemRows[j].SharePercent = newItemAmount > 0m ? autoAmounts[j] / newItemAmount * 100m : 0m;
+            }
+        }
+
+        await context.SaveChangesAsync(ct);
+
+        // Recomputes ChargeAmount/CostAmount from the shares just set, and writes every current
+        // leg's header — the single write path every parent-side change shares.
+        await pricingBreakdownAllocationService.RewriteAllocationsForParentAsync(
+            context, effectiveParentId, ct: ct);
+
+        Log.Information(
+            "Redistributed {ParentAmount} across the allocation rows of parent {ParentJobId}",
+            parentAmount, effectiveParentId);
     }
 
     /// <summary>

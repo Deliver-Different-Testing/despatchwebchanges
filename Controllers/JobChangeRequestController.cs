@@ -90,11 +90,6 @@ public class JobChangeRequestController(IJobChangeRequestService service) : Cont
         }
     }
 
-    /// <summary>
-    /// Approver inbox feed: Pending change requests this tenant must review.
-    /// Driven by Status='Pending' AND Origin='Peer' on the local DB — see
-    /// <see cref="IJobChangeRequestService.ListPendingForApprovalAsync"/>.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> PendingForApproval(int limit, CancellationToken ct)
     {
@@ -112,11 +107,6 @@ public class JobChangeRequestController(IJobChangeRequestService service) : Cont
         }
     }
 
-    /// <summary>
-    /// Visibility gate for the app-bar Partner Approvals badge: true iff the
-    /// local tenant has at least one active <c>IntMgrPartnerPairing</c>.
-    /// Tenants without any partnerships hide the badge entirely.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> HasActivePartners(CancellationToken ct)
     {
@@ -133,11 +123,6 @@ public class JobChangeRequestController(IJobChangeRequestService service) : Cont
         }
     }
 
-    /// <summary>
-    /// Internal: called by Integration Manager (with SC-JWT) when a peer's change request arrives.
-    /// Not user-facing; protected by the same [Authorize] gate as the rest of the controller —
-    /// IM mints a per-tenant JWT that DespatchWeb's auth middleware accepts.
-    /// </summary>
     [HttpPost]
     public async Task<IActionResult> PeerInbound([FromBody] PeerInboundChangeRequestPayload payload, CancellationToken ct)
     {

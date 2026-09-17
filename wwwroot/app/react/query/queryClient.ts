@@ -138,6 +138,10 @@ export const queryKeys = {
         job: (jobId: number, isPrebook: boolean, isArchived: boolean) =>
             ['priceBreakdowns', 'job', jobId, isPrebook, isArchived] as const,
     },
+    splitPriceBreakdown: {
+        all: ['splitPriceBreakdown'] as const,
+        job: (jobId: number) => ['splitPriceBreakdown', 'job', jobId] as const,
+    },
     tasks: {
         all: ['tasks'] as const,
         list: (filters: {

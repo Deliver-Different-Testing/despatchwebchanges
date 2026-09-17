@@ -116,7 +116,6 @@ public class NoteController(
 
             if (noteViewModel.BulkJobId.HasValue)
             {
-                // Bulk notes live in TblBulkJobNotes, not TucNotes
                 var existingBulkNote = await noteRepository.GetBulkNoteByIdAsync(noteViewModel.NoteId);
                 if (existingBulkNote == null)
                 {
@@ -127,7 +126,6 @@ public class NoteController(
             }
             else
             {
-                // Check if a note exists in TucNotes / TucNoteArchives
                 var existingNote = await noteRepository.GetNoteByIdAsync(noteViewModel.NoteId, noteViewModel.JobId);
                 if (existingNote == null)
                 {
@@ -161,7 +159,6 @@ public class NoteController(
         {
             ArgumentNullException.ThrowIfNull(noteViewModel);
 
-            // Check if a bulk note exists (query TblBulkJobNotes, not TucNotes)
             var existingNote = await noteRepository.GetBulkNoteByIdAsync(noteViewModel.NoteId);
             if (existingNote == null)
             {

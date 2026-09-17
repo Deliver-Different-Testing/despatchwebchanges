@@ -1226,7 +1226,8 @@ public class NationwideJobRepository(
             dto.DangerousGoods,
             dto.DryIceWeight,
             dto.PickupWaitTime,
-            dto.DeliveryWaitTime
+            dto.DeliveryWaitTime,
+            cubicList: null
         );
 
         return

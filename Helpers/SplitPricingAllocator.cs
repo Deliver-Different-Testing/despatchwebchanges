@@ -72,9 +72,23 @@ public static partial class SplitPricingAllocator
     /// <param name="PricingBreakdownId">The parent line this applies to; 0 for the synthesised line.</param>
     /// <param name="Sequence">The leg the share applies to (1 = pickup leg, 2 = delivery leg).</param>
     /// <param name="SharePercent">The leg's share of this line, as a percentage. Normalised per line.</param>
-    public sealed record LineShareOverride(int PricingBreakdownId, int Sequence, decimal SharePercent);
+    /// <param name="CostOverride">
+    /// This leg's cost for this line, set directly rather than derived from
+    /// <paramref name="SharePercent"/> — null means derived (the default).
+    /// </param>
+    public sealed record LineShareOverride(
+        int PricingBreakdownId, int Sequence, decimal SharePercent, decimal? CostOverride = null);
 
     /// <summary>A line to be written against one leg.</summary>
+    /// <param name="SharePercent">
+    /// This leg's share of the line, 0-100. The split-job Price Breakdown grid (docs/pricing/
+    /// job-splitting-price-breakdown.md) persists this per (item, leg) row, so a later parent-side
+    /// edit can re-derive the leg's amount without re-resolving the original split.
+    /// </param>
+    /// <param name="CostOverride">
+    /// Non-null when this leg's cost was set directly at split time rather than derived from
+    /// <paramref name="SharePercent"/> — <see cref="CostAmount"/> already reflects it either way.
+    /// </param>
     public sealed record AllocatedLine(
         int Sequence,
         string LetterSuffix,
@@ -82,7 +96,9 @@ public static partial class SplitPricingAllocator
         decimal ChargeAmount,
         decimal? CostAmount,
         bool IsAccessorial,
-        int PricingBreakdownId);
+        int PricingBreakdownId,
+        decimal SharePercent = 0m,
+        decimal? CostOverride = null);
 
     /// <summary>
     /// Returns each leg's fractional share, in the order the legs were supplied. Shares always sum
@@ -98,10 +114,10 @@ public static partial class SplitPricingAllocator
         var overrideTotal = legs.Sum(l => l.SharePercentOverride ?? 0m);
         if (legs.Any(l => l.SharePercentOverride.HasValue) && overrideTotal > 0m)
         {
-            return Normalise(legs.Select(l => (l.SharePercentOverride ?? 0m) / overrideTotal).ToList());
+            return Normalise([.. legs.Select(l => (l.SharePercentOverride ?? 0m) / overrideTotal)]);
         }
 
-        return SharesFromWeights(legs.Select(l => l.Miles).ToList());
+        return SharesFromWeights([.. legs.Select(l => l.Miles)]);
     }
 
     /// <summary>
@@ -120,8 +136,8 @@ public static partial class SplitPricingAllocator
         // a last resort the caller logs rather than a silent redistribution.
         var total = weights.Sum();
         return total != 0m
-            ? Normalise(weights.Select(w => w / total).ToList())
-            : Normalise(weights.Select(_ => 1m / weights.Count).ToList());
+            ? Normalise([.. weights.Select(w => w / total)])
+            : Normalise([.. weights.Select(_ => 1m / weights.Count)]);
     }
 
     /// <summary>
@@ -171,17 +187,29 @@ public static partial class SplitPricingAllocator
 
         var shares = Shares(legs);
         var overridesByLine = BuildLineShares(lineOverrides, legs);
+        var costOverridesByLineAndSequence = (lineOverrides ?? [])
+            .Where(o => o.CostOverride.HasValue)
+            .ToDictionary(o => (o.PricingBreakdownId, o.Sequence), o => o.CostOverride!.Value);
         var allocated = new List<AllocatedLine>(lines.Count * legs.Count);
 
         foreach (var line in lines)
         {
             var lineShares = overridesByLine.GetValueOrDefault(line.PricingBreakdownId) ?? shares;
             var revenues = DistributeAmount(line.ChargeAmount, lineShares);
-            var costs = line.CostAmount.HasValue ? DistributeAmount(line.CostAmount.Value, lineShares) : null;
+            var derivedCosts = line.CostAmount.HasValue ? DistributeAmount(line.CostAmount.Value, lineShares) : null;
 
-            allocated.AddRange(legs.Select((t, i) => new AllocatedLine(t.Sequence, t.LetterSuffix,
-                LegChargeName(line.ChargeName, t.LetterSuffix, lineShares[i]), revenues[i], costs?[i],
-                line.IsAccessorial, line.PricingBreakdownId)));
+            allocated.AddRange(legs.Select((t, i) =>
+            {
+                var costOverride = costOverridesByLineAndSequence.TryGetValue(
+                    (line.PricingBreakdownId, t.Sequence), out var overriddenCost)
+                    ? overriddenCost
+                    : (decimal?)null;
+
+                return new AllocatedLine(t.Sequence, t.LetterSuffix,
+                    LegChargeName(line.ChargeName, t.LetterSuffix, lineShares[i]),
+                    revenues[i], costOverride ?? derivedCosts?[i],
+                    line.IsAccessorial, line.PricingBreakdownId, lineShares[i] * 100m, costOverride);
+            }));
         }
 
         return allocated;

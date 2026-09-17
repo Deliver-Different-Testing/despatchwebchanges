@@ -64,7 +64,12 @@ public interface IJobQueryRepository
 
     Task<IReadOnlyList<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook, bool isArchived = false);
 
-    Task<SuggestedFuelChargeViewModel> GetSuggestedFuelChargeAsync(int jobId, decimal chargeAmount, bool isPrebook, bool isArchived = false);
+    Task<SplitPricingLockState> GetSplitPricingLockStateAsync(int parentJobId);
+
+    Task<SplitPricingBreakdownDto?> GetSplitPricingBreakdownAsync(int jobId);
+
+    Task<SuggestedFuelChargeViewModel> GetSuggestedFuelChargeAsync(int jobId, decimal chargeAmount, bool isPrebook,
+        bool isArchived = false);
 
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 
@@ -79,17 +84,8 @@ public interface IJobQueryRepository
     Task<JobGroupViewModel> GetJobByIdAsync(int jobId);
     Task<JobViewModel?> GetSingleJobById(int jobId);
 
-    /// <summary>
-    /// Every job whose id may key this job's POD media in S3 — itself, plus its non-void legs when
-    /// it is the family root.
-    /// </summary>
     Task<IReadOnlyList<PodMediaLeg>> GetPodMediaLegsAsync(int jobId);
 
-    /// <summary>
-    /// The live job a bulk ("scheduled") row materialised into, or null when the id is not a
-    /// tblBulkJob row. Only safe as a fallback after a tucJob lookup has missed — the two id
-    /// sequences overlap.
-    /// </summary>
     Task<int?> GetLinkedJobIdForBulkJobAsync(int bulkJobId);
 
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
@@ -108,7 +104,8 @@ public interface IJobQueryRepository
 
     Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
+        CancellationToken cancellationToken = default);
 
     Task<bool> IsJobParentAsync(int jobId);
     Task<bool> IsBulkJobParent(int bulkJobId);
@@ -116,29 +113,14 @@ public interface IJobQueryRepository
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
     Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId, bool isArchived);
 
-    /// <summary>
-    /// Reads US rating details on the supplied <paramref name="context"/> (rather than the
-    /// repository's own connection) so the read can participate in an open transaction — used
-    /// by the split re-rate, which must read the still-uncommitted child rows without
-    /// self-blocking on the transaction's locks. Also precomputes the airport-match flags on
-    /// the same connection so the downstream rating path performs no further child-row reads.
-    /// </summary>
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(DespatchContext context, int jobId);
 
-    /// <summary>
-    /// NZ counterpart of <see cref="GetJobDetailsForRatingAsync(DespatchContext, int)"/> — reads
-    /// rating details on the supplied <paramref name="context"/> so the read joins an open transaction.
-    /// </summary>
     Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(DespatchContext context, int jobId, bool isArchived);
     Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);
     Task<IReadOnlyList<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);
     Task<bool> IsJobArchived(int jobId);
 
-    /// <summary>
-    /// Reports whether the paid courier on an archived job can still be changed.
-    /// Returns null when the job is not in the archive.
-    /// </summary>
     Task<ArchivedCourierChangeEligibility?> GetArchivedCourierChangeEligibilityAsync(int jobId);
     Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
     Task<bool> JobNumberExistsAsync(string jobNumber);
@@ -155,20 +137,15 @@ public interface IJobQueryRepository
     Task<string?> GetStaffNameAsync(int staffId);
     Task<decimal> GetTotalAmountFromBaseAsync(int jobId, decimal baseAmount);
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
-    Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false);
+
+    Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
+        bool isBulkJob = false);
+
     Task<int?> GetJobParentIdAsync(int jobId);
     Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds);
 
-    /// <summary>
-    /// Returns each job's completion time (<c>UcjbComplTime</c>) keyed by job id. Used to capture the
-    /// completion month before a restore clears it, so the job's S3 photos can still be located.
-    /// </summary>
     Task<Dictionary<int, DateTime?>> GetJobCompletionTimesAsync(IReadOnlyList<int> jobIds);
 
-    /// <summary>
-    /// Returns the POD name and completion time of each live job. Used to tell the operator what
-    /// proof of delivery a restore would destroy before it happens.
-    /// </summary>
     Task<IReadOnlyList<RestorePodDetail>> GetRestorePodDetailsAsync(IReadOnlyList<int> jobIds);
 
     Task<List<Suggestion>> GetActivePartnerOptionsAsync();

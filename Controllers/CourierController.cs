@@ -24,10 +24,6 @@ public class CourierController(
     {
         try
         {
-            // No views selected means no driver-location scope. Substituting a
-            // view here would show that view's tenant-wide driver board to a user
-            // whose own view has no zone-group association — blank is the correct
-            // answer, not a fallback.
             if (despatchViewIds == null || despatchViewIds.Count == 0)
             {
                 return Json(new ClearListViewModel());
@@ -89,7 +85,6 @@ public class CourierController(
 
     public Task<IActionResult> PotentialCouriers(int jobId)
     {
-        // TODO: Disabled due to performance issues - re-enable once optimized
         return Task.FromResult<IActionResult>(Json(new List<PotentialCouriersViewModel>()));
     }
 
@@ -196,7 +191,6 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-
 
     public async Task<IActionResult> GetCourierDetailsForDashboard(int courierId)
     {

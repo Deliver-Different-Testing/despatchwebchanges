@@ -1,4 +1,5 @@
-﻿using DespatchWeb.EntityClasses;
+﻿using System.Runtime.CompilerServices;
+using DespatchWeb.EntityClasses;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -11,6 +12,24 @@ namespace DespatchWeb.Tests.Helpers;
 /// </summary>
 public sealed class SqliteTestDatabase : IAsyncDisposable
 {
+    // Building the 124-table DespatchContext schema via EnsureCreated() is expensive
+    // (this used to run ~1,189 times, once per test method). Build it once per process
+    // into a template connection, then clone it into each instance via SQLite's backup
+    // API, which just copies pages instead of re-running all the DDL.
+    //
+    // The static initializer below runs under the CLR's type-init lock: whichever
+    // thread hits it first pays the full build cost while every other thread that
+    // concurrently constructs a SqliteTestDatabase blocks on the same lock. With
+    // parallel test execution that shows up as several unrelated tests each taking
+    // several seconds. A module initializer forces this to happen once, single-
+    // threaded, when the test assembly loads - before any parallel test worker starts -
+    // so no test ever pays (or blocks behind) the build cost.
+    private static readonly Lock TemplateLock = new();
+    private static readonly SqliteConnection TemplateConnection = CreateTemplateConnection();
+
+    [ModuleInitializer]
+    internal static void WarmUpTemplate() => _ = TemplateConnection;
+
     public SqliteConnection Connection { get; }
     public DbContextOptions<DespatchContext> Options { get; }
 
@@ -18,6 +37,11 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
     {
         Connection = new SqliteConnection("DataSource=:memory:");
         Connection.Open();
+
+        lock (TemplateLock)
+        {
+            TemplateConnection.BackupDatabase(Connection);
+        }
 
         Connection.CreateFunction("getdate", () => TestDates.Now);
         Connection.CreateFunction("getutcdate", () => TestDates.UtcNow);
@@ -33,9 +57,21 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
             .UseSqlite(Connection)
             .AddSqliteDateDiffTranslation()
             .Options;
+    }
 
-        using var context = new DespatchContext(Options);
+    private static SqliteConnection CreateTemplateConnection()
+    {
+        var connection = new SqliteConnection("DataSource=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<DespatchContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        using var context = new DespatchContext(options);
         context.Database.EnsureCreated();
+
+        return connection;
     }
 
     public DespatchContext CreateContext() => new(Options);

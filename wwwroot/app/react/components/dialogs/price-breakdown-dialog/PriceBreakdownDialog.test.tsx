@@ -55,6 +55,31 @@ describe('PriceBreakdownDialog', () => {
         });
     });
 
+    // ── Read-only: split child, managed on the parent ────────────────
+    describe('managedElsewhere (split child)', () => {
+        it('shows a message naming the parent job and a link to it, and hides Add Item', () => {
+            const onNavigateToParent = jest.fn();
+            renderWithMantine(<PriceBreakdownDialog {...createMockProps({
+                readOnly: true,
+                managedElsewhere: {parentJobNumber: 'KT4071V', onNavigateToParent},
+            })} />);
+
+            expect(screen.getByText(/pricing is managed on the parent job/i)).toBeInTheDocument();
+            expect(screen.getByText('KT4071V')).toBeInTheDocument();
+
+            const link = screen.getByRole('button', {name: /KT4071V/});
+            fireEvent.click(link);
+            expect(onNavigateToParent).toHaveBeenCalledTimes(1);
+
+            expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
+        });
+
+        it('does not render the message when managedElsewhere is absent', () => {
+            renderWithMantine(<PriceBreakdownDialog {...createMockProps({readOnly: true})} />);
+            expect(screen.queryByText(/managed on the parent job/i)).not.toBeInTheDocument();
+        });
+    });
+
     // ── Read-only: default props (single render) ─────────────────────
     describe('Default render', () => {
         it('renders dialog structure, summary cards, price items table and footer', () => {

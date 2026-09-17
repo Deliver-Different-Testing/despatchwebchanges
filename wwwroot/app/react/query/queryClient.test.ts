@@ -286,6 +286,16 @@ describe('queryKeys', () => {
         });
     });
 
+    describe('splitPriceBreakdown', () => {
+        it('has all key', () => {
+            expect(queryKeys.splitPriceBreakdown.all).toEqual(['splitPriceBreakdown']);
+        });
+
+        it('generates job key', () => {
+            expect(queryKeys.splitPriceBreakdown.job(100)).toEqual(['splitPriceBreakdown', 'job', 100]);
+        });
+    });
+
     describe('tasks', () => {
         it('has all key', () => {
             expect(queryKeys.tasks.all).toEqual(['tasks']);

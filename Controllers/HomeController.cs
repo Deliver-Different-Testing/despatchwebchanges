@@ -74,17 +74,10 @@ public partial class HomeController(
                 ViewBag.IsUsTenant = isUsTenantFlag ?? false;
                 ViewBag.TimeZone = tenantTimeZone;
 
-                // Which dashboards DF Admin has exposed to this session, or null
-                // when the session is not gated. Resolved after the tenant
-                // connection is set, since the catalogue lives in that database.
-                // Both lookups are optional enrichment — a failure must not
-                // bounce an authenticated session to the login page.
                 var visibleDashboards = await TryResolveAsync(
                     featureVisibilityService.GetVisibleDashboardsAsync, "Dashboard visibility lookup");
                 ViewBag.VisibleFeatures = visibleDashboards?.ToArray();
 
-                // Network partners open their maps on their own address; null for
-                // everyone else, which leaves the tenant country centre in place.
                 ViewBag.NpMapCenter = await TryResolveAsync(
                     networkPartnerContextService.GetMapCentreAsync, "Network partner map centre lookup");
             }
@@ -127,10 +120,8 @@ public partial class HomeController(
 
     private static string MaskSensitiveInfo(string connectionString)
     {
-        // Mask password
         var maskedString = PasswordRegex().Replace(connectionString, "$1=********");
 
-        // Mask user id if present
         maskedString = UserIdRegex().Replace(maskedString, "$1=********");
 
         return maskedString;

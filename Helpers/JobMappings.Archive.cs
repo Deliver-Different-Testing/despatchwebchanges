@@ -17,6 +17,7 @@ public static partial class JobMappings
         Time = j.UcjbTime,
         ParentId = j.ParentId,
         RootParentId = j.RootParentId,
+        JobRelationshipTypeId = j.JobRelationshipTypeId,
         Date = FormatDate(j.UcjbDate),
         Booked = j.UcjbDate.HasValue
             ? j.UcjbDate.Value.CombineWithTime(j.UcjbTime)
