@@ -171,9 +171,17 @@ So the requirement has two halves that a single boolean will not express:
 
 | Event | `CourierPayment` |
 |---|---|
-| Network partner assigned | populate (§2.4 cascade, agent default substituted) |
-| **Partner assigns their own courier** → `ucjbCourierID` set | **locked — do not recalculate** |
+| Network partner assigned | **populate** (§2.4 cascade, agent default substituted) |
+| **Partner assigns their own courier** → `ucjbCourierID` set | **populate if still empty — locked if already set** |
 | Weight / items / cubic changed (usually at pickup) | recalculate |
+
+> **Populate if empty, lock if set.** *(Steve, 17 Sep 2026.)*
+>
+> The partner assigning one of their own drivers is not only the moment `CourierPayment` must be protected — it is also the **fallback moment to populate it**, if allocation to the network partner did not already do so.
+>
+> This is a better rule than a blanket lock. If the allocation-time write is missed, fails, or the job reached the partner by a path that skipped it, the partner would otherwise end up on **zero** — the exact failure §3.3 warns about. A populate-if-empty rule gives a second chance; a blanket lock cements the gap.
+>
+> What must **not** happen at this event is a *recalculation* of an already-populated value. The percentage the trigger would resolve there comes from the **partner's own driver**, whose pay belongs in `NPCourierPayment` (§2.2) — using it to rewrite `CourierPayment` is the layer collapse described above.
 
 `tucJob.CourierPaymentManualOverride` (bit) may be the right lock for the middle row, but it must not be allowed to suppress the third. Check what already carries the signal before adding new machinery — `tucJob.Reprice` (bit), `tucJob.RatedManually` (bit), and the `tucJob_Update_RecalculateAmount` / `tucJob_Update_RecalculateRawBaseAmount_And_CourierBonus` triggers all sit in this space (Q12).
 
@@ -458,7 +466,7 @@ Inferred — confirm against GitLab before estimating.
 3. **Resolve the two remaining naming unknowns before writing code (Q15, Q16).** `NpagentID` vs the existing `AgentID` on `tucJob`, and where the agent default percentage lives — `tucAgents` has no percentage column. (`NPCourierPayment` is settled and matches Migration M6; confirm it is deployed.) Neither should be guessed.
 4. **Then ship the display substitution (§3)** — `CourierPayment` as the revenue line, `CourierFuel` as the fuel line, across *every* NP-facing surface. **Include the job search / job download export (Q18)** — it shows full revenue today and is built from its own query, so fixing the board will not fix it. Kerran owns that area.
 5. **Path A (§2.3) is the cheaper half and can go first.** Where an agent rate priced the delivery — nationwide flight delivery portion, local nationwide speed — the rate is already the pre-markup number on `tucAgents` (§2.7) and is stamped into `CourierPayment` at creation. Confirm the speed/job-type set (Q13).
-6. **Lock `CourierPayment` when the partner assigns their own courier (§2.6d).** That is the one moment the trigger fires on an NP job — and it would resolve the percentage from the *partner's* driver, collapsing the tenant→partner and partner→driver layers into one field and silently corrupting tenant GP. Lock it there, but keep weight / items / cubic re-rates flowing. Not a permanent flag.
+6. **Lock `CourierPayment` when the partner assigns their own courier (§2.6d).** That is the one moment the trigger fires on an NP job — and it would resolve the percentage from the *partner's* driver, collapsing the tenant→partner and partner→driver layers into one field and silently corrupting tenant GP. The rule is **populate if still empty, lock if already set** — that same event is the fallback chance to populate, so a missed allocation-time write does not leave the partner on zero. Keep weight / items / cubic re-rates flowing. Not a permanent flag.
 7. **Settle §2.6 (a)–(c)** — whether cascade levels 1–3 apply to NP jobs, whether the 40% fallback is acceptable for a partner, and that the percentage multiplies `RawBaseAmount`.
 8. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§2.1).
 
