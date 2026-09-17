@@ -96,28 +96,34 @@ So this is **not** "stamp it and freeze it". Assignment must not touch an existi
 
 The 57% mentioned earlier is the typical value held against a network partner, not a platform constant — it comes from rule 2, not a hardcoded default.
 
-### 2.5 Path B is already exactly what the existing trigger does
+### 2.5 How much of this the existing trigger already does — and where it stops
 
 `tucJob_InsertUpdate_CalculateCourierPayment` computes `CourierPayment = RawBaseAmount × CourierPercentage` from a six-level cascade (`CourierPayCalculationIssues.md` §3):
 
-| Level | Source | |
+| Level | Source | Against §2.4 |
 |---|---|---|
-| 1 | `CourierPercentageOverride` on the job | |
-| 2 | `tblClientAvailableSpeed.CourierPercentage` (client + speed) | |
-| 3 | `tucJobType.CourierPercentage` (speed default) | |
-| **4** | **`tucClient.CourierPercentage`** (client default) | ← **Steve's rule 1** |
-| **5** | **`tucCourier.uccrPercentage`** (the courier's own rate) | ← **Steve's rule 2** |
-| 6 | Fallback `0.4` (40%) | |
+| 1 | `CourierPercentageOverride` on the job | — |
+| 2 | `tblClientAvailableSpeed.CourierPercentage` (client + speed) | — |
+| 3 | `tucJobType.CourierPercentage` (speed default) | — |
+| **4** | **`tucClient.CourierPercentage`** (client default) | ✅ **matches rule 1** |
+| 5 | `tucCourier.uccrPercentage` (the courier's own rate) | ❌ **not rule 2** — see below |
+| 6 | Fallback `0.4` (40%) | — |
 
-**Steve's Path B cascade is levels 4 and 5 of the cascade already running in production, in that order.**
+**Rule 1 maps onto level 4. Rule 2 does not map onto level 5.**
 
-The consequence is worth stating plainly:
+*Steve, 17 Sep 2026:* for a job going to a network partner, `uccrPercentage` is **substituted by the agent's default percentage**. Level 5 reads the courier's own rate off `tucCourier`; the partner's default is an agent-level value, not a courier-level one.
 
-> If the network partner is assigned as **`ucjbCourierID`**, the existing trigger **already does exactly what §2.4 describes**. `CourierPayment` is already correct, Path B needs no new calculation code, and the entire defect is what the NP dispatch view renders (§3).
+**So Path B is not free.** An earlier revision of this document claimed the existing trigger already implements §2.4 in full, which would have made Path B a no-op. That was wrong on rule 2. The substitution of the agent default for `uccrPercentage` is real work, wherever the percentage is resolved.
+
+The `ucjbCourierID` vs `AgentID` question (Q6/Q7) still matters, but its consequence is narrower than previously stated:
+
+> If the partner is attached as **`ucjbCourierID`**, the trigger fires and populates `CourierPayment` — but at level 5 it uses that courier row's `uccrPercentage`, **not** the agent default. The field is populated; the number may still be wrong.
 >
-> If the network partner is attached via **`AgentID` only**, the trigger never fires for them, `CourierPayment` stays null or zero, and the view falls back to revenue.
+> If attached via **`AgentID` only**, the trigger never fires and `CourierPayment` is null or zero.
 
-Q6 and Q7 settle which, with one SELECT. **Run them before designing anything** — the difference is between a view-layer fix and a build.
+Either way the display change (§3) is needed. Q6/Q7 decide whether the data work is "substitute the agent default" or "substitute the agent default *and* make it fire at all".
+
+> **Where does the agent's default percentage live?** Not on `tucAgents` — its full column list (§2.7) contains no percentage. The candidates are `tblSetting.DefaultCourierPercentage` (float, tenant-wide — plausibly where 57% sits) and, in the NP-redesign C# layer only, `Agent.DefaultCourierPaymentPercent`. **Confirm before building (Q16).**
 
 ### 2.6 Decisions that need Steve
 
@@ -143,6 +149,28 @@ The trigger uses **`RawBaseAmount`** (base only, no extras, no fuel), which is c
 The fix is therefore **not a permanent lock flag.** `tucJob.CourierPaymentManualOverride` (bit) would freeze the value through legitimate re-rates and cause the second failure. What is needed is recalculation gated on *what changed*: skip when the change is an assignment, run when a rating input changed.
 
 Check what already exists before building new machinery — `tucJob.Reprice` (bit), `tucJob.RatedManually` (bit) and the `tucJob_Update_RecalculateAmount` / `tucJob_Update_RecalculateRawBaseAmount_And_CourierBonus` triggers all sit in this space and may already carry the signal (Q12).
+
+### 2.7 `tucAgents` — the production agent rate card
+
+Full column list, from the schema dump (this answers Q4; `tucAgents` is absent from `DB-SCHEMA.md`):
+
+| Column | Type | Note |
+|---|---|---|
+| `ucagID` | int | PK — `tucJob.AgentID` points here |
+| `ucagName`, address / phone / geo columns | | |
+| **`Flagfall`** | money | **Agent rate card** |
+| **`KilometerRate`** | money | **Agent rate card** |
+| **`ItemRate`** | money | **Agent rate card** |
+| **`MaxKMs`** | int | **Agent rate card** |
+| **`AgentRateMarkup`** | decimal(18,4) | **Markup applied to the agent rate to reach the client charge** |
+| `RankingID`, `StatusID` | int | → `tucAgentStatus` |
+| `NumRef1–3`, `TextRef1–3`, audit columns | | |
+
+Two things follow.
+
+**1. The Path A rate source is already here.** `Flagfall` / `KilometerRate` / `ItemRate` / `MaxKMs` on `tucAgents` *is* the agent rate card, in production, today. `AgentRateMarkup` is how that rate becomes the client charge. So on a Path A delivery the agent rate is not something to be derived — it is the pre-markup number the charge was built from, available at the moment of rating. Stamping it into `CourierPayment` at creation (§2.3) is cheap precisely because of this.
+
+**2. It largely dissolves the "competing rate card shapes" concern in §4.2.** The NP-redesign `AgentVehicleRate` class mirrors these fields almost exactly — `Flagfall`, `KmRate`, `ItemRate`, `MaxKms` are the same four, named slightly differently. It reads as a re-modelling of `tucAgents`, not a rival design. What `tucAgents` does **not** have is any percentage column, which is why Q16 exists.
 
 ---
 
@@ -243,7 +271,9 @@ Between `ZoneRateCardJson` (AKL zone → PN zone) and `FlatRate`, the Golden Bla
 >
 > Neither side is a superset: the migration has effective-dating the C# lacks; the C# has `FlatRate` the migration lacks.
 >
-> **However** — `extra-charges-deep-dive.md` §3 lists **`AgentVehicleService.cs` in Admin Manager** ("Agent vehicle rates with extra charge links"). That implies agent vehicle rates are an **existing production concept**, and the NP-redesign class may be a re-modelling of a table that already exists. **Confirm against the live DB before writing any migration** (Q3) — the worst outcome here is a third competing shape.
+> **Largely resolved by §2.7:** the production agent rate card lives on `tucAgents` (`Flagfall`, `KilometerRate`, `ItemRate`, `MaxKMs`), and `AgentVehicleRate` mirrors those four fields — a re-modelling, not a rival. The note below stands as corroboration.
+>
+> `extra-charges-deep-dive.md` §3 lists **`AgentVehicleService.cs` in Admin Manager** ("Agent vehicle rates with extra charge links"). That implies agent vehicle rates are an **existing production concept**, and the NP-redesign class may be a re-modelling of a table that already exists. **Confirm against the live DB before writing any migration** (Q3) — the worst outcome here is a third competing shape.
 
 ### 4.3 Schedule-created jobs cannot resolve pay at rating time
 
@@ -324,7 +354,8 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q1 | Which field does the **Agent Portal (InboundAgent)** render as the money figure — and **does its data source still resolve?** Test the `IntMgrPartnerRateCard` failure shape (§5.3): a dead endpoint falling back to `ucjbAmount`. | `inboundagent` job view model / view; check for 404s in logs |
 | Q2 | Which field does the **NP dispatch board** render — same or different? | `despatchweb` NP board, `courierportal` |
 | Q3 | Does `AgentVehicleRate` **already exist in the live DB** (per `AgentVehicleService.cs`)? Does deployed `AgentCourierRate` match the C# model, migration 005, or neither? | Live DB `INFORMATION_SCHEMA` |
-| Q4 | Full column list for **`tucAgents`** — referenced by `tucJob.AgentID`, absent from `DB-SCHEMA.md` | Live DB |
+| Q16 | Where does the **agent's default percentage** live (§2.5)? `tblSetting.DefaultCourierPercentage`, `Agent.DefaultCourierPaymentPercent` (NP-redesign C# only), or somewhere else? `tucAgents` has no percentage column. | Live DB + Steve |
+| Q4 | *(Answered — see §2.7.)* Full column list for **`tucAgents`** — referenced by `tucJob.AgentID`, absent from `DB-SCHEMA.md` | Live DB |
 | Q5 | Body of `tucJob_Update_AddPickupAmountToNationwideAmount` — firing conditions, what it writes | Live DB `sp_helptext` |
 | Q6 | On a live PN schedule job: actual values of `CourierPayment`, `CourierFuel`, `CourierPercentage`, `ucjbCourierID`, `AgentID`, `ParentId` | Live DB, SELECT only |
 | Q7 | Is Golden Black Taxis an **agent** (`tucAgents`), a **courier/fleet** (`tucCourier`), or both? | Live DB |
@@ -404,7 +435,7 @@ Inferred — confirm against GitLab before estimating.
 
 ## 9. Recommendation
 
-1. **Run Q6/Q7 first — one SELECT decides the size of this job.** If the network partner is assigned as `ucjbCourierID`, the existing trigger already implements §2.4 exactly (levels 4 and 5), `CourierPayment` is already correct, and the whole defect is the NP view rendering revenue. If they are attached via `AgentID` only, the trigger never fires and there is a data bug as well. This is the difference between a view fix and a build (§2.5).
+1. **Run Q6/Q7 first — one SELECT sizes the data work.** If the partner is attached as `ucjbCourierID` the trigger fires and populates `CourierPayment`, but at level 5 it uses that courier row's `uccrPercentage` rather than the agent default — populated, possibly wrong. If attached via `AgentID` only it never fires at all. Either way the agent-default substitution is real work (§2.5).
 2. **Answer Q0 alongside it.** If Golden Black Taxis is a paired DFRNT tenant rather than an in-tenant agent, this is a Pricing Mode setting on the service mapping and none of §2 applies (§5.1).
 3. **Ship the display change (§3) regardless of both.** NP dispatch view shows courier amount + total, never job revenue — across *every* NP-facing surface, not just the screen where it was noticed. On the most likely outcome this is the entire fix.
 4. **Confirm `CourierFuel` populates on NP assignment before binding the view to it (Q14).** Evidence in `CourierPayCalculationIssues.md` shows it sitting at $0.00 on a job carrying $18.50 of fuel. Showing a partner no fuel is a worse failure than showing them too much — they are less likely to query it (§3.3).
