@@ -45,7 +45,15 @@ Two layers, two fields, two payers:
 | Layer | Payer → payee | Field |
 |---|---|---|
 | Tenant → network partner | the tenant pays the NP | **`CourierPayment`** (§2.1) |
+| Tenant → network partner (fuel) | the partner's fuel share | **`CourierFuel`** (§3.2) |
 | NP → their own courier | the NP pays their driver | **`NPcourierAmount`** |
+| NP → their own courier (fuel) | the NP's driver's fuel share | *`NPCourierFuelAmount`* — **deferred, not in MVP** |
+
+> **`NPCourierFuelAmount` — noted and deliberately out of MVP scope.** *(Steve, 17 Sep 2026.)*
+>
+> The pay layers are symmetrical but the fuel layers are not: `CourierFuel` records the fuel passed tenant → partner, and there is no equivalent for partner → their driver. A field would be needed to record the NP passing on only part of their fuel to their own courier.
+>
+> **Not required for MVP.** It bites for the same reason as §3.2 — only where fuel is *not* passed on in full. At Urgent the whole fuel goes through, so the NP→driver fuel split has nothing to record yet. Build it when a partner needs to retain part of the fuel, or when a jurisdiction that splits fuel comes on. Recorded here so the gap is a known deferral rather than an oversight.
 
 **`SubContractorPercentage` / `SubContractorBonusPercentage` / `SubContractorFuelPercentage` are not this.** Those fields exist for contractors who have subcontractors working below them, and are unrelated to the network partner layer. An earlier revision of this document wrongly identified them as the NP-courier mechanism — do not build against them.
 
@@ -196,6 +204,8 @@ At Urgent the whole fuel surcharge is passed to the network partner, so `Courier
 ### 3.3 `CourierFuel` must be populated first — confirmed gap
 
 `CourierFuel` is calculated when a courier is assigned. **This is now confirmed, not a risk.** Per §2.5, a network partner job has no courier assigned — `ucjbCourierID` stays blank — so the trigger never sets `CourierFuel`, which only populates when `CourierPayment > 0`. Job KT672V in `CourierPayCalculationIssues.md` §2 is the proof: `FuelSurchargeAmount` **$18.50**, `CourierFuel` **$0.00**, no courier assigned.
+
+**Timing is settled.** *(Steve, 17 Sep 2026.)* `CourierFuel` can be allocated **at the time of network partner allocation** — the same moment `CourierPayment` is populated (§2.5). One piece of work, not two.
 
 **So `CourierFuel` must be populated as part of the assignment work (§2.5), before or with the view change.** Binding the view to it first would show the partner no fuel at all — worse than the current over-statement, because a partner who is shown too little is less likely to query it.
 
@@ -425,7 +435,7 @@ Inferred — confirm against GitLab before estimating.
 ## 9. Recommendation
 
 1. **Treat this as two pieces of work, not one.** §2.5 settles it: on an NP job `ucjbCourierID` stays blank, so the existing trigger never populates `CourierPayment` or `CourierFuel`. The display substitution (§3) on its own would show the partner **zero**.
-2. **Data first — populate `CourierPayment` and `CourierFuel` on partner assignment.** Use the §2.4 cascade: client `CourierPercentage`, else the **agent's default percentage** substituted for the courier percentage the trigger would normally use. Fuel passes through to `CourierFuel`.
+2. **Data first — populate `CourierPayment` and `CourierFuel` at partner allocation.** Both at the same moment, one piece of work. Use the §2.4 cascade: client `CourierPercentage`, else the **agent's default percentage** substituted for the courier percentage the trigger would normally use. Fuel passes through to `CourierFuel`. `NPCourierFuelAmount` (NP → their driver's fuel) is **deferred — not in MVP** (§2.2).
 3. **Resolve the three field names before writing code (Q15, Q16).** `NpagentID` vs `AgentID`, `NPcourierAmount` vs `NpCourierPayment`, and where the agent default percentage actually lives — `tucAgents` has no percentage column. Three of the names in this spec do not match the schema dump; none of them should be guessed.
 4. **Then ship the display substitution (§3)** — `CourierPayment` as the revenue line, `CourierFuel` as the fuel line, across *every* NP-facing surface, not just the screen where it was noticed.
 5. **Path A (§2.3) is the cheaper half and can go first.** Where an agent rate priced the delivery — nationwide flight delivery portion, local nationwide speed — the rate is already the pre-markup number on `tucAgents` (§2.7) and is stamped into `CourierPayment` at creation. Confirm the speed/job-type set (Q13).
