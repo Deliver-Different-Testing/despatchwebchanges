@@ -61,7 +61,6 @@ public class SplitJobService(
                 Log.Information("Splitting job {JobId} by user {UserName} with meeting point address",
                     jobId, userName);
 
-                // Load the parent job (no speed navigation needed — we use UcjbSpeed directly)
                 var job = await context.TucJobs
                               .AsTracking()
                               .FirstOrDefaultAsync(j => j.UcjbId == jobId, ct)
@@ -77,46 +76,30 @@ public class SplitJobService(
 
                 var parentJobCourierId = await GetParentJobCourierIdAsync(context, ct);
 
-                // Generate child job numbers using letter suffixes (no SP = no speed suffix appended)
                 var childNumbers = await GenerateChildJobNumbersAsync(context, job, ct);
                 var (pickupJobNumber, deliveryJobNumber) =
                     (childNumbers.PickupJobNumber, childNumbers.DeliveryJobNumber);
 
-                // The tucJob INSERT triggers require non-null suburb IDs
-                // (UTL_fncFuelSurcharge_InclusiveAmount, UTL_fncJob_IsValid, etc.).
                 var (pickupMeetingPointSuburbId, deliveryMeetingPointSuburbId) =
                     await ResolveMeetingPointSuburbIdsAsync(context, job, ct);
 
-                // Capture original courier ID before modifying parent
                 var originalCourier = job.UcjbCourierId;
 
-                // Snapshot the booking window from memory, not from a later re-read: if a legacy
-                // proc rebases the parent too, a re-read baseline would agree with the drift and
-                // the check below would pass while both legs showed a restarted clock.
                 var bookedDate = job.UcjbDate;
                 var bookedTime = job.UcjbTime;
                 var bookedSpeed = job.UcjbSpeed;
 
-                // Same reasoning for what the customer is charged: splitting is an internal
-                // dispatch operation, so the parent's headline price and mileage are frozen here
-                // and put back below if anything on the insert path moved them.
                 var parentPricing = ParentPricing.From(job);
 
-                // Determine root parent ID - preserve existing if job is already a child
                 var rootParentId = job.RootParentId ?? job.UcjbId;
 
-                // Current tenant time
                 var currentTenantTime = tenantClock.TenantNow;
 
-                // Take the parent off the original courier's handset before its courier is swapped
-                // for the placeholder below — the proc reads the still-assigned courier. Run on this
-                // context so it joins the split transaction and a rollback un-notifies with it.
                 if (originalCourier.HasValue)
                 {
                     await context.Procedures.UTL_stpJob_RestoreDeviceAsync(jobId, cancellationToken: ct);
                 }
 
-                // Update parent job
                 job.JobRelationshipTypeId = parentRelTypeId;
                 job.UcjbCourierId = parentJobCourierId;
                 if (!job.ParentId.HasValue || job.ParentId == job.UcjbId)
@@ -128,17 +111,11 @@ public class SplitJobService(
                 job.InformationParentId ??= job.RootParentId;
                 job.DisplayInDespatch = false;
 
-                // Build pickup child job via direct entity insert
                 var pickupJob = BuildChildJob(job, pickupJobNumber, childRelTypeId, rootParentId, 1);
                 pickupJob.CreatedTimeUtc = tenantClock.UtcNow;
                 pickupJob.UcjbCourierId = originalCourier;
                 pickupJob.PickUpTime = job.PickUpTime;
 
-                // Only a leg genuinely handed to a courier carries dispatch metadata, and it carries
-                // the job's real dispatch history rather than the moment of the split. TenantNow is
-                // the fallback for a job that had a courier but no stamp of its own —
-                // tucJob_Insert_ClearListAreaOrder rejects a null OrderTime, and a courier receiving
-                // the leg now is a genuine dispatch.
                 if (originalCourier.HasValue)
                 {
                     pickupJob.UcjbDispTime = job.UcjbDispTime ?? currentTenantTime;
@@ -178,7 +155,6 @@ public class SplitJobService(
                 pickupJob.DeliveryLatitude = meetingPointAddress.Latitude;
                 pickupJob.DeliveryLongitude = meetingPointAddress.Longitude;
 
-                // Build delivery child job via direct entity insert
                 var deliveryJob = BuildChildJob(job, deliveryJobNumber, childRelTypeId, rootParentId, 2);
                 deliveryJob.CreatedTimeUtc = tenantClock.UtcNow;
                 deliveryJob.UcjbCourierId = courierIdForLegB;
@@ -220,24 +196,15 @@ public class SplitJobService(
                 deliveryJob.DeliveryLatitude = job.DeliveryLatitude;
                 deliveryJob.DeliveryLongitude = job.DeliveryLongitude;
 
-                // Save the parent update first (UPDATE doesn't hit the identity read-back issue)
                 await context.SaveChangesAsync(ct);
 
-                // INSERT child jobs via raw SQL — tucJob INSERT triggers produce extra
-                // result sets that break EF Core's PropagateResults identity read-back.
                 pickupJob.UcjbId = await createJobService.InsertJobRawAsync(context, pickupJob, ct);
                 deliveryJob.UcjbId = await createJobService.InsertJobRawAsync(context, deliveryJob, ct);
 
-                // Create notes (requires child job IDs)
                 await CreateSplitJobNotesAsync(context, pickupJob.UcjbId, deliveryJob.UcjbId, job.UcjbNotes, ct);
 
-                // Consolidate MARS information
                 await ConsolidateMarsInformationAsync(context, jobId, userName, ct);
 
-                // Divide the parent's pricing lines across the two legs inside the transaction, so
-                // each leg carries its own itemised breakdown before commit. A rating failure rolls
-                // back the whole split — better than committing two children at the full parent
-                // amount and double-charging the client.
                 await AllocateSplitPricingAsync(
                     context,
                     job,
@@ -247,15 +214,9 @@ public class SplitJobService(
                     lineAllocation,
                     ct);
 
-                // The dispatch grid's Remain is (ucjbDate + ucjbTime) + speed minutes - now, so a
-                // leg whose booked window was rebased by one of the legacy objects on the tucJob
-                // insert path shows the whole speed window again — the operator reads that as
-                // splitting having reset the job clock. Both legs run to the parent's deadline, so
-                // check it survived and put it back before commit.
                 await ReassertLegBookingAsync(context, jobId, bookedDate, bookedTime, bookedSpeed,
                     [pickupJob.UcjbId, deliveryJob.UcjbId], ct);
 
-                // Last thing before commit, so it sees the net effect of every leg write above.
                 await ReassertParentPricingAsync(context, jobId, parentPricing, ct);
 
                 await transaction.CommitAsync(ct);
@@ -273,9 +234,6 @@ public class SplitJobService(
             }
         });
 
-        // Refresh what is left on the original courier's handset now the parent has been taken off
-        // it. Outside the execution strategy (which can retry the whole lambda) and best-effort: the
-        // split is already committed, so a device failure must not surface as a failed split.
         if (originalCourierId is not { } courierId)
         {
             return (pickupJobId, deliveryJobId);
@@ -327,12 +285,10 @@ public class SplitJobService(
         switch (parentInfo.JobRelationshipTypeId)
         {
             case (int)JobRelationshipTypes.SplitParent:
-                // Split job: one fixed total divided across the legs.
                 await PropagateUpdateToSplitChildrenAsync(
                     context, parentJobId, parentInfo.RootParentId, parentInfo.Pricing, field, value, ct);
                 break;
             case (int)JobRelationshipTypes.Multi:
-                // Multi-drop: each part is priced on its own, so the total moves with the change.
                 await ReRateMultiPartsAsync(context, parentJobId, field, ct);
                 break;
             default:
@@ -402,8 +358,6 @@ public class SplitJobService(
             return DateCascadeResult.Empty;
         }
 
-        // BookedTime writes ucjbDate AND ucjbTime. Legs legitimately run to their own times
-        // (LHP early, DEL later), so children get Date — the date alone — either way.
         const JobProperty childField = JobProperty.Date;
 
         Log.Information(
@@ -454,16 +408,11 @@ public class SplitJobService(
 
         var children = relationshipTypeId switch
         {
-            // Split families span a whole tree, so RootParentId (not ParentId) is the anchor —
-            // otherwise a split-of-a-split's grandchildren are missed.
             (int)JobRelationshipTypes.SplitParent => live.Where(j =>
                 j.RootParentId == (rootParentId ?? parentJobId) && j.UcjbId != (rootParentId ?? parentJobId)),
 
             (int)JobRelationshipTypes.Multi => live.Where(j => j.ParentId == parentJobId),
 
-            // UTL_stpJob_InsertFromTblBulkJob can leave a stale tblBulkJob id in tucJob.ParentID
-            // when the parent bulk row was voided before release, so ParentId alone can collide
-            // with an unrelated live job. The relType guard is what makes the match safe.
             (int)JobRelationshipTypes.BulkParent => live.Where(j =>
                 j.ParentId == parentJobId
                 && j.JobRelationshipTypeId == (int)JobRelationshipTypes.BulkChild),
@@ -508,7 +457,6 @@ public class SplitJobService(
             "Propagate starting — parent {ParentJobId}, {ChildCount} child(ren) {ChildJobIds}, field {Field}",
             parentJobId, childJobIds.Count, childJobIds, field);
 
-        // Propagate the field update to each child job
         var failures = 0;
         foreach (var childId in childJobIds)
         {
@@ -527,11 +475,8 @@ public class SplitJobService(
             "Propagate finished — parent {ParentJobId}, field {Field}, {SuccessCount}/{ChildCount} children updated",
             parentJobId, field, childJobIds.Count - failures, childJobIds.Count);
 
-        // Redistribute the parent's current amount across its immediate children
         await RedistributeSplitJobAmountsAsync(context, parentJobId, parentPricing.Amount ?? 0m, ct);
 
-        // Rewriting the legs' breakdown rows hits the same parent-keyed rows the split does, so the
-        // parent needs the same guard here.
         await ReassertParentPricingAsync(context, parentJobId, parentPricing, ct);
     }
 
@@ -549,8 +494,6 @@ public class SplitJobService(
         JobProperty field,
         CancellationToken ct)
     {
-        // The parent leg plus all its non-void children — every part is an independently priced job.
-        // Manually-rated parts are excluded so we never clobber a hand-set price.
         var partIds = await context.TucJobs
             .Where(j => (j.UcjbId == parentJobId || j.ParentId == parentJobId) && !j.UcjbVoid && !j.RatedManually)
             .OrderBy(j => j.Sequence)
@@ -568,8 +511,6 @@ public class SplitJobService(
         var isUs = tenantInfoService.IsUsTenant();
         var succeeded = 0;
 
-        // Re-rate each part independently. A single part failing must not strand the others, but a
-        // mis-priced part is a real problem, so failures are logged loudly rather than swallowed.
         foreach (var partId in partIds)
         {
             try
@@ -625,13 +566,7 @@ public class SplitJobService(
             UcjbWeight = parent.UcjbWeight,
             UcjbSpeed = parent.UcjbSpeed,
             UcjbClientId = parent.UcjbClientId,
-            // Children start at 0 — ReRateSplitJobsAsync redistributes the parent amount
-            // proportionally before the split transaction commits. Initialising at the parent
-            // amount would silently double-charge if re-rate failed.
             UcjbAmount = 0m,
-            // A finished parent status does not carry over: the leg is created not-done, so
-            // inheriting Completed or Undeliverable would make it read as finished on the grid and
-            // undelivered in job properties from the moment it exists.
             UcjbStatus = JobStatusGroups.Completed.Contains(parent.UcjbStatus ?? (int)JobStatus.New)
                 ? (int)JobStatus.New
                 : parent.UcjbStatus,
@@ -749,15 +684,12 @@ public class SplitJobService(
 
         if (!job.UcjbTo.HasValue || !job.UcjbFrom.HasValue)
         {
-            // Nothing better to substitute, so leave it as it has always been rather than blocking a
-            // split that may well work — the insert triggers or the rating engine will say so.
             Log.Warning(
                 "No \"Unknown\" suburb and job {JobId} has no suburb of its own "
                 + "(from {FromSuburbId}, to {ToSuburbId}) — splitting with a null meeting-point suburb",
                 job.UcjbId, job.UcjbFrom, job.UcjbTo);
         }
 
-        // The pickup leg ends at the meeting point and the delivery leg starts there.
         return (job.UcjbTo, job.UcjbFrom);
     }
 
@@ -826,10 +758,6 @@ public class SplitJobService(
     {
         var parentAmount = parent.UcjbAmount ?? 0m;
 
-        // Allocation always anchors to the root's own items. When a leg is itself being re-split,
-        // that leg has no PricingBreakdown rows of its own to divide — only the root does — so the
-        // leg's EXISTING share of each root item is what gets divided further, not the root's items
-        // as a fresh 100%.
         var effectiveParentId = parent.ParentId ?? parent.UcjbId;
         var isResplit = effectiveParentId != parent.UcjbId;
 
@@ -837,9 +765,6 @@ public class SplitJobService(
             .Where(p => p.JobId == effectiveParentId && p.ChildJobId == null)
             .ToListAsync(ct);
 
-        // A flat or manually-priced parent has nothing itemised yet — give it one real row before
-        // allocating, since PricingBreakdownAllocation.ParentPricingBreakdownId is a hard FK and the
-        // old synthesised-line fallback (a line that was never actually written) can't be pointed to.
         if (rootItems.Count == 0)
         {
             var manualItem = new PricingBreakdown
@@ -847,7 +772,7 @@ public class SplitJobService(
                 JobId = effectiveParentId,
                 ChargeName = SplitPricingAllocator.ManuallyRatedChargeName,
                 ChargeAmount = parentAmount,
-                CostAmount = parent.CourierPayment,
+                CostAmount = parent.CourierPayment
             };
             context.PricingBreakdowns.Add(manualItem);
             await context.SaveChangesAsync(ct);
@@ -858,23 +783,17 @@ public class SplitJobService(
         var (legWeights, basis) = await ResolveLegWeightsAsync(
             context, pickup, delivery, confirmedAllocation, parentAmount);
 
-        // A line the user gave its own shares is divided by those instead of the leg-level split —
-        // a congestion charge only one leg's route incurred shouldn't follow the overall percentage.
         var lineOverrides = confirmedLineAllocation?
             .Select(a => new SplitPricingAllocator.LineShareOverride(
                 a.PricingBreakdownId, a.Sequence, a.SharePercent, a.CostOverride))
             .ToList();
 
-        // Only .SharePercent is used from here — the dollar amount fed in is a neutral probe, since
-        // Allocate's per-leg share of a line never depends on the amount being divided.
         var probeLines = rootItems
             .Select(p => new SplitPricingAllocator.ParentLine(p.PricingBreakdownId, p.ChargeName ?? string.Empty, 1m, null, p.IsAccessorial))
             .ToList();
         var resolvedShares = SplitPricingAllocator.Allocate(probeLines, legWeights, lineOverrides);
 
         var seeds = new Dictionary<(int, int), decimal>();
-        // A cost override is an absolute dollar amount, not a share, so it has no clean scaling rule
-        // across a re-split (see below) — only ever seeded on a first split.
         var costOverrideSeeds = new Dictionary<(int, int), decimal>();
         IReadOnlyList<int>? currentLegIds = null;
 
@@ -892,9 +811,6 @@ public class SplitJobService(
         }
         else
         {
-            // The leg being re-split (parent.UcjbId) holds its own share of every root item already —
-            // each new sub-leg's share of the ROOT item is that prior share scaled by the confirmed
-            // sub-split's own share. The other direct children of the root are unaffected and stay.
             var priorShareByItem = await context.PricingBreakdownAllocations
                 .Where(a => a.LegJobId == parent.UcjbId)
                 .ToDictionaryAsync(a => a.ParentPricingBreakdownId, a => a.SharePercent, ct);
@@ -903,15 +819,13 @@ public class SplitJobService(
             {
                 if (!priorShareByItem.TryGetValue(line.PricingBreakdownId, out var priorShare))
                 {
-                    continue; // The leg being split had no share of this item — nothing to redivide.
+                    continue;
                 }
 
                 var legJob = legJobs.First(l => l.Suffix == line.LetterSuffix).Job;
                 seeds[(line.PricingBreakdownId, legJob.UcjbId)] = priorShare * line.SharePercent / 100m;
             }
 
-            // The root's own ParentId is set to itself once it becomes a split parent (see the top
-            // of SplitJobAsync), so it must be excluded explicitly alongside the leg being replaced.
             var siblingLegIds = await context.TucJobs
                 .Where(j => j.ParentId == effectiveParentId && j.UcjbId != effectiveParentId
                     && !j.UcjbVoid && j.UcjbId != parent.UcjbId)
@@ -923,11 +837,6 @@ public class SplitJobService(
         await pricingBreakdownAllocationService.RewriteAllocationsForParentAsync(
             context, effectiveParentId, seeds, currentLegIds, costOverrideSeeds, ct);
 
-        // RatedManually=false and TotalDistance are both one-time, new-leg-only writes;
-        // RewriteAllocationsForParentAsync deliberately never touches either (it also serves the
-        // ongoing re-price path, where a leg may since have been marked RatedManually and there is
-        // no basis to justify a new distance) — a road-miles basis is the only one that writes a
-        // real distance value here.
         foreach (var leg in legJobs)
         {
             var weight = legWeights.First(w => w.LetterSuffix == leg.Suffix);
@@ -962,7 +871,6 @@ public class SplitJobService(
             legLines
                 .Where(l => PriceLineClassifier.Classify(l.ChargeName) == PriceLineClassifier.Bucket.Fuel)
                 .Sum(l => l.ChargeAmount),
-            // Leave driver pay null rather than inventing a zero when no source line carried a cost.
             legLines.Any(l => l.CostAmount.HasValue)
                 ? legLines.Sum(l => l.CostAmount ?? 0m)
                 : null);
@@ -1005,8 +913,6 @@ public class SplitJobService(
     {
         var legs = new[] { (Sequence: 1, pickup.Job, pickup.Suffix), (Sequence: 2, delivery.Job, delivery.Suffix) };
 
-        // 1. The user already agreed a split in the dialog — take it verbatim and skip any
-        //    distance or rating call entirely.
         var confirmed = confirmedAllocation?.Where(a => a.SharePercent > 0m).ToList();
         if (confirmed is { Count: > 0 } && confirmed.Sum(a => a.SharePercent) > 0m)
         {
@@ -1022,8 +928,6 @@ public class SplitJobService(
             }
         }
 
-        // 2/3. Distance — road miles first, then straight-line as a no-network fallback. Both give
-        //      the "% of total trip miles" share the split is meant to express.
         var roadMiles = new List<decimal>();
         foreach (var leg in legs)
         {
@@ -1048,7 +952,6 @@ public class SplitJobService(
             return (Weights(straightLineMiles), SplitPricingAllocator.AllocationBasis.StraightLine);
         }
 
-        // 4/5. No usable distance: fall back to the historic rate-proportional split, then even.
         var rates = await RateLegsAsync(context, [.. legs.Select(l => l.Job.UcjbId)], parentAmount);
         return rates.Sum() > 0m
             ? (Weights(rates), SplitPricingAllocator.AllocationBasis.LegRates)
@@ -1075,18 +978,12 @@ public class SplitJobService(
         var isUs = tenantInfoService.IsUsTenant();
         var rates = new List<decimal>(legJobIds.Count);
 
-        // Rated sequentially, and failures propagate: catching and substituting 0 would silently
-        // reassign the failed leg's share to the others. They are re-thrown as SplitJobException so
-        // the user is told which stage failed instead of getting the sanitised generic 500.
         for (var i = 0; i < legJobIds.Count; i++)
         {
             try
             {
                 if (isUs)
                 {
-                    // Read on the split transaction's own connection — the legs were just inserted in
-                    // this uncommitted transaction, so a read on a separate connection would block on
-                    // its locks until the command timeout (SQL error 258).
                     var details = await jobRepository.GetJobDetailsForRatingAsync(context, legJobIds[i]);
                     rates.Add((await rateJobService.GetJobRateUsAsync(details)).Rate);
                 }
@@ -1135,16 +1032,11 @@ public class SplitJobService(
             return;
         }
 
-        // Breakdown rows always hang off the effective (root) job, attributed to a leg by
-        // ChildJobId — the same addressing AllocateSplitPricingAsync writes them with.
         var effectiveParentId = await context.TucJobs
             .Where(j => j.UcjbId == parentJobId)
             .Select(j => j.ParentId ?? j.UcjbId)
             .FirstAsync(ct);
 
-        // Only the IMMEDIATE children of the parent being split — using RootParentId here would
-        // pull in unrelated siblings from earlier splits when re-splitting a leg, and redistribute
-        // this parent's amount across them too.
         var children = await context.TucJobs
             .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
             .OrderBy(j => j.Sequence)
@@ -1168,10 +1060,6 @@ public class SplitJobService(
             return;
         }
 
-        // A job split under the new model (docs/pricing/job-splitting-price-breakdown.md) has real
-        // PricingBreakdownAllocation rows for its legs; a pre-existing split from before that change
-        // has none (§5: no backfill) and falls through to the legacy ChildJobId-attributed-row path
-        // below, exactly as it did before this feature existed.
         var childJobIdsAll = children.Select(c => c.UcjbId).ToList();
         var hasAllocationRows = await context.PricingBreakdownAllocations
             .AnyAsync(a => childJobIdsAll.Contains(a.LegJobId), ct);
@@ -1185,9 +1073,6 @@ public class SplitJobService(
             return;
         }
 
-        // Manually-priced legs keep their existing amount and are excluded from redistribution —
-        // only the remaining amount (parent total minus what's already fixed manually) is spread
-        // across the auto-rated legs.
         var manualAmount = children.Where(c => c.RatedManually).Sum(c => c.UcjbAmount ?? 0m);
         var childJobIds = children.Where(c => !c.RatedManually).Select(c => c.UcjbId).ToList();
 
@@ -1202,9 +1087,6 @@ public class SplitJobService(
         var amountToDistribute = parentAmount - manualAmount;
         var autoLegs = children.Where(c => !c.RatedManually).ToList();
 
-        // Keep the division the legs already have — it encodes what the job was split on, including
-        // any per-line shares the user confirmed. A leg with no amount yet falls back to its share
-        // of trip miles, and SharesFromWeights settles on an even split when neither is available.
         var weights = autoLegs.Sum(c => c.UcjbAmount ?? 0m) > 0m
             ? autoLegs.Select(c => c.UcjbAmount ?? 0m).ToList()
             : autoLegs
@@ -1273,9 +1155,6 @@ public class SplitJobService(
         var manualAmount = rows.Where(r => manualLegIds.Contains(r.LegJobId)).Sum(r => r.ChargeAmount);
         var amountToDistribute = parentAmount - manualAmount;
 
-        // Each item's weight for dividing amountToDistribute is the auto legs' own CURRENT combined
-        // amount for it — the same "keep the existing division" philosophy as the legacy path, just
-        // applied per item instead of per whole leg.
         var itemWeights = items
             .Select(item => rows
                 .Where(r => r.ParentPricingBreakdownId == item.PricingBreakdownId && autoLegIds.Contains(r.LegJobId))
@@ -1317,8 +1196,6 @@ public class SplitJobService(
 
         await context.SaveChangesAsync(ct);
 
-        // Recomputes ChargeAmount/CostAmount from the shares just set, and writes every current
-        // leg's header — the single write path every parent-side change shares.
         await pricingBreakdownAllocationService.RewriteAllocationsForParentAsync(
             context, effectiveParentId, ct: ct);
 
@@ -1348,8 +1225,6 @@ public class SplitJobService(
             .Where(p => p.JobId == effectiveParentId && p.ChildJobId == legJobId)
             .ToListAsync(ct);
 
-        // A split made before legs carried their own lines has nothing to rescale. Leave the rows
-        // alone rather than inventing a breakdown, and write the header amount as before.
         if (rows.Count == 0)
         {
             Log.Information(
@@ -1365,9 +1240,6 @@ public class SplitJobService(
             return;
         }
 
-        // Rows that cancel out (a charge and an equal credit) have no proportional answer, so the
-        // rescale falls back to an even split and moves money between the lines. Rare and not worth
-        // blocking a re-price over, but never silent.
         if (rows.Sum(r => r.ChargeAmount) == 0m)
         {
             Log.Warning(
@@ -1393,7 +1265,6 @@ public class SplitJobService(
         TucJob job,
         CancellationToken ct)
     {
-        // Find root parent ID - use existing RootParentId if present, otherwise this job is the root
         var rootParentId = job.RootParentId ?? job.UcjbId;
 
         string mainJobNumber;
@@ -1419,7 +1290,6 @@ public class SplitJobService(
             existingChildCount = data?.ExistingChildCount ?? 0;
         }
 
-        // Generate letter suffixes for the two new jobs
         var pickupSuffix = SplitPricingAllocator.LetterSuffix(existingChildCount);
         var deliverySuffix = SplitPricingAllocator.LetterSuffix(existingChildCount + 1);
 
@@ -1494,8 +1364,6 @@ public class SplitJobService(
     {
         try
         {
-            // ToList rather than FirstOrDefault: a record struct has no null, so a parent that is
-            // no longer there would come back as an all-default value and read as drift.
             var rows = await context.TucJobs
                 .AsNoTracking()
                 .Where(j => j.UcjbId == parentJobId)
@@ -1532,8 +1400,6 @@ public class SplitJobService(
         }
         catch (Exception ex)
         {
-            // A failing guard must not turn a completed split into a failed one — the worst case is
-            // the behaviour we already had. Same posture as ReassertLegBookingAsync.
             Log.Warning(ex, "Failed to verify the pricing on the parent of split {ParentJobId}", parentJobId);
             return 0;
         }
@@ -1578,8 +1444,6 @@ public class SplitJobService(
     {
         try
         {
-            // AsNoTracking is load-bearing rather than hygiene: a tracked read would be served from
-            // the identity map and could never observe a write made behind EF's back.
             var legs = await context.TucJobs
                 .AsNoTracking()
                 .Where(j => legJobIds.Contains(j.UcjbId))
@@ -1624,8 +1488,6 @@ public class SplitJobService(
         }
         catch (Exception ex)
         {
-            // A failing guard must not turn a completed split into a failed one — the worst case is
-            // the behaviour we already had. Same posture as ConsolidateMarsInformationAsync.
             Log.Warning(ex, "Failed to verify the booked window on the new legs of split {ParentJobId}",
                 parentJobId);
             return 0;

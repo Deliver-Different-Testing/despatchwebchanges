@@ -18,11 +18,19 @@ export interface SplitPricingDialogProps {
     open: boolean;
     jobNo: string;
     preview: SplitPricingPreview;
+    legCourierNames?: (string | null)[];
     onClose: (result: SplitPricingResult) => void;
 }
 
-export const SplitPricingDialog: React.FC<SplitPricingDialogProps> = ({open, jobNo, preview, onClose}) => (
-    <SplitPricingBreakdownDialog mode="split" open={open} jobNo={jobNo} preview={preview} onClose={onClose}/>
+export const SplitPricingDialog: React.FC<SplitPricingDialogProps> = ({open, jobNo, preview, legCourierNames, onClose}) => (
+    <SplitPricingBreakdownDialog
+        mode="split"
+        open={open}
+        jobNo={jobNo}
+        preview={preview}
+        legCourierNames={legCourierNames}
+        onClose={onClose}
+    />
 );
 
 export default SplitPricingDialog;

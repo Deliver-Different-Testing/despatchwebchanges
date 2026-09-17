@@ -1,22 +1,12 @@
-/**
- * Pure allocation/rounding functions for the split-parent pricing grid
- * (docs/pricing/job-splitting-price-breakdown.md §4.6, §7). No rendering, no state —
- * ported from Helpers/PricingBreakdownAllocationCalculator.cs (server) and
- * docs/pricing/split-pricing-demo.html's setLegShare (share normalization), so the
- * client-side preview matches what the server will actually persist.
- */
-
 function round2(value: number): number {
     return Math.round(value * 100) / 100;
 }
 
-/**
- * Splits `amount` across `sharesPercent` (0-100, need not be provided pre-normalized),
- * giving any rounding remainder to the largest share — matches
- * PricingBreakdownAllocationCalculator.DistributeAmount server-side. Works in integer
- * cents throughout to avoid floating-point drift, same technique the demo prototype uses.
- */
-export function distributeAmount(amount: number, sharesPercent: readonly number[]): number[] {
+export function distributeAmount(
+    amount: number,
+    sharesPercent: readonly number[],
+    remainderTo: 'largest' | 'last' = 'largest',
+): number[] {
     if (sharesPercent.length === 0) {
         return [];
     }
@@ -24,10 +14,13 @@ export function distributeAmount(amount: number, sharesPercent: readonly number[
         return [round2(amount)];
     }
 
-    let largestIndex = 0;
-    for (let i = 1; i < sharesPercent.length; i++) {
-        if (sharesPercent[i] > sharesPercent[largestIndex]) {
-            largestIndex = i;
+    let remainderIndex = sharesPercent.length - 1;
+    if (remainderTo === 'largest') {
+        remainderIndex = 0;
+        for (let i = 1; i < sharesPercent.length; i++) {
+            if (sharesPercent[i] > sharesPercent[remainderIndex]) {
+                remainderIndex = i;
+            }
         }
     }
 
@@ -35,23 +28,18 @@ export function distributeAmount(amount: number, sharesPercent: readonly number[
     const partsCents = new Array(sharesPercent.length).fill(0);
     let runningCents = 0;
     for (let i = 0; i < sharesPercent.length; i++) {
-        if (i === largestIndex) {
+        if (i === remainderIndex) {
             continue;
         }
         const partCents = Math.round((cents * sharesPercent[i]) / 100);
         partsCents[i] = partCents;
         runningCents += partCents;
     }
-    partsCents[largestIndex] = cents - runningCents;
+    partsCents[remainderIndex] = cents - runningCents;
 
     return partsCents.map((c) => c / 100);
 }
 
-/**
- * When one leg's share changes, redistributes the remainder proportionally across the
- * other legs (by their prior weight), then corrects any rounding drift onto whichever
- * of those legs currently holds the largest share — mirrors the demo's setLegShare.
- */
 export function normalizeShares(
     sharesPercent: readonly number[],
     changedIndex: number,
@@ -79,7 +67,15 @@ export function normalizeShares(
     return result;
 }
 
-/** Modal grows before it scrolls (spec §7.2) — width scales with leg count past 2. */
+const WIDTH_BY_LEG_COUNT: Record<number, number> = {2: 1120, 3: 1275, 4: 1400};
+const WIDTH_STEP_PAST_FOUR = 125;
+
 export function computeDialogWidth(legCount: number): number {
-    return 1000 + Math.max(0, legCount - 2) * 175;
+    if (legCount <= 2) {
+        return WIDTH_BY_LEG_COUNT[2];
+    }
+    if (legCount <= 4) {
+        return WIDTH_BY_LEG_COUNT[legCount];
+    }
+    return WIDTH_BY_LEG_COUNT[4] + (legCount - 4) * WIDTH_STEP_PAST_FOUR;
 }

@@ -214,7 +214,7 @@ describe('executeSplitJobFlow', () => {
         });
 
         it('passes selected courierId when user assigns', async () => {
-            mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'assign', courierId: 42});
+            mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'assign', courierId: 42, courierName: 'Sam Driver'});
             const opts = createOptions();
 
             await executeSplitJobFlow(opts);
@@ -222,6 +222,26 @@ describe('executeSplitJobFlow', () => {
             expect(mockedSplitJob).toHaveBeenCalledWith(
                 expect.objectContaining({courierIdForLegB: 42}),
             );
+        });
+
+        it('passes the pickup job\'s current courier and the newly-assigned leg B courier to the pricing dialog', async () => {
+            mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'assign', courierId: 42, courierName: 'Sam Driver'});
+            const opts = createOptions({job: {...createOptions().job, courier: 'Existing Courier'} as DispatchJob});
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedOpenSplitPricingDialog).toHaveBeenCalledWith(
+                'J001', expect.anything(), ['Existing Courier', 'Sam Driver'],
+            );
+        });
+
+        it('passes null for a leg with no known courier', async () => {
+            mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'skip'});
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedOpenSplitPricingDialog).toHaveBeenCalledWith('J001', expect.anything(), [null, null]);
         });
     });
 
@@ -235,7 +255,7 @@ describe('executeSplitJobFlow', () => {
                 jobId: 1,
                 meetingPointAddress: expect.objectContaining({fullAddress: '15 Meeting St, Auckland'}),
             });
-            expect(mockedOpenSplitPricingDialog).toHaveBeenCalledWith('J001', expect.anything());
+            expect(mockedOpenSplitPricingDialog).toHaveBeenCalledWith('J001', expect.anything(), expect.anything());
             expect(mockedSplitJob).toHaveBeenCalledWith(
                 expect.objectContaining({pricingAllocation: CONFIRMED_ALLOCATION}),
             );

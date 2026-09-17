@@ -76,6 +76,8 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
     }
 
     const courierIdForLegB = courierResult.action === 'assign' ? courierResult.courierId : null;
+    // Leg A (pickup) keeps the job's current courier; leg B (delivery) gets whatever was just chosen.
+    const legCourierNames = [job.courier || null, courierResult.action === 'assign' ? courierResult.courierName : null];
 
     // ── Pricing dialog ──
     // Only the preview is best-effort: it writes nothing, so when it can't be loaded we fall through
@@ -98,7 +100,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
     if (preview) {
         let pricingResult: SplitPricingResult;
         try {
-            pricingResult = await openSplitPricingDialog(job.jobNo, preview);
+            pricingResult = await openSplitPricingDialog(job.jobNo, preview, legCourierNames);
         } catch (error) {
             console.error('Split pricing dialog failed:', error);
             showToast('Could not confirm split pricing — the job has not been split.', 'error');

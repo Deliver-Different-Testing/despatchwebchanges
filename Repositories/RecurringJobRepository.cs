@@ -18,7 +18,6 @@ public class RecurringJobRepository(
     IClearListEnvelopeService clearListEnvelopeService)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IRecurringJobRepository
 {
-    // Column length limits — should match database column definitions
     private const int MaxRefALength = 20;
     private const int MaxRefBLength = 15;
     private const int MaxOurRefLength = 20;
@@ -27,16 +26,8 @@ public class RecurringJobRepository(
     private const int MaxCustomNameLength = 100;
     private const int MaxConNoteLength = 100;
     private const int MaxSavedFlightNumberLength = 16;
-
-    // Upper bound for RecurringInitialDays / create-ahead offset. Bounds the
-    // backfill preview cost (see PreviewCreateAheadBackfillAsync) and prevents
-    // accidental multi-year batches from a fat-finger edit. Adjust here if
-    // product raises the cap.
     private const int MaxRecurringInitialDays = 30;
-
-    /// <summary>
-    /// SQL Server minimum date — values at or below this are treated as "no date" and skipped during timezone conversion.
-    /// </summary>
+    
     private static readonly DateTimeOffset SqlMinDate = new(1753, 1, 2, 0, 0, 0, TimeSpan.Zero);
 
     private readonly ITenantClock _clock = clock;
@@ -108,7 +99,6 @@ public class RecurringJobRepository(
         {
             var noteText = property switch
             {
-                // Simple single-field updates (no note)
                 JobProperty.Items or JobProperty.SpeedID or JobProperty.ClientID or
                     JobProperty.Pedal or JobProperty.Attention or JobProperty.Reprice or
                     JobProperty.Truck or JobProperty.Van or JobProperty.VanOK or
@@ -124,17 +114,14 @@ public class RecurringJobRepository(
                     JobProperty.SavedFlightNumber
                     => await UpdateSimplePropertyAsync(jobId, property, value),
 
-                // Parent + children updates (no note)
                 JobProperty.Time or JobProperty.Date or JobProperty.Weight or
                     JobProperty.CustomJobName or JobProperty.ConNote
                     => await UpdatePropertyWithChildrenAsync(jobId, property, value),
 
-                // Contact fields: parent + first/last child
                 JobProperty.FromContactName or JobProperty.FromContactPhone or
                     JobProperty.ToContactName or JobProperty.ToContactPhone
                     => await UpdateContactPropertyAsync(jobId, property, value),
 
-                // Updates that create an audit note
                 JobProperty.Size or JobProperty.DGDocumentation or
                     JobProperty.TrackingMethod or JobProperty.Frequency or
                     JobProperty.HolidayDelivery or JobProperty.DaysOfWeek or
@@ -199,14 +186,12 @@ public class RecurringJobRepository(
         {
             var address = request.Address;
 
-            // Get the last child job ID (for delivery address)
             var lastChildId = await Context.TucJobBookings
                 .Where(child => child.BookingParentId == request.JobId)
                 .OrderByDescending(child => child.UcbkId)
                 .Select(child => (int?)child.UcbkId)
                 .FirstOrDefaultAsync();
 
-            // Update parent job and last child job (if exists)
             var idsToUpdate = new List<int> { request.JobId };
             if (lastChildId.HasValue)
             {
@@ -247,14 +232,12 @@ public class RecurringJobRepository(
         {
             var address = request.Address;
 
-            // Get the first child job ID (for pickup address)
             var firstChildId = await Context.TucJobBookings
                 .Where(child => child.BookingParentId == request.JobId)
                 .OrderBy(child => child.UcbkId)
                 .Select(child => (int?)child.UcbkId)
                 .FirstOrDefaultAsync();
 
-            // Update parent job and first child job (if exists)
             var idsToUpdate = new List<int> { request.JobId };
             if (firstChildId.HasValue)
             {
@@ -364,26 +347,14 @@ public class RecurringJobRepository(
         var plan = BuildRepricePlan(
             newJobs.Select(j => (j.UcjbId, j.BookingParentId)),
             allTemplatePricing);
-
-        // Self-heal each affected template's RawBaseAmount once — only the
-        // templates whose raw base had to be derived from the fuel formula.
-        // BuildRepricePlan already excludes manually-rated templates (their
-        // pricing flows through untouched, same gate as the SQL cron path —
-        // tucJobBooking.RatedManually replaced the old per-client
-        // RecalcRecurringFuel toggle on 2026-07-28).
+        
         foreach (var (templateId, rawBaseAmount) in plan.SelfHealTemplateRawBases)
         {
             await Context.TucJobBookings
                 .Where(b => b.UcbkId == templateId)
                 .ExecuteUpdateAsync(s => s.SetProperty(b => b.RawBaseAmount, rawBaseAmount));
         }
-
-        // Reprice each new job via the shared proc — it updates tucJob AND
-        // replaces the PricingBreakdown "Fuel" line, so the breakdown sum
-        // never drifts from UcjbAmount the way a direct column update would.
-        // Per-job EXEC rather than a set-based ExecuteUpdateAsync; this path
-        // is the manual "Insert to Live" button, not the nightly cron, so the
-        // batch sizes don't need bulk-update performance.
+        
         foreach (var group in plan.Groups)
         {
             foreach (var jobId in group.JobIds)
@@ -402,23 +373,7 @@ public class RecurringJobRepository(
             ParentBookingIds = parentBookingIds
         };
     }
-
-    // ------------------------------------------------------------------
-    // CreateAheadDays backfill (Kevin 2026-07-16, Dane sign-off).
-    //
-    // The nightly materialiser (uspPrebookSet -> Monitor -> InsertSchedule /
-    // InsertJobAndChildren) already stamps ucbkDate = today + RecurringInitialDays
-    // for rolling-window bookings and materialises the corresponding tucJob on
-    // that day, so raising the offset takes effect on the very next cron pass.
-    // The gap to fill is: dates BETWEEN today + oldOffset + 1 AND today + newOffset
-    // that would have been materialised had the higher offset been in force
-    // yesterday. This flow lets an operator explicitly opt in to that catch-up.
-    //
-    // Filters mirror uspPrebookSet's target-match block so the preview matches
-    // what the cron would have created. Dup guard mirrors the booking-day-skip
-    // NOT EXISTS in uspPrebookSet. Materialiser reuses ExecuteMaterialiseParentAsync
-    // so each date rotates a fresh ucbkJobNumber family (collision-safe).
-    // ------------------------------------------------------------------
+    
     public async Task<PreviewCreateAheadBackfillResult> PreviewCreateAheadBackfillAsync(
         PreviewCreateAheadBackfillRequest request)
     {
@@ -427,10 +382,7 @@ public class RecurringJobRepository(
         {
             throw new ArgumentException("JobId is required", nameof(request));
         }
-
-        // NewValue <= OldValue means the operator is shrinking the offset (or
-        // no change). There is nothing to backfill — per the README's
-        // non-goal, we never delete future jobs when the value decreases.
+        
         if (request.NewValue <= request.OldValue)
         {
             return new PreviewCreateAheadBackfillResult();
@@ -445,13 +397,10 @@ public class RecurringJobRepository(
 
         var parentUcbkId = await Context.GetEffectiveJobBookingIdAsync(request.JobId);
 
-        var meta = await (
-            from jb in Context.TucJobBookings
-            where jb.UcbkId == parentUcbkId
-            join c in Context.TucClients on jb.UcbkClientId equals c.UcclId into cs
-            from c in cs.DefaultIfEmpty()
-            select new
-            {
+        var meta = await  Context.TucJobBookings
+            .Where(b => b.UcbkId == parentUcbkId)
+            .Select(jb => new
+            {  
                 jb.UcbkId,
                 jb.UcbkFrequency,
                 jb.UcbkDays,
@@ -460,9 +409,9 @@ public class RecurringJobRepository(
                 jb.ScheduleName,
                 jb.UcbkClientId,
                 jb.UcbkFirstDue,
-                ClientSiteId = c != null ? c.SiteId : (int?)null
-            }
-        ).FirstOrDefaultAsync();
+                ClientSiteId = jb.UcbkClient != null ? jb.UcbkClient.SiteId : (int?)null
+            })
+            .FirstOrDefaultAsync();
 
         if (meta is null)
         {
@@ -475,10 +424,7 @@ public class RecurringJobRepository(
         var windowStart = today.AddDays(request.OldValue + 1);
         var windowEnd = today.AddDays(request.NewValue);
         
-        var familyTemplateIds = await Context.TucJobBookings
-            .Where(b => b.UcbkId == parentUcbkId || b.BookingParentId == parentUcbkId)
-            .Select(b => b.UcbkId)
-            .ToListAsync();
+        var familyTemplateIds = await GetFamilyBookingTemplateIdsAsync(parentUcbkId);
 
         var windowStartDt = windowStart.ToDateTime(TimeOnly.MinValue);
         var windowEndDt = windowEnd.ToDateTime(TimeOnly.MaxValue);
@@ -531,8 +477,7 @@ public class RecurringJobRepository(
                 continue;
             }
 
-            // Frequency + day-pattern check (mirrors uspPrebookSet).
-            var patternDow = ((int)d.DayOfWeek + 6) % 7 + 1; // 1=Mon..7=Sun
+            var patternDow = ((int)d.DayOfWeek + 6) % 7 + 1;
             var freq = meta.UcbkFrequency ?? 0;
             var daysMask = meta.UcbkDays ?? "1111100";
             bool patternMatch;
@@ -551,7 +496,7 @@ public class RecurringJobRepository(
                 {
                     var firstOfMonth = new DateOnly(d.Year, d.Month, 1);
                     var weekOfMonth = WeeksBetween(firstOfMonth, d) + 1;
-                    var wantedWeek = freq switch { 4 => 1, 8 => 2, _ => 3 }; // _ = 16, per the enclosing case
+                    var wantedWeek = freq switch { 4 => 1, 8 => 2, _ => 3 };
                     patternMatch = MaskMatches(daysMask, patternDow) && weekOfMonth == wantedWeek;
                     break;
                 }
@@ -578,8 +523,7 @@ public class RecurringJobRepository(
 
             if ((meta.ScheduleId ?? 0) > 0)
             {
-                var isoDow = ((int)d.DayOfWeek + 6) % 7 + 1;
-                if (!scheduleActiveDows.Contains(isoDow))
+                if (!scheduleActiveDows.Contains(patternDow))
                 {
                     skipped.Add(new CreateAheadBackfillSkippedDate
                     {
@@ -590,7 +534,6 @@ public class RecurringJobRepository(
                 }
             }
 
-            // Holiday check unless HolidayDeliveryOption = 2 (Book Anyway).
             if (meta.HolidayDeliveryOption != 2 && holidaySet.Contains(d))
             {
                 skipped.Add(new CreateAheadBackfillSkippedDate
@@ -645,11 +588,7 @@ public class RecurringJobRepository(
 
         var useSchedule = (meta.ScheduleId ?? 0) > 0;
 
-        // Family template IDs for the dup guard — same set the preview built.
-        var familyTemplateIds = await Context.TucJobBookings
-            .Where(b => b.UcbkId == parentUcbkId || b.BookingParentId == parentUcbkId)
-            .Select(b => b.UcbkId)
-            .ToListAsync();
+        var familyTemplateIds = await GetFamilyBookingTemplateIdsAsync(parentUcbkId);
 
         var jobsCreated = 0;
         var duplicatesSkipped = 0;
@@ -658,7 +597,6 @@ public class RecurringJobRepository(
 
         foreach (var d in request.Dates.OrderBy(x => x))
         {
-            // Dup guard: mirrors the uspPrebookSet booking-day-skip predicate.
             var dt = d.ToDateTime(TimeOnly.MinValue);
             var dtEnd = d.ToDateTime(TimeOnly.MaxValue);
             var alreadyExists = await Context.TucJobs
@@ -677,9 +615,7 @@ public class RecurringJobRepository(
             {
                 var beforeUtc = DateTime.UtcNow;
                 await ExecuteMaterialiseParentAsync(parentUcbkId, dt, useSchedule);
-
-                // Count how many tucJob rows landed. Same shape the
-                // InsertRecurringToLive result uses.
+                
                 var newRowCount = await Context.TucJobs
                     .CountAsync(j => j.BookingParentId.HasValue
                                      && familyTemplateIds.Contains(j.BookingParentId.Value)
@@ -717,7 +653,6 @@ public class RecurringJobRepository(
 
         query = ApplyRecurringJobSort(query, request.Order, request.OrderDirection, applyDefaultSort: true);
 
-        // Cap export to prevent unbounded result sets
         const int maxExportRows = 10_000;
         var items = await query
             .Take(maxExportRows)
@@ -771,8 +706,6 @@ public class RecurringJobRepository(
             var templateId = bookingParentId.Value;
             if (templatePricing.TryGetValue(templateId, out var template) && template.RatedManually)
             {
-                // Manually-rated templates keep their copied pricing untouched —
-                // same gate the SQL cron path uses (tucJobBooking.RatedManually).
                 continue;
             }
 
@@ -822,7 +755,6 @@ public class RecurringJobRepository(
             return tpl.RawBaseAmount.Value;
         }
 
-        // Walk up to parent.
         if (tpl.BookingParentId.HasValue
             && templatePricing.TryGetValue(tpl.BookingParentId.Value, out var parentTpl)
             && parentTpl.RawBaseAmount.HasValue)
@@ -830,7 +762,6 @@ public class RecurringJobRepository(
             return parentTpl.RawBaseAmount.Value;
         }
 
-        // Formula fallback: use the template's own headline - fuel.
         var headline = tpl.UcbkAmount ?? 0m;
         var fuel = tpl.FuelSurchargeAmount ?? 0m;
         var derived = headline - fuel;
@@ -863,8 +794,6 @@ public class RecurringJobRepository(
             .Where(b => b.BookingParentId == parentUcbkId && b.UcbkId != parentUcbkId)
             .ToListAsync();
 
-        // Snapshot originals so we can restore on success/failure — the booking
-        // templates must never carry the temp-stamped state past this call.
         var origParentDate = parent.UcbkDate;
         var origParentInitialDays = parent.RecurringInitialDays;
         var origParentTime = parent.UcbkTime;
@@ -874,26 +803,8 @@ public class RecurringJobRepository(
             c => c.UcbkId,
             c => (Date: c.UcbkDate, InitialDays: c.RecurringInitialDays, Time: c.UcbkTime, JobNumber: c.UcbkJobNumber));
 
-        void Restore(bool selfHealChildTime)
-        {
-            parent.UcbkDate = origParentDate;
-            parent.RecurringInitialDays = origParentInitialDays;
-            parent.UcbkTime = origParentTime;
-            parent.UcbkJobNumber = origParentJobNumber;
-
-            foreach (var child in children)
-            {
-                var orig = childSnapshots[child.UcbkId];
-                child.UcbkDate = orig.Date;
-                child.RecurringInitialDays = orig.InitialDays;
-                child.UcbkTime = selfHealChildTime ? orig.Time ?? child.UcbkTime : orig.Time;
-                child.UcbkJobNumber = orig.JobNumber;
-            }
-        }
-
         try
         {
-            // Mint fresh job number via the same SP uspPrebookSet calls.
             var prebookStaffId = await Context.TucStaffs
                 .Where(s => s.UcstFirstName == "Prebooks")
                 .Select(s => (int?)s.UcstId)
@@ -902,15 +813,10 @@ public class RecurringJobRepository(
             var jobNo = new OutputParameter<string>();
             await Context.Procedures.UTL_stpJob_Insert_JobNumberAsync(prebookStaffId, parent.UcbkSpeed, jobNo);
 
-            // Stamp parent: fresh job number, chosen date, reset
-            // RecurringInitialDays so the materialiser uses the date as-is
-            // (no rolling-window offset).
             parent.UcbkDate = insertDate;
             parent.RecurringInitialDays = 0;
             parent.UcbkJobNumber = jobNo.Value;
 
-            // Stamp children: same date, parent's time (inherited), fresh job
-            // number + suffix derived from the child's current number shape.
             foreach (var child in children)
             {
                 if (child.JobRelationshipTypeId is not (13 or 20))
@@ -936,26 +842,36 @@ public class RecurringJobRepository(
                 await Context.Procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(parentUcbkId);
             }
 
-            // Restore — BUT self-heal ucbkTime: if a child's original was NULL,
-            // keep the parent's time we stamped (so the child template no longer
-            // has a NULL time after a successful push). Same idea would apply to
-            // ucbkJobNumber, except the daily cron rotates those, so leaving them
-            // suffixed would confuse the next cron — so jobNumber always restores.
             Restore(selfHealChildTime: true);
             await Context.SaveChangesAsync();
         }
         catch
         {
-            // Mirror restore on failure so the booking templates never carry
-            // the temp-stamped state past this call.
             Restore(selfHealChildTime: false);
             await Context.SaveChangesAsync();
             throw;
         }
+
+        return;
+
+        void Restore(bool selfHealChildTime)
+        {
+            parent.UcbkDate = origParentDate;
+            parent.RecurringInitialDays = origParentInitialDays;
+            parent.UcbkTime = origParentTime;
+            parent.UcbkJobNumber = origParentJobNumber;
+
+            foreach (var child in children)
+            {
+                var orig = childSnapshots[child.UcbkId];
+                child.UcbkDate = orig.Date;
+                child.RecurringInitialDays = orig.InitialDays;
+                child.UcbkTime = selfHealChildTime ? orig.Time ?? child.UcbkTime : orig.Time;
+                child.UcbkJobNumber = orig.JobNumber;
+            }
+        }
     }
 
-    // Mirrors the job-number suffix CASE uspPrebookSet stamps on child bookings
-    // (SQL's default collation is case-insensitive, hence OrdinalIgnoreCase).
     internal static string BuildChildJobNumberSuffix(int? relationshipTypeId, string currentJobNumber)
     {
         if (string.IsNullOrEmpty(currentJobNumber))
@@ -1027,8 +943,6 @@ public class RecurringJobRepository(
         switch (scope)
         {
             case InsertToLiveScope.Group:
-                // The starting parent IS the family root. SP will fan out
-                // to children automatically.
                 return [startMeta.UcbkId];
 
             case InsertToLiveScope.Route:
@@ -1039,8 +953,6 @@ public class RecurringJobRepository(
                         $"Booking {startBookingId} has no RouteId — route-scope push needs a route assignment.");
                 }
 
-                // All Manual PARENT bookings on the same route. Children
-                // come along via each parent's SP fan-out.
                 var parentIds = await Context.TucJobBookings
                     .Where(b => b.RouteId == startMeta.RouteId.Value
                                 && b.UcbkOneOff != true
@@ -1063,7 +975,12 @@ public class RecurringJobRepository(
         }
     }
 
-    // ISO 1=Mon.7=Sun position lookup on the tucJobBooking.ucbkDays mask.
+    private async Task<List<int>> GetFamilyBookingTemplateIdsAsync(int parentUcbkId) =>
+        await Context.TucJobBookings
+            .Where(b => b.UcbkId == parentUcbkId || b.BookingParentId == parentUcbkId)
+            .Select(b => b.UcbkId)
+            .ToListAsync();
+
     private static bool MaskMatches(string daysMask, int isoDow)
     {
         if (string.IsNullOrEmpty(daysMask) || isoDow < 1 || isoDow > daysMask.Length)
@@ -1074,8 +991,6 @@ public class RecurringJobRepository(
         return daysMask[isoDow - 1] == '1';
     }
 
-    // DATEDIFF(WEEK, ...) equivalent using SQL Server's Sunday-anchored
-    // ISO week boundary (@@DATEFIRST = 7).
     private static int WeeksBetween(DateOnly start, DateOnly end)
     {
         var startSunday = start.AddDays(-DaysFromMonday(start) - 1);
@@ -1231,11 +1146,6 @@ public class RecurringJobRepository(
                 break;
 
             case JobProperty.BookedTime:
-                // Ready card reads UcbkDate.CombineWithTime(UcbkTime) — date from
-                // one column, time from another. Writing only UcbkDate would
-                // leave the time stale and reappear under the Created card
-                // (which renders the raw UcbkDate). Mirror the live-job path
-                // (JobRepository.EditOperations BookedTime) and write both.
                 var bookedTime = ParseValue<DateTimeOffset>(value, property).DateTime;
                 await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                     .ExecuteUpdateAsync(s => s
@@ -1263,18 +1173,8 @@ public class RecurringJobRepository(
                 await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.CourierId, courierIdValue));
 
-                // Cascade to already-materialised future occurrences. With a
-                // create-ahead window (RecurringInitialDays >= 1) tomorrow's job
-                // is spun into a standalone tucJob before the operator edits the
-                // template, so a template-only write never reaches it. Re-drive
-                // every not-yet-actioned future job in the booking family (all
-                // legs) so changing/clearing the courier takes effect on
-                // tomorrow's run; completed and voided jobs are left untouched.
                 var today = _clock.TenantToday;
-                var familyTemplateIds = await Context.TucJobBookings
-                    .Where(b => b.UcbkId == jobId || b.BookingParentId == jobId)
-                    .Select(b => b.UcbkId)
-                    .ToListAsync();
+                var familyTemplateIds = await GetFamilyBookingTemplateIdsAsync(jobId);
 
                 await Context.TucJobs
                     .Where(j => j.BookingParentId.HasValue
@@ -1638,11 +1538,7 @@ public class RecurringJobRepository(
                 var isActive = ParseValue<bool>(value, property);
                 var staffId = _infoService.GetStaffId();
                 var currentTenantTime = _clock.TenantNow;
-
-                // Keep RecurringMode in sync so the new tri-state filter
-                // sees Active/Inactive transitions immediately. Legacy
-                // boolean callers don't know about Manual — that state can
-                // only be set via JobProperty.RecurringMode below.
+                
                 var newMode = isActive
                     ? (byte)RecurringMode.Active
                     : (byte)RecurringMode.Inactive;
@@ -1668,13 +1564,6 @@ public class RecurringJobRepository(
             }
             case JobProperty.RecurringMode:
             {
-                // Three-state operator transition. ucbkActive is synced per
-                // Steve's compatibility rule so legacy active-only screens
-                // continue to behave sensibly during rollout:
-                //   Inactive => ucbkActive=0 (stamp who/when)
-                //   Active   => ucbkActive=1
-                //   Manual   => ucbkActive=1 (visible but excluded from
-                //               auto-materialiser via uspPrebookSet filter)
                 var modeValue = ParseValue<byte>(value, property);
                 if (!Enum.IsDefined(typeof(RecurringMode), modeValue))
                 {
@@ -1698,10 +1587,6 @@ public class RecurringJobRepository(
                 }
                 else
                 {
-                    // Active or Manual — both surface as ucbkActive=1.
-                    // Inactive-audit fields are preserved as historical
-                    // markers per Steve's recommendation; they are not
-                    // cleared on a re-activate.
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                         .ExecuteUpdateAsync(s => s
                             .SetProperty(j => j.RecurringMode, modeValue)
@@ -1713,20 +1598,14 @@ public class RecurringJobRepository(
             case JobProperty.RecurringInitialDays:
             {
                 var newInitialDays = ParseValue<int>(value, property);
-
-                // Cap per Q5 recommendation (30 days). Bounds backfill preview
-                // cost and prevents accidental multi-year batches. Adjust here
-                // if product decides on a different limit.
+                
                 if (newInitialDays is < 0 or > MaxRecurringInitialDays)
                 {
                     throw new ArgumentException(
                         $"RecurringInitialDays must be between 0 and {MaxRecurringInitialDays}. Got: {newInitialDays}.",
                         nameof(value));
                 }
-
-                // Only write on the parent template — children are ignored by
-                // uspPrebookSet and inherit target-date behaviour via the SP
-                // fan-out in InsertSchedule / InsertJobAndChildren.
+                
                 var effectiveBookingId = await Context.GetEffectiveJobBookingIdAsync(jobId);
 
                 var beforeMeta = await Context.TucJobBookings
@@ -1739,11 +1618,6 @@ public class RecurringJobRepository(
                 await Context.TucJobBookings.Where(j => j.UcbkId == effectiveBookingId)
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.RecurringInitialDays, newInitialDays));
 
-                // Fortnightly anchor re-seed. Client-side guarded so we only
-                // hit the SP when it will actually do work (the SP itself
-                // also returns early for non-fortnightly, but skipping the
-                // round-trip keeps non-fortnightly edits SP-free and makes
-                // repository tests SQL-Server-independent).
                 if (newInitialDays != oldInitialDays && isFortnightly)
                 {
                     await Context.Procedures.UTL_stpJobBooking_RecomputeFirstDueOnEditAsync(effectiveBookingId);
@@ -1877,7 +1751,6 @@ public class RecurringJobRepository(
         var query = Context.TucJobBookings
             .Where(j => j.RecurringMode == modeFilter && j.UcbkOneOff != true);
 
-        // US tenants: exclude child jobs (only show parent jobs)
         if (isUsTenant)
         {
             query = query.Where(j => !j.BookingParentId.HasValue || j.BookingParentId == j.UcbkId);
@@ -1887,30 +1760,23 @@ public class RecurringJobRepository(
         {
             var searchPattern = $"%{request.SearchText}%";
             query = query.Where(j =>
-                // Job identifiers
                 EF.Functions.Like(j.UcbkJobNumber, searchPattern) ||
                 EF.Functions.Like(j.CustomJobName, searchPattern) ||
                 EF.Functions.Like(j.Barcode, searchPattern) ||
-                // Client fields
                 EF.Functions.Like(j.UcbkClientCode, searchPattern) ||
                 EF.Functions.Like(j.UcbkClient.UcclName, searchPattern) ||
-                // References
                 EF.Functions.Like(j.UcbkClientRefa, searchPattern) ||
                 EF.Functions.Like(j.UcbkClientRefb, searchPattern) ||
                 EF.Functions.Like(j.UcbkOurRef, searchPattern) ||
                 EF.Functions.Like(j.Connote, searchPattern) ||
-                // Contact fields
                 EF.Functions.Like(j.PickupFromContact, searchPattern) ||
                 EF.Functions.Like(j.DeliverToContact, searchPattern) ||
                 EF.Functions.Like(j.PickupFromPhone, searchPattern) ||
                 EF.Functions.Like(j.DeliverToPhone, searchPattern) ||
-                // Courier
                 EF.Functions.Like(j.Courier.UccrName, searchPattern) ||
                 EF.Functions.Like(j.Courier.Code, searchPattern) ||
-                // Run/Schedule
                 EF.Functions.Like(j.RunName, searchPattern) ||
                 EF.Functions.Like(j.ScheduleName, searchPattern) ||
-                // Pickup address
                 EF.Functions.Like(j.PickupAddressLine1, searchPattern) ||
                 EF.Functions.Like(j.PickupAddressLine2, searchPattern) ||
                 EF.Functions.Like(j.PickupAddressLine3, searchPattern) ||
@@ -1919,7 +1785,6 @@ public class RecurringJobRepository(
                 EF.Functions.Like(j.PickupAddressLine6, searchPattern) ||
                 EF.Functions.Like(j.PickupAddressLine7, searchPattern) ||
                 EF.Functions.Like(j.PickupAddressLine8, searchPattern) ||
-                // Delivery address
                 EF.Functions.Like(j.DeliveryAddressLine1, searchPattern) ||
                 EF.Functions.Like(j.DeliveryAddressLine2, searchPattern) ||
                 EF.Functions.Like(j.DeliveryAddressLine3, searchPattern) ||
@@ -1931,25 +1796,21 @@ public class RecurringJobRepository(
             );
         }
 
-        // Apply Speed filter
         if (request.SpeedId.HasValue)
         {
             query = query.Where(j => j.UcbkSpeed == request.SpeedId.Value);
         }
 
-        // Apply Courier filter
         if (request.CourierId.HasValue)
         {
             query = query.Where(j => j.CourierId == request.CourierId.Value);
         }
 
-        // Apply Days of Week filter (bitwise match - job must run on at least one of the selected days)
         if (request.DaysOfWeek is > 0)
         {
             query = query.Where(j => (j.UcbkDaysInt & request.DaysOfWeek.Value) != 0);
         }
 
-        // Apply Recurring Route filter
         if (request.RouteId.HasValue)
         {
             query = query.Where(j => j.RouteId == request.RouteId.Value);

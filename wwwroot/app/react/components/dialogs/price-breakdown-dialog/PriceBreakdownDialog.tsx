@@ -32,19 +32,24 @@ import {
     Fuel,
     Lock,
     Pencil,
-    PiggyBank,
     Plus,
     ReceiptText,
     RefreshCw,
-    TrendingUp,
     Trash2,
-    Wallet,
 } from 'lucide-react';
 import {IconPackage} from '@tabler/icons-react';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import type {ShowToastFn} from '../../../services/toastService';
 import {Icon} from '../../common/icon/Icon';
-import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, dialogSize, SummaryCard} from '../shared/mantine';
+import {
+    DialogShell,
+    DialogHeader,
+    DialogFooter,
+    dialogContentBg,
+    dialogSize,
+    getMarginColor,
+    PricingSummaryCards,
+} from '../shared/mantine';
 
 export interface PriceBreakdown {
     chargeId: number;
@@ -101,13 +106,6 @@ const extractErrorMessage = (error: unknown, fallback: string): string => {
 const calculateMargin = (revenue: number, cost: number): number => {
     if (revenue <= 0) return 0;
     return ((revenue - cost) / revenue) * 100;
-};
-
-/** Mantine palette key for a margin band — green ≥40%, orange ≥20%, red below. */
-const getMarginColor = (margin: number): string => {
-    if (margin >= 40) return 'green';
-    if (margin >= 20) return 'orange';
-    return 'red';
 };
 
 /** The delete-confirmation modal needs to paint above the dialog that opened it. */
@@ -357,35 +355,8 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                         </Alert>
                     </Box>
                 )}
-                {/* Summary Cards */}
                 {!isEditing && priceBreakdowns.length > 0 && (
-                    <Box p="lg" style={{backgroundColor: dialogContentBg}}>
-                        <Group gap="md" grow align="stretch" wrap="wrap">
-                            <SummaryCard
-                                color="green"
-                                icon={<Icon lucide={TrendingUp} size={28}/>}
-                                label="Total Revenue"
-                                value={formatCurrency(totals.totalRevenue)}
-                            />
-                            <SummaryCard
-                                color="orange"
-                                icon={<Icon lucide={Wallet} size={28}/>}
-                                label="Total Cost"
-                                value={formatCurrency(totals.totalCost)}
-                            />
-                            <SummaryCard
-                                color="reflex"
-                                icon={<Icon lucide={PiggyBank} size={28}/>}
-                                label="Gross Profit"
-                                value={formatCurrency(totals.profit)}
-                                footer={totals.totalRevenue > 0 ? (
-                                    <Badge size="sm" mt={4} color={getMarginColor(totals.margin)}>
-                                        {totals.margin.toFixed(1)}% margin
-                                    </Badge>
-                                ) : undefined}
-                            />
-                        </Group>
-                    </Box>
+                    <PricingSummaryCards totals={totals}/>
                 )}
 
                 {/* List View */}

@@ -1,23 +1,3 @@
-/**
- * Split Pricing Breakdown Dialog
- *
- * The shared grid behind both split modes (docs/pricing/job-splitting-price-breakdown.md §8):
- * `mode="edit"` is the parent's original price items with one editable cost column per leg,
- * replacing the flat Part A / Part B breakdown for a split parent (§3). `mode="split"` is the
- * pre-split "Confirm Split Pricing" preview, so an operator can get pricing right at the moment
- * of splitting instead of fixing it afterwards.
- *
- * Every edit (revenue, share, cost override) batches locally. In edit mode it saves in one call
- * on Save & Close; in split mode it's carried in the Confirm & Split result and applied when the
- * job is actually split. Add/remove item is edit-mode only, and is its own immediate mutation —
- * there's nothing to add/remove before the job exists.
- *
- * Note on scope: the pre-split screen previously offered a single "overall share" control that
- * moved every line's share together (`SplitPricingDialog.tsx`, retired by this unification). The
- * shared grid instead exposes only the per-item Share % control, matching the surface edit mode
- * already used — an item's own share is set directly rather than defaulted from an overall dial.
- */
-
 import React, {useEffect, useMemo, useState} from 'react';
 import {
     ActionIcon,
@@ -32,24 +12,28 @@ import {
     Table,
     Text,
     TextInput,
-    ThemeIcon,
 } from '@mantine/core';
 import {
     CircleCheck,
     DollarSign,
     Lock,
-    PiggyBank,
     Plus,
     ReceiptText,
     Split,
     Trash2,
-    TrendingUp,
-    Wallet,
 } from 'lucide-react';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import type {ShowToastFn} from '../../../services/toastService';
 import {Icon} from '../../common/icon/Icon';
-import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, dialogSize, SummaryCard} from '../shared/mantine';
+import {
+    DialogShell,
+    DialogHeader,
+    DialogFooter,
+    dialogContentBg,
+    dialogSize,
+    getMarginColor,
+    PricingSummaryCards,
+} from '../shared/mantine';
 import type {
     SplitPriceBreakdown,
     SplitPricingAllocationItem,
@@ -67,7 +51,6 @@ export type SplitPricingResult =
     | {
           action: 'confirm';
           allocation: SplitPricingAllocationItem[];
-          /** Only the lines the user adjusted; empty when every line follows the overall split. */
           lineAllocation: SplitPricingLineAllocationItem[];
       }
     | {action: 'cancel'};
@@ -88,6 +71,8 @@ export interface SplitModeProps {
     open: boolean;
     jobNo: string;
     preview: SplitPricingPreview;
+    /** Courier name for each leg in `preview.legs` order; missing/null renders as "Unassigned". */
+    legCourierNames?: (string | null)[];
     onClose: (result: SplitPricingResult) => void;
     showToast?: ShowToastFn;
 }
@@ -97,7 +82,6 @@ export type SplitPricingBreakdownDialogProps = EditModeProps | SplitModeProps;
 type ShareEdits = Record<number, Record<number, number>>;
 type CostOverrideEdits = Record<number, Record<number, number | null>>;
 
-/** The grid's own view of one item/leg pair — normalized so both modes render identically. */
 interface NormalizedAllocation {
     legKey: number;
     sharePercent: number;
@@ -116,17 +100,13 @@ interface NormalizedItem {
 
 interface NormalizedLeg {
     legKey: number;
+    legLetter: string;
+    jobOrDistanceText: string;
     label: string;
     subtitle: string;
+    subtitleUnassigned: boolean;
     costLocked: boolean;
     costLockReason: string | null;
-    /**
-     * Split mode only: the preview's own proposed overall share (e.g. mileage-derived), sent as
-     * `SplitPricingAllocationItem.sharePercent` on Confirm & Split. Deliberately NOT the actual
-     * blended result of any per-line overrides (`legSummaries`' computed share) — that value feeds
-     * the *default* split for every untouched line, so a line-level override must never bleed back
-     * into it. Unused in edit mode.
-     */
     overallSharePercent: number;
 }
 
@@ -138,7 +118,6 @@ interface NormalizedBreakdown {
 }
 
 const BASIS_LABELS: Record<SplitPricingBasis, string> = {
-    // Unit-neutral wording — the tenant's own unit is shown against each leg.
     RoadMiles: 'Split by road distance per leg',
     StraightLine: 'Split by straight-line distance per leg',
     UserConfirmed: 'Split by your adjusted shares',
@@ -161,21 +140,26 @@ function normalizeEditBreakdown(breakdown: SplitPriceBreakdown): NormalizedBreak
                 derivedCost: a.derivedCost,
             })),
         })),
-        legs: breakdown.legs.map((leg) => ({
+        legs: breakdown.legs.map((leg, index) => ({
             legKey: leg.jobId,
+            legLetter: String.fromCharCode(65 + index),
+            jobOrDistanceText: leg.jobNumber,
             label: leg.jobNumber,
             subtitle: leg.driverName ?? 'Unassigned',
+            subtitleUnassigned: leg.driverName == null,
             costLocked: leg.costLocked,
             costLockReason: leg.costLockReason,
-            overallSharePercent: 0, // edit mode never produces a SplitPricingResult; unused
+            overallSharePercent: 0,
         })),
         revenueLocked: breakdown.locks.revenueLocked,
         shareLocked: breakdown.locks.shareLocked,
     };
 }
 
-/** Pre-split: nothing can be invoiced/settled before the job exists, so nothing is locked yet. */
-function normalizeSplitPreview(preview: SplitPricingPreview): NormalizedBreakdown {
+function normalizeSplitPreview(
+    preview: SplitPricingPreview,
+    legCourierNames: (string | null)[] = [],
+): NormalizedBreakdown {
     return {
         items: preview.parentLines.map((line) => ({
             pricingBreakdownId: line.pricingBreakdownId,
@@ -194,14 +178,22 @@ function normalizeSplitPreview(preview: SplitPricingPreview): NormalizedBreakdow
                 };
             }),
         })),
-        legs: preview.legs.map((leg) => ({
-            legKey: leg.sequence,
-            label: `Leg ${leg.letterSuffix}`,
-            subtitle: leg.distance > 0 ? `${leg.distance} ${preview.distanceUnit}` : '',
-            costLocked: false,
-            costLockReason: null,
-            overallSharePercent: leg.sharePercent,
-        })),
+        legs: preview.legs.map((leg, index) => {
+            const distanceText = leg.distance > 0 ? `road distance ${leg.distance} ${preview.distanceUnit}` : '';
+            const courierName = legCourierNames[index] ?? null;
+            const courierText = courierName ?? 'Unassigned';
+            return {
+                legKey: leg.sequence,
+                legLetter: leg.letterSuffix,
+                jobOrDistanceText: leg.distance > 0 ? `${leg.distance} ${preview.distanceUnit}` : '',
+                label: `Leg ${leg.letterSuffix}`,
+                subtitle: distanceText ? `${distanceText} · ${courierText}` : courierText,
+                subtitleUnassigned: courierName == null,
+                costLocked: false,
+                costLockReason: null,
+                overallSharePercent: leg.sharePercent,
+            };
+        }),
         revenueLocked: false,
         shareLocked: false,
     };
@@ -214,27 +206,28 @@ const extractErrorMessage = (error: unknown, fallback: string): string => {
     return fallback;
 };
 
-const getMarginColor = (margin: number): string => {
-    if (margin >= 40) return 'green';
-    if (margin >= 20) return 'orange';
-    return 'red';
-};
-
 const moneyIcon = <Icon lucide={DollarSign} size={16}/>;
+
+const LEG_HUES: Record<string, string> = {A: '#1e88e5', B: '#00897b', C: '#6d4c41', D: '#8e24aa'};
+const DEFAULT_LEG_HUE = '#90a4ae';
 
 export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogProps> = (props) => {
     const {open, showToast} = props;
     const isEdit = props.mode === 'edit';
 
     const initialBreakdown = useMemo(
-        () => (props.mode === 'edit' ? normalizeEditBreakdown(props.breakdown) : normalizeSplitPreview(props.preview)),
+        () => (props.mode === 'edit'
+            ? normalizeEditBreakdown(props.breakdown)
+            : normalizeSplitPreview(props.preview, props.legCourierNames)),
         // eslint-disable-next-line react-hooks/exhaustive-deps -- re-normalize only when the source data changes
         [props.mode === 'edit' ? props.breakdown : props.preview],
     );
 
     const [breakdownState, setBreakdownState] = useState(initialBreakdown);
     const [revenueEdits, setRevenueEdits] = useState<Record<number, number>>({});
+    const [nameEdits, setNameEdits] = useState<Record<number, string>>({});
     const [shareEdits, setShareEdits] = useState<ShareEdits>({});
+    const [legShareEdits, setLegShareEdits] = useState<Record<number, number>>({});
     const [costOverrideEdits, setCostOverrideEdits] = useState<CostOverrideEdits>({});
     const [openShareItemId, setOpenShareItemId] = useState<number | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -248,20 +241,25 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
     useEffect(() => {
         setBreakdownState(initialBreakdown);
         setRevenueEdits({});
+        setNameEdits({});
         setShareEdits({});
+        setLegShareEdits({});
         setCostOverrideEdits({});
         setOpenShareItemId(null);
     }, [initialBreakdown]);
 
     const legKeys = useMemo(() => breakdownState.legs.map((leg) => leg.legKey), [breakdownState.legs]);
     const {revenueLocked, shareLocked} = breakdownState;
+    const hasLegShareDefault = Object.keys(legShareEdits).length > 0;
 
     const rows = useMemo(() => breakdownState.items.map((item) => {
         const allocationByLeg = new Map(item.allocations.map((a) => [a.legKey, a]));
         const revenue = revenueEdits[item.pricingBreakdownId] ?? item.revenue;
+        const name = nameEdits[item.pricingBreakdownId] ?? item.name;
+        const itemShareOverride = shareEdits[item.pricingBreakdownId];
         const shares = legKeys.map((legKey) =>
-            shareEdits[item.pricingBreakdownId]?.[legKey] ?? allocationByLeg.get(legKey)?.sharePercent ?? 0);
-        const previewRevenues = distributeAmount(revenue, shares);
+            itemShareOverride?.[legKey] ?? legShareEdits[legKey] ?? allocationByLeg.get(legKey)?.sharePercent ?? 0);
+        const previewRevenues = distributeAmount(revenue, shares, isEdit ? 'largest' : 'last');
 
         const cells = legKeys.map((legKey, index) => {
             const allocation = allocationByLeg.get(legKey);
@@ -283,8 +281,8 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
         const profit = revenue - totalCost;
         const margin = revenue > 0 ? ((profit / revenue) * 100) : 0;
 
-        return {item, revenue, cells, totalCost, profit, margin};
-    }), [breakdownState.items, legKeys, revenueEdits, shareEdits, costOverrideEdits]);
+        return {item, name, revenue, cells, totalCost, profit, margin, hasItemShareOverride: itemShareOverride !== undefined};
+    }), [breakdownState.items, legKeys, revenueEdits, nameEdits, shareEdits, legShareEdits, costOverrideEdits, isEdit]);
 
     const totals = useMemo(() => {
         const totalRevenue = rows.reduce((sum, r) => sum + r.revenue, 0);
@@ -299,23 +297,36 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
         const cost = rows.reduce((sum, r) => sum + (r.cells[index]?.cost ?? 0), 0);
         const margin = revenue > 0 ? (((revenue - cost) / revenue) * 100) : 0;
         const sharePercent = totals.totalRevenue > 0 ? (revenue / totals.totalRevenue) * 100 : 0;
-        return {leg, revenue, cost, margin, sharePercent};
-    }), [breakdownState.legs, rows, totals.totalRevenue]);
+        const shareValue = legShareEdits[leg.legKey] ?? (isEdit ? sharePercent : leg.overallSharePercent);
+        return {leg, revenue, cost, margin, sharePercent, shareValue};
+    }), [breakdownState.legs, rows, totals.totalRevenue, legShareEdits, isEdit]);
+
+    const legShareTotal = useMemo(
+        () => Math.round(legSummaries.reduce((sum, l) => sum + l.shareValue, 0)),
+        [legSummaries],
+    );
+
+    const legRevenueSum = useMemo(() => legSummaries.reduce((sum, l) => sum + l.revenue, 0), [legSummaries]);
+    const legsReconcile = Math.abs(legRevenueSum - totals.totalRevenue) < 0.005;
 
     const hasPendingEdits = Object.keys(revenueEdits).length > 0
+        || Object.keys(nameEdits).length > 0
         || Object.keys(shareEdits).length > 0
+        || hasLegShareDefault
         || Object.keys(costOverrideEdits).length > 0;
 
     const handleRevenueChange = (itemId: number, value: number) => {
         setRevenueEdits((prev) => ({...prev, [itemId]: value}));
     };
 
+    const handleNameChange = (itemId: number, value: string) => {
+        setNameEdits((prev) => ({...prev, [itemId]: value}));
+    };
+
     const handleShareChange = (itemId: number, changedLegKey: number, newValue: number) => {
-        const item = breakdownState.items.find((i) => i.pricingBreakdownId === itemId);
-        if (!item) return;
-        const allocationByLeg = new Map(item.allocations.map((a) => [a.legKey, a]));
-        const currentShares = legKeys.map((legKey) =>
-            shareEdits[itemId]?.[legKey] ?? allocationByLeg.get(legKey)?.sharePercent ?? 0);
+        const row = rows.find((r) => r.item.pricingBreakdownId === itemId);
+        if (!row) return;
+        const currentShares = row.cells.map((c) => c.sharePercent);
         const changedIndex = legKeys.indexOf(changedLegKey);
         if (changedIndex < 0) return;
         const normalized = normalizeShares(currentShares, changedIndex, newValue);
@@ -324,6 +335,26 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             legShareMap[legKey] = normalized[i];
         });
         setShareEdits((prev) => ({...prev, [itemId]: legShareMap}));
+    };
+
+    const handleResetItemShare = (itemId: number) => {
+        setShareEdits((prev) => {
+            const next = {...prev};
+            delete next[itemId];
+            return next;
+        });
+    };
+
+    const handleLegShareChange = (changedLegKey: number, newValue: number) => {
+        const currentValues = legSummaries.map((s) => s.shareValue);
+        const changedIndex = legKeys.indexOf(changedLegKey);
+        if (changedIndex < 0) return;
+        const normalized = normalizeShares(currentValues, changedIndex, newValue);
+        const nextLegShareEdits: Record<number, number> = {};
+        legKeys.forEach((legKey, i) => {
+            nextLegShareEdits[legKey] = normalized[i];
+        });
+        setLegShareEdits(nextLegShareEdits);
     };
 
     const handleCostChange = (itemId: number, legKey: number, value: number) => {
@@ -338,20 +369,34 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
         if (props.mode !== 'edit') return;
         setIsSaving(true);
         try {
-            const itemRevenues: SplitPricingItemRevenueUpdate[] = Object.entries(revenueEdits)
-                .map(([id, revenue]) => ({pricingBreakdownId: Number(id), revenue}));
+            const touchedItemIds = new Set([
+                ...Object.keys(revenueEdits).map(Number),
+                ...Object.keys(nameEdits).map(Number),
+            ]);
+            const itemRevenues: SplitPricingItemRevenueUpdate[] = Array.from(touchedItemIds).map((id) => {
+                const original = breakdownState.items.find((i) => i.pricingBreakdownId === id);
+                return {
+                    pricingBreakdownId: id,
+                    revenue: revenueEdits[id] ?? original?.revenue ?? 0,
+                    ...(nameEdits[id] !== undefined ? {name: nameEdits[id]} : {}),
+                };
+            });
 
             const allocations: SplitPricingAllocationUpdate[] = [];
-            Object.entries(shareEdits).forEach(([itemId, legShareMap]) => {
-                legKeys.forEach((legKey) => {
-                    if (legShareMap[legKey] !== undefined) {
-                        allocations.push({
-                            pricingBreakdownId: Number(itemId),
-                            legJobId: legKey,
-                            sharePercent: legShareMap[legKey],
-                        });
-                    }
-                });
+            breakdownState.items.forEach((item) => {
+                const itemId = item.pricingBreakdownId;
+                const perItemShareMap = shareEdits[itemId];
+                if (perItemShareMap) {
+                    legKeys.forEach((legKey) => {
+                        if (perItemShareMap[legKey] !== undefined) {
+                            allocations.push({pricingBreakdownId: itemId, legJobId: legKey, sharePercent: perItemShareMap[legKey]});
+                        }
+                    });
+                } else if (hasLegShareDefault) {
+                    legKeys.forEach((legKey) => {
+                        allocations.push({pricingBreakdownId: itemId, legJobId: legKey, sharePercent: legShareEdits[legKey]});
+                    });
+                }
             });
             Object.entries(costOverrideEdits).forEach(([itemId, legCostMap]) => {
                 Object.entries(legCostMap).forEach(([legKey, override]) => {
@@ -378,7 +423,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
 
         const allocation: SplitPricingAllocationItem[] = breakdownState.legs.map((leg) => ({
             sequence: leg.legKey,
-            sharePercent: leg.overallSharePercent,
+            sharePercent: legShareEdits[leg.legKey] ?? leg.overallSharePercent,
         }));
 
         const touchedItemIds = new Set([
@@ -452,89 +497,126 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             onClose={handleCancel}
             size={computeDialogWidth(legKeys.length)}
             maw="95vw"
-            label={isEdit ? 'Split Pricing Breakdown' : 'Confirm Split Pricing'}
+            label={isEdit ? 'Price Breakdown' : 'Confirm Split Pricing'}
         >
             <DialogHeader
                 icon={<Icon lucide={isEdit ? ReceiptText : Split}/>}
-                title={isEdit ? 'Split Pricing Breakdown' : 'Confirm Split Pricing'}
+                title={isEdit ? 'Price Breakdown' : 'Confirm Split Pricing'}
                 subtitle={isEdit
-                    ? 'The parent’s original items — each leg’s cost is derived and editable below'
+                    ? `The parent’s original items, split across ${legKeys.length} legs — each leg’s cost is derived and editable below`
                     : `${(props as SplitModeProps).jobNo} · ${formatCurrency(totals.totalRevenue)} to divide`}
                 onClose={handleCancel}
             />
 
-            {props.mode === 'split' && (
-                <Box p="lg" pb={0} style={{backgroundColor: dialogContentBg}}>
-                    <Alert color={props.preview.basis === 'EvenSplit' ? 'orange' : 'cyan'} variant="light">
-                        {BASIS_LABELS[props.preview.basis]}. The job total stays{' '}
-                        {formatCurrency(totals.totalRevenue)} — splitting does not change what the
-                        client is invoiced.
-                    </Alert>
-                    {props.preview.isSynthesised && (
-                        <Alert color="cyan" variant="light" mt="sm">
-                            This job has no itemised price lines, so a single line is divided across
-                            the legs.
+            <Box p="lg" pb={0} style={{backgroundColor: dialogContentBg}}>
+                {props.mode === 'split' ? (
+                    <>
+                        <Alert color={props.preview.basis === 'EvenSplit' ? 'orange' : 'cyan'} variant="light">
+                            {BASIS_LABELS[props.preview.basis]}. The job total stays{' '}
+                            {formatCurrency(totals.totalRevenue)} — splitting does not change what the
+                            client is invoiced.
                         </Alert>
-                    )}
-                </Box>
-            )}
-
-            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
-                <Group gap="md" grow align="stretch" wrap="wrap">
-                    <SummaryCard
-                        color="green"
-                        icon={<Icon lucide={TrendingUp} size={28}/>}
-                        label="Total Revenue"
-                        value={formatCurrency(totals.totalRevenue)}
-                    />
-                    <SummaryCard
-                        color="orange"
-                        icon={<Icon lucide={Wallet} size={28}/>}
-                        label="Total Cost"
-                        value={formatCurrency(totals.totalCost)}
-                    />
-                    <SummaryCard
-                        color="reflex"
-                        icon={<Icon lucide={PiggyBank} size={28}/>}
-                        label="Gross Profit"
-                        value={formatCurrency(totals.profit)}
-                        footer={totals.totalRevenue > 0 ? (
-                            <Badge size="sm" mt={4} color={getMarginColor(totals.margin)}>
-                                {totals.margin.toFixed(1)}% margin
-                            </Badge>
-                        ) : undefined}
-                    />
-                </Group>
+                        {props.preview.isSynthesised && (
+                            <Alert color="cyan" variant="light" mt="sm">
+                                This job has no itemised price lines, so a single line is divided across
+                                the legs.
+                            </Alert>
+                        )}
+                    </>
+                ) : (
+                    <Alert color="cyan" variant="light">
+                        Pricing for every leg is managed here, on the parent job. The child jobs
+                        show these figures read-only, so the parent and its legs can&apos;t drift
+                        out of sync.
+                    </Alert>
+                )}
             </Box>
 
+            <PricingSummaryCards totals={totals}/>
+
             <Box p="lg" pt={0}>
-                {/* Leg summary strip */}
+                <Group justify="space-between" mb="sm" wrap="wrap">
+                    <Text fw={600} fz="lg">Legs</Text>
+                    <Badge size="sm" variant="light" color={legShareTotal === 100 ? 'gray' : 'red'}>
+                        Shares total {legShareTotal}%
+                    </Badge>
+                </Group>
                 <Group gap="sm" mb="lg" wrap="wrap">
-                    {legSummaries.map(({leg, revenue, cost, margin, sharePercent}) => (
-                        <Paper key={leg.legKey} withBorder radius="md" p="sm" style={{flex: '1 1 200px'}}>
-                            <Group justify="space-between" wrap="nowrap" mb={4}>
-                                <Text fw={600} size="sm">{leg.label}</Text>
+                    {legSummaries.map(({leg, revenue, cost, margin, shareValue}) => {
+                        const hue = LEG_HUES[leg.legLetter] ?? DEFAULT_LEG_HUE;
+                        const isUnassigned = leg.subtitleUnassigned;
+                        return (
+                            <Paper
+                                key={leg.legKey}
+                                withBorder
+                                radius="md"
+                                p="sm"
+                                style={{flex: '1 1 200px', borderLeft: `3px solid ${hue}`}}
+                            >
+                                <Group gap={6} wrap="nowrap" mb={2}>
+                                    <Badge size="sm" radius="sm" style={{backgroundColor: hue, color: 'white'}}>
+                                        Leg {leg.legLetter}
+                                    </Badge>
+                                    <Text fw={700} size="sm">{leg.jobOrDistanceText}</Text>
+                                </Group>
+                                {leg.subtitle && (
+                                    <Text
+                                        size="xs"
+                                        c={isUnassigned ? 'orange' : 'dimmed'}
+                                        fw={isUnassigned ? 600 : 400}
+                                        mb={6}
+                                    >
+                                        {leg.subtitle}
+                                    </Text>
+                                )}
+                                <Group gap="md" wrap="nowrap" mt={4}>
+                                    {[['Revenue', formatCurrency(revenue)], ['Cost', formatCurrency(cost)]].map(([k, v]) => (
+                                        <Stack gap={0} key={k}>
+                                            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{k}</Text>
+                                            <Text size="sm" fw={700}>{v}</Text>
+                                        </Stack>
+                                    ))}
+                                    <Stack gap={0}>
+                                        <Text size="xs" c="dimmed" fw={700} tt="uppercase">Margin</Text>
+                                        <Badge size="sm" color={getMarginColor(margin)}>{margin.toFixed(1)}%</Badge>
+                                    </Stack>
+                                </Group>
+                                <Group
+                                    gap="xs"
+                                    wrap="nowrap"
+                                    mt={8}
+                                    pt={8}
+                                    style={{borderTop: '1px dashed var(--mantine-color-gray-3)'}}
+                                >
+                                    <Text size="xs" c="dimmed" fw={700} tt="uppercase">Share %</Text>
+                                    <NumberInput
+                                        aria-label={`Share % for ${leg.label}`}
+                                        value={Math.round(shareValue)}
+                                        onChange={(value) => handleLegShareChange(
+                                            leg.legKey, value === '' || value == null ? 0 : Number(value),
+                                        )}
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        disabled={shareLocked}
+                                        size="xs"
+                                        w={70}
+                                    />
+                                </Group>
                                 {leg.costLocked && (
                                     <Badge
+                                        mt={8}
                                         size="xs"
+                                        variant="outline"
                                         color="gray"
                                         leftSection={<Icon lucide={Lock} size={10}/>}
                                     >
                                         {leg.costLockReason ?? 'Locked'}
                                     </Badge>
                                 )}
-                            </Group>
-                            {leg.subtitle && <Text size="xs" c="dimmed" mb={6}>{leg.subtitle}</Text>}
-                            <Group justify="space-between" wrap="nowrap">
-                                <Text size="xs" c="dimmed">{sharePercent.toFixed(0)}% share</Text>
-                                <Badge size="sm" color={getMarginColor(margin)}>{margin.toFixed(1)}%</Badge>
-                            </Group>
-                            <Group justify="space-between" wrap="nowrap" mt={4}>
-                                <Text size="sm" fw={500}>{formatCurrency(revenue)}</Text>
-                                <Text size="sm" c="dimmed">{formatCurrency(cost)}</Text>
-                            </Group>
-                        </Paper>
-                    ))}
+                            </Paper>
+                        );
+                    })}
                 </Group>
 
                 <Group justify="space-between" mb="md" wrap="nowrap">
@@ -593,10 +675,20 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                             <Table.Tr>
                                 <Table.Th className={`${classes.itemCell} ${classes.headerCell}`} c="dimmed">Item</Table.Th>
                                 <Table.Th className={`${classes.revenueCell} ${classes.headerCell}`} c="dimmed" ta="right">Revenue</Table.Th>
+                                <Table.Th c="dimmed" ta="center">Share</Table.Th>
                                 {breakdownState.legs.map((leg) => (
                                     <Table.Th key={leg.legKey} c="dimmed" ta="right" miw={130}>
-                                        {leg.label} cost
-                                        {leg.costLocked && <Icon lucide={Lock} size={12}/>}
+                                        <Stack gap={0} align="flex-end">
+                                            <Group gap={4} wrap="nowrap">
+                                                <Text size="xs" fw={700} c="dimmed">{leg.label} cost</Text>
+                                                {leg.costLocked && <Icon lucide={Lock} size={12}/>}
+                                            </Group>
+                                            {leg.subtitle && (
+                                                <Text fz={9} c={leg.costLocked ? 'orange' : 'dimmed'} fw={500} tt="none">
+                                                    {leg.subtitle}
+                                                </Text>
+                                            )}
+                                        </Stack>
                                     </Table.Th>
                                 ))}
                                 <Table.Th c="dimmed" ta="right">Total Cost</Table.Th>
@@ -606,23 +698,22 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                             </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
-                            {rows.map(({item, revenue, cells, totalCost, profit, margin}) => (
+                            {rows.map(({item, name, revenue, cells, totalCost, profit, margin, hasItemShareOverride}) => (
                                 <React.Fragment key={item.pricingBreakdownId}>
                                     <Table.Tr>
                                         <Table.Td className={classes.itemCell}>
-                                            <Stack gap={2}>
-                                                <Text size="sm" fw={500}>{item.name}</Text>
-                                                <Button
-                                                    variant="subtle"
-                                                    size="compact-xs"
-                                                    onClick={() => setOpenShareItemId(
-                                                        openShareItemId === item.pricingBreakdownId ? null : item.pricingBreakdownId,
-                                                    )}
-                                                    disabled={shareLocked}
-                                                >
-                                                    Share %
-                                                </Button>
-                                            </Stack>
+                                            {isEdit ? (
+                                                <TextInput
+                                                    aria-label={`Name for ${item.name}`}
+                                                    value={name}
+                                                    onChange={(e) => handleNameChange(item.pricingBreakdownId, e.currentTarget.value)}
+                                                    variant="unstyled"
+                                                    size="sm"
+                                                    styles={{input: {fontWeight: 500}}}
+                                                />
+                                            ) : (
+                                                <Text size="sm" fw={500}>{name}</Text>
+                                            )}
                                         </Table.Td>
                                         <Table.Td className={classes.revenueCell} ta="right">
                                             <NumberInput
@@ -638,6 +729,19 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                 hideControls
                                                 size="xs"
                                             />
+                                        </Table.Td>
+                                        <Table.Td ta="center">
+                                            <Button
+                                                variant="default"
+                                                size="compact-xs"
+                                                aria-expanded={openShareItemId === item.pricingBreakdownId}
+                                                onClick={() => setOpenShareItemId(
+                                                    openShareItemId === item.pricingBreakdownId ? null : item.pricingBreakdownId,
+                                                )}
+                                                disabled={shareLocked}
+                                            >
+                                                {cells.map((c) => Math.round(c.sharePercent)).join(' / ')}
+                                            </Button>
                                         </Table.Td>
                                         {cells.map((cell) => (
                                             <Table.Td key={cell.legKey} ta="right">
@@ -705,9 +809,9 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                     </Table.Tr>
                                     {openShareItemId === item.pricingBreakdownId && (
                                         <Table.Tr>
-                                            <Table.Td colSpan={cells.length + (isEdit ? 5 : 4)}>
-                                                <Group gap="lg" wrap="wrap" p="sm">
-                                                    <Text size="xs" fw={600} c="dimmed">Share of &quot;{item.name}&quot; per leg</Text>
+                                            <Table.Td colSpan={cells.length + (isEdit ? 7 : 6)}>
+                                                <Group gap="lg" wrap="wrap" p="sm" align="flex-end">
+                                                    <Text size="xs" fw={600} c="dimmed">Share of &quot;{name}&quot; per leg</Text>
                                                     {cells.map((cell) => (
                                                         <NumberInput
                                                             key={cell.legKey}
@@ -726,6 +830,16 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                             rightSection={<Text size="xs" c="dimmed">%</Text>}
                                                         />
                                                     ))}
+                                                    {hasItemShareOverride && (
+                                                        <Button
+                                                            variant="subtle"
+                                                            size="compact-xs"
+                                                            onClick={() => handleResetItemShare(item.pricingBreakdownId)}
+                                                            disabled={shareLocked}
+                                                        >
+                                                            Reset to overall split
+                                                        </Button>
+                                                    )}
                                                 </Group>
                                             </Table.Td>
                                         </Table.Tr>
@@ -785,7 +899,11 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                     <Text component="span" fw={600} c="var(--mantine-color-text)">
                         {formatCurrency(totals.totalRevenue)}
                     </Text>{' '}
-                    total
+                    total • legs re-sum to{' '}
+                    <Text component="span" fw={600} c={legsReconcile ? 'var(--mantine-color-text)' : 'red'}>
+                        {formatCurrency(legRevenueSum)}
+                    </Text>{' '}
+                    {legsReconcile ? '✓' : '✕'}
                 </Text>
                 <Group gap="sm" wrap="nowrap">
                     <Button variant="default" onClick={handleCancel} miw={100}>
