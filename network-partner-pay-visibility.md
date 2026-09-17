@@ -38,7 +38,7 @@ Network partner payment is written to **`tucJob.CourierPayment`** (and `tucJobAr
 
 ### 2.2 The NP's own courier is a separate, second layer
 
-When the network partner pays *their* courier, that amount is stored in **`NPcourierAmount`** — a distinct field from `CourierPayment`.
+When the network partner pays *their* courier, that amount is stored in **`NPCourierPayment`** — a distinct field from `CourierPayment`.
 
 Two layers, two fields, two payers:
 
@@ -46,20 +46,20 @@ Two layers, two fields, two payers:
 |---|---|---|
 | Tenant → network partner | the tenant pays the NP | **`CourierPayment`** (§2.1) |
 | Tenant → network partner (fuel) | the partner's fuel share | **`CourierFuel`** (§3.2) |
-| NP → their own courier | the NP pays their driver | **`NPcourierAmount`** |
+| NP → their own courier | the NP pays their driver | **`NPCourierPayment`** |
 | NP → their own courier (fuel) | the NP's driver's fuel share | *`NPCourierFuelAmount`* — **deferred, not in MVP** |
 
 > **`NPCourierFuelAmount` — noted and deliberately out of MVP scope.** *(Steve, 17 Sep 2026.)*
 >
-> The pay layers are symmetrical but the fuel layers are not: `CourierFuel` records the fuel passed tenant → partner, and there is no equivalent for partner → their driver. A field would be needed to record the NP passing on only part of their fuel to their own courier.
+> The pay layers are symmetrical but the fuel layers are not: `CourierFuel` records the fuel passed tenant → partner, and there is no equivalent for partner → their driver. A field would be needed to record the NP passing on only part of their fuel to their own courier. (Name it when it is built — the pay layer runs `CourierPayment` → `NPCourierPayment`, so the fuel layer would naturally run `CourierFuel` → `NPCourierFuel`.)
 >
 > **Not required for MVP.** It bites for the same reason as §3.2 — only where fuel is *not* passed on in full. At Urgent the whole fuel goes through, so the NP→driver fuel split has nothing to record yet. Build it when a partner needs to retain part of the fuel, or when a jurisdiction that splits fuel comes on. Recorded here so the gap is a known deferral rather than an oversight.
 
 **`SubContractorPercentage` / `SubContractorBonusPercentage` / `SubContractorFuelPercentage` are not this.** Those fields exist for contractors who have subcontractors working below them, and are unrelated to the network partner layer. An earlier revision of this document wrongly identified them as the NP-courier mechanism — do not build against them.
 
-> ⚠️ **Two naming and design conflicts to resolve before building (Q15).**
+> ⚠️ **One design conflict to resolve before building (Q15).**
 >
-> **Name.** `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` Migration M6 adds the field as **`NpCourierPayment`** (`MONEY NULL`, on `tucJob`, `tucJobArchive`, `tucJobBooking`, `tblBulkJob`). Steve refers to it as **`NPcourierAmount`**. Confirm the deployed column name before writing code against either.
+> **Name — resolved.** *(Steve, 17 Sep 2026.)* The field is **`NPCourierPayment`**, which matches `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` Migration M6 (`MONEY NULL`, on `tucJob`, `tucJobArchive`, `tucJobBooking`, `tblBulkJob`). Still confirm it is actually **deployed** — M6 may not have been run.
 >
 > **Which field carries tenant → NP.** That same plan states the opposite of §2.1: it adds a separate **`AgentRate`** column for what the tenant pays the NP, and says *"On NP jobs, `CourierPayment` should be NULL (tenant isn't paying a courier directly)"*, on the grounds that mixing payers in one field creates accounting ambiguity.
 >
@@ -136,7 +136,9 @@ Shipping only the display change would show the partner **zero**.
 
 **The existing evidence now reads as proof, not warning.** Job KT672V in `CourierPayCalculationIssues.md` §2 carries `FuelSurchargeAmount` **$18.50** with `CourierPayment` **$0.00** and `CourierFuel` **$0.00** — explicitly "no courier assigned yet". That is the exact state every NP job sits in.
 
-> **Naming note (Q15).** Steve refers to the field as **`NpagentID`**. The EF model (`TucJob.cs`) and the schema dump both show only **`AgentID`** (`int NULL` → `tucAgents.ucagID`) on `tucJob`, with no `NpAgentID`. Either they are the same column under a working name, or `NpAgentID` is newer than the dump. This is the **third** NP field name in this spec that does not match the dump — alongside `NPcourierAmount` vs `NpCourierPayment` (§2.2). **Confirm all three against the live DB before writing code.**
+> **Naming note (Q15).** Steve refers to the field as **`NpagentID`**. The EF model (`TucJob.cs`) and the schema dump both show only **`AgentID`** (`int NULL` → `tucAgents.ucagID`) on `tucJob`, with no `NpAgentID`. Either they are the same column under a working name, or `NpAgentID` is newer than the dump. **Confirm against the live DB before writing code.**
+>
+> Worth noting the precedent: the other name in doubt, `NPCourierPayment`, resolved in favour of the value already written down in Migration M6 (§2.2) rather than the working name. The dump may simply predate the NP work.
 
 **Still open:** once the partner assigns one of *their* couriers on their board, does `ucjbCourierID` then get populated with that courier, or does it stay blank for the life of the job? That determines whether the trigger fires late and overwrites `CourierPayment` — exactly the failure §2.6d guards against (Q17).
 
@@ -161,7 +163,7 @@ The trigger does **not** fire when the network partner is assigned, because `ucj
 
 > **When the network partner assigns the job to their own courier**, `ucjbCourierID` is populated — and `tucJob_InsertUpdate_CalculateCourierPayment` fires. **`CourierPayment` must be locked at that moment** so the percentage calculation does not run.
 
-**Why this is worse than a plain overwrite.** The trigger would recompute `CourierPayment = RawBaseAmount × CourierPercentage`, resolving the percentage from the courier now sitting on the job — **the network partner's own driver**. That driver's pay belongs in `NPcourierAmount` (§2.2). So the trigger does not merely write a wrong number into `CourierPayment`; it **collapses the two layers**, replacing the tenant → partner amount with an NP → courier calculation. Tenant GP (§2.1) silently becomes wrong, and nothing on the job shows it happened.
+**Why this is worse than a plain overwrite.** The trigger would recompute `CourierPayment = RawBaseAmount × CourierPercentage`, resolving the percentage from the courier now sitting on the job — **the network partner's own driver**. That driver's pay belongs in `NPCourierPayment` (§2.2). So the trigger does not merely write a wrong number into `CourierPayment`; it **collapses the two layers**, replacing the tenant → partner amount with an NP → courier calculation. Tenant GP (§2.1) silently becomes wrong, and nothing on the job shows it happened.
 
 **But the lock must stay event-scoped, not permanent.** Per the rule in §2.3, `CourierPayment` still has to recalculate when the fundamentals change — additional weight, items or cubic, typically added at pickup. A permanent flag on the row would block that and hold the partner on a rate that no longer matches the job they carried.
 
@@ -376,7 +378,7 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q17 | Confirm the partner's own driver lands in **`ucjbCourierID`** when they assign on their board — that is the moment `CourierPayment` must be locked (§2.6d). Also: should that driver sit in the tenant's courier field at all, or one of its own? | Live DB + `despatchweb` NP board |
 | Q7 | Is Golden Black Taxis an **agent** (`tucAgents`), a **courier/fleet** (`tucCourier`), or both? | Live DB |
 | Q8 | Does the schedule path produce child legs, or one flat job with the partner on the whole job? | `despatchweb` `NationwideJobRepository.cs` + live data |
-| Q15 | What is the **deployed column name** for the NP→courier amount — `NPcourierAmount` or `NpCourierPayment` (Migration M6)? Is it deployed at all? And is the `AgentRate`/`CourierPayment`-NULL model in `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` superseded on the record, not just in conversation? (§2.2) | Live DB + Steve |
+| Q15 | Is the NP agent field on `tucJob` named **`NpagentID`** or the existing **`AgentID`** (§2.5)? The schema dump shows only `AgentID`. Separately: confirm `NPCourierPayment` (Migration M6) is actually deployed — the name is settled, the deployment is not. And is the `AgentRate` / `CourierPayment`-NULL model in `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` superseded on the record, not just in conversation? (§2.2) | Live DB + Steve |
 | Q14 | Is **`CourierFuel`** populated when a network partner is assigned? Both jobs sampled in `CourierPayCalculationIssues.md` show `CourierFuel = $0.00`, one of them on a job carrying $18.50 of fuel. Binding the NP view to an unpopulated field shows the partner no fuel at all (§3.3). | Live DB, same SELECT as Q6 |
 | Q13 | Exactly which speeds / job types are **Path A** (§2.3) — i.e. where an agent rate calculates the headline delivery rate? Steve names nationwide flight delivery portion and local nationwide speed; confirm the full set so Path B is not applied to a Path A job or vice versa. | `DD_stpGetNationwideRates`, `tucJobType.NationwideEntry`, Steve |
 | Q10 | *(Largely answered — §2.4 confirms the client-level field `tucClient.CourierPercentage`, not a nationwide-speed row.)* Remaining: do cascade levels 1–3 apply to NP jobs, and is the 40% fallback acceptable for a partner? (§2.6a, §2.6b) | Steve + `sp_helptext` on the trigger |
@@ -453,7 +455,7 @@ Inferred — confirm against GitLab before estimating.
 
 1. **Treat this as two pieces of work, not one.** §2.5 settles it: on an NP job `ucjbCourierID` stays blank, so the existing trigger never populates `CourierPayment` or `CourierFuel`. The display substitution (§3) on its own would show the partner **zero**.
 2. **Data first — populate `CourierPayment` and `CourierFuel` at partner allocation.** Both at the same moment, one piece of work. Use the §2.4 cascade: client `CourierPercentage`, else the **agent's default percentage** substituted for the courier percentage the trigger would normally use. Fuel passes through to `CourierFuel`. `NPCourierFuelAmount` (NP → their driver's fuel) is **deferred — not in MVP** (§2.2).
-3. **Resolve the three field names before writing code (Q15, Q16).** `NpagentID` vs `AgentID`, `NPcourierAmount` vs `NpCourierPayment`, and where the agent default percentage actually lives — `tucAgents` has no percentage column. Three of the names in this spec do not match the schema dump; none of them should be guessed.
+3. **Resolve the two remaining naming unknowns before writing code (Q15, Q16).** `NpagentID` vs the existing `AgentID` on `tucJob`, and where the agent default percentage lives — `tucAgents` has no percentage column. (`NPCourierPayment` is settled and matches Migration M6; confirm it is deployed.) Neither should be guessed.
 4. **Then ship the display substitution (§3)** — `CourierPayment` as the revenue line, `CourierFuel` as the fuel line, across *every* NP-facing surface. **Include the job search / job download export (Q18)** — it shows full revenue today and is built from its own query, so fixing the board will not fix it. Kerran owns that area.
 5. **Path A (§2.3) is the cheaper half and can go first.** Where an agent rate priced the delivery — nationwide flight delivery portion, local nationwide speed — the rate is already the pre-markup number on `tucAgents` (§2.7) and is stamped into `CourierPayment` at creation. Confirm the speed/job-type set (Q13).
 6. **Lock `CourierPayment` when the partner assigns their own courier (§2.6d).** That is the one moment the trigger fires on an NP job — and it would resolve the percentage from the *partner's* driver, collapsing the tenant→partner and partner→driver layers into one field and silently corrupting tenant GP. Lock it there, but keep weight / items / cubic re-rates flowing. Not a permanent flag.
