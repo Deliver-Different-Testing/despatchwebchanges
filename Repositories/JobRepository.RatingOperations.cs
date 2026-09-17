@@ -393,6 +393,8 @@ public partial class JobRepository
             isToAirport = await Context.DoesAddressMatchAirportAsync(dto.JobId, false);
         }
 
+        var cubicList = await GetCubicListAsync(dto.JobId);
+
         await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
             clientID: dto.ClientId,
             speedID: dto.Speed,
@@ -425,6 +427,7 @@ public partial class JobRepository
             isFromAddressAirport: isFromAirport,
             isToAddressAirport: isToAirport,
             dimensionsType: dto.CalculateDimsOncePerJob ? 2 : 0,
+            cubicList: cubicList,
             description: description,
             rate: rate,
             returnValue: returnValue

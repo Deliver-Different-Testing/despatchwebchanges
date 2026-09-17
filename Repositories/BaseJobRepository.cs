@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using DespatchWeb.EntityClasses;
@@ -866,6 +867,43 @@ public partial class BaseJobRepository(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteAsync)));
             throw;
         }
+    }
+
+    /// <summary>
+    /// Builds the per-package cubic CSV (matching the api repo's @CubicList convention used by
+    /// DD_stpJob_InsertExcelerator) from tucJobItems (or tucJobItemsArchive for an archived job)
+    /// for an existing job, expanding each row by its Items count. Returns null when the job has
+    /// no per-package cubic data.
+    /// </summary>
+    protected async Task<string> GetCubicListAsync(int jobId)
+    {
+        var isArchived = await IsJobArchived(jobId);
+
+        var items = isArchived
+            ? await Context.TucJobItemsArchives
+                .Where(i => i.JobId == jobId && i.Cubic != null)
+                .Select(i => new { i.Items, i.Cubic })
+                .ToListAsync()
+            : await Context.TucJobItems
+                .Where(i => i.JobId == jobId && i.Cubic != null)
+                .Select(i => new { i.Items, i.Cubic })
+                .ToListAsync();
+
+        if (items.Count == 0)
+        {
+            return null;
+        }
+
+        var cubicValues = new List<string>();
+        foreach (var item in items)
+        {
+            for (var unit = 0; unit < item.Items; unit++)
+            {
+                cubicValues.Add(item.Cubic.Value.ToString(CultureInfo.InvariantCulture));
+            }
+        }
+
+        return string.Join(",", cubicValues);
     }
 
     // Helper Methods

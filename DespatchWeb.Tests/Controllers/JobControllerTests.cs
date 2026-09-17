@@ -29,6 +29,7 @@ public class JobControllerTests : IDisposable
     private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
     private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
     private readonly IArrivalWaitRerateService _arrivalWaitRerateServiceMock = Substitute.For<IArrivalWaitRerateService>();
+    private readonly IAccessorialChargeRepository _accessorialChargeRepositoryMock = Substitute.For<IAccessorialChargeRepository>();
     private readonly HttpClient _httpClient = new();
     private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
@@ -108,7 +109,8 @@ public class JobControllerTests : IDisposable
             _sendToPartnerServiceMock,
             _partnerJobGateMock,
             _flightAssignmentServiceMock,
-            _arrivalWaitRerateServiceMock);
+            _arrivalWaitRerateServiceMock,
+            _accessorialChargeRepositoryMock);
     }
 
     /// <summary>

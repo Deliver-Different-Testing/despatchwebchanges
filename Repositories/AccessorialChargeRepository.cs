@@ -149,6 +149,25 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
         ];
     }
 
+    public async Task<decimal> GetTotalAppliedChargesAsync(int jobId)
+    {
+        var portions = await GetPortionJobsAsync(jobId);
+        if (portions.Count > 0)
+        {
+            decimal total = 0;
+            foreach (var portion in portions)
+            {
+                var portionCharges = await GetAppliedChargesAsync(portion.JobId);
+                total += portionCharges.Sum(c => c.OverrideAmount ?? c.CalculatedAmount ?? 0m);
+            }
+
+            return total;
+        }
+
+        var charges = await GetAppliedChargesAsync(jobId);
+        return charges.Sum(c => c.OverrideAmount ?? c.CalculatedAmount ?? 0m);
+    }
+
     private async Task<HashSet<int>> GetAlwaysApplyChargeIdsAsync(int jobId)
     {
         var groupId = await Context.TucJobs
