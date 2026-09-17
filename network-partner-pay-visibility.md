@@ -145,39 +145,29 @@ The trigger falls back to **40%**. §2.4 says `CourierPayment` is populated in a
 **(c) Which base amount does the percentage multiply?**
 The trigger uses **`RawBaseAmount`** (base only, no extras, no fuel), which is consistent with fuel passing through separately. Earlier framing said "the full amount" — 57% of `ucjbAmount` and 57% of `RawBaseAmount` are materially different numbers. Confirm `RawBaseAmount` (Q11).
 
-**(d) Making recalculation conditional — the highest risk in this document.**
-`tucJob_InsertUpdate_CalculateCourierPayment` fires on **every** insert and update and recomputes `CourierPayment` from the percentage cascade. It does not distinguish *why* the row changed. Two failures fall out of that, in opposite directions:
+**(d) Locking `CourierPayment` at the partner's own courier assignment — the highest risk in this document.**
 
-| If the trigger… | Result |
+*Steve, 17 Sep 2026.*
+
+The trigger does **not** fire when the network partner is assigned, because `ucjbCourierID` is not populated then (§2.5). The danger is one step later:
+
+> **When the network partner assigns the job to their own courier**, `ucjbCourierID` is populated — and `tucJob_InsertUpdate_CalculateCourierPayment` fires. **`CourierPayment` must be locked at that moment** so the percentage calculation does not run.
+
+**Why this is worse than a plain overwrite.** The trigger would recompute `CourierPayment = RawBaseAmount × CourierPercentage`, resolving the percentage from the courier now sitting on the job — **the network partner's own driver**. That driver's pay belongs in `NPcourierAmount` (§2.2). So the trigger does not merely write a wrong number into `CourierPayment`; it **collapses the two layers**, replacing the tenant → partner amount with an NP → courier calculation. Tenant GP (§2.1) silently becomes wrong, and nothing on the job shows it happened.
+
+**But the lock must stay event-scoped, not permanent.** Per the rule in §2.3, `CourierPayment` still has to recalculate when the fundamentals change — additional weight, items or cubic, typically added at pickup. A permanent flag on the row would block that and hold the partner on a rate that no longer matches the job they carried.
+
+So the requirement has two halves that a single boolean will not express:
+
+| Event | `CourierPayment` |
 |---|---|
-| recalculates on **assignment** | a stamped agent rate (Path A), or a rate already correctly set, is silently replaced by a percentage of the charge — partner paid the wrong number, nothing to show it happened |
-| does **not** recalculate on a **weight / items / cubic** change | partner paid against the original job, not the heavier or larger one they actually carried |
+| Network partner assigned | populate (§2.4 cascade, agent default substituted) |
+| **Partner assigns their own courier** → `ucjbCourierID` set | **locked — do not recalculate** |
+| Weight / items / cubic changed (usually at pickup) | recalculate |
 
-The fix is therefore **not a permanent lock flag.** `tucJob.CourierPaymentManualOverride` (bit) would freeze the value through legitimate re-rates and cause the second failure. What is needed is recalculation gated on *what changed*: skip when the change is an assignment, run when a rating input changed.
+`tucJob.CourierPaymentManualOverride` (bit) may be the right lock for the middle row, but it must not be allowed to suppress the third. Check what already carries the signal before adding new machinery — `tucJob.Reprice` (bit), `tucJob.RatedManually` (bit), and the `tucJob_Update_RecalculateAmount` / `tucJob_Update_RecalculateRawBaseAmount_And_CourierBonus` triggers all sit in this space (Q12).
 
-Check what already exists before building new machinery — `tucJob.Reprice` (bit), `tucJob.RatedManually` (bit) and the `tucJob_Update_RecalculateAmount` / `tucJob_Update_RecalculateRawBaseAmount_And_CourierBonus` triggers all sit in this space and may already carry the signal (Q12).
-
-### 2.7 `tucAgents` — the production agent rate card
-
-Full column list, from the schema dump (this answers Q4; `tucAgents` is absent from `DB-SCHEMA.md`):
-
-| Column | Type | Note |
-|---|---|---|
-| `ucagID` | int | PK — `tucJob.AgentID` points here |
-| `ucagName`, address / phone / geo columns | | |
-| **`Flagfall`** | money | **Agent rate card** |
-| **`KilometerRate`** | money | **Agent rate card** |
-| **`ItemRate`** | money | **Agent rate card** |
-| **`MaxKMs`** | int | **Agent rate card** |
-| **`AgentRateMarkup`** | decimal(18,4) | **Markup applied to the agent rate to reach the client charge** |
-| `RankingID`, `StatusID` | int | → `tucAgentStatus` |
-| `NumRef1–3`, `TextRef1–3`, audit columns | | |
-
-Two things follow.
-
-**1. The Path A rate source is already here.** `Flagfall` / `KilometerRate` / `ItemRate` / `MaxKMs` on `tucAgents` *is* the agent rate card, in production, today. `AgentRateMarkup` is how that rate becomes the client charge. So on a Path A delivery the agent rate is not something to be derived — it is the pre-markup number the charge was built from, available at the moment of rating. Stamping it into `CourierPayment` at creation (§2.3) is cheap precisely because of this.
-
-**2. It largely dissolves the "competing rate card shapes" concern in §4.2.** The NP-redesign `AgentVehicleRate` class mirrors these fields almost exactly — `Flagfall`, `KmRate`, `ItemRate`, `MaxKms` are the same four, named slightly differently. It reads as a re-modelling of `tucAgents`, not a rival design. What `tucAgents` does **not** have is any percentage column, which is why Q16 exists.
+> **Design question worth raising separately (Q17).** If the partner's own driver lands in `ucjbCourierID`, the tenant's courier field is holding the *partner's* courier — which is what makes the trigger dangerous here in the first place. Confirm that is genuinely what happens on the NP board, and whether that driver belongs in a field of its own rather than the tenant's.
 
 ---
 
@@ -356,7 +346,7 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q4 | *(Answered — see §2.7.)* Full column list for **`tucAgents`** — referenced by `tucJob.AgentID`, absent from `DB-SCHEMA.md` | Live DB |
 | Q5 | Body of `tucJob_Update_AddPickupAmountToNationwideAmount` — firing conditions, what it writes | Live DB `sp_helptext` |
 | Q6 | *(Answered — §2.5: `ucjbCourierID` stays blank, partner goes in the agent field.)* On a live PN schedule job: actual values of `CourierPayment`, `CourierFuel`, `CourierPercentage`, `ucjbCourierID`, `AgentID`, `ParentId` | Live DB, SELECT only |
-| Q17 | Once the partner assigns their own courier on their board, does `ucjbCourierID` get populated — firing the trigger late and overwriting `CourierPayment` (§2.5, §2.6d)? | Live DB + `despatchweb` NP board |
+| Q17 | Confirm the partner's own driver lands in **`ucjbCourierID`** when they assign on their board — that is the moment `CourierPayment` must be locked (§2.6d). Also: should that driver sit in the tenant's courier field at all, or one of its own? | Live DB + `despatchweb` NP board |
 | Q7 | Is Golden Black Taxis an **agent** (`tucAgents`), a **courier/fleet** (`tucCourier`), or both? | Live DB |
 | Q8 | Does the schedule path produce child legs, or one flat job with the partner on the whole job? | `despatchweb` `NationwideJobRepository.cs` + live data |
 | Q15 | What is the **deployed column name** for the NP→courier amount — `NPcourierAmount` or `NpCourierPayment` (Migration M6)? Is it deployed at all? And is the `AgentRate`/`CourierPayment`-NULL model in `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` superseded on the record, not just in conversation? (§2.2) | Live DB + Steve |
@@ -439,7 +429,7 @@ Inferred — confirm against GitLab before estimating.
 3. **Resolve the three field names before writing code (Q15, Q16).** `NpagentID` vs `AgentID`, `NPcourierAmount` vs `NpCourierPayment`, and where the agent default percentage actually lives — `tucAgents` has no percentage column. Three of the names in this spec do not match the schema dump; none of them should be guessed.
 4. **Then ship the display substitution (§3)** — `CourierPayment` as the revenue line, `CourierFuel` as the fuel line, across *every* NP-facing surface, not just the screen where it was noticed.
 5. **Path A (§2.3) is the cheaper half and can go first.** Where an agent rate priced the delivery — nationwide flight delivery portion, local nationwide speed — the rate is already the pre-markup number on `tucAgents` (§2.7) and is stamped into `CourierPayment` at creation. Confirm the speed/job-type set (Q13).
-6. **Gate recalculation on what changed (§2.6d).** A populated `CourierPayment` must survive assignment but still be recalculated on weight / items / cubic changes. Not a permanent lock. Check Q17 — if `ucjbCourierID` gets filled when the partner assigns their own driver, the trigger fires late and overwrites everything.
+6. **Lock `CourierPayment` when the partner assigns their own courier (§2.6d).** That is the one moment the trigger fires on an NP job — and it would resolve the percentage from the *partner's* driver, collapsing the tenant→partner and partner→driver layers into one field and silently corrupting tenant GP. Lock it there, but keep weight / items / cubic re-rates flowing. Not a permanent flag.
 7. **Settle §2.6 (a)–(c)** — whether cascade levels 1–3 apply to NP jobs, whether the 40% fallback is acceptable for a partner, and that the percentage multiplies `RawBaseAmount`.
 8. **Answer Q0 in parallel.** If Golden Black Taxis is a paired DFRNT tenant rather than an in-tenant agent, this is a Pricing Mode setting and none of §2 applies (§5.1).
 9. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§2.1).
