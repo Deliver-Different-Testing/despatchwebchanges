@@ -352,11 +352,15 @@ Because pricing mode flows **on the wire only**, nothing persists on the job rec
 
 On the agent/NP path there **is** a persisted field — `CourierPayment` (§2.1) — so the gap is narrower than it looked. The two mechanisms differ deliberately: cross-tenant settlement reconciles outside the job record, while agent/NP pay lands on the job so tenant GP works without a second calculation.
 
-### 5.6 A caveat that lands directly on the schedule path
+### 5.6 A caveat on the cross-tenant side that does *not* apply here
 
 > "For Mode 2 (Percentage) to work, the job must have a `UcjbAmount` populated at dispatch time; if it's missing, the Send-to-Partner dialog falls back to manual entry."
 
-Schedule-created jobs are bulk-rated at creation, so `UcjbAmount` should be present — but this needs confirming for the schedule path specifically (Q9). A silent fallback to manual entry is precisely how a wrong number reaches a partner.
+**Not a risk on this path.** *(Steve, 17 Sep 2026.)* A job will have `ucjbAmount` populated — there is no prospect of it being zero at the time of allocation to a network partner. Q9 is closed.
+
+So the §2.4 cascade always has a charge figure to work from. The failure mode this caveat describes belongs to the cross-tenant Send-to-Partner dialog, not to in-tenant agent allocation.
+
+> Note this closes the *amount-exists* question only. **Which** amount the percentage multiplies — `RawBaseAmount` or `ucjbAmount` — is a separate and still-open decision (§2.6c, Q11).
 
 ---
 
@@ -392,7 +396,7 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q10 | *(Largely answered — §2.4 confirms the client-level field `tucClient.CourierPercentage`, not a nationwide-speed row.)* Remaining: do cascade levels 1–3 apply to NP jobs, and is the 40% fallback acceptable for a partner? (§2.6a, §2.6b) | Steve + `sp_helptext` on the trigger |
 | Q11 | Does the NP percentage multiply `RawBaseAmount` or `ucjbAmount` (§2.6b)? | Steve / live data |
 | Q12 | What signal can gate `tucJob_InsertUpdate_CalculateCourierPayment` so it skips **assignment** but still runs on a **weight / items / cubic** change (§2.6d)? Check `tucJob.Reprice`, `RatedManually`, `CourierPaymentManualOverride` and the existing recalculate triggers before adding anything new. | Live DB `sp_helptext` on the trigger |
-| Q9 | On schedule-created jobs, is `UcjbAmount` reliably populated at dispatch time? Mode 2 falls back to **manual entry** when it is missing (§5.6) — a silent fallback is how a wrong number reaches a partner. | Live DB + Send-to-Partner dialog behaviour |
+| ~~Q9~~ | **Closed (Steve, 17 Sep 2026):** a job will have `ucjbAmount` populated; no risk of zero at allocation to a network partner. (§5.6) | — |
 
 ### Verification queries — SELECT only, read-only
 
