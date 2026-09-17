@@ -1,7 +1,7 @@
 # Network Partner Pay Visibility — NW Amount on Delivery Leg Allocation
 
 **Date:** 17 September 2026
-**For:** Karen, Jacob
+**For:** Karen (implementation, Dispatch), Jacob
 **From:** Steve Bonnici (AI-assisted analysis)
 **Status:** Investigation — not scoped for build, not assigned.
 
@@ -142,20 +142,53 @@ A Path A job has its agent rate written into `CourierPayment` at creation, but `
 
 ---
 
-## 4. The Display Change — What the NP Dispatch View Should Show
+## 4. The Display Change — For Karen, Implementing in Dispatch
 
-*Steve, 17 Sep 2026 — this is the key change.*
+*Steve, 17 Sep 2026. This is the change being asked for.*
 
-On a network partner's **dispatch view, job detail**, show only:
+### 4.1 The substitution
 
-- the **courier amount** (their pay — `CourierPayment`), and
-- the **total**
+The **price breakdown in the job details** — wherever it is surfaced when a **network partner is logged in** — renders the partner's own numbers in place of the tenant's revenue. Same job, same layout, substituted values:
 
-**Not** the revenue for that job (`ucjbAmount`, and not the revenue leg fields `NWAmount` / `DropoffAmount` / `PickupAmount` either).
+| Breakdown line | Normally reads | **NP logged in reads** |
+|---|---|---|
+| Base / amount | `ucjbAmount` / `RawBaseAmount` | **`CourierPayment`** |
+| Fuel | `FuelSurchargeAmount` | **`CourierFuel`** |
+| Total | revenue total | partner total (`CourierPayment` + `CourierFuel`) |
 
-This is consistent with the rate-masking rule already agreed for the NP programme — *"NP sees Revenue not Amount; master sees Amount + Agent Rate"* — and it is a **view-layer change**, not a data-model change, provided §3.5 confirms `CourierPayment` is populated.
+The partner sees `CourierPayment` **as the revenue figure** — not the job's actual revenue field. They are looking at the same job; the money simply reads as theirs.
 
-Scope it across every NP-facing surface, not just the screen where it was noticed: the NP dispatch board job detail, the job list, the Agent Portal (InboundAgent) per-job link, and any NP-visible export or report. A field masked in one place and leaked in another is the same bug.
+### 4.2 Use `CourierFuel`, not the job's fuel amount
+
+At Urgent the whole fuel surcharge is passed to the network partner, so `CourierFuel` and `FuelSurchargeAmount` are the same number and either would appear to work.
+
+**Bind to `CourierFuel` anyway.** Other jurisdictions do not pass all the fuel on, and `CourierFuel` is the field that carries the partner's actual share. Binding to `FuelSurchargeAmount` produces a correct-looking display at Urgent that silently over-reports the partner's fuel everywhere else — the kind of defect that ships because it tests clean in the one place it was tested.
+
+### 4.3 `CourierFuel` must actually be populated — confirm this first
+
+`CourierFuel` is calculated **when a courier is assigned** — and in this case, when the **network partner** is assigned. The display change depends on that happening.
+
+**There is direct evidence it does not always happen.** In `CourierPayCalculationIssues.md` §2, both sampled jobs show `CourierFuel = $0.00`:
+
+- **KT670V** — `CourierPayment` $41.69, `FuelSurchargeAmount` $0.00, `CourierFuel` **$0.00**
+- **KT672V** — `FuelSurchargeAmount` **$18.50**, `CourierPayment` $0.00 (no courier assigned), `CourierFuel` **$0.00**
+
+KT672V is the warning: a job carrying $18.50 of fuel with `CourierFuel` sitting at zero. Bind the NP view to `CourierFuel` while it is unpopulated and the partner sees **no fuel at all**. That is a worse failure than the current one — currently they see a number that is too big; this would show them a number that is too small, which they may not query.
+
+The existing trigger sets `CourierFuel = FuelSurchargeAmount` only when `CourierPayment > 0`, which is consistent with both samples. So the fuel population question is bound to the same one as §3.5: **if the partner is attached via `AgentID` rather than `ucjbCourierID`, neither `CourierPayment` nor `CourierFuel` is calculated for them.**
+
+**Sequence the work accordingly: confirm `CourierFuel` populates on NP assignment (Q14) before binding the view to it.**
+
+### 4.4 Scope
+
+Apply the substitution to **every** NP-facing surface, not only the screen where it was noticed:
+
+- NP dispatch board — job detail price breakdown *(the case in hand)*
+- NP dispatch board — job list, and any column showing an amount
+- Agent Portal (InboundAgent) per-job encrypted link
+- Any NP-visible export, report or emailed summary
+
+A field masked in one place and leaked in another is the same bug. This is a **view-layer change** — no schema change — provided §3.5 and Q14 confirm `CourierPayment` and `CourierFuel` are populated.
 
 ---
 
@@ -298,6 +331,7 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q6 | On a live PN schedule job: actual values of `NWAmount`, `DropoffAmount`, `CourierPayment`, `AgentID`, `ParentId` | Live DB, SELECT only |
 | Q7 | Is Golden Black Taxis an **agent** (`tucAgents`), a **courier/fleet** (`tucCourier`), or both? | Live DB |
 | Q8 | Does the schedule path produce child legs, or one flat job with the partner on the whole job? | `despatchweb` `NationwideJobRepository.cs` + live data |
+| Q14 | Is **`CourierFuel`** populated when a network partner is assigned? Both jobs sampled in `CourierPayCalculationIssues.md` show `CourierFuel = $0.00`, one of them on a job carrying $18.50 of fuel. Binding the NP view to an unpopulated field shows the partner no fuel at all (§4.3). | Live DB, same SELECT as Q6 |
 | Q13 | Exactly which speeds / job types are **Path A** (§3.3) — i.e. where an agent rate calculates the headline delivery rate? Steve names nationwide flight delivery portion and local nationwide speed; confirm the full set so Path B is not applied to a Path A job or vice versa. | `DD_stpGetNationwideRates`, `tucJobType.NationwideEntry`, Steve |
 | Q10 | *(Largely answered — §3.4 confirms the client-level field `tucClient.CourierPercentage`, not a nationwide-speed row.)* Remaining: do cascade levels 1–3 apply to NP jobs, and is the 40% fallback acceptable for a partner? (§3.6a, §3.6b) | Steve + `sp_helptext` on the trigger |
 | Q11 | Does the NP percentage multiply `RawBaseAmount` or `ucjbAmount` (§3.6b)? | Steve / live data |
@@ -376,11 +410,12 @@ Inferred — confirm against GitLab before estimating.
 1. **Run Q6/Q7 first — one SELECT decides the size of this job.** If the network partner is assigned as `ucjbCourierID`, the existing trigger already implements §3.4 exactly (levels 4 and 5), `CourierPayment` is already correct, and the whole defect is the NP view rendering revenue. If they are attached via `AgentID` only, the trigger never fires and there is a data bug as well. This is the difference between a view fix and a build (§3.5).
 2. **Answer Q0 alongside it.** If Golden Black Taxis is a paired DFRNT tenant rather than an in-tenant agent, this is a Pricing Mode setting on the service mapping and none of §3 applies (§6.1).
 3. **Ship the display change (§4) regardless of both.** NP dispatch view shows courier amount + total, never job revenue — across *every* NP-facing surface, not just the screen where it was noticed. On the most likely outcome this is the entire fix.
-4. **Path A is the only place new calculation code is clearly needed (§3.3).** Where an agent rate prices the delivery — nationwide flight delivery portion, local nationwide speed — stamp that rate into `CourierPayment` at creation rather than back-calculating later. Confirm the exact speed/job-type set first (Q13).
-5. **Guard the Path A stamp before writing it (§3.6d).** The trigger fires on every update and will overwrite a stamped agent rate from the percentage cascade unless `CourierPaymentManualOverride` (or equivalent) prevents it. A silent overwrite pays the partner the wrong number with no trace. Highest-risk item here.
-6. **Settle §3.6 (a)–(c)** — whether cascade levels 1–3 apply to NP jobs, whether the 40% fallback is acceptable for a partner, and that the percentage multiplies `RawBaseAmount`.
-7. **Do not repurpose `NWAmount`.** Revenue leg field feeding GP and the archive — the Partner Pricing Modes work made the same call deliberately on the cross-tenant side (§6.2).
-8. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§3.1).
+4. **Confirm `CourierFuel` populates on NP assignment before binding the view to it (Q14).** Evidence in `CourierPayCalculationIssues.md` shows it sitting at $0.00 on a job carrying $18.50 of fuel. Showing a partner no fuel is a worse failure than showing them too much — they are less likely to query it (§4.3).
+5. **Path A is the only place new calculation code is clearly needed (§3.3).** Where an agent rate prices the delivery — nationwide flight delivery portion, local nationwide speed — stamp that rate into `CourierPayment` at creation rather than back-calculating later. Confirm the exact speed/job-type set first (Q13).
+6. **Guard the Path A stamp before writing it (§3.6d).** The trigger fires on every update and will overwrite a stamped agent rate from the percentage cascade unless `CourierPaymentManualOverride` (or equivalent) prevents it. A silent overwrite pays the partner the wrong number with no trace. Highest-risk item here.
+7. **Settle §3.6 (a)–(c)** — whether cascade levels 1–3 apply to NP jobs, whether the 40% fallback is acceptable for a partner, and that the percentage multiplies `RawBaseAmount`.
+8. **Do not repurpose `NWAmount`.** Revenue leg field feeding GP and the archive — the Partner Pricing Modes work made the same call deliberately on the cross-tenant side (§6.2).
+9. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§3.1).
 
 ---
 
@@ -397,7 +432,7 @@ Verified locally:
 - `routed-operations/` schedule + linehaul docs and schedule rationalisation output
 
 - *Release Notes — Partner Pricing Modes, 2026-05-27* (supplied by Steve; shipped code is GitLab-side and not in the local `integration-manager` clone)
-- **Steve, 17 Sep 2026** — the production NP pay mechanism (§3), the agent-rate-at-creation rule (§3.3), the Path B cascade (§3.4) and the required display change (§4). Recalled from operating knowledge, not read from source; §3.5/§3.6 list what still needs confirming against the live DB.
+- **Steve, 17 Sep 2026** — the production NP pay mechanism (§3), the agent-rate-at-creation rule (§3.3), the Path B cascade (§3.4) and the price-breakdown substitution (§4). Recalled from operating knowledge, not read from source; §3.5/§3.6 list what still needs confirming against the live DB.
 
 **Not** available locally — must be checked against GitLab / live DB:
 
