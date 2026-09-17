@@ -1,7 +1,7 @@
 # Network Partner Pay Visibility
 
 **Date:** 17 September 2026
-**For:** Karen (implementation, Dispatch) · Kerran (job search / download, §3.4) · Jacob
+**For:** Karen (implementation, Dispatch) · Kerran (database + job search / download, §7.2) · Jacob
 **From:** Steve Bonnici (AI-assisted analysis)
 **Status:** Investigation — not scoped for build, not assigned.
 
@@ -223,13 +223,19 @@ At Urgent the whole fuel surcharge is passed to the network partner, so `Courier
 
 Apply the substitution to **every** NP-facing surface, not only the screen where it was noticed:
 
-| Surface | Note |
-|---|---|
-| NP dispatch board — job detail price breakdown | the case in hand |
-| NP dispatch board — job list, and any column showing an amount | |
-| **Job search → job download / export** | ⚠️ **known leak — see below** |
-| Agent Portal (InboundAgent) per-job encrypted link | |
-| Any other NP-visible export, report or emailed summary | |
+**A network partner sees DespatchWeb and Routed Operations** *(Steve, 17 Sep 2026 — Q2)*. Both applications are in scope, not just the dispatch board:
+
+| App | Surface | Note |
+|---|---|---|
+| **DespatchWeb** | NP dispatch board — job detail price breakdown | the case in hand |
+| **DespatchWeb** | NP dispatch board — job list, and any column showing an amount | |
+| **DespatchWeb** | **Job search → job download / export** | ⚠️ **known leak — see below** |
+| **Routed Operations** | run / schedule views and job detail visible to a partner | ⚠️ **separate application — separate code path** |
+| **Routed Operations** | any run sheet, manifest or export a partner can pull | |
+| DespatchWeb | Agent Portal (InboundAgent) per-job encrypted link | |
+| either | any other NP-visible export, report or emailed summary | |
+
+> **Routed Operations is the easy one to miss.** It is a different application with its own views and its own queries — fixing DespatchWeb does nothing for it. Anything a partner can open there showing a job amount needs the same substitution.
 
 > ⚠️ **Job search / job download report — flagged by Steve, 17 Sep 2026.**
 >
@@ -293,11 +299,15 @@ Between `ZoneRateCardJson` (AKL zone → PN zone) and `FlatRate`, the Golden Bla
 >
 > Neither side is a superset: the migration has effective-dating the C# lacks; the C# has `FlatRate` the migration lacks.
 >
+> **`AgentVehicleRate` exists** *(Steve, 17 Sep 2026 — Q3)* — the agent rate card is real and deployed, not just a prototype class. Since `tucAgents` also carries `Flagfall` / `KilometerRate` / `ItemRate` / `MaxKMs` (§2.7), Kerran should confirm **which of the two is authoritative** for pricing an agent delivery before Path A is built against either.
+>
 > **Largely resolved by §2.7:** the production agent rate card lives on `tucAgents` (`Flagfall`, `KilometerRate`, `ItemRate`, `MaxKMs`), and `AgentVehicleRate` mirrors those four fields — a re-modelling, not a rival. The note below stands as corroboration.
 >
 > `extra-charges-deep-dive.md` §3 lists **`AgentVehicleService.cs` in Admin Manager** ("Agent vehicle rates with extra charge links"). That implies agent vehicle rates are an **existing production concept**, and the NP-redesign class may be a re-modelling of a table that already exists. **Confirm against the live DB before writing any migration** (Q3) — the worst outcome here is a third competing shape.
 
 ### 4.3 Schedule-created jobs cannot resolve pay at rating time
+
+**The path produces child legs** *(Steve, 17 Sep 2026 — Q8)*, so the delivery leg a partner is allocated to is a child job, linked via `ParentId` / `RootParentId`. Everything in §2 about populating `CourierPayment` applies to **that child**, not the parent.
 
 Schedule jobs carry `ScheduleName`, and link back via `BookingParentId` / `BulkParentId`. They are rated **in bulk at creation** — before anyone knows which partner will take the delivery leg.
 
@@ -374,29 +384,48 @@ What still needs confirming is §6's own open question 8 — whether split jobs 
 
 ## 7. Open Questions
 
-Not resolvable from the material available locally. `despatchweb`, `inboundagent`, `booking` and `courierportal` are **not cloned on this machine** — the `gitlab-source` directories are empty shells — so the code paths below are inferred from schema, triggers and design docs, **not read from source**. GitLab remains source of truth.
+*Answered by Steve, 17 Sep 2026 unless noted. Remaining items are split by who can actually close them — a lookup and a decision are not the same thing.*
 
-| # | Question | Where |
+### 7.1 Answered
+
+| # | Answer |
+|---|---|
+| Q0 | Golden Black Taxis are a **network partner** — in-tenant agent allocation, not cross-tenant partner dispatch (§5.1). |
+| Q1 | The field the partner should see is **`CourierPayment`** (§3.1). |
+| Q2 | The network partner sees **DespatchWeb** and **Routed Operations**. Both are in scope for the substitution (§3.4). |
+| Q3 | **`AgentVehicleRate` exists.** The agent rate card is real and deployed (§4.2). |
+| Q6 | On an NP job `ucjbCourierID` stays blank; the partner goes in the agent field (§2.5). Karen has DB access to confirm values. |
+| Q7 | Golden Black are an **agent**, and they have **their own couriers** — a network partner agent. Confirms the two pay layers in §2.2. |
+| Q8 | The path **produces child legs**. The delivery leg the partner is allocated to is a child job (§2.3, §4.3). |
+| Q9 | `ucjbAmount` is always populated; no risk of zero at allocation (§5.6). |
+
+### 7.2 Assigned — lookups, not decisions
+
+**Kerran** has full database access for the agents table and the remaining schema questions. **Karen** has access to the stored procedures and trigger bodies.
+
+| # | Lookup | Owner |
 |---|---|---|
-| ~~Q0~~ | **Answered (Steve, 17 Sep 2026): in-tenant agent / NP allocation**, not cross-tenant partner dispatch. §2 and §3 apply as written; there is no Pricing Mode shortcut. (§5.1) | — |
-| Q1 | Which field does the **Agent Portal (InboundAgent)** render as the money figure — and **does its data source still resolve?** Test the `IntMgrPartnerRateCard` failure shape (§5.3): a dead endpoint falling back to `ucjbAmount`. | `inboundagent` job view model / view; check for 404s in logs |
-| Q2 | Which field does the **NP dispatch board** render — same or different? | `despatchweb` NP board, `courierportal` |
-| Q3 | Does `AgentVehicleRate` **already exist in the live DB** (per `AgentVehicleService.cs`)? Does deployed `AgentCourierRate` match the C# model, migration 005, or neither? | Live DB `INFORMATION_SCHEMA` |
-| Q16 | Where does the **agent's default percentage** live (§2.5)? `tblSetting.DefaultCourierPercentage`, `Agent.DefaultCourierPaymentPercent` (NP-redesign C# only), or somewhere else? `tucAgents` has no percentage column. | Live DB + Steve |
-| Q4 | *(Answered — see §2.7.)* Full column list for **`tucAgents`** — referenced by `tucJob.AgentID`, absent from `DB-SCHEMA.md` | Live DB |
-| Q5 | Body of `tucJob_Update_AddPickupAmountToNationwideAmount` — firing conditions, what it writes | Live DB `sp_helptext` |
-| Q6 | *(Answered — §2.5: `ucjbCourierID` stays blank, partner goes in the agent field.)* On a live PN schedule job: actual values of `CourierPayment`, `CourierFuel`, `CourierPercentage`, `ucjbCourierID`, `AgentID`, `ParentId` | Live DB, SELECT only |
-| Q18 | Does the **job search / job download** export expose the full revenue amount to a logged-in network partner (§3.4)? Built from its own query rather than the screen's view model, so masking the UI will not cover it. Karen to check; Kerran owns the area. | `despatchweb` job search / report definition |
-| Q17 | Confirm the partner's own driver lands in **`ucjbCourierID`** when they assign on their board — that is the moment `CourierPayment` must be locked (§2.6d). Also: should that driver sit in the tenant's courier field at all, or one of its own? | Live DB + `despatchweb` NP board |
-| Q7 | Is Golden Black Taxis an **agent** (`tucAgents`), a **courier/fleet** (`tucCourier`), or both? | Live DB |
-| Q8 | Does the schedule path produce child legs, or one flat job with the partner on the whole job? | `despatchweb` `NationwideJobRepository.cs` + live data |
-| Q15 | Is the NP agent field on `tucJob` named **`NpagentID`** or the existing **`AgentID`** (§2.5)? The schema dump shows only `AgentID`. Separately: confirm `NPCourierPayment` (Migration M6) is actually deployed — the name is settled, the deployment is not. And is the `AgentRate` / `CourierPayment`-NULL model in `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` superseded on the record, not just in conversation? (§2.2) | Live DB + Steve |
-| Q14 | Is **`CourierFuel`** populated when a network partner is assigned? Both jobs sampled in `CourierPayCalculationIssues.md` show `CourierFuel = $0.00`, one of them on a job carrying $18.50 of fuel. Binding the NP view to an unpopulated field shows the partner no fuel at all (§3.3). | Live DB, same SELECT as Q6 |
-| Q13 | Exactly which speeds / job types are **Path A** (§2.3) — i.e. where an agent rate calculates the headline delivery rate? Steve names nationwide flight delivery portion and local nationwide speed; confirm the full set so Path B is not applied to a Path A job or vice versa. | `DD_stpGetNationwideRates`, `tucJobType.NationwideEntry`, Steve |
-| Q10 | *(Largely answered — §2.4 confirms the client-level field `tucClient.CourierPercentage`, not a nationwide-speed row.)* Remaining: do cascade levels 1–3 apply to NP jobs, and is the 40% fallback acceptable for a partner? (§2.6a, §2.6b) | Steve + `sp_helptext` on the trigger |
-| Q11 | Does the NP percentage multiply `RawBaseAmount` or `ucjbAmount` (§2.6b)? | Steve / live data |
-| Q12 | What signal can gate `tucJob_InsertUpdate_CalculateCourierPayment` so it skips **assignment** but still runs on a **weight / items / cubic** change (§2.6d)? Check `tucJob.Reprice`, `RatedManually`, `CourierPaymentManualOverride` and the existing recalculate triggers before adding anything new. | Live DB `sp_helptext` on the trigger |
-| ~~Q9~~ | **Closed (Steve, 17 Sep 2026):** a job will have `ucjbAmount` populated; no risk of zero at allocation to a network partner. (§5.6) | — |
+| Q4 | Full `tucAgents` column list — partially captured in §2.7 from the schema dump; confirm against live. | Kerran |
+| Q5 | Body of `tucJob_Update_AddPickupAmountToNationwideAmount`. | Karen |
+| Q12 | What signal can gate `tucJob_InsertUpdate_CalculateCourierPayment` — check `Reprice`, `RatedManually`, `CourierPaymentManualOverride` and the existing recalculate triggers (§2.6d). | Karen |
+| Q14 | Is `CourierFuel` populated on NP assignment? Expected **no**, per §2.5 — confirm. | Kerran |
+| Q15a | Is the NP agent field named **`NpagentID`** or the existing **`AgentID`**? Is Migration M6 (`NPCourierPayment`) deployed? | Kerran |
+| Q16 | Where does the **agent's default percentage** live? `tucAgents` has no percentage column — candidates are `tblSetting.DefaultCourierPercentage` or `Agent.DefaultCourierPaymentPercent`. | Kerran |
+| Q17a | Confirm the partner's own driver lands in `ucjbCourierID` when they assign on their board (§2.6d). | Kerran |
+| Q18 | Does the **job search / job download** export expose full revenue to a logged-in network partner? Built from its own query, so masking the UI will not cover it (§3.4). | Karen to check · Kerran owns the area |
+
+### 7.3 Still needs a decision — no lookup will settle these
+
+These are policy and design calls. Database access does not answer them, and if they are left to be inferred during implementation they will be inferred inconsistently.
+
+| # | Decision | Ref |
+|---|---|---|
+| Q10a | Do cascade levels 1–3 (`CourierPercentageOverride`, client+speed, job type) apply to a network partner job, or are they bypassed in favour of the §2.4 rule? | §2.6a |
+| Q10b | If neither the client nor the partner has a percentage, is the trigger's **40% fallback** acceptable for a partner — or should that case fail loudly rather than pay a silent default? | §2.6b |
+| Q11 | Does the percentage multiply **`RawBaseAmount`** or **`ucjbAmount`**? At 57% these are materially different numbers. | §2.6c |
+| Q13 | The full set of speeds / job types that are **Path A**. Steve named nationwide flight delivery portion and local nationwide speed; the set needs closing so Path B is not applied to a Path A job. | §2.3 |
+| Q15b | Is the `AgentRate` / `CourierPayment`-NULL model in `AGENT-MARKETPLACE-IMPLEMENTATION-PLAN.md` superseded **on the record**? That document has now proved authoritative on naming, so it will be trusted on design unless the supersession is written down. | §2.2 |
+| Q17b | Should the partner's own driver sit in the tenant's `ucjbCourierID` at all, or in a field of its own? Locking guards the symptom; moving it removes the cause. | §2.6d |
 
 ### Verification queries — SELECT only, read-only
 
@@ -465,13 +494,13 @@ Inferred — confirm against GitLab before estimating.
 
 ## 9. Recommendation
 
-1. **Treat this as two pieces of work, not one.** §2.5 settles it: on an NP job `ucjbCourierID` stays blank, so the existing trigger never populates `CourierPayment` or `CourierFuel`. The display substitution (§3) on its own would show the partner **zero**.
-2. **Data first — populate `CourierPayment` and `CourierFuel` at partner allocation.** Both at the same moment, one piece of work. Use the §2.4 cascade: client `CourierPercentage`, else the **agent's default percentage** substituted for the courier percentage the trigger would normally use. Fuel passes through to `CourierFuel`. `NPCourierFuelAmount` (NP → their driver's fuel) is **deferred — not in MVP** (§2.2).
-3. **Resolve the two remaining naming unknowns before writing code (Q15, Q16).** `NpagentID` vs the existing `AgentID` on `tucJob`, and where the agent default percentage lives — `tucAgents` has no percentage column. (`NPCourierPayment` is settled and matches Migration M6; confirm it is deployed.) Neither should be guessed.
-4. **Then ship the display substitution (§3)** — `CourierPayment` as the revenue line, `CourierFuel` as the fuel line, across *every* NP-facing surface. **Include the job search / job download export (Q18)** — it shows full revenue today and is built from its own query, so fixing the board will not fix it. Kerran owns that area.
-5. **Path A (§2.3) is the cheaper half and can go first.** Where an agent rate priced the delivery — nationwide flight delivery portion, local nationwide speed — the rate is already the pre-markup number on `tucAgents` (§2.7) and is stamped into `CourierPayment` at creation. Confirm the speed/job-type set (Q13).
-6. **Lock `CourierPayment` when the partner assigns their own courier (§2.6d).** That is the one moment the trigger fires on an NP job — and it would resolve the percentage from the *partner's* driver, collapsing the tenant→partner and partner→driver layers into one field and silently corrupting tenant GP. The rule is **populate if still empty, lock if already set** — that same event is the fallback chance to populate, so a missed allocation-time write does not leave the partner on zero. Keep weight / items / cubic re-rates flowing. Not a permanent flag.
-7. **Settle §2.6 (a)–(c)** — whether cascade levels 1–3 apply to NP jobs, whether the 40% fallback is acceptable for a partner, and that the percentage multiplies `RawBaseAmount`.
+1. **Treat this as two pieces of work, not one.** On an NP job `ucjbCourierID` stays blank (§2.5), so the existing trigger never populates `CourierPayment` or `CourierFuel`. The display substitution (§3) on its own would show the partner **zero**.
+2. **Data first — populate `CourierPayment` and `CourierFuel` at partner allocation**, on the **child delivery leg** (§4.3, Q8). Both fields at the same moment, one piece of work. Use the §2.4 cascade: client `CourierPercentage`, else the **agent's default percentage**. `NPCourierFuelAmount` is deferred — not in MVP (§2.2).
+3. **Then ship the display substitution (§3) across both applications.** A partner sees **DespatchWeb and Routed Operations** (Q2) — two apps, two code paths. Include the **job search / job download export** (Q18): it shows full revenue today and is built from its own query, so fixing the board will not fix it.
+4. **Get §7.3 decided before implementation starts.** Six items — cascade levels, the 40% fallback, the base amount, the Path A speed set, recording the marketplace-plan supersession, and where the partner's driver belongs. No database lookup answers any of them, and left to implementation they will be answered inconsistently.
+5. **Kerran's lookups (§7.2) gate the data work.** Chiefly: the NP agent field name, whether Migration M6 is deployed, where the agent default percentage lives, and whether `tucAgents` or `AgentVehicleRate` is authoritative for agent pricing (Q3).
+6. **Path A (§2.3) is the cheaper half and can go first.** Where an agent rate priced the delivery, the rate is already the pre-markup number and is stamped into `CourierPayment` at creation. Confirm the speed/job-type set (Q13).
+7. **`CourierPayment`: populate if empty, lock if set, recalculate on weight / items / cubic (§2.6d).** The partner assigning their own driver is both the hazard and the fallback chance to populate. Not a permanent flag.
 8. **Keep partner pay in `CourierPayment`** — it is what makes tenant GP work with no second calculation (§2.1).
 
 ---
