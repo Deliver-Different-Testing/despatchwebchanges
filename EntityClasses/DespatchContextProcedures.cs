@@ -82,7 +82,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DD_stpGetAgentDistanceRateResult>> DD_stpGetAgentDistanceRateAsync(int? clientID, int? fromZipCode, string fromState, int? toZipCode, string toState, decimal? totalMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, int? agentVehicleID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DD_stpGetAgentDistanceRateResult>> DD_stpGetAgentDistanceRateAsync(int? clientID, int? fromZipCode, string fromState, int? toZipCode, string toState, decimal? totalMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? bookTime, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, int? agentVehicleID, string cubicList, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -211,9 +211,16 @@ namespace DespatchWeb.EntityClasses
                     Value = agentVehicleID ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "CubicList",
+                    Size = 400,
+                    Value = cubicList ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DD_stpGetAgentDistanceRateResult>("EXEC @returnValue = [dbo].[DD_stpGetAgentDistanceRate] @ClientID = @ClientID, @FromZipCode = @FromZipCode, @FromState = @FromState, @ToZipCode = @ToZipCode, @ToState = @ToState, @TotalMiles = @TotalMiles, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime, @AgentVehicleID = @AgentVehicleID", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DD_stpGetAgentDistanceRateResult>("EXEC @returnValue = [dbo].[DD_stpGetAgentDistanceRate] @ClientID = @ClientID, @FromZipCode = @FromZipCode, @FromState = @FromState, @ToZipCode = @ToZipCode, @ToState = @ToState, @TotalMiles = @TotalMiles, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime, @AgentVehicleID = @AgentVehicleID, @CubicList = @CubicList", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -995,7 +1002,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DD_stpJob_Rate_DescribedAsync(int? clientID, int? speedID, int? fromZipCode, string fromState, decimal? fromLat, decimal? fromLong, int? toZipCode, string toState, decimal? toLat, decimal? toLong, decimal? totalDistance, decimal? fromMiles, decimal? toMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? booked, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, int? fromAgentId, int? fromAirportId, int? toAgentId, int? toAirportId, bool? isFromAddressAirport, bool? isToAddressAirport, int? dimensionsType, OutputParameter<string> description, OutputParameter<decimal?> rate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DD_stpJob_Rate_DescribedAsync(int? clientID, int? speedID, int? fromZipCode, string fromState, decimal? fromLat, decimal? fromLong, int? toZipCode, string toState, decimal? toLat, decimal? toLong, decimal? totalDistance, decimal? fromMiles, decimal? toMiles, decimal? totalWeight, int? quantity, decimal? cubic, int? totalPallets, int? extraStopOffs, DateTime? booked, int? vehicleSizeID, bool? dangerousGoods, decimal? dryIceWeight, int? pickupWaitTime, int? deliveryWaitTime, int? fromAgentId, int? fromAirportId, int? toAgentId, int? toAirportId, bool? isFromAddressAirport, bool? isToAddressAirport, int? dimensionsType, string cubicList, OutputParameter<string> description, OutputParameter<decimal?> rate, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterDescription = new SqlParameter
             {
@@ -1233,9 +1240,16 @@ namespace DespatchWeb.EntityClasses
                     Value = dimensionsType ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "CubicList",
+                    Size = 400,
+                    Value = cubicList ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpJob_Rate_Described] @ClientID = @ClientID, @SpeedID = @SpeedID, @FromZipCode = @FromZipCode, @FromState = @FromState, @FromLat = @FromLat, @FromLong = @FromLong, @ToZipCode = @ToZipCode, @ToState = @ToState, @ToLat = @ToLat, @ToLong = @ToLong, @TotalDistance = @TotalDistance, @FromMiles = @FromMiles, @ToMiles = @ToMiles, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @Booked = @Booked, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime, @FromAgentId = @FromAgentId, @FromAirportId = @FromAirportId, @ToAgentId = @ToAgentId, @ToAirportId = @ToAirportId, @IsFromAddressAirport = @IsFromAddressAirport, @IsToAddressAirport = @IsToAddressAirport, @Description = @Description OUTPUT, @Rate = @Rate OUTPUT, @DimensionsType = @DimensionsType", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpJob_Rate_Described] @ClientID = @ClientID, @SpeedID = @SpeedID, @FromZipCode = @FromZipCode, @FromState = @FromState, @FromLat = @FromLat, @FromLong = @FromLong, @ToZipCode = @ToZipCode, @ToState = @ToState, @ToLat = @ToLat, @ToLong = @ToLong, @TotalDistance = @TotalDistance, @FromMiles = @FromMiles, @ToMiles = @ToMiles, @TotalWeight = @TotalWeight, @Quantity = @Quantity, @Cubic = @Cubic, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @Booked = @Booked, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @PickupWaitTime = @PickupWaitTime, @DeliveryWaitTime = @DeliveryWaitTime, @FromAgentId = @FromAgentId, @FromAirportId = @FromAirportId, @ToAgentId = @ToAgentId, @ToAirportId = @ToAirportId, @IsFromAddressAirport = @IsFromAddressAirport, @IsToAddressAirport = @IsToAddressAirport, @Description = @Description OUTPUT, @Rate = @Rate OUTPUT, @DimensionsType = @DimensionsType, @CubicList = @CubicList", sqlParameters, cancellationToken);
 
             description?.SetValue(parameterDescription.Value);
             rate?.SetValue(parameterRate.Value);

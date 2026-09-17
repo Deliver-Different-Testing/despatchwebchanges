@@ -1576,6 +1576,8 @@ public class NationwideJobRepository(
 
     private async Task<NationwideJobDetail> GetJobDetailsAsync(int jobId)
     {
+        var cubicList = await GetCubicListAsync(jobId);
+
         // Single query to get all job details including airport IDs
         var jobDetail = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -1605,7 +1607,8 @@ public class NationwideJobRepository(
                 ExtraStopOffs = true,
                 PickupWaitTime = j.WaitedPickUp ?? 0,
                 DeliveryWaitTime = j.WaitedDelivery ?? 0,
-                Cubic = null
+                Cubic = null,
+                CubicList = cubicList
             })
             .FirstOrDefaultAsync();
 
@@ -1650,7 +1653,8 @@ public class NationwideJobRepository(
             ExtraStopOffs = jobDetail.ExtraStopOffs,
             PickupWaitTime = jobDetail.PickupWaitTime,
             DeliveryWaitTime = jobDetail.DeliveryWaitTime,
-            Cubic = jobDetail.Cubic
+            Cubic = jobDetail.Cubic,
+            CubicList = jobDetail.CubicList
         };
     }
 
@@ -1720,6 +1724,7 @@ public class NationwideJobRepository(
             nationwideJob.PickupWaitTime,
             nationwideJob.DeliveryWaitTime,
             agent.AgentVehicleId,
+            nationwideJob.CubicList,
             cancellationToken: ct
         );
 

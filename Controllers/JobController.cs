@@ -45,7 +45,8 @@ public class JobController(
     ISendToPartnerService sendToPartnerService,
     IPartnerJobGate partnerJobGate,
     IFlightAssignmentService flightAssignmentService,
-    IArrivalWaitRerateService arrivalWaitRerateService
+    IArrivalWaitRerateService arrivalWaitRerateService,
+    IAccessorialChargeRepository accessorialChargeRepository
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -3173,20 +3174,39 @@ public class JobController(
 
         var isUsCustomer = infoService.IsUsTenant();
 
+        ApiRerate result;
         if (isUsCustomer)
         {
             var jobDetailsUs = isBooking
                 ? await jobQueryRepository.GetJobBookingDetailsForRatingAsync(jobId)
                 : await jobQueryRepository.GetJobDetailsForRatingAsync(jobId);
 
-            return await rateJobService.GetJobRateUsAsync(jobDetailsUs);
+            result = await rateJobService.GetJobRateUsAsync(jobDetailsUs);
+        }
+        else
+        {
+            var jobDetailsNz = isBooking
+                ? await jobQueryRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
+                : await jobQueryRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
+
+            result = await rateJobService.GetJobRateNzAsync(jobDetailsNz);
         }
 
-        var jobDetailsNz = isBooking
-            ? await jobQueryRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
-            : await jobQueryRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
+        // The rating engine only calculates freight - manually-added accessorial charges
+        // (JobAccessorialCharge, separate from the engine's own PricingBreakdown rows) are
+        // layered on top of the job's real amount already, so the preview must add them back in
+        // too or it misleadingly looks like a reprice would drop them. Accessorial charges are a
+        // live-job concept only (added via the job list), so skip for prebook jobs.
+        if (!isBooking)
+        {
+            var accessorialTotal = await accessorialChargeRepository.GetTotalAppliedChargesAsync(jobId);
+            if (accessorialTotal != 0)
+            {
+                result = result with { Rate = result.Rate + accessorialTotal };
+            }
+        }
 
-        return await rateJobService.GetJobRateNzAsync(jobDetailsNz);
+        return result;
     }
 
     /// <summary>
