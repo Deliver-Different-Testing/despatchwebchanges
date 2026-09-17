@@ -5,7 +5,7 @@
 **From:** Steve Bonnici (AI-assisted analysis)
 **Status:** Investigation — not scoped for build, not assigned.
 
-> **Start at §3 and §4.** §3 is how network partner pay actually works in production (confirmed by Steve, 17 Sep 2026); §4 is the change being asked for. §5 onward is supporting analysis, and §7 records where earlier revisions of this doc were wrong.
+> **Start at §3 and §4.** §3 is how network partner pay actually works in production (confirmed by Steve, 17 Sep 2026) — note §3.3, which splits the work into two paths with different timing; §4 is the change being asked for. §5 onward is supporting analysis, and §7 records where earlier revisions of this doc were wrong.
 >
 > Companion doc: `pricing-breakdown-gap-analysis.md` §6 covers the three-leg nationwide model and the `Purpose` / `ChildJobID` invoice-consolidation proposal. **This issue does not depend on it landing** — see §2.
 
@@ -70,17 +70,37 @@ When the network partner then pays *their* courier a lower percentage, that is t
 
 Two distinct layers: **tenant → NP** (`CourierPayment`) and **NP → their courier** (`SubContractor*`). Don't conflate them.
 
-### 3.3 The cascade to populate `CourierPayment` on NP assignment
+### 3.3 Two paths — and the agent-rate path wins
+
+*Steve, 17 Sep 2026.*
+
+> **Rule: if an agent rate is used to calculate the price of a delivery that will ultimately be given to a network partner, store that agent rate in the courier payment field — at job creation.**
+
+**Path A — agent-rate-priced delivery (stamp at creation).**
+Where the **agent / network partner rate** is what calculates the headline rate for the delivery — the delivery portion of a **nationwide flight**, and **local nationwide speed** — the agent rate is already known at the moment the job is priced. Write it into `CourierPayment` **then**, at creation.
+
+The point is to avoid **retrospectively back-calculating** the partner's pay at assignment. If the agent rate was the pricing input, reverse-engineering it later from a percentage is both unnecessary and lossy — a percentage applied to the charge will not reproduce the rate the charge was built from.
+
+**Path B — everything else (resolve at assignment).**
+Where no agent rate priced the delivery, there is nothing to stamp at creation, so `CourierPayment` is resolved when the partner is assigned, via the percentage cascade in §3.4.
+
+**Precedence: Path A wins.** A stamped agent rate is the agreed number and must not be overwritten by the percentage cascade when the partner is later assigned — nor by `tucJob_InsertUpdate_CalculateCourierPayment` on any subsequent update (§3.6d). This is the same shape as **Cost Plus (Mode 3)** on the cross-tenant side (§6), where the partner is quoted live for cost and *"you stamp cost as their agreed rate"* — worth keeping the two consistent.
+
+**Where this lands in code.** The nationwide rating/insert path is `DD_stpGetNationwideRates` → `UTL_stpJob_NationWide_Insert`, with `NationwideJobRepository.cs` as the C# entry point. Note from `extra-charges-deep-dive.md`: **`UTL_stpJob_NationWide_Insert` has its `DD_InsertPricingBreakdown` call commented out** — the nationwide insert path does not populate PricingBreakdown today. Further reason the carrier here is `CourierPayment`, not breakdown rows (§2).
+
+**This partially reverses §5.3.** "Schedule-created jobs cannot resolve pay at rating time" holds only for Path B. On Path A the rate *is* known at rating time and should be captured there.
+
+### 3.4 The cascade to populate `CourierPayment` on NP assignment
 
 Per Steve:
 
 1. Is there a **nationwide percentage against the client** the job is booked for?
 2. If yes → amount × that client's nationwide percentage.
 3. If no → amount × the **network/agent percentage**, defaulting to **57%**.
-4. *(Open — see §3.5)* Check a percentage held against the **network partner** before falling back to 57%.
+4. *(Open — see §3.6)* Check a percentage held against the **network partner** before falling back to 57%.
 5. **Courier fuel percentage passes straight through to the network partner.**
 
-### 3.4 This cascade already exists — which reframes the bug
+### 3.5 This cascade already exists — which reframes the bug
 
 `tucJob_InsertUpdate_CalculateCourierPayment` already computes `CourierPayment = RawBaseAmount × CourierPercentage` off a six-level cascade (`CourierPayCalculationIssues.md` §3):
 
@@ -101,7 +121,7 @@ Steve's NP cascade is a variant of this, not a new thing. Note `tucJobType.Natio
 
 Q6 and Q7 settle this with one SELECT. **Run them before designing anything.**
 
-### 3.5 Decisions that need Steve
+### 3.6 Decisions that need Steve
 
 **(a) Step 4 — should a partner-specific percentage sit ahead of the 57% default?**
 
@@ -115,7 +135,7 @@ Steve said "the full amount". The existing trigger uses **`RawBaseAmount`** (bas
 
 **(c) 57% vs the trigger's 40% fallback.** Two different defaults for the same field. Job KT670V in `CourierPayCalculationIssues.md` shows `CourierPercentage = 0.5711` — consistent with 57% being the real NP default in practice. Reconcile.
 
-**(d) Trigger vs service write-conflict.** If allocation writes `CourierPayment` directly while the trigger also computes it on every insert/update, they will fight. `tucJob.CourierPaymentManualOverride` (bit) looks like the existing guard — confirm that is its purpose, and that the NP path sets it.
+**(d) Trigger vs stamped-rate write-conflict — now the sharpest risk.** A Path A job has its agent rate stamped into `CourierPayment` at creation — but `tucJob_InsertUpdate_CalculateCourierPayment` fires on **every** insert and update and will recompute that field from the percentage cascade. Without a guard, the stamped agent rate is silently overwritten on the next touch of the job, and the partner is paid a percentage of the charge instead of the rate that built it. `tucJob.CourierPaymentManualOverride` (bit) looks like the existing guard — confirm that is its purpose, and that the Path A stamp sets it.
 
 ---
 
@@ -130,7 +150,7 @@ On a network partner's **dispatch view, job detail**, show only:
 
 **Not** the revenue for that job (`ucjbAmount`, and not the revenue leg fields `NWAmount` / `DropoffAmount` / `PickupAmount` either).
 
-This is consistent with the rate-masking rule already agreed for the NP programme — *"NP sees Revenue not Amount; master sees Amount + Agent Rate"* — and it is a **view-layer change**, not a data-model change, provided §3.4 confirms `CourierPayment` is populated.
+This is consistent with the rate-masking rule already agreed for the NP programme — *"NP sees Revenue not Amount; master sees Amount + Agent Rate"* — and it is a **view-layer change**, not a data-model change, provided §3.5 confirms `CourierPayment` is populated.
 
 Scope it across every NP-facing surface, not just the screen where it was noticed: the NP dispatch board job detail, the job list, the Agent Portal (InboundAgent) per-job link, and any NP-visible export or report. A field masked in one place and leaked in another is the same bug.
 
@@ -157,7 +177,7 @@ The rate-masking rule already agreed for the NP programme:
 
 ### 5.2 Rate cards, where a flat or zone rate is wanted instead of a percentage
 
-> **Largely superseded by §3.** The percentage cascade in §3.3 is the production mechanism and resolves the Golden Black Taxis case without any of the below. This subsection stays because a **flat or zone-based** partner rate — "AKL → PN delivery = $X" rather than a percentage of the charge — is not expressible in that cascade, and the NP programme has already modelled one. Relevant only if a flat rate is actually wanted.
+> **Largely superseded by §3.** The percentage cascade in §3.4 is the production mechanism and resolves the Golden Black Taxis case without any of the below. This subsection stays because a **flat or zone-based** partner rate — "AKL → PN delivery = $X" rather than a percentage of the charge — is not expressible in that cascade, and the NP programme has already modelled one. It is also the rate source for **Path A** (§3.3) — where an agent rate prices a nationwide delivery leg, this is what that rate comes from, so it is not purely a later question.
 
 The model in the NP redesign C# layer (`Steve-v2.0-NP-Redesign/api/src/DfrntAgentsPartners.Core/Models/`):
 
@@ -191,7 +211,7 @@ Schedule jobs carry `ScheduleName`, and link back via `BookingParentId` / `BulkP
 
 So at rating time there is no partner, no rate, and no cost figure. The record is revenue-only by construction.
 
-**Implication:** partner pay must be resolved (or re-resolved) at **allocation** time, not creation time. Any design that resolves it during rating will be wrong for the schedule path — which is the path in Steve's example.
+**Implication (Path B only — see §3.3):** where no agent rate priced the delivery, partner pay must be resolved at **allocation** time, not creation time. On Path A the agent rate is known at rating and is stamped at creation. Any design that resolves it during rating will be wrong for the schedule path — which is the path in Steve's example.
 
 This also interacts with §6's open question 6 ("when should consolidated Invoice rows be created on the parent") — for schedule jobs the answer cannot be "at booking."
 
@@ -275,9 +295,10 @@ Not resolvable from the material available locally. `despatchweb`, `inboundagent
 | Q6 | On a live PN schedule job: actual values of `NWAmount`, `DropoffAmount`, `CourierPayment`, `AgentID`, `ParentId` | Live DB, SELECT only |
 | Q7 | Is Golden Black Taxis an **agent** (`tucAgents`), a **courier/fleet** (`tucCourier`), or both? | Live DB |
 | Q8 | Does the schedule path produce child legs, or one flat job with the partner on the whole job? | `despatchweb` `NationwideJobRepository.cs` + live data |
-| Q10 | Is "nationwide percentage against the client" (§3.3 step 1) `tblClientAvailableSpeed.CourierPercentage` on a row whose speed has `tucJobType.NationwideEntry = 1`, or a separate field? | Live DB + `despatchweb` rating path |
-| Q11 | Does the NP percentage multiply `RawBaseAmount` or `ucjbAmount` (§3.5b)? | Steve / live data |
-| Q12 | Is `tucJob.CourierPaymentManualOverride` the guard that stops `tucJob_InsertUpdate_CalculateCourierPayment` overwriting a directly-written `CourierPayment` (§3.5d)? | Live DB `sp_helptext` on the trigger |
+| Q13 | Exactly which speeds / job types are **Path A** (§3.3) — i.e. where an agent rate calculates the headline delivery rate? Steve names nationwide flight delivery portion and local nationwide speed; confirm the full set so Path B is not applied to a Path A job or vice versa. | `DD_stpGetNationwideRates`, `tucJobType.NationwideEntry`, Steve |
+| Q10 | Is "nationwide percentage against the client" (§3.4 step 1) `tblClientAvailableSpeed.CourierPercentage` on a row whose speed has `tucJobType.NationwideEntry = 1`, or a separate field? | Live DB + `despatchweb` rating path |
+| Q11 | Does the NP percentage multiply `RawBaseAmount` or `ucjbAmount` (§3.6b)? | Steve / live data |
+| Q12 | Is `tucJob.CourierPaymentManualOverride` the guard that stops `tucJob_InsertUpdate_CalculateCourierPayment` overwriting a directly-written `CourierPayment` (§3.6d)? | Live DB `sp_helptext` on the trigger |
 | Q9 | On schedule-created jobs, is `UcjbAmount` reliably populated at dispatch time? Mode 2 falls back to **manual entry** when it is missing (§6.7) — a silent fallback is how a wrong number reaches a partner. | Live DB + Send-to-Partner dialog behaviour |
 
 ### Verification queries — SELECT only, read-only
@@ -350,12 +371,13 @@ Inferred — confirm against GitLab before estimating.
 ## 10. Recommendation
 
 1. **Answer Q0 first — it may end the investigation.** If Golden Black Taxis is a paired DFRNT tenant, this is a Pricing Mode configuration on the service mapping, not a build (§6.1).
-2. **Then run Q6/Q7 to settle §3.4.** Is the NP attached as `ucjbCourierID` (trigger fires, `CourierPayment` already populated → pure display bug) or as `AgentID` only (trigger never fires → `CourierPayment` empty → also a data bug)? One SELECT. Everything downstream depends on the answer.
-3. **Ship the display change (§4) regardless.** The NP dispatch view should show courier amount + total, never job revenue — across *every* NP-facing surface, not just the screen where it was spotted. If §3.4 comes back "trigger fires", this is the entire fix.
-4. **Do not repurpose `NWAmount`.** It is a revenue leg field feeding GP and the archive — and the Partner Pricing Modes work already made the same call deliberately on the cross-tenant side (§6.2).
-5. **Keep partner pay in `CourierPayment`.** It is what makes tenant GP work with no second calculation (§3.1). Don't move it to `PricingBreakdown` for this issue.
-6. **Settle §3.5 (a)–(d) before writing code** — partner-specific % ahead of the 57% default, which base amount, 57%-vs-40%, and the trigger write-conflict guard. These are cheap to decide now and expensive to unpick later.
-7. **Treat the flat/zone rate card (§5.2) as a separate, later question.** The percentage cascade solves the case in hand; only pursue rate cards if a flat partner rate is genuinely wanted.
+2. **Split the work by path (§3.3) before anything else.** Path A (agent rate prices the delivery — nationwide flight delivery portion, local nationwide speed) stamps `CourierPayment` at creation. Path B resolves it at assignment from the percentage cascade. They are different builds in different places; confirm which the PN case is (Q13).
+3. **Then run Q6/Q7 to settle §3.5.** Is the NP attached as `ucjbCourierID` (trigger fires, `CourierPayment` populated → pure display bug) or as `AgentID` only (trigger never fires → also a data bug)? One SELECT.
+4. **Ship the display change (§4) regardless.** NP dispatch view shows courier amount + total, never job revenue — across *every* NP-facing surface, not just the screen where it was spotted. If `CourierPayment` is already populated, this is the entire fix.
+5. **Protect the stamped agent rate (§3.6d) — highest-risk item.** `tucJob_InsertUpdate_CalculateCourierPayment` fires on every update and will overwrite a Path A stamp from the percentage cascade unless guarded. A silent overwrite here pays the partner the wrong number and nobody sees it. Settle the guard before stamping anything.
+6. **Do not repurpose `NWAmount`.** Revenue leg field feeding GP and the archive — and the Partner Pricing Modes work already made the same call deliberately on the cross-tenant side (§6.2).
+7. **Keep partner pay in `CourierPayment`.** It is what makes tenant GP work with no second calculation (§3.1).
+8. **Settle §3.6 (a)–(c) before writing code** — partner-specific % ahead of the 57% default, which base amount the percentage multiplies, and 57%-vs-40%. Cheap now, expensive to unpick later.
 
 ---
 
@@ -372,7 +394,7 @@ Verified locally:
 - `routed-operations/` schedule + linehaul docs and schedule rationalisation output
 
 - *Release Notes — Partner Pricing Modes, 2026-05-27* (supplied by Steve; shipped code is GitLab-side and not in the local `integration-manager` clone)
-- **Steve, 17 Sep 2026** — the production NP pay mechanism (§3) and the required display change (§4). Recalled from operating knowledge, not read from source; §3.4/§3.5 list what still needs confirming against the live DB.
+- **Steve, 17 Sep 2026** — the production NP pay mechanism (§3), the agent-rate-at-creation rule (§3.3) and the required display change (§4). Recalled from operating knowledge, not read from source; §3.5/§3.6 list what still needs confirming against the live DB.
 
 **Not** available locally — must be checked against GitLab / live DB:
 
