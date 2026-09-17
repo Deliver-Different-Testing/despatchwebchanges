@@ -1,4 +1,4 @@
-﻿#nullable enable annotations
+#nullable enable annotations
 using System.Diagnostics;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
@@ -11,41 +11,20 @@ namespace DespatchWeb.EntityClasses;
 
 public partial class DespatchContext
 {
-    // Per-request data-scope context resolved by IScopeProvider from Hub
-    // claims. When null (options-only ctor — scaffolding, design-time, tests
-    // not exercising scope) every Current* property below short-circuits so
-    // global filters pass every row.
     private readonly IScopeProvider? _scopeProvider;
 
     private ScopeContext CurrentScope =>
         _scopeProvider?.Scope ?? ScopeContext.BackgroundContext;
 
-    /// <summary>
-    /// True when no row filter applies — background worker, scaffolding,
-    /// design-time, DfrntAdmin (5), Tenant (4), or Internal (1). Internal is
-    /// a transitional bypass: spec §"Data scope per ClientType" collapses it
-    /// into Customer, but until the Phase 1.3 reparent of DFRNT staff to
-    /// DFRNTAdmin (5) ships (see docs/CLIENT-TYPE-FILTERING-CURRENT-STATE-2026-06-02.md),
-    /// ClientTypeId = 1 still belongs to dispatch operations users who must
-    /// see every job and every courier. Drop the IsInternal arm once that
-    /// reparent has run.
-    /// </summary>
     public bool CurrentBypassFilters =>
         CurrentScope.BypassFilters
         || CurrentScope.IsDfAdmin
         || CurrentScope.IsTenant
         || CurrentScope.IsInternal;
 
-    /// <summary>NP scope value used by the NetworkPartner predicate branch.</summary>
     public int? CurrentNpAgentId => CurrentScope.NpAgentId;
-
-    /// <summary>True when ClientTypeId == 3 (NetworkPartner).</summary>
     public bool CurrentIsNetworkPartner => CurrentScope.IsNetworkPartner;
-
-    /// <summary>True for ClientTypeId NULL / 1 / 2 — Customer scope branch.</summary>
     public bool CurrentIsCustomerScoped => CurrentScope.IsCustomerScoped;
-
-    /// <summary>Customer/Internal scope value (tucClient.UcclId).</summary>
     public int? CurrentClientId => CurrentScope.ClientId;
 
     public DespatchContext(DbContextOptions<DespatchContext> options, IScopeProvider scopeProvider)
@@ -54,12 +33,11 @@ public partial class DespatchContext
         _scopeProvider = scopeProvider;
     }
 
-    // Compiled queries
     private static readonly Func<DespatchContext, int, Task<bool>> IsLiveJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId));
-    
-    
+
+
     private static readonly Func<DespatchContext, int, Task<bool>> IsLivePartnerJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
@@ -68,17 +46,12 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
 
-    // "Outbound" = this tenant sent the job to a partner. The discriminator is
-    // PartnerPairing.OwnerTenantId — outbound jobs are tied to a pairing this
-    // tenant owns; inbound mirrors are tied to a pairing whose owner is the
-    // originating partner. A null/empty localTenantId resolves to "cannot tell"
-    // at the caller (see IsOutboundPartnerJobAsync) and returns false.
     private static readonly Func<DespatchContext, int, string, Task<bool>> IsOutboundPartnerJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId, string localTenantId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId
                                      && j.PartnerPairing != null
                                      && j.PartnerPairing.OwnerTenantId == localTenantId));
-    
+
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
@@ -233,8 +206,6 @@ public partial class DespatchContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
 #if DEBUG
-        // Only enable detailed SQL logging when debugger is attached in DEBUG builds
-        // This prevents sensitive query data from leaking to console in production
         if (Debugger.IsAttached)
         {
             optionsBuilder.LogTo(Console.WriteLine,
@@ -245,7 +216,6 @@ public partial class DespatchContext
 #endif
     }
 
-    // Access compiled queries
     public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
         await JobNumberExistsAsyncCompiled(this, jobNumber);
 
@@ -255,7 +225,7 @@ public partial class DespatchContext
     public async Task<IReadOnlyList<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
         await GetActiveNotesByJobIdCompiled(this, jobId).ToListAsync();
 
-    public async Task<int> GetUnreadMessageCountAsync(int staffId, DespatchContext context = null) =>
+    public async Task<int> GetUnreadMessageCountAsync(int staffId, DespatchContext? context) =>
         await GetUnreadMessageCountCompiled(context ?? this, staffId);
 
     public async Task<IReadOnlyList<Suggestion>> GetAllVehicleSizesAsync() =>
@@ -295,7 +265,7 @@ public partial class DespatchContext
         await DoesAddressMatchAirportComplied(this, jobId, isPickupAddress);
 
     public async Task<bool> IsLiveJobAsync(int jobId) => await IsLiveJobCompiled(this, jobId);
-    
+
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
         await IsLivePartnerJobCompiled(this, jobId)
         || await IsArchivedPartnerJobCompiled(this, jobId);
@@ -313,8 +283,6 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.RouteId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Spec branch: NP filters by NpAgentId (deny if missing); Customer/Internal/NULL
-            // filter by UcbkClientId (deny if missing); Tenant/DfrntAdmin/background bypass.
             entity.HasQueryFilter(j =>
                 CurrentBypassFilters
                 || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
@@ -356,7 +324,6 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.ToSuburbId);
         });
 
-        // Tuc Job
         modelBuilder.Entity<TucJob>(entity =>
         {
             entity.HasOne(d => d.Parent)
@@ -407,10 +374,8 @@ public partial class DespatchContext
                 || (CurrentIsCustomerScoped && CurrentClientId != null && j.ClientId == CurrentClientId));
         });
 
-        // Tuc Job Archive 
         modelBuilder.Entity<TucJobArchive>(entity =>
         {
-            // Configure foreign key relationships
             entity.HasOne(d => d.UcjbClient)
                 .WithMany()
                 .HasForeignKey(d => d.UcjbClientId)
@@ -542,9 +507,6 @@ public partial class DespatchContext
                 .HasPrincipalKey(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Dispatcher staff — the scaffolded TucJob has this nav but TucJobArchive
-            // doesn't, so it's wired here (kept out of the generated context so a
-            // re-scaffold won't drop it). Lets JobArchiveMapping project DispatcherName.
             entity.HasOne(d => d.UcjbDisp)
                 .WithMany()
                 .HasForeignKey(d => d.UcjbDispId)
@@ -556,15 +518,10 @@ public partial class DespatchContext
                 || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId));
         });
 
-        // TucCourier — NP-scoped table per spec §2. No customer-side column, so
-        // Customer-scoped users see no rows by default (DespatchWeb is not a
-        // customer-facing surface; this is the safe default). Internal (1) is
-        // bypassed via CurrentBypassFilters until the Phase 1.3 reparent ships.
         modelBuilder.Entity<TucCourier>().HasQueryFilter(c =>
             CurrentBypassFilters
             || (CurrentIsNetworkPartner && CurrentNpAgentId != null && c.NpAgentId == CurrentNpAgentId));
 
-        // TucNote / TucNoteArchive — NP-scoped notes only. Customers don't see notes in DespatchWeb.
         modelBuilder.Entity<TucNote>().HasQueryFilter(n =>
             CurrentBypassFilters
             || (CurrentIsNetworkPartner && CurrentNpAgentId != null && n.NpAgentId == CurrentNpAgentId));
@@ -591,7 +548,6 @@ public partial class DespatchContext
                 || (CurrentIsNetworkPartner && CurrentNpAgentId != null && n.NpAgentId == CurrentNpAgentId));
         });
 
-        // JobDeliveryJourneyArchive - navigation properties to match JobDeliveryJourney
         modelBuilder.Entity<JobDeliveryJourneyArchive>(entity =>
         {
             entity.HasOne(d => d.Courier).WithMany()

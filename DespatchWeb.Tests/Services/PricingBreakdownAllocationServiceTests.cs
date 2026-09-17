@@ -28,7 +28,7 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
             ChargeName = chargeName,
             ChargeAmount = chargeAmount,
             CostAmount = costAmount,
-            IsAccessorial = isAccessorial,
+            IsAccessorial = isAccessorial
         };
         context.PricingBreakdowns.Add(item);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -47,7 +47,7 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
                 UcjbNumber = leg.Number,
                 UcjbDate = new DateTime(2026, 9, 16),
                 ParentId = parentJobId,
-                UcjbVoid = leg.Void,
+                UcjbVoid = leg.Void
             });
         }
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -78,7 +78,7 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
         var seeds = new Dictionary<(int, int), decimal>
         {
             [(itemId, 101)] = 80m,
-            [(itemId, 102)] = 20m,
+            [(itemId, 102)] = 20m
         };
         await _service.RewriteAllocationsForParentAsync(context, 100, seeds, ct: TestContext.Current.CancellationToken);
 
@@ -117,7 +117,6 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
 
         Assert.Equal(5.00m, legA.CostAmount);
         Assert.Equal(5.00m, legA.CostOverride);
-        // The un-seeded leg derives its cost normally.
         Assert.Equal(6.40m, legB.CostAmount);
         Assert.Null(legB.CostOverride);
     }
@@ -125,9 +124,6 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
     [Fact]
     public async Task RewriteAllocationsForParentAsync_SeedCostOverrides_NeverAppliedToAnExistingRow()
     {
-        // A stale seed for a pair that already has a row must never overwrite that row's own
-        // persisted CostOverride — seedCostOverrides only ever applies to a genuinely new pair,
-        // exactly like seedSharePercents.
         await SeedJobsAsync(1200, (1201, "J1200A", false), (1202, "J1200B", false));
         var itemId = await SeedParentItemAsync(1200, "Base", 64.00m, 32.00m);
 
@@ -167,7 +163,6 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
             await _service.RewriteAllocationsForParentAsync(context, 200, seeds, ct: TestContext.Current.CancellationToken);
         }
 
-        // The operator edits the item's revenue on the parent — a routine rewrite, no new seeds.
         await using (var context = _db.CreateContext())
         {
             var item = context.PricingBreakdowns.Single(p => p.PricingBreakdownId == itemId);
@@ -177,14 +172,14 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
 
         await using (var context = _db.CreateContext())
         {
-            await _service.RewriteAllocationsForParentAsync(context, 200, null, ct: TestContext.Current.CancellationToken);
+            await _service.RewriteAllocationsForParentAsync(context, 200, ct: TestContext.Current.CancellationToken);
         }
 
         var rows = await GetAllocationsAsync(itemId);
         var legA = rows.Single(r => r.LegJobId == 201);
         var legB = rows.Single(r => r.LegJobId == 202);
-        Assert.Equal(70m, legA.SharePercent); // unchanged
-        Assert.Equal(140.00m, legA.ChargeAmount); // 200 * 70%
+        Assert.Equal(70m, legA.SharePercent);
+        Assert.Equal(140.00m, legA.ChargeAmount);
         Assert.Equal(30m, legB.SharePercent);
         Assert.Equal(60.00m, legB.ChargeAmount);
     }
@@ -201,7 +196,6 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
             await _service.RewriteAllocationsForParentAsync(context, 300, seeds, ct: TestContext.Current.CancellationToken);
         }
 
-        // Operator overrides leg A's cost directly (e.g. pay the driver a flat $10).
         await using (var context = _db.CreateContext())
         {
             var row = context.PricingBreakdownAllocations.Single(a => a.ParentPricingBreakdownId == itemId && a.LegJobId == 301);
@@ -209,8 +203,6 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        // A later share edit on the SAME item (e.g. per-item share moved to 70/30) must not
-        // clear the override or change its stored cost.
         await using (var context = _db.CreateContext())
         {
             var row = context.PricingBreakdownAllocations.Single(a => a.ParentPricingBreakdownId == itemId && a.LegJobId == 301);
@@ -222,14 +214,14 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
 
         await using (var context = _db.CreateContext())
         {
-            await _service.RewriteAllocationsForParentAsync(context, 300, null, ct: TestContext.Current.CancellationToken);
+            await _service.RewriteAllocationsForParentAsync(context, 300, ct: TestContext.Current.CancellationToken);
         }
 
         var rows = await GetAllocationsAsync(itemId);
         var legA = rows.Single(r => r.LegJobId == 301);
         Assert.Equal(10.00m, legA.CostOverride);
-        Assert.Equal(10.00m, legA.CostAmount); // override wins over the share-derived value
-        Assert.Equal(70m, legA.SharePercent); // share edit still took effect
+        Assert.Equal(10.00m, legA.CostAmount);
+        Assert.Equal(70m, legA.SharePercent);
 
         var jobA = await GetJobAsync(301);
         Assert.Equal(10.00m, jobA.CourierPayment);
@@ -247,13 +239,11 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
             await _service.RewriteAllocationsForParentAsync(context, 400, seeds, ct: TestContext.Current.CancellationToken);
         }
 
-        // A new item ("Congestion") is added on the parent — §7.1: defaults to the overall leg
-        // share, here the only existing item's 80/20.
         var congestionId = await SeedParentItemAsync(400, "Congestion", 10.00m, 4.00m);
 
         await using (var context = _db.CreateContext())
         {
-            await _service.RewriteAllocationsForParentAsync(context, 400, null, ct: TestContext.Current.CancellationToken);
+            await _service.RewriteAllocationsForParentAsync(context, 400, ct: TestContext.Current.CancellationToken);
         }
 
         var rows = await GetAllocationsAsync(congestionId);
@@ -271,13 +261,10 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
         var itemId = await SeedParentItemAsync(500, "Base", 90.00m, null);
 
         await using var context = _db.CreateContext();
-        await _service.RewriteAllocationsForParentAsync(context, 500, null, ct: TestContext.Current.CancellationToken);
+        await _service.RewriteAllocationsForParentAsync(context, 500, ct: TestContext.Current.CancellationToken);
 
         var rows = await GetAllocationsAsync(itemId);
         Assert.Equal(3, rows.Count);
-        // SQLite has no true fixed-precision DECIMAL type, so an exact 1/3 share round-trips with a
-        // little float noise even though the real decimal(9,6) column would store 33.333333 exactly —
-        // round to the column's own scale before comparing.
         Assert.All(rows, r => Assert.Equal(Math.Round(100m / 3m, 6), Math.Round(r.SharePercent, 6)));
         Assert.Equal(90.00m, rows.Sum(r => r.ChargeAmount));
     }
@@ -303,7 +290,7 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
 
         await using (var context = _db.CreateContext())
         {
-            await _service.RewriteAllocationsForParentAsync(context, 600, null, ct: TestContext.Current.CancellationToken);
+            await _service.RewriteAllocationsForParentAsync(context, 600, ct: TestContext.Current.CancellationToken);
         }
 
         var rows = await GetAllocationsAsync(itemId);
@@ -322,23 +309,19 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
         var seeds = new Dictionary<(int, int), decimal>
         {
             [(baseId, 701)] = 50m, [(baseId, 702)] = 50m,
-            [(fuelId, 701)] = 50m, [(fuelId, 702)] = 50m,
+            [(fuelId, 701)] = 50m, [(fuelId, 702)] = 50m
         };
         await _service.RewriteAllocationsForParentAsync(context, 700, seeds, ct: TestContext.Current.CancellationToken);
 
         var jobA = await GetJobAsync(701);
-        Assert.Equal(60.00m, jobA.UcjbAmount); // 50 (Base) + 10 (Fuel)
+        Assert.Equal(60.00m, jobA.UcjbAmount);
         Assert.Equal(10.00m, jobA.FuelSurchargeAmount);
-        Assert.Equal(27.50m, jobA.CourierPayment); // 20 + 7.50
+        Assert.Equal(27.50m, jobA.CourierPayment);
     }
 
     [Fact]
     public async Task RewriteAllocationsForParentAsync_SelfReferencingParentId_NeverTreatsTheRootAsItsOwnLeg()
     {
-        // SplitJobService.SplitJobAsync sets a split parent's own ParentId to itself (the "I am a
-        // split parent, not just unsplit" sentinel — see AllowSplit's identical check elsewhere).
-        // Self-discovery via TucJob.ParentId == parentJobId must not be fooled by that into treating
-        // the root as one of its own legs.
         await using (var context = _db.CreateContext())
         {
             context.TucJobs.Add(new TucJob { UcjbId = 1000, UcjbNumber = "J1000", UcjbDate = new DateTime(2026, 9, 16), ParentId = 1000 });
@@ -362,9 +345,6 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
     [Fact]
     public async Task RewriteAllocationsForParentAsync_ExplicitCurrentLegIds_OverridesSelfDiscoveryAndPrunesReplacedLeg()
     {
-        // Models a nested re-split: leg B (902) is being replaced by two sub-legs (903, 904) that
-        // are NOT TucJob.ParentId children of the root (they belong to B, which has since stopped
-        // being a leaf) — so self-discovery via ParentId==root would miss them and wrongly keep B.
         await SeedJobsAsync(900, (901, "J900A", false), (902, "J900B", false));
         var itemId = await SeedParentItemAsync(900, "Base", 100.00m, 40.00m);
 
@@ -374,8 +354,6 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
             await _service.RewriteAllocationsForParentAsync(context, 900, seeds, ct: TestContext.Current.CancellationToken);
         }
 
-        // The two sub-legs aren't TucJob.ParentId children of 900 (they belong to 902), but the
-        // service must still manage them when told to explicitly.
         await using (var context = _db.CreateContext())
         {
             context.TucJobs.Add(new TucJob { UcjbId = 903, UcjbNumber = "J900B1", UcjbDate = new DateTime(2026, 9, 16), ParentId = 902 });
@@ -392,7 +370,7 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
 
         var rows = await GetAllocationsAsync(itemId);
         Assert.Equal(3, rows.Count);
-        Assert.DoesNotContain(rows, r => r.LegJobId == 902); // B's row is pruned, not left stale
+        Assert.DoesNotContain(rows, r => r.LegJobId == 902);
         Assert.Equal(50m, rows.Single(r => r.LegJobId == 901).SharePercent);
         Assert.Equal(25m, rows.Single(r => r.LegJobId == 903).SharePercent);
         Assert.Equal(25m, rows.Single(r => r.LegJobId == 904).SharePercent);
@@ -409,7 +387,7 @@ public class PricingBreakdownAllocationServiceTests : IAsyncDisposable
         var itemId = await SeedParentItemAsync(800, "Base", 64.00m, 32.00m);
 
         await using var context2 = _db.CreateContext();
-        await _service.RewriteAllocationsForParentAsync(context2, 800, null, ct: TestContext.Current.CancellationToken);
+        await _service.RewriteAllocationsForParentAsync(context2, 800, ct: TestContext.Current.CancellationToken);
 
         var rows = await GetAllocationsAsync(itemId);
         Assert.Empty(rows);

@@ -16,7 +16,7 @@ public class SplitPricingAllocatorTests
     private static List<ParentLine> Kt1314VLines() => [Base, BaseFuel, Congestion];
 
     private static List<LegWeight> Legs(decimal milesA, decimal milesB) =>
-        [new LegWeight(1, "A", milesA), new LegWeight(2, "B", milesB)];
+        [new(1, "A", milesA), new(2, "B", milesB)];
 
     [Fact]
     public void Shares_AreProportionalToMiles()
@@ -39,7 +39,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Shares_PreferUserOverrides_NormalisedToOne()
     {
-        // Miles say 50/50 but the user pinned 70/30 in the dialog — the override wins.
         var legs = new List<LegWeight>
         {
             new(1, "A", 5m, 70m),
@@ -65,7 +64,6 @@ public class SplitPricingAllocatorTests
     {
         var allocated = Allocate(Kt1314VLines(), Legs(7m, 3m));
 
-        // Six rows: every line exists on both legs, named per the bug report's Expected section.
         Assert.Equal(6, allocated.Count);
         Assert.Equal(
             ["Base Part A", "Base Part B", "Base Fuel Part A", "Base Fuel Part B", "Congestion Part A", "Congestion Part B"
@@ -82,8 +80,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_CarriesTheShareUsedForEachLine_AsAPercent()
     {
-        // 70 miles / 30 miles => 70%/30%, needed by the split-job Price Breakdown grid to persist
-        // per (item, leg) shares rather than re-deriving them later.
         var allocated = Allocate(Kt1314VLines(), Legs(7m, 3m));
 
         Assert.All(allocated.Where(l => l.LetterSuffix == "A"), l => Assert.Equal(70m, l.SharePercent));
@@ -105,8 +101,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_UsesACostOverride_ForThatLegOnly()
     {
-        // Both legs' current 70/30 share are re-sent unchanged (matching how a caller always sends
-        // every leg of a touched line) — only leg A's cost is set directly.
         var lines = Kt1314VLines();
         var overrides = new List<LineShareOverride>
         {
@@ -121,11 +115,9 @@ public class SplitPricingAllocatorTests
 
         Assert.Equal(1.00m, legA.CostAmount);
         Assert.Equal(1.00m, legA.CostOverride);
-        // The sibling leg is unaffected — it still derives from the line's own cost by share.
-        Assert.Equal(1.80m, legB.CostAmount); // 6.00 - 4.20 (remainder-absorbing leg)
+        Assert.Equal(1.80m, legB.CostAmount);
         Assert.Null(legB.CostOverride);
 
-        // Revenue is untouched by the cost override — it still follows the unchanged 70/30 share.
         Assert.Equal(6.30m, legA.ChargeAmount);
         Assert.Equal(2.70m, legB.ChargeAmount);
     }
@@ -133,8 +125,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_PreservesEachLinesTotal_SoTheParentTotalIsUnchanged()
     {
-        // The invoice guarantee: the legs of every line sum back to the original line exactly, so
-        // the parent's 89.00 / 50.00 is neither lost nor doubled.
         var lines = Kt1314VLines();
         var allocated = Allocate(lines, Legs(1m, 2m));
 
@@ -145,7 +135,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_LastLegAbsorbsTheRoundingRemainder()
     {
-        // 10.00 split three ways can't round evenly — the last leg takes the difference.
         var lines = new List<ParentLine> {new(1, "Base", 10.00m, null)};
         var legs = new List<LegWeight> {new(1, "A", 1m), new(2, "B", 1m), new(3, "C", 1m)};
 
@@ -184,7 +173,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_GivesAnOverriddenLineItsOwnShares_LeavingTheOtherLinesOnTheLegSplit()
     {
-        // Leg A drove through the congestion zone; leg B didn't. The overall split stays 70/30.
         var allocated = Allocate(
             Kt1314VLines(),
             Legs(7m, 3m),
@@ -197,7 +185,6 @@ public class SplitPricingAllocatorTests
         Assert.Equal(0.00m, congestion[1].ChargeAmount);
         Assert.Equal(0.00m, congestion[1].CostAmount);
 
-        // The untouched lines still follow the legs.
         Assert.Equal(44.80m, allocated.First(l => l.ChargeName == "Base Part A").ChargeAmount);
         Assert.Equal(19.20m, allocated.First(l => l.ChargeName == "Base Part B").ChargeAmount);
         Assert.Equal(11.20m, allocated.First(l => l.ChargeName == "Base Fuel Part A").ChargeAmount);
@@ -206,7 +193,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_PreservesTheParentTotal_EvenWithAnOverriddenLine()
     {
-        // The invoice guarantee has to survive per-line overrides too.
         var lines = Kt1314VLines();
         var allocated = Allocate(
             lines,
@@ -232,7 +218,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_TreatsAMissingLegAsZero_SoOneLegCanTakeTheWholeLine()
     {
-        // Only leg 2 is named, so leg 1 weighs nothing.
         var allocated = Allocate([Congestion], Legs(7m, 3m), [new LineShareOverride(3, 2, 100m)]);
 
         Assert.Equal(0.00m, allocated[0].ChargeAmount);
@@ -242,8 +227,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_IgnoresOverrides_ForAnUnknownLineOrWithNoShareAtAll()
     {
-        // A stale line id and an all-zero override both fall back to the leg split rather than
-        // silently becoming an even division.
         var allocated = Allocate(
             [Base, Congestion],
             Legs(7m, 3m),
@@ -260,8 +243,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void Allocate_ScalesMileageInTheName_ByTheLinesOwnShare()
     {
-        // The base line's name carries the miles; an override on that line has to move them too,
-        // or PriceLineClassifier.ParseMiles reads a distance the leg never drove.
         var allocated = Allocate(
             [new ParentLine(1, "Base (100 miles)", 64.00m, null)],
             Legs(7m, 3m),
@@ -291,8 +272,6 @@ public class SplitPricingAllocatorTests
     }
 
     [Theory]
-    // A mileage-bearing name gets the leg's own miles, so per-leg miles parse back out correctly
-    // instead of every leg reporting the parent's distance.
     [InlineData("Base (108 miles)", 0.25, "Base (27 miles) Part A")]
     [InlineData("Distance (20 mi incl., 60 mi charged)", 0.5, "Distance (10 mi incl., 30 mi charged) Part A")]
     [InlineData("Base (10.5 miles)", 0.5, "Base (5.3 miles) Part A")]
@@ -303,7 +282,6 @@ public class SplitPricingAllocatorTests
     public void LegChargeName_LeavesNonMileageNamesAlone()
     {
         Assert.Equal("Congestion Part B", LegChargeName("Congestion", "B", 0.3m));
-        // No share supplied — nothing to scale by, so the name is only suffixed.
         Assert.Equal("Base (108 miles) Part B", LegChargeName("Base (108 miles)", "B", null));
     }
 
@@ -337,12 +315,9 @@ public class SplitPricingAllocatorTests
     }
 
     [Theory]
-    // NZ charge names carry kilometres, so a km figure has to be scaled per leg exactly as miles are
-    // — otherwise both legs keep the parent's full distance in their name.
     [InlineData("Distance (20 km)", 0.25, "Distance (5 km) Part A")]
     [InlineData("Base (10.5 km)", 0.5, "Base (5.3 km) Part A")]
     [InlineData("Distance (20 km incl., 60 km charged)", 0.5, "Distance (10 km incl., 30 km charged) Part A")]
-    // The matched unit is preserved rather than normalised to one or the other.
     [InlineData("Base (108 miles)", 0.25, "Base (27 miles) Part A")]
     public void LegChargeName_ScalesKilometresAsWellAsMiles(string original, double share, string expected) =>
         Assert.Equal(expected, LegChargeName(original, "A", (decimal)share));
@@ -350,15 +325,12 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void LegChargeName_LeavesUnitlessNumbersAlone()
     {
-        // "2" here is a quantity, not a distance — only figures carrying a distance unit move.
         Assert.Equal("Stop Offs (2) Part A", LegChargeName("Stop Offs (2)", "A", 0.5m));
     }
 
     [Fact]
     public void SharesFromWeights_NegativeTotal_StaysProportionalInsteadOfSplittingEvenly()
     {
-        // A credit/rebate set sums negative. Proportional scaling is still well-defined, and an even
-        // split would silently move money between the lines.
         var shares = SharesFromWeights([-100m, -50m]);
         var amounts = DistributeAmount(-60.00m, shares);
 
@@ -380,8 +352,6 @@ public class SplitPricingAllocatorTests
     [Fact]
     public void SharesFromWeights_WeightsCancelToZero_FallsBackToAnEvenSplit()
     {
-        // No proportional answer exists when the weights cancel out; an even split is the only
-        // option left, and callers log it rather than letting it pass unnoticed.
         var shares = SharesFromWeights([50m, -50m]);
 
         Assert.Equal(0.5m, shares[0]);

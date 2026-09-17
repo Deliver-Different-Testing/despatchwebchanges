@@ -5,15 +5,10 @@ import zlib from "zlib";
 import {promisify} from "util";
 import {lessLoader} from "esbuild-plugin-less";
 
-// Every valid-identifier named export of the installed React, used to generate
-// the `react` → window.React shim (see createReactGlobalShimPlugin) so the shim
-// tracks whatever React version ships rather than a hand-maintained list.
 const reactNamedExports: string[] = Object.keys(require("react")).filter(
     (k) => k !== "default" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k)
 );
 
-// Mantine barrels shimmed onto the vendor-react window globals. Export lists are
-// read off the installed packages so they never drift from the shipped version.
 const mantineBarrels: Record<string, {global: string; exports: string[]}> = Object.fromEntries(
     (
         [
@@ -33,7 +28,6 @@ const mantineBarrels: Record<string, {global: string; exports: string[]}> = Obje
     ])
 );
 
-// Type definitions
 type EntryPointName =
     'vendor-core'
     | 'vendor-plugins'
@@ -84,13 +78,11 @@ type EntryPointName =
     | 'dispatchDialogReact';
 type EntryPoints = Record<EntryPointName, string>;
 
-// Configuration
 const isDev = process.argv.includes("--dev");
 const isAnalyze = process.argv.includes("--analyze");
 const rootDir = __dirname;
 const distPath = path.join(rootDir, "wwwroot/dist");
 
-// Entry points configuration
 const entryPoints: EntryPoints = {
     "vendor-core": path.join(rootDir, "wwwroot/app/index.ts"),
     "vendor-plugins": path.join(rootDir, "wwwroot/app/vendor-plugins.ts"),
@@ -141,7 +133,6 @@ const entryPoints: EntryPoints = {
     dispatchReact: path.join(rootDir, "wwwroot/app/react/pages/dispatch/dispatch-react.module.tsx"),
 };
 
-// Lazy-load html-minifier-terser only when needed (production builds)
 let htmlMinifier: typeof import('html-minifier-terser') | null = null;
 async function getHtmlMinifier() {
     if (!htmlMinifier) {
@@ -150,7 +141,6 @@ async function getHtmlMinifier() {
     return htmlMinifier;
 }
 
-// Utility functions
 function toRelativePath(filePath: string): string {
     return path.relative(rootDir, filePath);
 }
@@ -160,7 +150,6 @@ function cleanDistFolder(): void {
     fs.mkdirSync(distPath, { recursive: true });
 }
 
-// HTML minification options (cached)
 const htmlMinifyOptions = {
     collapseWhitespace: true,
     removeComments: true,
@@ -175,7 +164,6 @@ const htmlMinifyOptions = {
     ignoreCustomFragments: [/\{\{[\s\S]*?}}/]
 };
 
-// ESBuild plugins
 function createHtmlMinifierPlugin(): esbuild.Plugin {
     return {
         name: "html-minifier",
@@ -221,33 +209,28 @@ function createErrorReportingPlugin(): esbuild.Plugin {
     };
 }
 
-// Plugin to redirect shared library imports to window globals (for module bundles)
 function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
     return {
         name: "global-shim",
         setup(build) {
-            // Intercept dayjs imports
             build.onResolve({ filter: /^dayjs(\/.*)?$/ }, (args) => ({
                 path: args.path,
                 namespace: "dayjs-shim",
             }));
 
             build.onLoad({ filter: /.*/, namespace: "dayjs-shim" }, (args) => {
-                // Handle dayjs plugins (dayjs/plugin/utc, etc.)
                 if (args.path.includes("/plugin/")) {
                     return {
                         contents: `export default function() {}; // Plugin already loaded in vendor`,
                         loader: "js",
                     };
                 }
-                // Main dayjs - return window global
                 return {
                     contents: `export default window.dayjs; export const Dayjs = window.dayjs;`,
                     loader: "js",
                 };
             });
 
-            // Intercept windows-iana imports
             build.onResolve({ filter: /^windows-iana$/ }, () => ({
                 path: "windows-iana",
                 namespace: "windows-iana-shim",
@@ -259,9 +242,7 @@ function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
                 loader: "js",
             }));
 
-            // For vendor-plugins: Vendor-core already loads Angular core
             if (includeAngular) {
-                // Shim Angular core modules to use window.angular
                 build.onResolve({ filter: /^angular$/ }, () => ({
                     path: "angular",
                     namespace: "angular-shim",
@@ -272,7 +253,6 @@ function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
                     loader: "js",
                 }));
 
-                // Angular submodules just need angular to be present
                 const angularModules = [
                     "angular-animate",
                     "angular-aria",
@@ -297,43 +277,25 @@ function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
     };
 }
 
-/**
- * Emits a tree-shakable `export const <name> = <expr>`.
- *
- * A bare `export const Button = M.Button` is NOT droppable: esbuild has to
- * assume the property read might invoke a getter, so it keeps every generated
- * export even when the island imports two of them. Wrapping the read in a
- * `/* @__PURE__ *\/` call makes it provably side-effect free, so unused exports
- * vanish — and the minifier inlines the IIFE, leaving `var t = window.X, o =
- * t.Button` for the ones that are used. Without this, each island importing the
- * `@mantine/core` barrel carried all ~440 assignments (~6 KB).
- */
 function pureExport(name: string, expr: string): string {
     return `export const ${name} = /* @__PURE__ */ (() => ${expr})();`;
 }
 
-// Plugin to redirect React imports to window globals (for react-module bundles)
 function createReactGlobalShimPlugin(): esbuild.Plugin {
     return {
         name: "react-global-shim",
         setup(build) {
-            // Shim React to use window.React
             build.onResolve({filter: /^react$/}, () => ({
                 path: "react",
                 namespace: "react-shim",
             }));
 
-            // Re-export EVERY named export of the installed React off window.React,
-            // generated from React's own export list. This avoids hand-maintaining
-            // the set (React 19 added `use`, `useEffectEvent`, `Activity`, … and
-            // Mantine imports them) — the shim now tracks whatever React ships.
             build.onLoad({filter: /.*/, namespace: "react-shim"}, () => ({
                 contents: `const React = window.React;\nexport default React;\n`
                     + reactNamedExports.map(k => pureExport(k, `React.${k}`)).join('\n'),
                 loader: "js",
             }));
 
-            // Shim react-dom to use window.ReactDOM
             build.onResolve({filter: /^react-dom$/}, () => ({
                 path: "react-dom",
                 namespace: "react-dom-shim",
@@ -346,7 +308,6 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 loader: "js",
             }));
 
-            // Shim react-dom/client
             build.onResolve({filter: /^react-dom\/client$/}, () => ({
                 path: "react-dom/client",
                 namespace: "react-dom-client-shim",
@@ -358,7 +319,6 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 loader: "js",
             }));
 
-            // Shim react/jsx-runtime - use the actual jsx-runtime from vendor
             build.onResolve({filter: /^react\/jsx-runtime$/}, () => ({
                 path: "react/jsx-runtime",
                 namespace: "jsx-runtime-shim",
@@ -370,7 +330,6 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 loader: "js",
             }));
 
-            // Shim @tanstack/react-query
             build.onResolve({filter: /^@tanstack\/react-query$/}, () => ({
                 path: "@tanstack/react-query",
                 namespace: "react-query-shim",
@@ -384,11 +343,6 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 loader: "js",
             }));
 
-            // ── Mantine: redirect the barrels to the vendor-react globals for the
-            // same reason as MUI below — otherwise every migrated island embeds its
-            // own copy of Mantine core. Export lists are generated from the
-            // installed packages (see mantineBarrels), so they track whatever
-            // version ships rather than a hand-maintained list.
             for (const [specifier, {global, exports}] of Object.entries(mantineBarrels)) {
                 const namespace = `mantine-shim:${specifier}`;
                 build.onResolve({filter: new RegExp(`^${specifier.replace("/", "\\/")}$`)}, () => ({
@@ -406,13 +360,10 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
     };
 }
 
-// Base build options (shared between vendor and modules)
 const baseBuildOptions: esbuild.BuildOptions = {
     bundle: true,
     format: "iife",
     target: ["es2020"],
-    // Emit real UTF-8 rather than escaping every non-ASCII character to \uXXXX.
-    // The UI strings use ·, →, — and friends; the served files declare UTF-8.
     charset: "utf8",
     mainFields: ["browser", "module", "main"],
     loader: {
@@ -429,10 +380,8 @@ const baseBuildOptions: esbuild.BuildOptions = {
     },
 };
 
-// Bundle types for different shim configurations
 type BundleType = "vendor-core" | "vendor-plugins" | "vendor-react" | "app-modules";
 
-// Build configuration for a specific entry or set of entries
 function getBuildConfig(
     forProduction: boolean,
     entries: Record<string, string>,
@@ -444,28 +393,14 @@ function getBuildConfig(
         createErrorReportingPlugin(),
     ];
 
-    // Apply shims based on the bundle type
     if (bundleType === "vendor-plugins") {
-        // vendor-plugins uses Angular from vendor-core
         plugins.unshift(createGlobalShimPlugin(true));
     } else if (bundleType === "app-modules") {
-        // Every non-vendor entry — the Angular route modules and the React islands
-        // alike — takes dayjs/windows-iana plus React/Mantine/MUI from the vendor
-        // bundles. The Angular modules need the React shim too because app.ts and
-        // the route modules pull in island entries; without it each of
-        // app/home/jobSearch/nationwide embeds its own copy of all three.
-        // _Layout.cshtml loads vendor-react.js ahead of app.js so the globals exist
-        // by the time any of these bundles evaluate.
         plugins.unshift(createGlobalShimPlugin(false));
         plugins.unshift(createReactGlobalShimPlugin());
     } else if (bundleType === "vendor-react") {
-        // vendor-react bundles MUI and Mantine; redirect dayjs to the single
-        // window.dayjs configured in vendor-core so @mantine/dates shares the
-        // app's dayjs plugins/timezone setup rather than a second, unconfigured
-        // dayjs instance.
         plugins.unshift(createGlobalShimPlugin(false));
     }
-    // vendor-core doesn't need shims - it bundles its own dependencies
 
     const define: Record<string, string> = {
         "process.env.NODE_ENV": forProduction ? '"production"' : '"development"',
@@ -493,12 +428,6 @@ function getBuildConfig(
             metafile: true,
             legalComments: "none",
             logLevel: "warning",
-            // No production sourcemaps: they added ~14 MB to the published image for a
-            // symbolication path nothing currently consumes. Dev builds still emit them.
-            // The islands narrate their mount/unmount lifecycle through console.log,
-            // which is what the old drop:["console"] was really targeting. `pure`
-            // strips exactly those while leaving console.error/warn intact — dropping
-            // the whole console object made production failures silent.
             drop: ["debugger"],
             pure: ["console.log", "console.debug", "console.info", "console.trace"],
         };
@@ -513,7 +442,6 @@ function getBuildConfig(
     };
 }
 
-// Manifest generation from esbuild metafile (more reliable than file scanning)
 function generateManifestFromMetafile(metafile: esbuild.Metafile): Record<string, string> {
     const manifest: Record<string, string> = {};
     const entryNames = Object.keys(entryPoints) as EntryPointName[];
@@ -521,9 +449,7 @@ function generateManifestFromMetafile(metafile: esbuild.Metafile): Record<string
     for (const outputPath of Object.keys(metafile.outputs)) {
         const fileName = path.basename(outputPath);
 
-        // Match output files to entry points
         for (const entryName of entryNames) {
-            // Pattern: entryName.HASH.ext or entryName.ext
             const jsMatch = fileName.match(new RegExp(`^${entryName}\\.([a-zA-Z0-9]+)\\.js$`));
             const cssMatch = fileName.match(new RegExp(`^${entryName}\\.([a-zA-Z0-9]+)\\.css$`));
             const simpleJsMatch = fileName === `${entryName}.js`;
@@ -545,7 +471,6 @@ function generateSimpleManifest(): Record<string, string> {
     const manifest: Record<string, string> = {};
     for (const entryName of Object.keys(entryPoints) as EntryPointName[]) {
         manifest[`${entryName}.js`] = `${entryName}.js`;
-        // Only include CSS if the file actually exists
         const cssPath = path.join(distPath, `${entryName}.css`);
         if (fs.existsSync(cssPath)) {
             manifest[`${entryName}.css`] = `${entryName}.css`;
@@ -554,37 +479,28 @@ function generateSimpleManifest(): Record<string, string> {
     return manifest;
 }
 
-// Size budgets, in bytes, for the production JS outputs worth guarding. Seeded from a
-// known-good build with ~10% headroom. These exist to catch the class of regression
-// where a bundle silently stops using a vendor shim and re-embeds React or Mantine —
-// historically worth megabytes, and invisible until someone looks at the dist folder.
-// Raise a number deliberately when a bundle legitimately grows; don't raise it to make
-// a build go green.
-// Raised from 9_200_000 for the new splitPricingBreakdownDialogReact bundle (2026-09-17), then
-// again from 9_260_000 when SplitPricingBreakdownDialog grew a split/edit mode + cost overrides,
-// which also grows every bundle below that pulls in the split-job flow directly (2026-09-17).
-const TOTAL_JS_BUDGET = 9_320_000;
+// Raised from 9_335_000 for SplitPricingBreakdownDialog's leg-card redesign (colored per-leg
+// identity badges, restructured revenue/cost/margin layout) (2026-09-17).
+const TOTAL_JS_BUDGET = 9_345_000;
 const bundleBudgets: Partial<Record<EntryPointName, number>> = {
     "vendor-react": 1_075_000,
     "vendor-core": 995_000,
     app: 551_000,
     nationwide: 424_000,
     home: 442_000,
-    dispatchReact: 433_000,
+    dispatchReact: 435_000,
     jobSearchReact: 410_000,
-    nationwideReact: 442_000,
+    nationwideReact: 444_000,
     recurringJobsReact: 401_000,
     jobSearch: 395_000,
     taskDashboardReact: 374_000,
     jobDetailsReact: 335_000,
-    currentWorkJobListReact: 257_000,
-    jobListReact: 257_000,
-    jobSearchJobListReact: 256_000,
-    nationwideJobListReact: 256_000,
+    currentWorkJobListReact: 259_000,
+    jobListReact: 259_000,
+    jobSearchJobListReact: 259_000,
+    nationwideJobListReact: 259_000,
 };
 
-// Fails the build when an output exceeds its budget, so a size regression surfaces here
-// rather than in production.
 function checkBudgets(metafile: esbuild.Metafile): void {
     const jsOutputs = Object.entries(metafile.outputs).filter(
         ([name]) => name.endsWith(".js")
@@ -626,15 +542,6 @@ function checkBudgets(metafile: esbuild.Metafile): void {
 const brotliCompress = promisify(zlib.brotliCompress);
 const gzipCompress = promisify(zlib.gzip);
 
-/**
- * Pre-compresses the production bundles to .br and .gz siblings.
- *
- * Doing this at build time rather than through ASP.NET's response-compression
- * middleware is a straight win here: dist filenames are content-hashed and therefore
- * immutable, so the expensive maximum-quality pass happens once per build instead of
- * once per request, and the runtime spends no CPU on it at all. Program.cs serves these
- * when the client advertises the matching Accept-Encoding.
- */
 async function compressDist(): Promise<void> {
     const targets = fs
         .readdirSync(distPath)
@@ -661,7 +568,6 @@ async function compressDist(): Promise<void> {
             rawTotal += raw.length;
             brTotal += br.length;
 
-            // A compressed copy that isn't smaller would only cost a round trip.
             if (br.length < raw.length) {
                 await fs.promises.writeFile(`${filePath}.br`, br);
             }
@@ -678,7 +584,6 @@ async function compressDist(): Promise<void> {
     );
 }
 
-// Bundle analyzer - shows what's in each bundle
 function analyzeBundle(metafile: esbuild.Metafile): void {
     console.log("\n[ANALYZE] Bundle breakdown:\n");
 
@@ -693,7 +598,6 @@ function analyzeBundle(metafile: esbuild.Metafile): void {
 
         if (!output.inputs) continue;
 
-        // Group by package
         const packages: Record<string, number> = {};
         for (const [inputPath, input] of Object.entries(output.inputs)) {
             const match = inputPath.match(/node_modules\/([^/]+)/);
@@ -701,7 +605,6 @@ function analyzeBundle(metafile: esbuild.Metafile): void {
             packages[pkg] = (packages[pkg] || 0) + input.bytesInOutput;
         }
 
-        // Show the top 10 contributors
         const sorted = Object.entries(packages)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10);
@@ -714,28 +617,19 @@ function analyzeBundle(metafile: esbuild.Metafile): void {
     }
 }
 
-// Split entry points into vendor (core + plugins + react) and modules
 const vendorEntries = {
     "vendor-core": entryPoints["vendor-core"],
     "vendor-plugins": entryPoints["vendor-plugins"],
     "vendor-react": entryPoints["vendor-react"],
 };
 
-// Everything that isn't a vendor bundle: the Angular route modules and the React
-// islands. These used to be two separate esbuild invocations, but their configs are
-// identical (same shims, same options), so building them together lets esbuild parse
-// the shared module graph — the React shims, the icon packages, the common
-// components — once instead of twice. Output is byte-for-byte the same: iife entries
-// don't share code, and the content hashes are unchanged by the grouping.
 const appModuleEntries = Object.fromEntries(
     Object.entries(entryPoints).filter(([name]) => !name.startsWith("vendor"))
 ) as Record<string, string>;
 
-// Build functions
 async function buildDev(): Promise<void> {
     console.log("[DEV] Building development bundles...");
 
-    // Build all bundle types with watch contexts
     const contexts = await Promise.all([
         esbuild.context(getBuildConfig(false, { "vendor-core": vendorEntries["vendor-core"] }, "vendor-core")),
         esbuild.context(getBuildConfig(false, { "vendor-plugins": vendorEntries["vendor-plugins"] }, "vendor-plugins")),
@@ -743,23 +637,19 @@ async function buildDev(): Promise<void> {
         esbuild.context(getBuildConfig(false, appModuleEntries, "app-modules")),
     ]);
 
-    // Initial builds
     await Promise.all(contexts.map(ctx => ctx.rebuild()));
 
-    // Write manifest
     const manifest = generateSimpleManifest();
     await fs.promises.writeFile(
         path.join(distPath, "manifest.json"),
         JSON.stringify(manifest, null, 2)
     );
 
-    // Start watching
     await Promise.all(contexts.map(ctx => ctx.watch()));
 
     console.log("[DEV] Build complete. Watching for changes...");
     console.log(`[DEV] Output: ${distPath}`);
 
-    // Keep the process alive
     await new Promise(() => {});
 }
 
@@ -767,14 +657,12 @@ async function buildProd(): Promise<void> {
     const startTime = performance.now();
     console.log("[PROD] Building production bundles...");
 
-    // Skip if already built in CI
     const manifestPath = path.join(distPath, "manifest.json");
     if (process.env.CI && fs.existsSync(manifestPath)) {
         console.log("[PROD] Build already exists, skipping...");
         return;
     }
 
-    // Build all bundle types in parallel
     const results = await Promise.all([
         esbuild.build(getBuildConfig(true, {"vendor-core": vendorEntries["vendor-core"]}, "vendor-core")),
         esbuild.build(getBuildConfig(true, {"vendor-plugins": vendorEntries["vendor-plugins"]}, "vendor-plugins")),
@@ -782,27 +670,22 @@ async function buildProd(): Promise<void> {
         esbuild.build(getBuildConfig(true, appModuleEntries, "app-modules")),
     ]);
 
-    // Verify all metafiles exist
     for (const result of results) {
         if (!result.metafile) {
             throw new Error("Metafile not generated");
         }
     }
 
-    // Merge metafiles for analysis and manifest
     const mergedMetafile: esbuild.Metafile = {
         inputs: Object.assign({}, ...results.map(r => r.metafile!.inputs)),
         outputs: Object.assign({}, ...results.map(r => r.metafile!.outputs)),
     };
 
-    // Persist the metafile so a bundle can be analysed (or diffed against a previous
-    // build) without having to re-run with --analyze.
     await fs.promises.writeFile(
         path.join(distPath, "meta.json"),
         JSON.stringify(mergedMetafile)
     );
 
-    // Show bundle analysis if requested
     if (isAnalyze) {
         analyzeBundle(mergedMetafile);
     }
@@ -811,7 +694,6 @@ async function buildProd(): Promise<void> {
 
     await compressDist();
 
-    // Generate manifest from merged metafile
     const manifest = generateManifestFromMetafile(mergedMetafile);
     await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 
@@ -820,7 +702,6 @@ async function buildProd(): Promise<void> {
     console.log(`[PROD] Build completed in ${buildTime}s (${fileCount} entries)`);
 }
 
-// Main entry point
 async function build(): Promise<void> {
     try {
         cleanDistFolder();

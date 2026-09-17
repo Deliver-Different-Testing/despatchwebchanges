@@ -10,7 +10,6 @@ describe('distributeAmount', () => {
     });
 
     it('gives the rounding remainder to the largest share, not the last leg', () => {
-        // 100 / 3 legs at equal share: 33.33 + 33.33 + 33.34 must sum back to 100 exactly.
         const parts = distributeAmount(100, [34, 33, 33]);
         expect(parts.reduce((a, b) => a + b, 0)).toBe(100);
         expect(parts[0]).toBeGreaterThanOrEqual(parts[1]);
@@ -28,6 +27,13 @@ describe('distributeAmount', () => {
         const parts = distributeAmount(9.00, [80, 20]);
         expect(parts.reduce((a, b) => a + b, 0)).toBeCloseTo(9.00, 10);
     });
+
+    it("gives the rounding remainder to the last leg when remainderTo is 'last'", () => {
+        expect(distributeAmount(100.01, [34, 33, 33])).toEqual([34.01, 33.00, 33.00]);
+        const lastParts = distributeAmount(100.01, [34, 33, 33], 'last');
+        expect(lastParts).toEqual([34.00, 33.00, 33.01]);
+        expect(lastParts.reduce((a, b) => a + b, 0)).toBeCloseTo(100.01, 10);
+    });
 });
 
 describe('normalizeShares', () => {
@@ -36,7 +42,6 @@ describe('normalizeShares', () => {
     });
 
     it('proportionally redistributes across more than one other leg', () => {
-        // Others were 20/20 (equal weight) — moving leg 0 down to 40 leaves 60 to split evenly.
         const result = normalizeShares([60, 20, 20], 0, 40);
         expect(result[0]).toBe(40);
         expect(result[1] + result[2]).toBe(60);
@@ -57,16 +62,19 @@ describe('normalizeShares', () => {
 });
 
 describe('computeDialogWidth', () => {
-    it('stays at the base width for 2 legs', () => {
-        expect(computeDialogWidth(2)).toBe(1000);
+    it('matches the mockup exactly for 2, 3, and 4 legs', () => {
+        expect(computeDialogWidth(2)).toBe(1120);
+        expect(computeDialogWidth(3)).toBe(1275);
+        expect(computeDialogWidth(4)).toBe(1400);
     });
 
-    it('grows per leg past 2', () => {
-        expect(computeDialogWidth(3)).toBe(1175);
-        expect(computeDialogWidth(4)).toBe(1350);
+    it('extrapolates past 4 legs at the same +125px step', () => {
+        expect(computeDialogWidth(5)).toBe(1525);
+        expect(computeDialogWidth(6)).toBe(1650);
     });
 
-    it('never shrinks below the base width for fewer than 2 legs', () => {
-        expect(computeDialogWidth(1)).toBe(1000);
+    it('never shrinks below the 2-leg width for fewer than 2 legs', () => {
+        expect(computeDialogWidth(1)).toBe(1120);
+        expect(computeDialogWidth(0)).toBe(1120);
     });
 });

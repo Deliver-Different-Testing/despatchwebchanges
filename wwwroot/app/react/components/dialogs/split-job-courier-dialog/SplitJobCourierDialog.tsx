@@ -5,7 +5,7 @@
  * of a split job. Shown after the meeting point address dialog.
  *
  * Three outcomes:
- *  - Assign: user picked a courier  → { action: 'assign', courierId }
+ *  - Assign: user picked a courier  → { action: 'assign', courierId, courierName }
  *  - Skip:   user chose to skip     → { action: 'skip' }
  *  - Cancel: user closed the dialog → { action: 'cancel' }
  */
@@ -19,7 +19,7 @@ import type {CourierSuggestion} from '../../../interfaces';
 import {DialogShell, DialogHeader, DialogFooter, dialogContentBg} from '../shared/mantine';
 
 export type SplitJobCourierResult =
-    | {action: 'assign'; courierId: number}
+    | {action: 'assign'; courierId: number; courierName: string}
     | {action: 'skip'}
     | {action: 'cancel'};
 
@@ -36,7 +36,7 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
 
     const handleAssign = () => {
         if (selected) {
-            onClose({action: 'assign', courierId: selected.id});
+            onClose({action: 'assign', courierId: selected.id, courierName: selected.text});
         }
     };
 

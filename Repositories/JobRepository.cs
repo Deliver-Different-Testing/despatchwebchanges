@@ -1,4 +1,5 @@
-﻿using DespatchWeb.Constants;
+using System.Threading.Tasks;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
@@ -34,8 +35,7 @@ public partial class JobRepository(
     /// Stateless — no constructor dependencies to inject, so a single shared instance avoids
     /// widening JobRepository's constructor (and every test file that builds one) for this alone.
     /// </summary>
-    private static readonly PricingBreakdownAllocationService PricingBreakdownAllocation =
-        new PricingBreakdownAllocationService();
+    private static readonly PricingBreakdownAllocationService PricingBreakdownAllocation = new();
 
     /// <summary>Dispatcher id that marks a multi-leg job whose siblings share a dispatcher.</summary>
     private const int MultiLegDispatcherId = 148;
@@ -73,7 +73,6 @@ public partial class JobRepository(
             })
         ];
 
-        // Validation logic remains the same
         if (
             data.Any(d =>
                 d.Id <= 0
@@ -115,10 +114,6 @@ public partial class JobRepository(
             return new HashSet<int>();
         }
 
-        // Discover the input jobs plus their parents/children directly from the real job tables
-        // (live + archived). The legacy tblJob view was unreliable here: any job it failed to
-        // surface was silently dropped from the id set, so the UPDATE below matched nothing and
-        // the caller saw a "success" with no actual change.
         var activeIdData = Context.TucJobs
             .Where(j =>
                 jobIds.Contains(j.UcjbId)
@@ -139,11 +134,6 @@ public partial class JobRepository(
             .Distinct()
             .ToList();
 
-        // Load the live and archived jobs to mutate on the single repository context so that every
-        // write below (job amounts, courier/status changes, and pricing breakdowns) shares one
-        // transaction and commits atomically. Previously these saves ran on separate connections,
-        // which allowed one to commit while another failed or deadlocked — leaving the price changed
-        // while the request reported failure.
         var dbData = await Context
             .TucJobs.AsTracking().Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
@@ -158,24 +148,18 @@ public partial class JobRepository(
             )
             .ToListAsync();
 
-        // Create dictionaries for O(1) lookups instead of O(n) list searches
         var dbDataDict = dbData.ToDictionary(j => j.UcjbId);
         var dbDataArchiveDict = dbDataArchive.ToDictionary(j => j.UcjbId);
 
-        // Update job status
         await UpdateJobStatusesAsync(data, dbDataDict, dbDataArchiveDict);
 
-        // Update job couriers
         await UpdateJobCouriersAsync(data, dbDataDict, dbDataArchiveDict);
 
-        // Log counts for diagnostics
         Log.Information("Processing {DbDataCount} active jobs and {Count} archived jobs", dbData.Count,
             dbDataArchive.Count);
-        // Keep track of jobs with changed prices
         var jobsWithChangedPrices = new HashSet<int>();
         var processedJobIds = new HashSet<int>();
 
-        // Process individual jobs and save in batches
         foreach (var d in data)
         {
             dynamic match = dbDataDict.TryGetValue(d.Id, out var activeJob) ? activeJob
@@ -185,12 +169,11 @@ public partial class JobRepository(
             if (match == null)
             {
                 Log.Warning("Job with ID {DId} not found in database", d.Id);
-                continue; // Skip this job instead of throwing an exception
+                continue;
             }
 
             try
             {
-                // Check if the price is actually changing
                 if (d.Amount.HasValue && d.Ppd.HasValue && d.Fuel.HasValue && d.CourierPayment.HasValue &&
                     d.CourierFuel.HasValue && d.CourierBonus.HasValue)
                 {
@@ -201,15 +184,11 @@ public partial class JobRepository(
 
                     if (priceChanged)
                     {
-                        // Apply updates cautiously
                         match.UcjbAmount = Math.Round(d.Amount.Value, 4, MidpointRounding.AwayFromZero);
                         match.FuelSurchargeAmount = Math.Round(d.Fuel.Value, 4, MidpointRounding.AwayFromZero);
                         match.PpdexclusiveAmount = Math.Round(d.Ppd.Value, 4, MidpointRounding.AwayFromZero);
                         match.RawBaseAmount = match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
-                        // A directly-entered bulk price is a manual set — flag it so a later
-                        // auto re-rate doesn't silently overwrite it.
                         match.RatedManually = true;
-                        // Mark this job for a pricing breakdown update
                         jobsWithChangedPrices.Add(d.Id);
                         Log.Information("Job {DId} has price change - updating", d.Id);
                     }
@@ -219,7 +198,6 @@ public partial class JobRepository(
                     }
                 }
 
-                // Always update these fields, regardless of price change
                 match.CourierPercentage = null;
                 if (d.CourierPayment != null)
                 {
@@ -231,7 +209,6 @@ public partial class JobRepository(
 
                 processedJobIds.Add(d.Id);
 
-                // Save changes for this specific job immediately
             }
             catch (Exception ex)
             {
@@ -239,7 +216,6 @@ public partial class JobRepository(
             }
         }
 
-        // Process parent jobs separately
         var parentJobs = dbData
             .Select(j => new
             {
@@ -282,7 +258,6 @@ public partial class JobRepository(
                 var totalFuel = childJobs.Sum(j => j.FuelSurchargeAmount);
                 var totalPpd = childJobs.Sum(j => j.PpdexclusiveAmount);
 
-                // Check if a parent job's price is actually changing
                 var parentPriceChanged =
                     Math.Abs((decimal)(parentJob.UcjbAmount ?? 0m) - totalAmount) >= PriceEqualityTolerance ||
                     Math.Abs((decimal)(parentJob.FuelSurchargeAmount ?? 0m) - totalFuel) >= PriceEqualityTolerance ||
@@ -295,12 +270,8 @@ public partial class JobRepository(
                     parentJob.PpdexclusiveAmount = totalPpd;
                     parentJob.RawBaseAmount = totalAmount - totalFuel - totalPpd;
 
-                    // The breakdown below gets collapsed to a single "Manually Rated" line since
-                    // there's no way to know how to re-split the new total across the old lines —
-                    // flag the job so a later auto re-rate doesn't silently overwrite it.
                     parentJob.RatedManually = true;
 
-                    // Mark this parent job for a pricing breakdown update
                     jobsWithChangedPrices.Add(x.Key);
                     Log.Information("Parent job {XKey} has price change - updating", x.Key);
                 }
@@ -317,15 +288,12 @@ public partial class JobRepository(
             }
         }
 
-        // Only update pricing breakdowns for jobs with changed prices
         if (jobsWithChangedPrices.Count != 0)
         {
-            // Separate jobs by their source table (active vs. archived)
             var activeJobIds = jobsWithChangedPrices.Where(id => dbData.Any(j => j.UcjbId == id)).ToList();
             var archivedJobIds = jobsWithChangedPrices
                 .Where(id => dbDataArchive.Any(j => j.UcjbId == id) && dbData.All(j => j.UcjbId != id)).ToList();
 
-            // Handle active jobs - use the PricingBreakdowns table
             if (activeJobIds.Count != 0)
             {
                 var existingBreakdowns = await Context.PricingBreakdowns
@@ -368,7 +336,6 @@ public partial class JobRepository(
                 }
             }
 
-            // Handle archived jobs - use PricingBreakdownArchives table
             if (archivedJobIds.Count != 0)
             {
                 var existingArchiveBreakdowns = await Context.PricingBreakdownArchives
@@ -415,7 +382,6 @@ public partial class JobRepository(
             Log.Information("No jobs with changed prices - skipping pricing breakdown updates");
         }
 
-        // Finally, update all jobs to the locked state
         foreach (var d in dbData.Where(j => processedJobIds.Contains(j.UcjbId)))
         {
             d.UcjbLocked = true;
@@ -426,9 +392,6 @@ public partial class JobRepository(
             d.UcjbLocked = 1;
         }
 
-        // Persist every change (job amounts, courier/status updates, pricing breakdowns) inside a
-        // single transaction so the batch is all-or-nothing. If any write fails the whole batch rolls
-        // back, so callers never observe a job whose price changed while the request reported failure.
         var strategy = Context.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -452,9 +415,6 @@ public partial class JobRepository(
             }
         });
 
-        // Report which of the requested jobs were actually found and updated, so the caller can
-        // surface the rest instead of reporting a false success. Parent jobs pulled in for total
-        // recomputation are intersected out (only caller-requested IDs are returned).
         processedJobIds.IntersectWith(jobIds);
         return processedJobIds;
     }
@@ -470,7 +430,6 @@ public partial class JobRepository(
             return;
         }
 
-        // Use ExecuteUpdateAsync for direct SQL UPDATE without loading entities
         await using var activeContext = CreateNewContext();
         await using var archiveContext = CreateNewContext();
 
@@ -566,15 +525,12 @@ public partial class JobRepository(
     /// <param name="data">POD update request with job ID and POD details.</param>
     public async Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data)
     {
-        // A POD name of blanks reads as empty everywhere it is displayed, so store it as
-        // empty rather than letting whitespace pass for a signature.
         var podName = data.PodName?.Trim() ?? string.Empty;
 
         Log.Information(
             "UpdatePodDetails requested: job {JobId}, status {JobStatus}, podName {PodName}, podTime {PodTime}",
             data.JobId, data.JobStatus, podName, data.PodTime);
 
-        // Find if a job is in active or archive table (tracked for mutation via SaveChanges)
         var activeJob = await Context.TucJobs
             .AsTracking()
             .FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
@@ -583,7 +539,6 @@ public partial class JobRepository(
         int? deliveryTzId;
         TucJobArchive archivedJob = null;
 
-        // Determine parent ID and delivery timezone based on job location
         if (isArchived)
         {
             archivedJob = await Context.TucJobArchives
@@ -591,9 +546,6 @@ public partial class JobRepository(
                 .FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
             if (archivedJob == null)
             {
-                // Returning quietly here made a completion that wrote nothing look identical
-                // to one that worked - the caller still reported the job as completed while
-                // it stayed active.
                 throw new JobNotFoundException(
                     $"Job {data.JobId} could not be completed because it no longer exists.");
             }
@@ -607,16 +559,12 @@ public partial class JobRepository(
             deliveryTzId = activeJob.DeliverByTimeZoneId;
         }
 
-        // Load delivery timezone entity (null falls back to tenant timezone in ParsePodTime)
         var deliveryTimeZone = deliveryTzId.HasValue
             ? await Context.TimeZones.FindAsync(deliveryTzId.Value)
             : null;
 
         var completionTime = ParsePodTime(data.PodTime, deliveryTimeZone);
 
-        // Update the already-tracked job entity directly (no re-query needed).
-        // A POD arriving after a void is still recorded, but must not move the job off the Void
-        // status - the job-search export reads that column to decide what counts as revenue.
         if (isArchived)
         {
             archivedJob.UcjbJobDone = true;
@@ -642,7 +590,6 @@ public partial class JobRepository(
             }
         }
 
-        // Update parent job if all siblings are complete (only relevant for child jobs)
         var parentCompleted = false;
         if (parentId != null)
         {
@@ -656,12 +603,6 @@ public partial class JobRepository(
             var hasUncompletedSiblings = familyLegs
                 .Any(leg => leg.UcjbId != data.JobId && !leg.UcjbJobDone);
 
-            // A linehaul movement is only finished once its final-mile DEL leg is delivered. LHP and
-            // LH legs routinely complete days before DEL is even created, and "no uncompleted
-            // siblings" was true in that window — completing the parent then reports the family as
-            // delivered and, because the customer's POD message is raised off the parent downstream,
-            // texts them before their freight has arrived. Leg roles come from the job-number suffix
-            // because nothing in the schema records them, so this is decided in memory.
             var isLinehaulFamily = familyLegs.Any(leg => JobLegRoles.IsLinehaul(leg.UcjbNumber));
             var finalMileLeg = familyLegs
                 .FirstOrDefault(leg => JobLegRoles.FromJobNumber(leg.UcjbNumber) == JobLegRole.FinalMileDelivery);
@@ -741,7 +682,6 @@ public partial class JobRepository(
             .Where(jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
             .MaxAsync(jt => jt.PickupTime);
 
-        // Get job information
         var job = await Context.TucJobs.AsTracking().FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job);
 
@@ -774,7 +714,6 @@ public partial class JobRepository(
         var minsOver = late - time;
         await SaveNoteAsync(jobId: jobId, noteText: $"Late Pickup: {minsOver} mins over ETA");
 
-        // Update job
         job.UcjbStatus = (int)JobStatus.LatePickup;
         job.UcjbLatePick = late;
         job.LatePickupNotificationHasBeenSent = false;
@@ -800,12 +739,10 @@ public partial class JobRepository(
     {
         var currentDate = _clock.TenantNow;
 
-        // Get the maximum delivery time for the specified speeds
         var time = await Context.TucJobTypes
             .Where(predicate: jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
             .MaxAsync(selector: jt => jt.DeliveryTime);
 
-        // Get job information
         var job = await Context.TucJobs.AsTracking().FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job);
 
@@ -814,7 +751,6 @@ public partial class JobRepository(
             return;
         }
 
-        // Calculate DueMins, LateDel, and Window
         var jobDateTime = job.UcjbDate.Add(value: job.UcjbTime.Value.TimeOfDay);
         var windowValue = job.UcjbLateDel ?? time;
 
@@ -826,25 +762,21 @@ public partial class JobRepository(
         var dueMins = (jobDateTime.AddMinutes(value: (double)windowValue) - currentDate).TotalMinutes;
         var lateDel = job.UcjbLateDel;
 
-        // Perform calculation if required
         if (calculationRequired)
         {
             var deliveryEtaValue = late;
             late = (int)(deliveryEtaValue - (int)dueMins + windowValue);
 
-            // Return if lateDel is already equal to late
             if (lateDel.GetValueOrDefault(defaultValue: 0) == late)
             {
                 return;
             }
         }
 
-        // Format delivery time
         var minsOver = late - time;
 
         await SaveNoteAsync(jobId: jobId, noteText: $"Late Delivery: {minsOver} mins over ETA");
 
-        // Update job
         job.UcjbStatus = (int)JobStatus.LateDelivery;
         job.UcjbLateDel = late;
         job.LateDeliveryNotificationHasBeenSent = false;
@@ -946,7 +878,6 @@ public partial class JobRepository(
     {
         try
         {
-            // Use selected job IDs if provided, otherwise fall back to legacy behavior
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
                 ? data.SelectedJobIds
                 : await ResolveJobsToVoidAsync(data);
@@ -956,7 +887,6 @@ public partial class JobRepository(
                 return;
             }
 
-            // Get courier IDs before voiding
             var courierIds = await Context.TucJobs
                 .Where(jt => jobsToVoid.Contains(jt.UcjbId) && jt.UcjbCourierId.HasValue)
                 .Select(jt => jt.UcjbCourierId!.Value)
@@ -964,7 +894,6 @@ public partial class JobRepository(
                 .TagWith($"VoidJob - Get Courier IDs for {jobsToVoid.Count} jobs")
                 .ToListAsync();
 
-            // Execute a void operation and clear all pricing fields
             await Context.TucJobs
                 .Where(j => jobsToVoid.Contains(j.UcjbId))
                 .TagWith($"VoidJob - Update {jobsToVoid.Count} jobs")
@@ -985,7 +914,6 @@ public partial class JobRepository(
                     .SetProperty(j => j.NwrawAmount, 0)
                     .SetProperty(j => j.RawBaseAmount, 0));
 
-            // Clear pricing breakdowns for voided jobs
             await Context.PricingBreakdowns
                 .Where(p => (p.JobId.HasValue && jobsToVoid.Contains(p.JobId.Value)) ||
                             (p.ChildJobId.HasValue && jobsToVoid.Contains(p.ChildJobId.Value)))
@@ -996,7 +924,6 @@ public partial class JobRepository(
                     .SetProperty(p => p.Charged, 0)
                     .SetProperty(p => p.CostAmount, 0));
 
-            // Void any linked bulk jobs
             var linkedBulkJobIds = await Context.TblBulkJobs
                 .Where(b => b.JobId.HasValue && jobsToVoid.Contains(b.JobId.Value) && !b.Void)
                 .Select(b => b.BulkJobId)
@@ -1026,13 +953,11 @@ public partial class JobRepository(
                 await SaveMultipleBulkNotesAsync(linkedBulkJobIds, data.VoidReason);
             }
 
-            // Update courier statuses
             if (courierIds.Count > 0)
             {
                 await UpdateClearListAreaOrderStatus(courierIds);
             }
 
-            // Close tasks
             await CloseTasksByJobIdsAsync(jobsToVoid);
             await SaveNoteToMultipleJobsAsync(jobsToVoid, data.VoidReason);
 
@@ -1055,7 +980,6 @@ public partial class JobRepository(
     {
         try
         {
-            // Use selected job IDs if provided, otherwise fall back to legacy behavior
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
                 ? data.SelectedJobIds
                 : data.VoidSingleJobOnly
@@ -1067,7 +991,6 @@ public partial class JobRepository(
                 return;
             }
 
-            // Verify all jobs are actually archived (reject mixed scenarios)
             var liveJobCount = await Context.TucJobs
                 .CountAsync(j => jobsToVoid.Contains(j.UcjbId));
 
@@ -1077,7 +1000,6 @@ public partial class JobRepository(
                     $"Cannot void archived jobs: {liveJobCount} job(s) are not archived. Mixed live/archived voiding is not supported.");
             }
 
-            // Execute a void operation and clear all pricing fields on archived jobs
             await Context.TucJobArchives
                 .Where(j => jobsToVoid.Contains(j.UcjbId))
                 .TagWith($"VoidArchivedJob - Update {jobsToVoid.Count} archived jobs")
@@ -1098,7 +1020,6 @@ public partial class JobRepository(
                     .SetProperty(j => j.NwrawAmount, 0)
                     .SetProperty(j => j.RawBaseAmount, 0));
 
-            // Clear pricing breakdowns for voided archived jobs
             await Context.PricingBreakdownArchives
                 .Where(p => p.JobId.HasValue && jobsToVoid.Contains(p.JobId.Value))
                 .ExecuteUpdateAsync(setters => setters
@@ -1108,10 +1029,7 @@ public partial class JobRepository(
                     .SetProperty(p => p.Charged, 0)
                     .SetProperty(p => p.CostAmount, 0));
 
-            // Skip: courier status updates (not applicable to archived jobs)
-            // Skip: task closing (not applicable to archived jobs)
 
-            // Add void note to archived notes
             await SaveNoteToMultipleArchivedJobsAsync(jobsToVoid, data.VoidReason);
 
             await Context.SaveChangesAsync();
@@ -1132,14 +1050,12 @@ public partial class JobRepository(
     {
         try
         {
-            // Use selected job IDs if provided, otherwise fall back to legacy behavior
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
                 ? data.SelectedJobIds
                 : data.VoidSingleJobOnly
                     ? await GetBulkJobWithChildrenAsync(data.BulkJobId)
                     : await GetAllRelatedBulkJobIdsIncludingParentAsync(data.BulkJobId);
 
-            // Combined query: void jobs and get distinct courier IDs in parallel
             await Context.TblBulkJobs
                 .Where(j => jobsToVoid.Contains(j.BulkJobId))
                 .ExecuteUpdateAsync(setters => setters
@@ -1154,10 +1070,8 @@ public partial class JobRepository(
                 .Distinct()
                 .ToListAsync();
 
-            // Update courier statuses in parallel
             await UpdateClearListAreaOrderStatus(courierIds);
 
-            // Close tasks and add notes
             await CloseAllBulkJobTasksAsync(jobsToVoid);
             await SaveMultipleBulkNotesAsync(jobsToVoid, data.VoidReason);
         }
@@ -1193,7 +1107,6 @@ public partial class JobRepository(
     {
         try
         {
-            // Validate charge name (required by database constraint)
             if (string.IsNullOrWhiteSpace(viewModel.Name))
             {
                 throw new ArgumentException("Charge name is required", nameof(viewModel));
@@ -1230,7 +1143,6 @@ public partial class JobRepository(
                 effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(viewModel.PrebookJobId ?? 0);
             }
 
-            // Validate job was found (effectiveJobId of 0 indicates job not found)
             if (effectiveJobId == 0)
             {
                 var jobIdentifier = isPrebook
@@ -1269,10 +1181,6 @@ public partial class JobRepository(
                 JobId = !isPrebook ? effectiveJobId : null,
                 PrebookJobId = isPrebook ? effectiveJobId : null,
                 CostAmount = viewModel.CostAmount,
-                // ChildJobId only means something when it names a DIFFERENT job than the one the
-                // item lives on (legacy per-leg attribution, see PriceDetail.cs's identical check) —
-                // storing it equal to the effective job id would make a split parent's own new item
-                // look like a legacy attributed row and hide it from PricingBreakdownAllocationService.
                 ChildJobId = !isPrebook && viewModel.ChildJobId == effectiveJobId ? null : viewModel.ChildJobId
             };
 
@@ -1293,8 +1201,6 @@ public partial class JobRepository(
             await Context.PricingBreakdowns.AddAsync(item);
             await Context.SaveChangesAsync();
 
-            // §7.1: adding an item on a split parent creates a zero-cost allocation row on every
-            // current leg. The single write path both the split flow and every per-cell edit share.
             if (await IsLiveSplitParentAsync(item.JobId, isArchived: false))
             {
                 await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, item.JobId!.Value);
@@ -1473,9 +1379,6 @@ public partial class JobRepository(
         Context.PricingBreakdowns.Remove(breakdown);
         await Context.SaveChangesAsync();
 
-        // §7.1: removing an item cascades to every leg's allocation row for it (FK ON DELETE
-        // CASCADE) — the remaining items' shares are untouched, but every current leg's header sum
-        // must still be refreshed to exclude the removed item's contribution.
         if (await IsLiveSplitParentAsync(deletedJobId, isArchived: false))
         {
             await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, deletedJobId!.Value);
@@ -1498,11 +1401,9 @@ public partial class JobRepository(
             var address = request.Address;
             var isArchived = await IsJobArchived(request.JobId);
 
-            // Combine all address lines for device sync field
             var fullAddress = CombineAddressLines(address);
             var suburbId = await ResolveSuburbIdAsync(address);
 
-            // Update archive record if JobId is found
             if (isArchived)
             {
                 await Context.TucJobArchives
@@ -1565,7 +1466,6 @@ public partial class JobRepository(
             var address = request.Address;
             var isArchived = await IsJobArchived(request.JobId);
 
-            // Combine all address lines for device sync field
             var fullAddress = CombineAddressLines(address);
             var suburbId = await ResolveSuburbIdAsync(address);
 
@@ -1641,7 +1541,6 @@ public partial class JobRepository(
                 return;
             }
 
-            // Job will be active
             await UpdateTucJobAsync(jobId, field, value);
         }
         catch (Exception e)
@@ -1675,7 +1574,6 @@ public partial class JobRepository(
                 var currentTenantTime = _clock.TenantNow;
                 var releaseNote = $"Bulk Job Released Manually at {currentTenantTime:dd/MM/yyyy HH:mm}\r\n";
 
-                // Stamp BookDate + Notes across the parent and any children.
                 var updatedCount = await Context.TblBulkJobs
                     .Where(BulkJobFamily.MemberOf(bulkJobId))
                     .ExecuteUpdateAsync(setters => setters
@@ -1688,9 +1586,6 @@ public partial class JobRepository(
                         $"Bulk job {bulkJobId} not found — no parent or child rows matched.");
                 }
 
-                // Not yet live and not voided. Done and JobId are both stamped by the release proc, so
-                // either one saying the row is already live is enough to keep it out — re-running the
-                // insert would mint a second live job for the same booking.
                 var releasable = await Context.TblBulkJobs
                     .Where(BulkJobFamily.MemberOf(bulkJobId))
                     .Where(b => !b.Done && b.JobId == null && !b.Void)
@@ -1760,7 +1655,6 @@ public partial class JobRepository(
                     );
                 }
 
-                // Verify the SP actually inserted live tucJob rows for the numbers we expected.
                 var jobNumbers = releasable.Select(r => r.JobNumber).ToList();
                 var liveJobCount = await Context.TucJobs
                     .Where(j => jobNumbers.Contains(j.UcjbNumber) && !j.UcjbVoid)
@@ -1832,7 +1726,6 @@ public partial class JobRepository(
             var staffId = _infoService.GetStaffId();
             var currentTime = _clock.TenantNow;
 
-            // Parallel job-number generation requires separate contexts (stored proc per context).
             await using var fromJobNumberContext = await _contextFactory.CreateDbContextAsync();
             await using var toJobNumberContext = await _contextFactory.CreateDbContextAsync();
 
@@ -1939,12 +1832,8 @@ public partial class JobRepository(
     {
         try
         {
-            // A null list means "remove all parcels" — treat it as empty.
             parcels ??= [];
 
-            // Archived jobs live in tucJobArchive / tucJobItemsArchive, not the live tables —
-            // route them to the archive equivalents so package/weight edits on archived (but
-            // not-yet-invoiced) jobs succeed instead of failing.
             if (await IsJobArchived(jobId))
             {
                 await UpdatePackagesForArchivedJobAsync(jobId, parcels, calculateDimsOncePerJob);
@@ -1963,17 +1852,13 @@ public partial class JobRepository(
             {
                 await using var transaction = await Context.Database.BeginTransactionAsync();
 
-                // Delete all existing items for this scope
                 await Context.TucJobItems
                     .Where(i => i.JobId == effectiveJobId &&
                                 (childJobId == null || i.ChildJobId == childJobId))
                     .ExecuteDeleteAsync();
 
-                // Re-insert all parcels with sequential ItemIds
                 if (parcels.Count > 0)
                 {
-                    // Get max ItemId across ALL items for this job (not just this scope)
-                    // to avoid collisions with sibling stop jobs
                     var maxItemId = await Context.TucJobItems
                         .Where(i => i.JobId == effectiveJobId)
                         .MaxAsync(i => (int?)i.ItemId) ?? 0;
@@ -1999,8 +1884,6 @@ public partial class JobRepository(
                     await Context.SaveChangesAsync();
                 }
 
-                // Update UcjbQty with total parcel count so it syncs to device
-                // For stop jobs, only count items belonging to this specific stop (not sibling stops)
                 var totalItemCount = await Context.TucJobItems
                     .Where(i => i.JobId == effectiveJobId &&
                                 (childJobId == null || i.ChildJobId == childJobId))
@@ -2010,7 +1893,6 @@ public partial class JobRepository(
 
                 if (childJobId == null)
                 {
-                    // Non-stop: sync qty across parent and all split children (they share the same parcels)
                     if (calculateDimsOncePerJob.HasValue)
                     {
                         await Context.TucJobs
@@ -2029,7 +1911,6 @@ public partial class JobRepository(
                 }
                 else
                 {
-                    // Stop job: each stop has its own parcels — only update this stop's qty
                     if (calculateDimsOncePerJob.HasValue)
                     {
                         await Context.TucJobs
@@ -2061,9 +1942,6 @@ public partial class JobRepository(
 
     public async Task UpdateJobWeightAsync(int jobId, decimal weight)
     {
-        // Archived jobs live in tucJobArchive, not tucJob — route them to the archive tables
-        // so weight edits on archived (but not-yet-invoiced) jobs succeed instead of silently
-        // updating zero live rows.
         if (await IsJobArchived(jobId))
         {
             await UpdateArchivedJobWeightAsync(jobId, weight);
@@ -2072,14 +1950,12 @@ public partial class JobRepository(
 
         if (await IsStopJob(jobId))
         {
-            // Stop job: each stop has its own weight — only update this stop
             await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
             return;
         }
 
-        // Non-stop: resolve to parent and sync weight across the entire delivery chain
         var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
         await Context.TucJobs
             .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
@@ -2106,17 +1982,13 @@ public partial class JobRepository(
             {
                 await using var transaction = await Context.Database.BeginTransactionAsync();
 
-                // Delete all existing items for this scope
                 await Context.TblBulkJobItems
                     .Where(i => i.JobId == effectiveJobId &&
                                 (childJobId == null || i.ChildJobId == childJobId))
                     .ExecuteDeleteAsync();
 
-                // Re-insert all parcels with sequential ItemIds
                 if (parcels.Count > 0)
                 {
-                    // Get max ItemId across ALL items for this job (not just this scope)
-                    // to avoid collisions with sibling stop jobs
                     var maxItemId = await Context.TblBulkJobItems
                         .Where(i => i.JobId == effectiveJobId)
                         .MaxAsync(i => (int?)i.ItemId) ?? 0;
@@ -2235,7 +2107,6 @@ public partial class JobRepository(
             var staffId = _infoService.GetStaffId();
             var currentTenantTime = _clock.TenantNow;
 
-            // Use MERGE to handle concurrent inserts safely (prevents PK violation race condition)
             await Context.Database.ExecuteSqlInterpolatedAsync($"""
                                                                                 MERGE INTO tucJobReadTracker WITH (HOLDLOCK) AS target
                                                                                 USING (SELECT {jobId} AS JobId) AS source
@@ -2314,7 +2185,6 @@ public partial class JobRepository(
     {
         try
         {
-            // Call the database function to calculate total with fuel surcharge
             var totalAmount = await Context.TucJobs
                 .Select(_ => DespatchContext.UTL_fncJob_RawBaseToAmount(data.JobId, data.BaseAmount))
                 .FirstOrDefaultAsync() ?? 0m;
@@ -2334,14 +2204,12 @@ public partial class JobRepository(
             }
             else
             {
-                // Try regular jobs first
                 var rowsChanged = await Context.TucJobs
                     .Where(j => j.UcjbId == data.JobId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(j => j.RatedManually, true)
                         .SetProperty(j => j.UcjbAmount, totalAmount));
 
-                // Fall back to archived jobs if not found
                 if (rowsChanged == 0)
                 {
                     rowsChanged = await Context.TucJobArchives
@@ -2539,7 +2407,6 @@ public partial class JobRepository(
             .Select(j => j.UcjbQty)
             .FirstOrDefaultAsync();
 
-        // Guard: qty already matches — update was previously applied
         if (currentQty == newQty)
         {
             return false;
@@ -2596,7 +2463,6 @@ public partial class JobRepository(
     {
         try
         {
-            // Get the main job's parent ID first
             var parentIdQuery = await Context.TblBulkJobs
                 .Where(j => j.BulkJobId == bulkJobId)
                 .Select(BulkJobFamily.RootIdOf)
@@ -2760,13 +2626,10 @@ public partial class JobRepository(
         var isUsCustomer = _infoService.IsUsTenant();
         var jobSearch = (data.Job ?? string.Empty).Trim().ToLower();
 
-        // Filter on the bulk job row before the joins so the shared wildcard predicate can be used.
-        // A specific bulk job id still ignores every other filter, the wildcard included.
         var bulkJobRows = data is { BulkJobIdSet: false, WildSet: true }
             ? Context.TblBulkJobs.Where(JobWildcardSearch.BulkJobMatches($"%{data.Wild}%"))
             : Context.TblBulkJobs;
 
-        // Build the base query
         var query = from j in bulkJobRows
             join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
@@ -2781,13 +2644,8 @@ public partial class JobRepository(
             join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
             where
-                // Hide routed schedule jobs (Steve, 2026-06-22): a tblBulkJob row is "routed"
-                // when its live job link (tblBulkJob.JobID = tucJob.ucjbID) points to a tucJob
-                // whose RouteId is set. Route-auto-assign stamps RouteId on tucJob at materialisation,
-                // so this predicate drops every routed schedule job from JobSearch Bulk Job Data.
                 !Context.TucJobs.Any(tj => tj.UcjbId == j.JobId && tj.RouteId != null)
                 && (
-                    // When searching by specific bulk job ID, ignore all other filters
                     data.BulkJobIdSet
                         ? j.BulkJobId == data.BulkJobId
                         : j.BookDate.Date >= data.FromDate.Date
@@ -2882,8 +2740,6 @@ public partial class JobRepository(
                 IsBulkJob = true
             };
 
-        // Cap initial SQL result set to prevent unbounded loads;
-        // client-side Distinct (custom comparer) requires in-memory dedup
         const int maxBulkSearchRows = 5000;
         var allResults = await query
             .Take(maxBulkSearchRows)
@@ -2944,7 +2800,6 @@ public partial class JobRepository(
         int? jobId = null
     )
     {
-        // Use same date handling as PodSearchAsync - strip time component
         var fromDateOnly = fromDate.Date;
         var toDateOnly = toDate.Date;
 
@@ -2958,21 +2813,17 @@ public partial class JobRepository(
         var jobIdSet = jobId.HasValue;
         var wildSet = !string.IsNullOrEmpty(wild);
 
-        // Use separate contexts for parallel queries (same pattern as PodSearchAsync)
         await using var liveJobsContext = await _contextFactory.CreateDbContextAsync();
         await using var archivedJobsContext = await _contextFactory.CreateDbContextAsync();
 
-        // Increase command timeout for large multi-client queries (5 minutes)
         liveJobsContext.Database.SetCommandTimeout(TimeSpan.FromMinutes(5));
         archivedJobsContext.Database.SetCommandTimeout(TimeSpan.FromMinutes(5));
 
-        // Build live and archived queries with SAME filters as PodSearchAsync
         IQueryable<TucJob> liveJobsQuery;
         IQueryable<TucJobArchive> archivedJobsQuery;
 
         if (jobIdSet)
         {
-            // When searching by specific job ID, ignore all other filters
             liveJobsQuery = liveJobsContext.TucJobs
                 .Where(j => j.UcjbId == jobId);
 
@@ -3003,21 +2854,16 @@ public partial class JobRepository(
                 );
         }
 
-        // Apply SAME wildcard search as PodSearchAsync
         if (!jobIdSet && wildSet)
         {
             liveJobsQuery = liveJobsQuery.Where(JobWildcardSearch.LiveJobMatches(wildSearch));
             archivedJobsQuery = archivedJobsQuery.Where(JobWildcardSearch.ArchivedJobMatches(wildSearch));
         }
 
-        // Keep the export consistent with PodSearchAsync: a job present in both tables is exported
-        // once, from the live row.
         archivedJobsQuery = ExcludeLiveDuplicates(archivedJobsQuery, archivedJobsContext.TucJobs);
 
-        // Cap each source to prevent unbounded export result sets
         const int maxExportRowsPerSource = 50000;
 
-        // Execute both queries in parallel with direct mapping to JobDownloadModel
         var liveJobsTask = liveJobsQuery
             .OrderBy(j => j.UcjbNumber)
             .Take(maxExportRowsPerSource)
@@ -3036,9 +2882,6 @@ public partial class JobRepository(
 
         await Task.WhenAll(liveJobsTask, archivedJobsTask);
 
-        // Archived jobs have no JobId-keyed item navigation (TucJobArchive.TucJobItemsArchives is
-        // keyed by ChildJobId), so sum tucJobItemsArchive.Cubic by JobId over the exported archive
-        // rows. Live-job cubic is summed inline in LiveJobDownloadMapping via TucJobItemJobs.
         var archivedCubicByJobId = await archivedJobsContext.TucJobItemsArchives
             .Where(i => cappedArchivedJobsQuery.Any(j => j.UcjbId == i.JobId))
             .GroupBy(i => i.JobId)
@@ -3046,20 +2889,13 @@ public partial class JobRepository(
             .TagWith("PodSearchDownload - Archived Job Cubic")
             .ToDictionaryAsync(x => x.JobId, x => x.Cubic);
 
-        // Combine and sort by job number
-        // Note: No parent/child filtering applied - download returns all jobs matching search criteria
-        // to maintain consistency with PodSearchAsync results
         var allJobs = (await liveJobsTask)
             .Concat(await archivedJobsTask)
             .OrderBy(j => j.JobNumber)
             .ToList();
 
-        // Apply timezone conversion to pickup and delivery times for consistent export
         var tenantTimeZone = _infoService.GetTenantTimeZone();
 
-        // ucjbVoid is the field voiding definitively owns; ucjbStatus can be moved off Void
-        // afterwards (manual status change, bulk status upload, POD), which would otherwise
-        // export a voided job as live revenue. Report the void status name whenever the flag is set.
         var voidStatusName = await GetVoidStatusNameAsync(liveJobsContext);
         return
         [
@@ -3254,23 +3090,16 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        // Current work is unbounded below for undelivered jobs: it includes overdue (past, not-done)
-        // jobs as well as today's. endDate caps the window at the current day. Done jobs are kept
-        // (so the client "Done" tab has data) but bounded to [startDate, endDate] so we don't return
-        // the courier's full completion history. Distinct from the drivers-overview count
-        // (CurrentWorkJob), which excludes done work entirely.
         var query = Context.TucJobs
             .Where(j => j.UcjbCourierId == courierId)
             .Where(CurrentWorkListJob(startDate, endDate));
 
-        // Single query to get both jobs and map items data
         var jobs = await query
             .Select(JobMappings.JobDispatchMapping(isUsCustomer, _infoService.GetCurrentTenantId()))
             .ToListAsync();
 
         var totalCount = jobs.Count;
 
-        // Build map items from jobs (avoids the second query)
         var mapItems = jobs.Select(j => new DispatchMapItem
         {
             JobId = j.Id,
@@ -3280,7 +3109,6 @@ public partial class JobRepository(
             AssignedCourier = j.AssignedCourier
         }).ToList();
 
-        // Calculate remaining time for each job
         var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
         var now = _clock.TenantNow;
         foreach (var job in jobs)
@@ -3492,7 +3320,6 @@ public partial class JobRepository(
                 })
                 .ToListAsync();
 
-            // Fall back to parent prebooks rows if this job has none
             if (prebookBreakdowns.Count == 0 && effectivePrebookId != jobId)
             {
                 prebookBreakdowns = await Context.PricingBreakdowns
@@ -3512,7 +3339,6 @@ public partial class JobRepository(
             return prebookBreakdowns;
         }
 
-        // Query archive table directly if we know the job is archived
         if (isArchived)
         {
             var effectiveArchiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
@@ -3534,9 +3360,6 @@ public partial class JobRepository(
                 })
                 .ToListAsync();
 
-            // Fall back to parent's archived rows if this job has none. PricingBreakdownArchive has
-            // no ChildJobId column, so per-leg attribution cannot survive archiving — an archived
-            // split leg still shows the parent's breakdown until that column exists.
             if (archiveBreakdowns.Count == 0 && effectiveArchiveJobId != jobId)
             {
                 archiveBreakdowns = await Context.PricingBreakdownArchives
@@ -3556,9 +3379,6 @@ public partial class JobRepository(
             return archiveBreakdowns;
         }
 
-        // Try live jobs — query the requested job first, then fall back to
-        // the parent's rows.  The previous OR query (effectiveJobId || jobId)
-        // combined both parent and child rows for split jobs, doubling the total.
         var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
         if (effectiveJobId != 0)
         {
@@ -3576,17 +3396,8 @@ public partial class JobRepository(
                 })
                 .ToListAsync();
 
-            // A split leg's rows live on the parent, attributed to the leg via ChildJobId — so take
-            // only this leg's. Returning the parent's whole breakdown made every leg report the
-            // parent's full revenue and cost while its own header showed a fraction of it.
-            // Splits made before per-leg lines existed have no attributed rows at all; those keep
-            // the original parent fallback rather than rendering an empty breakdown.
             if (pricingBreakdowns.Count == 0 && effectiveJobId != jobId)
             {
-                // New-model split (docs/pricing/job-splitting-price-breakdown.md §5): the parent's
-                // own items never carry a ChildJobId any more, so a leg's derived figures live in
-                // PricingBreakdownAllocation instead. Checked first — it takes priority over the
-                // legacy ChildJobId fallback below whenever this leg actually has allocation rows.
                 pricingBreakdowns = await Context.PricingBreakdownAllocations
                     .Where(a => a.LegJobId == jobId)
                     .Join(Context.PricingBreakdowns,
@@ -3630,7 +3441,6 @@ public partial class JobRepository(
             }
         }
 
-        // Fall back to archive table if live query returned no results
         var archiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
         if (archiveJobId == 0)
         {
@@ -3828,7 +3638,6 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        // First, try to get from active jobs (TucJobs)
         var activeJob = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer, _infoService.GetCurrentTenantId()))
@@ -3836,7 +3645,6 @@ public partial class JobRepository(
 
         if (activeJob != null)
         {
-            // TucJob doesn't have an Archived field, so check tblJobs view for the actual archived status
             var archivedStatus = await Context.TblJobs
                 .Where(j => j.JobId == jobId)
                 .Select(j => j.Archived ?? false)
@@ -3846,7 +3654,6 @@ public partial class JobRepository(
             return activeJob;
         }
 
-        // If not found in active jobs, try archived jobs (TblJobs)
         var archivedJobQuery =
             from j in Context.TblJobs
             join c in Context.TucCouriers on j.CourierId equals c.UccrId into courierJoin
@@ -3963,7 +3770,7 @@ public partial class JobRepository(
                         j.Time.HasValue ? j.Time.Value.Second : 0
                     )
                     : null,
-                IsArchived = j.Archived ?? false, // Use the actual Archived field from TblJobs view
+                IsArchived = j.Archived ?? false,
                 Locked = j.Locked.HasValue ? j.Locked != 0 : null,
                 ToAirportId = j.ToAirportId,
                 FromAirportId = j.FromAirportId,
@@ -4072,7 +3879,6 @@ public partial class JobRepository(
         const int maxMapJobs = 5000;
         var isUsCustomer = _infoService.IsUsTenant();
 
-        // Get active jobs to display on a map
         var jobs = await Context.TucJobs
             .Where(j =>
                 j.UcjbStatus.HasValue
@@ -4166,10 +3972,8 @@ public partial class JobRepository(
     {
         try
         {
-            // Fire-and-forget: mark as read concurrently (doesn't affect the read result)
             _ = MarkJobAsReadAsync(jobId);
 
-            // Try live first — eliminates the separate IsLiveJobAsync round-trip
             var result = await GetLiveJobByIdAsync(jobId);
             if (result != null)
             {
@@ -4275,7 +4079,7 @@ public partial class JobRepository(
         var baseQuery = Context.TucJobs.Where(j => j.InverseParent.Count != 0);
 
         var stats = await baseQuery
-            .GroupBy(j => true) // Group all records together
+            .GroupBy(j => true)
             .Select(g => new OverviewStatsViewModel
             {
                 Active = g.Count(j =>
@@ -4315,18 +4119,11 @@ public partial class JobRepository(
     public async Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate,
         int jobId, bool isBulkJob)
     {
-        // Scans are recorded against the parcel/item barcode for operational scan
-        // types (Sort, Run, Pickup, Transit, InwardsDepot) and against the job
-        // number only for Transfer scans. Match on the job number AND the job's
-        // item barcodes, mirroring the Run Viewer Scan Manager (RVW_stpScanJobs /
-        // RVW_stpJobItems). Matching the job number alone misses every depot scan.
         string jobNumber;
         var scanKeys = new HashSet<string>();
 
         if (isBulkJob)
         {
-            // One read for the number, the item-level (parent) bulk id and the job's
-            // own barcode, instead of three round trips to the same row.
             var bulk = await Context.TblBulkJobs
                 .Where(j => j.BulkJobId == jobId)
                 .Select(j => new
@@ -4352,8 +4149,6 @@ public partial class JobRepository(
                 scanKeys.Add(bulk.Barcode);
             }
 
-            // Items live at the parent bulk job: read from tucJobItems once the bulk
-            // job is pushed live, otherwise from tblBulkJobItems (mirrors RVW_stpJobItems).
             var liveJobId = await Context.TblBulkJobs
                 .Where(j => j.BulkJobId == bulk.ItemBulkJobId && j.Done && j.JobId != null)
                 .Select(j => j.JobId)
@@ -4372,7 +4167,6 @@ public partial class JobRepository(
         }
         else
         {
-            // Live job: number + item barcodes from the live tables.
             jobNumber = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.UcjbNumber)
@@ -4387,8 +4181,6 @@ public partial class JobRepository(
             }
             else
             {
-                // Archived job: number + item barcodes live in the archive tables;
-                // skip the live-item lookup entirely.
                 jobNumber = await Context.TucJobArchives
                     .Where(j => j.UcjbId == jobId)
                     .Select(j => j.UcjbNumber)
@@ -4414,12 +4206,8 @@ public partial class JobRepository(
         var scanKeyList = scanKeys.ToList();
 
         runDate ??= _clock.TenantNow;
-        // Compare wall-clock-to-wall-clock: bs.ScanDateTime is stored as
-        // tenant local time without an offset, so strip the offset from
-        // the cutoff before comparing.
         var cutoffDate = runDate.Value.AddDays(-3).DateTime;
 
-        // Use proper joins instead of subqueries to avoid N+1 queries
         var query = from bs in Context.TblBulkScans
             join courier in Context.TucCouriers on bs.CourierId equals courier.UccrId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
@@ -4431,8 +4219,6 @@ public partial class JobRepository(
             select new
             {
                 bs.BulkScanId,
-                // Project only the courier columns GetCourierDescription needs,
-                // not whole TucCourier rows (three per scan otherwise).
                 Courier = courier == null
                     ? (CourierLite?)null
                     : new CourierLite(courier.UccrId, courier.Code, courier.UccrName, courier.UccrSurname),
@@ -4443,7 +4229,6 @@ public partial class JobRepository(
                     ? (CourierLite?)null
                     : new CourierLite(bs.ToCourier.UccrId, bs.ToCourier.Code, bs.ToCourier.UccrName,
                         bs.ToCourier.UccrSurname),
-                // Only include RunViewerTransferTo when CourierId is 999 and the courier is active
                 RunViewerTransferTo = bs.CourierId == 999 && runViewerTransferTo != null && runViewerTransferTo.Active
                     ? new CourierLite(runViewerTransferTo.UccrId, runViewerTransferTo.Code,
                         runViewerTransferTo.UccrName, runViewerTransferTo.UccrSurname)
@@ -4665,10 +4450,6 @@ public partial class JobRepository(
         {
             var itemAllocations = allocationsByItem[item.PricingBreakdownId].ToList();
 
-            // What each leg's cost would be without its CostOverride — recomputed here (not
-            // stored) purely for the grid's "was X" + reset display; the write path already
-            // knows this at rewrite time but doesn't persist it, since only the effective Cost
-            // is ever needed downstream (Accounts, settlement).
             var derivedCosts = item.CostAmount.HasValue
                 ? PricingBreakdownAllocationCalculator.DistributeAmount(
                     item.CostAmount.Value, [.. itemAllocations.Select(a => a.SharePercent / 100m)])
@@ -4838,7 +4619,6 @@ public partial class JobRepository(
             })
             .ToListAsync();
 
-        // Jobs requested but absent from TucJobs are almost always archived (they live only in
         var missingJobIds = jobIds.Where(id => jobs.All(j => j.UcjbId != id)).ToList();
         if (missingJobIds.Count > 0)
         {
@@ -4856,7 +4636,6 @@ public partial class JobRepository(
                 "RestoreJobsCore evaluating job {JobId}: JobDone={JobDone}, Void={Void}, CourierId={CourierId}, DispId={DispId}, ParentId={ParentId}",
                 job.UcjbId, job.UcjbJobDone, job.UcjbVoid, job.UcjbCourierId, job.UcjbDispId, job.ParentId);
 
-            // Multi-leg relationship: clear the shared dispatcher off every sibling job.
             if (job.UcjbDispId == MultiLegDispatcherId && (job.ParentId ?? 0) != 0)
             {
                 var parentRelationshipTypeId = await Context.TucJobs
@@ -4873,9 +4652,6 @@ public partial class JobRepository(
                 }
             }
 
-            // Notify the courier's device the job has been taken off them. Must run before the
-            // courier is nulled below (the proc reads the still-assigned courier; it self-guards
-            // when the job has no courier).
             await Context.Procedures.UTL_stpJob_RestoreDeviceAsync(job.UcjbId);
 
             await Context.TucJobs
@@ -4908,7 +4684,6 @@ public partial class JobRepository(
                 "RestoreJobsCore restored job {JobId} to New/NewJobs (courier cleared, completion/dispatch state reset; POD name cleared so the job re-enters the dispatch view)",
                 job.UcjbId);
 
-            // Recompute the (former) courier's clear-list area ordering now the job is gone.
             if (job.UcjbCourierId is { } courierId)
             {
                 await courierRepository.ResetClearListAreaOrderAsync(courierId);
@@ -5190,17 +4965,13 @@ public partial class JobRepository(
         {
             await using var transaction = await Context.Database.BeginTransactionAsync();
 
-            // Delete all existing items for this scope
             await Context.TucJobItemsArchives
                 .Where(i => i.JobId == effectiveJobId &&
                             (childJobId == null || i.ChildJobId == childJobId))
                 .ExecuteDeleteAsync();
 
-            // Re-insert all parcels with sequential ItemIds
             if (parcels.Count > 0)
             {
-                // Get max ItemId across ALL items for this job (not just this scope)
-                // to avoid collisions with sibling stop jobs
                 var maxItemId = await Context.TucJobItemsArchives
                     .Where(i => i.JobId == effectiveJobId)
                     .MaxAsync(i => (int?)i.ItemId) ?? 0;
@@ -5226,8 +4997,6 @@ public partial class JobRepository(
                 await Context.SaveChangesAsync();
             }
 
-            // Update UcjbQty with total parcel count so it stays consistent with the parcels
-            // For stop jobs, only count items belonging to this specific stop (not sibling stops)
             var totalItemCount = await Context.TucJobItemsArchives
                 .Where(i => i.JobId == effectiveJobId &&
                             (childJobId == null || i.ChildJobId == childJobId))
@@ -5237,7 +5006,6 @@ public partial class JobRepository(
 
             if (childJobId == null)
             {
-                // Non-stop: sync qty across parent and all split children (they share the same parcels)
                 if (calculateDimsOncePerJob.HasValue)
                 {
                     await Context.TucJobArchives
@@ -5256,7 +5024,6 @@ public partial class JobRepository(
             }
             else
             {
-                // Stop job: each stop has its own parcels — only update this stop's qty
                 if (calculateDimsOncePerJob.HasValue)
                 {
                     await Context.TucJobArchives
@@ -5282,14 +5049,12 @@ public partial class JobRepository(
     {
         if (await IsStopJob(jobId))
         {
-            // Stop job: each stop has its own weight — only update this stop
             await Context.TucJobArchives
                 .Where(j => j.UcjbId == jobId)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
             return;
         }
 
-        // Non-stop: resolve to parent and sync weight across the entire delivery chain
         var effectiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
         await Context.TucJobArchives
             .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
@@ -5305,13 +5070,11 @@ public partial class JobRepository(
     /// <returns>True if the job can be split, false otherwise.</returns>
     public async Task<bool> CanJobBeSplitAsync(int jobId)
     {
-        // Use projection to check in SQL without loading full entity + collection
         var result = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new { HasFlights = j.TucJobNationwides.Any() })
             .FirstOrDefaultAsync();
 
-        // Only restriction: cannot split jobs with flights assigned
         return result is { HasFlights: false };
     }
 
@@ -5419,7 +5182,6 @@ public partial class JobRepository(
 
     private async Task<int> RepriceRegularOrArchivedJobAsync(SimpleRepriceJobModel data)
     {
-        // Try regular jobs first, fall back to the archive if not found
         var rowsChanged = await Context.TucJobs
             .Where(j => j.UcjbId == data.JobId)
             .ExecuteUpdateAsync(s => s
@@ -5457,7 +5219,6 @@ public partial class JobRepository(
             .Where(c => courierCodes.Contains(c.Code) && c.Active)
             .ToDictionaryAsync(c => c.Code, c => c.UccrId);
 
-        // Update couriers for each job
         foreach (var d in data.Where(d => !string.IsNullOrWhiteSpace(d.CourierCode)))
         {
             dynamic match = dbDataDict.TryGetValue(d.Id, out var activeJob) ? activeJob
@@ -5504,7 +5265,6 @@ public partial class JobRepository(
             .Where(s => statusNames.Contains(s.UcjsName))
             .ToDictionaryAsync(s => s.UcjsName, s => s.UcjsId);
 
-        // Update statuses for each job
         foreach (var d in data.Where(d => !string.IsNullOrWhiteSpace(d.StatusName)))
         {
             dynamic match = dbDataDict.TryGetValue(d.Id, out var activeJob) ? activeJob
@@ -5600,8 +5360,6 @@ public partial class JobRepository(
             return deliveryNow;
         }
 
-        // Handle timezone-aware strings from frontend (e.g., "2024-06-10T17:04:00-04:00")
-        // .DateTime extracts the wall-clock time which is already in delivery timezone from the frontend
         if (DateTimeOffset.TryParse(podTime, out var parsedOffset))
         {
             return parsedOffset.DateTime;
@@ -5637,13 +5395,11 @@ public partial class JobRepository(
 
     private async Task<IReadOnlyList<int>> GetAllRelatedJobIdsIncludingParentAsync(int jobId)
     {
-        // Single query to get both parent ID and all related job IDs
         var jobWithRelations = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new
             {
                 j.ParentId,
-                // If it has parent, get siblings; otherwise get children
                 RelatedJobIds = j.ParentId.HasValue
                     ? j.Parent.InverseParent.Select(child => child.UcjbId).ToList()
                     : j.InverseParent.Select(child => child.UcjbId).ToList()
@@ -5657,7 +5413,6 @@ public partial class JobRepository(
 
         var relatedJobIds = jobWithRelations.RelatedJobIds;
 
-        // Add the appropriate ID (parent or self)
         relatedJobIds.Add(jobWithRelations.ParentId ?? jobId);
 
         return relatedJobIds;
@@ -5665,9 +5420,6 @@ public partial class JobRepository(
 
     private async Task<IReadOnlyList<int>> GetAllRelatedBulkJobIdsIncludingParentAsync(int bulkJobId)
     {
-        // Resolve the family root from any member, then take every member of it. This used to test
-        // BulkParentId but navigate Parent.InverseParent, which is mapped to ParentId — a row linked
-        // by only one of the two columns resolved to an empty sibling set.
         var familyRootId = await Context.TblBulkJobs
             .Where(j => j.BulkJobId == bulkJobId)
             .Select(BulkJobFamily.RootIdOf)
@@ -5718,13 +5470,11 @@ public partial class JobRepository(
     /// </summary>
     private async Task<IReadOnlyList<int>> GetAllRelatedArchivedJobIdsIncludingParentAsync(int jobId)
     {
-        // Single query to get both parent ID and all related job IDs
         var jobWithRelations = await Context.TucJobArchives
             .Where(j => j.UcjbId == jobId)
             .Select(j => new
             {
                 j.ParentId,
-                // If it has parent, get siblings; otherwise get children
                 RelatedJobIds = j.ParentId.HasValue
                     ? j.Parent.InverseParent.Select(child => child.UcjbId).ToList()
                     : j.InverseParent.Select(child => child.UcjbId).ToList()
@@ -5738,7 +5488,6 @@ public partial class JobRepository(
 
         var relatedJobIds = jobWithRelations.RelatedJobIds;
 
-        // Add the appropriate ID (parent or self)
         relatedJobIds.Add(jobWithRelations.ParentId ?? jobId);
 
         return relatedJobIds;
@@ -5762,7 +5511,7 @@ public partial class JobRepository(
     /// can bypass the invariant the way a UI-only gate could.
     /// </summary>
     private async Task<bool> IsSplitChildAsync(int jobId, bool isArchived) =>
-        (int?)(isArchived
+        (isArchived
             ? await Context.TucJobArchives.Where(j => j.UcjbId == jobId)
                 .Select(j => j.JobRelationshipTypeId).FirstOrDefaultAsync()
             : await Context.TucJobs.Where(j => j.UcjbId == jobId)
@@ -5835,9 +5584,6 @@ public partial class JobRepository(
             }
         }
 
-        // A share update must name every current leg of that item, summing to 100 — a real
-        // data-integrity check (§4 rule 6), not just UI politeness, even though the grid's own
-        // client-side normalization should make this unreachable in practice.
         var currentLegIds = await Context.TucJobs
             .Where(j => j.ParentId == request.JobId && j.UcjbId != request.JobId && !j.UcjbVoid)
             .Select(j => j.UcjbId)
@@ -5859,11 +5605,58 @@ public partial class JobRepository(
             }
         }
 
+        var renames = request.ItemRevenues.Where(r => r.Name is not null).ToList();
+        if (renames.Count > 0)
+        {
+            var renamedIds = renames.Select(r => r.PricingBreakdownId).ToList();
+            var currentNames = await Context.PricingBreakdowns
+                .Where(p => renamedIds.Contains(p.PricingBreakdownId))
+                .ToDictionaryAsync(p => p.PricingBreakdownId, p => p.ChargeName);
+
+            foreach (var rename in renames)
+            {
+                var newName = rename.Name!.Trim();
+                switch (newName.Length)
+                {
+                    case 0:
+                        throw new ArgumentException($"Item {rename.PricingBreakdownId}'s name can't be blank.");
+                    case > SplitPricingAllocator.MaxChargeNameLength:
+                        throw new ArgumentException(
+                            $"Item {rename.PricingBreakdownId}'s name can't be longer than {SplitPricingAllocator.MaxChargeNameLength} characters.");
+                }
+
+                if (!currentNames.TryGetValue(rename.PricingBreakdownId, out var currentName))
+                {
+                    continue;
+                }
+
+                var wasFuel = currentName.EndsWith("Fuel", StringComparison.OrdinalIgnoreCase);
+                var willBeFuel = newName.EndsWith("Fuel", StringComparison.OrdinalIgnoreCase);
+                if (wasFuel != willBeFuel)
+                {
+                    throw new ArgumentException(
+                        $"Renaming \"{currentName}\" to \"{newName}\" would change whether it's treated as a fuel charge — keep or drop the \"Fuel\" suffix as its own rename.");
+                }
+            }
+        }
+
         foreach (var itemRevenue in request.ItemRevenues)
         {
-            await Context.PricingBreakdowns
-                .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.ChargeAmount, itemRevenue.Revenue));
+            var newName = itemRevenue.Name?.Trim();
+            if (newName is not null)
+            {
+                await Context.PricingBreakdowns
+                    .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(p => p.ChargeAmount, itemRevenue.Revenue)
+                        .SetProperty(p => p.ChargeName, newName));
+            }
+            else
+            {
+                await Context.PricingBreakdowns
+                    .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.ChargeAmount, itemRevenue.Revenue));
+            }
         }
 
         if (request.Allocations.Count > 0)
@@ -5955,9 +5748,6 @@ public partial class JobRepository(
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(j => j.UcjbAmount, parentSum));
 
-        // For split jobs the line also carries a ChildJobId. Sync the child's
-        // UcjbAmount to just its child-specific lines so a row on POD search /
-        // job list displays a total consistent with what the dialog shows.
         if (childJobId.HasValue && childJobId.Value != jobId.Value)
         {
             var childSum = await Context.PricingBreakdowns
@@ -5978,8 +5768,6 @@ public partial class JobRepository(
     /// </summary>
     private async Task SyncBreakdownLinesToChildAmountAsync(int childJobId, decimal newAmount)
     {
-        // Only applicable when repricing a child job in a split job; root parents should never
-        // have their own breakdown rows scaled via this path.
         var parentId = await Context.TucJobs
             .Where(j => j.UcjbId == childJobId)
             .Select(j => j.ParentId)
@@ -6022,7 +5810,6 @@ public partial class JobRepository(
                 allocated += scaled;
             }
 
-            // Last line absorbs any rounding difference
             lines[^1].ChargeAmount = newAmount - allocated;
         }
 
@@ -6160,8 +5947,6 @@ public partial class JobRepository(
 
     private async Task<bool> IsStopJob(int jobId)
     {
-        // Live jobs in tucJob; once archived the row moves to tucJobArchive. Look in the
-        // live table first, then fall back to the archive so this works for archived jobs too.
         var jobNumber = await Context.TucJobs
                             .Where(j => j.UcjbId == jobId)
                             .Select(j => j.UcjbNumber)
@@ -6172,9 +5957,6 @@ public partial class JobRepository(
                             .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(jobNumber);
-        // Stop jobs are created by appending a single lowercase letter (a-z, not v) to the parent
-        // job number. Regular jobs and split children end in an uppercase letter or digit.
-        // Guard that the second-to-last char is not also lowercase to avoid false positives.
         if (jobNumber.Length < 2)
         {
             return false;
@@ -6193,7 +5975,6 @@ public partial class JobRepository(
             var staffId = _infoService.GetStaffId();
             var currentTenantTime = _clock.TenantNow;
 
-            // Uses a separate context since this runs concurrently with the read queries
             await using var markReadContext = await _contextFactory.CreateDbContextAsync();
 
             var jobExists = await markReadContext.TucJobs.AnyAsync(j => j.UcjbId == jobId);
@@ -6234,7 +6015,7 @@ public partial class JobRepository(
 
         if (mainJobInfo == null)
         {
-            return null; // Not a live job — caller will try archived
+            return null;
         }
 
         var familyRootId = mainJobInfo.FamilyRootId;
@@ -6370,9 +6151,8 @@ public partial class JobRepository(
                 .Select(g => new { CourierId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.CourierId, x => x.Count);
 
-            // Determine which couriers get which status
-            var couriersToSetRejected = new List<int>(); // Status 3 - no jobs
-            var couriersToSetPickedUp = new List<int>(); // Status 5 - all jobs picked up or late
+            var couriersToSetRejected = new List<int>();
+            var couriersToSetPickedUp = new List<int>();
 
             foreach (var courierId in courierIds)
             {
@@ -6392,7 +6172,6 @@ public partial class JobRepository(
                 }
             }
 
-            // Bulk update using ExecuteUpdateAsync
             if (couriersToSetRejected.Count > 0)
             {
                 await Context.TblClearListAreaOrders

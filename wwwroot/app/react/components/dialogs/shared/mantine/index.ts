@@ -27,6 +27,8 @@ export {PriceDelta} from './PriceDelta';
 export type {PriceDeltaProps} from './PriceDelta';
 export {SummaryCard} from './SummaryCard';
 export type {SummaryCardProps} from './SummaryCard';
+export {PricingSummaryCards, getMarginColor} from './PricingSummaryCards';
+export type {PricingSummaryCardsProps, PricingTotals} from './PricingSummaryCards';
 export {AgentEmailFields} from './AgentEmailFields';
 export type {AgentEmailState} from './AgentEmailFields';
 export type {DialogFooterProps} from "./DialogFooterProps";

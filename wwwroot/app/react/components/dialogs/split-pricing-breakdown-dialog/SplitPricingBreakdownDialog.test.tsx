@@ -4,10 +4,6 @@ import {SplitPricingBreakdownDialog, type EditModeProps, type SplitModeProps} fr
 import type {SplitPriceBreakdown, SplitPricingPreview} from '../../../interfaces/splitJobs';
 import {createProps, renderWithMantine} from '../../../__testUtils__';
 
-// The spec's own worked example (§2): Base 64/32, 80/20 split across two legs.
-// A 2-item subset of the spec's §2 worked example (Base + Congestion only, still 80/20 split) —
-// the component recomputes every total client-side from `items`, so these top-level fields
-// (unused by rendering) are set to match that subset, not the full 5-item example.
 const workedExample: SplitPriceBreakdown = {
     jobId: 4071,
     totalRevenue: 73.00,
@@ -71,12 +67,38 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByText('$35.00')).toBeInTheDocument();
 
         expect(screen.getByText('KT4071VA')).toBeInTheDocument();
-        expect(screen.getByText('Sam Driver')).toBeInTheDocument();
+        expect(screen.getAllByText('Sam Driver').length).toBeGreaterThan(0); // leg card + grid column header
         expect(screen.getByText('KT4071VB')).toBeInTheDocument();
-        expect(screen.getByText('Unassigned')).toBeInTheDocument();
+        expect(screen.getAllByText('Unassigned').length).toBeGreaterThan(0);
 
-        expect(screen.getByText('Base')).toBeInTheDocument();
-        expect(screen.getByText('Congestion')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Base')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Congestion')).toBeInTheDocument();
+    });
+
+    it('shows the "Legs" heading and a 100%-shares indicator', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        expect(screen.getByText('Legs')).toBeInTheDocument();
+        expect(screen.getByText('Shares total 100%')).toBeInTheDocument();
+    });
+
+    it('shows a colored leg-identity badge with the job number next to it', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        expect(screen.getByText('Leg A').parentElement).toHaveAttribute(
+            'style', expect.stringContaining('background-color: rgb(30, 136, 229)'),
+        );
+        expect(screen.getByText('Leg B').parentElement).toHaveAttribute(
+            'style', expect.stringContaining('background-color: rgb(0, 137, 123)'),
+        );
+        expect(screen.getByText('KT4071VA')).toBeInTheDocument();
+        expect(screen.getByText('KT4071VB')).toBeInTheDocument();
+    });
+
+    it('shows the read-only-on-children banner', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        expect(screen.getByText(/managed here, on the parent job/i)).toBeInTheDocument();
     });
 
     it('Save & Close is disabled until something changes', () => {
@@ -132,7 +154,7 @@ describe('SplitPricingBreakdownDialog', () => {
         const onSave = jest.fn().mockResolvedValue(undefined);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
 
-        fireEvent.click(screen.getAllByRole('button', {name: 'Share %'})[0]);
+        fireEvent.click(screen.getAllByRole('button', {name: '80 / 20'})[0]); // Base row
         fireEvent.change(screen.getByLabelText('KT4071VA'), {target: {value: '60'}});
 
         fireEvent.click(screen.getByRole('button', {name: /save & close/i}));
@@ -147,6 +169,50 @@ describe('SplitPricingBreakdownDialog', () => {
         );
     });
 
+    it('"Reset to overall split" clears a per-item share override', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        fireEvent.click(screen.getAllByRole('button', {name: '80 / 20'})[0]); // Base row
+        fireEvent.change(screen.getByLabelText('KT4071VA'), {target: {value: '60'}});
+        expect(screen.getByRole('button', {name: /reset to overall split/i})).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', {name: /reset to overall split/i}));
+
+        expect(screen.getByLabelText('KT4071VA')).toHaveValue('80');
+        expect(screen.queryByRole('button', {name: /reset to overall split/i})).not.toBeInTheDocument();
+    });
+
+    it('renaming an item sends the new name on save', async () => {
+        const onSave = jest.fn().mockResolvedValue(undefined);
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
+
+        fireEvent.change(screen.getByLabelText('Name for Base'), {target: {value: 'Freight'}});
+        fireEvent.click(screen.getByRole('button', {name: /save & close/i}));
+
+        await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+        expect(onSave.mock.calls[0][0].itemRevenues).toContainEqual(
+            {pricingBreakdownId: 1, revenue: 64, name: 'Freight'},
+        );
+    });
+
+    it('editing a leg\'s overall share rebalances its sibling and defaults every untouched item on save', async () => {
+        const onSave = jest.fn().mockResolvedValue(undefined);
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
+
+        fireEvent.change(screen.getByLabelText('Share % for KT4071VA'), {target: {value: '60'}});
+        expect(screen.getByLabelText('Share % for KT4071VB')).toHaveValue('40');
+        expect(screen.getByText('Shares total 100%')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', {name: /save & close/i}));
+        await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+
+        const allocations = onSave.mock.calls[0][0].allocations;
+        [1, 2].forEach((pricingBreakdownId) => {
+            expect(allocations).toContainEqual(expect.objectContaining({pricingBreakdownId, legJobId: 201, sharePercent: 60}));
+            expect(allocations).toContainEqual(expect.objectContaining({pricingBreakdownId, legJobId: 202, sharePercent: 40}));
+        });
+    });
+
     it('locks revenue and Add Item when the parent is invoiced', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({
             breakdown: {
@@ -157,6 +223,7 @@ describe('SplitPricingBreakdownDialog', () => {
 
         expect(screen.getByLabelText('Revenue for Base')).toBeDisabled();
         expect(screen.getByRole('button', {name: /add item/i})).toBeDisabled();
+        expect(screen.getByLabelText('Share % for KT4071VA')).toBeDisabled();
     });
 
     it('locks only the settled leg\'s cost, leaving its sibling editable', () => {
@@ -195,7 +262,7 @@ describe('SplitPricingBreakdownDialog', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Add'}));
 
         await waitFor(() => expect(onAddItem).toHaveBeenCalledWith('New Item', 10));
-        expect(await screen.findByText('New Item')).toBeInTheDocument();
+        expect(await screen.findByDisplayValue('New Item')).toBeInTheDocument();
     });
 
     it('deletes an item via confirm and refreshes the grid', async () => {
@@ -207,13 +274,17 @@ describe('SplitPricingBreakdownDialog', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Delete'}));
 
         await waitFor(() => expect(onDeleteItem).toHaveBeenCalledWith(2));
-        await waitFor(() => expect(screen.queryByText('Congestion')).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByDisplayValue('Congestion')).not.toBeInTheDocument());
+    });
+
+    it('footer reconciles legs back to the total', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        expect(screen.getByText(/legs re-sum to/i).parentElement).toHaveTextContent('legs re-sum to $73.00 ✓');
     });
 });
 
 describe('SplitPricingBreakdownDialog — split mode', () => {
-    // Mirrors the KT1314V repro: a US$89.00/US$50.00 parent divided 70/30 by road miles —
-    // the same fixture split-pricing-dialog/SplitPricingDialog.test.tsx used before unification.
     function createPreview(overrides?: Partial<SplitPricingPreview>): SplitPricingPreview {
         return {
             basis: 'RoadMiles',
@@ -247,8 +318,12 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
         };
     }
 
-    const splitProps = (preview: SplitPricingPreview, onClose = jest.fn()): SplitModeProps =>
-        ({mode: 'split', open: true, jobNo: 'KT1314V', preview, onClose});
+    const splitProps = (
+        preview: SplitPricingPreview,
+        onClose = jest.fn(),
+        legCourierNames?: (string | null)[],
+    ): SplitModeProps =>
+        ({mode: 'split', open: true, jobNo: 'KT1314V', preview, legCourierNames, onClose});
 
     it('renders the preview: header, basis banner, leg strip, and item revenue', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview())} />);
@@ -257,10 +332,11 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
         expect(screen.getByText(/split by road distance per leg/i)).toBeInTheDocument();
         expect(screen.getByText(/splitting does not change what the client is invoiced/i)).toBeInTheDocument();
 
+        expect(screen.getByText('Legs')).toBeInTheDocument(); // heading is always "Legs", never "Overall split"
         expect(screen.getByText('Leg A')).toBeInTheDocument();
-        expect(screen.getByText('5.6 mi')).toBeInTheDocument();
+        expect(screen.getAllByText('5.6 mi').length).toBeGreaterThan(0); // leg card + grid column header
         expect(screen.getByText('Leg B')).toBeInTheDocument();
-        expect(screen.getByText('2.4 mi')).toBeInTheDocument();
+        expect(screen.getAllByText('2.4 mi').length).toBeGreaterThan(0);
 
         expect(screen.getByLabelText('Revenue for Base')).toHaveValue('64');
         expect(screen.getByLabelText('Revenue for Congestion')).toHaveValue('9');
@@ -304,12 +380,11 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
         const onClose = jest.fn();
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
 
-        fireEvent.click(screen.getAllByRole('button', {name: 'Share %'})[1]); // Congestion
+        fireEvent.click(screen.getAllByRole('button', {name: '70 / 30'})[1]); // Congestion
         fireEvent.change(screen.getByLabelText('Leg A'), {target: {value: '100'}});
 
         expect(screen.getByText('rev $9.00')).toBeInTheDocument(); // Congestion now wholly on leg A
         expect(screen.getByText('rev $0.00')).toBeInTheDocument();
-        // The untouched line still follows the preview's own 70/30.
         expect(screen.getByText('rev $44.80')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', {name: /confirm & split/i}));
@@ -346,6 +421,34 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
         });
     });
 
+    it('editing the leg-card overall share rebalances the sibling and is sent as the confirmed split', () => {
+        const onClose = jest.fn();
+        renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
+
+        fireEvent.change(screen.getByLabelText('Share % for Leg A'), {target: {value: '90'}});
+        expect(screen.getByLabelText('Share % for Leg B')).toHaveValue('10');
+
+        fireEvent.click(screen.getByRole('button', {name: /confirm & split/i}));
+
+        expect(onClose).toHaveBeenCalledWith({
+            action: 'confirm',
+            allocation: [
+                {sequence: 1, sharePercent: 90},
+                {sequence: 2, sharePercent: 10},
+            ],
+            lineAllocation: [],
+        });
+    });
+
+    it('shows the courier next to road distance, and "Unassigned" when none is assigned', () => {
+        renderWithMantine(
+            <SplitPricingBreakdownDialog {...splitProps(createPreview(), jest.fn(), ['Sam Driver', null])} />,
+        );
+
+        expect(screen.getAllByText(/road distance 5\.6 mi.*Sam Driver/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/road distance 2\.4 mi.*Unassigned/).length).toBeGreaterThan(0);
+    });
+
     it('warns when no distance was available, for a synthesised single-line job', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview({
             basis: 'EvenSplit',
@@ -367,8 +470,8 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
             legs: createPreview().legs.map((leg) => ({...leg, distance: leg.sequence === 1 ? 9.01 : 3.86})),
         }))} />);
 
-        expect(screen.getByText('9.01 km')).toBeInTheDocument();
-        expect(screen.getByText('3.86 km')).toBeInTheDocument();
+        expect(screen.getAllByText('9.01 km').length).toBeGreaterThan(0); // leg card + grid column header
+        expect(screen.getAllByText('3.86 km').length).toBeGreaterThan(0);
         expect(screen.queryByText(/\bmi\b/)).not.toBeInTheDocument();
     });
 });

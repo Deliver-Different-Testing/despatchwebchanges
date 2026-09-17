@@ -14,6 +14,7 @@ import {SplitPricingPreview} from "../../../interfaces/splitJobs";
 export function openSplitPricingDialog(
     jobNo: string,
     preview: SplitPricingPreview,
+    legCourierNames?: (string | null)[],
 ): Promise<SplitPricingResult> {
     return new Promise((resolve) => {
         const container = document.createElement('div');
@@ -28,7 +29,13 @@ export function openSplitPricingDialog(
 
         root.render(
             <DfrntMantineProvider>
-                <SplitPricingDialog open jobNo={jobNo} preview={preview} onClose={handleClose}/>
+                <SplitPricingDialog
+                    open
+                    jobNo={jobNo}
+                    preview={preview}
+                    legCourierNames={legCourierNames}
+                    onClose={handleClose}
+                />
             </DfrntMantineProvider>,
         );
     });
