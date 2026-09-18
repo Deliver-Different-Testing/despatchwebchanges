@@ -76,6 +76,7 @@ export const MessagesButton: React.FC<MessagesButtonProps> = ({unreadCount, onCl
             <ActionIcon
                 variant="subtle"
                 size="lg"
+                radius="xl"
                 onClick={onClick}
                 style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
                 aria-label="Messages"
@@ -108,6 +109,7 @@ export const RefreshButton: React.FC<RefreshButtonProps> = ({onClick, loading = 
                 <ActionIcon
                     variant="subtle"
                     size="lg"
+                    radius="xl"
                     onClick={onClick}
                     disabled={loading}
                     style={toolbarIconButtonStyle}
@@ -132,7 +134,7 @@ export interface SettingsButtonProps {
 export const SettingsButton: React.FC<SettingsButtonProps> = ({onClick}) => {
     return (
         <Tooltip label="Settings">
-            <ActionIcon variant="subtle" size="lg" onClick={onClick} style={toolbarIconButtonStyle} aria-label="Settings">
+            <ActionIcon variant="subtle" size="lg" radius="xl" onClick={onClick} style={toolbarIconButtonStyle} aria-label="Settings">
                 <Icon lucide={Settings} size={TOOLBAR_ICON_SIZE} />
             </ActionIcon>
         </Tooltip>
@@ -168,6 +170,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                     <ActionIcon
                         variant="subtle"
                         size="lg"
+                        radius="xl"
                         style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
                         aria-label="Views"
                     >
@@ -375,6 +378,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                     <ActionIcon
                         variant="subtle"
                         size="lg"
+                        radius="xl"
                         onClick={toggle}
                         style={toolbarIconButtonStyle}
                         aria-label="Layouts"
@@ -522,6 +526,7 @@ export const ToolbarIconButton: React.FC<ToolbarIconButtonProps> = ({
                 <ActionIcon
                     variant="subtle"
                     size="lg"
+                    radius="xl"
                     onClick={onClick}
                     disabled={disabled}
                     style={toolbarIconButtonStyle}

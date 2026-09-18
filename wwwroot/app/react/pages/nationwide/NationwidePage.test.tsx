@@ -1,22 +1,35 @@
 import React from 'react';
-import {act, render, screen} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // The job list and map pull in heavy dependencies; stub them and capture the
 // props the page hands over, which is what this suite is actually about.
 const listProps: Record<string, {
     storagePrefix: string;
-    fetchConfig?: {queryKeyFn?: unknown; initialParams?: Record<string, unknown>};
+    fetchConfig?: {queryKeyFn?: unknown; initialParams?: Record<string, unknown>; refetchInterval?: number | false};
     onJobSelect?: (job: unknown) => void;
+    topSlot?: React.ReactNode;
 }> = {};
+// What each list was pushed via setUpdateSearchParamsCallback, keyed by storagePrefix.
+const listParamPushes: Record<string, Record<string, unknown>[]> = {};
 jest.mock('../../components/job-list/JobListPanel', () => ({
     JobListPanel: (props: {
         storagePrefix: string;
-        fetchConfig?: {queryKeyFn?: unknown; initialParams?: Record<string, unknown>};
+        fetchConfig?: {queryKeyFn?: unknown; initialParams?: Record<string, unknown>; refetchInterval?: number | false};
         onJobSelect?: (job: unknown) => void;
+        topSlot?: React.ReactNode;
+        setUpdateSearchParamsCallback?: (cb: (params: Record<string, unknown>) => void) => void;
     }) => {
         listProps[props.storagePrefix] = props;
-        return <div data-testid={`mock-job-list-${props.storagePrefix}`}/>;
+        listParamPushes[props.storagePrefix] ??= [];
+        props.setUpdateSearchParamsCallback?.((params) => {
+            listParamPushes[props.storagePrefix].push(params);
+        });
+        return (
+            <div data-testid={`mock-job-list-${props.storagePrefix}`}>
+                {props.storagePrefix === 'nwNewJobList' ? props.topSlot : null}
+            </div>
+        );
     },
 }));
 
@@ -54,6 +67,12 @@ jest.mock('../../components/dialogs/auto-complete-dialog/auto-complete-dialog-re
 jest.mock('../../components/dialogs/recovery-agent-management-dialog', () => ({
     openRecoveryAgentManagementDialog: jest.fn(() => Promise.resolve(null)),
 }));
+jest.mock('../../components/dialogs/add-event-dialog', () => ({
+    openAddEventDialog: jest.fn(() => Promise.resolve(true)),
+}));
+jest.mock('../../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
+    openEditAddressDialog: jest.fn().mockResolvedValue(null),
+}));
 
 const dispatchDialogProps: {open?: boolean; initialType?: string; existingDestination?: {id: number; text: string}} = {};
 jest.mock('../../components/dialogs/dispatch-dialog', () => ({
@@ -68,8 +87,21 @@ jest.mock('../../services/dispatchExecutorApi', () => ({
     getDispatchJobDetail: jest.fn(() => new Promise(() => {})),
 }));
 
+const serverViews = [
+    {id: 11, name: 'Auckland', centerLatitude: -36.85, centerLongitude: 174.76, selected: false},
+    {id: 22, name: 'Airport', centerLatitude: -37.0, centerLongitude: 174.79, selected: false},
+];
+const fetchPageViewsMock = jest.fn().mockResolvedValue(serverViews);
+jest.mock('../../services/dispatchViewsApi', () => ({
+    fetchPageViews: (...a: unknown[]) => fetchPageViewsMock(...a),
+}));
+
 import {NationwidePage} from './NationwidePage';
 import {MantineTestProvider} from '../../__testUtils__';
+import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
+import {queryClient} from '../../query/queryClient';
+import {setupUser} from '../../__testUtils__/setupUser';
+import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof NationwidePage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -91,6 +123,8 @@ describe('NationwidePage', () => {
     beforeEach(() => {
         localStorage.clear();
         (window as unknown as {ContactID: number}).ContactID = 0;
+        for (const key of Object.keys(listProps)) delete listProps[key];
+        for (const key of Object.keys(listParamPushes)) delete listParamPushes[key];
     });
 
     it('renders all three job lists, each with its own storage prefix', () => {
@@ -99,6 +133,14 @@ describe('NationwidePage', () => {
         expect(screen.getByTestId('mock-job-list-nwNewJobList')).toBeInTheDocument();
         expect(screen.getByTestId('mock-job-list-nwPodJobList')).toBeInTheDocument();
         expect(screen.getByTestId('mock-job-list-nwRepriceJobList')).toBeInTheDocument();
+    });
+
+    it('does not give the job lists an inline views rail -- selection is app-bar only, matching AngularJS', () => {
+        renderPage();
+
+        expect(listProps['nwNewJobList'].topSlot).toBeUndefined();
+        expect(listProps['nwPodJobList'].topSlot).toBeUndefined();
+        expect(listProps['nwRepriceJobList'].topSlot).toBeUndefined();
     });
 
     it('gives each list a distinct query key so they page independently', () => {
@@ -114,6 +156,21 @@ describe('NationwidePage', () => {
         expect(keys[0]).toContain('newJobs');
         expect(keys[1]).toContain('podJobs');
         expect(keys[2]).toContain('repriceJobs');
+    });
+
+    it('has no auto-refresh by default (no V1 cadence stored)', () => {
+        renderPage();
+        for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
+            expect(listProps[prefix].fetchConfig?.refetchInterval).toBe(false);
+        }
+    });
+
+    it('carries forward a cadence the operator already saved on the classic V1 page', () => {
+        localStorage.setItem('refreshInterval-2-0', '30');
+        renderPage();
+        for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
+            expect(listProps[prefix].fetchConfig?.refetchInterval).toBe(30000);
+        }
     });
 
     it('seeds every list from the persisted date filter', () => {
@@ -205,6 +262,177 @@ describe('NationwidePage', () => {
             expect(screen.getByTestId('mock-dispatch-dialog')).toBeInTheDocument();
             expect(dispatchDialogProps.initialType).toBe('Agent');
             expect(dispatchDialogProps.existingDestination).toEqual({id: 7, text: 'Acme Air'});
+        });
+    });
+
+    describe('job actions menu', () => {
+        const selectAJob = async () => {
+            await act(async () => {
+                listProps['nwNewJobList'].onJobSelect?.({
+                    id: 5, jobNo: 'JOB-5', isAgentJob: true, relatedJobs: [],
+                });
+            });
+        };
+
+        it('is not shown until a job is selected', () => {
+            renderPage();
+            expect(screen.queryByRole('button', {name: 'Job actions'})).not.toBeInTheDocument();
+        });
+
+        it('opens the Add Task dialog for the selected job', async () => {
+            const user = setupUser();
+            renderPage();
+            await selectAJob();
+
+            await user.click(screen.getByRole('button', {name: 'Job actions'}));
+            await user.click(screen.getByRole('menuitem', {name: 'Add Task'}));
+
+            expect(openAddEventDialog).toHaveBeenCalledWith(expect.objectContaining({
+                job: expect.objectContaining({id: 5, jobNo: 'JOB-5'}),
+            }));
+        });
+    });
+
+    describe('dashboard views filter', () => {
+        const SELECTED_VIEWS_KEY = 'selectedViews-NW-0';
+
+        it('loads the Nationwide (AppPage.Domestic) page views', () => {
+            renderPage();
+            expect(fetchPageViewsMock).toHaveBeenCalledWith(LegacyAppPage.Domestic);
+        });
+
+        it('selects the first view on a first visit and persists it under the legacy V1 key', async () => {
+            renderPage();
+
+            // All three lists -- selection is app-bar only, no per-list rail -- get scoped.
+            for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
+                await waitFor(() => expect(listParamPushes[prefix]).toContainEqual({despatchViewIds: [11], page: 0}));
+            }
+            expect(JSON.parse(localStorage.getItem(SELECTED_VIEWS_KEY)!)).toEqual([
+                expect.objectContaining({id: 11, selected: true}),
+            ]);
+        });
+
+        it('restores a previously stored selection instead of auto-selecting', async () => {
+            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([{id: 22, selected: true}]));
+            renderPage();
+
+            // Matches the stored selection already, so no push is needed --
+            // the initial fetch is scoped to it directly.
+            await waitFor(() => expect(listProps['nwNewJobList'].fetchConfig?.initialParams).toEqual(
+                expect.objectContaining({despatchViewIds: [22]}),
+            ));
+        });
+
+        it('toggles a view (driven by the host toolbar) and pushes the new selection into every list', async () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+            await waitFor(() => expect(listParamPushes['nwNewJobList']).toContainEqual({despatchViewIds: [11], page: 0}));
+
+            await act(async () => bridge.setViewSelection([11, 22]));
+
+            for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
+                expect(listParamPushes[prefix]).toContainEqual({despatchViewIds: [11, 22], page: 0});
+            }
+        });
+
+        it('clears the selection (driven by the host toolbar) and keeps it cleared in storage', async () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+            await waitFor(() => expect(listParamPushes['nwNewJobList']).toContainEqual({despatchViewIds: [11], page: 0}));
+
+            await act(async () => bridge.setViewSelection([]));
+
+            expect(localStorage.getItem(SELECTED_VIEWS_KEY)).toBe('[]');
+            expect(listParamPushes['nwNewJobList']).toContainEqual({despatchViewIds: [], page: 0});
+        });
+    });
+
+    describe('host toolbar bridge', () => {
+        it('exposes a layout bridge to the host on mount', () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            expect(onLayoutBridgeReady).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    setCurrentLayoutName: expect.any(Function),
+                    reloadFromStorage: expect.any(Function),
+                    promptSaveLayout: expect.any(Function),
+                    promptDeleteLayout: expect.any(Function),
+                    promptRenameLayout: expect.any(Function),
+                    importLegacyLayouts: expect.any(Function),
+                    resetCurrentLayout: expect.any(Function),
+                    registerViewsListener: expect.any(Function),
+                    setViewSelection: expect.any(Function),
+                    updateRefreshIntervalMs: expect.any(Function),
+                }),
+            );
+        });
+
+        it('mirrors the view list and selection to the host toolbar, in both directions', async () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+            const listener = jest.fn();
+            bridge.registerViewsListener(listener);
+            // Still loading -- the toolbar keeps its spinner rather than
+            // flashing "No views available".
+            expect(listener).not.toHaveBeenCalled();
+
+            // React -> host: the loaded list arrives with the resolved selection.
+            // (The listener may first fire with the pre-auto-select state, so
+            // wait for the settled call rather than just "called".)
+            await waitFor(() => expect(listener).toHaveBeenLastCalledWith([
+                expect.objectContaining({id: 11, name: 'Auckland', selected: true}),
+                expect.objectContaining({id: 22, name: 'Airport', selected: false}),
+            ]));
+
+            // Host -> React: the toolbar's Views menu drives the lists' scope.
+            await act(async () => bridge.setViewSelection([22]));
+            expect(listener).toHaveBeenLastCalledWith([
+                expect.objectContaining({id: 11, name: 'Auckland', selected: false}),
+                expect.objectContaining({id: 22, name: 'Airport', selected: true}),
+            ]);
+        });
+
+        it('applies a refresh interval pushed from the host settings dialog', () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+            act(() => { bridge.updateRefreshIntervalMs(30_000); });
+
+            for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
+                expect(listProps[prefix].fetchConfig?.refetchInterval).toBe(30_000);
+            }
+        });
+    });
+
+    describe('per-box manual refresh', () => {
+        it('refreshes only the affected list, leaving non-list boxes as no-ops', async () => {
+            const user = setupUser();
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            renderPage();
+
+            for (const button of screen.getAllByRole('button', {name: 'Refresh'})) {
+                await user.click(button);
+            }
+
+            const nationwideCalls = invalidateSpy.mock.calls
+                .map(([opts]) => (opts as {queryKey?: unknown[]})?.queryKey)
+                .filter((key): key is unknown[] => Array.isArray(key) && key[0] === 'nationwide');
+
+            expect(nationwideCalls).toEqual(expect.arrayContaining([
+                ['nationwide', 'newJobs'],
+                ['nationwide', 'podJobs'],
+                ['nationwide', 'repriceJobs'],
+            ]));
+            // One call per list box -- Map/Job Detail/Tasks/Available are no-ops.
+            expect(nationwideCalls).toHaveLength(3);
+
+            invalidateSpy.mockRestore();
         });
     });
 });

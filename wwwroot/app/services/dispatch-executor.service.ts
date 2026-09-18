@@ -1,8 +1,7 @@
-import {IDispatchJob, IJobQueryParams, IJobSearchResult} from "../interfaces/job.interface";
+import {IDispatchJob} from "../interfaces/job.interface";
 import {ActiveCourierViewModel} from "../interfaces/courier.interface";
 import DispatchCoreService from "./dispatch-core.service";
 import dayjs from "dayjs";
-import {DfrntPageViewModel} from "../interfaces/dfrnt-page-view-model.interface";
 import {DispatchState, ValidationResult} from "../interfaces/dispatch-executor-service.interfaces";
 import angular from 'angular';
 
@@ -55,70 +54,6 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
     }
 
-    async getJobsWithDispatchInfo(
-        queryParams: IJobQueryParams,
-        isInternal: boolean,
-        selectedAreas: DfrntPageViewModel[],
-        selectedClearListId?: number,
-    ): Promise<IJobSearchResult> {
-        try {
-            return await this.fetchJobsByParameters(
-                queryParams,
-                isInternal,
-                selectedAreas,
-                selectedClearListId
-            );
-        } catch (error) {
-            console.error("Error fetching jobs with dispatch status:", error);
-            throw error;
-        }
-    }
-
-    async assignSingleJobById(courierId: number, jobId: number): Promise<void> {
-        console.log("Dispatching job by ID:", {courierId, jobId});
-
-        this.validateDispatchParams(courierId, jobId);
-
-        try {
-            const [job, courier] = await Promise.all([
-                this.DispatchData.getDispatchJobDetail(jobId),
-                this.DispatchData.getCourierById(courierId)
-            ]);
-
-            console.log("Job details fetched:", job);
-            console.log("Found courier:", courier);
-
-            if (!courier) {
-                await this.showCourierNotFoundDialog(courierId);
-                return;
-            }
-
-            await this.executeJobDispatch(courier, [job as IDispatchJob]);
-        } catch (error) {
-            console.error("Error in assignSingleJobById:", error);
-            throw error;
-        }
-    }
-
-    async assignJobsToCourier(courierId: number, jobs: IDispatchJob[]): Promise<void> {
-        console.log("Dispatching multiple jobs by courier ID:", {courierId, jobCount: jobs.length});
-
-        try {
-            const courier = await this.DispatchData.getCourierById(courierId);
-            console.log("Found courier:", courier);
-
-            if (!courier) {
-                console.warn(`Could not find courier with ID ${courierId}`);
-                return;
-            }
-
-            await this.executeJobDispatch(courier, jobs);
-        } catch (error) {
-            console.error("Error in assignJobsToCourier:", error);
-            throw error;
-        }
-    }
-
     async reassignJob(job: IDispatchJob): Promise<void> {
         try {
             const selectedCourier = await this.showCourierSelectionDialog(job);
@@ -142,16 +77,6 @@ class DispatchExecutorService implements angular.IServiceProvider {
     // Private Helper Methods
     // ============================================
 
-    private validateDispatchParams(courierId: number, jobId: number): void {
-        if (!jobId) {
-            throw new Error("No job ID provided");
-        }
-
-        if (!courierId) {
-            throw new Error("No courier ID provided");
-        }
-    }
-
     private async validateAndDispatch(courierId: number, jobs: IDispatchJob[]): Promise<void> {
         const courier = await this.DispatchData.getCourierById(courierId);
 
@@ -160,28 +85,6 @@ class DispatchExecutorService implements angular.IServiceProvider {
         }
 
         await this.executeJobDispatch(courier, jobs);
-    }
-
-    private async fetchJobsByParameters(
-        queryParams: IJobQueryParams,
-        isInternal: boolean,
-        selectedAreas: DfrntPageViewModel[],
-        selectedClearListId?: number,
-    ): Promise<IJobSearchResult> {
-        if (selectedClearListId) {
-            return this.DispatchData.getClearListJobs(
-                queryParams,
-                isInternal,
-                selectedAreas,
-                selectedClearListId
-            );
-        }
-
-        return this.DispatchData.getJobsWithFilters(
-            queryParams,
-            isInternal,
-            selectedAreas
-        );
     }
 
     async assignSingleJobToCourier(courierId: number, job: IDispatchJob): Promise<void> {
@@ -412,18 +315,6 @@ class DispatchExecutorService implements angular.IServiceProvider {
     // ============================================
     // UI Dialog Methods
     // ============================================
-
-    private async showCourierNotFoundDialog(courierId: number): Promise<void> {
-        await this.$mdDialog.show(
-            this.$mdDialog.alert()
-                .title("Unable to Restore")
-                .textContent(`This courier was not found. Unable to restore job`)
-                .ok("Understood")
-        );
-
-        console.error(`Courier with ID ${courierId} not found. Unable to restore job`);
-    }
-
     private async showCourierSelectionDialog(job: IDispatchJob): Promise<any> {
         const jobInfo = {
             title: job.jobNo,

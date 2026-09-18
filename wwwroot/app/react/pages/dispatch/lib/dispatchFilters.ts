@@ -5,13 +5,16 @@ import setDateFilterDefaults from '../../../../functions/setDateFilterDefaults';
 import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
 import {DEFAULT_TASK_REFRESH_SECONDS} from '../../task-dashboard/refreshIntervalOptions';
 import {loadDateFilterFrom} from '../../../utils/dateFilterStorage';
+import {
+    loadSelectedViewIdsFrom,
+    loadSelectedViewsFrom,
+    hasStoredViewSelectionAt,
+    persistSelectedViewsTo,
+    resolveInitialViewSelection,
+} from '../../../utils/viewsFilterStorage';
 
-/**
- * Dispatch toolbar filters that scope the job list and driver locations:
- * the selected page-view ids and the date range. Persisted by the AngularJS
- * dispatch toolbar (and the dispatchV2 route controller) under the same
- * localStorage keys the V1 home controller uses, so V1 and V2 share selection.
- */
+export {resolveInitialViewSelection};
+
 export interface DispatchFilters {
     despatchViewIds: number[];
     startDate: Dayjs;
@@ -25,7 +28,6 @@ export const REFRESH_INTERVAL_KEY = `refreshInterval-${LegacyAppPage.Dispatch}-$
 export const DRIVER_LOCATION_REFRESH_KEY = `driverLocationRefreshInterval-${LegacyAppPage.Dispatch}-${ContactID}`;
 export const TASK_REFRESH_KEY = `taskRefreshInterval-${LegacyAppPage.Dispatch}-${ContactID}`;
 
-/** Auto-refresh intervals in ms (React Query refetchInterval); `false` = off. */
 export interface DispatchRefreshIntervals {
     jobsMs: number | false;
     driverLocationsMs: number | false;
@@ -81,16 +83,7 @@ export function loadRefreshIntervals(): DispatchRefreshIntervals {
  * nothing for driver locations and an empty view scope for the job list).
  */
 export function loadSelectedViewIds(): number[] {
-    try {
-        const raw = localStorage.getItem(SELECTED_VIEWS_KEY);
-        if (!raw) return [];
-        const views = JSON.parse(raw) as Array<{id: number; selected?: boolean}>;
-        if (!Array.isArray(views)) return [];
-        // The toolbar stores only the selected views, but tolerate a mixed array.
-        return views.filter(v => v && (v.selected === undefined || v.selected)).map(v => v.id);
-    } catch {
-        return [];
-    }
+    return loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY);
 }
 
 /**
@@ -99,20 +92,12 @@ export function loadSelectedViewIds(): number[] {
  * recentre/zoom on the selected region (V1 `updateMapForSelectedViews`).
  */
 export function loadSelectedViews(): DfrntPageViewModel[] {
-    try {
-        const raw = localStorage.getItem(SELECTED_VIEWS_KEY);
-        if (!raw) return [];
-        const views = JSON.parse(raw) as DfrntPageViewModel[];
-        if (!Array.isArray(views)) return [];
-        return views.filter(v => v && (v.selected === undefined || v.selected));
-    } catch {
-        return [];
-    }
+    return loadSelectedViewsFrom(SELECTED_VIEWS_KEY);
 }
 
 /** True once the dispatcher has made (or explicitly cleared) a view selection. */
 export function hasStoredViewSelection(): boolean {
-    return hasStoredKey(SELECTED_VIEWS_KEY);
+    return hasStoredViewSelectionAt(SELECTED_VIEWS_KEY);
 }
 
 /**
@@ -122,35 +107,7 @@ export function hasStoredViewSelection(): boolean {
  * empty selection is what makes "cleared" stick across reloads.
  */
 export function persistSelectedViews(views: DfrntPageViewModel[]): void {
-    try {
-        localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify(views));
-    } catch { /* private browsing — ignore */ }
-}
-
-/**
- * Resolve which views start selected, mirroring home.controller's
- * `initializeViews`. Selection is rebuilt from the fresh server list so stored
- * ids the server no longer returns fall away, and the first view is only
- * auto-selected on a genuine first visit — an explicitly cleared selection
- * (`hasStoredState` with nothing stored) stays cleared.
- *
- * A stored selection whose ids have ALL gone stale is not a cleared selection:
- * it is a user whose view list changed under them (a network partner moved onto
- * the NP audience list, a view retired). Those land on the first view they can
- * see, since an empty selection means an empty job grid on NZ.
- */
-export function resolveInitialViewSelection(
-    serverViews: DfrntPageViewModel[],
-    storedIds: number[],
-    hasStoredState: boolean,
-): number[] {
-    if (serverViews.length === 0) return [];
-    const stored = new Set(storedIds);
-    const selected = serverViews.filter(v => stored.has(v.id)).map(v => v.id);
-    if (selected.length === 0 && (!hasStoredState || storedIds.length > 0)) {
-        return [serverViews[0].id];
-    }
-    return selected;
+    persistSelectedViewsTo(SELECTED_VIEWS_KEY, views);
 }
 
 /**

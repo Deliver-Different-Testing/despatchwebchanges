@@ -26,8 +26,6 @@ interface DashboardSettingsPayload {
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
     aiAutoOpen?: boolean;
-    jobSearchBetaEnabled?: boolean;
-    dispatchBetaEnabled?: boolean;
     nationwideBetaEnabled?: boolean;
 }
 
@@ -81,8 +79,6 @@ const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSetting
             refreshOptions={payload.refreshOptions}
             aiEnabled={payload.aiEnabled}
             aiAutoOpen={payload.aiAutoOpen}
-            jobSearchBetaEnabled={payload.jobSearchBetaEnabled}
-            dispatchBetaEnabled={payload.dispatchBetaEnabled}
             nationwideBetaEnabled={payload.nationwideBetaEnabled}
             onClose={() => close(null)}
             onSave={(result: DashboardSettingsResult) => {
@@ -104,8 +100,6 @@ export function openDashboardSettingsDialog(
     selectedDriverLocationRefreshInterval?: RefreshOption,
     selectedTaskRefreshInterval?: RefreshOption,
     aiEnabled?: boolean,
-    jobSearchBetaEnabled?: boolean,
-    dispatchBetaEnabled?: boolean,
     nationwideBetaEnabled?: boolean,
 ): Promise<DashboardSettingsResult | null> {
     return settingsHost.open({
@@ -116,8 +110,6 @@ export function openDashboardSettingsDialog(
         refreshOptions: [DISABLED_REFRESH, ...getMinsSelectionOptions()],
         aiEnabled,
         aiAutoOpen: isAiAutoOpenEnabled(),
-        jobSearchBetaEnabled,
-        dispatchBetaEnabled,
         nationwideBetaEnabled,
     });
 }

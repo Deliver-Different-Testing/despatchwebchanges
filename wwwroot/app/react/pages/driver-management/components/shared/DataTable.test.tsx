@@ -155,4 +155,25 @@ describe('DataTable', () => {
             expect(screen.getByText('1–3 of 3')).toBeInTheDocument();
         });
     });
+
+    describe('Numeric column alignment', () => {
+        it('should render a right-aligned column with tabular figures so digits line up', () => {
+            renderTable({
+                columns: [
+                    ...mockColumns,
+                    {key: 'total', label: 'Total', align: 'right' as const, render: (row: MockRow) => `$${row.value}`},
+                ],
+            });
+
+            const cell = screen.getByText('$100');
+            expect(cell.closest('td')).toHaveStyle({fontVariantNumeric: 'tabular-nums'});
+        });
+
+        it('should not apply tabular figures to a left-aligned column', () => {
+            renderTable();
+
+            const cell = screen.getByText('Alice');
+            expect(cell.closest('td')).not.toHaveStyle({fontVariantNumeric: 'tabular-nums'});
+        });
+    });
 });

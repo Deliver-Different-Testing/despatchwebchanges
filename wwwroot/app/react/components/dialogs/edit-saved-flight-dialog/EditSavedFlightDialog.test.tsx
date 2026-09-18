@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import {screen, fireEvent, waitFor, within} from '@testing-library/react';
+import {screen, waitFor} from '@testing-library/react';
 import dayjs from 'dayjs';
 import {EditSavedFlightDialog} from './EditSavedFlightDialog';
 import { setupUser } from '../../../__testUtils__/setupUser';
@@ -102,6 +102,28 @@ describe('EditSavedFlightDialog', () => {
         await user.clear(input);
         await user.click(screen.getByRole('button', {name: /save/i}));
         expect(onSubmit).toHaveBeenCalledWith('');
+    });
+
+    it('collapses duplicate flight options from the search result instead of crashing', async () => {
+        mockedApi.getRecurringFlightOptions.mockResolvedValue({
+            flights: [
+                flight('WN', '3771', 'OAK', 'BUR', '2026-07-08T11:20:00'),
+                flight('WN', '3771', 'OAK', 'BUR', '2026-07-08T11:20:00'),
+            ],
+        });
+        const user = setupUser();
+        const onSubmit = jest.fn();
+        renderWithTheme(<EditSavedFlightDialog {...defaultProps({onSubmit})} />);
+
+        await waitFor(() => expect(mockedApi.getRecurringFlightOptions).toHaveBeenCalled());
+
+        await user.click(screen.getByRole('combobox'));
+        const matches = await screen.findAllByText(/WN3771/);
+        expect(matches).toHaveLength(1);
+
+        await user.click(matches[0]);
+        await user.click(screen.getByRole('button', {name: /save/i}));
+        expect(onSubmit).toHaveBeenCalledWith('WN3771');
     });
 
     it('lets the operator enter a flight number when the route has no airports', async () => {

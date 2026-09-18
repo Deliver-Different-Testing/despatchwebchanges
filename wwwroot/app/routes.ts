@@ -18,11 +18,9 @@ import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
 import {openJobInSearch} from './react/services/navigationService';
 import {BELOW_APP_BAR_HEIGHT} from './react/components/common/app-toolbar/appBarMetrics';
-import {getNationwideBetaEnabled} from './react/pages/nationwide/lib/betaPreference';
-import {
-    getJobSearchBetaEnabled,
-    setJobSearchBetaEnabled,
-} from './react/pages/job-search/lib/betaPreference';
+import {getNationwideBetaEnabled, setNationwideBetaEnabled} from './react/pages/nationwide/lib/betaPreference';
+import {createDefaultNationwideLayout, createNationwideBoxes} from './react/pages/nationwide/lib/boxDefinitions';
+import {buildRefreshIntervalOptions, resolveSavedInterval} from './react/pages/nationwide/lib/refreshInterval';
 import {
     loadBoxVisibility,
     saveBoxVisibility,
@@ -30,10 +28,6 @@ import {
 } from './react/components/common/box-shell/layoutPersistence';
 import {createLayoutToolbarActions} from './functions/layoutToolbarActions';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './react/pages/job-search/lib/boxDefinitions';
-import {
-    getDispatchBetaEnabled,
-    setDispatchBetaEnabled,
-} from './react/pages/dispatch/lib/betaPreference';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './react/pages/dispatch/lib/boxDefinitions';
 import {
     loadDateFilter as loadDispatchDateFilter,
@@ -66,12 +60,13 @@ class RouterConfig {
 
         // Configure routes
         this.configureHomeState()
-            .configureDispatchV2State()
+            .configureDispatchState()
+            .configureDispatchV2RedirectState()
             .configureNationwideState()
             .configureNationwideV2State()
             .configureCSState()
             .configureJobSearchState()
-            .configureJobSearchV2State()
+            .configureJobSearchV2RedirectState()
             .configurePrebooksState()
             .configureOverviewState()
 
@@ -82,6 +77,9 @@ class RouterConfig {
     }
 
     private configureHomeState(): this {
+        // Kept as a thin redirect so bookmarks to `/` and `/?jobId=123` keep
+        // working — the classic AngularJS dispatch page has been deleted and
+        // React is the only implementation now.
         this.$stateProvider.state("home", {
             url: "/?jobId",
             params: {
@@ -90,71 +88,20 @@ class RouterConfig {
                     squash: true
                 }
             },
-            // Phase 4: the React dispatch page is the default. Redirect to
-            // /dispatchV2 unless the operator explicitly opted out — in which
-            // case we fall through and load the classic AngularJS home below.
-            // Handled at the route level so the home bundle isn't loaded for
-            // React users. The AngularJS module is intentionally retained.
             redirectTo: (trans: any) => {
-                if (!getDispatchBetaEnabled()) return undefined;
                 const jobId = trans.params()?.jobId;
-                return {state: 'dispatchV2', params: jobId ? {jobId} : {}};
-            },
-            resolve: {
-                jobId: ['$stateParams', ($stateParams: IDfrntStateParams) => {
-                    return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
-                }],
-                manifest: ['$http', async ($http: angular.IHttpService) => {
-                    try {
-                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
-                        return response.data;
-                    } catch {
-                        console.warn('[ROUTES] Failed to load manifest for home state, using fallback names');
-                        return {
-                            'home.js': 'home.js',
-                            'home.css': 'home.css'
-                        };
-                    }
-                }],
-                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
-                    try {
-                        const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                        await $ocLazyLoad.load([
-                            getAssetPath('home.js'),
-                            getAssetPath('home.css')
-                        ]);
-                        // Load React job list for the dispatch page
-                        if (!window.React) {
-                            await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
-                        }
-                        await $ocLazyLoad.load({
-                            name: 'uDispatch.jobListReact',
-                            files: islandFiles(manifest, 'jobListReact')
-                        });
-                        await $ocLazyLoad.load({
-                            name: 'uDispatch.currentWorkJobListReact',
-                            files: islandFiles(manifest, 'currentWorkJobListReact')
-                        });
-                    } catch (error) {
-                        console.error('[ROUTES] Failed to load home modules:', error);
-                        throw error;
-                    }
-                }]
-            },
-            component: "homeComponent"
+                return {state: 'dispatch', params: jobId ? {jobId} : {}};
+            }
         });
         return this;
     }
 
-    private configureDispatchV2State(): this {
-        // Parallel React rebuild of the main dispatch page (`home`/`/`). Lives
-        // alongside the AngularJS `home` state so we can QA the React shell
-        // against staging data before cutting over. Per-user opt-in via the
-        // dashboard settings dialog (see
-        // `wwwroot/app/react/pages/dispatch/lib/betaPreference.ts`); the home
-        // controller redirects opted-in operators here.
-        this.$stateProvider.state("dispatchV2", {
-            url: "/dispatchV2?jobId",
+    private configureDispatchState(): this {
+        // React rebuild of the main dispatch page (`home`/`/`). The classic
+        // AngularJS `home` state now redirects here unconditionally — see
+        // `configureHomeState`.
+        this.$stateProvider.state("dispatch", {
+            url: "/dispatch?jobId",
             params: {
                 jobId: {value: null, squash: true}
             },
@@ -163,7 +110,6 @@ class RouterConfig {
                     <react-app-shell
                             section="Dashboards"
                             title="Dispatch"
-                            beta="true"
                             messages-count="ctrl.unreadMessageCount"
                             on-messages-click="ctrl.openMessagingDialog($event)"
                             views="ctrl.views"
@@ -199,7 +145,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for dispatchV2 state, using fallback names');
+                        console.warn('[ROUTES] Failed to load manifest for dispatch state, using fallback names');
                         return {
                             'vendor-react.js': 'vendor-react.js',
                             'dispatchReact.js': 'dispatchReact.js',
@@ -345,7 +291,7 @@ class RouterConfig {
                             void $event;
                             if (w.ReactMessagingDialog) {
                                 w.ReactMessagingDialog.open().catch(err =>
-                                    console.error('[dispatchV2] messaging dialog error', err)
+                                    console.error('[dispatch] messaging dialog error', err)
                                 );
                             } else {
                                 toastrService.showErrorToast('Messaging dialog is not loaded.');
@@ -363,16 +309,12 @@ class RouterConfig {
                                             showDriverLocationRefresh?: boolean;
                                             showTaskRefresh?: boolean;
                                             showAiToggle?: boolean;
-                                            showDispatchBetaToggle?: boolean;
                                         },
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
                                         aiEnabled?: boolean,
-                                        jobSearchBetaEnabled?: boolean,
-                                        dispatchBetaEnabled?: boolean,
                                     ) => Promise<{
-                                        dispatchBetaEnabled?: boolean;
                                         aiEnabled?: boolean;
                                         selectedRefreshInterval?: {id: number; text: string};
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string};
@@ -396,7 +338,6 @@ class RouterConfig {
                                 ? readIntervalSeconds(DISPATCH_TASK_REFRESH_KEY)
                                 : readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY);
                             try {
-                                const wasOn = getDispatchBetaEnabled();
                                 const result = await w.ReactDashboardSettingsDialog.open(
                                     {
                                         title: 'Dispatch Dashboard Settings',
@@ -404,14 +345,11 @@ class RouterConfig {
                                         showDriverLocationRefresh: true,
                                         showTaskRefresh: true,
                                         showAiToggle: true,
-                                        showDispatchBetaToggle: true,
                                     },
                                     {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
                                     {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
                                     {id: taskSeedSeconds, text: ''},
                                     isAiEnabled(),
-                                    undefined,
-                                    wasOn,
                                 );
                                 if (!result) return;
 
@@ -436,26 +374,8 @@ class RouterConfig {
                                     driverLocationsMs: toMs(result.selectedDriverLocationRefreshInterval?.id),
                                     tasksMs: toMs(result.selectedTaskRefreshInterval?.id),
                                 });
-
-                                if (result.dispatchBetaEnabled !== undefined
-                                    && result.dispatchBetaEnabled !== wasOn) {
-                                    setDispatchBetaEnabled(result.dispatchBetaEnabled);
-                                    if (!result.dispatchBetaEnabled) {
-                                        // Operator turned beta OFF — send them back to /.
-                                        const injector = (window as unknown as {
-                                            angular?: {
-                                                element: (el: Element) => {
-                                                    injector: () => {
-                                                        get: (name: string) => angular.ui.IStateService;
-                                                    };
-                                                };
-                                            };
-                                        }).angular?.element(document.body).injector();
-                                        injector?.get('$state').go('home');
-                                    }
-                                }
                             } catch (err) {
-                                console.error('[dispatchV2] settings dialog error', err);
+                                console.error('[dispatch] settings dialog error', err);
                             }
                         },
 
@@ -488,7 +408,7 @@ class RouterConfig {
                                 saveBoxVisibility(layoutStorageKeys, layoutName, result);
                                 window.ReactDispatch?.reloadLayoutsFromStorage();
                             } catch (err) {
-                                console.error('[dispatchV2] customize panels dialog error', err);
+                                console.error('[dispatch] customize panels dialog error', err);
                             }
                         },
 
@@ -503,7 +423,7 @@ class RouterConfig {
                                 w.ReactCreateJobDialog.open(appConfig.US_Customer).then(newJobId => {
                                     if (newJobId) window.ReactDispatch?.jobCreated(newJobId);
                                 }).catch(err =>
-                                    console.error('[dispatchV2] create job dialog error', err)
+                                    console.error('[dispatch] create job dialog error', err)
                                 );
                             } else {
                                 toastrService.showErrorToast('Create job dialog is not loaded.');
@@ -558,7 +478,7 @@ class RouterConfig {
                     const pollUnreadCount = () => {
                         $http.get<number>('messages/GetUnreadMessageCount').then(res => {
                             ctrl.unreadMessageCount = res.data ?? 0;
-                        }).catch(err => console.error('[dispatchV2] unread count error', err));
+                        }).catch(err => console.error('[dispatch] unread count error', err));
                     };
                     pollUnreadCount();
                     const unreadPoll = $interval(pollUnreadCount, 60000);
@@ -570,6 +490,26 @@ class RouterConfig {
                     });
                 }
             ],
+        });
+        return this;
+    }
+
+    private configureDispatchV2RedirectState(): this {
+        // Kept as a thin redirect so old `/dispatchV2` bookmarks keep working
+        // now that the route has been renamed to `/dispatch` — see
+        // `configureDispatchState`.
+        this.$stateProvider.state("dispatchV2", {
+            url: "/dispatchV2?jobId",
+            params: {
+                jobId: {
+                    value: null,
+                    squash: true
+                }
+            },
+            redirectTo: (trans: any) => {
+                const jobId = trans.params()?.jobId;
+                return {state: 'dispatch', params: jobId ? {jobId} : {}};
+            }
         });
         return this;
     }
@@ -644,7 +584,17 @@ class RouterConfig {
             },
             template: `
                 <div style="height: 100%; position: relative;">
-                    <react-app-shell section="Operations" title="Nationwide"></react-app-shell>
+                    <react-app-shell
+                            section="Operations" title="Nationwide" beta="true"
+                            views="ctrl.views" views-loading="!ctrl.viewsInitialized"
+                            on-toggle-view="ctrl.toggleView(view)" on-clear-all-views="ctrl.clearAllViews()"
+                            layouts="ctrl.layouts" current-layout-name="ctrl.currentLayoutName"
+                            on-save-layout="ctrl.saveLayout()" on-load-layout="ctrl.loadLayout(index)"
+                            on-delete-layout="ctrl.deleteLayout(index)" on-rename-layout="ctrl.renameLayout(index)"
+                            on-import-layouts="ctrl.importLayouts()"
+                            on-settings-click="ctrl.openSettingsDialog($event)"
+                            on-customize-panels="ctrl.openCustomizePanelsDialog()" on-reset-layout="ctrl.resetLayout()">
+                    </react-app-shell>
                     <div id="react-nationwide-v2" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
                 </div>
             `,
@@ -655,7 +605,10 @@ class RouterConfig {
                         return response.data;
                     } catch {
                         console.warn('[ROUTES] Failed to load manifest for nwV2 state, using fallback names');
-                        return {'nationwideReact.js': 'nationwideReact.js'};
+                        return {
+                            'nationwideReact.js': 'nationwideReact.js',
+                            'dashboardSettingsDialogReact.js': 'dashboardSettingsDialogReact.js',
+                        };
                     }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
@@ -666,26 +619,193 @@ class RouterConfig {
                     // emits one, so loading the bundle alone would render it
                     // unstyled.
                     await $ocLazyLoad.load({
+                        name: 'uDispatch.dashboardSettingsDialogReact',
+                        files: islandFiles(manifest, 'dashboardSettingsDialogReact'),
+                    });
+                    // islandFiles pairs the JS with its stylesheet; this page
+                    // emits one, so loading the bundle alone would render it
+                    // unstyled.
+                    await $ocLazyLoad.load({
                         name: 'uDispatch.nationwideReact',
                         files: islandFiles(manifest, 'nationwideReact')
                     });
                 }]
             },
-            controller: ['$scope', '$stateParams', 'APP_CONFIG',
+            controller: ['$scope', '$stateParams', '$state', 'toastrService', 'APP_CONFIG',
                 function (
                     $scope: angular.IScope,
                     $stateParams: IDfrntStateParams,
+                    $state: angular.ui.IStateService,
+                    toastrService: {
+                        showSuccessToast: (m: string) => void;
+                        showWarningToast: (m: string) => void;
+                        showErrorToast: (m: string) => void;
+                        showInfoToast: (m: string) => void;
+                    },
                     appConfig: { US_Customer: boolean }
                 ) {
                     const jobId = $stateParams.jobId ? parseInt($stateParams.jobId, 10) : undefined;
+
+                    const layoutStorageKeys = {
+                        layoutsKey: `layoutsNWV2-${window.ContactID}`,
+                        lastActiveLayoutKey: `lastActiveLayoutNWV2-${window.ContactID}`,
+                        boxVisibilityKeyBase: `boxVisibilityV2-${AppPage.Domestic}-${window.ContactID}`,
+                    };
+                    const defaultLayout = createDefaultNationwideLayout();
+                    const refreshIntervalKey = `refreshInterval-${AppPage.Domestic}-${window.ContactID}`;
+
+                    const ctrl = {
+                        layouts: [] as ILayout[],
+                        currentLayoutName: undefined as string | undefined,
+                        views: [] as DfrntPageViewModel[],
+                        viewsInitialized: false,
+
+                        toggleView: (_view: DfrntPageViewModel) => {
+                            window.ReactNationwide?.setViewSelection(
+                                ctrl.views.filter(v => v.selected).map(v => v.id),
+                            );
+                        },
+
+                        clearAllViews: () => {
+                            window.ReactNationwide?.setViewSelection([]);
+                        },
+
+                        resetLayout: () => {
+                            const layoutName = ctrl.currentLayoutName ?? 'Default';
+                            if (!window.confirm(
+                                `Reset "${layoutName}" to the default arrangement? Panel sizes, order and visibility will be restored.`,
+                            )) return;
+                            window.ReactNationwide?.resetCurrentLayout();
+                        },
+
+                        openCustomizePanelsDialog: async () => {
+                            const w = window as unknown as {
+                                ReactCustomizePanelsDialog?: {
+                                    open: (
+                                        boxes: Record<string, IBox>,
+                                        title?: string,
+                                        layoutEditable?: boolean,
+                                    ) => Promise<Record<string, IBox> | null>;
+                                };
+                            };
+                            if (!w.ReactCustomizePanelsDialog) {
+                                toastrService.showErrorToast('Customize panels dialog is not loaded.');
+                                return;
+                            }
+                            try {
+                                const layoutName = ctrl.currentLayoutName ?? 'Default';
+                                const boxes = mergeBoxVisibility(
+                                    createNationwideBoxes(),
+                                    loadBoxVisibility(layoutStorageKeys, layoutName),
+                                );
+                                const editable = !isDefaultLayout(layoutName);
+                                const result = await w.ReactCustomizePanelsDialog.open(boxes, layoutName, editable);
+                                if (!result || !editable) return;
+
+                                saveBoxVisibility(layoutStorageKeys, layoutName, result);
+                                window.ReactNationwide?.reloadLayoutsFromStorage();
+                            } catch (err) {
+                                console.error('[nationwide] customize panels dialog error', err);
+                            }
+                        },
+
+                        openSettingsDialog: async ($event: MouseEvent) => {
+                            void $event;
+                            const w = window as unknown as {
+                                ReactDashboardSettingsDialog?: {
+                                    open: (
+                                        config: {
+                                            title: string;
+                                            showRefreshInterval?: boolean;
+                                            showNationwideBetaToggle?: boolean;
+                                        },
+                                        selectedRefreshInterval?: {id: number; text: string},
+                                        selectedDriverLocationRefreshInterval?: {id: number; text: string},
+                                        selectedTaskRefreshInterval?: {id: number; text: string},
+                                        aiEnabled?: boolean,
+                                        nationwideBetaEnabled?: boolean,
+                                    ) => Promise<{
+                                        selectedRefreshInterval?: {id: number; text: string};
+                                        nationwideBetaEnabled?: boolean;
+                                    } | null>;
+                                };
+                            };
+                            
+                            if (!w.ReactDashboardSettingsDialog) {
+                                toastrService.showErrorToast('Settings dialog is not loaded.');
+                                return;
+                            }
+                            
+                            const currentInterval = resolveSavedInterval(
+                                localStorage.getItem(refreshIntervalKey),
+                                buildRefreshIntervalOptions(),
+                            );
+                            
+                            try {
+                                const result = await w.ReactDashboardSettingsDialog.open(
+                                    {
+                                        title: 'Nationwide Dashboard Settings',
+                                        showRefreshInterval: true,
+                                        showNationwideBetaToggle: true,
+                                    },
+                                    currentInterval ?? {id: 0, text: ''},
+                                    undefined,
+                                    undefined,
+                                    undefined,
+                                    getNationwideBetaEnabled(),
+                                );
+                                if (!result) return;
+
+                                if (result.selectedRefreshInterval) {
+                                    localStorage.setItem(refreshIntervalKey, String(result.selectedRefreshInterval.id));
+                                    window.ReactNationwide?.updateRefreshIntervalMs(
+                                        result.selectedRefreshInterval.id > 0
+                                            ? result.selectedRefreshInterval.id * 1000
+                                            : false,
+                                    );
+                                }
+                                
+                                if (result.nationwideBetaEnabled === false && getNationwideBetaEnabled()) {
+                                    setNationwideBetaEnabled(false);
+                                    $state.go('nw').catch((err: unknown) => {
+                                        console.error('[nationwide] Failed to switch to the classic page', err);
+                                    });
+                                    return;
+                                }
+
+                                toastrService.showSuccessToast('Settings saved and applied successfully');
+                            } catch (err) {
+                                console.error('[nationwide] settings dialog error', err);
+                            }
+                        },
+                    };
+
+                    const layoutToolbar = createLayoutToolbarActions({
+                        getBridge: () => window.ReactNationwide,
+                        host: ctrl,
+                        storageKeys: layoutStorageKeys,
+                        defaultLayout,
+                        toastr: toastrService,
+                    });
+                    Object.assign(ctrl, layoutToolbar);
+                    layoutToolbar.initialize();
+
+                    ($scope as angular.IScope & {ctrl: typeof ctrl}).ctrl = ctrl;
 
                     window.ReactNationwide?.mount('react-nationwide-v2', {
                         isUsCustomer: appConfig.US_Customer,
                         timeZone: window.TimeZone || 'New Zealand Standard Time',
                         deepLinkJobId: Number.isFinite(jobId) ? jobId : undefined,
                     } as any);
+                    
+                    const unregisterViews = window.ReactNationwide!.registerViewsListener(views => {
+                        ctrl.views = views;
+                        ctrl.viewsInitialized = true;
+                        $scope.$applyAsync();
+                    });
 
                     $scope.$on('$destroy', () => {
+                        unregisterViews();
                         window.ReactNationwide?.unmount();
                     });
                 }]
@@ -702,57 +822,11 @@ class RouterConfig {
     }
 
     private configureJobSearchState(): this {
+        // React rebuild of the Job Search page. The classic AngularJS
+        // `jobSearch` page has been deleted and React is the only
+        // implementation now.
         this.$stateProvider.state("jobSearch", {
             url: "/jobSearch?jobId",
-            params: {
-                jobId: {
-                    value: null,
-                    squash: true
-                }
-            },
-            resolve: {
-                manifest: ['$http', async ($http: angular.IHttpService) => {
-                    try {
-                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
-                        return response.data;
-                    } catch {
-                        console.warn('[ROUTES] Failed to load manifest for jobSearch state, using fallback names');
-                        return {
-                            'jobSearch.js': 'jobSearch.js',
-                            'jobSearch.css': 'jobSearch.css'
-                        };
-                    }
-                }],
-                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
-                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    await $ocLazyLoad.load([
-                        getAssetPath('jobSearch.js'),
-                        getAssetPath('jobSearch.css')
-                    ]);
-                    // Load React job list for the job search page
-                    if (!window.React) {
-                        await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
-                    }
-                    await $ocLazyLoad.load({
-                        name: 'uDispatch.jobSearchJobListReact',
-                        files: islandFiles(manifest, 'jobSearchJobListReact')
-                    });
-                }]
-            },
-            component: "jobSearchComponent",
-        });
-        return this;
-    }
-
-    private configureJobSearchV2State(): this {
-        // Phase 3 of the AngularJS → React Job Search migration. Lives in
-        // parallel with the existing `/jobSearch` route so we can QA the
-        // React shell against staging data before cutting over. Phase 4
-        // flips `/jobSearch` to mount this same React module and deletes
-        // `wwwroot/app/components/jobSearch/`.
-        // See `wwwroot/app/react/pages/job-search/MIGRATION_CHECKLIST.md`.
-        this.$stateProvider.state("jobSearchV2", {
-            url: "/jobSearchV2?jobId",
             params: {
                 jobId: {value: null, squash: true}
             },
@@ -761,7 +835,6 @@ class RouterConfig {
                     <react-app-shell
                             section="Dashboards"
                             title="Search"
-                            beta="true"
                             messages-count="0"
                             on-messages-click="ctrl.openMessagingDialog($event)"
                             layouts="ctrl.layouts"
@@ -790,7 +863,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        console.warn('[ROUTES] Failed to load manifest for jobSearchV2 state, using fallback names');
+                        console.warn('[ROUTES] Failed to load manifest for jobSearch state, using fallback names');
                         return {
                             'vendor-react.js': 'vendor-react.js',
                             'jobSearchReact.js': 'jobSearchReact.js',
@@ -826,14 +899,18 @@ class RouterConfig {
                         {name: 'uDispatch.messagingDialogReact', file: 'messagingDialogReact.js'},
                         {name: 'uDispatch.dashboardSettingsDialogReact', file: 'dashboardSettingsDialogReact.js'},
                     ];
+                    
                     await Promise.all(lazyLoads.map(d => $ocLazyLoad.load({
                         name: d.name,
                         files: islandFiles(manifest, d.file.replace(/\.js$/, '')),
                     })));
+                    
                     const jobSearchFiles = [getAssetPath('jobSearchReact.js')];
+                    
                     if (manifest['jobSearchReact.css']) {
                         jobSearchFiles.push(getAssetPath('jobSearchReact.css'));
                     }
+                    
                     await $ocLazyLoad.load({
                         name: 'uDispatch.jobSearchReact',
                         files: jobSearchFiles
@@ -894,7 +971,7 @@ class RouterConfig {
                             void $event;
                             if (w.ReactMessagingDialog) {
                                 w.ReactMessagingDialog.open().catch(err =>
-                                    console.error('[jobSearchV2] messaging dialog error', err)
+                                    console.error('[jobSearch] messaging dialog error', err)
                                 );
                             } else {
                                 toastrService.showErrorToast('Messaging dialog is not loaded.');
@@ -911,15 +988,12 @@ class RouterConfig {
                                             showRefreshInterval?: boolean;
                                             showDriverLocationRefresh?: boolean;
                                             showAiToggle?: boolean;
-                                            showJobSearchBetaToggle?: boolean;
                                         },
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
                                         aiEnabled?: boolean,
-                                        jobSearchBetaEnabled?: boolean,
                                     ) => Promise<{
-                                        jobSearchBetaEnabled?: boolean;
                                         aiEnabled?: boolean;
                                     } | null>;
                                 };
@@ -929,44 +1003,23 @@ class RouterConfig {
                                 return;
                             }
                             try {
-                                const wasOn = getJobSearchBetaEnabled();
                                 const result = await w.ReactDashboardSettingsDialog.open(
                                     {
                                         title: 'Job Search Dashboard Settings',
                                         showAiToggle: true,
-                                        showJobSearchBetaToggle: true,
                                     },
                                     undefined,
                                     undefined,
                                     undefined, // selectedTaskRefreshInterval — not used on Job Search
                                     isAiEnabled(),
-                                    wasOn,
                                 );
                                 if (!result) return;
 
                                 if (result.aiEnabled !== undefined) {
                                     setAiEnabled(result.aiEnabled);
                                 }
-
-                                if (result.jobSearchBetaEnabled !== undefined
-                                    && result.jobSearchBetaEnabled !== wasOn) {
-                                    setJobSearchBetaEnabled(result.jobSearchBetaEnabled);
-                                    if (!result.jobSearchBetaEnabled) {
-                                        // Operator turned beta OFF — send them back to /jobSearch.
-                                        const injector = (window as unknown as {
-                                            angular?: {
-                                                element: (el: Element) => {
-                                                    injector: () => {
-                                                        get: (name: string) => angular.ui.IStateService;
-                                                    };
-                                                };
-                                            };
-                                        }).angular?.element(document.body).injector();
-                                        injector?.get('$state').go('jobSearch');
-                                    }
-                                }
                             } catch (err) {
-                                console.error('[jobSearchV2] settings dialog error', err);
+                                console.error('[jobSearch] settings dialog error', err);
                             }
                         },
 
@@ -1004,7 +1057,7 @@ class RouterConfig {
                                 saveBoxVisibility(layoutStorageKeys, layoutName, result);
                                 window.ReactJobSearch?.reloadLayoutsFromStorage();
                             } catch (err) {
-                                console.error('[jobSearchV2] customize panels dialog error', err);
+                                console.error('[jobSearch] customize panels dialog error', err);
                             }
                         },
 
@@ -1019,7 +1072,7 @@ class RouterConfig {
                                 w.ReactCreateJobDialog.open(appConfig.US_Customer).then(newJobId => {
                                     if (newJobId) window.ReactJobSearch?.jobCreated(newJobId);
                                 }).catch(err =>
-                                    console.error('[jobSearchV2] create job dialog error', err)
+                                    console.error('[jobSearch] create job dialog error', err)
                                 );
                             } else {
                                 toastrService.showErrorToast('Create job dialog is not loaded.');
@@ -1034,7 +1087,7 @@ class RouterConfig {
                             // bridge wires it to the page's toast service.
                             if (window.ReactJobSearch?.openInterCourierCharge) {
                                 window.ReactJobSearch.openInterCourierCharge().catch(err =>
-                                    console.error('[jobSearchV2] inter-courier dialog error', err)
+                                    console.error('[jobSearch] inter-courier dialog error', err)
                                 );
                             } else {
                                 toastrService.showErrorToast('Inter-courier dialog is not loaded.');
@@ -1078,6 +1131,26 @@ class RouterConfig {
                     });
                 }
             ],
+        });
+        return this;
+    }
+
+    private configureJobSearchV2RedirectState(): this {
+        // Kept as a thin redirect so old `/jobSearchV2` bookmarks keep working
+        // now that the route has been renamed to `/jobSearch` — see
+        // `configureJobSearchState`.
+        this.$stateProvider.state("jobSearchV2", {
+            url: "/jobSearchV2?jobId",
+            params: {
+                jobId: {
+                    value: null,
+                    squash: true
+                }
+            },
+            redirectTo: (trans: any) => {
+                const jobId = trans.params()?.jobId;
+                return {state: 'jobSearch', params: jobId ? {jobId} : {}};
+            }
         });
         return this;
     }

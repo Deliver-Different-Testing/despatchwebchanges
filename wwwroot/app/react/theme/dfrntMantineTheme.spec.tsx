@@ -43,9 +43,9 @@ describe('dfrntTheme', () => {
         expect(dfrntTheme.colors?.reflex?.[5]).toBe(dfrntBrand.reflexBlue);
     });
 
-    it('gives buttons and action icons the brand lozenge radius', () => {
-        expect(dfrntTheme.components?.Button?.defaultProps).toMatchObject({radius: 9999});
-        expect(dfrntTheme.components?.ActionIcon?.defaultProps).toMatchObject({radius: 9999});
+    it('gives buttons and action icons the squared-off radius, not a lozenge', () => {
+        expect(dfrntTheme.components?.Button?.defaultProps).toMatchObject({radius: 'sm'});
+        expect(dfrntTheme.components?.ActionIcon?.defaultProps).toMatchObject({radius: 'sm'});
     });
 
     it('maps Mantine dark roles onto the DFRNT charcoal ladder', () => {

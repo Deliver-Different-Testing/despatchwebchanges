@@ -22,8 +22,6 @@ import {IconTruck, IconMap} from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import {Icon} from '../icon/Icon';
 import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
-import {getDispatchBetaEnabled} from '../../../pages/dispatch/lib/betaPreference';
-import {getJobSearchBetaEnabled} from '../../../pages/job-search/lib/betaPreference';
 import {getNationwideBetaEnabled} from '../../../pages/nationwide/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
 import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
@@ -96,10 +94,10 @@ export const SideNav: React.FC<SideNavProps> = ({
                 id: 'dashboard',
                 label: 'Dashboard',
                 icon: <Icon lucide={LayoutDashboard} size={NAV_ICON_SIZE} />,
-                // Link straight at the React page so the nav skips the classic
-                // route's redirect hop; operators who opted out still get V1.
-                state: getDispatchBetaEnabled() ? 'dispatchV2' : 'home',
-                matchStates: ['home', 'dispatchV2'],
+                // Link straight at the React page so the nav skips the `home`
+                // state's redirect hop.
+                state: 'dispatch',
+                matchStates: ['home', 'dispatch', 'dispatchV2'],
                 featureKey: dashboardFeatureKeys.dispatch,
             },
             {
@@ -130,7 +128,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 id: 'jobSearch',
                 label: 'Job Search',
                 icon: <Icon lucide={Search} size={NAV_ICON_SIZE} />,
-                state: getJobSearchBetaEnabled() ? 'jobSearchV2' : 'jobSearch',
+                state: 'jobSearch',
                 matchStates: ['jobSearch', 'jobSearchV2'],
                 featureKey: dashboardFeatureKeys.jobSearch,
             },
@@ -262,7 +260,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 </Box>
 
                 {/* Navigation Menu */}
-                <ScrollArea style={{flex: 1}}>
+                <ScrollArea style={{flex: 1}} type="never">
                     <Box
                         component="nav"
                         aria-label="Main navigation"

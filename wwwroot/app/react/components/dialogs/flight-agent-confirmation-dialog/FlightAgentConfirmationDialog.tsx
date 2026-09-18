@@ -6,7 +6,23 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {ActionIcon, Alert, Badge, Box, Button, Checkbox, Divider, Group, Loader, Paper, Stack, Text, Textarea, TextInput, Title} from '@mantine/core';
+import {
+    ActionIcon,
+    Alert,
+    Badge,
+    Box,
+    Button,
+    Checkbox,
+    Divider,
+    Group,
+    Loader,
+    Paper,
+    Stack,
+    Text,
+    Textarea,
+    TextInput,
+    Title
+} from '@mantine/core';
 import {DateTimePicker} from '@mantine/dates';
 import {ArrowRight, Ban, CircleAlert, CircleCheck, Clock, Pencil, TriangleAlert, User} from 'lucide-react';
 import {IconPackage, IconPlane, IconTruck} from '@tabler/icons-react';

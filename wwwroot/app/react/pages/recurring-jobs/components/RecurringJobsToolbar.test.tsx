@@ -230,6 +230,24 @@ describe('RecurringJobsToolbar', () => {
             // Verify useCourierSearch is called
             expect(mockUseCourierSearch).toHaveBeenCalled();
         });
+
+        it('collapses duplicate courier names from the search result instead of crashing', async () => {
+            mockUseCourierSearch.mockReturnValue({
+                data: [
+                    {id: 1, text: 'John Smith'},
+                    {id: 2, text: 'John Smith'},
+                ],
+                isLoading: false,
+                error: null,
+            } as any);
+            renderWithProviders(createDefaultProps());
+
+            const courierInput = screen.getByRole('combobox', {name: 'Courier'});
+            const user = setupUser();
+            await user.click(courierInput);
+            const matches = await screen.findAllByText('John Smith');
+            expect(matches).toHaveLength(1);
+        });
     });
 
     describe('Days of week filter', () => {

@@ -208,8 +208,13 @@ const extractErrorMessage = (error: unknown, fallback: string): string => {
 
 const moneyIcon = <Icon lucide={DollarSign} size={16}/>;
 
-const LEG_HUES: Record<string, string> = {A: '#1e88e5', B: '#00897b', C: '#6d4c41', D: '#8e24aa'};
-const DEFAULT_LEG_HUE = '#90a4ae';
+const LEG_HUES: Record<string, string> = {
+    A: 'var(--mantine-color-reflex-6)',
+    B: 'var(--mantine-color-green-7)',
+    C: 'var(--mantine-color-orange-8)',
+    D: 'var(--mantine-color-grape-6)',
+};
+const DEFAULT_LEG_HUE = 'var(--mantine-color-gray-6)';
 
 export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogProps> = (props) => {
     const {open, showToast} = props;

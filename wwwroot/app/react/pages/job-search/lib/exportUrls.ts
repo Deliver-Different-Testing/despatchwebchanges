@@ -1,12 +1,6 @@
 /**
- * Job Search export URL builders.
- *
- * Framework-agnostic ports of the V1 `JobSearchService.getPodJobsDownloadUrl`
- * and `getClientJobsReportDownloadUrl` (see
- * `wwwroot/app/components/jobSearch/jobSearch.service.ts`). Shared so the
- * AngularJS V1 service and the React V2 page build the exact same URLs —
- * correct endpoint names, tenant-timezone (wall-clock) dates, and the full
- * parameter set (`speedIds`/`jobId` included).
+ * Job Search export URL builders — correct endpoint names, tenant-timezone
+ * (wall-clock) dates, and the full parameter set (`speedIds`/`jobId` included).
  *
  * These return relative URLs intended to be opened with `window.open(url)`
  * so the browser performs a native, cookie-authenticated download.

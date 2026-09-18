@@ -250,18 +250,28 @@ describe('SideNav', () => {
             expect(screen.getByRole('button', {name: 'Tasks'})).not.toHaveAttribute('aria-current');
         });
 
-        it('should highlight Dashboard on the v2 dispatch state', () => {
+        it('should highlight Dashboard on the dispatch state', () => {
+            renderWithMantine(<SideNav {...defaultProps} currentState="dispatch" />);
+            expect(screen.getByRole('button', {name: 'Dashboard'})).toHaveAttribute('data-active', 'true');
+        });
+
+        it('should highlight Dashboard on the legacy dispatchV2 bookmark state', () => {
             renderWithMantine(<SideNav {...defaultProps} currentState="dispatchV2" />);
             expect(screen.getByRole('button', {name: 'Dashboard'})).toHaveAttribute('data-active', 'true');
         });
 
-        it('should highlight Job Search on the v2 job search state', () => {
+        it('should highlight Job Search on the job search state', () => {
+            renderWithMantine(<SideNav {...defaultProps} currentState="jobSearch" />);
+            expect(screen.getByRole('button', {name: 'Job Search'})).toHaveAttribute('data-active', 'true');
+        });
+
+        it('should highlight Job Search on the legacy jobSearchV2 bookmark state', () => {
             renderWithMantine(<SideNav {...defaultProps} currentState="jobSearchV2" />);
             expect(screen.getByRole('button', {name: 'Job Search'})).toHaveAttribute('data-active', 'true');
         });
 
-        it('should not highlight unrelated items on the v2 job search state', () => {
-            renderWithMantine(<SideNav {...defaultProps} currentState="jobSearchV2" />);
+        it('should not highlight unrelated items on the job search state', () => {
+            renderWithMantine(<SideNav {...defaultProps} currentState="jobSearch" />);
             expect(screen.getByRole('button', {name: 'Dashboard'})).not.toHaveAttribute('data-active');
         });
     });
@@ -276,29 +286,15 @@ describe('SideNav', () => {
             expect(onNavigate).toHaveBeenCalledWith('taskDashboard');
         });
 
-        it('navigates straight to the V2 dispatch and job search pages', () => {
+        it('navigates straight to the dispatch and job search pages', () => {
             const onNavigate = jest.fn();
             renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} />);
 
             fireEvent.click(screen.getByText('Dashboard'));
-            expect(onNavigate).toHaveBeenLastCalledWith('dispatchV2');
-
-            fireEvent.click(screen.getByText('Job Search'));
-            expect(onNavigate).toHaveBeenLastCalledWith('jobSearchV2');
-        });
-
-        it('falls back to the classic pages for operators who opted out of V2', () => {
-            localStorage.setItem('dispatchBetaEnabled-0', 'false');
-            localStorage.setItem('jobSearchBetaEnabled-0', 'false');
-            const onNavigate = jest.fn();
-            renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} />);
-
-            fireEvent.click(screen.getByText('Dashboard'));
-            expect(onNavigate).toHaveBeenLastCalledWith('home');
+            expect(onNavigate).toHaveBeenLastCalledWith('dispatch');
 
             fireEvent.click(screen.getByText('Job Search'));
             expect(onNavigate).toHaveBeenLastCalledWith('jobSearch');
-            localStorage.clear();
         });
 
         it('should call onClose when item is clicked', () => {

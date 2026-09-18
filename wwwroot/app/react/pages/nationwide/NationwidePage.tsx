@@ -1,9 +1,9 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {ContactID} from '../../../contants';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 import {AppPage} from '../../interfaces/dispatchJob';
-import type {DispatchJob} from '../../interfaces/dispatchJob';
+import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
 import type {IDispatchMapItem, ISuggestion} from '../../../interfaces/job.interface';
 import {JobProperty} from '../../../enums/job-property.enum';
 import type {Agent} from '../../interfaces/agent';
@@ -33,7 +33,14 @@ import {
     getActivePartnerOptions,
     getPartnerRateForJob,
     sendToPartner,
+    setJobLocked,
 } from '../../services/jobListApi';
+import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
+import {executeAddStopFlow} from '../../utils/addStopFlow';
+import {
+    NationwideJobActionsMenu,
+    type NationwideJobActionId,
+} from './components/NationwideJobActionsMenu';
 import {openFlightConfirmationDialog} from '../../components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module';
 import {openAutoCompleteDialog} from '../../components/dialogs/auto-complete-dialog/auto-complete-dialog-react.module';
 import {openRecoveryAgentManagementDialog} from '../../components/dialogs/recovery-agent-management-dialog';
@@ -55,8 +62,49 @@ import {
     getConnectionTime,
 } from './lib/flightFormatting';
 import {useFlightAgentWidget} from './hooks/useFlightAgentWidget';
+import {buildRefreshIntervalOptions, resolveSavedInterval} from './lib/refreshInterval';
 import {loadDateFilterFrom} from '../../utils/dateFilterStorage';
+import {
+    loadSelectedViewIdsFrom,
+    hasStoredViewSelectionAt,
+    persistSelectedViewsTo,
+    resolveInitialViewSelection,
+} from '../../utils/viewsFilterStorage';
+import {useDashboardViews} from '../../hooks/useDashboardViews';
+import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import type {NationwidePageProps} from './NationwidePageProps';
+
+/**
+ * V1's Nationwide controller used a bespoke "NW" abbreviation for this key
+ * rather than the numeric AppPage enum it uses for its date-filter and
+ * refresh-interval keys (`nationwide.controller.ts`'s `SelectedViewsKey`).
+ * V1 and V2 must share this exact key while both pages coexist.
+ */
+const SELECTED_VIEWS_KEY = `selectedViews-NW-${ContactID}`;
+
+/**
+ * Same key V1 stores the operator's chosen auto-refresh cadence under
+ * (`nationwide.controller.ts`'s `refreshDurationIntervalKey`) — unlike the
+ * views key, this one already uses the numeric AppPage enum on both sides.
+ */
+const REFRESH_INTERVAL_KEY = `refreshInterval-${LegacyAppPage.Domestic}-${ContactID}`;
+
+/**
+ * Read a previously-saved V1 cadence, in ms for React Query's
+ * `refetchInterval` (`false` = off). Seeds the initial state on mount; the
+ * host settings dialog changes it afterwards via the layout bridge's
+ * `updateRefreshIntervalMs`, the same way V1's preference was carried forward.
+ */
+function loadSavedRefreshIntervalMs(): number | false {
+    let stored: string | null = null;
+    try {
+        stored = localStorage.getItem(REFRESH_INTERVAL_KEY);
+    } catch {
+        return false;
+    }
+    const option = resolveSavedInterval(stored, buildRefreshIntervalOptions());
+    return option && option.id > 0 ? option.id * 1000 : false;
+}
 
 /** Storage prefixes for each list's own column/sort/density preferences. */
 const LIST_STORAGE_PREFIX = {
@@ -78,11 +126,24 @@ const LIST_QUERY_KEYS = {
     [NationwideBoxes.RepriceJobs]: queryKeys.nationwide.repriceJobs,
 } as const;
 
+/**
+ * Prefix of each list's query key (everything before the params object), for
+ * invalidating just one box's list -- `queryClient.invalidateQueries` matches
+ * any query key that *starts with* the given array, so this refetches only
+ * the affected list rather than all three (V1's per-box `refreshAction`).
+ */
+const LIST_QUERY_KEY_PREFIX = {
+    [NationwideBoxes.NewJobs]: ['nationwide', 'newJobs'],
+    [NationwideBoxes.PodJobs]: ['nationwide', 'podJobs'],
+    [NationwideBoxes.RepriceJobs]: ['nationwide', 'repriceJobs'],
+} as const;
+
 export const NationwidePage: React.FC<NationwidePageProps> = ({
                                                                   showToast,
                                                                   isUsCustomer,
                                                                   timeZone,
                                                                   deepLinkJobId,
+                                                                  onLayoutBridgeReady,
                                                               }) => {
     /*
      * V2 keys, with V1's as the import source -- the same arrangement Dispatch
@@ -117,6 +178,115 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         () => loadDateFilterFrom(`dateFilter-${LegacyAppPage.Domestic}-${ContactID}`, {timeZone}),
         [timeZone],
     );
+
+    const [refetchIntervalMs, setRefetchIntervalMs] = useState<number | false>(() => loadSavedRefreshIntervalMs());
+    const applyRefreshIntervalMs = useCallback((ms: number | false) => setRefetchIntervalMs(ms), []);
+
+    // ── Dashboard "Views" filter, scoping the three job lists ───────────
+    // V1 `views`/`selectedViews` (nationwide.controller.ts `initializeViews`).
+    const {data: pageViews, isLoading: viewsLoading} = useDashboardViews(LegacyAppPage.Domestic);
+    const viewsRef = useRef<DfrntPageViewModel[]>([]);
+    viewsRef.current = pageViews ?? [];
+    const [selectedViewIds, setSelectedViewIds] = useState<number[]>(
+        () => loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY),
+    );
+    const selectedViewIdsRef = useRef(selectedViewIds);
+    selectedViewIdsRef.current = selectedViewIds;
+
+    const applyViewSelection = useCallback((ids: number[]) => {
+        // Normalise to server order so the persisted selection is stable
+        // regardless of the order the operator clicked the pills in.
+        const selected = viewsRef.current.filter(v => ids.includes(v.id));
+        persistSelectedViewsTo(SELECTED_VIEWS_KEY, selected.map(v => ({...v, selected: true})));
+        setSelectedViewIds(prev => (
+            prev.join(',') === selected.map(v => v.id).join(',') ? prev : selected.map(v => v.id)
+        ));
+    }, []);
+
+    // The host toolbar's Views menu mirrors this selection; it registers a
+    // listener and pushes its own changes back through `setViewSelection`.
+    const decoratedViews = useMemo<DfrntPageViewModel[]>(
+        () => (pageViews ?? []).map(v => ({...v, selected: selectedViewIds.includes(v.id)})),
+        [pageViews, selectedViewIds],
+    );
+    const decoratedViewsRef = useRef(decoratedViews);
+    const viewsListenerRef = useRef<((views: DfrntPageViewModel[]) => void) | null>(null);
+    // Hold the first notification until the list has actually loaded, so the
+    // toolbar menu keeps its spinner instead of flashing "No views available".
+    const viewsLoadedRef = useRef(false);
+    viewsLoadedRef.current = !viewsLoading;
+    useEffect(() => {
+        decoratedViewsRef.current = decoratedViews;
+        if (!viewsLoading) viewsListenerRef.current?.(decoratedViews);
+    }, [decoratedViews, viewsLoading]);
+
+    const registerViewsListener = useCallback((listener: (views: DfrntPageViewModel[]) => void) => {
+        viewsListenerRef.current = listener;
+        if (viewsLoadedRef.current) listener(decoratedViewsRef.current);
+        return () => {
+            if (viewsListenerRef.current === listener) viewsListenerRef.current = null;
+        };
+    }, []);
+
+    useEffect(() => {
+        onLayoutBridgeReady?.({
+            setCurrentLayoutName: boxLayout.setCurrentLayoutName,
+            reloadFromStorage: boxLayout.reloadFromStorage,
+            promptSaveLayout: layoutPrompts.promptSaveLayout,
+            promptDeleteLayout: layoutPrompts.promptDeleteLayout,
+            promptRenameLayout: layoutPrompts.promptRenameLayout,
+            importLegacyLayouts: boxLayout.importLegacyLayouts,
+            resetCurrentLayout: boxLayout.resetCurrentLayout,
+            registerViewsListener,
+            setViewSelection: applyViewSelection,
+            updateRefreshIntervalMs: applyRefreshIntervalMs,
+        });
+    }, [
+        onLayoutBridgeReady,
+        boxLayout.setCurrentLayoutName,
+        boxLayout.reloadFromStorage,
+        boxLayout.importLegacyLayouts,
+        boxLayout.resetCurrentLayout,
+        layoutPrompts.promptSaveLayout,
+        layoutPrompts.promptDeleteLayout,
+        layoutPrompts.promptRenameLayout,
+        registerViewsListener,
+        applyViewSelection,
+        applyRefreshIntervalMs,
+    ]);
+
+    // Resolve the starting selection once the server list lands: restore what
+    // was stored, drop views that no longer exist, and only fall back to the
+    // first view on a genuine first visit (V1 `initializeViews`).
+    const viewsSeededRef = useRef(false);
+    useEffect(() => {
+        if (viewsSeededRef.current || !pageViews || pageViews.length === 0) return;
+        viewsSeededRef.current = true;
+        applyViewSelection(
+            resolveInitialViewSelection(pageViews, loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY), hasStoredViewSelectionAt(SELECTED_VIEWS_KEY)),
+        );
+    }, [pageViews, applyViewSelection]);
+
+    /*
+     * Each list caches its own `updateSearchParams` callback (one JobListPanel
+     * per list, unlike Dispatch's single combined list). A param change is
+     * pushed into the mounted lists rather than re-keying them — same
+     * reasoning as Dispatch: the views rail lives inside the list's own
+     * `topSlot` and a remount would lose its scroll position.
+     */
+    const listParamsRefs = useRef<Partial<Record<
+        keyof typeof LIST_FETCHERS, (params: Partial<JobListSearchParams>) => void
+    >>>({});
+    const viewsPushSeededRef = useRef(false);
+    useEffect(() => {
+        if (!viewsPushSeededRef.current) {
+            viewsPushSeededRef.current = true;
+            return;
+        }
+        for (const push of Object.values(listParamsRefs.current)) {
+            push?.({despatchViewIds: selectedViewIds, page: 0});
+        }
+    }, [selectedViewIds]);
 
     /*
      * Deep link. V1 could not honour `?jobId` at all -- it looked the id up in a
@@ -334,6 +504,76 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         void openRecoveryAgentManagementDialog({jobId: flightAgentJob.id});
     }, [flightAgentJob]);
 
+    /**
+     * Job-detail action (kebab) menu. Mirrors V1's `md-fab-speed-dial` handlers
+     * in `nationwide.controller.ts`, reusing the same dialogs/APIs Dispatch's
+     * equivalent menu uses (window globals preloaded by the nwV2 route).
+     */
+    const fabAction = useCallback(async (actionId: NationwideJobActionId, job: DispatchJob) => {
+        const w = window as any;
+        const refreshDetail = () => {
+            void queryClient.invalidateQueries({queryKey: queryKeys.jobs.detail(job.id, 'standard')});
+            w.ReactJobDetails?.refresh?.();
+        };
+
+        try {
+            switch (actionId) {
+                case 'addStop': {
+                    const newJobId = await executeAddStopFlow({job, isUsCustomer, showToast});
+                    if (newJobId) {
+                        showToast(`Stop added to ${job.jobNo}`, 'success');
+                        refreshLists();
+                        await selectJobById(newJobId);
+                    }
+                    return;
+                }
+
+                case 'accessorialCharges':
+                    if (!job.accessorialChargeGroupId) return;
+                    await w.ReactAccessorialChargesDialog?.open({
+                        job: {
+                            id: job.id,
+                            accessorialChargeGroupId: job.accessorialChargeGroupId,
+                            amount: job.amount,
+                            weight: job.weight,
+                            quantity: job.quantity,
+                        },
+                        toastService: {showToast},
+                    });
+                    refreshDetail();
+                    return;
+
+                case 'attachments':
+                    await w.ReactJobFileUploadDialog?.open(job.id);
+                    refreshDetail();
+                    return;
+
+                case 'addTask':
+                    await openAddEventDialog({
+                        job: {id: job.id, jobNo: job.jobNo, client: job.client ?? '', clientId: job.clientId},
+                        toastService: {showToast},
+                    });
+                    return;
+
+                case 'lock':
+                case 'unlock': {
+                    const locked = actionId === 'lock';
+                    await setJobLocked(job.id, locked, !!job.preBook);
+                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
+                    refreshLists();
+                    refreshDetail();
+                    return;
+                }
+
+                default:
+                    return;
+            }
+        } catch (error) {
+            console.error(`[NationwidePage] Job action '${actionId}' failed:`, error);
+            showToast('Something went wrong. Please try again.', 'error');
+        }
+    }, [isUsCustomer, showToast, refreshLists, selectJobById]);
+
     const fetchConfigFor = useCallback((boxName: keyof typeof LIST_FETCHERS) => ({
         fetchFn: LIST_FETCHERS[boxName],
         queryKeyFn: LIST_QUERY_KEYS[boxName],
@@ -342,10 +582,12 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             endDate: dateFilter.endDate,
             useTime: dateFilter.useTime,
             isInternal: window.ClientInternal ?? false,
+            despatchViewIds: selectedViewIds,
             page: 0,
             pageSize: 50,
         },
-    }), [dateFilter]);
+        refetchInterval: refetchIntervalMs,
+    }), [dateFilter, selectedViewIds, refetchIntervalMs]);
 
     const mapConfig = useMemo(() => {
         if (!currentJob) {
@@ -382,6 +624,9 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                         storagePrefix={LIST_STORAGE_PREFIX[key]}
                         fetchConfig={fetchConfigFor(key) as never}
                         onJobSelect={selectJob}
+                        setUpdateSearchParamsCallback={(cb: (params: Partial<JobListSearchParams>) => void) => {
+                            listParamsRefs.current[key] = cb;
+                        }}
                     />
                 );
             }
@@ -480,14 +725,25 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         widget, flightAgentJob, handleAddFlightToJob, handleAddAgentToJob, handleSendQuoteRequest,
         handleOpenAgentSearchDialog, handleOpenRecoveryAgentDialog]);
 
-    const handleRefreshBox = useCallback(() => {
-        // Each panel refetches through React Query; the shell's refresh button
-        // is wired per box in the next step.
+    const handleRefreshBox = useCallback((boxName: string) => {
+        const prefix = LIST_QUERY_KEY_PREFIX[boxName as keyof typeof LIST_QUERY_KEY_PREFIX];
+        if (prefix) {
+            // Only the affected list refetches -- mirrors V1's per-box
+            // `ctrl.refreshAction(box.name)`.
+            void queryClient.invalidateQueries({queryKey: prefix});
+        }
     }, []);
 
     const boxSubtitle = useCallback((boxName: string) => (
         boxName === NationwideBoxes.JobDetail ? currentJob?.jobNo : undefined
     ), [currentJob?.jobNo]);
+
+    const boxRightSlotFor = useCallback((boxName: string): React.ReactNode => {
+        if (boxName === NationwideBoxes.JobDetail) {
+            return <NationwideJobActionsMenu currentJob={currentJob} onAction={fabAction}/>;
+        }
+        return undefined;
+    }, [currentJob, fabAction]);
 
     return (
         <>
@@ -498,6 +754,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                 renderBoxContent={renderBoxContent}
                 onRefreshBox={handleRefreshBox}
                 boxSubtitle={boxSubtitle}
+                boxRightSlot={boxRightSlotFor}
                 isDefaultLayout={boxLayout.currentLayoutName === 'Default'}
                 onColumnSizes={boxLayout.setColumnSizes}
                 onBoxHeights={boxLayout.setBoxHeights}

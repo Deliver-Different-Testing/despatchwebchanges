@@ -57,10 +57,6 @@ export interface DashboardSettingsConfig {
     /** Show the "Tasks" auto-refresh dropdown (its own independent cadence). */
     showTaskRefresh?: boolean;
     showAiToggle?: boolean;
-    /** Show the "Use the new Job Search" toggle (on by default). Job Search settings only. */
-    showJobSearchBetaToggle?: boolean;
-    /** Show the "Use the new Dispatch" toggle (on by default). Dispatch settings only. */
-    showDispatchBetaToggle?: boolean;
     /** Show the "Use the new Nationwide" toggle (on by default). Nationwide settings only. */
     showNationwideBetaToggle?: boolean;
 }
@@ -72,10 +68,6 @@ export interface DashboardSettingsResult {
     aiEnabled?: boolean;
     /** When true, the Auto-mate briefing opens expanded automatically instead of click-to-open. */
     aiAutoOpen?: boolean;
-    /** Set when `showJobSearchBetaToggle` is true; the caller persists + redirects. */
-    jobSearchBetaEnabled?: boolean;
-    /** Set when `showDispatchBetaToggle` is true; the caller persists + redirects. */
-    dispatchBetaEnabled?: boolean;
     /** Set when `showNationwideBetaToggle` is true; the caller persists + redirects. */
     nationwideBetaEnabled?: boolean;
 }
@@ -89,8 +81,6 @@ export interface DashboardSettingsDialogProps {
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
     aiAutoOpen?: boolean;
-    jobSearchBetaEnabled?: boolean;
-    dispatchBetaEnabled?: boolean;
     nationwideBetaEnabled?: boolean;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
@@ -220,8 +210,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     refreshOptions,
     aiEnabled: initialAiEnabled,
     aiAutoOpen: initialAiAutoOpen,
-    jobSearchBetaEnabled: initialJobSearchBetaEnabled,
-    dispatchBetaEnabled: initialDispatchBetaEnabled,
     nationwideBetaEnabled: initialNationwideBetaEnabled,
     onClose,
     onSave,
@@ -237,12 +225,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     );
     const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? false);
     const [aiAutoOpen, setAiAutoOpen] = useState<boolean>(initialAiAutoOpen ?? false);
-    const [jobSearchBetaEnabled, setJobSearchBetaEnabled] = useState<boolean>(
-        initialJobSearchBetaEnabled ?? true,
-    );
-    const [dispatchBetaEnabled, setDispatchBetaEnabled] = useState<boolean>(
-        initialDispatchBetaEnabled ?? true,
-    );
     const [nationwideBetaEnabled, setNationwideBetaEnabled] = useState<boolean>(
         initialNationwideBetaEnabled ?? true,
     );
@@ -254,8 +236,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             selectedTaskRefreshInterval: taskInterval,
             aiEnabled,
             aiAutoOpen,
-            jobSearchBetaEnabled: config.showJobSearchBetaToggle ? jobSearchBetaEnabled : undefined,
-            dispatchBetaEnabled: config.showDispatchBetaToggle ? dispatchBetaEnabled : undefined,
             nationwideBetaEnabled: config.showNationwideBetaToggle ? nationwideBetaEnabled : undefined,
         });
     };
@@ -344,25 +324,8 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             </Box>
         ),
 
-        /* Job Search version toggle — the React rebuild of /jobSearch is now the
-           default; this switches back to the classic page. Caller persists
-           localStorage and triggers the route redirect after Save. */
-        config.showJobSearchBetaToggle && (
-            <Box p={24} key="jobSearchVersion">
-                <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Job Search version"/>
-                <SettingRow
-                    title="Use the new Job Search"
-                    description="The rebuilt Job Search is now the default — faster filtering, quicker loads,
-                        and modern dialogs. Turn this off to go back to the classic page. Applies to
-                        your account only."
-                    checked={jobSearchBetaEnabled}
-                    onToggle={() => setJobSearchBetaEnabled((prev) => !prev)}
-                />
-            </Box>
-        ),
-
-        /* Nationwide version toggle — opt-in, unlike the other two, because the
-           React Nationwide page is new and unproven. */
+        /* Nationwide version toggle — opt-in because the React Nationwide page
+           is new and unproven. */
         config.showNationwideBetaToggle && (
             <Box p={24} key="nationwideVersion">
                 <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Nationwide version"/>
@@ -374,22 +337,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         and off again at any time if you hit a problem. Applies to your account only."
                     checked={nationwideBetaEnabled}
                     onToggle={() => setNationwideBetaEnabled((prev) => !prev)}
-                />
-            </Box>
-        ),
-
-        /* Dispatch version toggle — same deal for the home/dispatch page. */
-        config.showDispatchBetaToggle && (
-            <Box p={24} key="dispatchVersion">
-                <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Dispatch version"/>
-                <SettingRow
-                    title="Use the new Dispatch"
-                    description="The rebuilt Dispatch is now the default — faster loads, modern dialogs, and
-                        more customisation options like choosing your columns. Saved layouts follow
-                        your account, so they persist across browsers and computers. Turn this off to
-                        go back to the classic page. Applies to your account only."
-                    checked={dispatchBetaEnabled}
-                    onToggle={() => setDispatchBetaEnabled((prev) => !prev)}
                 />
             </Box>
         ),

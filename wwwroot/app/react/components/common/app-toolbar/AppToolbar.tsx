@@ -182,7 +182,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
 
                 {/* Actions Container - a single cluster, so tighter than the bar's own gap */}
                 {children && (
-                    <Group gap={4} wrap="nowrap">
+                    <Group gap={8} wrap="nowrap">
                         {children}
                     </Group>
                 )}
@@ -192,6 +192,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                     <ActionIcon
                         variant="subtle"
                         size="lg"
+                        radius="xl"
                         aria-label="Open navigation menu"
                         onMouseEnter={onMenuHover}
                         onClick={onMenuClick}

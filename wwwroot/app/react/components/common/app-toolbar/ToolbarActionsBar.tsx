@@ -56,7 +56,7 @@ export const ToolbarActionsBar: React.FC<ToolbarActionsBarProps> = ({actions, co
         : [];
 
     return (
-        <Group gap={4} wrap="nowrap">
+        <Group gap={8} wrap="nowrap">
             {inlineItems.map(item => (
                 <React.Fragment key={item.key}>{item.node}</React.Fragment>
             ))}
@@ -68,6 +68,7 @@ export const ToolbarActionsBar: React.FC<ToolbarActionsBarProps> = ({actions, co
                             <ActionIcon
                                 variant="subtle"
                                 size="lg"
+                                radius="xl"
                                 aria-label="More actions"
                                 style={toolbarIconButtonStyle}
                             >

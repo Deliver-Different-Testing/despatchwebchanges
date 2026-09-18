@@ -296,8 +296,6 @@ declare global {
                 selectedDriverLocationRefreshInterval?: RefreshOption,
                 selectedTaskRefreshInterval?: RefreshOption,
                 aiEnabled?: boolean,
-                jobSearchBetaEnabled?: boolean,
-                dispatchBetaEnabled?: boolean,
                 nationwideBetaEnabled?: boolean
             ) => Promise<DashboardSettingsResult | null>;
         };

@@ -130,7 +130,6 @@ export const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({
                                 borderRadius: '50%',
                                 background: 'var(--mantine-color-body)',
                                 color: 'var(--mantine-primary-color-filled)',
-                                boxShadow: 'var(--mantine-shadow-xs)',
                             }}
                         >
                             <Icon tabler={IconPlane} size={20}/>
