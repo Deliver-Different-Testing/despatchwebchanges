@@ -31,7 +31,7 @@ const BoolBadge = ({value}: { value?: boolean }) => (
 );
 
 const InfoCard = ({icon, title, children}: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
-    <Card withBorder p={0} radius="sm" style={{overflow: 'hidden'}}>
+    <Card withBorder p={0} radius="lg" style={{overflow: 'hidden'}}>
         <PanelHeader icon={icon} title={title} />
         <div style={{padding: 16}}>
             {children}
@@ -55,7 +55,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
     return (
         <Stack gap={16}>
             {/* Search Section */}
-            <Card withBorder p={0} radius="sm" style={{overflow: 'hidden'}}>
+            <Card withBorder p={0} radius="lg" style={{overflow: 'hidden'}}>
                 <PanelHeader
                     icon={<Icon lucide={Search}/>}
                     title="Driver search"
@@ -78,7 +78,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                         maw={400}
                         value={searchText}
                         onChange={handleDriverSelect}
-                        data={searchResults.map(option => option.text)}
+                        data={Array.from(new Set(searchResults.map(option => option.text)))}
                         rightSection={isSearching ? <Loader size={16} aria-label="Searching drivers"/> : undefined}
                     />
                     {!isSearching && searchText.length > 0 && searchResults.length === 0 && (
@@ -101,7 +101,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                  * headerBadgeSx tokens. PanelHeader *is* that bar, so the summary
                  * takes it: same 48px surface, same keyline, one definition.
                  */
-                <Card withBorder p={0} radius="sm" style={{overflow: 'hidden'}}>
+                <Card withBorder p={0} radius="lg" style={{overflow: 'hidden'}}>
                     <PanelHeader
                         icon={<Icon lucide={IdCard}/>}
                         title={`${driver.basicInformation.code} — ${driver.basicInformation.firstName} ${driver.basicInformation.surname}`}
@@ -164,7 +164,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
             )}
             {/* Empty State */}
             {!isLoadingDetails && !driver && (
-                <Card withBorder radius="sm">
+                <Card withBorder radius="lg">
                     <Stack align="center" gap={4} py={64} c="dimmed">
                         <Icon lucide={UserSearch} size={48}/>
                         <Text fw={600} mt={8}>No driver selected</Text>

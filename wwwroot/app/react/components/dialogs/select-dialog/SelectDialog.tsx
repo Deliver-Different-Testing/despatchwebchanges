@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {Alert, Box, Checkbox, Divider, Select, Stack} from '@mantine/core';
+import {Alert, Checkbox, Divider, Select, Stack} from '@mantine/core';
 import { ListChecks, TriangleAlert } from 'lucide-react';
 import { Icon } from '../../common/icon/Icon';
 import { DialogShell, DialogHeader, DialogFooter, dialogContentBg } from '../shared/mantine';

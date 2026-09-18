@@ -64,7 +64,7 @@ export const StatsTabs: React.FC<StatsTabsProps> = React.memo(({statistics, acti
                                 h={3}
                                 mt={4}
                                 bg="var(--mantine-primary-color-filled)"
-                                style={{borderRadius: 6}}
+                                style={{borderRadius: 'var(--mantine-radius-md)'}}
                             />
                         )}
                     </Stack>

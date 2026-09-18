@@ -57,6 +57,7 @@ export interface BoxHeaderProps {
 const actionButtonProps = {
     variant: 'subtle' as const,
     color: 'gray' as const,
+    radius: 'xl' as const,
     w: PANEL_CONTROL_HEIGHT,
     h: PANEL_CONTROL_HEIGHT,
     style: panelIconButtonStyle,

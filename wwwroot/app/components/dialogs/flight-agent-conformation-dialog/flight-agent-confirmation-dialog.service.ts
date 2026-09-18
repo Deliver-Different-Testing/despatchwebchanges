@@ -1,7 +1,6 @@
 import {IFlightViewModel} from "../../../interfaces/nationwideFlight.interfaces";
-import {IDispatchJob, ISuggestion} from "../../../interfaces/job.interface";
+import {IDispatchJob} from "../../../interfaces/job.interface";
 import {FlightAgentConfirmationDialogResult} from "../../../interfaces/dialog-result.interfaces";
-import countSubJobs from "../../../functions/countSubJobs";
 import {Dayjs} from "dayjs";
 import angular from 'angular';
 
@@ -113,47 +112,6 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
             };
         } catch (error) {
             console.error('FlightAgentConfirmationDialogService: Error in flightConfirmationDialog', error);
-            return {
-                shouldAssign: false,
-                awb: undefined,
-            };
-        }
-    }
-
-    async agentConfirmationDialog(_$event: MouseEvent, job: IDispatchJob, agent: ISuggestion): Promise<FlightAgentConfirmationDialogResult> {
-        console.debug('FlightAgentConfirmationDialogService: agentConfirmationDialog called');
-        const stopJobCount = job.relatedJobs ? countSubJobs(job.jobNo, job.relatedJobs) : 0;
-
-        try {
-            // Load the React dialog module on demand
-            await this.loadReactDialog();
-
-            // Open the React dialog
-            // loadReactDialog throws on failure, so the global is populated here.
-            const result = await window.ReactFlightAgentConfirmationDialog!.openAgentDialog({
-                jobId: job.id,
-                jobNumber: job.jobNo,
-                agent: agent,
-                existingAwb: job.conNote,
-                dgClass: job.dgClass,
-                stopJobCount,
-            });
-
-            console.debug('FlightAgentConfirmationDialogService: Dialog closed with result:', result);
-
-            // Convert result to expected format
-            return {
-                shouldAssign: result.shouldAssign,
-                awb: result.awb,
-                shouldAssignToStopJobs: result.shouldAssignToStopJobs,
-                packageReadyTime: result.packageReadyTime,
-                packageDeliverByTime: result.packageDeliverByTime,
-                packageDeliveryNotes: result.packageDeliveryNotes,
-                emailSubject: result.emailSubject,
-                emailBody: result.emailBody,
-            };
-        } catch (error) {
-            console.error('FlightAgentConfirmationDialogService: Error in agentConfirmationDialog', error);
             return {
                 shouldAssign: false,
                 awb: undefined,

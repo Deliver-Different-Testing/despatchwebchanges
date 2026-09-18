@@ -152,7 +152,6 @@ export function createController(overrides: Partial<Ctrl> = {}): Ctrl {
     };
     ctrl.flightAgentConfirmationDialogService = {
         flightConfirmationDialog: jest.fn().mockResolvedValue({shouldAssign: false}),
-        agentConfirmationDialog: jest.fn().mockResolvedValue({shouldAssign: false}),
     };
     ctrl.$mdDialog = {
         show: jest.fn().mockResolvedValue(undefined),

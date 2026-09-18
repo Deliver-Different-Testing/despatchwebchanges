@@ -87,7 +87,6 @@ export const RecurringJourneyRunRow: React.FC<RecurringJourneyRunRowProps> = ({
                     borderRadius: '50%',
                     border: '3px solid var(--mantine-color-body)',
                     backgroundColor: tone,
-                    boxShadow: `0 0 0 2px ${tone}`,
                     zIndex: 1,
                     position: 'relative',
                 }}

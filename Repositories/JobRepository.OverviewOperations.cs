@@ -27,7 +27,12 @@ public partial class JobRepository
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        var query = (await BuildBaseQueryAsync(parameters.DespatchViewIds, isUsCustomer))
+        // The standalone Overview page has no despatch-view selector, so unlike the Dispatch
+        // page's panels it must keep seeing every job rather than being scoped to (and
+        // potentially emptied by) a view selection it has no way to make.
+        var query = (parameters.ScopeToDespatchViews
+                ? await BuildBaseQueryAsync(parameters.DespatchViewIds, isUsCustomer)
+                : Context.TucJobs)
             .Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
 
         // Apply status group - filter early
@@ -246,7 +251,9 @@ public partial class JobRepository
         var nextDate = currentDate.AddDays(1);
         var isUsTenant = _infoService.IsUsTenant();
 
-        var query = (await BuildBaseQueryAsync(parameters.DespatchViewIds, isUsTenant))
+        var query = (parameters.ScopeToDespatchViews
+                ? await BuildBaseQueryAsync(parameters.DespatchViewIds, isUsTenant)
+                : Context.TucJobs)
             .Where(j =>
                 j.UcjbStatus != (int)JobStatus.Completed &&
                 j.UcjbStatus != (int)JobStatus.Rejected &&

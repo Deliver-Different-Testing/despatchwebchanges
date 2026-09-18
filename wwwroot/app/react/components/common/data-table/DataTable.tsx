@@ -98,8 +98,9 @@ export function DataTable<T>({
 
     const colSpan = columns.length + (checkboxSelection ? 1 : 0);
 
+    // `lg` matches BoxShell's panel radius — the dispatch page's Xero-inspired rounder card corners.
     return (
-        <Card p={0} radius="sm" withBorder style={{overflow: 'hidden'}}>
+        <Card p={0} radius="lg" withBorder style={{overflow: 'hidden'}}>
             <Table.ScrollContainer minWidth={0}>
                 <Table>
                     <Table.Thead>
@@ -166,7 +167,13 @@ export function DataTable<T>({
                                         <Table.Td>{renderCheckbox?.(row)}</Table.Td>
                                     )}
                                     {columns.map((column) => (
-                                        <Table.Td key={column.key} ta={column.align || 'left'}>
+                                        <Table.Td
+                                            key={column.key}
+                                            ta={column.align || 'left'}
+                                            // Right-aligned columns are numeric/currency data in this app —
+                                            // tabular figures keep the digits lined up column-for-column.
+                                            style={column.align === 'right' ? {fontVariantNumeric: 'tabular-nums'} : undefined}
+                                        >
                                             {column.render(row, index)}
                                         </Table.Td>
                                     ))}

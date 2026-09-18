@@ -290,7 +290,7 @@ const DriverCard: React.FC<{
     }, [initialDriver.lastCompleted]);
 
     return (
-        <Card withBorder p={0} mb={8}>
+        <Card withBorder p={0} radius="lg" mb={8}>
             <Group
                 onClick={() => setExpanded(!expanded)}
                 px={16}
@@ -365,7 +365,7 @@ const JobCard: React.FC<{
     job: ViewJob;
     onSelectJob?: (jobId: number) => void;
 }> = React.memo(({job, onSelectJob}) => (
-    <Card withBorder p={0} miw={300} style={{width: 'calc(50% - 8px)'}}>
+    <Card withBorder p={0} radius="lg" miw={300} style={{width: 'calc(50% - 8px)'}}>
         <Box p={16}>
             {/* Header */}
             <Group justify="space-between" align="center" mb={8} wrap="nowrap">

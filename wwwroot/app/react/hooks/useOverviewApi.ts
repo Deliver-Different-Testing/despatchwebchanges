@@ -53,7 +53,7 @@ export function useOverviewStats() {
 }
 
 export function useOverviewOpenJobs(
-    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers' | 'despatchViewIds'>,
+    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers' | 'despatchViewIds' | 'scopeToDespatchViews'>,
     refetchInterval?: number,
 ) {
     return useQuery({

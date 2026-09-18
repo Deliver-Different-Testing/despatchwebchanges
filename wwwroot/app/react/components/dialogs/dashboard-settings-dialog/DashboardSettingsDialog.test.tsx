@@ -47,7 +47,7 @@ describe('DashboardSettingsDialog', () => {
         it('renders no panels section, panel toggles or moved notice', () => {
             renderWithTheme(
                 <DashboardSettingsDialog
-                    {...createMockProps({config: {...mockConfig, showJobSearchBetaToggle: true}})}
+                    {...createMockProps()}
                 />,
             );
 
@@ -239,51 +239,6 @@ describe('DashboardSettingsDialog', () => {
             })} />);
 
             expect(screen.getByRole('combobox', {name: 'Driver locations'})).toHaveValue('Disabled');
-        });
-    });
-
-    // ── Dispatch version toggle ─────────────────────────────────────
-    describe('Dispatch version toggle', () => {
-        it('is hidden unless showDispatchBetaToggle is set', () => {
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
-            expect(screen.queryByText('Dispatch version')).not.toBeInTheDocument();
-        });
-
-        it('renders the toggle and emits dispatchBetaEnabled on save when enabled', async () => {
-            const user = setupUser();
-            const onSave = jest.fn();
-            renderWithTheme(
-                <DashboardSettingsDialog
-                    {...createMockProps({
-                        config: {...mockConfig, showDispatchBetaToggle: true},
-                        dispatchBetaEnabled: false,
-                        onSave,
-                    })}
-                />,
-            );
-
-            expect(screen.getByText('Dispatch version')).toBeInTheDocument();
-
-            await user.click(screen.getByRole('switch', {name: 'Use the new Dispatch'}));
-            await user.click(screen.getByRole('button', {name: /save/i}));
-
-            expect(onSave).toHaveBeenCalledWith(
-                expect.objectContaining({dispatchBetaEnabled: true}),
-            );
-        });
-
-        it('omits dispatchBetaEnabled from the result when the toggle is not shown', async () => {
-            const user = setupUser();
-            const onSave = jest.fn();
-            renderWithTheme(
-                <DashboardSettingsDialog {...createMockProps({onSave})} />,
-            );
-
-            await user.click(screen.getByRole('button', {name: /save/i}));
-
-            expect(onSave).toHaveBeenCalledWith(
-                expect.objectContaining({dispatchBetaEnabled: undefined}),
-            );
         });
     });
 

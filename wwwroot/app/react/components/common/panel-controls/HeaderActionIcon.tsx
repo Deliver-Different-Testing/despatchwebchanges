@@ -31,6 +31,7 @@ export const HeaderActionIcon = React.forwardRef<HTMLButtonElement, HeaderAction
                 <ActionIcon
                     ref={ref}
                     size={PANEL_CONTROL_HEIGHT}
+                    radius="xl"
                     variant="subtle"
                     aria-label={label}
                     className={classes.control}

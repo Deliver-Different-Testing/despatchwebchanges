@@ -44,6 +44,8 @@ export interface OverviewQueryParams {
     speeds?: number[];
     couriers?: number[];
     despatchViewIds?: number[];
+    /** Scope jobs to `despatchViewIds` (the Dispatch page's panels); the standalone Overview page omits this to see every job. */
+    scopeToDespatchViews?: boolean;
 }
 
 export interface OverviewStatsViewModel {

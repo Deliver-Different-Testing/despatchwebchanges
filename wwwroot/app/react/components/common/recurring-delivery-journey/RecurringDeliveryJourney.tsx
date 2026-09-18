@@ -10,7 +10,7 @@
  */
 
 import React, {useCallback, useState} from 'react';
-import {ActionIcon, Alert, Box, Card, Progress, Stack, Text} from '@mantine/core';
+import {ActionIcon, Alert, Box, Card, Progress, ScrollArea, Stack, Text} from '@mantine/core';
 import {CalendarX2, RefreshCw, ScrollText} from 'lucide-react';
 import {Icon} from '../icon/Icon';
 import classes from './RecurringDeliveryJourney.module.css';
@@ -78,7 +78,7 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
 
             <Box
                 bg="var(--mantine-color-body)"
-                style={{flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0}}
+                style={{flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0}}
             >
                 {!bookingId && (
                     <Stack align="center" justify="center" gap={12} py={40} px={24} c="dimmed" style={{flex: 1}}>
@@ -96,23 +96,27 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
                 )}
 
                 {bookingId && !isError && data && (
-                    <>
-                        <RecurringJourneyBreakdown breakdown={data.breakdown} />
-                        <RecurringJourneyInfoStrip />
-                        {data.runs.length === 0 ? (
+                    data.runs.length === 0 ? (
+                        <>
+                            <RecurringJourneyBreakdown breakdown={data.breakdown} />
+                            <RecurringJourneyInfoStrip />
                             <Stack align="center" justify="center" gap={12} py={40} px={24} c="dimmed" style={{flex: 1}}>
                                 <Text fz="sm">
                                     No runs yet — this recurring job hasn't been pushed live.
                                 </Text>
                             </Stack>
-                        ) : (
+                        </>
+                    ) : (
+                        <ScrollArea style={{flex: 1, minHeight: 0}}>
+                            <RecurringJourneyBreakdown breakdown={data.breakdown} />
+                            <RecurringJourneyInfoStrip />
                             <RecurringJourneyRunList
                                 runs={data.runs}
                                 onParentClick={handleParentClick}
                                 onChildClick={handleChildClick}
                             />
-                        )}
-                    </>
+                        </ScrollArea>
+                    )
                 )}
 
                 {bookingId && isLoading && !data && (

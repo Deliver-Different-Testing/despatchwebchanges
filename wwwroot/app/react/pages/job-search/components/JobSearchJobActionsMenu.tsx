@@ -4,9 +4,7 @@ import type {DispatchJob} from '../../../interfaces/dispatchJob';
 
 /**
  * Job-detail action menu for the React job search page, rendered as an overflow
- * (kebab) menu in the Job Detail panel header. Mirrors the md-fab-speed-dial in
- * `wwwroot/app/components/jobSearch/jobSearch.template.html:72-170`; availability
- * conditions match the AngularJS `ng-if`s.
+ * (kebab) menu in the Job Detail panel header.
  */
 
 export type JobSearchJobActionId =

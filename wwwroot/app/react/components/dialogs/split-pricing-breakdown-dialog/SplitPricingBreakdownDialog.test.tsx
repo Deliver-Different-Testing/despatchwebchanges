@@ -86,10 +86,10 @@ describe('SplitPricingBreakdownDialog', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
 
         expect(screen.getByText('Leg A').parentElement).toHaveAttribute(
-            'style', expect.stringContaining('background-color: rgb(30, 136, 229)'),
+            'style', expect.stringContaining('background-color: var(--mantine-color-reflex-6)'),
         );
         expect(screen.getByText('Leg B').parentElement).toHaveAttribute(
-            'style', expect.stringContaining('background-color: rgb(0, 137, 123)'),
+            'style', expect.stringContaining('background-color: var(--mantine-color-green-7)'),
         );
         expect(screen.getByText('KT4071VA')).toBeInTheDocument();
         expect(screen.getByText('KT4071VB')).toBeInTheDocument();

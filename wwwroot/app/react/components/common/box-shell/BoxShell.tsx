@@ -65,7 +65,10 @@ const boxCardStyle: React.CSSProperties = {
     height: '100%',
     backgroundColor: 'var(--dd-surface-container)',
     border: '1px solid var(--mantine-color-default-border)',
-    borderRadius: 'var(--mantine-radius-sm)',
+    // Rounder than the app's other `sm` chrome — a deliberate, narrow echo of
+    // Xero's card radius on the dispatch page specifically, still well short
+    // of the `xl` "toy" shape the theme otherwise avoids.
+    borderRadius: 'var(--mantine-radius-lg)',
     overflow: 'hidden',
 };
 

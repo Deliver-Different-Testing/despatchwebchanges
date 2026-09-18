@@ -1,19 +1,3 @@
-/**
- * EditSavedFlightDialog
- *
- * Sets the flight number saved against a recurring flight booking. The operator
- * searches the booking's route (one fetch on open) and picks a flight, or types
- * a custom flight number — which shows a "can't guarantee auto-assign" warning.
- * The saved number is matched and auto-assigned on each push-to-live.
- *
- * When `showAirportPickers` is set (recurring bookings created without a route),
- * the dialog also renders From/To airport autocompletes sourced from the airport
- * table; the flight search runs off that selection and the chosen airports are
- * returned to `onSubmit` so they can be persisted with the flight number.
- *
- * Follows the canonical job-detail edit-dialog design language.
- */
-
 import {Alert, Autocomplete, Box, Loader, Paper, Select, Stack, Text, Tooltip} from '@mantine/core';
 import {PlaneTakeoff} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
@@ -84,14 +68,10 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         [departureDate]
     );
 
-    // Airports driving the flight search: the operator's picker selection when
-    // pickers are shown, otherwise the airports passed in for a flight booking.
     const effectiveFromId = showAirportPickers ? selectedFrom?.id : fromAirportId;
     const effectiveToId = showAirportPickers ? selectedTo?.id : toAirportId;
     const hasAirports = effectiveFromId != null && effectiveToId != null;
-
-    // Reset per-open, and (picker mode) load the airport list and seed any
-    // airports already on the booking.
+    
     useEffect(() => {
         if (!open) return;
 
@@ -133,8 +113,6 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         };
     }, [open, showAirportPickers, currentValue, fromAirportId, toAirportId]);
 
-    // Search the route's flights whenever both airports are known. In picker
-    // mode this re-runs as the operator changes the From/To selection.
     useEffect(() => {
         if (!open) return;
 
@@ -157,7 +135,15 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
             })
             .then((result) => {
                 if (cancelled) return;
-                const opts = result.flights.map(toOption);
+                // Cirium can return more than one record for what displays as the
+                // same flight (codeshares, alternate connections, nearby-airport
+                // search); Mantine's Autocomplete data must be unique strings.
+                const seen = new Set<string>();
+                const opts = result.flights.map(toOption).filter((o) => {
+                    if (seen.has(o.label)) return false;
+                    seen.add(o.label);
+                    return true;
+                });
                 setOptions(opts);
                 setMessage(result.message);
                 // Flag a pre-existing saved value as custom if the route search
@@ -190,14 +176,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         },
         [options]
     );
-
-    /*
-     * MUI split this across onInputChange and onChange; Mantine's Autocomplete has
-     * one callback carrying the string. That is enough because applyTypedValue
-     * already matches on the label as well as the value, so picking a suggestion
-     * and typing its label land in the same place — and anything unmatched is
-     * marked custom, which is what the warning below reads.
-     */
+    
     const handleFlightInputChange = useCallback(
         (value: string) => {
             setInputValue(value);
@@ -206,14 +185,10 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
         [applyTypedValue]
     );
 
-    // In picker mode the route airports must be chosen and a flight number
-    // entered before we can save — the auto-assign needs all three.
     const missingRoute = showAirportPickers && (selectedFrom == null || selectedTo == null);
     const missingFlight = showAirportPickers && savedValue.length === 0;
     const submitDisabled = isSaving || missingRoute || missingFlight;
 
-    // Explain why Save is unavailable — a disabled button gives no feedback on
-    // its own. Matches the disabled-Save tooltip used by the dimensions dialog.
     const saveHint = missingRoute
         ? 'Select departure and arrival airports first'
         : missingFlight
@@ -238,11 +213,6 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
     }, [onSubmit, savedValue, showAirportPickers, selectedFrom, selectedTo]);
 
     return (
-        /*
-         * The header was hand-built from the legacy sx tokens, with its own titleId
-         * and describedby wiring because a custom Box header gave MUI nothing to
-         * name the dialog from. DialogShell takes `label` for that, so both ids go.
-         */
         <DialogShell
             opened={open}
             onClose={onClose}

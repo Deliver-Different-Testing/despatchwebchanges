@@ -6,8 +6,8 @@
  * `on-messages-click` the directive defers to it, otherwise the directive
  * self-wires the shared messaging dialog and polls the unread count.
  *
- * Follows the repo convention (see jobSearch.controller.spec.ts) of invoking
- * the unit directly with mocked dependencies instead of bootstrapping AngularJS DI.
+ * Follows the repo convention of invoking the unit directly with mocked
+ * dependencies instead of bootstrapping AngularJS DI.
  */
 
 jest.mock('angular', () => ({default: {}, element: jest.fn()}));

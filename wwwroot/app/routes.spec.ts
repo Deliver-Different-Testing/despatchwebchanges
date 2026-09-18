@@ -86,11 +86,6 @@ describe('RouterConfig', () => {
             expect(homeState.url).toBe('/?jobId');
         });
 
-        it('should configure home state with homeComponent', () => {
-            const homeState = registeredStates.get('home');
-            expect(homeState.component).toBe('homeComponent');
-        });
-
         it('should configure home state with optional jobId param', () => {
             const homeState = registeredStates.get('home');
             expect(homeState.params).toBeDefined();
@@ -100,11 +95,16 @@ describe('RouterConfig', () => {
             });
         });
 
-        it('should configure home state with lazy loading resolves', () => {
+        it('always redirects home to dispatch (classic AngularJS dispatch page is deleted)', () => {
             const homeState = registeredStates.get('home');
-            expect(homeState.resolve).toBeDefined();
-            expect(homeState.resolve.manifest).toBeDefined();
-            expect(homeState.resolve.loadModule).toBeDefined();
+            expect(homeState.component).toBeUndefined();
+            expect(homeState.resolve).toBeUndefined();
+
+            const withoutJobId = homeState.redirectTo({params: () => ({})});
+            expect(withoutJobId).toEqual({state: 'dispatch', params: {}});
+
+            const withJobId = homeState.redirectTo({params: () => ({jobId: '123'})});
+            expect(withJobId).toEqual({state: 'dispatch', params: {jobId: '123'}});
         });
     });
 
@@ -160,6 +160,7 @@ describe('RouterConfig', () => {
         it('should register all expected states', () => {
             const expectedStates = [
                 'home',
+                'dispatch',
                 'dispatchV2',
                 'nw',
                 'nwV2',
@@ -202,11 +203,11 @@ describe('RouterConfig', () => {
         });
 
         it('should register exactly the expected number of states', () => {
-            // 16 states total (excluding commented megaMap). The three `*V2`
-            // states are the parallel React rebuilds of the home/dispatch, job
-            // search and Nationwide pages; each collapses onto its classic URL
-            // once that page is deleted.
-            expect(registeredStates.size).toBe(16);
+            // 17 states total (excluding commented megaMap). `nwV2` is the
+            // parallel React rebuild of Nationwide, opt-in via a beta toggle.
+            // `dispatchV2` and `jobSearchV2` are thin redirects kept only so
+            // old bookmarks to those now-renamed URLs still resolve.
+            expect(registeredStates.size).toBe(17);
         });
     });
 
@@ -222,10 +223,10 @@ describe('RouterConfig', () => {
         // <md-content class="md-dense">, which pulled Angular Material's
         // container styles (and its md-dense density scale) onto pages that
         // render no Angular Material components at all. The classic AngularJS
-        // states (home, jobSearch, nw) keep their own templates.
+        // state (nw) keeps its own template.
         const reactOnlyStates = [
-            'dispatchV2',
-            'jobSearchV2',
+            'dispatch',
+            'jobSearch',
             'recurringJobs',
             'overview',
             'taskDashboard',
@@ -247,7 +248,7 @@ describe('RouterConfig', () => {
         });
 
         it('keeps the full-height sizing the wrapper used to provide', () => {
-            for (const stateName of ['dispatchV2', 'jobSearchV2', 'overview', 'driverManagement']) {
+            for (const stateName of ['dispatch', 'jobSearch', 'overview', 'driverManagement']) {
                 const state = registeredStates.get(stateName);
                 expect(state.template).toContain('height: 100%');
             }
@@ -270,6 +271,35 @@ describe('RouterConfig', () => {
         it('should configure nw state with nationwide-component template', () => {
             const nwState = registeredStates.get('nw');
             expect(nwState.template).toBe('<nationwide-component></nationwide-component>');
+        });
+    });
+
+    describe('Nationwide V2 State Configuration', () => {
+        beforeEach(() => {
+            new RouterConfig(
+                mockUrlRouterProvider as any,
+                mockStateProvider as any
+            );
+        });
+
+        // Every other section of the app-shell toolbar (Views, Layouts,
+        // Settings) is opt-in per host attribute — omitting them is how the
+        // "only Messages shows" bug happened. Assert the wiring stays in the
+        // template so it can't silently regress again.
+        it('wires the app-shell toolbar with views, layouts and settings', () => {
+            const nwV2State = registeredStates.get('nwV2');
+            expect(nwV2State.template).toContain('views="ctrl.views"');
+            expect(nwV2State.template).toContain('on-toggle-view="ctrl.toggleView(view)"');
+            expect(nwV2State.template).toContain('on-clear-all-views="ctrl.clearAllViews()"');
+            expect(nwV2State.template).toContain('layouts="ctrl.layouts"');
+            expect(nwV2State.template).toContain('on-save-layout="ctrl.saveLayout()"');
+            expect(nwV2State.template).toContain('on-load-layout="ctrl.loadLayout(index)"');
+            expect(nwV2State.template).toContain('on-delete-layout="ctrl.deleteLayout(index)"');
+            expect(nwV2State.template).toContain('on-rename-layout="ctrl.renameLayout(index)"');
+            expect(nwV2State.template).toContain('on-import-layouts="ctrl.importLayouts()"');
+            expect(nwV2State.template).toContain('on-customize-panels="ctrl.openCustomizePanelsDialog()"');
+            expect(nwV2State.template).toContain('on-reset-layout="ctrl.resetLayout()"');
+            expect(nwV2State.template).toContain('on-settings-click="ctrl.openSettingsDialog($event)"');
         });
     });
 
@@ -296,10 +326,37 @@ describe('RouterConfig', () => {
             );
         });
 
-        it('should configure jobSearch state', () => {
+        it('serves jobSearch as the React page directly at /jobSearch', () => {
             const state = registeredStates.get('jobSearch');
             expect(state.url).toBe('/jobSearch?jobId');
-            expect(state.component).toBe('jobSearchComponent');
+            expect(state.redirectTo).toBeUndefined();
+            expect(state.controller).toBeDefined();
+        });
+
+        it('redirects the legacy /jobSearchV2 bookmark to jobSearch', () => {
+            const state = registeredStates.get('jobSearchV2');
+            expect(state.url).toBe('/jobSearchV2?jobId');
+            expect(state.component).toBeUndefined();
+            expect(state.resolve).toBeUndefined();
+
+            const withoutJobId = state.redirectTo({params: () => ({})});
+            expect(withoutJobId).toEqual({state: 'jobSearch', params: {}});
+
+            const withJobId = state.redirectTo({params: () => ({jobId: '123'})});
+            expect(withJobId).toEqual({state: 'jobSearch', params: {jobId: '123'}});
+        });
+
+        it('redirects the legacy /dispatchV2 bookmark to dispatch', () => {
+            const state = registeredStates.get('dispatchV2');
+            expect(state.url).toBe('/dispatchV2?jobId');
+            expect(state.component).toBeUndefined();
+            expect(state.resolve).toBeUndefined();
+
+            const withoutJobId = state.redirectTo({params: () => ({})});
+            expect(withoutJobId).toEqual({state: 'dispatch', params: {}});
+
+            const withJobId = state.redirectTo({params: () => ({jobId: '123'})});
+            expect(withJobId).toEqual({state: 'dispatch', params: {jobId: '123'}});
         });
 
         it('should configure recurringJobs state', () => {
@@ -463,13 +520,13 @@ describe('Base URL Behavior', () => {
 
 const TOOLBARS = [
     {
-        state: 'dispatchV2',
+        state: 'dispatch',
         bridgeName: 'ReactDispatch',
         layoutsKey: 'layoutV2',
         lastActiveKey: 'lastActiveLayoutV2',
     },
     {
-        state: 'jobSearchV2',
+        state: 'jobSearch',
         bridgeName: 'ReactJobSearch',
         layoutsKey: 'layoutsCSV2',
         lastActiveKey: 'lastActiveLayoutCSV2',
@@ -509,8 +566,8 @@ describe.each(TOOLBARS)('$state layout toolbar', ({state, bridgeName, layoutsKey
             showErrorToast: jest.fn(),
             showInfoToast: jest.fn(),
         };
-        // dispatchV2 also takes $http/$interval for its unread-message badge;
-        // jobSearchV2 ignores the extra arguments.
+        // dispatch also takes $http/$interval for its unread-message badge;
+        // jobSearch ignores the extra arguments.
         const $http = {get: jest.fn(() => ({then: () => ({catch: jest.fn()})}))};
         const $interval: any = jest.fn(() => 'interval-token');
         $interval.cancel = jest.fn();
