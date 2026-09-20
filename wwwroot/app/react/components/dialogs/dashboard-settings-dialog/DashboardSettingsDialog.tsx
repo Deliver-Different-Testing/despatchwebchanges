@@ -2,26 +2,14 @@
  * React Dashboard Settings Dialog
  *
  * The gear dialog behind Dispatch, Job Search and the dashboards: refresh
- * cadences, Auto-mate and the classic/new page toggles. Panel visibility is
- * not here — it lives in the Customize Panels dialog, reached from the Layouts
- * menu. Follows the dialog design language in CLAUDE.md.
+ * cadences and the classic/new page toggle. Panel visibility is not here — it
+ * lives in the Customize Panels dialog, reached from the Layouts menu.
+ * Auto-mate settings are not here either — they live on the global Settings
+ * page, reached from the sidebar. Follows the dialog design language in CLAUDE.md.
  */
 
 import React, {useState} from 'react';
-import {
-    Badge,
-    Box,
-    Divider,
-    Group,
-    Paper,
-    Select,
-    Stack,
-    Switch,
-    Text,
-    ThemeIcon,
-    Title,
-    alpha,
-} from '@mantine/core';
+import {Box, Divider, Group, Select, Paper, Stack, Text} from '@mantine/core';
 import {Clock, Settings, Sparkles} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {
@@ -31,9 +19,7 @@ import {
     dialogContentBg,
     dialogSize,
 } from '../shared/mantine';
-import {aiAccentColor} from '../../../theme/designTokens';
-import {AutoMateLogo} from '../../common/auto-mate-logo/AutoMateLogo';
-import styles from './DashboardSettingsDialog.module.css';
+import {SectionHeading, SettingRow} from '../../common/settings-controls/SettingsControls';
 
 // Types that mirror the AngularJS interfaces
 export interface RefreshOption {
@@ -56,7 +42,6 @@ export interface DashboardSettingsConfig {
     showDriverLocationRefresh?: boolean;
     /** Show the "Tasks" auto-refresh dropdown (its own independent cadence). */
     showTaskRefresh?: boolean;
-    showAiToggle?: boolean;
     /** Show the "Use the new Nationwide" toggle (on by default). Nationwide settings only. */
     showNationwideBetaToggle?: boolean;
 }
@@ -65,9 +50,6 @@ export interface DashboardSettingsResult {
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
     selectedTaskRefreshInterval?: RefreshOption;
-    aiEnabled?: boolean;
-    /** When true, the Auto-mate briefing opens expanded automatically instead of click-to-open. */
-    aiAutoOpen?: boolean;
     /** Set when `showNationwideBetaToggle` is true; the caller persists + redirects. */
     nationwideBetaEnabled?: boolean;
 }
@@ -79,90 +61,9 @@ export interface DashboardSettingsDialogProps {
     selectedDriverLocationRefreshInterval?: RefreshOption;
     selectedTaskRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
-    aiEnabled?: boolean;
-    aiAutoOpen?: boolean;
     nationwideBetaEnabled?: boolean;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
-}
-
-/**
- * A concrete value, not a Mantine colour name: it feeds inline custom
- * properties and CSS strings, where a name does not resolve.
- */
-const BRAND_ACCENT = 'var(--mantine-primary-color-filled)';
-
-/** The tinted square and heading each settings section leads with. */
-function SectionHeading({icon, title, accent = BRAND_ACCENT}: {
-    icon: React.ReactNode;
-    title: string;
-    accent?: string;
-}) {
-    return (
-        <Group gap={12} wrap="nowrap" mb={16}>
-            <ThemeIcon
-                size={36}
-                radius="md"
-                style={{'--ti-bg': alpha(accent, 0.1), '--ti-color': accent} as React.CSSProperties}
-            >
-                {icon}
-            </ThemeIcon>
-            <Title order={5} fw={600}>{title}</Title>
-        </Group>
-    );
-}
-
-/**
- * One setting: a title, an explanation and a control, in a card that is itself
- * the click target. Five copies of this markup had drifted apart — the AI rows
- * carried a hover the panel rows did not, and each repeated the switch's
- * stopPropagation by hand.
- */
-function SettingRow({title, description, badge, accent = BRAND_ACCENT, checked, disabled, onToggle}: {
-    title: string;
-    description: React.ReactNode;
-    badge?: React.ReactNode;
-    accent?: string;
-    checked: boolean;
-    /** Dims the row and stops both the card and the switch responding. */
-    disabled?: boolean;
-    onToggle: () => void;
-}) {
-    return (
-        <Paper
-            data-setting-row
-            data-clickable={disabled ? undefined : true}
-            className={styles.settingRow}
-            withBorder
-            radius="md"
-            p={16}
-            onClick={disabled ? undefined : onToggle}
-            style={{
-                '--setting-accent': accent,
-                cursor: disabled ? 'default' : 'pointer',
-                opacity: disabled ? 0.5 : 1,
-            } as React.CSSProperties}
-        >
-            <Group justify="space-between" wrap="nowrap" gap={16}>
-                <Box>
-                    <Group gap={8}>
-                        <Text fz="sm" fw={600}>{title}</Text>
-                        {badge}
-                    </Group>
-                    <Text fz="sm" c="dimmed">{description}</Text>
-                </Box>
-                <Switch
-                    checked={checked}
-                    disabled={disabled}
-                    aria-label={title}
-                    /* The card already toggles; without this a click on the switch counts twice. */
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={onToggle}
-                    style={{'--switch-bg': accent} as React.CSSProperties}
-                />
-            </Group>
-        </Paper>
-    );
 }
 
 /** One "how often does X refresh" row: a label, an explanation and an interval picker. */
@@ -208,8 +109,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     selectedDriverLocationRefreshInterval: initialDriverInterval,
     selectedTaskRefreshInterval: initialTaskInterval,
     refreshOptions,
-    aiEnabled: initialAiEnabled,
-    aiAutoOpen: initialAiAutoOpen,
     nationwideBetaEnabled: initialNationwideBetaEnabled,
     onClose,
     onSave,
@@ -223,8 +122,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [taskInterval, setTaskInterval] = useState<RefreshOption>(
         initialTaskInterval ?? {id: 0, text: 'Disabled'}
     );
-    const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? false);
-    const [aiAutoOpen, setAiAutoOpen] = useState<boolean>(initialAiAutoOpen ?? false);
     const [nationwideBetaEnabled, setNationwideBetaEnabled] = useState<boolean>(
         initialNationwideBetaEnabled ?? true,
     );
@@ -234,8 +131,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             selectedRefreshInterval: refreshInterval,
             selectedDriverLocationRefreshInterval: driverLocationInterval,
             selectedTaskRefreshInterval: taskInterval,
-            aiEnabled,
-            aiAutoOpen,
             nationwideBetaEnabled: config.showNationwideBetaToggle ? nationwideBetaEnabled : undefined,
         });
     };
@@ -277,49 +172,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             onChange={setDriverLocationInterval}
                         />
                     )}
-                </Stack>
-            </Box>
-        ),
-
-        config.showAiToggle && (
-            <Box p={24} key="autoMate">
-                <SectionHeading
-                    icon={<AutoMateLogo size={28}/>}
-                    title="Auto-mate Settings"
-                    accent={aiAccentColor}
-                />
-
-                <Stack gap={16}>
-                    <SettingRow
-                        title="Show Auto-mate briefings"
-                        badge={
-                            <Badge
-                                size="xs"
-                                c="white"
-                                style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
-                            >
-                                BETA
-                            </Badge>
-                        }
-                        description="Adds a short AI briefing — verdict, what needs attention, and key facts —
-                            to the job details, task dashboard, operations, and driver compliance pages.
-                            Applies to your account only."
-                        accent={aiAccentColor}
-                        checked={aiEnabled}
-                        onToggle={() => setAiEnabled((prev) => !prev)}
-                    />
-
-                    {/* Only meaningful while briefings are on, so the row is
-                        disabled and dimmed when they are off. */}
-                    <SettingRow
-                        title="Open automatically"
-                        description="Opens the Auto-mate briefing expanded instead of waiting for a click.
-                            Applies to your account only."
-                        accent={aiAccentColor}
-                        checked={aiAutoOpen}
-                        disabled={!aiEnabled}
-                        onToggle={() => setAiAutoOpen((prev) => !prev)}
-                    />
                 </Stack>
             </Box>
         ),

@@ -172,6 +172,7 @@ describe('RouterConfig', () => {
                 'taskDashboard',
                 'driverManagement',
                 'courierMap',
+                'settings',
                 'notFound',
                 'error',
                 'forbidden',
@@ -203,11 +204,12 @@ describe('RouterConfig', () => {
         });
 
         it('should register exactly the expected number of states', () => {
-            // 17 states total (excluding commented megaMap). `nwV2` is the
+            // 18 states total (excluding commented megaMap). `nwV2` is the
             // parallel React rebuild of Nationwide, opt-in via a beta toggle.
             // `dispatchV2` and `jobSearchV2` are thin redirects kept only so
-            // old bookmarks to those now-renamed URLs still resolve.
-            expect(registeredStates.size).toBe(17);
+            // old bookmarks to those now-renamed URLs still resolve. `settings`
+            // is the global Settings page reached from the sidebar.
+            expect(registeredStates.size).toBe(18);
         });
     });
 

@@ -36,6 +36,7 @@ type EntryPointName =
     | 'nationwide'
     | 'taskDashboardReact'
     | 'driverManagementReact'
+    | 'settingsReact'
     | 'composeEmailDialogReact'
     | 'courierMapReact'
     | 'dateRangeDialogReact'
@@ -88,6 +89,7 @@ const entryPoints: EntryPoints = {
     nationwide: path.join(rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
     driverManagementReact: path.join(rootDir, "wwwroot/app/react/pages/driver-management/driver-management-react.module.tsx"),
+    settingsReact: path.join(rootDir, "wwwroot/app/react/pages/settings/settings-react.module.tsx"),
     composeEmailDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/compose-email-dialog/compose-email-dialog-react.module.tsx"),
     courierMapReact: path.join(rootDir, "wwwroot/app/react/pages/courier-map/courier-map-react.module.tsx"),
     dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),

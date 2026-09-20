@@ -5,7 +5,7 @@
  */
 
 import React, {useMemo, useCallback} from 'react';
-import {Avatar, Badge, Box, Drawer, em, Group, NavLink, ScrollArea, Stack, Text, useMantineTheme} from '@mantine/core';
+import {Avatar, Badge, Box, Divider, Drawer, em, Group, NavLink, ScrollArea, Stack, Text, useMantineTheme} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
 import {
     CalendarDays,
@@ -16,6 +16,7 @@ import {
     Search,
     Clock,
     UserCog,
+    Settings as SettingsIcon,
     Heart,
 } from 'lucide-react';
 import {IconTruck, IconMap} from '@tabler/icons-react';
@@ -170,6 +171,35 @@ export const SideNav: React.FC<SideNavProps> = ({
         onClose();
     }, [onNavigate, onClose]);
 
+    const settingsNavItem: NavItem = useMemo(() => ({
+        id: 'settings',
+        label: 'Settings',
+        icon: <Icon lucide={SettingsIcon} size={NAV_ICON_SIZE} />,
+        state: 'settings',
+    }), []);
+
+    const renderNavItem = useCallback((item: NavItem) => {
+        const isActive =
+            currentState === item.state ||
+            (item.matchStates?.includes(currentState) ?? false);
+        return (
+            <NavLink
+                key={item.id}
+                component="button"
+                className={classes.navLink}
+                classNames={{section: classes.section}}
+                active={isActive}
+                aria-current={isActive ? 'page' : undefined}
+                color="brand"
+                variant="subtle"
+                label={item.label}
+                leftSection={item.icon}
+                onClick={() => handleNavClick(item.state)}
+                styles={navItemStyles}
+            />
+        );
+    }, [currentState, handleNavClick, navItemStyles]);
+
     const initials = getInitials(userName);
 
     /**
@@ -285,27 +315,13 @@ export const SideNav: React.FC<SideNavProps> = ({
                         >
                             Menu
                         </Text>
-                        {filteredNavItems.map((item) => {
-                            const isActive =
-                                currentState === item.state ||
-                                (item.matchStates?.includes(currentState) ?? false);
-                            return (
-                                <NavLink
-                                    key={item.id}
-                                    component="button"
-                                    className={classes.navLink}
-                                    classNames={{section: classes.section}}
-                                    active={isActive}
-                                    aria-current={isActive ? 'page' : undefined}
-                                    color="brand"
-                                    variant="subtle"
-                                    label={item.label}
-                                    leftSection={item.icon}
-                                    onClick={() => handleNavClick(item.state)}
-                                    styles={navItemStyles}
-                                />
-                            );
-                        })}
+                        {filteredNavItems.map((item) => renderNavItem(item))}
+
+                        {/* Settings sits apart from the dashboards above it — a utility
+                            item, not gated by dashboardFeatureKeys — so it gets its own
+                            divider rather than joining the filtered list. */}
+                        <Divider my={8} mx={20}/>
+                        {renderNavItem(settingsNavItem)}
                     </Box>
                 </ScrollArea>
 

@@ -214,7 +214,7 @@ namespace DespatchWeb.EntityClasses
                 new SqlParameter
                 {
                     ParameterName = "CubicList",
-                    Size = 400,
+                    Size = 800,
                     Value = cubicList ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
@@ -1250,7 +1250,7 @@ namespace DespatchWeb.EntityClasses
                 new SqlParameter
                 {
                     ParameterName = "CubicList",
-                    Size = 400,
+                    Size = 800,
                     Value = cubicList ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },

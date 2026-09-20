@@ -47,6 +47,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[CourierSettlementBatch]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[DespatchViewZoneGroup]",
          "ObjectType": 0
       },
@@ -120,6 +124,10 @@
       },
       {
          "Name": "[dbo].[StaffDispatchLayout]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[StaffPreference]",
          "ObjectType": 0
       },
       {

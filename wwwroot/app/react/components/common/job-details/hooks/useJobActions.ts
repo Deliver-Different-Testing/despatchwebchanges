@@ -1015,16 +1015,25 @@ export function useJobActions({
             onRequestPartnerChange('PartnerAgreedRate', newRate.trim(), true);
             return;
         }
-        // A split parent gets the per-leg grid instead of the flat dialog, unless it was split
-        // before this feature shipped (no PricingBreakdownAllocation rows exist yet) — that
-        // falls through to the flat dialog below exactly as it always has (docs/pricing/
-        // job-splitting-price-breakdown.md §5, "existing split jobs are out of scope").
-        if (j.jobRelationshipTypeId === JobRelationshipType.SplitParent) {
-            const splitBreakdown = await getSplitPricingBreakdown(j.id);
+        // Every split job — parent or child — shares one price breakdown view: the per-leg grid,
+        // fetched from the parent. A split child's pricing is derived from the parent (docs/pricing/
+        // job-splitting-price-breakdown.md §6), so it opens the same grid read-only with its own
+        // leg highlighted rather than a separate flat dialog.
+        const isSplitParent = j.jobRelationshipTypeId === JobRelationshipType.SplitParent;
+        const isSplitChild = j.jobRelationshipTypeId === JobRelationshipType.SplitChild;
+        if (isSplitParent || isSplitChild) {
+            const parentJob = isSplitChild && j.rootParentId != null
+                ? relatedJobs.find(rj => rj.id === j.rootParentId)
+                : undefined;
+            const splitParentId = isSplitChild ? parentJob?.id : j.id;
+            const splitBreakdown = splitParentId != null ? await getSplitPricingBreakdown(splitParentId) : undefined;
             if (splitBreakdown) {
                 await ensureSplitPricingBreakdownDialog();
                 window.ReactSplitPricingBreakdownDialog?.setToastService({showToast});
-                await window.ReactSplitPricingBreakdownDialog?.open(splitBreakdown);
+                await window.ReactSplitPricingBreakdownDialog?.open(splitBreakdown, {
+                    readOnly: isSplitChild,
+                    highlightLegId: isSplitChild ? j.id : undefined,
+                });
                 await refreshAndNotify();
                 return;
             }
@@ -1045,9 +1054,8 @@ export function useJobActions({
                 readOnly: !!j.locked,
             });
         } else {
-            // A split child's pricing is derived from the parent (docs/pricing/job-splitting-price-breakdown.md
-            // §6) — force read-only regardless of lock state, and point back at the parent.
-            const isSplitChild = j.jobRelationshipTypeId === JobRelationshipType.SplitChild;
+            // Reached only when the split-breakdown lookup above found nothing to show (e.g. no
+            // pricing items or no live legs at all) — an unusual fallback, not the normal split path.
             const parentJob = isSplitChild && j.rootParentId != null
                 ? relatedJobs.find(rj => rj.id === j.rootParentId)
                 : undefined;

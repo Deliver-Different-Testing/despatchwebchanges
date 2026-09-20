@@ -16,7 +16,6 @@ import {
     User,
     UserX,
 } from 'lucide-react';
-import type {Dayjs} from 'dayjs';
 import {Icon} from '../icon/Icon';
 import {NoData} from '../no-data/NoData';
 import {HeaderSlotPortal} from '../header-slot/HeaderSlotPortal';
@@ -39,13 +38,8 @@ import {
     useTasks,
     useActiveStaff,
     useEventTypes,
-    useMarkTaskAsClosed,
-    useUpdateTaskDate,
-    useUpdateTaskTime,
-    useReassignTask,
-    useUnassignTask,
+    useTaskComponentServices,
 } from '../../../hooks/useTasksApi';
-import {tasksApi} from '../../../services/tasksApi';
 
 export interface TasksBoxProps {
     /** The selected job whose tasks to show. Tasks only load when a job is selected. */
@@ -125,34 +119,7 @@ export const TasksBox: React.FC<TasksBoxProps> = ({jobId, appPage, showToast, re
 
     const {data: tasks = [], isLoading, refetch} = useTasks(filterRequest, {enabled: tasksEnabled, refetchInterval: refetchIntervalMs});
 
-    const markTaskAsClosedMutation = useMarkTaskAsClosed();
-    const updateTaskDateMutation = useUpdateTaskDate();
-    const updateTaskTimeMutation = useUpdateTaskTime();
-    const reassignTaskMutation = useReassignTask();
-    const unassignTaskMutation = useUnassignTask();
-
-    const tasksServiceForComponents = useMemo(() => ({
-        markTaskAsClosed: async (eventId: number, closed: boolean) => {
-            await markTaskAsClosedMutation.mutateAsync({eventId, closed});
-        },
-        updateTaskDate: async (eventId: number, date: Dayjs, timezone?: string) => {
-            await updateTaskDateMutation.mutateAsync({eventId, date, timezone});
-        },
-        updateTaskTime: async (eventId: number, time: Dayjs, timezone?: string) => {
-            await updateTaskTimeMutation.mutateAsync({eventId, time, timezone});
-        },
-        reassignTaskToStaff: async (eventId: number, staffId: number) => {
-            await reassignTaskMutation.mutateAsync({eventId, staffId});
-        },
-        unassignTask: async (eventId: number) => {
-            await unassignTaskMutation.mutateAsync({eventId});
-        },
-    }), [markTaskAsClosedMutation, updateTaskDateMutation, updateTaskTimeMutation, reassignTaskMutation, unassignTaskMutation]);
-
-    const dispatchServiceForComponents = useMemo(() => ({
-        getActiveStaff: () => tasksApi.getActiveStaff(),
-        getDeliveryJourney: (id: number) => tasksApi.getDeliveryJourney(id),
-    }), []);
+    const {tasksService: tasksServiceForComponents, dispatchService: dispatchServiceForComponents} = useTaskComponentServices();
 
     const showSuccessToast = (msg: string) => showToast(msg, 'success');
     const showErrorToast = (msg: string) => showToast(msg, 'error');

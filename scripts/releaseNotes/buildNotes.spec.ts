@@ -9,10 +9,10 @@ const mr = (overrides: Partial<ReleaseMergeRequest> = {}): ReleaseMergeRequest =
     sourceBranch: 'feat/pod-report-2.0.49',
     labels: [],
     description: [
-        '## What changed',
+        '## New features',
         'The POD report now lists items and weight. It also shows job history.',
         '',
-        '## How to test',
+        '## What to test',
         'Export a POD for a completed job.',
     ].join('\n'),
     ...overrides,
@@ -46,7 +46,7 @@ describe('headlineFor', () => {
 });
 
 describe('buildReleaseNotes', () => {
-    it('classifies each merge request and pulls out its headline and sections', () => {
+    it('classifies each merge request from its filled-in section and pulls out its headline and sections', () => {
         const notes = buildReleaseNotes({ mergeRequests: [mr()], directCommits: [] });
 
         expect(notes.changes).toHaveLength(1);
@@ -60,9 +60,19 @@ describe('buildReleaseNotes', () => {
         expect(notes.missingTestSteps).toBe(0);
     });
 
+    it('falls back to the branch prefix for a merge request with none of the structured headings', () => {
+        const notes = buildReleaseNotes({
+            mergeRequests: [mr({ sourceBranch: 'fix/pod-report-2.0.49', description: '## What changed\nSomething.' })],
+            directCommits: [],
+        });
+
+        expect(notes.changes[0].type).toBe('fixed');
+        expect(notes.changes[0].what).toBe('Something.');
+    });
+
     it('keeps a change with no description or test steps, and counts it as unsignable', () => {
         const notes = buildReleaseNotes({
-            mergeRequests: [mr({ iid: 1, description: '' }), mr({ iid: 2, description: '## What changed\nSomething.' })],
+            mergeRequests: [mr({ iid: 1, description: '' }), mr({ iid: 2, description: '## New features\nSomething.' })],
             directCommits: [],
         });
 
@@ -91,18 +101,41 @@ describe('buildReleaseNotes', () => {
         expect(notes.changes[0].risk).toBe('Check the exports.');
     });
 
-    it('tallies the changes by type', () => {
+    it('lets Bug Fixes content win the type and headline when a merge request filled in more than one section', () => {
         const notes = buildReleaseNotes({
             mergeRequests: [
-                mr({ iid: 1, sourceBranch: 'feat/a' }),
-                mr({ iid: 2, sourceBranch: 'feat/b' }),
-                mr({ iid: 3, sourceBranch: 'fix/c' }),
-                mr({ iid: 4, sourceBranch: 'chore/d' }),
-                mr({ iid: 5, sourceBranch: 'WhateverThisIs' }),
+                mr({
+                    description: [
+                        '## Bug Fixes',
+                        'POD images now appear on exports for scheduled jobs.',
+                        '',
+                        '## New features',
+                        'DF Admin can now archive a dashboard.',
+                    ].join('\n'),
+                }),
             ],
             directCommits: [],
         });
 
-        expect(countByType(notes)).toEqual({ new: 2, improved: 0, fixed: 1, internal: 1, other: 1 });
+        expect(notes.changes[0].type).toBe('fixed');
+        expect(notes.changes[0].headline).toBe('POD images now appear on exports for scheduled jobs.');
+        expect(notes.changes[0].what).toBe(
+            'POD images now appear on exports for scheduled jobs.\n\nDF Admin can now archive a dashboard.',
+        );
+    });
+
+    it('tallies the changes by type', () => {
+        const notes = buildReleaseNotes({
+            mergeRequests: [
+                mr({ iid: 1, sourceBranch: 'feat/a', description: '' }),
+                mr({ iid: 2, sourceBranch: 'feat/b', description: '' }),
+                mr({ iid: 3, sourceBranch: 'fix/c', description: '' }),
+                mr({ iid: 4, sourceBranch: 'chore/d', description: '' }),
+                mr({ iid: 5, sourceBranch: 'WhateverThisIs', description: '' }),
+            ],
+            directCommits: [],
+        });
+
+        expect(countByType(notes)).toEqual({ new: 2, fixed: 1, maintenance: 2 });
     });
 });

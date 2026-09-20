@@ -195,6 +195,36 @@ describe('SideNav', () => {
         });
     });
 
+    describe('Settings item', () => {
+        it('renders Settings separated from the primary nav by a divider', () => {
+            renderWithMantine(<SideNav {...defaultProps} />);
+
+            expect(screen.getByRole('button', {name: 'Settings'})).toBeInTheDocument();
+            expect(screen.getByRole('separator')).toBeInTheDocument();
+        });
+
+        it('is not affected by dashboard feature-visibility gating', () => {
+            window.VisibleFeatures = ['dw-dispatch'];
+
+            renderWithMantine(<SideNav {...defaultProps} />);
+
+            expect(screen.getByRole('button', {name: 'Settings'})).toBeInTheDocument();
+
+            delete window.VisibleFeatures;
+        });
+
+        it('navigates to the settings state and closes on click', () => {
+            const onNavigate = jest.fn();
+            const onClose = jest.fn();
+            renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} onClose={onClose} />);
+
+            fireEvent.click(screen.getByRole('button', {name: 'Settings'}));
+
+            expect(onNavigate).toHaveBeenCalledWith('settings');
+            expect(onClose).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe('Dashboard visibility', () => {
         // The Razor global is written once at page load, before React mounts, so
         // setting it before render matches production ordering.

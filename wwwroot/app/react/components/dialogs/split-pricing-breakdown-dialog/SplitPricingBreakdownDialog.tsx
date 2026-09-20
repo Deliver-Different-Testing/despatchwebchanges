@@ -64,6 +64,10 @@ export interface EditModeProps {
     onAddItem: (name: string, revenue: number) => Promise<SplitPriceBreakdown>;
     onDeleteItem: (pricingBreakdownId: number) => Promise<SplitPriceBreakdown>;
     showToast?: ShowToastFn;
+    /** True when opened from a split child — shows the parent's breakdown, view only. */
+    readOnly?: boolean;
+    /** The viewing split child's own leg, highlighted among the legs shown. */
+    highlightLegId?: number;
 }
 
 export interface SplitModeProps {
@@ -219,6 +223,9 @@ const DEFAULT_LEG_HUE = 'var(--mantine-color-gray-6)';
 export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogProps> = (props) => {
     const {open, showToast} = props;
     const isEdit = props.mode === 'edit';
+    const readOnly = props.mode === 'edit' && !!props.readOnly;
+    const canEdit = isEdit && !readOnly;
+    const highlightLegId = props.mode === 'edit' ? props.highlightLegId : undefined;
 
     const initialBreakdown = useMemo(
         () => (props.mode === 'edit'
@@ -265,12 +272,14 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
         const shares = legKeys.map((legKey) =>
             itemShareOverride?.[legKey] ?? legShareEdits[legKey] ?? allocationByLeg.get(legKey)?.sharePercent ?? 0);
         const previewRevenues = distributeAmount(revenue, shares, isEdit ? 'largest' : 'last');
+        const totalDerivedCost = item.allocations.reduce((sum, a) => sum + (a.derivedCost ?? 0), 0);
+        const previewCosts = distributeAmount(totalDerivedCost, shares, isEdit ? 'largest' : 'last');
 
         const cells = legKeys.map((legKey, index) => {
             const allocation = allocationByLeg.get(legKey);
             const pendingOverride = costOverrideEdits[item.pricingBreakdownId]?.[legKey];
             const effectiveOverride = pendingOverride !== undefined ? pendingOverride : (allocation?.costOverride ?? null);
-            const derivedCost = allocation?.derivedCost ?? 0;
+            const derivedCost = previewCosts[index] ?? 0;
             const cost = effectiveOverride ?? derivedCost;
             return {
                 legKey,
@@ -508,7 +517,9 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                 icon={<Icon lucide={isEdit ? ReceiptText : Split}/>}
                 title={isEdit ? 'Price Breakdown' : 'Confirm Split Pricing'}
                 subtitle={isEdit
-                    ? `The parent’s original items, split across ${legKeys.length} legs — each leg’s cost is derived and editable below`
+                    ? (readOnly
+                        ? `The parent’s original items, split across ${legKeys.length} legs — view only`
+                        : `The parent’s original items, split across ${legKeys.length} legs — each leg’s cost is derived and editable below`)
                     : `${(props as SplitModeProps).jobNo} · ${formatCurrency(totals.totalRevenue)} to divide`}
                 onClose={handleCancel}
             />
@@ -533,6 +544,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                         Pricing for every leg is managed here, on the parent job. The child jobs
                         show these figures read-only, so the parent and its legs can&apos;t drift
                         out of sync.
+                        {readOnly && ' You are viewing this job’s leg below, highlighted.'}
                     </Alert>
                 )}
             </Box>
@@ -550,19 +562,27 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                     {legSummaries.map(({leg, revenue, cost, margin, shareValue}) => {
                         const hue = LEG_HUES[leg.legLetter] ?? DEFAULT_LEG_HUE;
                         const isUnassigned = leg.subtitleUnassigned;
+                        const isHighlighted = leg.legKey === highlightLegId;
                         return (
                             <Paper
                                 key={leg.legKey}
                                 withBorder
                                 radius="md"
                                 p="sm"
-                                style={{flex: '1 1 200px', borderLeft: `3px solid ${hue}`}}
+                                style={{
+                                    flex: '1 1 200px',
+                                    borderLeft: `3px solid ${hue}`,
+                                    ...(isHighlighted
+                                        ? {outline: `2px solid ${hue}`, outlineOffset: -1, backgroundColor: 'var(--mantine-color-gray-0)'}
+                                        : {}),
+                                }}
                             >
                                 <Group gap={6} wrap="nowrap" mb={2}>
                                     <Badge size="sm" radius="sm" style={{backgroundColor: hue, color: 'white'}}>
                                         Leg {leg.legLetter}
                                     </Badge>
                                     <Text fw={700} size="sm">{leg.jobOrDistanceText}</Text>
+                                    {isHighlighted && <Badge size="xs" variant="filled" color="gray">This job</Badge>}
                                 </Group>
                                 {leg.subtitle && (
                                     <Text
@@ -603,7 +623,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                         min={0}
                                         max={100}
                                         step={1}
-                                        disabled={shareLocked}
+                                        disabled={shareLocked || readOnly}
                                         size="xs"
                                         w={70}
                                     />
@@ -626,7 +646,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
 
                 <Group justify="space-between" mb="md" wrap="nowrap">
                     <Text fw={600} fz="lg">Price Items</Text>
-                    {isEdit && (
+                    {canEdit && (
                         <Button
                             leftSection={<Icon lucide={Plus}/>}
                             size="sm"
@@ -638,7 +658,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                     )}
                 </Group>
 
-                {isEdit && isAdding && (
+                {canEdit && isAdding && (
                     <Paper withBorder radius="md" p="md" mb="md">
                         <Group gap="md" align="flex-end" wrap="wrap">
                             <TextInput
@@ -699,7 +719,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                 <Table.Th c="dimmed" ta="right">Total Cost</Table.Th>
                                 <Table.Th c="dimmed" ta="right">Profit</Table.Th>
                                 <Table.Th c="dimmed" ta="center">Margin</Table.Th>
-                                {isEdit && <Table.Th c="dimmed" ta="center" w={60}/>}
+                                {canEdit && <Table.Th c="dimmed" ta="center" w={60}/>}
                             </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
@@ -707,7 +727,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                 <React.Fragment key={item.pricingBreakdownId}>
                                     <Table.Tr>
                                         <Table.Td className={classes.itemCell}>
-                                            {isEdit ? (
+                                            {canEdit ? (
                                                 <TextInput
                                                     aria-label={`Name for ${item.name}`}
                                                     value={name}
@@ -730,7 +750,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                 min={0}
                                                 step={0.01}
                                                 decimalScale={2}
-                                                disabled={revenueLocked}
+                                                disabled={revenueLocked || readOnly}
                                                 hideControls
                                                 size="xs"
                                             />
@@ -743,7 +763,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                 onClick={() => setOpenShareItemId(
                                                     openShareItemId === item.pricingBreakdownId ? null : item.pricingBreakdownId,
                                                 )}
-                                                disabled={shareLocked}
+                                                disabled={shareLocked || readOnly}
                                             >
                                                 {cells.map((c) => Math.round(c.sharePercent)).join(' / ')}
                                             </Button>
@@ -761,7 +781,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                         min={0}
                                                         step={0.01}
                                                         decimalScale={2}
-                                                        disabled={breakdownState.legs.find((l) => l.legKey === cell.legKey)?.costLocked}
+                                                        disabled={readOnly || breakdownState.legs.find((l) => l.legKey === cell.legKey)?.costLocked}
                                                         hideControls
                                                         size="xs"
                                                     />
@@ -771,13 +791,15 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                             <Text size="xs" c="orange">
                                                                 was {formatCurrency(cell.derivedCost)}
                                                             </Text>
-                                                            <Button
-                                                                variant="subtle"
-                                                                size="compact-xs"
-                                                                onClick={() => handleResetCost(item.pricingBreakdownId, cell.legKey)}
-                                                            >
-                                                                Reset
-                                                            </Button>
+                                                            {canEdit && (
+                                                                <Button
+                                                                    variant="subtle"
+                                                                    size="compact-xs"
+                                                                    onClick={() => handleResetCost(item.pricingBreakdownId, cell.legKey)}
+                                                                >
+                                                                    Reset
+                                                                </Button>
+                                                            )}
                                                         </Group>
                                                     )}
                                                 </Stack>
@@ -798,7 +820,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                 </Badge>
                                             )}
                                         </Table.Td>
-                                        {isEdit && (
+                                        {canEdit && (
                                             <Table.Td ta="center">
                                                 <ActionIcon
                                                     variant="light"
@@ -814,7 +836,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                     </Table.Tr>
                                     {openShareItemId === item.pricingBreakdownId && (
                                         <Table.Tr>
-                                            <Table.Td colSpan={cells.length + (isEdit ? 7 : 6)}>
+                                            <Table.Td colSpan={cells.length + (canEdit ? 7 : 6)}>
                                                 <Group gap="lg" wrap="wrap" p="sm" align="flex-end">
                                                     <Text size="xs" fw={600} c="dimmed">Share of &quot;{name}&quot; per leg</Text>
                                                     {cells.map((cell) => (
@@ -829,13 +851,13 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                             min={0}
                                                             max={100}
                                                             step={1}
-                                                            disabled={shareLocked}
+                                                            disabled={shareLocked || readOnly}
                                                             size="xs"
                                                             w={110}
                                                             rightSection={<Text size="xs" c="dimmed">%</Text>}
                                                         />
                                                     ))}
-                                                    {hasItemShareOverride && (
+                                                    {canEdit && hasItemShareOverride && (
                                                         <Button
                                                             variant="subtle"
                                                             size="compact-xs"
@@ -856,7 +878,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                 </Paper>
             </Box>
 
-            {isEdit && (
+            {canEdit && (
                 <DialogShell
                     opened={confirmDeleteItemId !== null}
                     onClose={() => (!isDeleting ? setConfirmDeleteItemId(null) : undefined)}
@@ -911,18 +933,26 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                     {legsReconcile ? '✓' : '✕'}
                 </Text>
                 <Group gap="sm" wrap="nowrap">
-                    <Button variant="default" onClick={handleCancel} miw={100}>
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={isEdit ? handleSaveEdit : handleConfirmSplit}
-                        leftSection={<Icon lucide={isEdit ? CircleCheck : Split}/>}
-                        loading={isSaving}
-                        disabled={isEdit && !hasPendingEdits}
-                        miw={140}
-                    >
-                        {isEdit ? 'Save & Close' : 'Confirm & Split'}
-                    </Button>
+                    {readOnly ? (
+                        <Button onClick={handleCancel} miw={100}>
+                            Close
+                        </Button>
+                    ) : (
+                        <>
+                            <Button variant="default" onClick={handleCancel} miw={100}>
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={isEdit ? handleSaveEdit : handleConfirmSplit}
+                                leftSection={<Icon lucide={isEdit ? CircleCheck : Split}/>}
+                                loading={isSaving}
+                                disabled={isEdit && !hasPendingEdits}
+                                miw={140}
+                            >
+                                {isEdit ? 'Save & Close' : 'Confirm & Split'}
+                            </Button>
+                        </>
+                    )}
                 </Group>
             </Group>
         </DialogShell>
