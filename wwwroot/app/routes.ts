@@ -40,7 +40,6 @@ import type {DfrntPageViewModel} from './interfaces/dfrnt-page-view-model.interf
 import type IDateFilterData from './interfaces/date-filter-data.interface';
 import type {IBox, ILayout} from './interfaces/layout.interfaces';
 import {AppPage} from './enums/app-pages.enum';
-import {isAiEnabled, setAiEnabled} from './functions/aiSettings';
 import isDefaultLayout from './functions/isDefaultLayout';
 
 class RouterConfig {
@@ -73,6 +72,7 @@ class RouterConfig {
             .configureTaskDashboardState()
             .configureDriverManagementState()
             .configureCourierMapState()
+            .configureSettingsState()
             .configureErrorStates();
     }
 
@@ -308,14 +308,11 @@ class RouterConfig {
                                             showRefreshInterval?: boolean;
                                             showDriverLocationRefresh?: boolean;
                                             showTaskRefresh?: boolean;
-                                            showAiToggle?: boolean;
                                         },
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
-                                        aiEnabled?: boolean,
                                     ) => Promise<{
-                                        aiEnabled?: boolean;
                                         selectedRefreshInterval?: {id: number; text: string};
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string};
                                         selectedTaskRefreshInterval?: {id: number; text: string};
@@ -344,18 +341,12 @@ class RouterConfig {
                                         showRefreshInterval: true,
                                         showDriverLocationRefresh: true,
                                         showTaskRefresh: true,
-                                        showAiToggle: true,
                                     },
                                     {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
                                     {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
                                     {id: taskSeedSeconds, text: ''},
-                                    isAiEnabled(),
                                 );
                                 if (!result) return;
-
-                                if (result.aiEnabled !== undefined) {
-                                    setAiEnabled(result.aiEnabled);
-                                }
 
                                 // Persist + apply auto-refresh intervals (seconds in
                                 // storage; React Query uses ms, 0 = off).
@@ -722,7 +713,6 @@ class RouterConfig {
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
-                                        aiEnabled?: boolean,
                                         nationwideBetaEnabled?: boolean,
                                     ) => Promise<{
                                         selectedRefreshInterval?: {id: number; text: string};
@@ -749,7 +739,6 @@ class RouterConfig {
                                         showNationwideBetaToggle: true,
                                     },
                                     currentInterval ?? {id: 0, text: ''},
-                                    undefined,
                                     undefined,
                                     undefined,
                                     getNationwideBetaEnabled(),
@@ -844,7 +833,6 @@ class RouterConfig {
                             on-delete-layout="ctrl.deleteLayout(index)"
                             on-rename-layout="ctrl.renameLayout(index)"
                             on-import-layouts="ctrl.importLayouts()"
-                            on-settings-click="ctrl.openSettingsDialog($event)"
                             on-customize-panels="ctrl.openCustomizePanelsDialog()"
                             on-reset-layout="ctrl.resetLayout()"
                             column-edit-mode="ctrl.columnEditMode"
@@ -975,51 +963,6 @@ class RouterConfig {
                                 );
                             } else {
                                 toastrService.showErrorToast('Messaging dialog is not loaded.');
-                            }
-                        },
-
-                        openSettingsDialog: async ($event: MouseEvent) => {
-                            void $event;
-                            const w = window as unknown as {
-                                ReactDashboardSettingsDialog?: {
-                                    open: (
-                                        config: {
-                                            title: string;
-                                            showRefreshInterval?: boolean;
-                                            showDriverLocationRefresh?: boolean;
-                                            showAiToggle?: boolean;
-                                        },
-                                        selectedRefreshInterval?: {id: number; text: string},
-                                        selectedDriverLocationRefreshInterval?: {id: number; text: string},
-                                        selectedTaskRefreshInterval?: {id: number; text: string},
-                                        aiEnabled?: boolean,
-                                    ) => Promise<{
-                                        aiEnabled?: boolean;
-                                    } | null>;
-                                };
-                            };
-                            if (!w.ReactDashboardSettingsDialog) {
-                                toastrService.showErrorToast('Settings dialog is not loaded.');
-                                return;
-                            }
-                            try {
-                                const result = await w.ReactDashboardSettingsDialog.open(
-                                    {
-                                        title: 'Job Search Dashboard Settings',
-                                        showAiToggle: true,
-                                    },
-                                    undefined,
-                                    undefined,
-                                    undefined, // selectedTaskRefreshInterval — not used on Job Search
-                                    isAiEnabled(),
-                                );
-                                if (!result) return;
-
-                                if (result.aiEnabled !== undefined) {
-                                    setAiEnabled(result.aiEnabled);
-                                }
-                            } catch (err) {
-                                console.error('[jobSearch] settings dialog error', err);
                             }
                         },
 
@@ -1534,6 +1477,46 @@ class RouterConfig {
                     });
                 }
             ],
+        });
+        return this;
+    }
+
+    private configureSettingsState(): this {
+        this.$stateProvider.state("settings", {
+            url: "/settings",
+            template: `
+                <react-app-shell section="Account" title="Settings"></react-app-shell>
+                <div id="react-settings" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
+            `,
+            resolve: {
+                manifest: ['$http', async ($http: angular.IHttpService) => {
+                    try {
+                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
+                        return response.data;
+                    } catch {
+                        console.warn('[ROUTES] Failed to load manifest for settings state, using fallback names');
+                        return {
+                            'vendor-react.js': 'vendor-react.js',
+                            'settingsReact.js': 'settingsReact.js'
+                        };
+                    }
+                }],
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+                    await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    const files = [getAssetPath('settingsReact.js')];
+                    const cssFile = manifest['settingsReact.css'];
+                    if (cssFile) files.push(`dist/${cssFile}`);
+                    return $ocLazyLoad.load(files);
+                }]
+            },
+            controller: ['$scope', function ($scope: angular.IScope) {
+                window.ReactSettings!.mount('react-settings', {});
+
+                $scope.$on('$destroy', () => {
+                    window.ReactSettings!.unmount();
+                });
+            }],
         });
         return this;
     }

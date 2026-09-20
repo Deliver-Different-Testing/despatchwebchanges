@@ -19,6 +19,13 @@ import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model
 import type {ImportLayoutsResult} from '../../components/common/box-shell/layoutPersistence';
 import {NationwidePage} from './NationwidePage';
 import type {NationwideLayoutBridge, NationwidePageProps} from './NationwidePageProps';
+import {
+    promptDeleteLayout as promptDeleteLayoutOnBridge,
+    promptRenameLayout as promptRenameLayoutOnBridge,
+    promptSaveLayout as promptSaveLayoutOnBridge,
+    reloadLayoutsFromStorage as reloadLayoutsFromStorageOnBridge,
+    setCurrentLayoutName as setCurrentLayoutNameOnBridge,
+} from "../../utils/layoutUtils";
 
 export interface MountNationwidePageConfig extends NationwidePageProps {}
 
@@ -75,26 +82,6 @@ export function unmountNationwidePage(): void {
 // Each call is a no-op until the page has mounted and registered its bridge,
 // so a toolbar click during load cannot throw.
 
-export function setCurrentLayoutName(name: string): void {
-    layoutBridge?.setCurrentLayoutName(name);
-}
-
-export function reloadLayoutsFromStorage(): void {
-    layoutBridge?.reloadFromStorage();
-}
-
-export function promptSaveLayout(): Promise<string | null> {
-    return layoutBridge?.promptSaveLayout() ?? Promise.resolve(null);
-}
-
-export function promptDeleteLayout(layoutName: string): Promise<boolean> {
-    return layoutBridge?.promptDeleteLayout(layoutName) ?? Promise.resolve(false);
-}
-
-export function promptRenameLayout(layoutName: string): Promise<string | null> {
-    return layoutBridge?.promptRenameLayout(layoutName) ?? Promise.resolve(null);
-}
-
 export function importLegacyLayouts(): ImportLayoutsResult {
     return layoutBridge?.importLegacyLayouts() ?? {imported: [], skipped: []};
 }
@@ -127,6 +114,26 @@ export function setViewSelection(viewIds: number[]): void {
 
 export function updateRefreshIntervalMs(ms: number | false): void {
     layoutBridge?.updateRefreshIntervalMs(ms);
+}
+
+export function setCurrentLayoutName(name: string): void {
+    setCurrentLayoutNameOnBridge(layoutBridge, name);
+}
+
+export function reloadLayoutsFromStorage(): void {
+    reloadLayoutsFromStorageOnBridge(layoutBridge);
+}
+
+export function promptSaveLayout(): Promise<string | null> {
+    return promptSaveLayoutOnBridge(layoutBridge);
+}
+
+export function promptDeleteLayout(layoutName: string): Promise<boolean> {
+    return promptDeleteLayoutOnBridge(layoutBridge, layoutName);
+}
+
+export function promptRenameLayout(layoutName: string): Promise<string | null> {
+    return promptRenameLayoutOnBridge(layoutBridge, layoutName);
 }
 
 declare global {

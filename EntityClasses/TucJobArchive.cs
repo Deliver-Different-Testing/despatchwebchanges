@@ -545,6 +545,8 @@ public partial class TucJobArchive
 
     public virtual TucAgent Agent { get; set; }
 
+    public virtual CourierSettlementBatch CourierSettlementBatch { get; set; }
+
     public virtual TimeZone DeliverByTimeZone { get; set; }
 
     public virtual TblAirport FromAirport { get; set; }

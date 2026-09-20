@@ -4,7 +4,6 @@ import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
-import {isAiEnabled} from "../../../functions/aiSettings";
 import {getNationwideBetaEnabled} from "../../../react/pages/nationwide/lib/betaPreference";
 import angular from 'angular';
 
@@ -93,7 +92,6 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             title,
             showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
             showDriverLocationRefresh: appPage === AppPage.Dispatch,
-            showAiToggle: true,
             showNationwideBetaToggle: appPage === AppPage.Domestic,
         };
 
@@ -119,7 +117,6 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 selectedRefreshInterval,
                 selectedDriverLocationRefreshInterval,
                 undefined, // selectedTaskRefreshInterval — V1 dispatch has no separate Tasks cadence
-                isAiEnabled(),
                 appPage === AppPage.Domestic ? getNationwideBetaEnabled() : undefined,
             );
 

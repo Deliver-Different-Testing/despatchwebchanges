@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿#nullable enable
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
@@ -38,7 +39,7 @@ public partial class HomeController(
             {
                 var hubUrl = Environment.GetEnvironmentVariable("HubUrl");
 
-                Log.Error("Connection string or tenant ID is missing.");
+                Log.Error("Connection string or tenant ID is missing");
                 return Redirect(hubUrl ?? "https://deliverdifferent.com/");
             }
 

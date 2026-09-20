@@ -3,7 +3,6 @@
 interface ISettingsDialogResult {
     selectedRefreshInterval?: ISuggestion;
     selectedDriverLocationRefreshInterval?: ISuggestion;
-    aiEnabled?: boolean;
     nationwideBetaEnabled?: boolean;
 }
 

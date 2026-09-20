@@ -2,12 +2,16 @@
  * What kind of change a merge request is, so the note can lead with what shipped
  * rather than a flat list ordered by merge request number.
  *
- * The signal is the source branch prefix, which is already near-universal here —
- * over the last 80 merges, 42 `feat`, 33 `fix`, 2 `perf`, 1 `hotfix`. A `type::`
- * scoped label wins when someone sets one, so a mis-prefixed branch is fixable
- * after the fact without a rebase.
+ * Groups mirror the mr-release-notes skill's fixed sections (Bug Fixes / New
+ * features / Maintenance): a merge request written with those headings is
+ * classified straight from its content — see mrSections.ts and buildNotes.ts.
+ * The branch-prefix signal below is only a fallback for merge requests without
+ * those headings (over the last 80 merges before this template changed: 42
+ * `feat`, 33 `fix`, 2 `perf`, 1 `hotfix`). A `type::` scoped label wins when
+ * someone sets one, so a mis-prefixed branch is fixable after the fact without
+ * a rebase.
  */
-export type ChangeType = 'new' | 'improved' | 'fixed' | 'internal' | 'other';
+export type ChangeType = 'new' | 'fixed' | 'maintenance';
 
 export interface ChangeGroup {
     type: ChangeType;
@@ -16,12 +20,10 @@ export interface ChangeGroup {
     summary: string;
 }
 
-/** `internal` is deliberately absent: it collapses to a single line, not a group. */
 export const CHANGE_GROUPS: readonly ChangeGroup[] = [
-    { type: 'new', heading: '✨ New', summary: 'new' },
-    { type: 'improved', heading: '⚡ Improved', summary: 'improved' },
-    { type: 'fixed', heading: '🛠 Fixed', summary: 'fixed' },
-    { type: 'other', heading: '📋 Other changes', summary: 'other' },
+    { type: 'fixed', heading: 'Bug Fixes', summary: 'fixed' },
+    { type: 'new', heading: 'New features', summary: 'new' },
+    { type: 'maintenance', heading: 'Maintenance', summary: 'maintenance' },
 ];
 
 const PREFIX_TYPES: Record<string, ChangeType> = {
@@ -31,17 +33,17 @@ const PREFIX_TYPES: Record<string, ChangeType> = {
     bug: 'fixed',
     bugfix: 'fixed',
     hotfix: 'fixed',
-    perf: 'improved',
-    improvement: 'improved',
-    build: 'internal',
-    chore: 'internal',
-    ci: 'internal',
-    deps: 'internal',
-    docs: 'internal',
-    refactor: 'internal',
-    style: 'internal',
-    test: 'internal',
-    tests: 'internal',
+    perf: 'maintenance',
+    improvement: 'maintenance',
+    build: 'maintenance',
+    chore: 'maintenance',
+    ci: 'maintenance',
+    deps: 'maintenance',
+    docs: 'maintenance',
+    refactor: 'maintenance',
+    style: 'maintenance',
+    test: 'maintenance',
+    tests: 'maintenance',
 };
 
 export interface ClassifiableChange {
@@ -62,5 +64,5 @@ export function classifyChange({ sourceBranch, labels }: ClassifiableChange): Ch
         }
     }
 
-    return typeOfPrefix((sourceBranch ?? '').split('/')[0]) ?? 'other';
+    return typeOfPrefix((sourceBranch ?? '').split('/')[0]) ?? 'maintenance';
 }

@@ -1,17 +1,31 @@
 /**
- * The merge request template headings are the parsing contract for release notes.
- * The aliases cover merge requests written against the previous template, so the
- * first releases after this lands still produce usable notes.
+ * The merge request template headings are the parsing contract for release notes,
+ * and mirror the mr-release-notes skill's fixed sections — a merge request that
+ * follows the skill's format when it was written is classified straight from
+ * whichever section it filled in, rather than guessed from the branch name.
  */
 export const SECTION_HEADINGS = {
-    what: { canonical: 'What changed', aliases: ['What I did', 'Highlights'] },
-    test: { canonical: 'How to test', aliases: [] as string[] },
-    risk: { canonical: 'Risk / areas touched', aliases: ['Implications'] },
+    bugFixes: { canonical: 'Bug Fixes', aliases: [] as string[] },
+    newFeatures: { canonical: 'New features', aliases: [] as string[] },
+    maintenance: { canonical: 'Maintenance', aliases: [] as string[] },
+    test: { canonical: 'What to test', aliases: ['How to test'] },
 } as const;
 
+/**
+ * Headings from the template this replaced. Kept only so merge requests opened
+ * before the template changed still produce a headline instead of falling back
+ * to the MR title — not part of the current parsing contract.
+ */
+const LEGACY_WHAT_HEADINGS = ['What changed', 'What I did', 'Highlights'];
+const LEGACY_RISK_HEADINGS = ['Risk / areas touched', 'Implications'];
+
 export interface MrSections {
-    what: string;
+    bugFixes: string;
+    newFeatures: string;
+    maintenance: string;
     test: string;
+    /** Pre-skill "What changed" prose, used only when no structured section is filled in. */
+    legacyWhat: string;
     risk: string;
 }
 
@@ -64,8 +78,17 @@ export function extractSection(description: string | null | undefined, headings:
 
 export function parseMrSections(description: string | null | undefined): MrSections {
     return {
-        what: extractSection(description, [SECTION_HEADINGS.what.canonical, ...SECTION_HEADINGS.what.aliases]),
+        bugFixes: extractSection(description, [SECTION_HEADINGS.bugFixes.canonical, ...SECTION_HEADINGS.bugFixes.aliases]),
+        newFeatures: extractSection(description, [
+            SECTION_HEADINGS.newFeatures.canonical,
+            ...SECTION_HEADINGS.newFeatures.aliases,
+        ]),
+        maintenance: extractSection(description, [
+            SECTION_HEADINGS.maintenance.canonical,
+            ...SECTION_HEADINGS.maintenance.aliases,
+        ]),
         test: extractSection(description, [SECTION_HEADINGS.test.canonical, ...SECTION_HEADINGS.test.aliases]),
-        risk: extractSection(description, [SECTION_HEADINGS.risk.canonical, ...SECTION_HEADINGS.risk.aliases]),
+        legacyWhat: extractSection(description, LEGACY_WHAT_HEADINGS),
+        risk: extractSection(description, LEGACY_RISK_HEADINGS),
     };
 }

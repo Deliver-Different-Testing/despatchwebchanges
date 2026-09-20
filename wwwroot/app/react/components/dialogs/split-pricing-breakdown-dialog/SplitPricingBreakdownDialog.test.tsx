@@ -101,6 +101,24 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByText(/managed here, on the parent job/i)).toBeInTheDocument();
     });
 
+    it('readOnly mode (a split child viewing its parent) hides every edit control and shows Close instead of Save', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({readOnly: true})} />);
+
+        expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /save & close/i})).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/delete base/i)).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('Base')).not.toBeInTheDocument();
+        expect(screen.getByText('Base')).toBeInTheDocument();
+
+        expect(screen.getByRole('button', {name: /^close$/i})).toBeInTheDocument();
+    });
+
+    it('readOnly mode highlights the viewing split child’s own leg', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({readOnly: true, highlightLegId: 202})} />);
+
+        expect(screen.getByText('This job')).toBeInTheDocument();
+    });
+
     it('Save & Close is disabled until something changes', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
         expect(screen.getByRole('button', {name: /save & close/i})).toBeDisabled();
@@ -167,6 +185,39 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(allocations).toContainEqual(
             expect.objectContaining({pricingBreakdownId: 1, legJobId: 202, sharePercent: 40}),
         );
+    });
+
+    it('editing an item\'s own share re-derives that item\'s cost/profit/margin live, not just revenue', async () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        fireEvent.click(screen.getAllByRole('button', {name: '80 / 20'})[0]); // Base row
+        fireEvent.change(screen.getByLabelText('KT4071VA'), {target: {value: '60'}});
+
+        // Base's $32 cost pool (25.60 + 6.40) redistributed 60/40 instead of the stale 80/20 split.
+        expect(screen.getByLabelText('Cost for Base, leg 201')).toHaveValue('19.2');
+        expect(screen.getByLabelText('Cost for Base, leg 202')).toHaveValue('12.8');
+    });
+
+    it('editing the overall leg share re-derives an untouched item\'s cost live', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        fireEvent.change(screen.getByLabelText('Share % for KT4071VA'), {target: {value: '60'}});
+
+        // Congestion's $6 cost pool (4.80 + 1.20) redistributed 60/40 under the new overall split.
+        expect(screen.getByLabelText('Cost for Congestion, leg 201')).toHaveValue('3.6');
+        expect(screen.getByLabelText('Cost for Congestion, leg 202')).toHaveValue('2.4');
+    });
+
+    it('a cost override survives a share change, while its sibling leg and the "was" hint re-derive', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        fireEvent.change(screen.getByLabelText('Cost for Base, leg 201'), {target: {value: '10'}});
+        fireEvent.click(screen.getAllByRole('button', {name: '80 / 20'})[0]); // Base row
+        fireEvent.change(screen.getByLabelText('KT4071VA'), {target: {value: '60'}});
+
+        expect(screen.getByLabelText('Cost for Base, leg 201')).toHaveValue('10'); // override untouched
+        expect(screen.getByLabelText('Cost for Base, leg 202')).toHaveValue('12.8'); // re-derived at 60/40
+        expect(screen.getByText('was $19.20')).toBeInTheDocument(); // derived baseline re-derived too
     });
 
     it('"Reset to overall split" clears a per-item share override', () => {

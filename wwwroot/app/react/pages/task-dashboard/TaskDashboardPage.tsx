@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
 import classes from './TaskDashboardPage.module.css';
-import dayjs, {Dayjs} from 'dayjs';
+import dayjs from 'dayjs';
 import {
     DateFilterData,
     ExtendedTask,
@@ -62,14 +62,9 @@ import {formatDateForApi} from '../../utils/dateUtils';
 import {
     useActiveStaff,
     useEventTypes,
-    useMarkTaskAsClosed,
-    useReassignTask,
-    useUnassignTask,
+    useTaskComponentServices,
     useTasks,
-    useUpdateTaskDate,
-    useUpdateTaskTime,
 } from '../../hooks/useTasksApi';
-import {tasksApi} from '../../services/tasksApi';
 import {getCurrentUserId} from '../../services/tasksService';
 import {
     
@@ -264,12 +259,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     const {data: staffList = []} = useActiveStaff();
     const {data: eventTypesList = []} = useEventTypes();
 
-    // Mutation hooks
-    const markTaskAsClosedMutation = useMarkTaskAsClosed();
-    const updateTaskDateMutation = useUpdateTaskDate();
-    const updateTaskTimeMutation = useUpdateTaskTime();
-    const reassignTaskMutation = useReassignTask();
-    const unassignTaskMutation = useUnassignTask();
+    // Adapters for TaskItem/TaskCalendarView, wired to the shared mutation hooks.
+    const {tasksService: tasksServiceForComponents, dispatchService: dispatchServiceForComponents} = useTaskComponentServices();
 
     // Initialize time strings for tasks
     const tasks = useMemo((): ExtendedTask[] => {
@@ -476,31 +467,6 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     const showSuccessToast = useCallback((msg: string) => showToast(msg, 'success'), [showToast]);
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
     
-    // Create a tasks service interface for child components
-    const tasksServiceForComponents = useMemo(() => ({
-        markTaskAsClosed: async (eventId: number, closed: boolean) => {
-            await markTaskAsClosedMutation.mutateAsync({eventId, closed});
-        },
-        updateTaskDate: async (eventId: number, date: Dayjs, timezone?: string) => {
-            await updateTaskDateMutation.mutateAsync({eventId, date, timezone});
-        },
-        updateTaskTime: async (eventId: number, time: Dayjs, timezone?: string) => {
-            await updateTaskTimeMutation.mutateAsync({eventId, time, timezone});
-        },
-        reassignTaskToStaff: async (eventId: number, staffId: number) => {
-            await reassignTaskMutation.mutateAsync({eventId, staffId});
-        },
-        unassignTask: async (eventId: number) => {
-            await unassignTaskMutation.mutateAsync({eventId});
-        },
-    }), [markTaskAsClosedMutation, updateTaskDateMutation, updateTaskTimeMutation, reassignTaskMutation, unassignTaskMutation]);
-
-    // Create a dispatch service interface for child components
-    const dispatchServiceForComponents = useMemo(() => ({
-        getActiveStaff: () => tasksApi.getActiveStaff(),
-        getDeliveryJourney: (jobId: number) => tasksApi.getDeliveryJourney(jobId),
-    }), []);
-
     // Freshness + sync state for the toolbar. While a fetch is in flight we say
     // so; otherwise we show how stale the last successful load is.
     const freshnessLabel = tasksFetching ? 'Updating…' : formatUpdatedAgo(dataUpdatedAt, nowTick);

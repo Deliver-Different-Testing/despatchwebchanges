@@ -616,5 +616,6 @@
     <TypeScriptCompile Include="wwwroot\app\react\pages\job-search\JobSearchLayoutBridge.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\pages\job-search\JobSearchPageProps.tsx" />
     <TypeScriptCompile Include="wwwroot\app\react\services\requestOptions.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\utils\layoutUtils.ts" />
   </ItemGroup>
 </Project>

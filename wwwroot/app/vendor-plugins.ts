@@ -19,9 +19,6 @@ import "angular-material-data-table";
 // for two class usages on one Razor error page, and its reboot actively fought
 // the Mantine theme. Do not re-add it.
 
-// Local libs
-import "../lib/ModernizerLocalStorage";
-
 import angular from "angular";
 
 // Create the main Angular module

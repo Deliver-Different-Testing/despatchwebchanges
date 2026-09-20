@@ -23,6 +23,8 @@ interface ApiService {
 interface SplitPricingBreakdownPayload {
     breakdown: SplitPriceBreakdown;
     apiService: ApiService;
+    readOnly?: boolean;
+    highlightLegId?: number;
 }
 
 async function refetchOrThrow(jobId: number): Promise<SplitPriceBreakdown> {
@@ -46,6 +48,8 @@ const host = createDialogHost<SplitPricingBreakdownPayload, null>({
             onDeleteItem={(pricingBreakdownId) =>
                 payload.apiService.deleteItem(payload.breakdown.jobId, pricingBreakdownId)}
             showToast={showToast}
+            readOnly={payload.readOnly}
+            highlightLegId={payload.highlightLegId}
         />
     ),
 });
@@ -70,11 +74,14 @@ function createDefaultApiService(): ApiService {
 
 export function openSplitPricingBreakdownDialog(
     breakdown: SplitPriceBreakdown,
+    options?: {readOnly?: boolean; highlightLegId?: number},
     apiService?: ApiService,
 ): Promise<null> {
     return host.open({
         breakdown,
         apiService: apiService ?? createDefaultApiService(),
+        readOnly: options?.readOnly,
+        highlightLegId: options?.highlightLegId,
     });
 }
 

@@ -991,11 +991,42 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
 
 describe('useJobActions — handlePricingClick on a split child', () => {
     afterEach(() => {
+        delete (window as any).ReactSplitPricingBreakdownDialog;
         delete (window as any).ReactPriceBreakdownDialog;
         jest.restoreAllMocks();
     });
 
-    it('forces readOnly and passes managedElsewhere with the parent job number, even when unlocked', async () => {
+    it('opens the same split pricing grid as the parent — fetched via the parent, read-only, with its own leg highlighted', async () => {
+        const {getSplitPricingBreakdown} = jest.requireMock('../../../../services/splitPriceBreakdownApi');
+        const breakdown = {jobId: 500, totalRevenue: 100, items: [], legs: [], locks: {}};
+        (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
+
+        const splitOpenMock = jest.fn().mockResolvedValue(null);
+        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+
+        const parentJob = createMockJob({id: 500, jobNo: 'KT4071V'});
+        const job = createMockJob({
+            id: 501,
+            jobNo: 'KT4071VA',
+            locked: false,
+            isArchived: false,
+            rootParentId: 500,
+            jobRelationshipTypeId: JobRelationshipType.SplitChild,
+        });
+
+        const {result} = renderHook(() =>
+            useJobActions({...jobActionsDefaults(), job, relatedJobs: [parentJob]}),
+        );
+
+        await act(async () => {
+            await result.current.handlePricingClick();
+        });
+
+        expect(getSplitPricingBreakdown).toHaveBeenCalledWith(500);
+        expect(splitOpenMock).toHaveBeenCalledWith(breakdown, {readOnly: true, highlightLegId: 501});
+    });
+
+    it('falls back to the flat dialog, forced read-only, when the parent has no derivable split breakdown', async () => {
         const openMock = jest.fn().mockResolvedValue(null);
         (window as any).ReactPriceBreakdownDialog = {
             open: openMock,
@@ -1037,39 +1068,16 @@ describe('useJobActions — handlePricingClick on a split child', () => {
         managedElsewhere.onNavigateToParent();
         expect(onNavigateToJob).toHaveBeenCalledWith(500);
     });
-
-    it('does not force readOnly for a split parent (still fully editable)', async () => {
-        const openMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactPriceBreakdownDialog = {open: openMock, setToastService: jest.fn()};
-        const {getPriceBreakdowns} = jest.requireMock('../../../../services/pricingBreakdownApi');
-        (getPriceBreakdowns as jest.Mock).mockResolvedValueOnce([{chargeId: 1, name: 'Base', amount: 10}]);
-
-        const job = createMockJob({
-            id: 502,
-            jobNo: 'KT4071V',
-            locked: false,
-            isArchived: false,
-            jobRelationshipTypeId: JobRelationshipType.SplitParent,
-        });
-
-        const {result} = renderHook(() => useJobActions({...jobActionsDefaults(), job}));
-
-        await act(async () => {
-            await result.current.handlePricingClick();
-        });
-
-        expect(openMock).toHaveBeenCalledWith(expect.any(Array), 502, false, false, false, false, undefined);
-    });
 });
 
-describe('useJobActions — handlePricingClick on a split parent with a derivable grid', () => {
+describe('useJobActions — handlePricingClick on a split parent', () => {
     afterEach(() => {
         delete (window as any).ReactSplitPricingBreakdownDialog;
         delete (window as any).ReactPriceBreakdownDialog;
         jest.restoreAllMocks();
     });
 
-    it('opens the split pricing grid instead of the flat dialog', async () => {
+    it('opens the split pricing grid instead of the flat dialog, fully editable', async () => {
         const {getSplitPricingBreakdown} = jest.requireMock('../../../../services/splitPriceBreakdownApi');
         const breakdown = {jobId: 503, totalRevenue: 100, items: [], legs: [], locks: {}};
         (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
@@ -1091,11 +1099,11 @@ describe('useJobActions — handlePricingClick on a split parent with a derivabl
             await result.current.handlePricingClick();
         });
 
-        expect(splitOpenMock).toHaveBeenCalledWith(breakdown);
+        expect(splitOpenMock).toHaveBeenCalledWith(breakdown, {readOnly: false, highlightLegId: undefined});
         expect(flatOpenMock).not.toHaveBeenCalled();
     });
 
-    it('falls back to the flat dialog when no allocation rows exist yet', async () => {
+    it('falls back to the flat dialog, fully editable, when the split breakdown has nothing to show at all', async () => {
         const {getSplitPricingBreakdown} = jest.requireMock('../../../../services/splitPriceBreakdownApi');
         (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(null);
         const {getPriceBreakdowns} = jest.requireMock('../../../../services/pricingBreakdownApi');
