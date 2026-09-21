@@ -85,7 +85,7 @@ jest.mock('./jobListPreferences', () => ({
 // Covered by its own test file; everywhere else, stub it out so tests don't
 // fire real network requests for a preference this suite doesn't exercise.
 jest.mock('./addressFormatPreferences', () => ({
-    loadEffectiveAddressFieldOrder: jest.fn().mockResolvedValue(undefined),
+    loadEffectiveAddressFormat: jest.fn().mockResolvedValue({}),
 }));
 
 jest.mock('../../services/jobListApi', () => ({
@@ -118,7 +118,7 @@ import {
 } from '../../services/jobListApi';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
 import {loadJobListColumnsFromServer, persistJobListColumnsToServer} from './jobListPreferences';
-import {loadEffectiveAddressFieldOrder} from './addressFormatPreferences';
+import {loadEffectiveAddressFormat} from './addressFormatPreferences';
 import {queryClient} from '../../query/queryClient';
 const mockedSearchCouriers = searchActiveCouriersExtended as jest.Mock;
 const mockedAllocateJobs = allocateJobs as jest.Mock;
@@ -640,14 +640,17 @@ describe('JobListPanel', () => {
     });
 
     describe('Address format preference', () => {
-        const mockedLoadAddressFormat = loadEffectiveAddressFieldOrder as jest.Mock;
+        const mockedLoadAddressFormat = loadEffectiveAddressFormat as jest.Mock;
 
         afterEach(() => {
-            mockedLoadAddressFormat.mockReset().mockResolvedValue(undefined);
+            mockedLoadAddressFormat.mockReset().mockResolvedValue({});
         });
 
-        it('renders pickup/delivery using the resolved field order once it loads', async () => {
-            mockedLoadAddressFormat.mockResolvedValue(['streetNumber', 'streetName']);
+        it('renders pickup/delivery using the resolved per-side format once it loads', async () => {
+            mockedLoadAddressFormat.mockResolvedValue({
+                pickup: {line1: ['streetNumber', 'streetName'], line2: []},
+                delivery: {line1: ['streetNumber', 'streetName'], line2: []},
+            });
             renderAndPushJobs([createMockDispatchJob()]);
 
             await waitFor(() => {
@@ -657,7 +660,7 @@ describe('JobListPanel', () => {
         });
 
         it('keeps the legacy NZ/US format when nothing is configured', async () => {
-            mockedLoadAddressFormat.mockResolvedValue(undefined);
+            mockedLoadAddressFormat.mockResolvedValue({});
             renderAndPushJobs([createMockDispatchJob()]);
 
             await waitFor(() => {
