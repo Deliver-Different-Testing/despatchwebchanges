@@ -1,62 +1,80 @@
 import React from 'react';
-import {fireEvent, screen} from '@testing-library/react';
+import {fireEvent, screen, within} from '@testing-library/react';
 import {AddressFormatEditor, AddressFormatEditorProps} from './AddressFormatEditor';
 import {renderWithMantine} from '../../__testUtils__';
 import {setupUser} from '../../__testUtils__/setupUser';
-import type {AddressFieldKey} from '../../interfaces/address';
+import type {AddressLineFormat} from '../../interfaces/address';
 
 const userEvent = setupUser();
 
-function renderEditor(fields: AddressFieldKey[], onChange = jest.fn()) {
-    renderWithMantine(<AddressFormatEditor fields={fields} onChange={onChange} />);
+function renderEditor(value: AddressLineFormat, onChange = jest.fn()) {
+    renderWithMantine(<AddressFormatEditor value={value} onChange={onChange} />);
     return onChange;
 }
 
+function radioFor(fieldLabel: string, lineLabel: 'Off' | 'Line 1' | 'Line 2') {
+    return within(screen.getByRole('radiogroup', {name: `${fieldLabel} line`})).getByRole('radio', {name: lineLabel});
+}
+
 describe('AddressFormatEditor', () => {
-    it('lists every configurable field, included ones first in their saved order', () => {
-        renderEditor(['postcode', 'streetName']);
+    it('lists every configurable field across the three zones', () => {
+        renderEditor({line1: ['postcode', 'streetName'], line2: []});
 
-        const rows = screen.getAllByRole('switch').map((el) => el.getAttribute('aria-label'));
-        expect(rows.slice(0, 2)).toEqual(['Show Postcode', 'Show Street Name']);
-        expect(rows).toHaveLength(8);
+        expect(screen.getByText('Not shown')).toBeInTheDocument();
+        expect(screen.getAllByRole('radiogroup')).toHaveLength(8);
     });
 
-    it('reflects which fields are currently included', () => {
-        renderEditor(['streetName']);
+    it('reflects which zone each field is currently in', () => {
+        renderEditor({line1: ['streetName'], line2: ['postcode']});
 
-        expect(screen.getByLabelText('Show Street Name')).toBeChecked();
-        expect(screen.getByLabelText('Show Postcode')).not.toBeChecked();
+        expect(radioFor('Street Name', 'Line 1')).toBeChecked();
+        expect(radioFor('Postcode', 'Line 2')).toBeChecked();
+        expect(radioFor('Country', 'Off')).toBeChecked();
     });
 
-    it('adds a field to the end of the included list when switched on', async () => {
-        const onChange = renderEditor(['streetName', 'postcode']);
+    it('moves a field from off to line 1 when selected', async () => {
+        const onChange = renderEditor({line1: ['streetName'], line2: []});
 
-        await userEvent.click(screen.getByLabelText('Show Country'));
+        await userEvent.click(radioFor('Country', 'Line 1'));
 
-        expect(onChange).toHaveBeenCalledWith(['streetName', 'postcode', 'country']);
+        expect(onChange).toHaveBeenCalledWith({line1: ['streetName', 'country'], line2: []});
     });
 
-    it('removes a field, closing the gap in the included order', async () => {
-        const onChange = renderEditor(['streetName', 'postcode', 'country']);
+    it('moves a field from line 1 to line 2', async () => {
+        const onChange = renderEditor({line1: ['streetName', 'postcode'], line2: []});
 
-        await userEvent.click(screen.getByLabelText('Show Postcode'));
+        await userEvent.click(radioFor('Postcode', 'Line 2'));
 
-        expect(onChange).toHaveBeenCalledWith(['streetName', 'country']);
+        expect(onChange).toHaveBeenCalledWith({line1: ['streetName'], line2: ['postcode']});
     });
 
-    it('reorders included fields with the arrow keys', () => {
-        const onChange = renderEditor(['streetNumber', 'streetName', 'postcode']);
+    it('turns a field off, closing the gap in its line', async () => {
+        const onChange = renderEditor({line1: ['streetName', 'postcode', 'country'], line2: []});
+
+        await userEvent.click(radioFor('Postcode', 'Off'));
+
+        expect(onChange).toHaveBeenCalledWith({line1: ['streetName', 'country'], line2: []});
+    });
+
+    it('reorders fields within line 1 with the arrow keys', () => {
+        const onChange = renderEditor({line1: ['streetNumber', 'streetName', 'postcode'], line2: []});
 
         fireEvent.keyDown(screen.getByRole('button', {name: /Reorder Street Name/}), {key: 'ArrowUp'});
 
-        expect(onChange).toHaveBeenCalledWith(['streetName', 'streetNumber', 'postcode']);
+        expect(onChange).toHaveBeenCalledWith({line1: ['streetName', 'streetNumber', 'postcode'], line2: []});
     });
 
-    it('does not reorder past the ends of the list', () => {
-        const onChange = renderEditor(['streetNumber', 'streetName']);
+    it('does not reorder past the ends of a line', () => {
+        const onChange = renderEditor({line1: ['streetNumber', 'streetName'], line2: []});
 
         fireEvent.keyDown(screen.getByRole('button', {name: /Reorder Street Number/}), {key: 'ArrowUp'});
 
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('does not offer a drag handle for not-shown fields', () => {
+        renderEditor({line1: ['streetName'], line2: []});
+
+        expect(screen.queryByRole('button', {name: /Reorder Country/})).not.toBeInTheDocument();
     });
 });

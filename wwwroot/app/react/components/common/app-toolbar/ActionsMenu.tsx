@@ -9,7 +9,7 @@ import React from 'react';
 import {ActionIcon, Menu, Tooltip} from '@mantine/core';
 import {DollarSign, Plus} from 'lucide-react';
 import {Icon} from '../icon/Icon';
-import {toolbarIconButtonStyle} from './ToolbarActions';
+import {toolbarIconButtonClassName, toolbarIconButtonStyle} from './ToolbarActions';
 
 export interface ActionsMenuProps {
     onCreateNewJob: (event: React.MouseEvent) => void;
@@ -28,6 +28,7 @@ export const ActionsMenu: React.FC<ActionsMenuProps> = ({
                         variant="subtle"
                         size="lg"
                         radius="xl"
+                        className={toolbarIconButtonClassName}
                         style={toolbarIconButtonStyle}
                         aria-label="Actions menu"
                     >

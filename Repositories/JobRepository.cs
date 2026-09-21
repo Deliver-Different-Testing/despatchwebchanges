@@ -1316,13 +1316,6 @@ public partial class JobRepository(
                 return;
             }
 
-            var archiveTargetJobId = archiveBreakdown.ChildJobId ?? archiveBreakdown.JobId;
-            if (archiveTargetJobId.HasValue && await IsSplitChildAsync(archiveTargetJobId.Value, isArchived: true))
-            {
-                throw new InvalidOperationException(
-                    $"Job {archiveTargetJobId} is a split child — pricing is managed on its parent job.");
-            }
-
             var archiveJobId = archiveBreakdown.JobId;
             Context.PricingBreakdownArchives.Remove(archiveBreakdown);
             await Context.SaveChangesAsync();
@@ -1342,13 +1335,6 @@ public partial class JobRepository(
         if (breakdown == null)
         {
             return;
-        }
-
-        var deleteTargetJobId = breakdown.ChildJobId ?? breakdown.JobId;
-        if (deleteTargetJobId.HasValue && await IsSplitChildAsync(deleteTargetJobId.Value, isArchived: false))
-        {
-            throw new InvalidOperationException(
-                $"Job {deleteTargetJobId} is a split child — pricing is managed on its parent job.");
         }
 
         var note = $"Deleted {chargeId} - {breakdown.ChargeName} - {breakdown.ChargeAmount}";
@@ -5590,7 +5576,16 @@ public partial class JobRepository(
 
         var relType = await Context.TucJobs.Where(j => j.UcjbId == jobId)
             .Select(j => j.JobRelationshipTypeId).FirstOrDefaultAsync();
-        return relType == (int)JobRelationshipTypes.SplitParent;
+        if (relType != (int)JobRelationshipTypes.SplitParent)
+        {
+            return false;
+        }
+
+        // A pre-feature split has every item's ChildJobId pointing at a leg — no root (unattributed)
+        // item for RewriteAllocationsForParentAsync to rewrite. Without this check every split
+        // parent looked "live", so a legacy split's item edit silently no-opped there instead of
+        // falling through to RecalculateJobAmountFromBreakdownAsync's plain per-leg sum.
+        return await Context.PricingBreakdowns.AnyAsync(p => p.JobId == jobId && p.ChildJobId == null);
     }
 
     /// <summary>

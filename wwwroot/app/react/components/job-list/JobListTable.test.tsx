@@ -99,10 +99,13 @@ describe('JobListTable', () => {
     });
 
     // ── Configurable address format ───────────────────────────────────
-    describe('addressFieldOrder', () => {
-        it('renders pickup and delivery using the configured field order instead of NZ/US defaults', () => {
+    describe('addressFormat', () => {
+        it('renders pickup and delivery using the configured format instead of NZ/US defaults', () => {
             renderWithMantine(<JobListTable {...createDefaultProps({
-                addressFieldOrder: ['streetNumber', 'streetName'],
+                addressFormat: {
+                    pickup: {line1: ['streetNumber', 'streetName'], line2: []},
+                    delivery: {line1: ['streetNumber', 'streetName'], line2: []},
+                },
             })}/>);
 
             expect(screen.getByText('10, Queen St')).toBeInTheDocument(); // pickup
@@ -112,14 +115,41 @@ describe('JobListTable', () => {
         it('takes precedence over isUsCustomer when both are set', () => {
             renderWithMantine(<JobListTable {...createDefaultProps({
                 isUsCustomer: true,
-                addressFieldOrder: ['cityOrSuburb'],
+                addressFormat: {
+                    pickup: {line1: ['cityOrSuburb'], line2: []},
+                    delivery: {line1: ['cityOrSuburb'], line2: []},
+                },
             })}/>);
 
             expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // pickup
             expect(screen.getByText('Newmarket')).toBeInTheDocument(); // delivery
         });
 
-        it('falls back to the NZ/US default when no field order is configured', () => {
+        it('renders line 2 as a dimmed second line when fields are assigned to it', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                addressFormat: {
+                    pickup: {line1: ['streetNumber', 'streetName'], line2: ['cityOrSuburb']},
+                    delivery: undefined,
+                },
+            })}/>);
+
+            expect(screen.getByText('10, Queen St')).toBeInTheDocument();
+            expect(screen.getByText('Auckland CBD')).toBeInTheDocument();
+        });
+
+        it('resolves pickup and delivery independently — one side configured, the other legacy', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                addressFormat: {
+                    pickup: {line1: ['cityOrSuburb'], line2: []},
+                    delivery: undefined,
+                },
+            })}/>);
+
+            expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // pickup: configured
+            expect(screen.getByText('Newmarket, 20, High St')).toBeInTheDocument(); // delivery: NZ legacy
+        });
+
+        it('falls back to the NZ/US default when no format is configured', () => {
             renderWithMantine(<JobListTable {...createDefaultProps()}/>);
 
             expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // NZ pickup: suburb only

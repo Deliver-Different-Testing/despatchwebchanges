@@ -48,23 +48,46 @@ const twoBoxBoxes = {
 };
 
 describe('BoxShell layout affordances', () => {
-    it.each(['Default', 'My Layout'])('offers reorder on the %s layout', (name) => {
-        renderShell({layout: {...layout, name}, onMoveBox: jest.fn()});
+    it.each(['Default', 'My Layout'])('offers reorder in Edit Layout mode on the %s layout', (name) => {
+        renderShell({layout: {...layout, name}, onMoveBox: jest.fn(), columnEditMode: true});
 
         expect(screen.getByRole('button', {name: /Reorder/})).toBeInTheDocument();
         expect(screen.getByText('Live Job Data')).toBeInTheDocument();
     });
 
+    it('offers no reorder or resize affordances outside Edit Layout mode', () => {
+        const {container} = renderShell({
+            layout: {
+                ...layout,
+                name: 'My Layout',
+                layout: {
+                    columns: [
+                        {id: 'col1', width: '50%', boxes: [{name: 'jobList', title: 'Live Job Data', visible: true}]},
+                        {id: 'col2', width: '50%', boxes: [{name: 'map', title: 'Map', visible: true}]},
+                    ],
+                },
+            },
+            boxes: {
+                jobList: {name: 'jobList', title: 'Live Job Data', visible: true},
+                map: {name: 'map', title: 'Map', visible: true},
+            },
+            onMoveBox: jest.fn(),
+        });
+
+        expect(screen.queryByRole('button', {name: /Reorder/})).not.toBeInTheDocument();
+        expect(container.querySelectorAll('[data-panel-resize-handle]')).toHaveLength(0);
+    });
+
     it('has no collapse control', () => {
-        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
+        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn(), columnEditMode: true});
 
         expect(screen.queryByRole('button', {name: /Collapse|Expand/})).not.toBeInTheDocument();
     });
 
-    it('hides the columns bar until "Edit columns" mode is on', () => {
+    it('hides the columns bar until "Edit Layout" mode is on', () => {
         renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
 
-        expect(screen.queryByText('Editing columns')).not.toBeInTheDocument();
+        expect(screen.queryByText('Editing layout')).not.toBeInTheDocument();
         expect(screen.queryByRole('group', {name: /number of columns/i})).not.toBeInTheDocument();
     });
 
@@ -136,7 +159,7 @@ describe('BoxShell columns bar', () => {
     it.each(['Default', 'My Layout'])('shows the stepper on the %s layout', (name) => {
         editing({layout: multiCol(name, 2)});
 
-        expect(screen.getByText('Editing columns')).toBeInTheDocument();
+        expect(screen.getByText('Editing layout')).toBeInTheDocument();
         expect(screen.getByRole('group', {name: /number of columns/i})).toHaveTextContent('2');
     });
 
@@ -188,8 +211,8 @@ describe('BoxShell resize persistence', () => {
         map: {name: 'map', title: 'Map', visible: true},
     };
 
-    it.each(['Default', 'My Layout'])('renders a resize gutter between columns on the %s layout', (name) => {
-        const {container} = renderShell({layout: multiCol(name), boxes: multiColBoxes});
+    it.each(['Default', 'My Layout'])('renders a resize gutter between columns on the %s layout in Edit Layout mode', (name) => {
+        const {container} = renderShell({layout: multiCol(name), boxes: multiColBoxes, columnEditMode: true});
 
         expect(container.querySelectorAll('[data-panel-resize-handle]')).toHaveLength(1);
     });

@@ -13,7 +13,11 @@ import {ActionIcon, Drawer, Indicator, Tooltip} from '@mantine/core';
 import {useDisclosure} from '@mantine/hooks';
 import {Handshake} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
-import {badgeOverflowStyle, toolbarIconButtonStyle} from '../../components/common/app-toolbar/ToolbarActions';
+import {
+    badgeOverflowStyle,
+    toolbarIconButtonClassName,
+    toolbarIconButtonStyle,
+} from '../../components/common/app-toolbar/ToolbarActions';
 import {useApproverInbox} from './useApproverInbox';
 import {useHasActivePartners} from './useHasActivePartners';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
@@ -74,6 +78,7 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
                     size={toolbarVariant ? 'lg' : 30}
                     variant="subtle"
                     color={toolbarVariant ? undefined : 'gray'}
+                    className={toolbarVariant ? toolbarIconButtonClassName : undefined}
                     style={toolbarVariant ? {...toolbarIconButtonStyle, ...badgeOverflowStyle} : badgeOverflowStyle}
                 >
                     <Indicator

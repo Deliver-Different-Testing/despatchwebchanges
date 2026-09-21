@@ -29,8 +29,7 @@
 
 /*
  * The panel header is a solid brand fill, so its action button needs a light
- * overlay rather than the scheme-following default — the same reason
- * SHELL_ICON_HOVER_FILL exists for the Ink shell.
+ * overlay rather than the scheme-following default.
  */
 .headerAction:hover {
     background-color: rgba(255, 255, 255, 0.15);

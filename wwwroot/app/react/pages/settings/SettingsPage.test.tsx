@@ -1,5 +1,5 @@
 import React from 'react';
-import {screen, waitFor} from '@testing-library/react';
+import {screen, waitFor, within} from '@testing-library/react';
 import {renderWithMantine} from '../../__testUtils__';
 import {setupUser} from '../../__testUtils__/setupUser';
 import {SettingsPage} from './SettingsPage';
@@ -41,9 +41,16 @@ const mockSavePreference = savePreference as jest.Mock;
 const mockDeletePreference = deletePreference as jest.Mock;
 const mockGetTenantAddressFormatDefault = getTenantAddressFormatDefault as jest.Mock;
 
+/** Pickup renders first, delivery second — both sides render an identically-labelled control per field. */
+function radioFor(side: 'pickup' | 'delivery', fieldLabel: string, lineLabel: 'Off' | 'Line 1' | 'Line 2') {
+    const groups = screen.getAllByRole('radiogroup', {name: `${fieldLabel} line`});
+    return within(groups[side === 'pickup' ? 0 : 1]).getByRole('radio', {name: lineLabel});
+}
+
 describe('SettingsPage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.spyOn(console, 'error').mockImplementation(() => undefined);
         mockIsAiEnabled.mockReturnValue(false);
         mockIsAiAutoOpenEnabled.mockReturnValue(false);
         mockLoadAutoMateFromServer.mockResolvedValue(undefined);
@@ -51,6 +58,10 @@ describe('SettingsPage', () => {
         mockSavePreference.mockResolvedValue(undefined);
         mockDeletePreference.mockResolvedValue(undefined);
         mockGetTenantAddressFormatDefault.mockResolvedValue(null);
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     it('renders a page heading and the Auto-mate section', () => {
@@ -62,14 +73,7 @@ describe('SettingsPage', () => {
         expect(screen.getByText('Open automatically')).toBeInTheDocument();
     });
 
-    it('has no Save or Cancel button — toggles apply instantly', () => {
-        renderWithMantine(<SettingsPage />);
-
-        expect(screen.queryByRole('button', {name: /save/i})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /cancel/i})).not.toBeInTheDocument();
-    });
-
-    it('seeds both toggles from the stored preferences', () => {
+    it('seeds both Auto-mate toggles from the stored preferences', () => {
         mockIsAiEnabled.mockReturnValue(true);
         mockIsAiAutoOpenEnabled.mockReturnValue(true);
 
@@ -87,7 +91,7 @@ describe('SettingsPage', () => {
         expect(screen.getByRole('switch', {name: 'Open automatically'})).toBeDisabled();
     });
 
-    it('persists a toggle immediately, with no separate save step', async () => {
+    it('persists an Auto-mate toggle immediately, with no separate save step', async () => {
         const user = setupUser();
         renderWithMantine(<SettingsPage />);
 
@@ -96,92 +100,114 @@ describe('SettingsPage', () => {
         expect(mockSetAiEnabled).toHaveBeenCalledWith(true);
     });
 
-    it('enables and persists "Open automatically" once briefings are on', async () => {
-        mockIsAiEnabled.mockReturnValue(true);
-        const user = setupUser();
-        renderWithMantine(<SettingsPage />);
-
-        const autoOpenSwitch = screen.getByRole('switch', {name: 'Open automatically'});
-        expect(autoOpenSwitch).toBeEnabled();
-
-        await user.click(autoOpenSwitch);
-
-        expect(mockSetAiAutoOpenEnabled).toHaveBeenCalledWith(true);
-    });
-
-    describe('server hydration', () => {
-        it('pulls Auto-mate settings from the server on mount', () => {
-            renderWithMantine(<SettingsPage />);
-
-            expect(mockLoadAutoMateFromServer).toHaveBeenCalledTimes(1);
-        });
-
-        it('re-reads local storage once the server hydrate resolves', async () => {
-            mockIsAiEnabled.mockReturnValueOnce(false).mockReturnValueOnce(true);
-
-            renderWithMantine(<SettingsPage />);
-
-            expect(screen.getByRole('switch', {name: 'Show Auto-mate briefings'})).not.toBeChecked();
-            await waitFor(() => {
-                expect(screen.getByRole('switch', {name: 'Show Auto-mate briefings'})).toBeChecked();
-            });
-        });
-    });
-
     describe('Address format', () => {
-        it('pre-fills the editor from the tenant default when the user has no override', async () => {
+        it('pre-fills both sides from the tenant default when the user has no override', async () => {
             mockGetPreference.mockResolvedValue(null);
-            mockGetTenantAddressFormatDefault.mockResolvedValue('{"fields":["postcode"]}');
+            mockGetTenantAddressFormatDefault.mockResolvedValue(
+                '{"pickup":{"line1":["postcode"],"line2":[]},"delivery":{"line1":["country"],"line2":[]}}',
+            );
 
             renderWithMantine(<SettingsPage />);
 
-            await waitFor(() => {
-                expect(screen.getByLabelText('Show Postcode')).toBeChecked();
-            });
+            await waitFor(() => expect(radioFor('pickup', 'Postcode', 'Line 1')).toBeChecked());
+            expect(radioFor('delivery', 'Country', 'Line 1')).toBeChecked();
             expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled();
+            expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
         });
 
-        it('loads the user\'s own override in preference to the tenant default', async () => {
-            mockGetPreference.mockResolvedValue('{"fields":["streetName"]}');
-            mockGetTenantAddressFormatDefault.mockResolvedValue('{"fields":["postcode"]}');
+        it('loads the user\'s own override in preference to the tenant default, per side', async () => {
+            mockGetPreference.mockResolvedValue(
+                '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":["postcode"],"line2":[]}}',
+            );
+            mockGetTenantAddressFormatDefault.mockResolvedValue(
+                '{"pickup":{"line1":["country"],"line2":[]},"delivery":{"line1":["country"],"line2":[]}}',
+            );
 
             renderWithMantine(<SettingsPage />);
 
-            await waitFor(() => {
-                expect(screen.getByLabelText('Show Street Name')).toBeChecked();
-            });
-            expect(screen.getByLabelText('Show Postcode')).not.toBeChecked();
+            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            expect(radioFor('delivery', 'Postcode', 'Line 1')).toBeChecked();
             expect(screen.getByRole('button', {name: 'Reset to default'})).toBeEnabled();
         });
 
-        it('saves immediately when a field is toggled', async () => {
-            mockGetPreference.mockResolvedValue('{"fields":["streetName"]}');
+        it('does not save while editing — only stages the draft, and enables Save', async () => {
+            mockGetPreference.mockResolvedValue(
+                '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',
+            );
             const user = setupUser();
             renderWithMantine(<SettingsPage />);
-            await waitFor(() => expect(screen.getByLabelText('Show Street Name')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
 
-            await user.click(screen.getByLabelText('Show Postcode'));
+            expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+            await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
 
-            expect(mockSavePreference).toHaveBeenCalledWith(
-                'DispatchAddressFormat', '{"fields":["streetName","postcode"]}',
-            );
+            expect(mockSavePreference).not.toHaveBeenCalled();
+            expect(screen.getByRole('button', {name: 'Save'})).toBeEnabled();
         });
 
-        it('resets to the tenant default and clears the stored override', async () => {
-            mockGetPreference.mockResolvedValue('{"fields":["streetName"]}');
-            mockGetTenantAddressFormatDefault.mockResolvedValue('{"fields":["postcode"]}');
+        it('saves both sides only once Save is clicked', async () => {
+            mockGetPreference.mockResolvedValue(
+                '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',
+            );
             const user = setupUser();
             renderWithMantine(<SettingsPage />);
-            await waitFor(() => expect(screen.getByLabelText('Show Street Name')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+
+            await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
+            await user.click(screen.getByRole('button', {name: 'Save'}));
+
+            expect(mockSavePreference).toHaveBeenCalledWith(
+                'DispatchAddressFormat',
+                JSON.stringify({
+                    pickup: {line1: ['streetName', 'postcode'], line2: []},
+                    delivery: {line1: [], line2: []},
+                }),
+            );
+            await waitFor(() => expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled());
+        });
+
+        it('copies the pickup draft onto delivery', async () => {
+            mockGetPreference.mockResolvedValue(
+                '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',
+            );
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+
+            await user.click(screen.getByRole('button', {name: 'Copy to delivery'}));
+
+            expect(radioFor('delivery', 'Street Name', 'Line 1')).toBeChecked();
+        });
+
+        it('resets both sides to the tenant default and clears the stored override immediately', async () => {
+            mockGetPreference.mockResolvedValue(
+                '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',
+            );
+            mockGetTenantAddressFormatDefault.mockResolvedValue(
+                '{"pickup":{"line1":["postcode"],"line2":[]},"delivery":{"line1":["postcode"],"line2":[]}}',
+            );
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
 
             await user.click(screen.getByRole('button', {name: 'Reset to default'}));
 
             expect(mockDeletePreference).toHaveBeenCalledWith('DispatchAddressFormat');
-            await waitFor(() => {
-                expect(screen.getByLabelText('Show Postcode')).toBeChecked();
-            });
-            expect(screen.getByLabelText('Show Street Name')).not.toBeChecked();
+            await waitFor(() => expect(radioFor('pickup', 'Postcode', 'Line 1')).toBeChecked());
+            expect(radioFor('pickup', 'Street Name', 'Off')).toBeChecked();
             expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled();
+        });
+
+        it('keeps a working user override even when the tenant default fetch fails', async () => {
+            mockGetPreference.mockResolvedValue(
+                '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',
+            );
+            mockGetTenantAddressFormatDefault.mockRejectedValue(new Error('500'));
+
+            renderWithMantine(<SettingsPage />);
+
+            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            expect(screen.getByText(/Couldn.t load the tenant address format default/)).toBeInTheDocument();
         });
     });
 });

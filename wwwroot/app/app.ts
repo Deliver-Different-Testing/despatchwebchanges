@@ -12,6 +12,7 @@ import JobDetailComponent from "./components/common/job-details/job-details.comp
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
 import {resolveDashboardRedirect} from "./react/services/dashboardRouteGuard";
+import {confirmNavigationAllowed} from "./react/services/unsavedChangesGuard";
 import ThemeConfig from "./materialTheme";
 import {bytesFilter, momentFormatFilter, replaceFilter, timezoneShortFilter} from "./filters";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
@@ -97,6 +98,12 @@ app.run(["$transitions", ($transitions: any) => {
         const redirect = resolveDashboardRedirect(target);
         return redirect ? transition.router.stateService.target(redirect) : true;
     });
+}]);
+
+// Blocks leaving a page (e.g. Settings) with unsaved edits — the page itself
+// registers the check via registerUnsavedChangesGuard while it has a dirty draft.
+app.run(["$transitions", ($transitions: any) => {
+    $transitions.onBefore({}, () => confirmNavigationAllowed());
 }]);
 
 // Log state transition errors so route resolve failures are visible in the console

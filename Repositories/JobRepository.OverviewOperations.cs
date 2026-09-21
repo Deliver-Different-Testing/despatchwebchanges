@@ -31,7 +31,7 @@ public partial class JobRepository
         // page's panels it must keep seeing every job rather than being scoped to (and
         // potentially emptied by) a view selection it has no way to make.
         var query = (parameters.ScopeToDespatchViews
-                ? await BuildBaseQueryAsync(parameters.DespatchViewIds, isUsCustomer)
+                ? await BuildParentScopedQueryAsync(parameters.DespatchViewIds, isUsCustomer)
                 : Context.TucJobs)
             .Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
 

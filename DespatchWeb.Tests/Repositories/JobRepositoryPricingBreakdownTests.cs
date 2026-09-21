@@ -832,22 +832,45 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task DeleteJobPriceBreakdownAsync_OnSplitChild_Throws()
+    public async Task DeleteJobPriceBreakdownAsync_OnLegacySplitChildRow_DeletesAndRecalculatesLegAmount()
     {
         const int parentId = 100;
         const int legId = 101;
         _context.TucJobs.AddRange(
-            new TucJob { UcjbId = parentId, UcjbNumber = "J100", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent },
-            new TucJob { UcjbId = legId, UcjbNumber = "J100A", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild });
-        _context.PricingBreakdowns.Add(CreatePricingBreakdown(1, parentId, null, "Base Part A", 50.00m, childJobId: legId));
+            new TucJob { UcjbId = parentId, UcjbNumber = "J100", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent, UcjbAmount = 80.00m },
+            new TucJob { UcjbId = legId, UcjbNumber = "J100A", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild, UcjbAmount = 80.00m });
+        _context.PricingBreakdowns.AddRange(
+            CreatePricingBreakdown(1, parentId, null, "Base Part A", 50.00m, childJobId: legId),
+            CreatePricingBreakdown(2, parentId, null, "Fuel Part A", 30.00m, childJobId: legId));
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await repository.DeleteJobPriceBreakdownAsync(1, isArchived: false));
+        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: false);
 
-        Assert.NotEmpty(await _context.PricingBreakdowns.ToListAsync(TestContext.Current.CancellationToken));
+        _context.ChangeTracker.Clear();
+        Assert.Equal(1, await _context.PricingBreakdowns.CountAsync(TestContext.Current.CancellationToken));
+        var legJob = await _context.TucJobs.FirstAsync(j => j.UcjbId == legId, TestContext.Current.CancellationToken);
+        Assert.Equal(50.00m, legJob.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task DeleteJobPriceBreakdownAsync_OnArchivedLegacySplitChildRow_Deletes()
+    {
+        const int parentId = 100;
+        const int legId = 101;
+        _context.TucJobArchives.AddRange(
+            new TucJobArchive { UcjbId = parentId, UcjbNumber = "J100", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent },
+            new TucJobArchive { UcjbId = legId, UcjbNumber = "J100A", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild });
+        _context.PricingBreakdownArchives.Add(
+            CreatePricingBreakdownArchive(1, parentId, "Base Part A", 50.00m, childJobId: legId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        await repository.DeleteJobPriceBreakdownAsync(1, isArchived: true);
+
+        Assert.Empty(await _context.PricingBreakdownArchives.ToListAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -1391,13 +1414,15 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         RootParentId = parentId
     };
 
-    private static PricingBreakdownArchive CreatePricingBreakdownArchive(int id, int? jobId, string name, decimal amount, decimal? costAmount = null) => new()
+    private static PricingBreakdownArchive CreatePricingBreakdownArchive(
+        int id, int? jobId, string name, decimal amount, decimal? costAmount = null, int? childJobId = null) => new()
     {
         PricingBreakdownId = id,
         JobId = jobId,
         ChargeName = name,
         ChargeAmount = amount,
-        CostAmount = costAmount
+        CostAmount = costAmount,
+        ChildJobId = childJobId
     };
 
 }

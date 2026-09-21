@@ -238,7 +238,49 @@ public partial class BaseJobRepository(
         return query.TagWith($"BuildBaseQuery - Views: {selectedViewIds?.Count ?? 0}");
     }
 
-    private async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    /// <summary>
+    /// Same despatch-view scoping as <see cref="BuildBaseQueryAsync"/>, but for callers that
+    /// group jobs by parent (e.g. the Overview page's parent/child list). A view's
+    /// WhereCondition is evaluated leg-by-leg, so a split job's child can match on its own
+    /// courier/region/etc. while the parent row does not — resolving straight to the matched
+    /// leg's own id would then get filtered out by a parent-only restriction downstream, and
+    /// the parent was never in the matched set either. Routing matches through
+    /// <see cref="ResolveParentScopedJobs"/> ensures a match on any leg still surfaces the
+    /// family under its parent.
+    /// </summary>
+    protected async Task<IQueryable<TucJob>> BuildParentScopedQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    {
+        if (!isUsTenant && (selectedViewIds == null || selectedViewIds.Count == 0))
+        {
+            return Context.TucJobs.Where(j => false);
+        }
+
+        var matchedJobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant);
+        var matchedJobIds = await matchedJobIdsQuery.ToListAsync();
+
+        return ResolveParentScopedJobs(matchedJobIds)
+            .TagWith($"BuildParentScopedQuery - Views: {selectedViewIds?.Count ?? 0}");
+    }
+
+    /// <summary>
+    /// Maps a set of matched job/leg ids up to their parent (or themselves, if standalone),
+    /// then returns the corresponding parent-level <see cref="TucJob"/> rows. Takes the
+    /// matched ids already materialized (rather than an <see cref="IQueryable{T}"/> sourced
+    /// from the SQL-Server-only despatch view) so the parent-resolution logic can be composed
+    /// and tested against a plain in-memory id list, independent of that view.
+    /// </summary>
+    // internal so DespatchWeb.Tests can exercise it directly (InternalsVisibleTo is set).
+    internal IQueryable<TucJob> ResolveParentScopedJobs(IReadOnlyList<int> matchedJobIds)
+    {
+        var parentIds = Context.TucJobs
+            .Where(job => matchedJobIds.Contains(job.UcjbId))
+            .Select(job => job.ParentId ?? job.UcjbId)
+            .Distinct();
+
+        return Context.TucJobs.Where(job => parentIds.Contains(job.UcjbId));
+    }
+
+    protected async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {

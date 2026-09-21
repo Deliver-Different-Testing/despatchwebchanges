@@ -122,7 +122,7 @@ export function headerChromeStyle(variant: PanelHeaderVariant = 'primary'): Reac
         color: fg,
         // Every variant now shares the neutral bar, so it always needs the
         // keyline to separate it from the body.
-        borderBottom: '1px solid var(--mantine-color-default-border)',
+        borderBottom: dialogHeaderBorder,
         display: 'flex',
         alignItems: 'center',
         gap: 'var(--mantine-spacing-md)',
@@ -182,6 +182,9 @@ export const dialogContentBg = 'var(--mantine-color-gray-1)';
 
 /** Footer keyline (top border) colour. */
 export const dialogFooterBorder = '1px solid var(--mantine-color-gray-3)';
+
+/** Header keyline (bottom border) colour — separates the header bar from the scrolling body. */
+export const dialogHeaderBorder = '1px solid var(--mantine-color-gray-3)';
 
 /**
  * The modal shell's Mantine `styles`.

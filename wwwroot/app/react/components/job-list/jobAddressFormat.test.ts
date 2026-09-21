@@ -7,8 +7,11 @@
  */
 
 import type {DispatchJob} from '../../interfaces/dispatchJob';
+import type {AddressFormatSides} from '../../interfaces/address';
 import {createMockAddress} from '../../__testUtils__/mockData';
 import {
+    flattenLineFormat,
+    formatAddressLines,
     formatAddressWithFields,
     getDeliveryAddressNz,
     getDeliveryAddressUs,
@@ -117,21 +120,79 @@ describe('jobAddressFormat', () => {
         });
     });
 
-    describe('serializeAddressFormatJson / parseAddressFormatJson', () => {
-        it('round-trips an ordered field list', () => {
-            const fields: Array<'streetNumber' | 'streetName'> = ['streetNumber', 'streetName'];
-            expect(parseAddressFormatJson(serializeAddressFormatJson(fields))).toEqual(fields);
+    describe('formatAddressLines', () => {
+        it('splits fields across the two lines, with the fallback only on line 1', () => {
+            const [line1, line2] = formatAddressLines(
+                address,
+                {line1: ['streetNumber', 'streetName'], line2: ['cityOrSuburb', 'postcode']},
+                undefined,
+            );
+            expect(line1).toBe('15, Gilgit Road');
+            expect(line2).toBe('Newmarket, 1050');
         });
 
-        it('returns an empty array for null, undefined, or malformed JSON', () => {
-            expect(parseAddressFormatJson(null)).toEqual([]);
-            expect(parseAddressFormatJson(undefined)).toEqual([]);
-            expect(parseAddressFormatJson('not json')).toEqual([]);
-            expect(parseAddressFormatJson('{}')).toEqual([]);
+        it('leaves line 2 empty when no fields are assigned to it', () => {
+            const [, line2] = formatAddressLines(address, {line1: ['streetName'], line2: []}, undefined);
+            expect(line2).toBe('');
+        });
+
+        it('falls back to the free-text copy on line 1 only, when there is no structured address', () => {
+            const [line1, line2] = formatAddressLines(
+                undefined,
+                {line1: ['streetName'], line2: ['postcode']},
+                '15,Gilgit Road,  Newmarket',
+            );
+            expect(line1).toBe('15, Gilgit Road, Newmarket');
+            expect(line2).toBe('');
+        });
+
+        it('treats a null format as nothing configured', () => {
+            expect(formatAddressLines(undefined, null, '15,Gilgit Road')).toEqual(['15, Gilgit Road', '']);
+        });
+    });
+
+    describe('flattenLineFormat', () => {
+        it('concatenates line 1 then line 2', () => {
+            expect(flattenLineFormat({line1: ['streetNumber', 'streetName'], line2: ['postcode']}))
+                .toEqual(['streetNumber', 'streetName', 'postcode']);
+        });
+
+        it('returns an empty array for a null/undefined format', () => {
+            expect(flattenLineFormat(null)).toEqual([]);
+            expect(flattenLineFormat(undefined)).toEqual([]);
+        });
+    });
+
+    describe('serializeAddressFormatJson / parseAddressFormatJson', () => {
+        it('round-trips both sides', () => {
+            const sides: AddressFormatSides = {
+                pickup: {line1: ['streetNumber', 'streetName'], line2: ['postcode']},
+                delivery: {line1: ['cityOrSuburb'], line2: []},
+            };
+            expect(parseAddressFormatJson(serializeAddressFormatJson(sides))).toEqual(sides);
+        });
+
+        it('returns both sides null for null, undefined, or malformed JSON', () => {
+            expect(parseAddressFormatJson(null)).toEqual({pickup: null, delivery: null});
+            expect(parseAddressFormatJson(undefined)).toEqual({pickup: null, delivery: null});
+            expect(parseAddressFormatJson('not json')).toEqual({pickup: null, delivery: null});
+            expect(parseAddressFormatJson('{}')).toEqual({pickup: null, delivery: null});
         });
 
         it('drops unrecognised field keys rather than propagating corrupt data', () => {
-            expect(parseAddressFormatJson('{"fields":["streetName","bogus",42]}')).toEqual(['streetName']);
+            expect(parseAddressFormatJson('{"pickup":{"line1":["streetName","bogus",42],"line2":[]},"delivery":null}'))
+                .toEqual({pickup: {line1: ['streetName'], line2: []}, delivery: null});
+        });
+
+        it('maps the legacy single-list shape onto line 1 of both sides', () => {
+            expect(parseAddressFormatJson('{"fields":["streetName","postcode"]}')).toEqual({
+                pickup: {line1: ['streetName', 'postcode'], line2: []},
+                delivery: {line1: ['streetName', 'postcode'], line2: []},
+            });
+        });
+
+        it('treats an empty legacy field list as unconfigured', () => {
+            expect(parseAddressFormatJson('{"fields":[]}')).toEqual({pickup: null, delivery: null});
         });
     });
 });

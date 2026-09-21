@@ -6,10 +6,10 @@
  * panel, which sorts by them, compose the same line selections, so the selections live here.
  */
 
-import type {AddressFieldKey, AddressViewModel} from '../../interfaces/address';
+import type {AddressFieldKey, AddressFormatSides, AddressLineFormat, AddressViewModel} from '../../interfaces/address';
 import type {DispatchJob} from '../../interfaces/dispatchJob';
 
-export type {AddressFieldKey};
+export type {AddressFieldKey, AddressFormatSides, AddressLineFormat};
 
 type PickLines = (address: AddressViewModel) => Array<string | undefined>;
 
@@ -42,20 +42,44 @@ function isAddressFieldKey(value: unknown): value is AddressFieldKey {
     return typeof value === 'string' && ADDRESS_FIELD_KEYS.has(value as AddressFieldKey);
 }
 
-/** Parses the `{"fields":[...]}` preference/setting shape, tolerating null/malformed JSON. */
-export function parseAddressFormatJson(json: string | null | undefined): AddressFieldKey[] {
-    if (!json) return [];
+function toFieldArray(value: unknown): AddressFieldKey[] {
+    return Array.isArray(value) ? value.filter(isAddressFieldKey) : [];
+}
+
+function parseLineFormat(value: unknown): AddressLineFormat | null {
+    if (!value || typeof value !== 'object') return null;
+    const {line1, line2} = value as {line1?: unknown; line2?: unknown};
+    return {line1: toFieldArray(line1), line2: toFieldArray(line2)};
+}
+
+/**
+ * Parses the per-side `{"pickup":{"line1":[...],"line2":[...]},"delivery":{...}}`
+ * preference/setting shape, tolerating null/malformed JSON. Also tolerates the
+ * older single-list `{"fields":[...]}` shape (pre pickup/delivery split) by
+ * applying those fields to line 1 of both sides.
+ */
+export function parseAddressFormatJson(json: string | null | undefined): AddressFormatSides {
+    if (!json) return {pickup: null, delivery: null};
     try {
-        const parsed: unknown = JSON.parse(json);
-        const fields = (parsed as {fields?: unknown})?.fields;
-        return Array.isArray(fields) ? fields.filter(isAddressFieldKey) : [];
+        const parsed = JSON.parse(json) as {fields?: unknown; pickup?: unknown; delivery?: unknown};
+        if (Array.isArray(parsed?.fields)) {
+            const legacyFields = toFieldArray(parsed.fields);
+            const legacy: AddressLineFormat = {line1: legacyFields, line2: []};
+            return legacyFields.length ? {pickup: legacy, delivery: legacy} : {pickup: null, delivery: null};
+        }
+        return {pickup: parseLineFormat(parsed?.pickup), delivery: parseLineFormat(parsed?.delivery)};
     } catch {
-        return [];
+        return {pickup: null, delivery: null};
     }
 }
 
-export function serializeAddressFormatJson(fields: AddressFieldKey[]): string {
-    return JSON.stringify({fields});
+export function serializeAddressFormatJson(sides: AddressFormatSides): string {
+    return JSON.stringify(sides);
+}
+
+/** Included fields from both lines, in display order — for sorting, where the line split doesn't matter. */
+export function flattenLineFormat(format: AddressLineFormat | null | undefined): AddressFieldKey[] {
+    return format ? [...format.line1, ...format.line2] : [];
 }
 
 export function formatAddressWithFields(
@@ -68,6 +92,19 @@ export function formatAddressWithFields(
         (a) => fields.map((field) => a[ADDRESS_FIELD_LINE[field]] as string | undefined),
         fallback,
     );
+}
+
+/** Line 1 carries the fallback text; line 2 is custom fields only, so the fallback never shows twice. */
+export function formatAddressLines(
+    address: AddressViewModel | undefined,
+    format: AddressLineFormat | null | undefined,
+    fallback: string | undefined,
+): [string, string] {
+    if (!format) return [formatAddressWithFields(address, [], fallback), ''];
+    return [
+        formatAddressWithFields(address, format.line1, fallback),
+        formatAddressWithFields(address, format.line2, undefined),
+    ];
 }
 
 export function formatAddressOrFallback(
