@@ -12,7 +12,7 @@ import type {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type angular from 'angular';
 
 // Page module mount configs
-import type {MountRecurringJobsConfig, MountDriverManagementConfig, MountJobListConfig, DispatchJob, JobListSearchParams} from '../app/react/interfaces';
+import type {MountRecurringJobsConfig, MountDriverManagementConfig, MountJobListConfig, MountSettingsConfig, DispatchJob, JobListSearchParams} from '../app/react/interfaces';
 import type {MountJobDetailsConfig} from '../app/react/components/common/job-details/JobDetails.types';
 import type {MountOverviewConfig} from '../app/react/pages/overview/OverviewPage.interfaces';
 import type {MountTaskDashboardConfig} from '../app/react/pages/task-dashboard/TaskDashboardPage.interfaces';
@@ -145,6 +145,7 @@ declare global {
         ReactOverview?: ReactPageModule<MountOverviewConfig>;
         ReactTaskDashboard?: ReactPageModule<MountTaskDashboardConfig>;
         ReactDriverManagement?: ReactPageModule<MountDriverManagementConfig>;
+        ReactSettings?: ReactPageModule<MountSettingsConfig>;
         ReactCourierMap?: ReactPageModule<MountCourierMapConfig>;
         ReactErrorPage?: ReactPageModule<MountErrorPageConfig>;
         ReactJobDetails?: ReactPageModule<MountJobDetailsConfig>;
@@ -295,9 +296,6 @@ declare global {
                 selectedRefreshInterval?: RefreshOption,
                 selectedDriverLocationRefreshInterval?: RefreshOption,
                 selectedTaskRefreshInterval?: RefreshOption,
-                aiEnabled?: boolean,
-                jobSearchBetaEnabled?: boolean,
-                dispatchBetaEnabled?: boolean,
                 nationwideBetaEnabled?: boolean
             ) => Promise<DashboardSettingsResult | null>;
         };
@@ -380,6 +378,7 @@ declare global {
         ReactSplitPricingBreakdownDialog?: {
             open: (
                 breakdown: SplitPriceBreakdown,
+                options?: {readOnly?: boolean; highlightLegId?: number},
                 apiService?: {
                     save: (request: UpdateSplitPricingBreakdownRequest) => Promise<void>;
                     addItem: (jobId: number, name: string, revenue: number) => Promise<SplitPriceBreakdown>;

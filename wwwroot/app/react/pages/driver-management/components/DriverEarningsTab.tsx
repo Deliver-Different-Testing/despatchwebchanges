@@ -17,10 +17,10 @@ interface DriverEarningsTabProps {
 
 const columns: DataTableColumn<CourierDailyEarnings>[] = [
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
-    {key: 'hoursLogged', label: 'Hours Logged', sortable: true, width: '120px', render: (row) => `${row.hoursLogged.toFixed(1)}h`},
-    {key: 'deliveries', label: 'Deliveries', sortable: true, width: '110px', render: (row) => row.deliveries},
-    {key: 'earnings', label: 'Earnings', sortable: true, width: '110px', render: (row) => formatCurrency(row.earnings)},
-    {key: 'hourlyRate', label: 'Hourly Rate', sortable: true, width: '110px', render: (row) => `${formatCurrency(row.hourlyRate)}/h`},
+    {key: 'hoursLogged', label: 'Hours Logged', sortable: true, width: '120px', align: 'right', render: (row) => `${row.hoursLogged.toFixed(1)}h`},
+    {key: 'deliveries', label: 'Deliveries', sortable: true, width: '110px', align: 'right', render: (row) => row.deliveries},
+    {key: 'earnings', label: 'Earnings', sortable: true, width: '110px', align: 'right', render: (row) => formatCurrency(row.earnings)},
+    {key: 'hourlyRate', label: 'Hourly Rate', sortable: true, width: '110px', align: 'right', render: (row) => `${formatCurrency(row.hourlyRate)}/h`},
 ];
 
 export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast}) => {

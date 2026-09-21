@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -4398,9 +4397,12 @@ public partial class JobRepository(
 
     /// <summary>
     /// The parent's own price items plus every leg's derived allocation, for the split-parent
-    /// grid (docs/pricing/job-splitting-price-breakdown.md §3). Returns null when the job isn't
-    /// a live split parent, or is one with no PricingBreakdownAllocation rows yet — a job split
-    /// before this feature shipped, which the caller falls back to the old flat dialog for.
+    /// grid (docs/pricing/job-splitting-price-breakdown.md §3) — this is the one view every split
+    /// job (parent or child) is shown, so a job with no PricingBreakdownAllocation rows yet (split
+    /// before this feature shipped) gets an equal-share split computed on read rather than a null.
+    /// That computed split is never persisted — it's written for real only if/when the user edits
+    /// and saves, via the normal UpdateSplitPricingBreakdownAsync path. Returns null only when the
+    /// job isn't a live split parent, or has no pricing items or no live legs to show at all.
     /// </summary>
     public async Task<SplitPricingBreakdownDto> GetSplitPricingBreakdownAsync(int jobId)
     {
@@ -4426,7 +4428,11 @@ public partial class JobRepository(
 
         if (allocations.Count == 0)
         {
-            return null;
+            allocations = await SynthesizeEqualSplitAllocationsAsync(jobId, parentItems);
+            if (allocations.Count == 0)
+            {
+                return null;
+            }
         }
 
         var legIds = allocations.Select(a => a.LegJobId).Distinct().ToList();
@@ -4519,6 +4525,51 @@ public partial class JobRepository(
                 ShareLockReason = lockState.ShareLockReason
             }
         };
+    }
+
+    /// <summary>
+    /// An even split across the parent's current live legs, computed in memory (never added to
+    /// the context) for a split parent that has no persisted PricingBreakdownAllocation rows yet.
+    /// </summary>
+    private async Task<List<PricingBreakdownAllocation>> SynthesizeEqualSplitAllocationsAsync(
+        int parentJobId, List<PricingBreakdown> parentItems)
+    {
+        var legIds = await Context.TucJobs
+            .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
+            .OrderBy(j => j.Sequence)
+            .Select(j => j.UcjbId)
+            .ToListAsync();
+
+        if (legIds.Count == 0)
+        {
+            return [];
+        }
+
+        var sharePercent = 100m / legIds.Count;
+        var fractions = legIds.Select(_ => sharePercent / 100m).ToList();
+
+        var synthesized = new List<PricingBreakdownAllocation>();
+        foreach (var item in parentItems)
+        {
+            var revenues = PricingBreakdownAllocationCalculator.DistributeAmount(item.ChargeAmount, fractions);
+            var costs = item.CostAmount.HasValue
+                ? PricingBreakdownAllocationCalculator.DistributeAmount(item.CostAmount.Value, fractions)
+                : null;
+
+            for (var i = 0; i < legIds.Count; i++)
+            {
+                synthesized.Add(new PricingBreakdownAllocation
+                {
+                    ParentPricingBreakdownId = item.PricingBreakdownId,
+                    LegJobId = legIds[i],
+                    SharePercent = sharePercent,
+                    ChargeAmount = revenues[i],
+                    CostAmount = costs?[i]
+                });
+            }
+        }
+
+        return synthesized;
     }
 
     public new async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,

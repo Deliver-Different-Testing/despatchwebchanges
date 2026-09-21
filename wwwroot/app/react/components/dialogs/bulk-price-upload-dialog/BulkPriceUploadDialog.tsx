@@ -404,7 +404,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     pr={8}
                     mb={20}
                     style={{
-                        borderRadius: 'var(--mantine-radius-xl)',
+                        borderRadius: 'var(--mantine-radius-sm)',
                         background: 'var(--mantine-color-gray-1)',
                     }}
                 >

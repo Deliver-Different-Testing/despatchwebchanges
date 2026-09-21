@@ -9,8 +9,8 @@ import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {NoteManagementDialog} from './NoteManagementDialog';
 import {NoteManagementDialogProps} from './types';
 import {JobNote, NoteType} from '../../../interfaces/notes';
-import { renderWithMantineProviders } from '../../../__testUtils__';
-import { setupUser } from '../../../__testUtils__/setupUser';
+import {renderWithMantineProviders} from '../../../__testUtils__';
+import {setupUser} from '../../../__testUtils__/setupUser';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
@@ -65,6 +65,23 @@ const createMockProps = (overrides: Partial<NoteManagementDialogProps> = {}): No
     showToast: jest.fn(),
     ...overrides,
 });
+
+async function CreateNewNoteTypeTest(props: any) {
+    await act(async () => {
+        renderWithTheme(<NoteManagementDialog {...props} />);
+    });
+
+    await waitFor(() => {
+        expect(props.onLoadNoteTypes).toHaveBeenCalled();
+    });
+
+    // Open the "Create New Note Type" sub-form
+    await act(async () => {
+        await userEvent.click(screen.getByRole('button', {name: 'Add note type'}));
+    });
+
+    expect(await screen.findByText('Create New Note Type')).toBeInTheDocument();
+}
 
 describe('NoteManagementDialog', () => {
     // ── New note render: dialog, title, note types loaded, no metadata, char count, save disabled (single render) ─
@@ -157,20 +174,8 @@ describe('NoteManagementDialog', () => {
     // ── Create note type: courier-facing checkbox reveals warning and flows to onCreateNoteType ─
     it('creates a courier-facing note type with a warning shown while ticked', async () => {
         const props = createMockProps();
-        await act(async () => {
-            renderWithTheme(<NoteManagementDialog {...props} />);
-        });
 
-        await waitFor(() => {
-            expect(props.onLoadNoteTypes).toHaveBeenCalled();
-        });
-
-        // Open the "Create New Note Type" sub-form
-        await act(async () => {
-            await userEvent.click(screen.getByRole('button', {name: 'Add note type'}));
-        });
-
-        expect(await screen.findByText('Create New Note Type')).toBeInTheDocument();
+        await CreateNewNoteTypeTest(props);
 
         // Name the new type
         const nameField = screen.getByRole('textbox', {name: /note type name/i});
@@ -198,18 +203,8 @@ describe('NoteManagementDialog', () => {
     // ── Tall content must not strand the footer (the shell's scroll container) ─
     it('keeps Save Note reachable once the note-type creator expands the dialog', async () => {
         const props = createMockProps();
-        await act(async () => {
-            renderWithTheme(<NoteManagementDialog {...props} />);
-        });
 
-        await waitFor(() => {
-            expect(props.onLoadNoteTypes).toHaveBeenCalled();
-        });
-
-        await act(async () => {
-            await userEvent.click(screen.getByRole('button', {name: 'Add note type'}));
-        });
-        expect(await screen.findByText('Create New Note Type')).toBeInTheDocument();
+        await CreateNewNoteTypeTest(props);
 
         // jsdom does no layout, so this asserts the wiring rather than the pixels:
         // the body scrolls and the footer sits outside it, always on screen.

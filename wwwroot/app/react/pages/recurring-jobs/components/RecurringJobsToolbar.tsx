@@ -258,6 +258,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             variant="subtle"
                             color="gray"
                             size="sm"
+                            radius="xl"
                             onClick={handleClearSearch}
                             aria-label="Clear search"
                         >
@@ -304,6 +305,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                         <ActionIcon
                             variant="default"
                             size={FILTER_CONTROL_HEIGHT}
+                            radius="xl"
                             onClick={onRefresh}
                             disabled={isRefreshing}
                             aria-label="Refresh"
@@ -319,6 +321,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                         <ActionIcon
                             variant="default"
                             size={FILTER_CONTROL_HEIGHT}
+                            radius="xl"
                             onClick={onExport}
                             disabled={isLoading || isExporting}
                             aria-label="Export to CSV"
@@ -364,7 +367,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     disabled={isLoading}
                     value={courierInputValue}
                     onChange={handleCourierInputChange}
-                    data={courierSuggestions.map((option) => option.text)}
+                    data={Array.from(new Set(courierSuggestions.map((option) => option.text)))}
                     rightSection={isLoadingCouriers ? <Loader size={16} role="progressbar" aria-label="Loading couriers"/> : undefined}
                     />
                 </Stack>

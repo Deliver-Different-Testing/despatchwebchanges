@@ -2,6 +2,7 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
 import {createTestQueryClient} from '../../../__testUtils__';
+import {setupUser} from '../../../__testUtils__/setupUser';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverDetailsTab} from './DriverDetailsTab';
 import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
@@ -65,6 +66,21 @@ describe('DriverDetailsTab', () => {
             renderWithProviders();
 
             expect(screen.getByText('Driver search')).toBeInTheDocument();
+        });
+
+        it('collapses duplicate driver names from the search result instead of crashing', async () => {
+            setupMocks({
+                searchResults: [
+                    {id: 1, text: 'John Smith'},
+                    {id: 2, text: 'John Smith'},
+                ],
+            });
+            const user = setupUser();
+            renderWithProviders();
+
+            await user.click(screen.getByRole('combobox', {name: 'Select driver'}));
+            const matches = await screen.findAllByText('John Smith');
+            expect(matches).toHaveLength(1);
         });
     });
 

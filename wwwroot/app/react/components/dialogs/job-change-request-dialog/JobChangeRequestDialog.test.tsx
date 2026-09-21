@@ -8,8 +8,8 @@
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
 import {JobChangeRequestDialog, JobChangeRequestDialogProps} from './JobChangeRequestDialog';
-import { renderWithMantine as renderWithTheme } from '../../../__testUtils__';
-import { setupUser } from '../../../__testUtils__/setupUser';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
+import {setupUser} from '../../../__testUtils__/setupUser';
 import {jobChangeRequestApi} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
 

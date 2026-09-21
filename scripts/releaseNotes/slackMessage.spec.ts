@@ -24,10 +24,10 @@ const mr = (overrides: Partial<ReleaseMergeRequest> = {}): ReleaseMergeRequest =
     sourceBranch: 'feat/np-dashboard-visibility',
     labels: [],
     description: [
-        '## What changed',
+        '## New features',
         'DF Admin can now choose which dashboards a Network Partner sees.',
         '',
-        '## How to test',
+        '## What to test',
         'Log in as DF Admin and untick a dashboard.',
     ].join('\n'),
     ...overrides,
@@ -121,11 +121,11 @@ describe('summaryText', () => {
     it('reads as a notification preview, counting only user-visible changes', () => {
         const notes = notesFor([
             mr({ iid: 1, sourceBranch: 'feat/a' }),
-            mr({ iid: 2, sourceBranch: 'fix/b' }),
-            mr({ iid: 3, sourceBranch: 'chore/c' }),
+            mr({ iid: 2, sourceBranch: 'fix/b', description: '' }),
+            mr({ iid: 3, sourceBranch: 'chore/c', description: '' }),
         ]);
 
-        expect(summaryText('Production', notes)).toBe('Live on Production — 2 changes (1 new, 1 fixed)');
+        expect(summaryText('Production', notes)).toBe('Live on Production — 2 changes (1 fixed, 1 new)');
     });
 
     it('gets the singular right, and says so when nothing shipped', () => {
@@ -143,7 +143,7 @@ describe('buildSummaryBlocks', () => {
                     iid: 1146,
                     sourceBranch: 'fix/pod-images-on-scheduled-jobs',
                     webUrl: `${projectUrl}/-/merge_requests/1146`,
-                    description: '## What changed\nPOD images now appear on exports for scheduled jobs.',
+                    description: '## Bug Fixes\nPOD images now appear on exports for scheduled jobs.',
                 }),
             ]),
         );
@@ -153,28 +153,34 @@ describe('buildSummaryBlocks', () => {
             text: { type: 'plain_text', text: '🚀 Live on Production', emoji: true },
         });
         expect(blocks[1].elements?.[0].text).toBe('8 tenants · <!date^1788322320^{date_short_pretty} at {time}|2026-09-02 04:12 UTC>');
-        expect(blocks[2].text?.text).toBe('*2 changes*  ·  1 new · 1 fixed');
+        expect(blocks[2].text?.text).toBe('*2 changes*  ·  1 fixed · 1 new');
         expect(blocks[3]).toEqual({ type: 'divider' });
 
         const body = textOf(blocks);
         expect(body).toContain(
-            `*✨ New*\n• DF Admin can now choose which dashboards a Network Partner sees.  <${projectUrl}/-/merge_requests/1152|!1152>`,
+            `*Bug Fixes*\n• POD images now appear on exports for scheduled jobs.  <${projectUrl}/-/merge_requests/1146|!1146>`,
         );
         expect(body).toContain(
-            `*🛠 Fixed*\n• POD images now appear on exports for scheduled jobs.  <${projectUrl}/-/merge_requests/1146|!1146>`,
+            `*New features*\n• DF Admin can now choose which dashboards a Network Partner sees.  <${projectUrl}/-/merge_requests/1152|!1152>`,
         );
     });
 
-    it('collapses internal work to one line instead of a group', () => {
-        const body = textOf(summary(notesFor([mr({ iid: 1, sourceBranch: 'feat/a' }), mr({ iid: 2, sourceBranch: 'chore/b' })])));
+    it('lists maintenance work as its own group instead of collapsing it to a count', () => {
+        const body = textOf(
+            summary(
+                notesFor([
+                    mr({ iid: 1, sourceBranch: 'feat/a' }),
+                    mr({ iid: 2, sourceBranch: 'chore/b', description: '## Maintenance\nBumped NuGet packages.' }),
+                ]),
+            ),
+        );
 
         expect(body).toContain('*1 change*  ·  1 new');
-        expect(body).toContain('_Plus 1 internal change — dependencies, refactors and tooling, with no user-visible effect._');
-        expect(body).not.toContain('*📋 Other changes*');
+        expect(body).toContain(`*Maintenance*\n• Bumped NuGet packages.  <${projectUrl}/-/merge_requests/1152|!2>`);
     });
 
     it('puts the commit, links and any missing test steps in a quiet footer, not at the top', () => {
-        const blocks = summary(notesFor([mr({ description: '## What changed\nSomething.' })]));
+        const blocks = summary(notesFor([mr({ description: '## Bug Fixes\nSomething.' })]));
         const footer = blocks.at(-1)?.elements?.[0].text ?? '';
 
         expect(footer).toBe(
@@ -199,11 +205,13 @@ describe('buildSummaryBlocks', () => {
         expect(textOf(summary(notesFor([])))).toContain('_No merge requests in this deployment._');
     });
 
-    it('says so when everything in the deployment was internal', () => {
-        const body = textOf(summary(notesFor([mr({ sourceBranch: 'chore/bump' })])));
+    it('says so when everything in the deployment was maintenance', () => {
+        const body = textOf(
+            summary(notesFor([mr({ sourceBranch: 'chore/bump', description: '## Maintenance\nBumped dependencies.' })])),
+        );
 
         expect(body).toContain('*No user-visible changes* in this deployment.');
-        expect(body).toContain('_Plus 1 internal change');
+        expect(body).toContain('*Maintenance*\n• Bumped dependencies.');
     });
 });
 

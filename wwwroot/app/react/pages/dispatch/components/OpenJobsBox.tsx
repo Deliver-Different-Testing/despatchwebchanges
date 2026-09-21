@@ -73,7 +73,7 @@ export const OpenJobsBox: React.FC<OpenJobsBoxProps> = ({
     );
 
     const {data = [], isLoading} = useOverviewOpenJobs(
-        {startDate: range.startDate, endDate: range.endDate, despatchViewIds},
+        {startDate: range.startDate, endDate: range.endDate, despatchViewIds, scopeToDespatchViews: true},
         refetchIntervalMs || undefined,
     );
 

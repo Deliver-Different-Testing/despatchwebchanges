@@ -47,7 +47,7 @@ export const FilterToolbar: React.FC<FilterToolbarProps> = ({
         .filter(Boolean);
 
     return (
-        <Card withBorder p={0} radius="sm" style={{overflow: 'hidden'}}>
+        <Card withBorder p={0} radius="lg" style={{overflow: 'hidden'}}>
             <PanelHeader icon={<Icon lucide={SlidersHorizontal}/>} title="Filters" action={actions} />
             {/*
               * Bottom-aligned for the same reason the recurring-jobs toolbar is: the

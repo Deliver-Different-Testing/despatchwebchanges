@@ -367,3 +367,5 @@ nul
 
 # Markdown files (project-specific docs, Claude instructions, etc.)
 *.md
+/docs/
+/bin_ttest/

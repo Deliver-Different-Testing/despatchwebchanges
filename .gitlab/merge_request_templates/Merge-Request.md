@@ -1,26 +1,31 @@
-## What changed
+## Bug Fixes
 
-<!-- Plain English, written for a tester. Name the tenant or client if relevant — the
-     release channel is internal.
+<!-- One bullet per fix, plain English, written for a tester. Name the tenant or
+     client if relevant — the release channel is internal.
      "Fixed null ref in ConsignmentService" is not a release note.
+     Leave this section out entirely if nothing here is a bug fix. -->
 
-     THE FIRST SENTENCE IS THE HEADLINE. It is what appears, on its own, in
-     #dfrnt-releases when this deploys — read by management as well as testers. Lead
-     with the outcome: "DF Admin can now choose which dashboards a Network Partner
-     sees." Detail goes in the sentences after it. -->
+## New features
 
-## How to test
+<!-- One bullet per new capability. THE FIRST BULLET IS THE HEADLINE. It is what
+     appears, on its own, in #dfrnt-releases when this deploys — read by
+     management as well as testers. Lead with the outcome: "DF Admin can now
+     choose which dashboards a Network Partner sees." Leave this section out
+     entirely if nothing here is a new feature. -->
 
-<!-- Steps and expected result. If we specced this properly, copy the acceptance criteria. -->
+## Maintenance
 
-## Risk / areas touched
+<!-- Refactors, dependency bumps, CI/tooling, test-only changes, docs, formatting
+     — no behavioural change. Leave this section out entirely if there's none. -->
 
-<!-- Optional. Anything a tester should regression-check beyond the change itself. -->
+## What to test
 
-<!-- These three headings are the parsing contract for the automated release notes
-     (scripts/releaseNotes). Anything left empty here shows up in the note — and in
-     #dfrnt-releases — with a "no test steps supplied" warning against your name.
+<!-- Concrete steps and expected result, tied to the Bug Fixes / New features
+     above. If we specced this properly, copy the acceptance criteria. -->
 
-     The branch prefix decides which group the change lands in: feat → New,
-     fix/hotfix → Fixed, perf → Improved, chore/refactor/docs/ci → internal. Add a
-     `type::fix` style label to override a branch you named badly. -->
+<!-- These four headings are the parsing contract for the automated release notes
+     (scripts/releaseNotes) and for #dfrnt-releases. Whichever of Bug Fixes / New
+     features / Maintenance you filled in decides which group this lands in — no
+     need to get the branch prefix right. Leave a section out entirely if it has
+     nothing in it; never write "None". Anything left empty in "What to test"
+     shows up with a "no test steps supplied" warning against your name. -->

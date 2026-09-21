@@ -103,6 +103,7 @@ export const OverviewDeliveriesBox: React.FC<OverviewDeliveriesBoxProps> = ({
             orderBy: sort.column,
             orderDirection: sort.direction,
             despatchViewIds,
+            scopeToDespatchViews: true,
         },
         refetchIntervalMs || undefined,
     );

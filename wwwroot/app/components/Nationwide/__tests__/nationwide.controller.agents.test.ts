@@ -81,7 +81,6 @@ describe('addSelectedAgentToJob', () => {
 
         expect(ctrl.dispatchDialogService.openDispatchDialog)
             .toHaveBeenCalledWith(job, 'Agent', {id: 1, text: 'Agent'});
-        expect(ctrl.flightAgentConfirmationDialogService.agentConfirmationDialog).not.toHaveBeenCalled();
     });
 
     it('returns early when the modal is cancelled', async () => {

@@ -23,8 +23,8 @@ export const SendToLiveConfirmationDialog: React.FC<SendToLiveConfirmationDialog
         setIsSubmitting(true);
         try {
             await onConfirm();
-        } catch {
-            // Parent surfaces failures (e.g. via toast); the dialog closes regardless.
+        } catch(error) {
+           console.error("Something went wrong: ", error);
         } finally {
             setIsSubmitting(false);
             onClose();

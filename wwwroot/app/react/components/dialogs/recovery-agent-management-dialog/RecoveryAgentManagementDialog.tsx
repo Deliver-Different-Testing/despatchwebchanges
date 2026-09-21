@@ -715,7 +715,7 @@ function AddressRow({icon, label, value}: {
         <Group gap="md" align="flex-start" wrap="nowrap">
             <ThemeIcon
                 size={32}
-                radius="sm"
+                radius="lg"
                 style={{'--ti-bg': headerOverlayColor(0.2), '--ti-color': 'inherit'} as React.CSSProperties}
             >
                 {icon}
@@ -748,7 +748,7 @@ function DetailCard({icon, label, value, valueColor}: DetailCardProps): React.Re
                 border: '1px solid var(--mantine-color-default-border)',
             }}
         >
-            <ThemeIcon size={32} radius="sm" variant="light" color="brand">
+            <ThemeIcon size={32} radius="lg" variant="light" color="brand">
                 {icon}
             </ThemeIcon>
             <Box style={{minWidth: 0}}>

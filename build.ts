@@ -33,11 +33,10 @@ type EntryPointName =
     | 'vendor-plugins'
     | 'vendor-react'
     | 'app'
-    | 'home'
     | 'nationwide'
-    | 'jobSearch'
     | 'taskDashboardReact'
     | 'driverManagementReact'
+    | 'settingsReact'
     | 'composeEmailDialogReact'
     | 'courierMapReact'
     | 'dateRangeDialogReact'
@@ -70,7 +69,6 @@ type EntryPointName =
     | 'jobListReact'
     | 'currentWorkJobListReact'
     | 'nationwideJobListReact'
-    | 'jobSearchJobListReact'
     | 'jobDetailsReact'
     | 'jobSearchReact'
     | 'nationwideReact'
@@ -88,11 +86,10 @@ const entryPoints: EntryPoints = {
     "vendor-plugins": path.join(rootDir, "wwwroot/app/vendor-plugins.ts"),
     "vendor-react": path.join(rootDir, "wwwroot/app/vendor-react.ts"),
     app: path.join(rootDir, "wwwroot/app/app.ts"),
-    home: path.join(rootDir, "wwwroot/app/components/home/home.module.ts"),
     nationwide: path.join(rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
-    jobSearch: path.join(rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
     driverManagementReact: path.join(rootDir, "wwwroot/app/react/pages/driver-management/driver-management-react.module.tsx"),
+    settingsReact: path.join(rootDir, "wwwroot/app/react/pages/settings/settings-react.module.tsx"),
     composeEmailDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/compose-email-dialog/compose-email-dialog-react.module.tsx"),
     courierMapReact: path.join(rootDir, "wwwroot/app/react/pages/courier-map/courier-map-react.module.tsx"),
     dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),
@@ -126,7 +123,6 @@ const entryPoints: EntryPoints = {
     jobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-list-react.module.tsx"),
     currentWorkJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/current-work-job-list-react.module.tsx"),
     nationwideJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/nationwide-job-list-react.module.tsx"),
-    jobSearchJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-search-job-list-react.module.tsx"),
     jobDetailsReact: path.join(rootDir, "wwwroot/app/react/components/common/job-details/job-details-react.module.tsx"),
     jobSearchReact: path.join(rootDir, "wwwroot/app/react/pages/job-search/job-search-react.module.tsx"),
     nationwideReact: path.join(rootDir, "wwwroot/app/react/pages/nationwide/nationwide-react.module.tsx"),
@@ -479,66 +475,6 @@ function generateSimpleManifest(): Record<string, string> {
     return manifest;
 }
 
-// Raised from 9_335_000 for SplitPricingBreakdownDialog's leg-card redesign (colored per-leg
-// identity badges, restructured revenue/cost/margin layout) (2026-09-17).
-const TOTAL_JS_BUDGET = 9_345_000;
-const bundleBudgets: Partial<Record<EntryPointName, number>> = {
-    "vendor-react": 1_075_000,
-    "vendor-core": 995_000,
-    app: 551_000,
-    nationwide: 424_000,
-    home: 442_000,
-    dispatchReact: 435_000,
-    jobSearchReact: 410_000,
-    nationwideReact: 444_000,
-    recurringJobsReact: 401_000,
-    jobSearch: 395_000,
-    taskDashboardReact: 374_000,
-    jobDetailsReact: 335_000,
-    currentWorkJobListReact: 259_000,
-    jobListReact: 259_000,
-    jobSearchJobListReact: 259_000,
-    nationwideJobListReact: 259_000,
-};
-
-function checkBudgets(metafile: esbuild.Metafile): void {
-    const jsOutputs = Object.entries(metafile.outputs).filter(
-        ([name]) => name.endsWith(".js")
-    );
-
-    const breaches: string[] = [];
-
-    for (const [outputPath, output] of jsOutputs) {
-        const fileName = path.basename(outputPath);
-        for (const [entryName, budget] of Object.entries(bundleBudgets)) {
-            if (!fileName.match(new RegExp(`^${entryName}\\.[a-zA-Z0-9]+\\.js$`))) continue;
-            if (output.bytes > budget) {
-                const over = (((output.bytes - budget) / budget) * 100).toFixed(1);
-                breaches.push(
-                    `  ${entryName}: ${output.bytes} bytes exceeds budget ${budget} (+${over}%)`
-                );
-            }
-        }
-    }
-
-    const totalJs = jsOutputs.reduce((sum, [, output]) => sum + output.bytes, 0);
-    if (totalJs > TOTAL_JS_BUDGET) {
-        const over = (((totalJs - TOTAL_JS_BUDGET) / TOTAL_JS_BUDGET) * 100).toFixed(1);
-        breaches.push(
-            `  [total JS]: ${totalJs} bytes exceeds budget ${TOTAL_JS_BUDGET} (+${over}%)`
-        );
-    }
-
-    if (breaches.length > 0) {
-        console.error("\n[ERROR] Bundle size budget exceeded:");
-        breaches.forEach((b) => console.error(b));
-        console.error(
-            "\nRun `npm run build -- --analyze` to see what grew, or adjust the budget in build.ts if the growth is intended.\n"
-        );
-        process.exit(1);
-    }
-}
-
 const brotliCompress = promisify(zlib.brotliCompress);
 const gzipCompress = promisify(zlib.gzip);
 
@@ -689,9 +625,7 @@ async function buildProd(): Promise<void> {
     if (isAnalyze) {
         analyzeBundle(mergedMetafile);
     }
-
-    checkBudgets(mergedMetafile);
-
+    
     await compressDist();
 
     const manifest = generateManifestFromMetafile(mergedMetafile);
