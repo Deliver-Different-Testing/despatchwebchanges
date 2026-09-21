@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import {screen, waitFor, within} from '@testing-library/react';
+import {act, screen, waitFor, within} from '@testing-library/react';
+import {notifications} from '@mantine/notifications';
 import {JobChangeRequestDialog, JobChangeRequestDialogProps} from './JobChangeRequestDialog';
 import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 import {setupUser} from '../../../__testUtils__/setupUser';
@@ -48,6 +49,14 @@ describe('JobChangeRequestDialog', () => {
             {id: 2, text: 'Express'},
             {id: 3, text: 'Same Day'},
         ]);
+    });
+
+    // The toast service mounts its own singleton root — notifications from one
+    // test otherwise pile up and delay/hide the toast the next test asserts on.
+    afterEach(async () => {
+        await act(async () => {
+            notifications.clean();
+        });
     });
 
     it('shows the job number and a field-specific title', () => {
@@ -137,6 +146,8 @@ describe('JobChangeRequestDialog', () => {
                 reason: undefined,
             });
         });
+        // Await the resulting toast so it doesn't leak into the next test.
+        expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
     });
 
     it('shows a "re-rates" notice for commercial fields', () => {
@@ -150,55 +161,111 @@ describe('JobChangeRequestDialog', () => {
     });
 
     describe('address fields', () => {
-        it('renders structured address inputs and submits a JSON payload', async () => {
-            const user = setupUser();
-            mockCreate.mockResolvedValueOnce({
-                success: true,
-                request: {status: 'Pending'},
-            });
-            renderDialog({preselectedFieldName: 'PickupAddress'});
-
-            await user.click(screen.getByLabelText(/Address line 1/i));
-            await user.paste('123 Cuba St');
-            await user.click(screen.getByLabelText(/Suburb/i));
-            await user.paste('Te Aro');
-            await user.click(screen.getByLabelText(/City/i));
-            await user.paste('Wellington');
-            await user.click(screen.getByLabelText(/Postcode/i));
-            await user.paste('6011');
-
-            await user.click(screen.getByRole('button', {name: /Submit/}));
-
-            await waitFor(() => {
-                expect(mockCreate).toHaveBeenCalledTimes(1);
-            });
-            const call = mockCreate.mock.calls[0][0];
-            expect(call.fieldName).toBe('PickupAddress');
-            const payload = JSON.parse(call.requestedValue);
-            expect(payload.addressLine1).toBe('123 Cuba St');
-            expect(payload.addressLine3).toBe('Te Aro');
-            expect(payload.addressLine4).toBe('Wellington');
-            expect(payload.addressLine6).toBe('6011');
-            // fullAddress is derived from the joined non-empty lines.
-            expect(payload.fullAddress).toContain('123 Cuba St');
-            expect(payload.fullAddress).toContain('Wellington');
+        afterEach(() => {
+            delete (window as any).serverConfig;
         });
 
-        it('rejects submission when all address lines are empty', async () => {
-            const user = setupUser();
-            renderDialog({preselectedFieldName: 'DeliveryAddress'});
-            await user.click(screen.getByRole('button', {name: /Submit/}));
-            expect(screen.getByText(/Enter at least one address line/)).toBeInTheDocument();
-            expect(mockCreate).not.toHaveBeenCalled();
+        describe('NZ tenant', () => {
+            beforeEach(() => {
+                (window as any).serverConfig = {isUSCustomer: false};
+            });
+
+            it('renders Suburb/City/Postcode inputs and submits a JSON payload', async () => {
+                const user = setupUser();
+                mockCreate.mockResolvedValueOnce({
+                    success: true,
+                    request: {status: 'Pending'},
+                });
+                renderDialog({preselectedFieldName: 'PickupAddress'});
+
+                await user.click(screen.getByLabelText(/Address line 1/i));
+                await user.paste('123 Cuba St');
+                await user.click(screen.getByLabelText(/Suburb/i));
+                await user.paste('Te Aro');
+                await user.click(screen.getByLabelText(/City/i));
+                await user.paste('Wellington');
+                await user.click(screen.getByLabelText(/Postcode/i));
+                await user.paste('6011');
+
+                expect(screen.queryByLabelText(/^State$/i)).not.toBeInTheDocument();
+
+                await user.click(screen.getByRole('button', {name: /Submit/}));
+
+                await waitFor(() => {
+                    expect(mockCreate).toHaveBeenCalledTimes(1);
+                });
+                const call = mockCreate.mock.calls[0][0];
+                expect(call.fieldName).toBe('PickupAddress');
+                const payload = JSON.parse(call.requestedValue);
+                expect(payload.addressLine1).toBe('123 Cuba St');
+                expect(payload.addressLine3).toBe('Te Aro');
+                expect(payload.addressLine4).toBe('Wellington');
+                expect(payload.addressLine6).toBe('6011');
+                // fullAddress is derived from the joined non-empty lines.
+                expect(payload.fullAddress).toContain('123 Cuba St');
+                expect(payload.fullAddress).toContain('Wellington');
+                // Await the resulting toast so it doesn't leak into the next test.
+                expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
+            });
+
+            it('rejects submission when all address lines are empty', async () => {
+                const user = setupUser();
+                renderDialog({preselectedFieldName: 'DeliveryAddress'});
+                await user.click(screen.getByRole('button', {name: /Submit/}));
+                expect(screen.getByText(/Enter at least one address line/)).toBeInTheDocument();
+                expect(mockCreate).not.toHaveBeenCalled();
+            });
+
+            it('pre-fills address fields from a serialised preInitialValue', () => {
+                renderDialog({
+                    preselectedFieldName: 'PickupAddress',
+                    preInitialValue: JSON.stringify({addressLine1: '99 Lambton Quay', addressLine4: 'Wellington'}),
+                });
+                expect(screen.getByLabelText(/Address line 1/i)).toHaveValue('99 Lambton Quay');
+                expect(screen.getByLabelText(/City/i)).toHaveValue('Wellington');
+            });
         });
 
-        it('pre-fills address fields from a serialised preInitialValue', () => {
-            renderDialog({
-                preselectedFieldName: 'PickupAddress',
-                preInitialValue: JSON.stringify({addressLine1: '99 Lambton Quay', addressLine4: 'Wellington'}),
+        describe('US tenant', () => {
+            beforeEach(() => {
+                (window as any).serverConfig = {isUSCustomer: true};
             });
-            expect(screen.getByLabelText(/Address line 1/i)).toHaveValue('99 Lambton Quay');
-            expect(screen.getByLabelText(/City/i)).toHaveValue('Wellington');
+
+            it('renders City/State/ZIP inputs instead of Suburb/Postcode, and submits a JSON payload', async () => {
+                const user = setupUser();
+                mockCreate.mockResolvedValueOnce({
+                    success: true,
+                    request: {status: 'Pending'},
+                });
+                renderDialog({preselectedFieldName: 'PickupAddress'});
+
+                expect(screen.queryByLabelText(/Suburb/i)).not.toBeInTheDocument();
+                expect(screen.queryByLabelText(/^Postcode$/i)).not.toBeInTheDocument();
+
+                await user.click(screen.getByLabelText(/Address line 1/i));
+                await user.paste('123 Main St');
+                await user.click(screen.getByLabelText(/City/i));
+                await user.paste('Portland');
+                await user.click(screen.getByLabelText(/^State$/i));
+                await user.paste('OR');
+                await user.click(screen.getByLabelText(/ZIP Code/i));
+                await user.paste('97201');
+
+                await user.click(screen.getByRole('button', {name: /Submit/}));
+
+                await waitFor(() => {
+                    expect(mockCreate).toHaveBeenCalledTimes(1);
+                });
+                const call = mockCreate.mock.calls[0][0];
+                expect(call.fieldName).toBe('PickupAddress');
+                const payload = JSON.parse(call.requestedValue);
+                expect(payload.addressLine1).toBe('123 Main St');
+                expect(payload.addressLine4).toBe('Portland');
+                expect(payload.addressLine5).toBe('OR');
+                expect(payload.addressLine6).toBe('97201');
+                // Await the resulting toast so it doesn't leak into the next test.
+                expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
+            });
         });
     });
 
@@ -310,6 +377,8 @@ describe('JobChangeRequestDialog', () => {
                     reason: 'Customer requested a rate review after holiday surcharge',
                 });
             });
+            // Await the resulting toast so it doesn't leak into the next test.
+            expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
         });
 
         it('renders addresses as a parsed single-line summary', () => {

@@ -585,8 +585,6 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             case DispatchBoxes.JobsList:
                 return (
                     <JobListPanel
-                        columnEditMode={columnEditMode}
-                        onExitColumnEditMode={handleExitColumnEditMode}
                         // Only the clear-list scope remounts: it swaps fetchFn/queryKeyFn and
                         // forces its own category. View and date changes are pushed in below.
                         key={clearListId ?? 'all'}

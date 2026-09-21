@@ -118,8 +118,8 @@ describe('CreateJobDialog', () => {
             // Form fields
             expect(screen.getByRole('combobox', {name: /client/i})).toBeInTheDocument();
             expect(screen.getByLabelText(/charge amount/i)).toBeInTheDocument();
-            // isUsTenant=true in defaultProps -> weight label is "Weight (lb)"
-            expect(screen.getByLabelText(/weight \(lb\)/i)).toBeInTheDocument();
+            // isUsTenant=true in defaultProps -> weight label is "Weight (lbs)"
+            expect(screen.getByLabelText(/weight \(lbs\)/i)).toBeInTheDocument();
             expect(screen.getByRole('combobox', {name: /courier/i})).toBeInTheDocument();
             expect(screen.getByLabelText(/job date/i)).toBeInTheDocument();
             expect(screen.getByRole('combobox', {name: /pickup address/i})).toBeInTheDocument();
@@ -178,7 +178,7 @@ describe('CreateJobDialog', () => {
             expect(showToast).not.toHaveBeenCalled();
 
             // Every incomplete field is listed in the summary as a shortcut to itself
-            ['Client', 'Charge Amount', 'Weight (lb)', 'Pickup Address', 'Pickup Contact',
+            ['Client', 'Charge Amount', 'Weight (lbs)', 'Pickup Address', 'Pickup Contact',
                 'Delivery Address', 'Delivery Contact', 'POD Name', 'Vehicle', 'Speed']
                 .forEach(label => {
                     expect(within(summary).getByRole('button', {name: label})).toBeInTheDocument();
@@ -406,7 +406,7 @@ describe('CreateJobDialog', () => {
             const props = createMockProps({onSubmit, showToast, isUsTenant: true});
             renderWithAllProviders(<CreateJobDialog {...props} />);
 
-            await fillRequiredFields(/weight \(lb\)/i);
+            await fillRequiredFields(/weight \(lbs\)/i);
 
             // Submit — use fireEvent.click to avoid the slow user-event pointer pipeline
             // (the rest of the test already uses fireEvent for the same reason)
@@ -451,7 +451,7 @@ describe('CreateJobDialog', () => {
             const props = createMockProps({onSubmit, showToast, isUsTenant: true});
             renderWithAllProviders(<CreateJobDialog {...props} />);
 
-            await fillRequiredFields(/weight \(lb\)/i);
+            await fillRequiredFields(/weight \(lbs\)/i);
             fireEvent.click(screen.getByRole('button', {name: /create job/i}));
 
             await waitFor(() => {

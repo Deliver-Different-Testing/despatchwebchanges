@@ -48,4 +48,21 @@ public class StaffPreferenceRepository(
 
         await Context.SaveChangesAsync();
     }
+
+    public async Task DeletePreferenceAsync(string key)
+    {
+        var staffId = infoService.GetStaffId();
+
+        var existing = await Context.StaffPreferences
+            .AsTracking()
+            .FirstOrDefaultAsync(p => p.StaffId == staffId && p.PreferenceKey == key);
+
+        if (existing is null)
+        {
+            return;
+        }
+
+        Context.StaffPreferences.Remove(existing);
+        await Context.SaveChangesAsync();
+    }
 }

@@ -295,7 +295,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
         const profit = revenue - totalCost;
         const margin = revenue > 0 ? ((profit / revenue) * 100) : 0;
 
-        return {item, name, revenue, cells, totalCost, profit, margin, hasItemShareOverride: itemShareOverride !== undefined};
+        return {item, name, revenue, cells, totalCost, totalDerivedCost, profit, margin, hasItemShareOverride: itemShareOverride !== undefined};
     }), [breakdownState.items, legKeys, revenueEdits, nameEdits, shareEdits, legShareEdits, costOverrideEdits, isEdit]);
 
     const totals = useMemo(() => {
@@ -371,12 +371,31 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
         setLegShareEdits(nextLegShareEdits);
     };
 
-    const handleCostChange = (itemId: number, legKey: number, value: number) => {
-        setCostOverrideEdits((prev) => ({...prev, [itemId]: {...prev[itemId], [legKey]: value}}));
+    const handleCostChange = (itemId: number, changedLegKey: number, value: number) => {
+        setCostOverrideEdits((prev) => ({...prev, [itemId]: {...prev[itemId], [changedLegKey]: value}}));
+
+        const row = rows.find((r) => r.item.pricingBreakdownId === itemId);
+        const changedIndex = legKeys.indexOf(changedLegKey);
+        if (!row || changedIndex < 0 || row.totalDerivedCost <= 0) return;
+
+        const newSharePercent = (value / row.totalDerivedCost) * 100;
+        const currentShares = row.cells.map((c) => c.sharePercent);
+        const normalized = normalizeShares(currentShares, changedIndex, newSharePercent);
+        const legShareMap: Record<number, number> = {};
+        legKeys.forEach((legKey, i) => {
+            legShareMap[legKey] = normalized[i];
+        });
+        setShareEdits((prev) => ({...prev, [itemId]: legShareMap}));
     };
 
     const handleResetCost = (itemId: number, legKey: number) => {
         setCostOverrideEdits((prev) => ({...prev, [itemId]: {...prev[itemId], [legKey]: null}}));
+        // The cost edit may have synced this item's share (handleCostChange); undo that too.
+        setShareEdits((prev) => {
+            const next = {...prev};
+            delete next[itemId];
+            return next;
+        });
     };
 
     const handleSaveEdit = async () => {

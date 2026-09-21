@@ -14,13 +14,14 @@
  *   - Radius scale squared off and the lozenge-button defaults dropped (see
  *     `tokens.radius` and the `Button`/`ActionIcon`/`Chip`/`SegmentedControl`
  *     component overrides below) — this app's operators found the fully-rounded
- *     brand shape read as toy-like on a dense operational dashboard. `Switch`
- *     keeps its pill track; that's a near-universal toggle affordance, not the
- *     decorative pill shape being moved away from. Don't re-copy this file's
- *     radius section from the skill without re-applying this deviation.
+ *     brand shape read as toy-like on a dense operational dashboard, so it's
+ *     softly rounded rather than fully square or a lozenge. `Switch` keeps its
+ *     pill track; that's a near-universal toggle affordance, not the decorative
+ *     pill shape being moved away from. Don't re-copy this file's radius section
+ *     from the skill without re-applying this deviation.
  *
  * Brand: Ink Blue #0d0c2c shell · Cyan #3bc7f4 primary · Light Grey #f4f2f1 page
- * (light) / charcoal #2c2a30 (dark). Elevation by tone not shadow.
+ * (light) / charcoal #2c2a30 (dark). Elevation by tone, plus a soft shadow.
  */
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
 import {getMd3Scheme} from './md3';
@@ -197,13 +198,13 @@ export const codeBlockPalette = {
 };
 
 /**
- * Radius / duration / shadow tokens (squared-off corporate corner scale).
+ * Radius / duration / shadow tokens (softly-rounded corporate corner scale).
  * `xl` stays large deliberately — it's what makes `radius="xl"` clip to a full
  * circle on avatars/ThemeIcons app-wide; shrinking it would turn those circles
  * into rounded squares, which was never part of the "less rounded" complaint.
  */
 export const tokens = {
-    radius: {xs: 2, sm: 4, md: 6, lg: 8, xl: 28, full: 9999, tile: 2},
+    radius: {xs: 2, sm: 8, md: 10, lg: 14, xl: 28, full: 9999, tile: 2},
     duration: {instant: 100, fast: 150, normal: 200, slow: 350},
     shadow: {
         sm: '0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1)',
@@ -249,23 +250,30 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
         },
         defaultRadius: 'sm',
         // `xl` stays large — see the `tokens.radius` comment above.
-        radius: {xs: '2px', sm: '4px', md: '6px', lg: '8px', xl: '28px'},
+        radius: {xs: '2px', sm: '8px', md: '10px', lg: '14px', xl: '28px'},
+        // Wires the app's own soft shadow scale (`tokens.shadow`, already what the
+        // LESS `@elevation-*` vars sync against) into Mantine's native shadow
+        // system, so every `var(--mantine-shadow-*)` consumer app-wide gets the
+        // same soft values instead of Mantine's un-customized defaults. `tokens.shadow`
+        // has no `xs` tier, so it reuses `sm` — Mantine requires all five sizes.
+        shadows: {xs: tokens.shadow.sm, ...tokens.shadow},
         components: {
             Button: {defaultProps: {radius: 'sm'}},
             ActionIcon: {defaultProps: {radius: 'sm'}},
-            // Cards/paper sit one tonal tier above the page in both schemes (elevation by
-            // tone, not shadow). Applied as a class-based `styles.root`, NOT a `bg`
-            // defaultProp, so a component's own inline `style={{background}}` still wins.
+            // Cards/paper sit one tonal tier above the page in both schemes, plus a soft
+            // shadow for a little lift. Background applied as a class-based `styles.root`,
+            // NOT a `bg` defaultProp, so a component's own inline `style={{background}}`
+            // still wins.
             Card: {
-                defaultProps: {radius: 'md'},
+                defaultProps: {radius: 'md', shadow: 'sm'},
                 styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
             },
             Paper: {
-                defaultProps: {radius: 'md'},
+                defaultProps: {radius: 'md', shadow: 'sm'},
                 styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
             },
             Modal: {
-                defaultProps: {radius: 'md', centered: true},
+                defaultProps: {radius: 'md', centered: true, shadow: 'md'},
                 styles: {content: {backgroundColor: 'var(--dd-surface-container-high)'}},
             },
             TextInput: {defaultProps: {radius: 'sm'}},

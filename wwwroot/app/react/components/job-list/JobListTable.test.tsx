@@ -98,6 +98,34 @@ describe('JobListTable', () => {
         });
     });
 
+    // ── Configurable address format ───────────────────────────────────
+    describe('addressFieldOrder', () => {
+        it('renders pickup and delivery using the configured field order instead of NZ/US defaults', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                addressFieldOrder: ['streetNumber', 'streetName'],
+            })}/>);
+
+            expect(screen.getByText('10, Queen St')).toBeInTheDocument(); // pickup
+            expect(screen.getByText('20, High St')).toBeInTheDocument(); // delivery
+        });
+
+        it('takes precedence over isUsCustomer when both are set', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                isUsCustomer: true,
+                addressFieldOrder: ['cityOrSuburb'],
+            })}/>);
+
+            expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // pickup
+            expect(screen.getByText('Newmarket')).toBeInTheDocument(); // delivery
+        });
+
+        it('falls back to the NZ/US default when no field order is configured', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+
+            expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // NZ pickup: suburb only
+        });
+    });
+
     // ── Table Rendering (single render) ─────────────────────────────
     describe('Table Rendering', () => {
         it('renders table headers, job data, resize handles and correct column visibility', () => {

@@ -23,6 +23,7 @@ public static class RepositoryServiceCollectionExtensions
         services.AddScoped<IAccessorialChargeRepository, AccessorialChargeRepository>();
         services.AddScoped<IDispatchLayoutRepository, DispatchLayoutRepository>();
         services.AddScoped<IStaffPreferenceRepository, StaffPreferenceRepository>();
+        services.AddScoped<ITenantSettingsService, TenantSettingsService>();
 
         return services;
     }

@@ -10,10 +10,12 @@ export {DialogHeader} from './DialogHeader';
 export {DialogFooter} from './DialogFooter';
 export {
     headerColors,
+    headerAccents,
     headerSurfaceAccent,
     headerChromeStyle,
     headerChipProps,
     headerOnColor,
+    headerAccentColor,
     headerOverlayColor,
     sectionPaperProps,
     sectionLabelProps,

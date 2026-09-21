@@ -1,5 +1,5 @@
 /**
- * Job List view options — density selector, reset-columns, and the (dispatch-only)
+ * Job List view options — density selector, reset/edit-columns, and the (dispatch-only)
  * "logged-in couriers only" toggle. Rendered either inline in the toolbar
  * (default) or, on the dispatch page, portaled into the panel header
  * (`headerVariant`) — a plain `'surface'` paper bar, so controls inherit the
@@ -13,7 +13,7 @@
 
 import React from 'react';
 import {Group, Switch} from '@mantine/core';
-import {AlignJustify, Check, Columns3, Rows3, Rows4} from 'lucide-react';
+import {AlignJustify, Check, Columns3, Rows3, Rows4, Settings2} from 'lucide-react';
 
 import {Icon} from '../common/icon/Icon';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../common/panel-controls';
@@ -25,6 +25,7 @@ interface JobListViewOptionsProps {
     densityMode: DensityMode;
     onDensityModeChange: (mode: DensityMode) => void;
     onResetColumns: () => void;
+    onEditColumns: () => void;
     loggedInCouriersOnly: boolean;
     onLoggedInCouriersOnlyChange: (checked: boolean) => void;
     /** Show the logged-in-couriers toggle (dispatch contexts only). */
@@ -52,6 +53,7 @@ export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
     densityMode,
     onDensityModeChange,
     onResetColumns,
+    onEditColumns,
     loggedInCouriersOnly,
     onLoggedInCouriersOnlyChange,
     showLoggedInSwitch,
@@ -89,6 +91,10 @@ export const JobListViewOptions: React.FC<JobListViewOptionsProps> = ({
 
         <HeaderActionIcon label="Reset columns" onClick={onResetColumns}>
             <Icon lucide={Columns3} size={PANEL_CONTROL_GLYPH_SIZE}/>
+        </HeaderActionIcon>
+
+        <HeaderActionIcon label="Edit columns" onClick={onEditColumns}>
+            <Icon lucide={Settings2} size={PANEL_CONTROL_GLYPH_SIZE}/>
         </HeaderActionIcon>
     </Group>
 );

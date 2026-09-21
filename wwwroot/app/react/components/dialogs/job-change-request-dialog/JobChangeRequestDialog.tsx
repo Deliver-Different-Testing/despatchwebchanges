@@ -23,6 +23,7 @@ import {jobChangeRequestApi} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
 import {toastService} from '../../../services/toastService';
 import {FIELD_META, formatChangeRequestValue, getFieldMeta, type JobChangeRequestFieldMeta} from '../../job-change-requests/jobChangeRequestFormatting';
+import {isUsCustomer} from '../../../utils/dateUtils';
 import type {ISuggestion} from '../../../../interfaces/job.interface';
 import type {JobChangeRequestResult} from '../../../interfaces/jobChangeRequest';
 
@@ -520,6 +521,7 @@ interface AddressFieldGroupProps {
 function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
     const set = (key: keyof AddressDraft) => (event: React.ChangeEvent<HTMLInputElement>) =>
         onChange({...value, [key]: event.currentTarget.value});
+    const isUs = isUsCustomer();
     return (
         <Stack gap="xs">
             <TextInput
@@ -534,12 +536,12 @@ function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
                 onChange={set('addressLine2')}
             />
             <Group gap="xs" grow align="flex-start">
-                <TextInput label="Suburb" value={value.addressLine3} onChange={set('addressLine3')}/>
+                {!isUs && <TextInput label="Suburb" value={value.addressLine3} onChange={set('addressLine3')}/>}
                 <TextInput label="City" value={value.addressLine4} onChange={set('addressLine4')}/>
+                {isUs && <TextInput label="State" value={value.addressLine5} onChange={set('addressLine5')}/>}
             </Group>
             <Group gap="xs" grow align="flex-start">
-                <TextInput label="State" value={value.addressLine5} onChange={set('addressLine5')}/>
-                <TextInput label="Postcode" value={value.addressLine6} onChange={set('addressLine6')}/>
+                <TextInput label={isUs ? 'ZIP Code' : 'Postcode'} value={value.addressLine6} onChange={set('addressLine6')}/>
                 <TextInput label="Country" value={value.addressLine7} onChange={set('addressLine7')}/>
             </Group>
         </Stack>

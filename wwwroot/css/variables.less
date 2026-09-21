@@ -1,6 +1,6 @@
-@standard-grey: #999;
+@standard-grey: #a8a29e;
 
-// Primary colors - aligned with MUI theme (muiTheme.ts). US tenants: DFRNT Cyan.
+// Primary colors - aligned with the Mantine theme (dfrntMantineTheme.ts). US tenants: DFRNT Cyan.
 @primary-blue: #3bc7f4;
 @primary-green: #13b964;
 @primary-color: #3bc7f4;
@@ -52,33 +52,29 @@
 @status-gray: #78716c; // Completed, Awaiting POD, Assuming Completed (warm gray 600 - white text)
 
 // Spacing
-@brand: #333;
 @spacing: 14px;
-
-// Animations
-@animationDuration: 1s;
 
 // MD3 Motion tokens
 @duration-short: 150ms;
 @duration-medium: 300ms;
 @easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
 
-// Squared-off corporate corner scale - matches tokens.radius in dfrntMantineTheme.ts
-@radius-sm: 4px;
-@radius-md: 6px;
-@radius-lg: 8px;
+// Softly-rounded corporate corner scale - matches tokens.radius in dfrntMantineTheme.ts
+@radius-sm: 8px;
+@radius-md: 10px;
+@radius-lg: 14px;
 @radius-full: 9999px;
 
-// MD3 Elevation tokens - matches MUI tokens.shadow
+// MD3 Elevation tokens - matches tokens.shadow in dfrntMantineTheme.ts
 @elevation-1: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);
 @elevation-2: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
 @elevation-3: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
 
-// MD3 Surface colors
-@surface-container-lowest: #fafafa;
-@surface-container-low: #f5f5f5;
-@surface-container: #eeeeee;
-@surface-container-high: #e0e0e0;
+// MD3 Surface colors - matches the warm ladder in theme/md3.ts
+@surface-container-lowest: #ffffff;
+@surface-container-low: #f8f7f7;
+@surface-container: #f5f5f4;
+@surface-container-high: #e7e5e4;
 
 // Font Sizes
 @font-xs: 11px; // Status badges, timestamps, meta info
@@ -100,5 +96,3 @@
 @line-snug: 1.375;
 @line-normal: 1.4;
 @line-relaxed: 1.5;
-
-@dialog-border-radius: 12px;

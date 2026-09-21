@@ -609,8 +609,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             case JobSearchBoxes.JobList:
                 return (
                     <JobListPanel
-                        columnEditMode={columnEditMode}
-                        onExitColumnEditMode={handleExitColumnEditMode}
                         showToast={showToast}
                         isUsCustomer={isUsCustomer}
                         appPage={AppPage.JobSearch}
@@ -630,8 +628,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             case JobSearchBoxes.BulkJobList:
                 return (
                     <JobListPanel
-                        columnEditMode={columnEditMode}
-                        onExitColumnEditMode={handleExitColumnEditMode}
                         showToast={showToast}
                         isUsCustomer={isUsCustomer}
                         appPage={AppPage.JobSearch}

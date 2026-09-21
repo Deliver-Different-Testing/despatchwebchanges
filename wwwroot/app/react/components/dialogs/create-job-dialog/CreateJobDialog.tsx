@@ -235,7 +235,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
     const [submitAttempt, setSubmitAttempt] = useState(0);
     const summaryRef = useRef<HTMLDivElement>(null);
 
-    const weightLabel = isUsTenant ? 'Weight (lb)' : 'Weight (kg)';
+    const weightLabel = isUsTenant ? 'Weight (lbs)' : 'Weight (kg)';
 
     /* The tenant's currency marker, taken from the same formatter the rest of the
        app prices with rather than a symbol table of our own. */

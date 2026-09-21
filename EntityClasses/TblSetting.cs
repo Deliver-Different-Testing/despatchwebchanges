@@ -351,5 +351,12 @@ public partial class TblSetting
 
     public bool OpenforceConsolidateCommission { get; set; }
 
+    /// <summary>
+    /// Tenant-wide default address field order for job list display, as JSON
+    /// (<c>{"fields":["streetNumber","streetName",...]}</c>). Set by a tenant
+    /// admin in the Configurator; null means no tenant default is configured.
+    /// </summary>
+    public string DispatchAddressFormatJson { get; set; }
+
     public virtual TucStaff InternetJobStaff { get; set; }
 }
