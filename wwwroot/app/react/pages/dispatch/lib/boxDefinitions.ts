@@ -60,7 +60,7 @@ export function createDispatchBoxes(): Record<string, IBox> {
         /*
          * The two Overview panels ship hidden. They are an opt-in addition to the
          * dispatch board rather than part of its shipped arrangement, so they stay
-         * off until an operator turns them on from Customize panels (which needs a
+         * off until an operator turns them on from Show/Hide Panels (which needs a
          * saved layout — the Default layout is read-only).
          */
         [DispatchBoxes.OverviewDeliveries]: {

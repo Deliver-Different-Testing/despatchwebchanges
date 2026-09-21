@@ -27,7 +27,7 @@ describe('CustomizePanelsDialog', () => {
     it('renders a visibility switch per panel reflecting initial state', () => {
         renderWithMantine(<CustomizePanelsDialog {...createMockProps()} />);
 
-        expect(screen.getByText('Customize panels')).toBeInTheDocument();
+        expect(screen.getByText('Show/Hide Panels')).toBeInTheDocument();
         expect(screen.getByLabelText('Live Job Data')).toBeChecked();
         expect(screen.getByLabelText('Map')).not.toBeChecked();
     });

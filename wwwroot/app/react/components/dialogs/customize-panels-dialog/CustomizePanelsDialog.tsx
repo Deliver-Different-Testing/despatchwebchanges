@@ -3,7 +3,7 @@
  *
  * Dedicated home for dashboard panel visibility, split out of the gear
  * "Dashboard Settings" dialog and reachable via the Layouts menu's
- * "Customize panels…" entry.
+ * "Show/Hide Panels…" entry.
  * Follows the canonical job-detail dialog design language (see CLAUDE.md →
  * "Dialog design language").
  */
@@ -70,10 +70,10 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
     const handleSave = () => onSave(boxes);
 
     return (
-        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label="Customize panels">
+        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label="Show/Hide Panels">
             <DialogHeader
                 icon={<Icon lucide={LayoutDashboard}/>}
-                title="Customize panels"
+                title="Show/Hide Panels"
                 subtitle={title}
                 onClose={onClose}
             />

@@ -42,12 +42,14 @@ export interface BoxShellProps {
      */
     isDefaultLayout?: boolean;
     /**
-     * "Edit columns" mode, toggled from the toolbar's Layouts menu. Reveals the
-     * columns bar (layout column stepper) above the panels; each job-list panel
-     * separately reveals its own column editor.
+     * "Edit Layout" mode, toggled from the toolbar's Layouts menu. Gates every
+     * structural edit — the columns stepper bar, panel resize gutters, and
+     * drag/keyboard reorder — so widgets can't be nudged just by viewing a
+     * saved layout. Each job-list panel separately reveals its own column
+     * editor, unaffected by this mode.
      */
     columnEditMode?: boolean;
-    /** Leave "Edit columns" mode from the bar's Done button. */
+    /** Leave "Edit Layout" mode from the bar's Done button. */
     onExitColumnEditMode?: () => void;
     /** Append a column to the current layout. Supply both to show the stepper. */
     onAddColumn?: () => void;
@@ -134,6 +136,9 @@ export const BoxShell: React.FC<BoxShellProps> = ({
 }) => {
     const columnCount = layout.layout.columns.length;
     const showColumnStepper = !!onAddColumn && !!onRemoveColumn;
+    // Single gate for every structural edit: resize, reorder, and the columns
+    // stepper. The Default layout is always read-only regardless of mode.
+    const editable = columnEditMode && !isDefaultLayout;
     const dragRef = useRef<DragRef | null>(null);
     // Every PanelGroup emits its computed sizes once on mount. That emit carries
     // no user intent, so swallowing the first one per group keeps merely opening
@@ -202,7 +207,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
             flexDirection: 'column',
             gap: 4,
         }}>
-            {columnEditMode && !isDefaultLayout && (
+            {editable && (
                 <Group gap="xs" px={4} wrap="nowrap" style={{flexShrink: 0}}>
                     <Badge
                         variant="outline"
@@ -210,7 +215,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                         tt="none"
                         leftSection={<Icon lucide={Columns3} size={14}/>}
                     >
-                        Editing columns
+                        Editing layout
                     </Badge>
                     <Text size="xs" c="dimmed" style={{flex: 1}}>
                         Set the layout&rsquo;s columns here, and each list&rsquo;s columns in its own panel
@@ -285,7 +290,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
 
                     return (
                         <Fragment key={column.id}>
-                            {columnIdx > 0 && !isDefaultLayout && (
+                            {columnIdx > 0 && editable && (
                                 <PanelResizeHandle>
                                     <Box className={`${classes.handle} ${classes.horizontal}`} />
                                 </PanelResizeHandle>
@@ -333,7 +338,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                 // Keyboard reorder targets the neighbouring visible panel's
                                                 // original index — mirroring the drag drop-on-box semantics so
                                                 // useBoxLayout.moveBox applies the same index adjustment.
-                                                const canReorder = !!onMoveBox && !isDefaultLayout;
+                                                const canReorder = !!onMoveBox && editable;
                                                 const prevVisible = vIdx > 0 ? visibleBoxes[vIdx - 1] : undefined;
                                                 const nextVisible = vIdx < visibleBoxes.length - 1
                                                     ? visibleBoxes[vIdx + 1]
@@ -347,7 +352,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
 
                                                 return (
                                                     <Fragment key={boxRef.name}>
-                                                        {vIdx > 0 && !isDefaultLayout && (
+                                                        {vIdx > 0 && editable && (
                                                             <PanelResizeHandle>
                                                                 <Box className={`${classes.handle} ${classes.vertical}`} />
                                                             </PanelResizeHandle>

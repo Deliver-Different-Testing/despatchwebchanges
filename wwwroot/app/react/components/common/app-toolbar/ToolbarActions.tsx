@@ -268,9 +268,9 @@ export interface LayoutsMenuProps {
     onCustomizePanels?: () => void;
     /** Optional: restore the current layout to the shipped arrangement. */
     onResetLayout?: () => void;
-    /** Optional: whether the "Edit columns" bar is currently shown. */
+    /** Optional: whether the "Edit Layout" bar is currently shown. */
     columnEditMode?: boolean;
-    /** Optional: toggle the "Edit columns" bar. When provided, an Edit/Done item is shown. */
+    /** Optional: toggle the "Edit Layout" bar. When provided, an Edit/Done item is shown. */
     onToggleColumnEditMode?: () => void;
 }
 
@@ -477,7 +477,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                 disabled={isDefaultLayout}
                                 icon={<Icon lucide={columnEditMode ? Check : Columns3} size={16} />}
                             >
-                                {columnEditMode ? 'Done editing columns' : 'Edit columns'}
+                                {columnEditMode ? 'Done editing layout' : 'Edit Layout'}
                             </PopoverRow>
                         </Tooltip>
                     </>
@@ -490,9 +490,9 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                             <PopoverRow
                                 onClick={handleCustomize}
                                 disabled={isDefaultLayout}
-                                icon={<Icon lucide={Settings} size={16} />}
+                                icon={<Icon lucide={Eye} size={16} />}
                             >
-                                Customize panels…
+                                Show/Hide Panels…
                             </PopoverRow>
                         </Tooltip>
                     </>
