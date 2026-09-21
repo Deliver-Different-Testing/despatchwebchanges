@@ -20,6 +20,7 @@ function createDefaultProps(overrides?: Partial<{
     densityMode: DensityMode;
     onDensityModeChange: jest.Mock;
     onResetColumns: jest.Mock;
+    onEditColumns: jest.Mock;
     appPage: number;
     showLoggedInSwitch: boolean;
 }>) {
@@ -33,6 +34,7 @@ function createDefaultProps(overrides?: Partial<{
         densityMode: 'dense' as DensityMode,
         onDensityModeChange: jest.fn(),
         onResetColumns: jest.fn(),
+        onEditColumns: jest.fn(),
         appPage: AppPage.Dispatch,
         showLoggedInSwitch: true,
         ...overrides,
@@ -112,5 +114,16 @@ describe('JobListToolbar', () => {
         await user.click(resetButton);
 
         expect(props.onResetColumns).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires onEditColumns when the edit columns button is clicked', async () => {
+        const user = setupUser();
+        const props = createDefaultProps();
+        renderWithMantine(<JobListToolbar {...props}/>);
+
+        const editButton = screen.getByRole('button', {name: /edit columns/i});
+        await user.click(editButton);
+
+        expect(props.onEditColumns).toHaveBeenCalledTimes(1);
     });
 });

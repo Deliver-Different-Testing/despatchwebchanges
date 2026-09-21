@@ -899,7 +899,7 @@ public partial class BaseJobRepository(
         {
             for (var unit = 0; unit < item.Items; unit++)
             {
-                cubicValues.Add(item.Cubic.Value.ToString(CultureInfo.InvariantCulture));
+                cubicValues.Add(item.Cubic?.ToString(CultureInfo.InvariantCulture));
             }
         }
 

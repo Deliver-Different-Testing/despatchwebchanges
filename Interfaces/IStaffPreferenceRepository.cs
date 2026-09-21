@@ -14,4 +14,11 @@ public interface IStaffPreferenceRepository
     /// preference key.
     /// </summary>
     Task SetPreferenceAsync(string key, string preferenceJson);
+
+    /// <summary>
+    /// Removes the current staff member's stored value for the given
+    /// preference key, if any. Used to reset a preference back to whatever
+    /// default applies when nothing is stored.
+    /// </summary>
+    Task DeletePreferenceAsync(string key);
 }

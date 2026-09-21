@@ -89,4 +89,55 @@ public class StaffPreferenceControllerTests
         Assert.IsType<BadRequestObjectResult>(result);
         await _repositoryMock.DidNotReceiveWithAnyArgs().SetPreferenceAsync(null!, null!);
     }
+
+    [Fact]
+    public async Task SavePreference_AcceptsAJobListColumnsKey()
+    {
+        var controller = CreateController();
+
+        var result = await controller.SavePreference(new SavePreferenceRequest
+        {
+            PreferenceKey = "JobListColumnsDispatchJobList",
+            PreferenceJson = "{\"columnOrder\":[]}",
+        });
+
+        Assert.IsType<OkResult>(result);
+        await _repositoryMock.Received(1).SetPreferenceAsync(
+            "JobListColumnsDispatchJobList", "{\"columnOrder\":[]}");
+    }
+
+    [Fact]
+    public async Task DeletePreference_RemovesTheStoredJson()
+    {
+        var controller = CreateController();
+
+        var result = await controller.DeletePreference("AutoMate");
+
+        Assert.IsType<OkResult>(result);
+        await _repositoryMock.Received(1).DeletePreferenceAsync("AutoMate");
+    }
+
+    [Fact]
+    public async Task DeletePreference_RejectsAnUnknownKey()
+    {
+        var controller = CreateController();
+
+        var result = await controller.DeletePreference("Nope");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().DeletePreferenceAsync(null!);
+    }
+
+    [Fact]
+    public async Task GetPreference_RejectsTheEnumsUnderlyingNumericValue()
+    {
+        // Enum.TryParse also accepts "0" as AutoMate's numeric value — that's
+        // not a real key name and must not slip through the allow-list.
+        var controller = CreateController();
+
+        var result = await controller.GetPreference("0");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().GetPreferenceAsync(null!);
+    }
 }

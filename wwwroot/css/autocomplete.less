@@ -1,11 +1,11 @@
 @import 'variables.less';
 
-// Material Design Variables for Typeahead
-@primary-color-light: rgba(33, 150, 243, 0.1);
-@text-primary: rgba(0,0,0,0.87);
-@text-secondary: rgba(0,0,0,0.54);
+// Typeahead variables — brand colours, not raw Material defaults.
+@primary-color-light: fade(@primary-color, 10%);
+@text-primary: @text-dark;
+@text-secondary: @text-muted;
 @text-disabled: rgba(0,0,0,0.38);
-@text-hint: rgba(0,0,0,0.54);
+@text-hint: @text-muted;
 @divider-color: rgba(0,0,0,0.12);
 @shadow-color: rgba(0,0,0,0.15);
 

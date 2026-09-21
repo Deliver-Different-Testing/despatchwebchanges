@@ -143,10 +143,13 @@ describe('SplitPricingBreakdownDialog', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
 
         fireEvent.change(screen.getByLabelText('Cost for Base, leg 201'), {target: {value: '5'}});
-        expect(screen.getByText('was $25.60')).toBeInTheDocument();
+        // $5 against Base's fixed $32 cost pool implies a share that re-derives to the same $5.00.
+        expect(screen.getByText('was $5.00')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', {name: 'Reset'}));
-        expect(screen.queryByText(/was \$25\.60/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/was \$/)).not.toBeInTheDocument();
+        // Resetting the cost also undoes the share sync, restoring the original 80/20 split.
+        expect(screen.getByLabelText('Cost for Base, leg 201')).toHaveValue('25.6');
 
         fireEvent.click(screen.getByRole('button', {name: /save & close/i}));
         await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -208,16 +211,42 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByLabelText('Cost for Congestion, leg 202')).toHaveValue('2.4');
     });
 
-    it('a cost override survives a share change, while its sibling leg and the "was" hint re-derive', () => {
+    it('overriding a leg cost also updates that item\'s share, re-deriving the sibling leg\'s cost', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
 
         fireEvent.change(screen.getByLabelText('Cost for Base, leg 201'), {target: {value: '10'}});
-        fireEvent.click(screen.getAllByRole('button', {name: '80 / 20'})[0]); // Base row
+
+        // $10 against Base's fixed $32 cost pool implies a 31.25/68.75 split.
+        expect(screen.getByLabelText('Cost for Base, leg 201')).toHaveValue('10'); // override pinned
+        expect(screen.getByLabelText('Cost for Base, leg 202')).toHaveValue('22'); // re-derived at 68.75%
+        expect(screen.getByText('was $10.00')).toBeInTheDocument(); // derived baseline now matches the override
+        expect(screen.getAllByRole('button', {name: '31 / 69'})[0]).toBeInTheDocument(); // share badge synced
+    });
+
+    it('a cost-synced share can still be manually renormalized afterwards', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        fireEvent.change(screen.getByLabelText('Cost for Base, leg 201'), {target: {value: '10'}});
+        fireEvent.click(screen.getAllByRole('button', {name: '31 / 69'})[0]); // Base row, now cost-synced
         fireEvent.change(screen.getByLabelText('KT4071VA'), {target: {value: '60'}});
 
-        expect(screen.getByLabelText('Cost for Base, leg 201')).toHaveValue('10'); // override untouched
+        expect(screen.getByLabelText('Cost for Base, leg 201')).toHaveValue('10'); // override still pinned
         expect(screen.getByLabelText('Cost for Base, leg 202')).toHaveValue('12.8'); // re-derived at 60/40
         expect(screen.getByText('was $19.20')).toBeInTheDocument(); // derived baseline re-derived too
+    });
+
+    it('a cost-synced share also re-derives revenue for that leg, while the pinned cost is unaffected by a later revenue edit', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
+
+        fireEvent.change(screen.getByLabelText('Cost for Base, leg 201'), {target: {value: '10'}});
+        fireEvent.change(screen.getByLabelText('Revenue for Base'), {target: {value: '128'}});
+
+        // Revenue now follows the 31.25/68.75 split implied by the cost edit.
+        expect(screen.getByText('rev $40.00')).toBeInTheDocument();
+        expect(screen.getByText('rev $88.00')).toBeInTheDocument();
+        // The cost pool (32) is independent of revenue, so the pinned override and its sibling are unchanged.
+        expect(screen.getByLabelText('Cost for Base, leg 201')).toHaveValue('10');
+        expect(screen.getByLabelText('Cost for Base, leg 202')).toHaveValue('22');
     });
 
     it('"Reset to overall split" clears a per-item share override', () => {
@@ -453,12 +482,13 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
         });
     });
 
-    it('sets a per-leg cost override at split time and carries it in the Confirm & Split payload', () => {
+    it('sets a per-leg cost override at split time and carries the synced share in the Confirm & Split payload', () => {
         const onClose = jest.fn();
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
 
         fireEvent.change(screen.getByLabelText('Cost for Base, leg 1'), {target: {value: '5'}});
-        expect(screen.getByText('was $22.40')).toBeInTheDocument();
+        // $5 against Base's fixed $32 cost pool implies a 15.625/84.375 split.
+        expect(screen.getByText('was $5.00')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', {name: /confirm & split/i}));
 
@@ -466,8 +496,8 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
             action: 'confirm',
             allocation: expect.any(Array),
             lineAllocation: [
-                {pricingBreakdownId: 1, sequence: 1, sharePercent: 70, costOverride: 5},
-                {pricingBreakdownId: 1, sequence: 2, sharePercent: 30},
+                {pricingBreakdownId: 1, sequence: 1, sharePercent: 15.625, costOverride: 5},
+                {pricingBreakdownId: 1, sequence: 2, sharePercent: 84.375},
             ],
         });
     });

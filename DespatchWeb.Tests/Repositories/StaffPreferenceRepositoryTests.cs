@@ -106,6 +106,40 @@ public class StaffPreferenceRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task DeletePreferenceAsync_RemovesTheStoredRow()
+    {
+        var repository = CreateRepository();
+        await repository.SetPreferenceAsync("AutoMate", "{\"aiEnabled\":true}");
+
+        await repository.DeletePreferenceAsync("AutoMate");
+
+        Assert.Null(await repository.GetPreferenceAsync("AutoMate"));
+    }
+
+    [Fact]
+    public async Task DeletePreferenceAsync_WhenNothingSaved_DoesNothing()
+    {
+        var repository = CreateRepository();
+
+        await repository.DeletePreferenceAsync("AutoMate");
+
+        Assert.Null(await repository.GetPreferenceAsync("AutoMate"));
+    }
+
+    [Fact]
+    public async Task DeletePreferenceAsync_LeavesOtherKeysAndStaffMembersUntouched()
+    {
+        var repository = CreateRepository();
+        await repository.SetPreferenceAsync("AutoMate", "{\"a\":1}");
+        await repository.SetPreferenceAsync("Nationwide", "{\"b\":2}");
+
+        await repository.DeletePreferenceAsync("AutoMate");
+
+        Assert.Null(await repository.GetPreferenceAsync("AutoMate"));
+        Assert.Equal("{\"b\":2}", await repository.GetPreferenceAsync("Nationwide"));
+    }
+
+    [Fact]
     public async Task GetPreferenceAsync_DoesNotLeakAnotherStaffMembersValue()
     {
         var repository = CreateRepository();

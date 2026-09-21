@@ -10,6 +10,8 @@ import {
     setAiAutoOpenEnabled,
     loadAutoMateFromServer,
 } from '../../../functions/aiSettings';
+import {deletePreference, getPreference, savePreference} from '../../services/preferencesApi';
+import {getTenantAddressFormatDefault} from '../../services/tenantSettingsApi';
 
 jest.mock('../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn(),
@@ -19,11 +21,25 @@ jest.mock('../../../functions/aiSettings', () => ({
     loadAutoMateFromServer: jest.fn(),
 }));
 
+jest.mock('../../services/preferencesApi', () => ({
+    getPreference: jest.fn(),
+    savePreference: jest.fn(),
+    deletePreference: jest.fn(),
+}));
+
+jest.mock('../../services/tenantSettingsApi', () => ({
+    getTenantAddressFormatDefault: jest.fn(),
+}));
+
 const mockIsAiEnabled = isAiEnabled as jest.MockedFunction<typeof isAiEnabled>;
 const mockIsAiAutoOpenEnabled = isAiAutoOpenEnabled as jest.MockedFunction<typeof isAiAutoOpenEnabled>;
 const mockSetAiEnabled = setAiEnabled as jest.MockedFunction<typeof setAiEnabled>;
 const mockSetAiAutoOpenEnabled = setAiAutoOpenEnabled as jest.MockedFunction<typeof setAiAutoOpenEnabled>;
 const mockLoadAutoMateFromServer = loadAutoMateFromServer as jest.MockedFunction<typeof loadAutoMateFromServer>;
+const mockGetPreference = getPreference as jest.Mock;
+const mockSavePreference = savePreference as jest.Mock;
+const mockDeletePreference = deletePreference as jest.Mock;
+const mockGetTenantAddressFormatDefault = getTenantAddressFormatDefault as jest.Mock;
 
 describe('SettingsPage', () => {
     beforeEach(() => {
@@ -31,6 +47,10 @@ describe('SettingsPage', () => {
         mockIsAiEnabled.mockReturnValue(false);
         mockIsAiAutoOpenEnabled.mockReturnValue(false);
         mockLoadAutoMateFromServer.mockResolvedValue(undefined);
+        mockGetPreference.mockResolvedValue(null);
+        mockSavePreference.mockResolvedValue(undefined);
+        mockDeletePreference.mockResolvedValue(undefined);
+        mockGetTenantAddressFormatDefault.mockResolvedValue(null);
     });
 
     it('renders a page heading and the Auto-mate section', () => {
@@ -105,6 +125,63 @@ describe('SettingsPage', () => {
             await waitFor(() => {
                 expect(screen.getByRole('switch', {name: 'Show Auto-mate briefings'})).toBeChecked();
             });
+        });
+    });
+
+    describe('Address format', () => {
+        it('pre-fills the editor from the tenant default when the user has no override', async () => {
+            mockGetPreference.mockResolvedValue(null);
+            mockGetTenantAddressFormatDefault.mockResolvedValue('{"fields":["postcode"]}');
+
+            renderWithMantine(<SettingsPage />);
+
+            await waitFor(() => {
+                expect(screen.getByLabelText('Show Postcode')).toBeChecked();
+            });
+            expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled();
+        });
+
+        it('loads the user\'s own override in preference to the tenant default', async () => {
+            mockGetPreference.mockResolvedValue('{"fields":["streetName"]}');
+            mockGetTenantAddressFormatDefault.mockResolvedValue('{"fields":["postcode"]}');
+
+            renderWithMantine(<SettingsPage />);
+
+            await waitFor(() => {
+                expect(screen.getByLabelText('Show Street Name')).toBeChecked();
+            });
+            expect(screen.getByLabelText('Show Postcode')).not.toBeChecked();
+            expect(screen.getByRole('button', {name: 'Reset to default'})).toBeEnabled();
+        });
+
+        it('saves immediately when a field is toggled', async () => {
+            mockGetPreference.mockResolvedValue('{"fields":["streetName"]}');
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+            await waitFor(() => expect(screen.getByLabelText('Show Street Name')).toBeChecked());
+
+            await user.click(screen.getByLabelText('Show Postcode'));
+
+            expect(mockSavePreference).toHaveBeenCalledWith(
+                'DispatchAddressFormat', '{"fields":["streetName","postcode"]}',
+            );
+        });
+
+        it('resets to the tenant default and clears the stored override', async () => {
+            mockGetPreference.mockResolvedValue('{"fields":["streetName"]}');
+            mockGetTenantAddressFormatDefault.mockResolvedValue('{"fields":["postcode"]}');
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+            await waitFor(() => expect(screen.getByLabelText('Show Street Name')).toBeChecked());
+
+            await user.click(screen.getByRole('button', {name: 'Reset to default'}));
+
+            expect(mockDeletePreference).toHaveBeenCalledWith('DispatchAddressFormat');
+            await waitFor(() => {
+                expect(screen.getByLabelText('Show Postcode')).toBeChecked();
+            });
+            expect(screen.getByLabelText('Show Street Name')).not.toBeChecked();
+            expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled();
         });
     });
 });

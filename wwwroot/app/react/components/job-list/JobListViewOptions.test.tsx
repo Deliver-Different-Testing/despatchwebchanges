@@ -16,6 +16,7 @@ function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobL
         densityMode: 'dense' as DensityMode,
         onDensityModeChange: jest.fn(),
         onResetColumns: jest.fn(),
+        onEditColumns: jest.fn(),
         loggedInCouriersOnly: false,
         onLoggedInCouriersOnlyChange: jest.fn(),
         showLoggedInSwitch: true,
@@ -38,6 +39,9 @@ describe('JobListViewOptions', () => {
 
         await user.click(screen.getByRole('button', {name: 'Reset columns'}));
         expect(props.onResetColumns).toHaveBeenCalledTimes(1);
+
+        await user.click(screen.getByRole('button', {name: 'Edit columns'}));
+        expect(props.onEditColumns).toHaveBeenCalledTimes(1);
 
         await user.click(screen.getByRole('switch', {name: 'Logged-in only'}));
         expect(props.onLoggedInCouriersOnlyChange).toHaveBeenCalledWith(true);

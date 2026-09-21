@@ -9,6 +9,7 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -1826,7 +1827,7 @@ public partial class JobRepository(
     /// <param name="parcels">List of parcel dimensions to add or update.</param>
     /// <param name="calculateDimsOncePerJob"></param>
     public async Task UpdatePackagesForJobAsync(int jobId,
-        IReadOnlyList<ParcelDimensions> parcels,
+        [CanBeNull] IReadOnlyList<ParcelDimensions> parcels,
         bool? calculateDimsOncePerJob = null)
     {
         try

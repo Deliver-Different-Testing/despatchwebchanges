@@ -10,6 +10,7 @@ import {
     headerSurfaceAccent,
     headerChromeStyle,
     headerColors,
+    headerAccentColor,
     headerOnColor,
     headerOverlayColor,
     dialogShellStyles,
@@ -17,7 +18,7 @@ import {
     PriceDelta,
 } from './index';
 import {alpha} from '@mantine/core';
-import {getHeaderColors, getHeaderSurfaceAccent} from './styles';
+import {getHeaderColors, getHeaderAccents, getHeaderSurfaceAccent} from './styles';
 import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
 import {dfrntPrimaryPalette, urgentPrimaryPalette} from '../../../../theme/palettes';
 import {renderWithMantine} from '../../../../__testUtils__';
@@ -220,11 +221,14 @@ describe('DialogFooter options', () => {
 });
 
 describe('header style helpers', () => {
-    it('paints the chrome with the variant fill and its on-colour', () => {
+    it('paints every variant\'s chrome with the same neutral bar and keyline', () => {
         const chrome = headerChromeStyle('error');
         expect(chrome.backgroundColor).toBe(headerColors.error.bg);
         expect(chrome.color).toBe(headerColors.error.fg);
         expect(chrome.display).toBe('flex');
+        expect(chrome.borderBottom).toBe('1px solid var(--mantine-color-default-border)');
+        // No variant gets a solid colour fill any more — that's the whole point.
+        expect(headerChromeStyle('error')).toEqual(headerChromeStyle('surface'));
     });
 
     it('defaults to the primary variant', () => {
@@ -232,29 +236,28 @@ describe('header style helpers', () => {
         expect(headerOnColor()).toBe(headerColors.primary.fg);
     });
 
-    it('sizes the icon chip and scrims it in the on-colour', () => {
+    it('sizes the icon chip and scrims it in the variant accent, not the bar', () => {
         // A ThemeIcon prop bag, not a style object: size/radius are real props
         // and the scrim rides ThemeIcon's own CSS variables.
         expect(headerChipProps('warning')).toMatchObject({size: 40, radius: 'md'});
         expect(headerChipProps('warning', 32)).toMatchObject({size: 32});
-        expect(headerChipProps('warning').style['--ti-bg']).toBe(headerOverlayColor(0.18, 'warning'));
-        expect(headerChipProps('warning').style['--ti-color']).toBe(headerColors.warning.fg);
+        expect(headerChipProps('warning').style['--ti-bg']).toBe(alpha(headerAccentColor('warning'), 0.15));
+        expect(headerChipProps('warning').style['--ti-color']).toBe(headerAccentColor('warning'));
     });
 
-    it('fills the primary header with the tenant primary — matching the MUI dialogs', () => {
-        // Asserted through the factories rather than the module-level `headerColors`,
+    it('gives the icon chip the tenant primary accent — matching the MUI dialogs', () => {
+        // Asserted through the factory rather than the module-level `headerAccents`,
         // which is bound to whichever tenant the bundle booted in.
         //
-        // These must equal the MUI `headerChromeSx` fill (`palette.primary.main` +
-        // `contrastText`) so a Mantine dialog and an unmigrated MUI one opened in
-        // the same session wear the same header. Both hues are light, so the
-        // on-colour is Ink on either tenant.
-        expect(getHeaderColors(true).primary).toEqual({bg: dfrntPrimaryPalette[500], fg: dfrntBrand.inkBlue});
-        expect(getHeaderColors(false).primary).toEqual({bg: urgentPrimaryPalette[500], fg: dfrntBrand.inkBlue});
+        // These must equal the MUI `headerChromeSx` fill (`palette.primary.main`) so
+        // a Mantine dialog and an unmigrated MUI one opened in the same session
+        // signal the same primary colour, even though the bar itself is neutral now.
+        expect(getHeaderAccents(true).primary).toBe(dfrntPrimaryPalette[500]);
+        expect(getHeaderAccents(false).primary).toBe(urgentPrimaryPalette[500]);
     });
 
-    it('keeps the semantic fills and the neutral bar off the tenant switch', () => {
-        for (const variant of ['secondary', 'info', 'success', 'warning', 'error', 'surface'] as const) {
+    it('keeps the neutral bar off the tenant switch entirely, including primary', () => {
+        for (const variant of ['primary', 'secondary', 'info', 'success', 'warning', 'error', 'surface'] as const) {
             expect(getHeaderColors(false)[variant]).toEqual(getHeaderColors(true)[variant]);
         }
         // The on-paper brand accent still follows the tenant, even though the neutral
@@ -263,24 +266,18 @@ describe('header style helpers', () => {
         expect(getHeaderSurfaceAccent(true)).not.toBe(getHeaderSurfaceAccent(false));
     });
 
-    it('gives the page-card surface variant a keyline instead of a fill', () => {
-        const chrome = headerChromeStyle('surface');
-        expect(chrome.backgroundColor).toBe(headerColors.surface.bg);
-        expect(chrome.borderBottom).toBe('1px solid var(--mantine-color-default-border)');
-        expect(headerChromeStyle('error').borderBottom).toBe('none');
-    });
-
     /**
      * The neutral bar carries no brand colour at all: its glyph is the body ink and
      * its washes follow that same on-colour, so both sides of the bar invert with
-     * the colour scheme instead of pinning a fixed accent.
+     * the colour scheme instead of pinning a fixed accent. Semantic meaning lives
+     * entirely in the icon chip's accent now, see `headerAccentColor`.
      */
     it('washes the neutral bar in its own on-colour, not the brand accent', () => {
         expect(headerOverlayColor(0.08, 'surface')).toBe(alpha(headerColors.surface.fg, 0.08));
         expect(headerOverlayColor(0.08, 'surface')).not.toContain(headerSurfaceAccent);
-        expect(headerChipProps('surface').style['--ti-color']).toBe(headerColors.surface.fg);
-        // The solid fills still wash in their hand-picked on-colour.
-        expect(headerOverlayColor(0.1, 'error')).toBe(alpha(headerColors.error.fg, 0.1));
+        expect(headerChipProps('surface').style['--ti-color']).toBe(headerAccentColor('surface'));
+        // Every variant washes the same neutral on-colour now — the bar itself has none to keep.
+        expect(headerOverlayColor(0.1, 'error')).toBe(headerOverlayColor(0.1, 'surface'));
     });
 
     it('maps the MUI breakpoint widths so converted dialogs keep their size', () => {

@@ -29,6 +29,7 @@ interface JobListToolbarProps {
     densityMode: DensityMode;
     onDensityModeChange: (mode: DensityMode) => void;
     onResetColumns: () => void;
+    onEditColumns: () => void;
     appPage?: AppPage | number;
     selectedCount?: number;
     onClearSelection?: () => void;
@@ -96,6 +97,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     densityMode,
     onDensityModeChange,
     onResetColumns,
+    onEditColumns,
     appPage,
     selectedCount = 0,
     onClearSelection,
@@ -196,6 +198,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                     densityMode={densityMode}
                     onDensityModeChange={onDensityModeChange}
                     onResetColumns={onResetColumns}
+                    onEditColumns={onEditColumns}
                     loggedInCouriersOnly={loggedInCouriersOnly}
                     onLoggedInCouriersOnlyChange={onLoggedInCouriersOnlyChange}
                     showLoggedInSwitch={showLoggedInSwitch}

@@ -1966,4 +1966,57 @@ public class CourierRepositoryTests : IAsyncDisposable
         UcjbVoid = isVoid,
         UcjbStatus = status
     };
+
+    private const int MaxExportRowsUnderTest = 10_000;
+
+    [Fact]
+    public async Task GetAfterHoursScheduleForExportAsync_WithMoreThanMaxExportRows_CapsAtMaxExportRows()
+    {
+        // Arrange - one more schedule group than the export cap; every sibling *ForExportAsync
+        // method caps at MaxExportRows, this one must too instead of returning everything.
+        await SetupAfterHoursSchedulesExceedingExportCap(MaxExportRowsUnderTest + 1);
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAfterHoursScheduleForExportAsync(new CourierAfterHoursFilterRequest());
+
+        // Assert
+        Assert.Equal(MaxExportRowsUnderTest, result.Count);
+    }
+
+    private async Task SetupAfterHoursSchedulesExceedingExportCap(int scheduleGroupCount)
+    {
+        await using var context = CreateContext();
+
+        var startTime = new DateTime(2024, 1, 1, 9, 0, 0);
+        var endTime = new DateTime(2024, 1, 1, 17, 0, 0);
+
+        for (var courierId = 1; courierId <= scheduleGroupCount; courierId++)
+        {
+            context.TucCouriers.Add(new TucCourier
+            {
+                UccrId = courierId,
+                Code = $"C{courierId:D5}",
+                UccrName = $"Driver{courierId}",
+                UccrSurname = "Test",
+                Active = true,
+                UccrChannelId = 1,
+                Created = TestDates.Now,
+                CreatedBy = "Test",
+                LastModified = TestDates.Now,
+                LastModifiedBy = "Test"
+            });
+
+            context.TblAfterhoursCouriers.Add(new TblAfterhoursCourier
+            {
+                Id = courierId,
+                CourierId = courierId,
+                WeekDay = 1,
+                StartTime = startTime,
+                EndTime = endTime
+            });
+        }
+
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
 }
