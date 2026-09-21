@@ -18,7 +18,7 @@ import {ActionIcon, Group, Menu, Tooltip, em} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
 import {EllipsisVertical} from 'lucide-react';
 import {Icon} from '../icon/Icon';
-import {toolbarIconButtonStyle} from './ToolbarActions';
+import {toolbarIconButtonClassName, toolbarIconButtonStyle} from './ToolbarActions';
 
 export interface ToolbarOverflowEntry {
     label: string;
@@ -70,6 +70,7 @@ export const ToolbarActionsBar: React.FC<ToolbarActionsBarProps> = ({actions, co
                                 size="lg"
                                 radius="xl"
                                 aria-label="More actions"
+                                className={toolbarIconButtonClassName}
                                 style={toolbarIconButtonStyle}
                             >
                                 <Icon lucide={EllipsisVertical} size={18} />

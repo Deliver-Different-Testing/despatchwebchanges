@@ -7,7 +7,6 @@ import {
     dfrntBrand,
     dfrntCssVariablesResolver,
     createDfrntTheme,
-    getShellIconHoverFill,
 } from './dfrntMantineTheme';
 import {contrastRatio, getMd3Scheme} from './md3';
 import {dfrntPrimaryPalette, urgentPrimaryPalette, inkBluePalette} from './palettes';
@@ -81,11 +80,6 @@ describe('createDfrntTheme — per-tenant brand', () => {
         }
     });
 
-    it('washes the shell icon hover with a colour that reads on each bar', () => {
-        // A brand wash on the gold bar would be gold-on-gold, so it washes with Ink.
-        expect(getShellIconHoverFill(true)).toContain('--mantine-color-brand-5');
-        expect(getShellIconHoverFill(false)).toContain('--mantine-color-ink-9');
-    });
 });
 
 describe('dfrntCssVariablesResolver', () => {
@@ -97,7 +91,6 @@ describe('dfrntCssVariablesResolver', () => {
         expect(us.variables['--dd-on-shell']).toBe('#fff');
         expect(nonUs.variables['--dd-shell-bar']).toBe(dfrntBrand.gold);
         expect(nonUs.variables['--dd-on-shell']).toBe(dfrntBrand.inkBlue);
-        expect(nonUs.variables['--dd-shell-icon-hover']).toBe(getShellIconHoverFill(false));
     });
 
     it('paints page and card surfaces a tone apart in each colour scheme', () => {

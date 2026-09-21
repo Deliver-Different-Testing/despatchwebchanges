@@ -26,16 +26,16 @@ describe('Shell icon buttons', () => {
         ['Messages', <MessagesButton key="m" unreadCount={5} onClick={jest.fn()} />],
         ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={jest.fn()} onClearAll={jest.fn()} />],
         ['Custom', <ToolbarIconButton key="c" icon={<span />} tooltip="Custom" onClick={jest.fn()} />],
-    ])('%s takes its hover wash and glyph colour from the shell variables', (name, element) => {
-        // The wash and on-colour differ per tenant (the gold bar cannot use a brand
-        // wash), so the button defers to the vars the theme resolver publishes rather
-        // than baking either value in. `dfrntMantineTheme.spec` asserts the values.
-        // Every button in the bar shares this chrome — hence the sweep rather than a
-        // single sample.
+    ])('%s takes its glyph colour from the shell variables', (name, element) => {
+        // The on-colour differs per tenant (Ink on gold, white on Ink), so the button
+        // defers to the var the theme resolver publishes rather than baking it in.
+        // `dfrntMantineTheme.spec` asserts the value. Every button in the bar shares
+        // this chrome — hence the sweep rather than a single sample. The hover grow
+        // itself is a `:hover`/`:focus-visible` CSS-module rule, unreachable from
+        // jsdom, so it isn't asserted here.
         renderWithMantine(element);
 
         const button = screen.getByRole('button', {name});
-        expect(button.style.getPropertyValue('--ai-hover')).toBe('var(--dd-shell-icon-hover)');
         expect(button).toHaveStyle({color: 'var(--dd-on-shell)'});
     });
 

@@ -26,7 +26,7 @@ import {Calendar, CalendarRange} from 'lucide-react';
 import dayjs, {Dayjs} from 'dayjs';
 import {getIanaTimezone, getInputDateFormat, getTimezoneName} from '../../../utils/dateUtils';
 import {Icon} from '../icon/Icon';
-import {toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
+import {toolbarIconButtonClassName, toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
 
 /** The string form `DateInput` speaks. */
 const ISO_DATE = 'YYYY-MM-DD';
@@ -387,13 +387,14 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         >
             <Popover.Target>
                 <Tooltip label="Date Filter">
-                    {/* Same box, glyph colour and hover wash as every other shell icon —
-                        the shared style object is the single source for all three. */}
+                    {/* Same box, glyph colour and hover grow as every other shell icon —
+                        the shared style/class pair is the single source for all three. */}
                     <ActionIcon
                         variant="subtle"
                         size="lg"
                         onClick={handleClick}
                         aria-label="Date Filter"
+                        className={toolbarIconButtonClassName}
                         style={toolbarIconButtonStyle}
                     >
                         <Icon lucide={Calendar} size={18}/>

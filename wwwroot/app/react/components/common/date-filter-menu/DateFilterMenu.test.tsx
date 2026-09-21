@@ -41,15 +41,14 @@ describe('DateFilterMenu', () => {
     });
 
     describe('Rendering', () => {
-        it('should wash its trigger like the Mantine shell icons beside it', () => {
+        it('should style its trigger like the Mantine shell icons beside it', () => {
             // The trigger is now an `ActionIcon size="lg"` like the rest of the bar, so its
             // box comes from the variant rather than a hand-set 34px — the only thing left
-            // to pin is the shared per-tenant hover wash, which rides a custom property
-            // because the `:hover` rule itself is unreachable from `toHaveStyle`.
+            // to pin is the shared per-tenant glyph colour. The hover-grow itself is a
+            // `:hover`/`:focus-visible` CSS-module rule, unreachable from `toHaveStyle`.
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
             const trigger = screen.getByRole('button', {name: 'Date Filter'});
-            expect(trigger.style.getPropertyValue('--ai-hover')).toBe('var(--dd-shell-icon-hover)');
             expect(trigger.style.color).toBe('var(--dd-on-shell)');
         });
 

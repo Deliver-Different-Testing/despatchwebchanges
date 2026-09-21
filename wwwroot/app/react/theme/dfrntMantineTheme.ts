@@ -167,21 +167,6 @@ export function getOnBrandScrim(isUsCustomer: boolean) {
     };
 }
 
-/**
- * The wash a shell icon button shows on hover.
- *
- * Pinned rather than left to `variant="subtle"` because that variable resolves
- * against the *page's* colour scheme while the bar's fill never changes, so a
- * scheme flip would swap in a tint meant for a different background. On gold the
- * brand wash would be gold-on-gold, so the non-US bar washes with its Ink
- * on-colour instead.
- */
-export function getShellIconHoverFill(isUsCustomer: boolean): string {
-    return isUsCustomer
-        ? 'color-mix(in srgb, var(--mantine-color-brand-5) 12%, transparent)'
-        : 'color-mix(in srgb, var(--mantine-color-ink-9) 10%, transparent)';
-}
-
 /** The current tenant's shell tokens, for the few consumers outside a provider. */
 export const sidebarColors = getSidebarColors(isUsTenant());
 
@@ -218,7 +203,6 @@ declare module '@mantine/core' {
     export interface MantineThemeOther {
         shell: typeof sidebarColors;
         scrim: typeof onBrandScrim;
-        shellIconHoverFill: string;
         code: typeof codeBlockPalette;
         tokens: typeof tokens;
     }
@@ -301,7 +285,6 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
         other: {
             shell: getSidebarColors(isUsCustomer),
             scrim: getOnBrandScrim(isUsCustomer),
-            shellIconHoverFill: getShellIconHoverFill(isUsCustomer),
             code: codeBlockPalette,
             tokens,
         },
@@ -327,7 +310,6 @@ export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
             // `toolbarIconStyles` don't each need the theme threaded to them.
             '--dd-shell-bar': theme.other.shell.appBar,
             '--dd-on-shell': theme.other.scrim.text,
-            '--dd-shell-icon-hover': theme.other.shellIconHoverFill,
         },
         light: {
             '--mantine-color-body': light.surface, // #f4f2f1 page
