@@ -18,3 +18,8 @@ export async function getPreference(key: string): Promise<string | null> {
 export async function savePreference(key: string, preferenceJson: string): Promise<void> {
     await apiClient.post('StaffPreference/SavePreference', {preferenceKey: key, preferenceJson});
 }
+
+/** Removes the stored value for the given key, resetting it to whatever default applies. */
+export async function deletePreference(key: string): Promise<void> {
+    await apiClient.post('StaffPreference/DeletePreference', undefined, {params: {key}});
+}

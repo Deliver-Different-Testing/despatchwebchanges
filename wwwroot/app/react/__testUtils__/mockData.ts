@@ -30,7 +30,7 @@ export function createMockAddress(overrides?: Partial<AddressViewModel>): Addres
         addressLine5: 'Auckland Central',        // Suburb
         addressLine6: 'Auckland',                // City
         addressLine7: '1010',                    // Post Code
-        addressLine8: '',                        // Additional Notes
+        addressLine8: '',                        // Country
         fullAddress: '123 Test Street, Auckland Central, Auckland 1010',
         latitude: -36.8485,
         longitude: 174.7633,
@@ -50,7 +50,7 @@ export function createMockUSAddress(overrides?: Partial<AddressViewModel>): Addr
         addressLine5: 'New York',                // City (US)
         addressLine6: 'NY',                      // State (US)
         addressLine7: '10001',                   // ZIP Code
-        addressLine8: '',                        // Additional Notes
+        addressLine8: '',                        // Country
         fullAddress: '456 Main St, New York, NY 10001',
         latitude: 40.7128,
         longitude: -74.006,

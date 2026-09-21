@@ -2967,6 +2967,7 @@ public class CourierRepository(
                 AfterHoursScheduleIds = g.Select(x => x.Id).ToList()
             })
             .OrderBy(c => c.CourierName)
+            .Take(MaxExportRows)
             .TagWith("GetAfterHoursScheduleForExport")
             .ToListAsync();
 

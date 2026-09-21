@@ -25,10 +25,10 @@ import {JobListColumnEditor} from './JobListColumnEditor';
 import {availableColumns, DEFAULT_COLUMN_WIDTHS, orderColumns} from './jobListColumns';
 import {HeaderSlotPortal} from '../common/header-slot/HeaderSlotPortal';
 import {JobListTable} from './JobListTable';
-import {getDeliveryAddressUs, getPickupAddressUs} from './jobAddressFormat';
+import {formatAddressWithFields, getDeliveryAddressUs, getPickupAddressUs} from './jobAddressFormat';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
-import type {AddressViewModel} from '../../interfaces/address';
+import type {AddressFieldKey, AddressViewModel} from '../../interfaces/address';
 import {
     addRestoreEvent,
     allocateJobs,
@@ -42,7 +42,15 @@ import {
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
 import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch, priorityRank} from './jobListHelpers';
-import {jobListStorageKey, loadJobListCategory, persistJobListCategory, toStatusFilter} from './jobListPreferences';
+import {
+    jobListStorageKey,
+    loadJobListCategory,
+    loadJobListColumnsFromServer,
+    persistJobListCategory,
+    persistJobListColumnsToServer,
+    toStatusFilter,
+} from './jobListPreferences';
+import {loadEffectiveAddressFieldOrder} from './addressFormatPreferences';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
 import {DispatchDialog, type DispatchConfirmation} from '../dialogs/dispatch-dialog';
@@ -115,7 +123,12 @@ function matchesSearch(job: DispatchJob, query: string): boolean {
 }
 
 /** `null` means "no value to order by" — those rows sink to the bottom whichever way the sort runs. */
-function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean): string | number | null {
+function getSortValue(
+    job: DispatchJob,
+    column: string,
+    isUsCustomer?: boolean,
+    addressFieldOrder?: AddressFieldKey[],
+): string | number | null {
     switch (column) {
         case 'date':
             return job.booked ? dayjs(job.booked).startOf('day').valueOf() : 0;
@@ -138,9 +151,13 @@ function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean):
         case 'refA':
             return job.refA || '';
         case 'pickup':
-            return getPickupAddressUs(job);
+            return addressFieldOrder?.length
+                ? formatAddressWithFields(job.pickupAddress, addressFieldOrder, job.from)
+                : getPickupAddressUs(job);
         case 'delivery':
-            return getDeliveryAddressUs(job);
+            return addressFieldOrder?.length
+                ? formatAddressWithFields(job.deliveryAddress, addressFieldOrder, job.toAddress)
+                : getDeliveryAddressUs(job);
         case 'courier':
             return isUsCustomer
                 ? (job.courierData?.courierName || job.assignedCourier?.text || '')
@@ -158,7 +175,12 @@ function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean):
     }
 }
 
-function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: boolean): DispatchJob[] {
+function sortJobs(
+    jobs: DispatchJob[],
+    sortState: JobListSort,
+    isUsCustomer?: boolean,
+    addressFieldOrder?: AddressFieldKey[],
+): DispatchJob[] {
     const sorted = [...jobs];
 
     if (!sortState.column || !sortState.direction) {
@@ -181,7 +203,7 @@ function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: bo
     const col = sortState.column!;
     const sortCache = new Map<number, string | number | null>();
     for (const job of sorted) {
-        sortCache.set(job.id, getSortValue(job, col, isUsCustomer));
+        sortCache.set(job.id, getSortValue(job, col, isUsCustomer, addressFieldOrder));
     }
 
     return sorted.sort((a, b) => {
@@ -225,8 +247,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
-                                                              columnEditMode,
-                                                              onExitColumnEditMode,
                                                               headerSlot,
                                                               topSlot,
                                                               setJobsCallback,
@@ -320,6 +340,36 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         defaultValue: [],
         getInitialValueInEffect: false,
     });
+    // "Edit columns" mode for this list's own column editor — local to this
+    // panel instance, opened from its own toolbar button.
+    const [columnEditMode, setColumnEditMode] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        loadJobListColumnsFromServer(storagePrefix).then((prefs) => {
+            if (cancelled || !prefs) return;
+            setColumnOrder(prefs.columnOrder);
+            setColumnWidths({...DEFAULT_COLUMN_WIDTHS, ...prefs.columnWidths});
+            setHiddenColumns(prefs.hiddenColumns);
+        }).catch((error) => console.error(`Failed to load job list columns (${storagePrefix}) from server:`, error));
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [storagePrefix]);
+
+    // Effective address field order: user's own override, else the tenant
+    // default — undefined (unresolved yet, or neither configured) keeps the
+    // legacy hardcoded NZ/US format in JobListTable.
+    const [addressFieldOrder, setAddressFieldOrder] = useState<AddressFieldKey[] | undefined>(undefined);
+    useEffect(() => {
+        let cancelled = false;
+        loadEffectiveAddressFieldOrder().then((fields) => {
+            if (!cancelled) setAddressFieldOrder(fields);
+        }).catch((error) => console.error('Failed to load address format preference:', error));
+        return () => {
+            cancelled = true;
+        };
+    }, []);
     const [loggedInCouriersOnly, setLoggedInCouriersOnly] = useLocalStorage<boolean>({
         key: getStorageKey('loggedInCouriersOnly'),
         defaultValue: false,
@@ -434,10 +484,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
 
         // Sort
-        filtered = sortJobs(filtered, sortState, isUsCustomer);
+        filtered = sortJobs(filtered, sortState, isUsCustomer, addressFieldOrder);
 
         return filtered;
-    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, fetchConfig]);
+    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, addressFieldOrder, fetchConfig]);
 
     // ── Computed: stats header ───────────────────────────────────────
     // The header describes the whole list, so the server counts it — before any category filter and
@@ -596,10 +646,19 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     }, [setColumnWidths]);
 
     const handleResetColumns = useCallback(() => {
-        setColumnWidths({...DEFAULT_COLUMN_WIDTHS});
-        setColumnOrder([]);
-        setHiddenColumns([]);
-    }, [setColumnWidths, setColumnOrder, setHiddenColumns]);
+        const defaults = {columnWidths: {...DEFAULT_COLUMN_WIDTHS}, columnOrder: [] as string[], hiddenColumns: [] as string[]};
+        setColumnWidths(defaults.columnWidths);
+        setColumnOrder(defaults.columnOrder);
+        setHiddenColumns(defaults.hiddenColumns);
+        persistJobListColumnsToServer(storagePrefix, defaults);
+    }, [storagePrefix, setColumnWidths, setColumnOrder, setHiddenColumns]);
+
+    const handleEditColumns = useCallback(() => setColumnEditMode(true), []);
+
+    const handleDoneEditingColumns = useCallback(() => {
+        setColumnEditMode(false);
+        persistJobListColumnsToServer(storagePrefix, {columnOrder, columnWidths, hiddenColumns});
+    }, [storagePrefix, columnOrder, columnWidths, hiddenColumns]);
 
     // Every configurable column for this tenant/page, in the user's order —
     // what the editor lists. The table then drops the hidden ones.
@@ -853,6 +912,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                         densityMode={densityMode}
                         onDensityModeChange={handleDensityModeChange}
                         onResetColumns={handleResetColumns}
+                        onEditColumns={handleEditColumns}
                         loggedInCouriersOnly={loggedInCouriersOnly}
                         onLoggedInCouriersOnlyChange={handleLoggedInCouriersOnlyChange}
                         showLoggedInSwitch={showLoggedInSwitch}
@@ -870,6 +930,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 densityMode={densityMode}
                 onDensityModeChange={handleDensityModeChange}
                 onResetColumns={handleResetColumns}
+                onEditColumns={handleEditColumns}
                 appPage={appPage}
                 selectedCount={multiSelect.selectCount}
                 onClearSelection={multiSelect.clear}
@@ -889,7 +950,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                     onHiddenChange={setHiddenColumns}
                     onColumnWidthsChange={setColumnWidths}
                     onReset={handleResetColumns}
-                    onDone={onExitColumnEditMode ?? (() => undefined)}
+                    onDone={handleDoneEditingColumns}
                 />
             )}
             <JobListTable
@@ -907,6 +968,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onColumnWidthsChange={handleColumnWidthsChange}
                 columns={tableColumns}
                 isUsCustomer={isUsCustomer}
+                addressFieldOrder={addressFieldOrder}
                 appPage={appPage}
                 isJobSearchPage={isJobSearchPage}
                 loggedInCouriersOnly={loggedInCouriersOnlyEffective}

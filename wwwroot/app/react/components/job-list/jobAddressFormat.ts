@@ -6,10 +6,69 @@
  * panel, which sorts by them, compose the same line selections, so the selections live here.
  */
 
-import type {AddressViewModel} from '../../interfaces/address';
+import type {AddressFieldKey, AddressViewModel} from '../../interfaces/address';
 import type {DispatchJob} from '../../interfaces/dispatchJob';
 
+export type {AddressFieldKey};
+
 type PickLines = (address: AddressViewModel) => Array<string | undefined>;
+
+const ADDRESS_FIELD_LINE: Record<AddressFieldKey, keyof AddressViewModel> = {
+    building: 'addressLine1',
+    unit: 'addressLine2',
+    streetNumber: 'addressLine3',
+    streetName: 'addressLine4',
+    cityOrSuburb: 'addressLine5',
+    stateOrCity: 'addressLine6',
+    postcode: 'addressLine7',
+    country: 'addressLine8',
+};
+
+/** Every configurable field, in a sensible default order, for the field-order builder UI. */
+export const ADDRESS_FIELD_OPTIONS: {key: AddressFieldKey; label: string}[] = [
+    {key: 'building', label: 'Company / Building'},
+    {key: 'unit', label: 'Unit / Suite'},
+    {key: 'streetNumber', label: 'Street Number'},
+    {key: 'streetName', label: 'Street Name'},
+    {key: 'cityOrSuburb', label: 'City / Suburb'},
+    {key: 'stateOrCity', label: 'State / City'},
+    {key: 'postcode', label: 'Postcode'},
+    {key: 'country', label: 'Country'},
+];
+
+const ADDRESS_FIELD_KEYS = new Set(ADDRESS_FIELD_OPTIONS.map((o) => o.key));
+
+function isAddressFieldKey(value: unknown): value is AddressFieldKey {
+    return typeof value === 'string' && ADDRESS_FIELD_KEYS.has(value as AddressFieldKey);
+}
+
+/** Parses the `{"fields":[...]}` preference/setting shape, tolerating null/malformed JSON. */
+export function parseAddressFormatJson(json: string | null | undefined): AddressFieldKey[] {
+    if (!json) return [];
+    try {
+        const parsed: unknown = JSON.parse(json);
+        const fields = (parsed as {fields?: unknown})?.fields;
+        return Array.isArray(fields) ? fields.filter(isAddressFieldKey) : [];
+    } catch {
+        return [];
+    }
+}
+
+export function serializeAddressFormatJson(fields: AddressFieldKey[]): string {
+    return JSON.stringify({fields});
+}
+
+export function formatAddressWithFields(
+    address: AddressViewModel | undefined,
+    fields: AddressFieldKey[],
+    fallback: string | undefined,
+): string {
+    return formatAddressOrFallback(
+        address,
+        (a) => fields.map((field) => a[ADDRESS_FIELD_LINE[field]] as string | undefined),
+        fallback,
+    );
+}
 
 export function formatAddressOrFallback(
     address: AddressViewModel | undefined,

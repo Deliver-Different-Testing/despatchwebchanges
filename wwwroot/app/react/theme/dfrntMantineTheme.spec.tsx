@@ -110,7 +110,7 @@ describe('dfrntCssVariablesResolver', () => {
         expect(vars.dark['--mantine-color-body']).toBe(dark.surface);
         expect(vars.dark['--dd-surface-container']).toBe(dark.surfaceContainer);
 
-        // Elevation by tone, not shadow: the card tone must differ from the page.
+        // Elevation by tone (plus a soft shadow, set separately): the card tone must differ from the page.
         expect(vars.light['--dd-surface-container']).not.toBe(vars.light['--mantine-color-body']);
         expect(vars.dark['--dd-surface-container']).not.toBe(vars.dark['--mantine-color-body']);
     });

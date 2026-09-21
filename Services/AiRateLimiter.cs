@@ -64,7 +64,7 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
         return Task.CompletedTask;
     }
 
-    internal static decimal CostUsd(AiModelProfile profile, AiUsageInfo usage) =>
+    private static decimal CostUsd(AiModelProfile profile, AiUsageInfo usage) =>
         usage.InputTokens / 1_000_000m * profile.InputPricePerMillion +
         usage.OutputTokens / 1_000_000m * profile.OutputPricePerMillion +
         usage.CacheReadInputTokens / 1_000_000m * profile.CacheReadPricePerMillion +

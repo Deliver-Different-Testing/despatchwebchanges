@@ -31,30 +31,41 @@ export type HeaderVariant =
 export type PanelHeaderVariant = HeaderVariant | 'surface';
 
 /**
- * The solid header fill + its on-colour, per variant. A bold flat bar (no
- * gradient); the colour change is the separator. On-colours are hand-picked for
- * legibility on each fill (dark ink on the light Cyan/Orange fills, white on the
- * dark/saturated ones).
+ * The header bar's background + text colour, per variant. Every variant now
+ * shares the same calm, neutral bar (the tone the `'surface'` variant always
+ * used for page panels) — a keyline separates it from the body, not a colour
+ * change. Semantic meaning moved to the icon chip's accent, see
+ * {@link getHeaderAccents} — a colour change there, not a solid fill bar, is
+ * the separator now.
  */
-export function getHeaderColors(isUsCustomer: boolean): Record<PanelHeaderVariant, {bg: string; fg: string}> {
+export function getHeaderColors(_isUsCustomer: boolean): Record<PanelHeaderVariant, {bg: string; fg: string}> {
+    const neutral = {bg: 'var(--dd-surface-container)', fg: 'var(--mantine-color-text)'};
     return {
-        // The tenant's primary: Cyan on US, the brand gold elsewhere — the same
-        // fill the MUI `headerChromeSx` uses (`palette.primary.main` +
-        // `contrastText`), so a Mantine dialog and an unmigrated MUI one opened
-        // in the same session wear the same header. Both hues are light, so the
-        // on-colour is dark Ink on either tenant.
-        primary: isUsCustomer
-            ? {bg: dfrntBrand.cyan, fg: dfrntBrand.inkBlue}
-            : {bg: dfrntBrand.gold, fg: dfrntBrand.inkBlue},
-        secondary: {bg: dfrntBrand.purple, fg: '#ffffff'},
-        info: {bg: dfrntBrand.cyan, fg: dfrntBrand.inkBlue}, // light Cyan → dark ink text
-        success: {bg: dfrntBrand.green, fg: '#ffffff'},
-        warning: {bg: dfrntBrand.orange, fg: dfrntBrand.inkBlue},
-        error: {bg: dfrntBrand.red, fg: '#ffffff'},
-        // Page card/panel headers: the card's own surface, so a keyline rather than
-        // a colour change separates the bar from the body. Neutral on both tenants,
-        // and both tokens are colour-scheme aware, so this follows dark mode for free.
-        surface: {bg: 'var(--dd-surface-container)', fg: 'var(--mantine-color-text)'},
+        primary: neutral,
+        secondary: neutral,
+        info: neutral,
+        success: neutral,
+        warning: neutral,
+        error: neutral,
+        surface: neutral,
+    };
+}
+
+/**
+ * The semantic hue behind each variant's icon chip — all that's left to carry
+ * meaning now the header bar itself is neutral. `'surface'` (plain page/panel
+ * headers) gets no accent at all: a neutral icon, since it isn't semantic.
+ */
+export function getHeaderAccents(isUsCustomer: boolean): Record<PanelHeaderVariant, string> {
+    return {
+        // The tenant's primary: Cyan on US, the brand gold elsewhere.
+        primary: isUsCustomer ? dfrntBrand.cyan : dfrntBrand.gold,
+        secondary: dfrntBrand.purple,
+        info: dfrntBrand.cyan,
+        success: dfrntBrand.green,
+        warning: dfrntBrand.orange,
+        error: dfrntBrand.red,
+        surface: 'var(--mantine-color-text)',
     };
 }
 
@@ -71,11 +82,18 @@ export function getHeaderSurfaceAccent(isUsCustomer: boolean): string {
 
 export const headerColors = getHeaderColors(isUsTenant());
 
+export const headerAccents = getHeaderAccents(isUsTenant());
+
 export const headerSurfaceAccent = getHeaderSurfaceAccent(isUsTenant());
 
-/** The header's on-colour — text, glyphs and the close button sit in this. */
+/** The header's on-colour — text and the close button sit in this. */
 export function headerOnColor(variant: PanelHeaderVariant = 'primary'): string {
     return headerColors[variant].fg;
+}
+
+/** The header icon chip's colour — the one place variant meaning still shows. */
+export function headerAccentColor(variant: PanelHeaderVariant = 'primary'): string {
+    return headerAccents[variant];
 }
 
 /**
@@ -90,21 +108,21 @@ export function headerOverlayColor(opacity: number, variant: PanelHeaderVariant 
 }
 
 /**
- * The header bar itself: solid fill, on-colour, and the standard padding/flex
- * layout. For headers built by hand rather than through `<DialogHeader>` — panel
- * bars, page headers and compact variants. Override `padding` after spreading it
- * if a surface needs a tighter bar.
+ * The header bar itself: neutral fill, body text colour, and the standard
+ * padding/flex layout. Every variant shares this now — the icon chip carries
+ * the semantic colour, see {@link headerChipProps}. For headers built by hand
+ * rather than through `<DialogHeader>` — panel bars, page headers and compact
+ * variants. Override `padding` after spreading it if a surface needs a
+ * tighter bar.
  */
 export function headerChromeStyle(variant: PanelHeaderVariant = 'primary'): React.CSSProperties {
     const {bg, fg} = headerColors[variant];
     return {
         backgroundColor: bg,
         color: fg,
-        // The neutral bar shares the card's fill, so it needs a keyline to
-        // separate it from the body; the solid fills separate themselves.
-        borderBottom: variant === 'surface'
-            ? '1px solid var(--mantine-color-default-border)'
-            : 'none',
+        // Every variant now shares the neutral bar, so it always needs the
+        // keyline to separate it from the body.
+        borderBottom: '1px solid var(--mantine-color-default-border)',
         display: 'flex',
         alignItems: 'center',
         gap: 'var(--mantine-spacing-md)',
@@ -114,22 +132,25 @@ export function headerChromeStyle(variant: PanelHeaderVariant = 'primary'): Reac
 }
 
 /**
- * The square icon chip inside a header: a translucent on-colour scrim behind the
- * glyph. `size` is load-bearing — 40 in dialogs, 32 on the dispatch panel bar, 36
- * on the messaging header. Spread onto a `<ThemeIcon {...headerChipProps(v)}>`,
+ * The square icon chip inside a header: a translucent scrim of the variant's
+ * accent colour behind the glyph — the one place a header still signals error/
+ * warning/success/etc. at a glance, now that the bar itself is neutral.
+ * `size` is load-bearing — 40 in dialogs, 32 on the dispatch panel bar, 36 on
+ * the messaging header. Spread onto a `<ThemeIcon {...headerChipProps(v)}>`,
  * which brings the box, the centring and `min-width`/`min-height` natively; the
  * scrim rides ThemeIcon's own `--ti-bg`/`--ti-color` variables. Pass the icon its
  * own size at the call site — ThemeIcon sizes the box, not the glyph.
  */
 export function headerChipProps(variant: PanelHeaderVariant = 'primary', size = 40) {
+    const accent = headerAccentColor(variant);
     return {
         size,
         radius: 'md' as const,
         // Typed to admit the custom properties — `CSSProperties` alone cannot be
         // indexed by `--*`, which makes the vars unassertable in tests.
         style: {
-            '--ti-bg': headerOverlayColor(0.18, variant),
-            '--ti-color': headerOnColor(variant),
+            '--ti-bg': alpha(accent, 0.15),
+            '--ti-color': accent,
         } as React.CSSProperties & Record<`--${string}`, string>,
     };
 }

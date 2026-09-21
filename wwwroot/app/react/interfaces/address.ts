@@ -14,7 +14,7 @@ export interface AddressViewModel {
     addressLine5: string;  // City (US) or Suburb (NZ)
     addressLine6: string;  // State (US) or City (NZ)
     addressLine7: string;  // ZIP Code (US) or Post Code (NZ)
-    addressLine8: string;  // Additional Notes
+    addressLine8: string;  // Country
     latitude?: number;
     longitude?: number;
     fullAddress: string;
@@ -41,6 +41,18 @@ export interface ShipmentDetails {
     quantity?: number;
     jobNotes?: string;
 }
+
+// A tenant/user-configurable address format: an ordered subset of these named
+// fields, each backed by one of the 8 fixed address lines above.
+export type AddressFieldKey =
+    | 'building'
+    | 'unit'
+    | 'streetNumber'
+    | 'streetName'
+    | 'cityOrSuburb'
+    | 'stateOrCity'
+    | 'postcode'
+    | 'country';
 
 // HERE Maps autocomplete result
 export interface HereMapsPosition {

@@ -74,6 +74,20 @@ jest.mock('../../services/courierApi', () => ({
 jest.mock('../../utils/dateUtils', () =>
     require('../../../tests/mocks/dateUtilsMock').nzDateUtilsMock());
 
+// The column-preferences server sync is covered by its own describe block below;
+// everywhere else, stub it out so tests don't fire real network requests.
+jest.mock('./jobListPreferences', () => ({
+    ...jest.requireActual('./jobListPreferences'),
+    loadJobListColumnsFromServer: jest.fn().mockResolvedValue(null),
+    persistJobListColumnsToServer: jest.fn(),
+}));
+
+// Covered by its own test file; everywhere else, stub it out so tests don't
+// fire real network requests for a preference this suite doesn't exercise.
+jest.mock('./addressFormatPreferences', () => ({
+    loadEffectiveAddressFieldOrder: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('../../services/jobListApi', () => ({
     allocateJobs: jest.fn(),
     getEventGroups: jest.fn().mockResolvedValue([]),
@@ -103,6 +117,8 @@ import {
     addRestoreEvent,
 } from '../../services/jobListApi';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
+import {loadJobListColumnsFromServer, persistJobListColumnsToServer} from './jobListPreferences';
+import {loadEffectiveAddressFieldOrder} from './addressFormatPreferences';
 import {queryClient} from '../../query/queryClient';
 const mockedSearchCouriers = searchActiveCouriersExtended as jest.Mock;
 const mockedAllocateJobs = allocateJobs as jest.Mock;
@@ -552,6 +568,101 @@ describe('JobListPanel', () => {
             renderAndPushJobs([], {storagePrefix: 'panelB'});
             const toggleB = screen.getByRole('switch');
             expect(toggleB).not.toBeChecked();
+        });
+    });
+
+    describe('Column Preferences (StaffPreference sync)', () => {
+        const mockedLoadColumns = loadJobListColumnsFromServer as jest.Mock;
+        const mockedPersistColumns = persistJobListColumnsToServer as jest.Mock;
+
+        beforeEach(() => {
+            mockedLoadColumns.mockReset().mockResolvedValue(null);
+            mockedPersistColumns.mockReset();
+        });
+
+        it('opens this list\'s own column editor from its "Edit columns" button', async () => {
+            const user = setupUser();
+            renderAndPushJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
+
+            expect(screen.queryByRole('button', {name: 'Done'})).not.toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: 'Edit columns'}));
+
+            expect(screen.getByRole('button', {name: 'Done'})).toBeInTheDocument();
+        });
+
+        it('loads this list\'s saved column layout from the server on mount', () => {
+            renderAndPushJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
+
+            expect(mockedLoadColumns).toHaveBeenCalledWith('dispatchJobList');
+        });
+
+        it('hydrates hidden columns from the server-saved layout', () => {
+            mockedLoadColumns.mockResolvedValue({
+                columnOrder: [],
+                columnWidths: {},
+                hiddenColumns: ['jobNo'],
+            });
+
+            renderAndPushJobs([createMockDispatchJob({jobNo: 'J001'})], {storagePrefix: 'dispatchJobList'});
+
+            return waitFor(() => {
+                expect(screen.queryByText('J001')).not.toBeInTheDocument();
+            });
+        });
+
+        it('saves the current column layout to the server when Done is clicked', async () => {
+            const user = setupUser();
+            renderAndPushJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
+
+            await user.click(screen.getByRole('button', {name: 'Edit columns'}));
+            await user.click(screen.getByRole('button', {name: 'Done'}));
+
+            expect(mockedPersistColumns).toHaveBeenCalledWith('dispatchJobList', expect.objectContaining({
+                columnOrder: expect.any(Array),
+                columnWidths: expect.any(Object),
+                hiddenColumns: expect.any(Array),
+            }));
+            expect(screen.queryByRole('button', {name: 'Done'})).not.toBeInTheDocument();
+        });
+
+        it('resets columns to defaults and persists the reset to the server', async () => {
+            const user = setupUser();
+            renderAndPushJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
+
+            await user.click(screen.getByRole('button', {name: 'Reset columns'}));
+
+            expect(mockedPersistColumns).toHaveBeenCalledWith('dispatchJobList', expect.objectContaining({
+                columnOrder: [],
+                hiddenColumns: [],
+            }));
+        });
+    });
+
+    describe('Address format preference', () => {
+        const mockedLoadAddressFormat = loadEffectiveAddressFieldOrder as jest.Mock;
+
+        afterEach(() => {
+            mockedLoadAddressFormat.mockReset().mockResolvedValue(undefined);
+        });
+
+        it('renders pickup/delivery using the resolved field order once it loads', async () => {
+            mockedLoadAddressFormat.mockResolvedValue(['streetNumber', 'streetName']);
+            renderAndPushJobs([createMockDispatchJob()]);
+
+            await waitFor(() => {
+                expect(screen.getByText('10, Queen St')).toBeInTheDocument(); // pickup
+            });
+            expect(screen.getByText('20, High St')).toBeInTheDocument(); // delivery
+        });
+
+        it('keeps the legacy NZ/US format when nothing is configured', async () => {
+            mockedLoadAddressFormat.mockResolvedValue(undefined);
+            renderAndPushJobs([createMockDispatchJob()]);
+
+            await waitFor(() => {
+                expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // NZ pickup: suburb only
+            });
         });
     });
 

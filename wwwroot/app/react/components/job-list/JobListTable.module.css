@@ -123,7 +123,7 @@
 
 .row:hover {
     background-color: var(--mantine-color-gray-3);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--mantine-shadow-sm);
 }
 
 /*
