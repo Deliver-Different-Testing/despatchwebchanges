@@ -10,7 +10,7 @@ interface StatCardProps {
 }
 
 export const StatCard: React.FC<StatCardProps> = ({value, label, color, icon}) => (
-    <Card withBorder p={0} radius="sm" miw={140} style={{flex: 1, overflow: 'hidden'}}>
+    <Card withBorder p={0} radius="lg" miw={140} style={{flex: 1, overflow: 'hidden'}}>
         {/*
           * The 3px rule is the card's only colour. It is stamped so a test can
           * assert the colour reached the DOM — the bar has no text, no role and

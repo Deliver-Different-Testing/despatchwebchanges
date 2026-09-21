@@ -1,6 +1,6 @@
 import {
     IAgent,
-    IAgentInfoDialog, IAirlineSuggestion,
+    IAirlineSuggestion,
     IAirportSuggestion,
     IJobQueryParams, IJobSearchResult, IJobSearchResultDto
 } from "../../interfaces/job.interface";
@@ -175,15 +175,6 @@ class NationwideService {
         await this.$http.post("nationwideJob/RestoreJob", {
             jobId,
         });
-    }
-
-    async getAgentInfoForDialog(agentId: number): Promise<IAgentInfoDialog> {
-        const response = await this.$http.get<IAgentInfoDialog>("nationwideJob/GetAgentInfo", {
-            params: {
-                agentId,
-            }
-        });
-        return response.data;
     }
 
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Dayjs, timezone?: string): Promise<IFlightCargoProcessing> {

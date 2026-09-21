@@ -18,6 +18,7 @@ import {dashboardFeatureKeys, isDashboardVisible, visibleDashboards} from './fea
  */
 export const dashboardStateFeatureKeys: Readonly<Record<string, string>> = {
     home: dashboardFeatureKeys.dispatch,
+    dispatch: dashboardFeatureKeys.dispatch,
     dispatchV2: dashboardFeatureKeys.dispatch,
     nw: dashboardFeatureKeys.nationwide,
     nwV2: dashboardFeatureKeys.nationwide,
@@ -32,7 +33,7 @@ export const dashboardStateFeatureKeys: Readonly<Record<string, string>> = {
 
 /** Landing preference when the requested dashboard is blocked. */
 const LANDING_ORDER = [
-    'dispatchV2',
+    'dispatch',
     'jobSearch',
     'nw',
     'overview',

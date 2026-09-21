@@ -27,6 +27,7 @@ export const ActionsMenu: React.FC<ActionsMenuProps> = ({
                     <ActionIcon
                         variant="subtle"
                         size="lg"
+                        radius="xl"
                         style={toolbarIconButtonStyle}
                         aria-label="Actions menu"
                     >

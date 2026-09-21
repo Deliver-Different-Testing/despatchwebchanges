@@ -15,12 +15,26 @@ import {ErrorBoundary} from '../../components/common/error-boundary';
 import {createPageHost} from '../../utils/reactPageHost';
 import {toastService} from '../../services/toastService';
 import type {ShowToastFn} from '../../services/toastTypes';
+import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
+import type {ImportLayoutsResult} from '../../components/common/box-shell/layoutPersistence';
 import {NationwidePage} from './NationwidePage';
 import type {NationwideLayoutBridge, NationwidePageProps} from './NationwidePageProps';
+import {
+    promptDeleteLayout as promptDeleteLayoutOnBridge,
+    promptRenameLayout as promptRenameLayoutOnBridge,
+    promptSaveLayout as promptSaveLayoutOnBridge,
+    reloadLayoutsFromStorage as reloadLayoutsFromStorageOnBridge,
+    setCurrentLayoutName as setCurrentLayoutNameOnBridge,
+} from "../../utils/layoutUtils";
 
 export interface MountNationwidePageConfig extends NationwidePageProps {}
 
 let layoutBridge: NationwideLayoutBridge | null = null;
+// The host toolbar registers its Views-menu listener as soon as its controller
+// runs, which can be before the React bridge exists. Held here and attached on
+// bridge-ready, mirroring `pages/dispatch/dispatch-react.module.tsx`.
+let pendingViewsListener: ((views: DfrntPageViewModel[]) => void) | null = null;
+let unregisterViewsListener: (() => void) | null = null;
 
 /**
  * Page toasts render through the same Mantine notification surface the dialogs
@@ -40,6 +54,9 @@ const host = createPageHost<MountNationwidePageConfig>({
                 showToast={showMantineToast}
                 onLayoutBridgeReady={bridge => {
                     layoutBridge = bridge;
+                    if (pendingViewsListener) {
+                        unregisterViewsListener = bridge.registerViewsListener(pendingViewsListener);
+                    }
                     config.onLayoutBridgeReady?.(bridge);
                 }}
             />
@@ -55,36 +72,68 @@ export function mountNationwidePage(
 }
 
 export function unmountNationwidePage(): void {
-    layoutBridge = null;
     host.unmount();
+    layoutBridge = null;
+    pendingViewsListener = null;
+    unregisterViewsListener = null;
 }
 
 // ── Layout bridge, driven from the AngularJS toolbar ─────────────────
 // Each call is a no-op until the page has mounted and registered its bridge,
 // so a toolbar click during load cannot throw.
 
+export function importLegacyLayouts(): ImportLayoutsResult {
+    return layoutBridge?.importLegacyLayouts() ?? {imported: [], skipped: []};
+}
+
+/** Restore the current layout to the shipped arrangement (toolbar → Layouts → Reset layout). */
+export function resetCurrentLayout(): void {
+    layoutBridge?.resetCurrentLayout();
+}
+
+/**
+ * Subscribe the host toolbar's Views menu to the page's view list + selection.
+ * Only one listener is supported (there is a single toolbar).
+ */
+export function registerViewsListener(listener: (views: DfrntPageViewModel[]) => void): () => void {
+    if (layoutBridge) {
+        unregisterViewsListener = layoutBridge.registerViewsListener(listener);
+    } else {
+        pendingViewsListener = listener;
+    }
+    return () => {
+        if (pendingViewsListener === listener) pendingViewsListener = null;
+        unregisterViewsListener?.();
+        unregisterViewsListener = null;
+    };
+}
+
+export function setViewSelection(viewIds: number[]): void {
+    layoutBridge?.setViewSelection(viewIds);
+}
+
+export function updateRefreshIntervalMs(ms: number | false): void {
+    layoutBridge?.updateRefreshIntervalMs(ms);
+}
+
 export function setCurrentLayoutName(name: string): void {
-    layoutBridge?.setCurrentLayoutName(name);
+    setCurrentLayoutNameOnBridge(layoutBridge, name);
 }
 
 export function reloadLayoutsFromStorage(): void {
-    layoutBridge?.reloadFromStorage();
+    reloadLayoutsFromStorageOnBridge(layoutBridge);
 }
 
 export function promptSaveLayout(): Promise<string | null> {
-    return layoutBridge?.promptSaveLayout() ?? Promise.resolve(null);
+    return promptSaveLayoutOnBridge(layoutBridge);
 }
 
 export function promptDeleteLayout(layoutName: string): Promise<boolean> {
-    return layoutBridge?.promptDeleteLayout(layoutName) ?? Promise.resolve(false);
+    return promptDeleteLayoutOnBridge(layoutBridge, layoutName);
 }
 
 export function promptRenameLayout(layoutName: string): Promise<string | null> {
-    return layoutBridge?.promptRenameLayout(layoutName) ?? Promise.resolve(null);
-}
-
-export function importLegacyLayouts(): unknown {
-    return layoutBridge?.importLegacyLayouts();
+    return promptRenameLayoutOnBridge(layoutBridge, layoutName);
 }
 
 declare global {
@@ -98,6 +147,10 @@ declare global {
             promptDeleteLayout: typeof promptDeleteLayout;
             promptRenameLayout: typeof promptRenameLayout;
             importLegacyLayouts: typeof importLegacyLayouts;
+            resetCurrentLayout: typeof resetCurrentLayout;
+            registerViewsListener: typeof registerViewsListener;
+            setViewSelection: typeof setViewSelection;
+            updateRefreshIntervalMs: typeof updateRefreshIntervalMs;
         };
     }
 }
@@ -111,6 +164,10 @@ window.ReactNationwide = {
     promptDeleteLayout,
     promptRenameLayout,
     importLegacyLayouts,
+    resetCurrentLayout,
+    registerViewsListener,
+    setViewSelection,
+    updateRefreshIntervalMs,
 };
 
 // Registered so $ocLazyLoad can dedupe and verify the load.

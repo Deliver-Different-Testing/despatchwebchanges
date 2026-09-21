@@ -27,6 +27,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<ClientTypeFeature> ClientTypeFeatures { get; set; }
 
+    public virtual DbSet<CourierSettlementBatch> CourierSettlementBatches { get; set; }
+
     public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
 
     public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
@@ -67,11 +69,11 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<PricingBreakdownArchive> PricingBreakdownArchives { get; set; }
 
-    public virtual DbSet<CourierSettlementBatch> CourierSettlementBatches { get; set; }
-
     public virtual DbSet<Route> Routes { get; set; }
 
     public virtual DbSet<StaffDispatchLayout> StaffDispatchLayouts { get; set; }
+
+    public virtual DbSet<StaffPreference> StaffPreferences { get; set; }
 
     public virtual DbSet<TblAfterHour> TblAfterHours { get; set; }
 
@@ -468,6 +470,19 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.FeatureKey)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ClientTypeFeature_Feature");
+        });
+
+        modelBuilder.Entity<CourierSettlementBatch>(entity =>
+        {
+            entity.ToTable("CourierSettlementBatch");
+
+            entity.Property(e => e.AccountsSynced).HasPrecision(3);
+            entity.Property(e => e.Completed).HasPrecision(3);
+            entity.Property(e => e.Created)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(getdate())", "DF_CourierSettlementBatch_Created");
+            entity.Property(e => e.Date).HasPrecision(3);
+            entity.Property(e => e.Generated).HasPrecision(3);
         });
 
         modelBuilder.Entity<DesQryAllJobType>(entity =>
@@ -1401,13 +1416,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Total).HasColumnType("decimal(18, 4)");
         });
 
-        modelBuilder.Entity<CourierSettlementBatch>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
-        });
-
         modelBuilder.Entity<Route>(entity =>
         {
             entity.HasIndex(e => new { e.Active, e.Name }, "IX_Routes_Active");
@@ -1465,6 +1473,28 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.StaffId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_StaffDispatchLayout_Staff");
+        });
+
+        modelBuilder.Entity<StaffPreference>(entity =>
+        {
+            entity.ToTable("StaffPreference");
+
+            entity.HasIndex(e => e.StaffId, "IX_StaffPreference_StaffId");
+
+            entity.HasIndex(e => new { e.StaffId, e.PreferenceKey }, "UQ_StaffPreference_Staff_Key").IsUnique();
+
+            entity.Property(e => e.Id).HasDefaultValueSql("(newsequentialid())", "DF_StaffPreference_Id");
+            entity.Property(e => e.CreatedUtc).HasDefaultValueSql("(sysutcdatetime())", "DF_StaffPreference_CreatedUtc");
+            entity.Property(e => e.LastModifiedUtc).HasDefaultValueSql("(sysutcdatetime())", "DF_StaffPreference_LastModifiedUtc");
+            entity.Property(e => e.PreferenceJson).IsRequired();
+            entity.Property(e => e.PreferenceKey)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasOne(d => d.Staff).WithMany(p => p.StaffPreferences)
+                .HasForeignKey(d => d.StaffId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StaffPreference_Staff");
         });
 
         modelBuilder.Entity<TblAfterHour>(entity =>
@@ -6492,6 +6522,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Agent).WithMany(p => p.TucJobArchives)
                 .HasForeignKey(d => d.AgentId)
                 .HasConstraintName("FK_tucJobArchive_Agent");
+
+            entity.HasOne(d => d.CourierSettlementBatch).WithMany(p => p.TucJobArchives)
+                .HasForeignKey(d => d.CourierSettlementBatchId)
+                .HasConstraintName("FK_tucJobArchive_CourierSettlementBatch");
 
             entity.HasOne(d => d.DeliverByTimeZone).WithMany(p => p.TucJobArchiveDeliverByTimeZones)
                 .HasForeignKey(d => d.DeliverByTimeZoneId)

@@ -1,10 +1,8 @@
 /**
  * The Job Search page's panels.
  *
- * Canonical home is here rather than `components/jobSearch/enums/`, because
- * that folder goes with the AngularJS page while these identifiers outlive it —
- * they key the persisted layout and per-box visibility, so the string values
- * must not change. The AngularJS enum re-exports this.
+ * These identifiers key the persisted layout and per-box visibility, so the
+ * string values must not change.
  */
 export enum JobSearchBoxes {
     SearchWidget = 'pickDate',

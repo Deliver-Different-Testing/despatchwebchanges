@@ -19,6 +19,13 @@ import type {ImportLayoutsResult} from '../../components/common/box-shell/layout
 import {createPageHost} from '../../utils/reactPageHost';
 import {toastService} from '../../services/toastService';
 import type {ShowToastFn} from '../../services/toastTypes';
+import {
+    promptDeleteLayout as promptDeleteLayoutOnBridge,
+    promptRenameLayout as promptRenameLayoutOnBridge,
+    promptSaveLayout as promptSaveLayoutOnBridge,
+    reloadLayoutsFromStorage as reloadLayoutsFromStorageOnBridge,
+    setCurrentLayoutName as setCurrentLayoutNameOnBridge,
+} from "../../utils/layoutUtils";
 
 export interface MountDispatchPageConfig extends DispatchPageProps {}
 
@@ -81,26 +88,6 @@ export function unmountDispatchPage(): void {
     unregisterViewsListener = null;
 }
 
-export function setCurrentLayoutName(name: string): void {
-    layoutBridge?.setCurrentLayoutName(name);
-}
-
-export function reloadLayoutsFromStorage(): void {
-    layoutBridge?.reloadFromStorage();
-}
-
-export function promptSaveLayout(): Promise<string | null> {
-    return layoutBridge?.promptSaveLayout() ?? Promise.resolve(null);
-}
-
-export function promptDeleteLayout(layoutName: string): Promise<boolean> {
-    return layoutBridge?.promptDeleteLayout(layoutName) ?? Promise.resolve(false);
-}
-
-export function promptRenameLayout(layoutName: string): Promise<string | null> {
-    return layoutBridge?.promptRenameLayout(layoutName) ?? Promise.resolve(null);
-}
-
 export function updateFilters(filters: Partial<DispatchFilters>): void {
     if (layoutBridge) {
         layoutBridge.updateFilters(filters);
@@ -129,6 +116,26 @@ export function registerViewsListener(listener: (views: DfrntPageViewModel[]) =>
 
 export function setViewSelection(viewIds: number[]): void {
     layoutBridge?.setViewSelection(viewIds);
+}
+
+export function setCurrentLayoutName(name: string): void {
+    setCurrentLayoutNameOnBridge(layoutBridge, name);
+}
+
+export function reloadLayoutsFromStorage(): void {
+    reloadLayoutsFromStorageOnBridge(layoutBridge);
+}
+
+export function promptSaveLayout(): Promise<string | null> {
+    return promptSaveLayoutOnBridge(layoutBridge);
+}
+
+export function promptDeleteLayout(layoutName: string): Promise<boolean> {
+    return promptDeleteLayoutOnBridge(layoutBridge, layoutName);
+}
+
+export function promptRenameLayout(layoutName: string): Promise<string | null> {
+    return promptRenameLayoutOnBridge(layoutBridge, layoutName);
 }
 
 export function updateRefreshIntervals(intervals: Partial<DispatchRefreshIntervals>): void {

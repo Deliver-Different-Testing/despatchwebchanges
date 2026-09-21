@@ -76,7 +76,7 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
          */
         <Stack gap={16} h="100%" p={8} bg="var(--mantine-color-body)">
             {/* Page Header */}
-            <Card withBorder p={0} radius="sm" style={{flexShrink: 0, overflow: 'hidden'}}>
+            <Card withBorder p={0} radius="lg" style={{flexShrink: 0, overflow: 'hidden'}}>
                 <Tabs value={String(selectedTab)} onChange={handleTabChange}>
                     <Tabs.List>
                         {TAB_LABELS.map((label, index) => (

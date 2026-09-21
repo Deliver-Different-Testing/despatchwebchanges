@@ -5,13 +5,6 @@ import {Box, Stack} from '@mantine/core';
 import {useDisclosure} from '@mantine/hooks';
 import {Briefcase} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
-
-/**
- * A driver-location area scopes the job list to its clear list, and V1 forced the
- * category to Unassigned when the area was clicked (`selectAndActivateArea`).
- */
-const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
-
 import {NoData} from '../../components/common/no-data/NoData';
 import {ContactID} from '../../../contants';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
@@ -53,7 +46,7 @@ import {createDefaultDispatchLayout, createDispatchBoxes} from './lib/boxDefinit
 import {computeMapJobs, selectedCourierId} from './lib/mapJobs';
 import {computeMapView} from './lib/mapView';
 import {getDefaultMapCenter, getNetworkPartnerMapCenter} from '../../components/common/here-map/HereMap.types';
-import {executeAddStopFlow} from './lib/addStopFlow';
+import {executeAddStopFlow} from '../../utils/addStopFlow';
 import {
     DispatchFilters,
     loadDispatchFilters,
@@ -65,8 +58,8 @@ import {
     DispatchRefreshIntervals,
     loadRefreshIntervals,
 } from './lib/dispatchFilters';
-import {useDispatchViews} from './hooks/useDispatchViews';
-import {ViewsRail} from './components/ViewsRail';
+import {useDashboardViews} from '../../hooks/useDashboardViews';
+import {ViewsRail} from '../../components/common/views-rail';
 import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import {CurrentWorkBox} from './components/CurrentWorkBox';
 import {TasksBox} from '../../components/common/tasks-box/TasksBox';
@@ -75,6 +68,8 @@ import {OverviewDeliveriesBox} from './components/OverviewDeliveriesBox';
 import {OpenJobsBox} from './components/OpenJobsBox';
 import {TruckModeMenu} from './components/TruckModeMenu';
 import type {TruckMode} from '../../components/common/driver-locations/DriverLocations.types';
+
+const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
 
 export interface DispatchLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
@@ -178,7 +173,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     // ── Page views (the job list's scope) ──────────────────────────────
     // The definitions come from the server; the selection lives in `filters`
     // and is mirrored to localStorage so V1 and the host toolbar see it too.
-    const {data: pageViews, isLoading: viewsLoading} = useDispatchViews(LegacyAppPage.Dispatch);
+    const {data: pageViews, isLoading: viewsLoading} = useDashboardViews(LegacyAppPage.Dispatch);
     const viewsRef = useRef<DfrntPageViewModel[]>([]);
     viewsRef.current = pageViews ?? [];
     const selectedViewIdsRef = useRef(filters.despatchViewIds);
@@ -494,7 +489,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
 
     // ── Job-detail FAB actions ────────────────────────────────────────
     // Mirrors home.controller.ts FAB handlers, reusing the existing React
-    // dialogs (window globals preloaded by the dispatchV2 route) and APIs.
+    // dialogs (window globals preloaded by the dispatch route) and APIs.
     const fabAction = useCallback(async (actionId: DispatchJobActionId, job: DispatchJob) => {
         const w = window as any;
         const refreshDetail = () => {

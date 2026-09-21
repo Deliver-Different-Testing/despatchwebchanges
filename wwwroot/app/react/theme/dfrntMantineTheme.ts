@@ -11,9 +11,16 @@
  *     app already loads Plus Jakarta Sans from Google Fonts in `_Layout.cshtml`.
  *   - `dfrntBrand` semantic-hex export added for the non-Mantine consumers that
  *     need a plain hex (the dialog header map).
+ *   - Radius scale squared off and the lozenge-button defaults dropped (see
+ *     `tokens.radius` and the `Button`/`ActionIcon`/`Chip`/`SegmentedControl`
+ *     component overrides below) — this app's operators found the fully-rounded
+ *     brand shape read as toy-like on a dense operational dashboard. `Switch`
+ *     keeps its pill track; that's a near-universal toggle affordance, not the
+ *     decorative pill shape being moved away from. Don't re-copy this file's
+ *     radius section from the skill without re-applying this deviation.
  *
  * Brand: Ink Blue #0d0c2c shell · Cyan #3bc7f4 primary · Light Grey #f4f2f1 page
- * (light) / charcoal #2c2a30 (dark). Lozenge buttons, elevation by tone not shadow.
+ * (light) / charcoal #2c2a30 (dark). Elevation by tone not shadow.
  */
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
 import {getMd3Scheme} from './md3';
@@ -189,9 +196,14 @@ export const codeBlockPalette = {
     textError: '#f1adb5',
 };
 
-/** Radius / duration / shadow tokens (MD3 corner scale). */
+/**
+ * Radius / duration / shadow tokens (squared-off corporate corner scale).
+ * `xl` stays large deliberately — it's what makes `radius="xl"` clip to a full
+ * circle on avatars/ThemeIcons app-wide; shrinking it would turn those circles
+ * into rounded squares, which was never part of the "less rounded" complaint.
+ */
 export const tokens = {
-    radius: {xs: 4, sm: 8, md: 12, lg: 16, xl: 28, full: 9999, tile: 2},
+    radius: {xs: 2, sm: 4, md: 6, lg: 8, xl: 28, full: 9999, tile: 2},
     duration: {instant: 100, fast: 150, normal: 200, slow: 350},
     shadow: {
         sm: '0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1)',
@@ -235,11 +247,12 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             fontFamily: '"Plus Jakarta Sans", sans-serif',
             fontWeight: '600',
         },
-        defaultRadius: 'md',
-        radius: {xs: '4px', sm: '8px', md: '12px', lg: '16px', xl: '28px'},
+        defaultRadius: 'sm',
+        // `xl` stays large — see the `tokens.radius` comment above.
+        radius: {xs: '2px', sm: '4px', md: '6px', lg: '8px', xl: '28px'},
         components: {
-            Button: {defaultProps: {radius: 9999}}, // lozenge
-            ActionIcon: {defaultProps: {radius: 9999}},
+            Button: {defaultProps: {radius: 'sm'}},
+            ActionIcon: {defaultProps: {radius: 'sm'}},
             // Cards/paper sit one tonal tier above the page in both schemes (elevation by
             // tone, not shadow). Applied as a class-based `styles.root`, NOT a `bg`
             // defaultProp, so a component's own inline `style={{background}}` still wins.
@@ -252,7 +265,7 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
                 styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
             },
             Modal: {
-                defaultProps: {radius: 'lg', centered: true},
+                defaultProps: {radius: 'md', centered: true},
                 styles: {content: {backgroundColor: 'var(--dd-surface-container-high)'}},
             },
             TextInput: {defaultProps: {radius: 'sm'}},
@@ -265,11 +278,14 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             },
             Tooltip: {defaultProps: {radius: 'sm', color: 'ink'}},
             Badge: {defaultProps: {radius: 'sm'}},
-            Chip: {defaultProps: {radius: 9999}},
+            Chip: {defaultProps: {radius: 'sm'}},
             // Selection controls. Prefer `SegmentedToggle` (components/common/
             // segmented-toggle) for any single-select choice — these defaults
             // only keep stock usages on-brand.
-            SegmentedControl: {defaultProps: {radius: 9999, withItemsBorders: false}},
+            SegmentedControl: {defaultProps: {radius: 'sm', withItemsBorders: false}},
+            // Kept fully round: a pill toggle track is the universal switch
+            // affordance, not the decorative lozenge shape the rest of the
+            // controls moved away from.
             Switch: {defaultProps: {radius: 9999}},
             Radio: {defaultProps: {size: 'sm'}},
             Tabs: {styles: {tab: {paddingBlock: 14, fontWeight: 500}}},

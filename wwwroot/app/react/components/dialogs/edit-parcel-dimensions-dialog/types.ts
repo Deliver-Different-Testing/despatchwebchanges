@@ -17,7 +17,7 @@ export interface ParcelDimensions {
     cubic?: number;
     dimensions: string;
     barcode?: string;
-    itemTypes?: Array<{name: string; quantity: number}>;
+    itemTypes?: Array<{ name: string; quantity: number }>;
 }
 
 /**

@@ -280,7 +280,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                 mih={32}
                 bg="var(--mantine-color-body)"
                 style={{
-                    borderRadius: 8,
+                    borderRadius: 'var(--mantine-radius-lg)',
                     cursor: 'pointer',
                     border: '1px solid var(--mantine-color-default-border)',
                     borderLeft: `3px solid ${isOverdue ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-yellow-6)'}`,
@@ -323,7 +323,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                         : dayIsSelected
                             ? 'var(--mantine-primary-color-filled)'
                             : isPast ? 'var(--mantine-color-gray-0)' : 'var(--mantine-color-body)',
-                    borderRadius: 12,
+                    borderRadius: 'var(--mantine-radius-sm)',
                     cursor: 'pointer',
                     border: `2px solid ${day.isToday ? 'var(--mantine-primary-color-filled)' : 'transparent'}`,
                     position: 'relative',
@@ -370,7 +370,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                             fz="0.75rem"
                             style={{
                                 backgroundColor: dayIsSelected ? 'rgba(255, 255, 255, 0.95)' : 'var(--mantine-color-gray-1)',
-                                borderRadius: 8,
+                                borderRadius: 'var(--mantine-radius-lg)',
                                 cursor: 'pointer',
                                 borderLeft: `3px solid ${getTaskPriorityColor(task)}`,
                             }}
@@ -455,7 +455,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
             wrap="nowrap"
             h="100%"
             bg="var(--mantine-color-body)"
-            style={{borderRadius: 12, boxShadow: 'var(--mantine-shadow-xs)', overflow: 'hidden'}}
+            style={{borderRadius: 'var(--mantine-radius-sm)', overflow: 'hidden'}}
         >
             {/* Time Column */}
             <Box
@@ -545,7 +545,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
             <Box
                 w={80}
                 bg="var(--mantine-color-gray-0)"
-                style={{flexShrink: 0, borderRadius: '12px 0 0 12px'}}
+                style={{flexShrink: 0, borderRadius: 'var(--mantine-radius-sm) 0 0 var(--mantine-radius-sm)'}}
             >
                 {TIME_SLOTS.map(time => (
                     <Text
@@ -570,8 +570,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                 style={{
                     flex: 1,
                     overflowY: 'auto',
-                    borderRadius: '0 12px 12px 0',
-                    boxShadow: 'var(--mantine-shadow-xs)',
+                    borderRadius: '0 var(--mantine-radius-sm) var(--mantine-radius-sm) 0',
                 }}
             >
                 {TIME_SLOTS.map(time => (
@@ -632,7 +631,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
             // height/overflow stay inline: a regression test asserts them with
             // toHaveStyle, and a fixed viewport height here overshoots the real flex
             // space and clips the bottom with no scrollbar.
-            style={{height: '100%', minHeight: 0, borderRadius: 12, overflow: 'hidden'}}
+            style={{height: '100%', minHeight: 0, borderRadius: 'var(--mantine-radius-sm)', overflow: 'hidden'}}
         >
             {/* Toolbar */}
             <Group

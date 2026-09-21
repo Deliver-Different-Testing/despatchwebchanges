@@ -1,5 +1,5 @@
 import { classifyChange, type ChangeType } from './changeTypes';
-import { parseMrSections } from './mrSections';
+import { parseMrSections, type MrSections } from './mrSections';
 
 export interface ReleaseMergeRequest {
     iid: number;
@@ -69,23 +69,51 @@ export function headlineFor(what: string, title: string): string {
 }
 
 /**
+ * The type and "what changed" body for a merge request. A merge request written
+ * with the mr-release-notes skill's headings is classified from whichever of
+ * Bug Fixes / New features / Maintenance it filled in — content across more than
+ * one of those still all reaches the reader, just under a single group, in that
+ * priority order. Only a merge request with none of them falls back to guessing
+ * from the branch prefix, for ones opened before the template changed.
+ */
+function typeAndWhat(mergeRequest: ReleaseMergeRequest, sections: MrSections): { type: ChangeType; what: string } {
+    const structured = (
+        [
+            { type: 'fixed', body: sections.bugFixes },
+            { type: 'new', body: sections.newFeatures },
+            { type: 'maintenance', body: sections.maintenance },
+        ] as const
+    ).filter((entry) => entry.body);
+
+    if (structured.length) {
+        return { type: structured[0].type, what: structured.map((entry) => entry.body).join('\n\n') };
+    }
+
+    return {
+        type: classifyChange({ sourceBranch: mergeRequest.sourceBranch, labels: mergeRequest.labels }),
+        what: sections.legacyWhat,
+    };
+}
+
+/**
  * A change with no description or test steps is still listed, with a marker — a
  * silently omitted change is an untested change.
  */
 export function buildReleaseNotes({ mergeRequests, directCommits }: ReleaseNotesInput): ReleaseNotes {
     const changes = mergeRequests.map((mergeRequest): ReleaseChange => {
-        const { what, test, risk } = parseMrSections(mergeRequest.description);
+        const sections = parseMrSections(mergeRequest.description);
+        const { type, what } = typeAndWhat(mergeRequest, sections);
 
         return {
             iid: mergeRequest.iid,
             title: mergeRequest.title,
             webUrl: mergeRequest.webUrl,
             authorName: mergeRequest.authorName,
-            type: classifyChange({ sourceBranch: mergeRequest.sourceBranch, labels: mergeRequest.labels }),
+            type,
             headline: headlineFor(what, mergeRequest.title),
             what,
-            test,
-            risk,
+            test: sections.test,
+            risk: sections.risk,
         };
     });
 
@@ -97,7 +125,7 @@ export function buildReleaseNotes({ mergeRequests, directCommits }: ReleaseNotes
 }
 
 export function countByType(notes: ReleaseNotes): Record<ChangeType, number> {
-    const counts: Record<ChangeType, number> = { new: 0, improved: 0, fixed: 0, internal: 0, other: 0 };
+    const counts: Record<ChangeType, number> = { new: 0, fixed: 0, maintenance: 0 };
     for (const change of notes.changes) {
         counts[change.type] += 1;
     }

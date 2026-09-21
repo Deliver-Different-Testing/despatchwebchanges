@@ -18,6 +18,13 @@ import {JobSearchLayoutBridge} from "./JobSearchLayoutBridge";
 import {createPageHost} from '../../utils/reactPageHost';
 import {toastService} from '../../services/toastService';
 import type {ShowToastFn} from '../../services/toastTypes';
+import {
+    promptDeleteLayout as promptDeleteLayoutOnBridge,
+    promptRenameLayout as promptRenameLayoutOnBridge,
+    promptSaveLayout as promptSaveLayoutOnBridge,
+    reloadLayoutsFromStorage as reloadLayoutsFromStorageOnBridge,
+    setCurrentLayoutName as setCurrentLayoutNameOnBridge,
+} from "../../utils/layoutUtils";
 
 export interface MountJobSearchPageConfig extends JobSearchPageProps {}
 
@@ -62,47 +69,24 @@ export function unmountJobSearchPage(): void {
     layoutBridge = null;
 }
 
-/**
- * Tell the live React page to switch to a layout by name (e.g. after
- * AngularJS writes a new layout to localStorage from the AppShell menu).
- * No-op if React is not mounted.
- */
 export function setCurrentLayoutName(name: string): void {
-    layoutBridge?.setCurrentLayoutName(name);
+    setCurrentLayoutNameOnBridge(layoutBridge, name);
 }
 
-/**
- * Tell the live React page to re-read its layouts list from localStorage
- * (after AngularJS adds/deletes a layout via the AppShell menu).
- */
 export function reloadLayoutsFromStorage(): void {
-    layoutBridge?.reloadFromStorage();
+    reloadLayoutsFromStorageOnBridge(layoutBridge);
 }
 
-/**
- * Open the React MUI "Save Layout" dialog and resolve with the entered name
- * (or null if canceled / React not mounted). The AngularJS toolbar awaits
- * this in place of the old native `window.prompt`.
- */
 export function promptSaveLayout(): Promise<string | null> {
-    return layoutBridge?.promptSaveLayout() ?? Promise.resolve(null);
+    return promptSaveLayoutOnBridge(layoutBridge);
 }
 
-/**
- * Open the React MUI "Delete Layout" confirmation and resolve true if the user
- * confirms (false if cancelled / React not mounted). The AngularJS toolbar
- * awaits this in place of the old native `window.confirm`.
- */
 export function promptDeleteLayout(layoutName: string): Promise<boolean> {
-    return layoutBridge?.promptDeleteLayout(layoutName) ?? Promise.resolve(false);
+    return promptDeleteLayoutOnBridge(layoutBridge, layoutName);
 }
 
-/**
- * Open the React MUI "Rename Layout" dialog and resolve with the new name (or
- * null if cancelled / React not mounted). The AngularJS toolbar awaits this.
- */
 export function promptRenameLayout(layoutName: string): Promise<string | null> {
-    return layoutBridge?.promptRenameLayout(layoutName) ?? Promise.resolve(null);
+    return promptRenameLayoutOnBridge(layoutBridge, layoutName);
 }
 
 /**

@@ -86,18 +86,19 @@ export function slackDate(isoTimestamp: string): string {
 
 export interface ReleaseTally {
     userVisible: number;
-    internal: number;
-    /** "3 new · 1 fixed", omitting the groups nothing landed in. */
+    maintenance: number;
+    /** "1 fixed · 1 new", omitting the groups nothing landed in — Maintenance never appears here. */
     breakdown: string;
 }
 
+/** Maintenance work is real content further down, but doesn't count toward "N changes" up top. */
 export function tally(notes: ReleaseNotes): ReleaseTally {
     const counts = countByType(notes);
 
     return {
-        userVisible: notes.changes.length - counts.internal,
-        internal: counts.internal,
-        breakdown: CHANGE_GROUPS.filter((group) => counts[group.type] > 0)
+        userVisible: notes.changes.length - counts.maintenance,
+        maintenance: counts.maintenance,
+        breakdown: CHANGE_GROUPS.filter((group) => group.type !== 'maintenance' && counts[group.type] > 0)
             .map((group) => `${counts[group.type]} ${group.summary}`)
             .join(' · '),
     };
@@ -133,7 +134,7 @@ function summaryBody(notes: ReleaseNotes): SlackBlock[] {
         return [section('_No merge requests in this deployment._')];
     }
 
-    const { userVisible, internal, breakdown } = tally(notes);
+    const { userVisible, breakdown } = tally(notes);
     const blocks: SlackBlock[] = [
         section(
             userVisible
@@ -153,14 +154,6 @@ function summaryBody(notes: ReleaseNotes): SlackBlock[] {
             .map((change) => `• ${escapeSlack(change.headline)}  <${change.webUrl}|!${change.iid}>`)
             .join('\n');
         blocks.push(...sections(`*${group.heading}*\n${bullets}`));
-    }
-
-    if (internal) {
-        blocks.push(
-            section(
-                `_Plus ${plural(internal, 'internal change', 'internal changes')} — dependencies, refactors and tooling, with no user-visible effect._`,
-            ),
-        );
     }
 
     return blocks;

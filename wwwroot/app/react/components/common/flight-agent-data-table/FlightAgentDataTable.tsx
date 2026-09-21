@@ -30,28 +30,12 @@ type FlightSortKey =
     | 'aircraft';
 type AgentSortKey = 'agentName' | 'agentRate' | 'agentRanking' | 'agentNotes';
 
-// Airline colors matching the original CSS
-const AIRLINE_COLORS: Record<string, { bg: string; text: string }> = {
-    'AA': {bg: '#0078D2', text: '#FFFFFF'},
-    'DL': {bg: '#E01A4F', text: '#FFFFFF'},
-    'UA': {bg: '#002244', text: '#FFFFFF'},
-    'WN': {bg: '#304CB2', text: '#FFFFFF'},
-    'AC': {bg: '#D82F2F', text: '#FFFFFF'},
-    'B6': {bg: '#003A70', text: '#FFFFFF'},
-    'AS': {bg: '#0060AF', text: '#FFFFFF'},
-    'WS': {bg: '#0F8ED0', text: '#FFFFFF'},
-    'NK': {bg: '#FFC600', text: '#000000'},
-    'F9': {bg: '#018A32', text: '#FFFFFF'},
-    'TS': {bg: '#1F83BE', text: '#FFFFFF'},
-    'HA': {bg: '#481D7D', text: '#FFFFFF'},
-    'G4': {bg: '#FFC72C', text: '#000000'},
-    'PD': {bg: '#00BDF2', text: '#FFFFFF'},
-    'F8': {bg: '#59CAEE', text: '#000000'},
-    'Y9': {bg: '#A3CE39', text: '#000000'},
-};
-
-const getAirlineColor = (code: string): { bg: string; text: string } => {
-    return AIRLINE_COLORS[code] || {bg: '#757575', text: '#FFFFFF'};
+// Airline identity is carried by the code/name text, not a per-carrier hue —
+// a muted, uniform chip reads as professional data, not a rainbow of brand marks.
+const AIRLINE_CHIP_COLORS = {
+    bg: 'var(--mantine-color-default)',
+    text: 'var(--mantine-color-text)',
+    border: 'var(--mantine-color-default-border)',
 };
 
 
@@ -97,7 +81,7 @@ const RowActionButton: React.FC<{
 const CharterChip: React.FC<{ description?: string }> = ({description}) => (
     <Tooltip label={description || 'Charter flight'} withArrow position="top">
         {/* `tt="none"` is required: Mantine's Badge uppercases its label by default. */}
-        <Badge color="yellow" variant="filled" h={16} px={4} fz={9} fw={600} tt="none">
+        <Badge color="orange" variant="light" h={16} px={4} fz={9} fw={600} tt="none">
             Charter
         </Badge>
     </Tooltip>
@@ -109,32 +93,17 @@ const AirlineChip: React.FC<{
     label?: string;
     tooltip?: string;
     isSelected?: boolean;
-    isAllChip?: boolean;
     onClick: () => void;
-}> = ({code, label, tooltip, isSelected, isAllChip, onClick}) => {
-    const colors = isAllChip ? {bg: '#f5f5f5', text: 'rgba(0,0,0,0.87)'} : getAirlineColor(code);
+}> = ({code, label, tooltip, isSelected, onClick}) => {
     const button = (
         <Button
             onClick={onClick}
             h={24}
-            radius={12}
             px={8}
             miw={0}
+            variant={isSelected ? 'filled' : 'default'}
             leftSection={<Icon tabler={IconPlane} size={14}/>}
             styles={{
-                // The chip's fill is per-airline data, so the hover tint has to be
-                // computed here rather than themed. `--button-hover` is the supported
-                // seam for that — a nested '&:hover' in `styles` lands as an inline
-                // style and is silently dropped.
-                root: {
-                    backgroundColor: colors.bg,
-                    color: colors.text,
-                    border: isSelected
-                        ? '2px solid var(--mantine-primary-color-filled)'
-                        : '2px solid transparent',
-                    boxShadow: isSelected ? 'var(--mantine-shadow-xs)' : 'none',
-                    '--button-hover': alpha(colors.bg, 0.85),
-                },
                 label: {fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap'},
                 section: {marginInlineEnd: 2},
             }}
@@ -172,7 +141,6 @@ const AirportMenu: React.FC<{
                 aria-label={label}
                 variant="default"
                 h={24}
-                radius={12}
                 px={8}
                 leftSection={icon}
                 styles={{
@@ -227,7 +195,7 @@ const SegmentEndpoint: React.FC<{
             radius="xl"
             variant="default"
             mb={4}
-            style={{border: `2px solid ${color}`, color, boxShadow: `0 2px 4px ${alpha(color, 0.2)}`}}
+            style={{border: '1px solid var(--mantine-color-default-border)', color}}
         >
             {icon}
         </ThemeIcon>
@@ -282,8 +250,7 @@ const SegmentDetailsRow: React.FC<{
                                     bg="var(--mantine-color-body)"
                                     style={{
                                         border: '1px solid var(--mantine-color-default-border)',
-                                        borderRadius: 12,
-                                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                                        borderRadius: 'var(--mantine-radius-sm)',
                                     }}
                                 >
                                     <Icon tabler={IconPlane} size={12} style={{color: primary, transform: 'rotate(90deg)'}}/>
@@ -323,17 +290,17 @@ const SegmentDetailsRow: React.FC<{
                                     px={12}
                                     py={4}
                                     style={{
-                                        backgroundColor: 'var(--mantine-color-yellow-0)',
-                                        border: '1px solid var(--mantine-color-yellow-3)',
-                                        borderRadius: 16,
+                                        backgroundColor: 'var(--mantine-color-orange-0)',
+                                        border: '1px solid var(--mantine-color-orange-3)',
+                                        borderRadius: 'var(--mantine-radius-sm)',
                                     }}
                                 >
-                                    <Icon tabler={IconPlaneTilt} size={16} style={{color: 'var(--mantine-color-yellow-8)'}}/>
+                                    <Icon tabler={IconPlaneTilt} size={16} style={{color: 'var(--mantine-color-orange-8)'}}/>
                                     <div style={{textAlign: 'center'}}>
-                                        <Text fz={11} fw={600} c="var(--mantine-color-yellow-8)" lh={1.2}>
+                                        <Text fz={11} fw={600} c="var(--mantine-color-orange-8)" lh={1.2}>
                                             {getConnectionTime(segment, segments[index + 1])}
                                         </Text>
-                                        <Text fz={9} c="var(--mantine-color-yellow-6)" tt="uppercase" style={{letterSpacing: '0.5px'}}>
+                                        <Text fz={9} c="var(--mantine-color-orange-6)" tt="uppercase" style={{letterSpacing: '0.5px'}}>
                                             Layover
                                         </Text>
                                     </div>
@@ -388,7 +355,6 @@ const FlightFilterBar: React.FC<{
                     code="ALL"
                     label="All"
                     tooltip="Show all airlines"
-                    isAllChip
                     isSelected={!selectedAirline}
                     onClick={() => onFilterFlightsByAirline(null)}
                 />
@@ -436,7 +402,6 @@ const FlightFilterBar: React.FC<{
                         aria-pressed={includeNearbyAirports}
                         variant={includeNearbyAirports ? 'filled' : 'default'}
                         h={24}
-                        radius={12}
                         px={8}
                         ml={4}
                         leftSection={<Icon lucide={Navigation} size={14}/>}
@@ -790,7 +755,6 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                 {sortedFlights.map((flight, index) => {
                                     const flightId = flight.connectionId || flight.flightNumber;
                                     const isExpanded = expandedFlights.has(flightId);
-                                    const airlineColor = getAirlineColor(flight.airline);
 
                                     return (
                                         <React.Fragment key={`${flightId}-${index}`}>
@@ -803,9 +767,10 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                             px={4}
                                                             py={1}
                                                             style={{
-                                                                borderRadius: 3,
-                                                                backgroundColor: airlineColor.bg,
-                                                                color: airlineColor.text,
+                                                                borderRadius: 'var(--mantine-radius-xs)',
+                                                                backgroundColor: AIRLINE_CHIP_COLORS.bg,
+                                                                color: AIRLINE_CHIP_COLORS.text,
+                                                                border: `1px solid ${AIRLINE_CHIP_COLORS.border}`,
                                                             }}
                                                         >
                                                             {flight.airline}
@@ -866,9 +831,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                     ) : (
                                                         <Badge
                                                             variant="light"
-                                                            color="yellow"
+                                                            color="orange"
                                                             size="xs"
-                                                            radius={3}
                                                             tt="none"
                                                             fz={10}
                                                         >

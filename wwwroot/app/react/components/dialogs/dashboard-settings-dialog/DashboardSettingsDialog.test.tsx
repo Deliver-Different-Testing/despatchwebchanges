@@ -47,7 +47,7 @@ describe('DashboardSettingsDialog', () => {
         it('renders no panels section, panel toggles or moved notice', () => {
             renderWithTheme(
                 <DashboardSettingsDialog
-                    {...createMockProps({config: {...mockConfig, showJobSearchBetaToggle: true}})}
+                    {...createMockProps()}
                 />,
             );
 
@@ -64,7 +64,7 @@ describe('DashboardSettingsDialog', () => {
             const {unmount} = renderWithTheme(
                 <DashboardSettingsDialog
                     {...createMockProps({
-                        config: {title: 'Dashboard Settings', showAiToggle: true},
+                        config: {title: 'Dashboard Settings', showNationwideBetaToggle: true},
                     })}
                 />,
             );
@@ -73,7 +73,7 @@ describe('DashboardSettingsDialog', () => {
 
             renderWithTheme(
                 <DashboardSettingsDialog
-                    {...createMockProps({config: {...mockConfig, showAiToggle: true}})}
+                    {...createMockProps({config: {...mockConfig, showNationwideBetaToggle: true}})}
                 />,
             );
             expect(screen.getAllByRole('separator')).toHaveLength(1);
@@ -242,98 +242,14 @@ describe('DashboardSettingsDialog', () => {
         });
     });
 
-    // ── Dispatch version toggle ─────────────────────────────────────
-    describe('Dispatch version toggle', () => {
-        it('is hidden unless showDispatchBetaToggle is set', () => {
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
-            expect(screen.queryByText('Dispatch version')).not.toBeInTheDocument();
-        });
-
-        it('renders the toggle and emits dispatchBetaEnabled on save when enabled', async () => {
-            const user = setupUser();
-            const onSave = jest.fn();
-            renderWithTheme(
-                <DashboardSettingsDialog
-                    {...createMockProps({
-                        config: {...mockConfig, showDispatchBetaToggle: true},
-                        dispatchBetaEnabled: false,
-                        onSave,
-                    })}
-                />,
-            );
-
-            expect(screen.getByText('Dispatch version')).toBeInTheDocument();
-
-            await user.click(screen.getByRole('switch', {name: 'Use the new Dispatch'}));
-            await user.click(screen.getByRole('button', {name: /save/i}));
-
-            expect(onSave).toHaveBeenCalledWith(
-                expect.objectContaining({dispatchBetaEnabled: true}),
-            );
-        });
-
-        it('omits dispatchBetaEnabled from the result when the toggle is not shown', async () => {
-            const user = setupUser();
-            const onSave = jest.fn();
-            renderWithTheme(
-                <DashboardSettingsDialog {...createMockProps({onSave})} />,
-            );
-
-            await user.click(screen.getByRole('button', {name: /save/i}));
-
-            expect(onSave).toHaveBeenCalledWith(
-                expect.objectContaining({dispatchBetaEnabled: undefined}),
-            );
-        });
-    });
-
-    // ── Auto-mate Settings section ──────────────────────────────────
+    // ── Auto-mate Settings — moved to the global Settings page ───────
     describe('Auto-mate Settings', () => {
-        const aiConfig: DashboardSettingsConfig = {...mockConfig, showAiToggle: true};
+        it('no longer renders the Auto-mate section here', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
-        it('renders the renamed section with both toggles', () => {
-            renderWithTheme(
-                <DashboardSettingsDialog {...createMockProps({config: aiConfig, aiEnabled: true})} />,
-            );
-
-            expect(screen.getByText('Auto-mate Settings')).toBeInTheDocument();
-            expect(screen.queryByText('Auto-mate Briefings')).not.toBeInTheDocument();
-            expect(screen.getByText('Show Auto-mate briefings')).toBeInTheDocument();
-            expect(screen.getByText('Open automatically')).toBeInTheDocument();
-        });
-
-        it('disables "Open automatically" while briefings are off, enables it once on', async () => {
-            const user = setupUser();
-            renderWithTheme(
-                <DashboardSettingsDialog {...createMockProps({config: aiConfig, aiEnabled: false})} />,
-            );
-
-            const autoOpenSwitch = screen.getByRole('switch', {name: 'Open automatically'});
-            expect(autoOpenSwitch).toBeDisabled();
-
-            // Turning briefings on re-enables the auto-open toggle.
-            await user.click(screen.getByRole('switch', {name: 'Show Auto-mate briefings'}));
-            expect(autoOpenSwitch).toBeEnabled();
-        });
-
-        it('reflects the aiAutoOpen prop and emits it on save', async () => {
-            const user = setupUser();
-            const onSave = jest.fn();
-            renderWithTheme(
-                <DashboardSettingsDialog
-                    {...createMockProps({config: aiConfig, aiEnabled: true, aiAutoOpen: false, onSave})}
-                />,
-            );
-
-            const autoOpenSwitch = screen.getByRole('switch', {name: 'Open automatically'}) as HTMLInputElement;
-            expect(autoOpenSwitch.checked).toBe(false);
-
-            await user.click(autoOpenSwitch);
-            await user.click(screen.getByRole('button', {name: /save/i}));
-
-            expect(onSave).toHaveBeenCalledWith(
-                expect.objectContaining({aiEnabled: true, aiAutoOpen: true}),
-            );
+            expect(screen.queryByText('Auto-mate Settings')).not.toBeInTheDocument();
+            expect(screen.queryByText('Show Auto-mate briefings')).not.toBeInTheDocument();
+            expect(screen.queryByText('Open automatically')).not.toBeInTheDocument();
         });
     });
 });

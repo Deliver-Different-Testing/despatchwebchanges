@@ -5,7 +5,7 @@
  */
 
 import React, {useMemo, useCallback} from 'react';
-import {Avatar, Badge, Box, Drawer, em, Group, NavLink, ScrollArea, Stack, Text, useMantineTheme} from '@mantine/core';
+import {Avatar, Badge, Box, Divider, Drawer, em, Group, NavLink, ScrollArea, Stack, Text, useMantineTheme} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
 import {
     CalendarDays,
@@ -16,14 +16,13 @@ import {
     Search,
     Clock,
     UserCog,
+    Settings as SettingsIcon,
     Heart,
 } from 'lucide-react';
 import {IconTruck, IconMap} from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import {Icon} from '../icon/Icon';
 import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
-import {getDispatchBetaEnabled} from '../../../pages/dispatch/lib/betaPreference';
-import {getJobSearchBetaEnabled} from '../../../pages/job-search/lib/betaPreference';
 import {getNationwideBetaEnabled} from '../../../pages/nationwide/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
 import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
@@ -96,10 +95,10 @@ export const SideNav: React.FC<SideNavProps> = ({
                 id: 'dashboard',
                 label: 'Dashboard',
                 icon: <Icon lucide={LayoutDashboard} size={NAV_ICON_SIZE} />,
-                // Link straight at the React page so the nav skips the classic
-                // route's redirect hop; operators who opted out still get V1.
-                state: getDispatchBetaEnabled() ? 'dispatchV2' : 'home',
-                matchStates: ['home', 'dispatchV2'],
+                // Link straight at the React page so the nav skips the `home`
+                // state's redirect hop.
+                state: 'dispatch',
+                matchStates: ['home', 'dispatch', 'dispatchV2'],
                 featureKey: dashboardFeatureKeys.dispatch,
             },
             {
@@ -130,7 +129,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 id: 'jobSearch',
                 label: 'Job Search',
                 icon: <Icon lucide={Search} size={NAV_ICON_SIZE} />,
-                state: getJobSearchBetaEnabled() ? 'jobSearchV2' : 'jobSearch',
+                state: 'jobSearch',
                 matchStates: ['jobSearch', 'jobSearchV2'],
                 featureKey: dashboardFeatureKeys.jobSearch,
             },
@@ -171,6 +170,35 @@ export const SideNav: React.FC<SideNavProps> = ({
         onNavigate(state);
         onClose();
     }, [onNavigate, onClose]);
+
+    const settingsNavItem: NavItem = useMemo(() => ({
+        id: 'settings',
+        label: 'Settings',
+        icon: <Icon lucide={SettingsIcon} size={NAV_ICON_SIZE} />,
+        state: 'settings',
+    }), []);
+
+    const renderNavItem = useCallback((item: NavItem) => {
+        const isActive =
+            currentState === item.state ||
+            (item.matchStates?.includes(currentState) ?? false);
+        return (
+            <NavLink
+                key={item.id}
+                component="button"
+                className={classes.navLink}
+                classNames={{section: classes.section}}
+                active={isActive}
+                aria-current={isActive ? 'page' : undefined}
+                color="brand"
+                variant="subtle"
+                label={item.label}
+                leftSection={item.icon}
+                onClick={() => handleNavClick(item.state)}
+                styles={navItemStyles}
+            />
+        );
+    }, [currentState, handleNavClick, navItemStyles]);
 
     const initials = getInitials(userName);
 
@@ -262,7 +290,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 </Box>
 
                 {/* Navigation Menu */}
-                <ScrollArea style={{flex: 1}}>
+                <ScrollArea style={{flex: 1}} type="never">
                     <Box
                         component="nav"
                         aria-label="Main navigation"
@@ -287,27 +315,13 @@ export const SideNav: React.FC<SideNavProps> = ({
                         >
                             Menu
                         </Text>
-                        {filteredNavItems.map((item) => {
-                            const isActive =
-                                currentState === item.state ||
-                                (item.matchStates?.includes(currentState) ?? false);
-                            return (
-                                <NavLink
-                                    key={item.id}
-                                    component="button"
-                                    className={classes.navLink}
-                                    classNames={{section: classes.section}}
-                                    active={isActive}
-                                    aria-current={isActive ? 'page' : undefined}
-                                    color="brand"
-                                    variant="subtle"
-                                    label={item.label}
-                                    leftSection={item.icon}
-                                    onClick={() => handleNavClick(item.state)}
-                                    styles={navItemStyles}
-                                />
-                            );
-                        })}
+                        {filteredNavItems.map((item) => renderNavItem(item))}
+
+                        {/* Settings sits apart from the dashboards above it — a utility
+                            item, not gated by dashboardFeatureKeys — so it gets its own
+                            divider rather than joining the filtered list. */}
+                        <Divider my={8} mx={20}/>
+                        {renderNavItem(settingsNavItem)}
                     </Box>
                 </ScrollArea>
 

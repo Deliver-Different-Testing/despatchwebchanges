@@ -20,4 +20,5 @@ public class BaseOverviewRequest
     public List<int> Speeds { get; init; } = [];
     public List<int> Couriers { get; init; } = [];
     public List<int> DespatchViewIds { get; init; } = [];
+    public bool ScopeToDespatchViews { get; init; }
 }

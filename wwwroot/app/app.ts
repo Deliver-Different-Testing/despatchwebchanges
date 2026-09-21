@@ -19,17 +19,9 @@ import JobAddStopService from "./services/job-add-stop.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
-import TruckCourierStatusDialogController
-    from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
-import TruckCourierStatusDialogService
-    from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
-import RestoreConfirmationDialogService
-    from "./components/dialogs/restore-confirmation-dialog/restore-confirmation-dialog.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
-import BulkPriceUploadDialogService
-    from "./components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
 import {DriverLocationsReactComponent} from "./react/components/common/driver-locations/driver-locations-react.module";
 import {NoDataReactComponent} from "./react/components/common/no-data/no-data-react.module";
@@ -222,7 +214,6 @@ app.component("dispatchMapReact", DispatchMapReactComponent);
 app.directive("reactAppShell", reactAppShellDirective);
 
 // Dialogs
-app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 
 // Services
 app.service("configService", ConfigService);
@@ -233,10 +224,7 @@ app.service("editAddressDialogService", EditAddressDialogService);
 app.service("jobFileUploadDialogService", JobFileUploadDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
-app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingDialogService", MessagingDialogService);
-app.service('restoreConfirmationDialogService', RestoreConfirmationDialogService);
-app.service('bulkPriceUploadDialogService', BulkPriceUploadDialogService);
 app.service('dispatchJobService', DispatchExecutorService);
 
 export default app;

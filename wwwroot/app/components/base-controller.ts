@@ -1,6 +1,3 @@
-import {getIanaTimezone} from "../react/utils/dateUtils";
-import {TimeZone} from "../contants";
-import {timezoneShortFilter} from "../filters";
 import angular from 'angular';
 
 class BaseController implements angular.IController {
@@ -201,14 +198,6 @@ class BaseController implements angular.IController {
 
         // Clear cache
         this.dataCache.clear();
-
-        // All resources cleaned up
-    }
-
-    // Filters
-    protected getShortTimeZoneString() {
-       const ianaTimeZone = getIanaTimezone(TimeZone)
-        return timezoneShortFilter(ianaTimeZone);
     }
 }
 

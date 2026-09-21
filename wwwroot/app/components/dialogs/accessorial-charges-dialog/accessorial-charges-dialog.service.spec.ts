@@ -56,6 +56,17 @@ describe('AccessorialChargesDialogService', () => {
     let mockOcLazyLoad: ReturnType<typeof createMockOcLazyLoad>;
     let mockHttp: ReturnType<typeof createMockHttp>;
 
+    /** Makes $ocLazyLoad.load() define window.ReactAccessorialChargesDialog once the module load call resolves. */
+    const setupLazyLoadToDefineDialog = () => {
+        mockOcLazyLoad.load.mockImplementation(async (arg: any) => {
+            if (typeof arg === 'object' && arg.name) {
+                (window as any).ReactAccessorialChargesDialog = {
+                    open: jest.fn().mockResolvedValue(true),
+                };
+            }
+        });
+    };
+
     beforeEach(() => {
         mockToastr = createMockToastrService();
         mockOcLazyLoad = createMockOcLazyLoad();
@@ -89,14 +100,7 @@ describe('AccessorialChargesDialogService', () => {
     describe('Lazy Loading', () => {
         it('should fetch manifest.json when loading for the first time', async () => {
             delete (window as any).ReactAccessorialChargesDialog;
-
-            mockOcLazyLoad.load.mockImplementation(async (arg: any) => {
-                if (typeof arg === 'object' && arg.name) {
-                    (window as any).ReactAccessorialChargesDialog = {
-                        open: jest.fn().mockResolvedValue(true),
-                    };
-                }
-            });
+            setupLazyLoadToDefineDialog();
 
             await service.showAccessorialChargesDialog(mockEvent, createMockJob() as any);
 
@@ -105,14 +109,7 @@ describe('AccessorialChargesDialogService', () => {
 
         it('should load vendor-react with hashed filename when React is not on window', async () => {
             delete (window as any).ReactAccessorialChargesDialog;
-
-            mockOcLazyLoad.load.mockImplementation(async (arg: any) => {
-                if (typeof arg === 'object' && arg.name) {
-                    (window as any).ReactAccessorialChargesDialog = {
-                        open: jest.fn().mockResolvedValue(true),
-                    };
-                }
-            });
+            setupLazyLoadToDefineDialog();
 
             await service.showAccessorialChargesDialog(mockEvent, createMockJob() as any);
 
@@ -139,14 +136,7 @@ describe('AccessorialChargesDialogService', () => {
 
         it('should load the accessorialChargesDialogReact module with correct name and file', async () => {
             delete (window as any).ReactAccessorialChargesDialog;
-
-            mockOcLazyLoad.load.mockImplementation(async (arg: any) => {
-                if (typeof arg === 'object' && arg.name) {
-                    (window as any).ReactAccessorialChargesDialog = {
-                        open: jest.fn().mockResolvedValue(true),
-                    };
-                }
-            });
+            setupLazyLoadToDefineDialog();
 
             await service.showAccessorialChargesDialog(mockEvent, createMockJob() as any);
 
@@ -159,14 +149,7 @@ describe('AccessorialChargesDialogService', () => {
         it('should fall back to unhashed filename when manifest entry is missing', async () => {
             delete (window as any).ReactAccessorialChargesDialog;
             mockHttp.get.mockResolvedValue({ data: {} });
-
-            mockOcLazyLoad.load.mockImplementation(async (arg: any) => {
-                if (typeof arg === 'object' && arg.name) {
-                    (window as any).ReactAccessorialChargesDialog = {
-                        open: jest.fn().mockResolvedValue(true),
-                    };
-                }
-            });
+            setupLazyLoadToDefineDialog();
 
             await service.showAccessorialChargesDialog(mockEvent, createMockJob() as any);
 

@@ -101,7 +101,6 @@ import {transformFlightToDTO} from "../../functions/toDtoMappings";
 import utc from "dayjs/plugin/utc";
 import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
-import {setAiEnabled} from "../../functions/aiSettings";
 import angular from 'angular';
 import ITaskItemConfig from "../../interfaces/task-item-config";
 
@@ -2117,10 +2116,6 @@ class NationwideControl extends BaseController {
 
             if (!result) return;
 
-            if (result.aiEnabled !== undefined) {
-                setAiEnabled(result.aiEnabled);
-            }
-
             // Opting back in to the React page: persist and move there, the
             // same way the Dispatch and Job Search toggles behave.
             if (result.nationwideBetaEnabled !== undefined
@@ -2136,11 +2131,11 @@ class NationwideControl extends BaseController {
 
             this.saveCurrentLayout();
             this.applyScope();
-            this.toastrService.showSuccessToast('Settings saved and applied successfully');
+            await this.toastrService.showSuccessToast('Settings saved and applied successfully');
         } catch (error) {
             if (!error) return;
             console.error('Error opening settings dialog:', error);
-            this.toastrService.showErrorToast('Failed to open settings dialog');
+           await this.toastrService.showErrorToast('Failed to open settings dialog');
         }
     }
 
@@ -2162,7 +2157,7 @@ class NationwideControl extends BaseController {
         } catch (error) {
             if (!error) return;
             console.error('Error opening customize panels dialog:', error);
-            this.toastrService.showErrorToast('Failed to open customize panels dialog');
+           await this.toastrService.showErrorToast('Failed to open customize panels dialog');
         }
     }
 

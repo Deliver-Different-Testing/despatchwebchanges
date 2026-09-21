@@ -73,7 +73,7 @@ function JobPill({jobNumber, compact = false}: {jobNumber: string; compact?: boo
                 paddingInline: compact ? 10 : 14,
                 paddingBlock: compact ? 4 : 6,
                 backgroundColor: compact ? alpha('var(--mantine-color-gray-6)', 0.1) : scrim(0.06),
-                borderRadius: compact ? 16 : 20,
+                borderRadius: 'var(--mantine-radius-sm)',
                 flexShrink: 0,
             }}
         >
