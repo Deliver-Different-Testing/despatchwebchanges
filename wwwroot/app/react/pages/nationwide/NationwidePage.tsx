@@ -629,6 +629,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                         setUpdateSearchParamsCallback={(cb: (params: Partial<JobListSearchParams>) => void) => {
                             listParamsRefs.current[key] = cb;
                         }}
+                        headerSlot={headerSlot}
                     />
                 );
             }
