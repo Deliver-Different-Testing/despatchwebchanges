@@ -88,10 +88,21 @@ jest.mock('../../components/dialogs/dispatch-dialog', () => ({
     },
 }));
 
+const getDispatchJobDetailMock = jest.fn((_jobId: number) => new Promise(() => {}));
 jest.mock('../../services/dispatchExecutorApi', () => ({
     ...jest.requireActual('../../services/dispatchExecutorApi'),
-    getDispatchJobDetail: jest.fn(() => new Promise(() => {})),
+    getDispatchJobDetail: (jobId: number) => getDispatchJobDetailMock(jobId),
 }));
+
+const assignFlightToJobMock = jest.fn().mockResolvedValue(undefined);
+jest.mock('../../services/nationwideApi', () => {
+    // Reassign in place -- spreading the class instance would drop its
+    // prototype methods (getActiveAirlines, getNearbyAirports, ...), which
+    // the flight/agent widget hook also needs on mount.
+    const actual = jest.requireActual('../../services/nationwideApi');
+    actual.nationwideApi.assignFlightToJob = (...args: unknown[]) => assignFlightToJobMock(...args);
+    return actual;
+});
 
 const executeDispatchConfirmationMock = jest.fn().mockResolvedValue({message: 'ok', severity: 'success'});
 jest.mock('../../components/dialogs/dispatch-dialog/executeDispatch', () => ({
@@ -113,6 +124,8 @@ import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 import {queryClient} from '../../query/queryClient';
 import {setupUser} from '../../__testUtils__/setupUser';
 import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
+import {openFlightConfirmationDialog} from '../../components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module';
+import {formatDateForApiWithTzs} from '../../utils/dateUtils';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof NationwidePage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -339,6 +352,115 @@ describe('NationwidePage', () => {
                 expect.objectContaining({id: 5, jobNo: 'JOB-5'}),
                 expect.objectContaining({type: 'Courier'}),
             );
+        });
+    });
+
+    describe('flight assignment', () => {
+        // Deliberately not the tenant default ('UTC', from getTenantTimezone's
+        // window.TimeZone fallback in jsdom) -- a domestic US flight can span
+        // timezones the tenant-wide default does not reflect.
+        const mockFlight = {
+            airline: 'Test Air',
+            flightNumber: 'TA100',
+            departureTime: dayjs('2024-06-01T15:00:00Z'),
+            arrivalTime: dayjs('2024-06-01T20:00:00Z'),
+            departureAirport: 'LAX',
+            arrivalAirport: 'JFK',
+            duration: '5h',
+            stops: 0,
+            aircraft: 'B737',
+            serviceClasses: [],
+            isCodeShare: false,
+            serviceType: 'J',
+            isCharter: false,
+            serviceTypeDescription: '',
+            amount: 0,
+            codeShareAirline: '',
+            airlineId: 1,
+            departureTimeZone: 'America/Los_Angeles',
+            arrivalTimeZone: 'America/New_York',
+            isMultiSegment: false,
+            elapsedTime: 300,
+            score: 0,
+            connectionId: 'c1',
+            flightSegments: [{
+                segmentOrder: 1,
+                carrierFsCode: 'TA',
+                flightNumber: '100',
+                departureTime: dayjs('2024-06-01T15:00:00Z'),
+                arrivalTime: dayjs('2024-06-01T17:00:00Z'),
+                departureAirportFsCode: 'LAX',
+                arrivalAirportFsCode: 'ORD',
+                flightEquipmentIataCode: '737',
+                elapsedTime: 120,
+                stopsInSegment: 0,
+                departureAirportTimeZone: 'America/Los_Angeles',
+                arrivalAirportTimeZone: 'America/Chicago',
+            }],
+        };
+        const packageReadyTime = dayjs('2024-06-01T21:00:00Z');
+        const packageDeliverByTime = dayjs('2024-06-02T05:00:00Z');
+
+        const selectAFlightJob = async () => {
+            await act(async () => {
+                listProps['nwNewJobList'].onJobSelect?.({
+                    id: 9, jobNo: 'JOB-9', isAgentJob: false, relatedJobs: [],
+                });
+            });
+        };
+
+        const assignTheFlight = async () => {
+            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+                shouldAssign: true,
+                packageReadyTime,
+                packageDeliverByTime,
+            });
+            // handleAddFlightToJob re-fetches the job after a successful assign
+            // (see 'refreshes the selected job...' below); resolve it here too
+            // so awaiting the handler in the other tests doesn't hang forever.
+            getDispatchJobDetailMock.mockResolvedValueOnce(undefined);
+
+            const onAddFlight = widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>;
+            await act(async () => {
+                await onAddFlight(mockFlight);
+            });
+        };
+
+        it("formats departure/package times using the flight's own timezones, not the tenant default", async () => {
+            renderPage();
+            await selectAFlightJob();
+            await assignTheFlight();
+
+            expect(assignFlightToJobMock).toHaveBeenCalledWith(expect.objectContaining({
+                departureDate: formatDateForApiWithTzs(mockFlight.departureTime, mockFlight.departureTimeZone),
+                packageReadyTime: formatDateForApiWithTzs(packageReadyTime, mockFlight.arrivalTimeZone),
+                packageDeliverByTime: formatDateForApiWithTzs(packageDeliverByTime, mockFlight.arrivalTimeZone),
+            }));
+        });
+
+        it('maps each flight segment through its own airport timezone rather than sending raw Dayjs objects', async () => {
+            renderPage();
+            await selectAFlightJob();
+            await assignTheFlight();
+
+            const segment = mockFlight.flightSegments[0];
+            expect(assignFlightToJobMock).toHaveBeenCalledWith(expect.objectContaining({
+                flightSegments: [expect.objectContaining({
+                    departureTime: formatDateForApiWithTzs(segment.departureTime, segment.departureAirportTimeZone),
+                    arrivalTime: formatDateForApiWithTzs(segment.arrivalTime, segment.arrivalAirportTimeZone),
+                })],
+            }));
+            const sentSegment = assignFlightToJobMock.mock.calls[0][0].flightSegments[0];
+            expect(typeof sentSegment.departureTime).toBe('string');
+            expect(typeof sentSegment.arrivalTime).toBe('string');
+        });
+
+        it('refreshes the selected job after a successful assignment, matching the courier/partner handlers', async () => {
+            renderPage();
+            await selectAFlightJob();
+            await assignTheFlight();
+
+            await waitFor(() => expect(getDispatchJobDetailMock).toHaveBeenCalledWith(9));
         });
     });
 

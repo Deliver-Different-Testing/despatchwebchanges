@@ -383,13 +383,17 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                 fromAirportId: widget.selectedOutboundAirport?.id,
                 toAirportId: widget.selectedInboundAirport?.id,
                 flightNumber: flight.flightNumber,
-                departureDate: formatDateForApiWithTzs(flight.departureTime),
-                flightSegments: (flight.flightSegments ?? []) as never,
+                departureDate: formatDateForApiWithTzs(flight.departureTime, flight.departureTimeZone),
+                flightSegments: (flight.flightSegments ?? []).map(segment => ({
+                    ...segment,
+                    departureTime: formatDateForApiWithTzs(segment.departureTime, segment.departureAirportTimeZone),
+                    arrivalTime: formatDateForApiWithTzs(segment.arrivalTime, segment.arrivalAirportTimeZone),
+                })),
                 packageReadyTime: result.packageReadyTime
-                    ? formatDateForApiWithTzs(result.packageReadyTime)
+                    ? formatDateForApiWithTzs(result.packageReadyTime, flight.arrivalTimeZone)
                     : undefined,
                 packageDeliverByTime: result.packageDeliverByTime
-                    ? formatDateForApiWithTzs(result.packageDeliverByTime)
+                    ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone)
                     : undefined,
                 packageDeliveryNotes: result.packageDeliveryNotes,
             });
@@ -405,11 +409,16 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
 
             refreshLists();
             showToast('Flight assigned to job', 'success');
+            // V1 refetched and re-selected the job so the widget and job-detail
+            // panel immediately reflect the new assignedFlight, matching the
+            // other two mutation handlers in this file.
+            await selectJobById(flightAgentJob.id);
         } catch (error) {
             console.error('Error assigning flight:', error);
             showToast('Could not assign the flight. Please try again.', 'error');
         }
-    }, [flightAgentJob, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast, refreshLists]);
+    }, [flightAgentJob, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast, refreshLists,
+        selectJobById]);
 
     const handleAddAgentToJob = useCallback(async (agent: Agent) => {
         if (!flightAgentJob) return;
