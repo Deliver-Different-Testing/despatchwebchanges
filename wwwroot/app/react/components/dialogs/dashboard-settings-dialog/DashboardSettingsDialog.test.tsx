@@ -242,6 +242,54 @@ describe('DashboardSettingsDialog', () => {
         });
     });
 
+    // ── Current Work title (courier display mode) ────────────────────
+    describe('Current Work title', () => {
+        it('is hidden unless showCourierDisplayMode is set', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
+            expect(screen.queryByText('Current Work title')).not.toBeInTheDocument();
+        });
+
+        it('renders all four options with the saved value selected', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps({
+                config: {...mockConfig, showCourierDisplayMode: true},
+                selectedCourierDisplayMode: 'number',
+            })} />);
+
+            expect(screen.getByText('Current Work title')).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: 'Off'})).not.toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show Courier Name'})).not.toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show Courier Number'})).toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show Name and Number'})).not.toBeChecked();
+        });
+
+        it('emits the newly-picked mode on save', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps({
+                config: {...mockConfig, showCourierDisplayMode: true},
+                selectedCourierDisplayMode: 'off',
+                onSave,
+            })} />);
+
+            await user.click(screen.getByRole('radio', {name: 'Show Name and Number'}));
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave).toHaveBeenCalledWith(
+                expect.objectContaining({courierDisplayMode: 'both'}),
+            );
+        });
+
+        it('omits courierDisplayMode from the save result when the section is not shown', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps({onSave})} />);
+
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave.mock.calls[0][0]).not.toHaveProperty('courierDisplayMode');
+        });
+    });
+
     // ── Auto-mate Settings — moved to the global Settings page ───────
     describe('Auto-mate Settings', () => {
         it('no longer renders the Auto-mate section here', () => {

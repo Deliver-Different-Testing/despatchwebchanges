@@ -1,6 +1,6 @@
 import React from 'react';
 import { setupUser } from '../../__testUtils__/setupUser';
-import {act, render, screen} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
     DRIVER_LOCATION_REFRESH_KEY,
@@ -8,7 +8,12 @@ import {
     TASK_REFRESH_KEY,
 } from './lib/dispatchFilters';
 
-const sampleJob = {id: 55, jobNo: 'JOB-55', assignedCourier: undefined};
+const sampleJob = {
+    id: 55,
+    jobNo: 'JOB-55',
+    assignedCourier: undefined,
+    courierData: {courier: 'C1', courierId: 5, courierName: 'Jane Smith', courierNumber: '007'},
+};
 
 // The job list and map pull in heavy dependencies (React Query data fetching,
 // the HERE Maps SDK); stub them so the smoke test exercises the shell wiring.
@@ -53,7 +58,7 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
 const boxProps: {
     driverLocations?: {refetchIntervalMs?: number | false; activeAreaId?: number};
     supports?: {refetchIntervalMs?: number | false};
-    currentWork?: {refetchIntervalMs?: number | false};
+    currentWork?: {refetchIntervalMs?: number | false; courierDisplayMode?: string; selectedJobCourierNumber?: string};
     overviewDeliveries?: {refetchIntervalMs?: number | false; despatchViewIds?: number[]};
     openJobs?: {refetchIntervalMs?: number | false; despatchViewIds?: number[]};
 } = {};
@@ -72,10 +77,21 @@ jest.mock('../../components/common/tasks-box/TasksBox', () => ({
     },
 }));
 jest.mock('./components/CurrentWorkBox', () => ({
-    CurrentWorkBox: (props: {refetchIntervalMs?: number | false}) => {
-        boxProps.currentWork = {refetchIntervalMs: props.refetchIntervalMs};
+    CurrentWorkBox: (props: {refetchIntervalMs?: number | false; courierDisplayMode?: string; selectedJobCourierNumber?: string}) => {
+        boxProps.currentWork = {
+            refetchIntervalMs: props.refetchIntervalMs,
+            courierDisplayMode: props.courierDisplayMode,
+            selectedJobCourierNumber: props.selectedJobCourierNumber,
+        };
         return <div data-testid="mock-current-work"/>;
     },
+}));
+
+const getPreferenceMock = jest.fn().mockResolvedValue(null);
+const savePreferenceMock = jest.fn().mockResolvedValue(undefined);
+jest.mock('../../services/preferencesApi', () => ({
+    getPreference: (...a: unknown[]) => getPreferenceMock(...a),
+    savePreference: (...a: unknown[]) => savePreferenceMock(...a),
 }));
 jest.mock('./components/OverviewDeliveriesBox', () => ({
     OverviewDeliveriesBox: (props: {refetchIntervalMs?: number | false; despatchViewIds?: number[]; onSelectJob: (id: number) => void}) => {
@@ -211,6 +227,44 @@ describe('DispatchPage', () => {
     beforeEach(() => {
         localStorage.clear();
         jobListParamPushes.length = 0;
+        getPreferenceMock.mockReset().mockResolvedValue(null);
+        savePreferenceMock.mockReset().mockResolvedValue(undefined);
+    });
+
+    describe('courier display mode', () => {
+        it('defaults US tenants to off when no preference is stored', async () => {
+            renderPage({isUsCustomer: true});
+            await waitFor(() => expect(boxProps.currentWork?.courierDisplayMode).toBe('off'));
+        });
+
+        it('defaults non-US (NZ) tenants to courier number when no preference is stored', async () => {
+            renderPage({isUsCustomer: false});
+            await waitFor(() => expect(boxProps.currentWork?.courierDisplayMode).toBe('number'));
+        });
+
+        it('loads a saved preference, overriding the region default', async () => {
+            getPreferenceMock.mockResolvedValue(JSON.stringify('both'));
+            renderPage({isUsCustomer: true});
+            await waitFor(() => expect(boxProps.currentWork?.courierDisplayMode).toBe('both'));
+        });
+
+        it('applies a new mode pushed through the layout bridge, without a reload', async () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady, isUsCustomer: true});
+            await waitFor(() => expect(boxProps.currentWork?.courierDisplayMode).toBe('off'));
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+            act(() => { bridge.updateCourierDisplayMode('name'); });
+
+            expect(boxProps.currentWork?.courierDisplayMode).toBe('name');
+        });
+
+        it('passes the selected job\'s courier number through to the Current Work box', async () => {
+            const user = setupUser();
+            renderPage();
+            await user.click(screen.getByRole('button', {name: 'select-sample-job'}));
+            expect(boxProps.currentWork?.selectedJobCourierNumber).toBe('007');
+        });
     });
 
     describe('persisted category filter', () => {

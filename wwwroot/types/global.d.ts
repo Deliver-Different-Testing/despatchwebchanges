@@ -46,6 +46,7 @@ import type {SendPodJobData} from '../app/react/components/dialogs/send-pod-dial
 import type {PodPhoto} from '../app/react/components/common/pod-photo-viewer/pod-photo-viewer.types';
 import type {Suggestion} from '../app/react/components/dialogs/auto-complete-dialog/AutoCompleteDialog';
 import type {DashboardSettingsConfig, DashboardBox, RefreshOption, DashboardSettingsResult} from '../app/react/components/dialogs/dashboard-settings-dialog/DashboardSettingsDialog';
+import type {CourierDisplayMode} from '../app/react/interfaces/courierDisplayMode';
 import type {DateRange} from '../app/react/components/dialogs/date-range-dialog/DateRangeDialog';
 import type {PriceBreakdown} from '../app/react/components/dialogs/price-breakdown-dialog/PriceBreakdownDialog';
 import type {SplitPriceBreakdown, UpdateSplitPricingBreakdownRequest} from '../app/react/interfaces/splitJobs';
@@ -296,7 +297,8 @@ declare global {
                 selectedRefreshInterval?: RefreshOption,
                 selectedDriverLocationRefreshInterval?: RefreshOption,
                 selectedTaskRefreshInterval?: RefreshOption,
-                nationwideBetaEnabled?: boolean
+                nationwideBetaEnabled?: boolean,
+                selectedCourierDisplayMode?: CourierDisplayMode
             ) => Promise<DashboardSettingsResult | null>;
         };
         ReactCustomizePanelsDialog?: {

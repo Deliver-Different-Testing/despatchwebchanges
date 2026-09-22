@@ -45,6 +45,9 @@ import type IDateFilterData from './interfaces/date-filter-data.interface';
 import type {IBox, ILayout} from './interfaces/layout.interfaces';
 import {AppPage} from './enums/app-pages.enum';
 import isDefaultLayout from './functions/isDefaultLayout';
+import {getPreference, savePreference} from './react/services/preferencesApi';
+import {StaffPreferenceKey} from './enums/staff-preference-key.enum';
+import {defaultCourierDisplayMode, type CourierDisplayMode} from './react/pages/dispatch/lib/courierDisplayMode';
 
 class RouterConfig {
     constructor(
@@ -312,14 +315,18 @@ class RouterConfig {
                                             showRefreshInterval?: boolean;
                                             showDriverLocationRefresh?: boolean;
                                             showTaskRefresh?: boolean;
+                                            showCourierDisplayMode?: boolean;
                                         },
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
+                                        nationwideBetaEnabled?: boolean,
+                                        selectedCourierDisplayMode?: CourierDisplayMode,
                                     ) => Promise<{
                                         selectedRefreshInterval?: {id: number; text: string};
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string};
                                         selectedTaskRefreshInterval?: {id: number; text: string};
+                                        courierDisplayMode?: CourierDisplayMode;
                                     } | null>;
                                 };
                             };
@@ -338,6 +345,15 @@ class RouterConfig {
                             const taskSeedSeconds = localStorage.getItem(DISPATCH_TASK_REFRESH_KEY) != null
                                 ? readIntervalSeconds(DISPATCH_TASK_REFRESH_KEY)
                                 : readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY);
+                            const seedCourierDisplayMode = async (): Promise<CourierDisplayMode> => {
+                                try {
+                                    const raw = await getPreference(StaffPreferenceKey.DispatchCourierDisplayMode);
+                                    return raw ? (JSON.parse(raw) as CourierDisplayMode) : defaultCourierDisplayMode(appConfig.US_Customer);
+                                } catch (err) {
+                                    console.error('[dispatch] failed to load courier display mode preference', err);
+                                    return defaultCourierDisplayMode(appConfig.US_Customer);
+                                }
+                            };
                             try {
                                 const result = await w.ReactDashboardSettingsDialog.open(
                                     {
@@ -345,10 +361,13 @@ class RouterConfig {
                                         showRefreshInterval: true,
                                         showDriverLocationRefresh: true,
                                         showTaskRefresh: true,
+                                        showCourierDisplayMode: true,
                                     },
                                     {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
                                     {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
                                     {id: taskSeedSeconds, text: ''},
+                                    undefined,
+                                    await seedCourierDisplayMode(),
                                 );
                                 if (!result) return;
 
@@ -369,6 +388,14 @@ class RouterConfig {
                                     driverLocationsMs: toMs(result.selectedDriverLocationRefreshInterval?.id),
                                     tasksMs: toMs(result.selectedTaskRefreshInterval?.id),
                                 });
+
+                                if (result.courierDisplayMode) {
+                                    await savePreference(
+                                        StaffPreferenceKey.DispatchCourierDisplayMode,
+                                        JSON.stringify(result.courierDisplayMode),
+                                    );
+                                    window.ReactDispatch?.updateCourierDisplayMode(result.courierDisplayMode);
+                                }
                             } catch (err) {
                                 console.error('[dispatch] settings dialog error', err);
                             }

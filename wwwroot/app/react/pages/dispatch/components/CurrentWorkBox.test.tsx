@@ -227,6 +227,82 @@ describe('CurrentWorkBox', () => {
         });
     });
 
+    describe('courier display mode', () => {
+        it('shows the courier number on the non-US label when the mode is set to number', () => {
+            const slot = document.createElement('div');
+            document.body.appendChild(slot);
+            try {
+                renderBox({
+                    selectedJobCourierId: 42,
+                    selectedJobCourierName: 'Jane Smith',
+                    selectedJobCourierNumber: '007',
+                    courierDisplayMode: 'number',
+                    headerSlot: slot,
+                });
+                expect(within(slot).getByText('007')).toBeInTheDocument();
+                expect(within(slot).queryByText('Jane Smith')).not.toBeInTheDocument();
+            } finally {
+                document.body.removeChild(slot);
+            }
+        });
+
+        it('shows name and number together on the non-US label when the mode is set to both', () => {
+            const slot = document.createElement('div');
+            document.body.appendChild(slot);
+            try {
+                renderBox({
+                    selectedJobCourierId: 42,
+                    selectedJobCourierName: 'Jane Smith',
+                    selectedJobCourierNumber: '007',
+                    courierDisplayMode: 'both',
+                    headerSlot: slot,
+                });
+                expect(within(slot).getByText('Jane Smith · 007')).toBeInTheDocument();
+            } finally {
+                document.body.removeChild(slot);
+            }
+        });
+
+        it('shows no courier label on the non-US header when the mode is off', () => {
+            const slot = document.createElement('div');
+            document.body.appendChild(slot);
+            try {
+                renderBox({
+                    selectedJobCourierId: 42,
+                    selectedJobCourierName: 'Jane Smith',
+                    selectedJobCourierNumber: '007',
+                    courierDisplayMode: 'off',
+                    headerSlot: slot,
+                });
+                expect(within(slot).queryByText('Jane Smith')).not.toBeInTheDocument();
+                expect(within(slot).queryByText('007')).not.toBeInTheDocument();
+            } finally {
+                document.body.removeChild(slot);
+            }
+        });
+
+        it('reflects the courier number on the US focused-driver toggle when the mode is set to number', () => {
+            renderBox({
+                isUsCustomer: true,
+                selectedJobCourierId: 42,
+                selectedJobCourierName: 'Jane Smith',
+                selectedJobCourierNumber: '007',
+                courierDisplayMode: 'number',
+            });
+            expect(screen.getByRole('radio', {name: '007'})).toBeInTheDocument();
+        });
+
+        it('falls back to the driver name on the US toggle when number mode is requested but no number is available (manual pick)', async () => {
+            renderBox({isUsCustomer: true, courierDisplayMode: 'number'});
+
+            await act(async () => {
+                mockOverview.onDriverSelect?.({courierId: 7, name: 'Jane Smith'});
+            });
+
+            expect(await screen.findByRole('radio', {name: 'Jane Smith'})).toBeInTheDocument();
+        });
+    });
+
     describe('courier search toggle', () => {
         it('keeps the search field collapsed behind a header button until clicked', () => {
             renderBox();

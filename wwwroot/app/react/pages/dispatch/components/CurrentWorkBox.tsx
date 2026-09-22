@@ -19,6 +19,7 @@ import {SegmentedToggle} from '../../../components/common/segmented-toggle';
 import {TruckLoadingStatusDialog} from './TruckLoadingStatusDialog';
 import {HeaderSlotPortal} from '../../../components/common/header-slot/HeaderSlotPortal';
 import type {CourierSuggestion} from '../../../interfaces';
+import {formatCourierDisplayLabel, type CourierDisplayMode} from '../lib/courierDisplayMode';
 
 type Mode = 'overview' | 'active' | 'detail';
 
@@ -80,6 +81,10 @@ export interface CurrentWorkBoxProps {
     selectedJobCourierId?: number;
     /** Display name for the selected job's courier (shown in the breadcrumb). */
     selectedJobCourierName?: string;
+    /** Courier number for the selected job's courier, if known (shown in the breadcrumb). */
+    selectedJobCourierNumber?: string;
+    /** How much courier info to show in the breadcrumb once a courier is focused. */
+    courierDisplayMode?: CourierDisplayMode;
     onJobSelect?: (job: DispatchJob) => void;
     /** Card header DOM node; the breadcrumb + truck button portal into it. */
     headerSlot?: HTMLElement | null;
@@ -109,6 +114,8 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     endDate,
     selectedJobCourierId,
     selectedJobCourierName,
+    selectedJobCourierNumber,
+    courierDisplayMode = 'name',
     onJobSelect,
     headerSlot,
 }) => {
@@ -187,7 +194,12 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
         closeSearch();
     };
 
-    const courierLabel = pickedCourierName ?? selectedJobCourierName ?? 'Selected Driver';
+    // A manually-picked courier (search, or the US overview drill-in) never carries a
+    // number — only the currently selected job's assigned courier does.
+    const courierName = pickedCourierName ?? selectedJobCourierName;
+    const courierNumber = pickedCourierName ? undefined : selectedJobCourierNumber;
+    const formattedCourierLabel = formatCourierDisplayLabel(courierDisplayMode, courierName, courierNumber);
+    const courierLabel = formattedCourierLabel ?? 'Selected Driver';
     const [truckStatusOpen, {open: openTruckStatus, close: closeTruckStatus}] = useDisclosure(false);
 
     const overviewQuery = useQuery({
@@ -292,13 +304,18 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                             />
                         </Box>
                     ) : (
-                        <HeaderActionIcon
-                            ref={searchButtonRef}
-                            label="Search courier"
-                            onClick={openSearch}
-                        >
-                            <Icon tabler={IconSearch} size={PANEL_CONTROL_GLYPH_SIZE}/>
-                        </HeaderActionIcon>
+                        <>
+                            {courierId && formattedCourierLabel && (
+                                <Text fz="sm" fw={600} style={detailSegmentStyle}>{formattedCourierLabel}</Text>
+                            )}
+                            <HeaderActionIcon
+                                ref={searchButtonRef}
+                                label="Search courier"
+                                onClick={openSearch}
+                            >
+                                <Icon tabler={IconSearch} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                            </HeaderActionIcon>
+                        </>
                     ))}
                 </Group>
             </HeaderSlotPortal>
