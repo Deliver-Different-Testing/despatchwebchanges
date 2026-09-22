@@ -90,4 +90,29 @@ public class DispatchLayoutControllerTests
         Assert.IsType<BadRequestObjectResult>(result);
         await _repositoryMock.DidNotReceiveWithAnyArgs().ReplaceLayoutsAsync(null!, null!);
     }
+
+    [Fact]
+    public async Task GetLayouts_AllowsTheNationwidePage()
+    {
+        _repositoryMock.GetLayoutsAsync("Nationwide").Returns([Layout("Wide")]);
+        var controller = CreateController();
+
+        var result = await controller.GetLayouts("Nationwide");
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task SaveLayouts_AllowsTheNationwidePage()
+    {
+        var controller = CreateController();
+
+        var result = await controller.SaveLayouts(
+            new SaveDispatchLayoutsRequest { Page = "Nationwide", Layouts = [Layout("Wide")] });
+
+        Assert.IsType<OkResult>(result);
+        await _repositoryMock.Received(1).ReplaceLayoutsAsync(
+            "Nationwide",
+            Arg.Is<IReadOnlyList<DispatchLayoutDto>>(l => l.Count == 1 && l[0].Name == "Wide"));
+    }
 }

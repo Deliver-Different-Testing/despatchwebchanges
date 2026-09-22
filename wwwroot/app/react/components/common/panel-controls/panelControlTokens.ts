@@ -9,14 +9,16 @@
  *
  * Hover and disabled are **pseudo/attribute state**, so they cannot go through
  * Mantine's `styles` prop — those values land as inline styles and silently drop
- * the selector. Hover therefore rides Mantine's per-component CSS variables
- * (`--ai-hover`, `--button-hover`), and everything else lives in the unlayered
- * `PanelControls.module.css`. Pinning `color: 'inherit'` inline is specifically
- * avoided: it outranks Mantine's disabled colour, which is what used to make the
- * disabled truck button look enabled.
+ * the selector. A text button's hover still rides Mantine's per-component CSS
+ * variable (`--button-hover`); an icon button instead grows on hover via the
+ * shared, unlayered `growOnHoverIcon` class, same as the app bar. Everything
+ * else lives in the unlayered `PanelControls.module.css`. Pinning `color:
+ * 'inherit'` inline is specifically avoided: it outranks Mantine's disabled
+ * colour, which is what used to make the disabled truck button look enabled.
  */
 
 import type React from 'react';
+import {growOnHoverClassName} from '../growOnHoverIcon';
 import {headerOverlayColor} from '../../dialogs/shared/mantine/styles';
 
 /**
@@ -43,7 +45,5 @@ export const panelTextButtonStyle = {
     '--button-hover': PANEL_CONTROL_HOVER,
 } as React.CSSProperties;
 
-/** Icon-button counterpart of {@link panelTextButtonStyle}. */
-export const panelIconButtonStyle = {
-    '--ai-hover': PANEL_CONTROL_HOVER,
-} as React.CSSProperties;
+/** Icon-button counterpart of {@link panelTextButtonStyle}: grows on hover instead of washing. */
+export const panelIconButtonClassName = growOnHoverClassName;

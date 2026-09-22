@@ -1,7 +1,7 @@
 /**
- * The icon button for a panel card bar — 32px band, tooltip, and the header's
- * hover wash. Replaces the `ActionIcon` + `Tooltip` + hover-variable trio that
- * was hand-repeated in three places (once with a hover that never fired).
+ * The icon button for a panel card bar — 32px band, tooltip, and grow-on-hover.
+ * Replaces the `ActionIcon` + `Tooltip` + hover-variable trio that was
+ * hand-repeated in three places (once with a hover that never fired).
  *
  * Forwards its ref so it can be a `Menu.Target`.
  */
@@ -10,7 +10,7 @@ import React from 'react';
 import {ActionIcon, Tooltip} from '@mantine/core';
 
 import classes from './PanelControls.module.css';
-import {PANEL_CONTROL_HEIGHT, panelIconButtonStyle} from './panelControlTokens';
+import {PANEL_CONTROL_HEIGHT, panelIconButtonClassName} from './panelControlTokens';
 
 export interface HeaderActionIconProps extends Omit<React.ComponentPropsWithoutRef<'button'>, 'children'> {
     /** Names the button and, unless `tooltip` overrides it, labels the tooltip. */
@@ -34,8 +34,7 @@ export const HeaderActionIcon = React.forwardRef<HTMLButtonElement, HeaderAction
                     radius="xl"
                     variant="subtle"
                     aria-label={label}
-                    className={classes.control}
-                    style={panelIconButtonStyle}
+                    className={`${classes.control} ${panelIconButtonClassName}`}
                     {...rest}
                 >
                     {children}

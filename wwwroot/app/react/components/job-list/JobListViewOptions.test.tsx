@@ -7,7 +7,6 @@ import {screen} from '@testing-library/react';
 import {renderWithMantine} from '../../__testUtils__';
 import {setupUser} from '../../__testUtils__/setupUser';
 import {JobListViewOptions} from './JobListViewOptions';
-import {PANEL_CONTROL_HOVER} from '../common/panel-controls';
 import {SEGMENTED_TOGGLE_HEADER_HEIGHT, SEGMENTED_TOGGLE_INLINE_HEIGHT} from '../common/segmented-toggle';
 import type {DensityMode} from '../../interfaces/dispatchJob';
 
@@ -78,14 +77,12 @@ describe('JobListViewOptions', () => {
         expect(screen.queryByRole('switch')).not.toBeInTheDocument();
     });
 
-    it('washes the header-variant controls with the bar accent and leaves colour to the stylesheet', () => {
-        // The panel header is a plain `surface` bar, so the hover has to be a
-        // translucent step of the bar's accent — and the colour must stay in the
-        // stylesheet, because an inline one outranks Mantine's disabled colour.
+    it('leaves the header-variant icon controls\' colour to the stylesheet, not an inline override', () => {
+        // The colour must stay in the stylesheet, because an inline one
+        // outranks Mantine's disabled colour.
         renderWithMantine(<JobListViewOptions {...createDefaultProps({headerVariant: true})}/>);
 
         const reset = screen.getByRole('button', {name: 'Reset columns'});
-        expect(reset.style.getPropertyValue('--ai-hover')).toBe(PANEL_CONTROL_HOVER);
         expect(reset.style.color).toBe('');
     });
 

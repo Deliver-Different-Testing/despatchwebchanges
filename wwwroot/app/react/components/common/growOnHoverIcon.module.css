@@ -1,0 +1,20 @@
+/*
+ * Hover/focus state for an icon-only button: grow instead of painting a
+ * background wash behind the glyph. Unlayered, so it outranks Mantine's own
+ * `@layer mantine` hover background regardless of selector specificity.
+ */
+.growOnHover:hover,
+.growOnHover:focus-visible {
+    background-color: transparent;
+    transform: scale(1.18);
+}
+
+.growOnHover {
+    transition: transform 120ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .growOnHover {
+        transition: none;
+    }
+}

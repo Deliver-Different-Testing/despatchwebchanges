@@ -20,9 +20,10 @@ import {
     PANEL_CONTROL_HEIGHT,
     PANEL_CONTROL_HOVER,
     PANEL_CONTROL_SELECTED,
-    panelIconButtonStyle,
+    panelIconButtonClassName,
     panelTextButtonStyle,
 } from './index';
+import {growOnHoverClassName} from '../growOnHoverIcon';
 
 describe('panel control tokens', () => {
     it('lines every control up with the 32px band PanelHeader already uses', () => {
@@ -47,17 +48,19 @@ describe('panel control tokens', () => {
         expect(PANEL_CONTROL_HOVER).not.toContain(headerSurfaceAccent);
     });
 
-    it('drives hover through Mantine CSS variables, never a styles-prop pseudo-selector', () => {
+    it('drives text-button hover through a Mantine CSS variable, never a styles-prop pseudo-selector', () => {
         // A `styles={{root: {'&:hover': …}}}` object would be dropped — Mantine's
         // `styles` values are applied as inline styles.
         expect(panelTextButtonStyle).toMatchObject({'--button-hover': PANEL_CONTROL_HOVER});
-        expect(panelIconButtonStyle).toMatchObject({'--ai-hover': PANEL_CONTROL_HOVER});
+    });
+
+    it('grows an icon button on hover via the shared class, same as the app bar', () => {
+        expect(panelIconButtonClassName).toBe(growOnHoverClassName);
     });
 
     it('leaves the disabled colour to the stylesheet instead of pinning it inline', () => {
         // `color: 'inherit'` inline outranks Mantine's disabled colour, which is
         // why the disabled truck button used to look enabled.
-        expect(panelIconButtonStyle).not.toHaveProperty('color');
         expect(panelTextButtonStyle).not.toHaveProperty('color');
     });
 });
