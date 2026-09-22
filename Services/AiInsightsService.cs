@@ -5,6 +5,7 @@ using System.Text.Json;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Ai;
 using DespatchWeb.Models.Response;
 using Microsoft.Extensions.Options;
 using Serilog;

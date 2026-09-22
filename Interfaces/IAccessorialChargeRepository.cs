@@ -12,11 +12,5 @@ public interface IAccessorialChargeRepository
     Task DeleteChargeAsync(int jobAccessorialChargeId);
     Task<decimal> GetJobAmountAsync(int jobId);
     Task<IReadOnlyList<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId);
-
-    /// <summary>
-    /// Sums the job's currently-applied accessorial charges (override amount where set,
-    /// otherwise the calculated amount). For a split/multi-leg job, charges live on the
-    /// portion (child) jobs rather than the parent, so portions are summed instead when present.
-    /// </summary>
     Task<decimal> GetTotalAppliedChargesAsync(int jobId);
 }
