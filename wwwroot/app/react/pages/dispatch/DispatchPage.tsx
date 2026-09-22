@@ -94,7 +94,7 @@ export interface DispatchLayoutBridge {
     updateRefreshIntervals: (intervals: Partial<DispatchRefreshIntervals>) => void;
     /** Restore the current layout to the shipped arrangement (toolbar → Layouts → Reset layout). */
     resetCurrentLayout: () => void;
-    /** Show or hide the "Edit Layout" bar (toolbar → Layouts → Edit Layout). */
+    /** Show or hide the "Edit columns" bar (toolbar → Layouts → Edit columns). */
     setColumnEditMode: (enabled: boolean) => void;
     /** Open the Inter-Courier Charge dialog, wired to the page's toast. */
     openInterCourierCharge: () => void;
@@ -111,7 +111,7 @@ export interface DispatchPageProps {
     timeZoneShort?: string;
     deepLinkJobId?: number;
     /** Called once with imperative handles for the AppShell toolbar to drive layout selection. */
-    /** Leave "Edit Layout" mode; routes back through the toolbar so its menu stays in sync. */
+    /** Leave "Edit columns" mode; routes back through the toolbar so its menu stays in sync. */
     onExitColumnEditMode?: () => void;
     onLayoutBridgeReady?: (bridge: DispatchLayoutBridge) => void;
 }
@@ -154,9 +154,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     // Truck-mode filter for Driver Locations; the control lives in that box's
     // panel header (see boxRightSlotFor), so the state is lifted here.
     const [truckMode, setTruckMode] = useState<TruckMode>('On');
-    // "Edit Layout" mode, driven from the toolbar's Layouts menu: gates box
-    // resize/reorder and the layout column stepper in the shell, and reveals
-    // each list's own column editor.
+    // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
+    // layout column stepper in the shell and each list's column editor.
     const [columnEditMode, setColumnEditMode] = useState(false);
     const handleExitColumnEditMode = useCallback(() => {
         setColumnEditMode(false);
