@@ -11,7 +11,7 @@ import {fetchDriverWorkOverview} from '../../../services/courierApi';
 import {queryKeys} from '../../../query/queryClient';
 import {JobListPanel} from '../../../components/job-list/JobListPanel';
 import {CurrentWorkAllDrivers, IDriverWorkOverview} from '../../../components/common/current-work-all-drivers';
-import {IconTruck} from '@tabler/icons-react';
+import {IconSearch, IconTruck} from '@tabler/icons-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import {CourierSearchField} from './CourierSearchField';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
@@ -153,11 +153,38 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
         }
     }, [selectedJobCourierId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    const [searchOpen, {open: openSearch, close: closeSearch}] = useDisclosure(false);
+    const searchButtonRef = useRef<HTMLButtonElement>(null);
+    const restoreSearchFocusRef = useRef(false);
+
     const handleCourierSearchSelect = (courier: CourierSuggestion) => {
         setCourierId(courier.id);
         setPickedCourierName(courier.text);
         setMode('detail');
         persistFocus({courierId: courier.id, pickedCourierName: courier.text, mode: 'detail'});
+        closeSearch();
+    };
+
+    // Closing with the keyboard has to hand focus back to the toggle button — it
+    // only exists once the search field is gone, so the focus move waits for the swap.
+    useEffect(() => {
+        if (searchOpen || !restoreSearchFocusRef.current) return;
+        restoreSearchFocusRef.current = false;
+        searchButtonRef.current?.focus();
+    }, [searchOpen]);
+
+    // Abandoning the search collapses it back to the toggle button. React's `onBlur`
+    // is `focusout`, so it catches a click anywhere else on the page; the containment
+    // check keeps focus moves *inside* the search box from closing it.
+    const handleSearchBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+        closeSearch();
+    };
+
+    const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key !== 'Escape') return;
+        restoreSearchFocusRef.current = true;
+        closeSearch();
     };
 
     const courierLabel = pickedCourierName ?? selectedJobCourierName ?? 'Selected Driver';
@@ -248,6 +275,31 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                             <Icon tabler={IconTruck} size={PANEL_CONTROL_GLYPH_SIZE}/>
                         </HeaderActionIcon>
                     )}
+                    {/* US dispatchers already have the drivers overview (plus its own
+                        name filter) to find a courier, so the direct lookup is only
+                        needed for non-US tenants. Tucked behind this toggle so the
+                        header bar only grows wide enough to type a name or code. */}
+                    {!isUsCustomer && (searchOpen ? (
+                        <Box
+                            w={200}
+                            onBlur={handleSearchBlur}
+                            onKeyDown={handleSearchKeyDown}
+                        >
+                            <CourierSearchField
+                                onSelect={handleCourierSearchSelect}
+                                showToast={showToast}
+                                autoFocus
+                            />
+                        </Box>
+                    ) : (
+                        <HeaderActionIcon
+                            ref={searchButtonRef}
+                            label="Search courier"
+                            onClick={openSearch}
+                        >
+                            <Icon tabler={IconSearch} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                        </HeaderActionIcon>
+                    ))}
                 </Group>
             </HeaderSlotPortal>
             <TruckLoadingStatusDialog
@@ -257,11 +309,6 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                 isUsCustomer={isUsCustomer}
                 onClose={closeTruckStatus}
             />
-            {/* Every tenant gets the courier lookup — V1 rendered the code box for all
-                of them, and US dispatchers otherwise have only the drivers overview. */}
-            <Box px="xs" pt={4} style={{flexShrink: 0}}>
-                <CourierSearchField onSelect={handleCourierSearchSelect} showToast={showToast} />
-            </Box>
             <Box style={{flex: 1, minHeight: 0, overflow: 'auto'}}>
                 {showDriverList ? (
                     <CurrentWorkAllDrivers
