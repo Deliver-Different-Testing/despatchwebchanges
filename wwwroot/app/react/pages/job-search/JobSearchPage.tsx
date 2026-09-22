@@ -93,8 +93,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
     const [currentJobId, setCurrentJobId] = useState<number | undefined>();
     const [isBulkJob, setIsBulkJob] = useState(false);
-    // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
-    // layout column stepper in the shell and each list's column editor.
+    // "Edit Layout" mode, driven from the toolbar's Layouts menu: gates box
+    // resize/reorder and the layout column stepper in the shell, and reveals
+    // each list's own column editor.
     const [columnEditMode, setColumnEditMode] = useState(false);
     const handleExitColumnEditMode = useCallback(() => {
         setColumnEditMode(false);

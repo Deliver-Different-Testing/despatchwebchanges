@@ -15,6 +15,7 @@ import {
     headerOverlayColor,
     dialogShellStyles,
     dialogStickyChromeStyle,
+    dialogHeaderBorder,
     PriceDelta,
 } from './index';
 import {alpha} from '@mantine/core';
@@ -226,7 +227,7 @@ describe('header style helpers', () => {
         expect(chrome.backgroundColor).toBe(headerColors.error.bg);
         expect(chrome.color).toBe(headerColors.error.fg);
         expect(chrome.display).toBe('flex');
-        expect(chrome.borderBottom).toBe('1px solid var(--mantine-color-default-border)');
+        expect(chrome.borderBottom).toBe(dialogHeaderBorder);
         // No variant gets a solid colour fill any more — that's the whole point.
         expect(headerChromeStyle('error')).toEqual(headerChromeStyle('surface'));
     });

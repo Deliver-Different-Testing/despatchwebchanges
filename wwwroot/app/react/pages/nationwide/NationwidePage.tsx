@@ -8,7 +8,7 @@ import type {IDispatchMapItem, ISuggestion} from '../../../interfaces/job.interf
 import {JobProperty} from '../../../enums/job-property.enum';
 import type {Agent} from '../../interfaces/agent';
 import type {FlightViewModel} from '../../interfaces/nationwideJobs';
-import {formatDateForApiWithTzs} from '../../utils/dateUtils';
+import {formatDateForApiWithTzs, getIanaTimezone} from '../../utils/dateUtils';
 import {
     fetchNationwideJobsNew,
     fetchNationwideJobsPod,
@@ -145,6 +145,8 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                                                                   deepLinkJobId,
                                                                   onLayoutBridgeReady,
                                                               }) => {
+    const ianaTimeZone = useMemo(() => getIanaTimezone(timeZone), [timeZone]);
+
     /*
      * V2 keys, with V1's as the import source -- the same arrangement Dispatch
      * and Job Search use. Writing V1's keys directly would corrupt the classic
@@ -175,8 +177,8 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
 
     const dateFilter = useMemo(
-        () => loadDateFilterFrom(`dateFilter-${LegacyAppPage.Domestic}-${ContactID}`, {timeZone}),
-        [timeZone],
+        () => loadDateFilterFrom(`dateFilter-${LegacyAppPage.Domestic}-${ContactID}`, {timeZone: ianaTimeZone}),
+        [ianaTimeZone],
     );
 
     const [refetchIntervalMs, setRefetchIntervalMs] = useState<number | false>(() => loadSavedRefreshIntervalMs());
@@ -344,7 +346,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         [showToast],
     );
 
-    const widget = useFlightAgentWidget({job: flightAgentJob, timeZone, onWarning});
+    const widget = useFlightAgentWidget({job: flightAgentJob, timeZone: ianaTimeZone, onWarning});
 
     /** Quote request and the "flight required" notice both use the shared confirm. */
     const [confirm, setConfirm] = useState<{
@@ -610,7 +612,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         statusId: currentJob.statusId,
     }] : []), [currentJob]);
 
-    const renderBoxContent = useCallback((boxName: string) => {
+    const renderBoxContent = useCallback((boxName: string, headerSlot?: HTMLElement | null) => {
         switch (boxName) {
             case NationwideBoxes.NewJobs:
             case NationwideBoxes.PodJobs:
@@ -627,6 +629,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                         setUpdateSearchParamsCallback={(cb: (params: Partial<JobListSearchParams>) => void) => {
                             listParamsRefs.current[key] = cb;
                         }}
+                        headerSlot={headerSlot}
                     />
                 );
             }
@@ -714,6 +717,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                         appPage={LegacyAppPage.Domestic}
                         showToast={showToast}
                         onSelectJob={(jobId) => void selectJobById(jobId)}
+                        headerSlot={headerSlot}
                     />
                 );
 

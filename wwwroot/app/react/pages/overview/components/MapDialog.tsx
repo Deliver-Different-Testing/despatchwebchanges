@@ -71,7 +71,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                 subtitle="View delivery locations and routes"
                 onClose={onClose}
             />
-            <Box style={{flex: 1, position: 'relative', overflow: 'hidden'}}>
+            <Box style={{height: '100%', position: 'relative', overflow: 'hidden'}}>
                 {isLoading && (
                     <Stack
                         align="center"

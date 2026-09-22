@@ -26,16 +26,16 @@ describe('Shell icon buttons', () => {
         ['Messages', <MessagesButton key="m" unreadCount={5} onClick={jest.fn()} />],
         ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={jest.fn()} onClearAll={jest.fn()} />],
         ['Custom', <ToolbarIconButton key="c" icon={<span />} tooltip="Custom" onClick={jest.fn()} />],
-    ])('%s takes its hover wash and glyph colour from the shell variables', (name, element) => {
-        // The wash and on-colour differ per tenant (the gold bar cannot use a brand
-        // wash), so the button defers to the vars the theme resolver publishes rather
-        // than baking either value in. `dfrntMantineTheme.spec` asserts the values.
-        // Every button in the bar shares this chrome — hence the sweep rather than a
-        // single sample.
+    ])('%s takes its glyph colour from the shell variables', (name, element) => {
+        // The on-colour differs per tenant (Ink on gold, white on Ink), so the button
+        // defers to the var the theme resolver publishes rather than baking it in.
+        // `dfrntMantineTheme.spec` asserts the value. Every button in the bar shares
+        // this chrome — hence the sweep rather than a single sample. The hover grow
+        // itself is a `:hover`/`:focus-visible` CSS-module rule, unreachable from
+        // jsdom, so it isn't asserted here.
         renderWithMantine(element);
 
         const button = screen.getByRole('button', {name});
-        expect(button.style.getPropertyValue('--ai-hover')).toBe('var(--dd-shell-icon-hover)');
         expect(button).toHaveStyle({color: 'var(--dd-on-shell)'});
     });
 
@@ -382,12 +382,12 @@ describe('LayoutsMenu', () => {
         expect(onImportLayouts).toHaveBeenCalledTimes(1);
     });
 
-    it('should not render a Customize panels entry without onCustomizePanels', async () => {
+    it('should not render a Show/Hide Panels entry without onCustomizePanels', async () => {
         renderWithMantine(<LayoutsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Add layout')).toBeInTheDocument();
-        expect(screen.queryByText('Customize panels…')).not.toBeInTheDocument();
+        expect(screen.queryByText('Show/Hide Panels…')).not.toBeInTheDocument();
     });
 
     it('should call onCustomizePanels when clicked on a custom layout', async () => {
@@ -401,12 +401,12 @@ describe('LayoutsMenu', () => {
         );
 
         fireEvent.click(screen.getByRole('button'));
-        fireEvent.click(await screen.findByText('Customize panels…'));
+        fireEvent.click(await screen.findByText('Show/Hide Panels…'));
 
         expect(onCustomizePanels).toHaveBeenCalledTimes(1);
     });
 
-    it('should offer Customize panels on a user-created layout', async () => {
+    it('should offer Show/Hide Panels on a user-created layout', async () => {
         const onCustomizePanels = jest.fn();
         renderWithMantine(
             <LayoutsMenu
@@ -417,7 +417,7 @@ describe('LayoutsMenu', () => {
         );
 
         fireEvent.click(screen.getByRole('button'));
-        fireEvent.click(await screen.findByText('Customize panels…'));
+        fireEvent.click(await screen.findByText('Show/Hide Panels…'));
 
         expect(onCustomizePanels).toHaveBeenCalledTimes(1);
     });
@@ -435,8 +435,8 @@ describe('LayoutsMenu', () => {
         );
 
         fireEvent.click(screen.getByRole('button'));
-        const customize = (await screen.findByText('Customize panels…')).closest('button')!;
-        const editColumns = screen.getByText('Edit columns').closest('button')!;
+        const customize = (await screen.findByText('Show/Hide Panels…')).closest('button')!;
+        const editColumns = screen.getByText('Edit Layout').closest('button')!;
 
         expect(customize).toBeDisabled();
         expect(editColumns).toBeDisabled();
@@ -447,14 +447,14 @@ describe('LayoutsMenu', () => {
         expect(onToggleColumnEditMode).not.toHaveBeenCalled();
     });
 
-    it('should not render an Edit columns entry without onToggleColumnEditMode', async () => {
+    it('should not render an Edit Layout entry without onToggleColumnEditMode', async () => {
         renderWithMantine(<LayoutsMenu {...defaultProps} currentLayoutName="Custom Layout 1" />);
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Switch layout')).toBeInTheDocument();
-        expect(screen.queryByText('Edit columns')).not.toBeInTheDocument();
+        expect(screen.queryByText('Edit Layout')).not.toBeInTheDocument();
     });
 
-    it('should toggle the Edit columns bar and reflect the current mode', async () => {
+    it('should toggle the Edit Layout bar and reflect the current mode', async () => {
         const onToggleColumnEditMode = jest.fn();
         const {unmount} = renderWithMantine(
             <LayoutsMenu
@@ -464,7 +464,7 @@ describe('LayoutsMenu', () => {
             />,
         );
         fireEvent.click(screen.getByRole('button'));
-        fireEvent.click(await screen.findByText('Edit columns'));
+        fireEvent.click(await screen.findByText('Edit Layout'));
         expect(onToggleColumnEditMode).toHaveBeenCalledTimes(1);
         unmount();
 
@@ -477,7 +477,7 @@ describe('LayoutsMenu', () => {
             />,
         );
         fireEvent.click(screen.getByRole('button'));
-        expect(await screen.findByText('Done editing columns')).toBeInTheDocument();
+        expect(await screen.findByText('Done editing layout')).toBeInTheDocument();
     });
 
     it('should not render a Reset layout entry without onResetLayout', async () => {

@@ -14,7 +14,8 @@ public class DispatchLayoutController(IDispatchLayoutRepository dispatchLayoutRe
     private static readonly HashSet<string> AllowedPages = new(StringComparer.Ordinal)
     {
         "JobSearch",
-        "Dispatch"
+        "Dispatch",
+        "Nationwide"
     };
 
     public async Task<IActionResult> GetLayouts(string page)

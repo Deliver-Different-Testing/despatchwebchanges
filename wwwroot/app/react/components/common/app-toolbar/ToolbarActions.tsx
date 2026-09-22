@@ -40,7 +40,7 @@ import {
 import {Icon} from '../icon/Icon';
 import {
     badgeOverflowStyle,
-    SHELL_ICON_HOVER_FILL,
+    toolbarIconButtonClassName,
     toolbarIconButtonStyle,
 } from './toolbarIconStyles';
 import classes from './LayoutsMenu.module.css';
@@ -54,7 +54,7 @@ export {ActionsMenu} from './ActionsMenu';
 export type {ActionsMenuProps} from './ActionsMenu';
 
 // Re-exported so the existing import sites keep working now the tokens live in a leaf module.
-export {badgeOverflowStyle, SHELL_ICON_HOVER_FILL, toolbarIconButtonStyle};
+export {badgeOverflowStyle, toolbarIconButtonClassName, toolbarIconButtonStyle};
 
 /** Glyph size shared by the toolbar's icon buttons. */
 const TOOLBAR_ICON_SIZE = 18;
@@ -78,6 +78,7 @@ export const MessagesButton: React.FC<MessagesButtonProps> = ({unreadCount, onCl
                 size="lg"
                 radius="xl"
                 onClick={onClick}
+                className={toolbarIconButtonClassName}
                 style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
                 aria-label="Messages"
             >
@@ -112,6 +113,7 @@ export const RefreshButton: React.FC<RefreshButtonProps> = ({onClick, loading = 
                     radius="xl"
                     onClick={onClick}
                     disabled={loading}
+                    className={toolbarIconButtonClassName}
                     style={toolbarIconButtonStyle}
                     aria-label="Refresh"
                 >
@@ -134,7 +136,15 @@ export interface SettingsButtonProps {
 export const SettingsButton: React.FC<SettingsButtonProps> = ({onClick}) => {
     return (
         <Tooltip label="Settings">
-            <ActionIcon variant="subtle" size="lg" radius="xl" onClick={onClick} style={toolbarIconButtonStyle} aria-label="Settings">
+            <ActionIcon
+                variant="subtle"
+                size="lg"
+                radius="xl"
+                onClick={onClick}
+                className={toolbarIconButtonClassName}
+                style={toolbarIconButtonStyle}
+                aria-label="Settings"
+            >
                 <Icon lucide={Settings} size={TOOLBAR_ICON_SIZE} />
             </ActionIcon>
         </Tooltip>
@@ -171,6 +181,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                         variant="subtle"
                         size="lg"
                         radius="xl"
+                        className={toolbarIconButtonClassName}
                         style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
                         aria-label="Views"
                     >
@@ -257,9 +268,9 @@ export interface LayoutsMenuProps {
     onCustomizePanels?: () => void;
     /** Optional: restore the current layout to the shipped arrangement. */
     onResetLayout?: () => void;
-    /** Optional: whether the "Edit columns" bar is currently shown. */
+    /** Optional: whether the "Edit Layout" bar is currently shown. */
     columnEditMode?: boolean;
-    /** Optional: toggle the "Edit columns" bar. When provided, an Edit/Done item is shown. */
+    /** Optional: toggle the "Edit Layout" bar. When provided, an Edit/Done item is shown. */
     onToggleColumnEditMode?: () => void;
 }
 
@@ -380,6 +391,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                         size="lg"
                         radius="xl"
                         onClick={toggle}
+                        className={toolbarIconButtonClassName}
                         style={toolbarIconButtonStyle}
                         aria-label="Layouts"
                     >
@@ -465,7 +477,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                 disabled={isDefaultLayout}
                                 icon={<Icon lucide={columnEditMode ? Check : Columns3} size={16} />}
                             >
-                                {columnEditMode ? 'Done editing columns' : 'Edit columns'}
+                                {columnEditMode ? 'Done editing layout' : 'Edit Layout'}
                             </PopoverRow>
                         </Tooltip>
                     </>
@@ -478,9 +490,9 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                             <PopoverRow
                                 onClick={handleCustomize}
                                 disabled={isDefaultLayout}
-                                icon={<Icon lucide={Settings} size={16} />}
+                                icon={<Icon lucide={Eye} size={16} />}
                             >
-                                Customize panels…
+                                Show/Hide Panels…
                             </PopoverRow>
                         </Tooltip>
                     </>
@@ -529,6 +541,7 @@ export const ToolbarIconButton: React.FC<ToolbarIconButtonProps> = ({
                     radius="xl"
                     onClick={onClick}
                     disabled={disabled}
+                    className={toolbarIconButtonClassName}
                     style={toolbarIconButtonStyle}
                     aria-label={tooltip}
                 >

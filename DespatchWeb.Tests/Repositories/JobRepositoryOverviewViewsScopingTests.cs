@@ -139,4 +139,29 @@ public class JobRepositoryOverviewViewsScopingTests : IAsyncDisposable
         Assert.Single(result);
         Assert.Equal("JOB100", result[0].Reference);
     }
+
+    [Fact]
+    public async Task ResolveParentScopedJobs_MatchOnChildLeg_ReturnsParent()
+    {
+        // Arrange — a despatch view's WhereCondition is evaluated against the leg-level
+        // DESWEB_qryDespatch view, so a split job's child leg (which carries the courier/
+        // region attributes) can match while the parent row itself does not. The Overview
+        // Deliveries panel groups by parent, so a match on the child must still resolve to
+        // (and surface) its parent rather than being dropped.
+        await using var context = _db.CreateContext();
+        context.TucJobs.AddRange(
+            new TucJob { UcjbId = 100, UcjbNumber = "JOB100", UcjbStatus = (int)JobStatus.Dispatched },
+            new TucJob { UcjbId = 101, UcjbNumber = "JOB100-1", ParentId = 100, UcjbStatus = (int)JobStatus.Dispatched }
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act — the view matched only the child leg's id (101), not the parent's (100).
+        var result = await repository.ResolveParentScopedJobs([101]).ToListAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        var job = Assert.Single(result);
+        Assert.Equal(100, job.UcjbId);
+    }
 }

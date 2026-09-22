@@ -147,7 +147,7 @@ export function resetCurrentLayout(): void {
     layoutBridge?.resetCurrentLayout();
 }
 
-/** Show or hide the "Edit columns" bar (toolbar → Layouts → Edit columns). */
+/** Show or hide the "Edit Layout" bar (toolbar → Layouts → Edit Layout). */
 export function setColumnEditMode(enabled: boolean): void {
     layoutBridge?.setColumnEditMode(enabled);
 }

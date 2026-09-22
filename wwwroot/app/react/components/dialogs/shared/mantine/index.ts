@@ -21,6 +21,7 @@ export {
     sectionLabelProps,
     dialogContentBg,
     dialogFooterBorder,
+    dialogHeaderBorder,
     dialogShellStyles,
     dialogStickyChromeStyle,
 } from './styles';

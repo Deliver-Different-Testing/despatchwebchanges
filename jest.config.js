@@ -62,7 +62,7 @@ const config = {
 
     reporters: [
         'default',
-        ['jest-slow-test-reporter', { numTests: 15, warnOnSlowerThan: 300, color: true }],
+        ['jest-slow-test-reporter', { numTests: 20, warnOnSlowerThan: 300, color: true }],
     ],
 
     // Fail fast on hung tests (type-check CI job catches real issues).

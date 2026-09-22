@@ -11,8 +11,9 @@
  */
 import React from 'react';
 import {Box, CloseButton, Group, Text, ThemeIcon} from '@mantine/core';
-import {dialogStickyChromeStyle, headerChipProps, headerColors, headerOnColor} from './styles';
+import {dialogHeaderBorder, dialogStickyChromeStyle, headerChipProps, headerColors, headerOnColor} from './styles';
 import {DialogHeaderProps} from "./DialogHeaderProps";
+import classes from './DialogHeader.module.css';
 
 export const DialogHeader: React.FC<DialogHeaderProps> = ({
     icon,
@@ -33,6 +34,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
             style={{
                 backgroundColor: headerColors[variant].bg,
                 color: fg,
+                borderBottom: dialogHeaderBorder,
                 ...dialogStickyChromeStyle('top'),
             }}
         >
@@ -48,14 +50,15 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
                 )}
             </Box>
             {actions}
-            {/* Mantine's own close affordance — it brings the icon, the size ramp
-                and the hover, so the header only has to set the on-colour. */}
+            {/* Mantine's own close affordance for the icon and size ramp; hover
+                is overridden to grow rather than wash, matching the app bar. */}
             <CloseButton
                 onClick={onClose}
                 disabled={closeDisabled}
                 aria-label="Close dialog"
                 c={fg}
                 iconSize={20}
+                className={classes.closeButton}
             />
         </Group>
     );

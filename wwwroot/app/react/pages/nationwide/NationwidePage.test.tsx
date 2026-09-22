@@ -183,6 +183,20 @@ describe('NationwidePage', () => {
         }
     });
 
+    describe('date filter timezone conversion', () => {
+        it('does not fail to load the date filter when the page timezone is a Windows ID, not IANA', () => {
+            localStorage.setItem('dateFilter-2-0', JSON.stringify({startDate: 0, endDate: 0, useTime: false}));
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+            renderPage({timeZone: 'Eastern Standard Time'});
+
+            expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+                'Error loading date filter from storage:',
+                expect.anything(),
+            );
+        });
+    });
+
     it('renders the map scoped to its own preferences', () => {
         renderPage();
 

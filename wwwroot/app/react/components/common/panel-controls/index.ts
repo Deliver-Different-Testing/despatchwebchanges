@@ -7,6 +7,6 @@ export {
     PANEL_CONTROL_HEIGHT,
     PANEL_CONTROL_HOVER,
     PANEL_CONTROL_SELECTED,
-    panelIconButtonStyle,
+    panelIconButtonClassName,
     panelTextButtonStyle,
 } from './panelControlTokens';

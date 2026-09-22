@@ -484,11 +484,10 @@ describe('DispatchPage', () => {
             renderPage();
             await screen.findByRole('button', {name: 'Auckland', pressed: true});
 
-            await user.click(screen.getByRole('button', {name: 'Clear'}));
+            await user.click(screen.getByRole('button', {name: 'Clear selected views'}));
 
             expect(railPill('Auckland')).toHaveAttribute('aria-pressed', 'false');
             expect(localStorage.getItem(SELECTED_VIEWS_KEY)).toBe('[]');
-            expect(screen.getByText('Select a view to load jobs.')).toBeInTheDocument();
             expect(jobListFetchConfig.initialParams?.despatchViewIds).toEqual([]);
         });
 

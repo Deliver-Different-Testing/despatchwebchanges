@@ -26,7 +26,7 @@ import type {CourierSuggestion} from '../../interfaces/afterhours';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
 import {addressesDisagree, staleAddressSummary} from '../../utils/addressAgreement';
 import {
-    formatAddressWithFields,
+    formatAddressLines,
     getDeliveryAddressNz,
     getDeliveryAddressUs,
     getDeliveryCityState,
@@ -34,7 +34,7 @@ import {
     getPickupAddressUs,
     getPickupCityState,
 } from './jobAddressFormat';
-import type {AddressFieldKey} from '../../interfaces/address';
+import type {EffectiveAddressFormat} from './addressFormatPreferences';
 import dayjs from 'dayjs';
 import {
     formatMins,
@@ -247,7 +247,7 @@ interface JobListTableProps {
     /** Columns to render, already filtered and ordered by the panel. */
     columns: ColumnDef[];
     isUsCustomer?: boolean;
-    addressFieldOrder?: AddressFieldKey[];
+    addressFormat?: EffectiveAddressFormat;
     appPage?: number;
     isJobSearchPage?: boolean;
     loggedInCouriersOnly?: boolean;
@@ -271,7 +271,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                                               onColumnWidthsChange,
                                                               columns,
                                                               isUsCustomer,
-                                                              addressFieldOrder,
+                                                              addressFormat,
                                                               appPage,
                                                               loggedInCouriersOnly,
                                                               onLoadMore,
@@ -470,7 +470,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                 columns={columns}
                                 densityMode={densityMode}
                                 isUsCustomer={isUsCustomer}
-                                addressFieldOrder={addressFieldOrder}
+                                addressFormat={addressFormat}
                                 appPage={appPage}
                                 onClick={onJobClick}
                                 onContextMenu={onContextMenu}
@@ -502,7 +502,7 @@ interface JobRowProps {
     columns: ColumnDef[];
     densityMode: DensityMode;
     isUsCustomer?: boolean;
-    addressFieldOrder?: AddressFieldKey[];
+    addressFormat?: EffectiveAddressFormat;
     appPage?: number;
     onClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
@@ -519,7 +519,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
                                                       columns,
                                                       densityMode,
                                                       isUsCustomer,
-                                                      addressFieldOrder,
+                                                      addressFormat,
                                                       appPage,
                                                       onClick,
                                                       onContextMenu,
@@ -570,14 +570,14 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
                                 </Box>
                             </Tooltip>
                             <MemoizedCellContent col={col.key} job={job} isUltraDense={isUltraDense}
-                                                 isUsCustomer={isUsCustomer} addressFieldOrder={addressFieldOrder}
+                                                 isUsCustomer={isUsCustomer} addressFormat={addressFormat}
                                                  appPage={appPage}
                                                  onJobDispatch={onJobDispatch}
                                                  loggedInCouriersOnly={loggedInCouriersOnly}/>
                         </Group>
                     ) : (
                         <MemoizedCellContent col={col.key} job={job} isUltraDense={isUltraDense}
-                                             isUsCustomer={isUsCustomer} addressFieldOrder={addressFieldOrder}
+                                             isUsCustomer={isUsCustomer} addressFormat={addressFormat}
                                              appPage={appPage} onJobDispatch={onJobDispatch}
                                              loggedInCouriersOnly={loggedInCouriersOnly}/>
                     )}
@@ -757,7 +757,7 @@ const CellContent: React.FC<{
     job: DispatchJob;
     isUltraDense: boolean;
     isUsCustomer?: boolean;
-    addressFieldOrder?: AddressFieldKey[];
+    addressFormat?: EffectiveAddressFormat;
     appPage?: number;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
     loggedInCouriersOnly?: boolean
@@ -766,7 +766,7 @@ const CellContent: React.FC<{
                      job,
                      isUltraDense,
                      isUsCustomer,
-                     addressFieldOrder,
+                     addressFormat,
                      appPage,
                      onJobDispatch,
                      loggedInCouriersOnly,
@@ -809,8 +809,16 @@ const CellContent: React.FC<{
         case 'refA':
             return <>{job.refA || ''}</>;
         case 'pickup':
-            if (addressFieldOrder?.length) {
-                return <>{formatAddressWithFields(job.pickupAddress, addressFieldOrder, job.from)}</>;
+            if (addressFormat?.pickup) {
+                const [line1, line2] = formatAddressLines(job.pickupAddress, addressFormat.pickup, job.from);
+                return (
+                    <>
+                        <Text fz="inherit" truncate>{line1}</Text>
+                        {line2 && (
+                            <Text size="xs" c="dimmed" lh={1.2} truncate>{line2}</Text>
+                        )}
+                    </>
+                );
             }
             if (isUsCustomer) {
                 return (
@@ -826,11 +834,17 @@ const CellContent: React.FC<{
             }
             return <>{getPickupAddressNz(job)}</>;
         case 'delivery':
-            if (addressFieldOrder?.length) {
+            if (addressFormat?.delivery) {
+                const [line1, line2] = formatAddressLines(job.deliveryAddress, addressFormat.delivery, job.toAddress);
                 return (
                     <>
-                        <StaleDeliveryAddressMarker job={job}/>
-                        {formatAddressWithFields(job.deliveryAddress, addressFieldOrder, job.toAddress)}
+                        <Text fz="inherit" truncate>
+                            <StaleDeliveryAddressMarker job={job}/>
+                            {line1}
+                        </Text>
+                        {line2 && (
+                            <Text size="xs" c="dimmed" lh={1.2} truncate>{line2}</Text>
+                        )}
                     </>
                 );
             }

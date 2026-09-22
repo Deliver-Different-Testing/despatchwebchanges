@@ -26,7 +26,6 @@ function renderRail(props: Partial<React.ComponentProps<typeof ViewsRail>> = {})
             <ViewsRail
                 views={views}
                 selectedIds={[11]}
-                isUsCustomer={false}
                 onToggle={onToggle}
                 onClearAll={onClearAll}
                 {...props}
@@ -58,32 +57,20 @@ describe('ViewsRail', () => {
         expect(pill.style.getPropertyValue('--ab-height')).toBe(`${ACTION_BUTTON_HEIGHT}px`);
 
         // Clear is an action, not a toggle — it must not announce a pressed state.
-        expect(screen.getByRole('button', {name: 'Clear'})).not.toHaveAttribute('aria-pressed');
+        expect(screen.getByRole('button', {name: 'Clear selected views'})).not.toHaveAttribute('aria-pressed');
     });
 
-    it('offers Clear only while something is selected, and clears on click', async () => {
+    it('clears the selection on click', async () => {
         const {onClearAll} = renderRail();
 
-        await userEvent.click(screen.getByRole('button', {name: 'Clear'}));
+        await userEvent.click(screen.getByRole('button', {name: 'Clear selected views'}));
         expect(onClearAll).toHaveBeenCalledTimes(1);
     });
 
-    it('replaces Clear with a tenant-specific hint when nothing is selected', () => {
-        const {rerender} = render(
-            <MantineTestProvider>
-                <ViewsRail views={views} selectedIds={[]} isUsCustomer={false} onToggle={jest.fn()} onClearAll={jest.fn()}/>
-            </MantineTestProvider>,
-        );
+    it('disables Clear when nothing is selected', () => {
+        renderRail({selectedIds: []});
 
-        expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
-        expect(screen.getByText('Select a view to load jobs.')).toBeInTheDocument();
-
-        rerender(
-            <MantineTestProvider>
-                <ViewsRail views={views} selectedIds={[]} isUsCustomer onToggle={jest.fn()} onClearAll={jest.fn()}/>
-            </MantineTestProvider>,
-        );
-        expect(screen.getByText('No view selected — showing all jobs.')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Clear selected views'})).toBeDisabled();
     });
 
     it('shows placeholder pills while the views load', () => {
@@ -96,7 +83,7 @@ describe('ViewsRail', () => {
     it('renders nothing when the tenant has no views configured', () => {
         render(
             <MantineTestProvider>
-                <ViewsRail views={[]} selectedIds={[]} isUsCustomer={false} onToggle={jest.fn()} onClearAll={jest.fn()}/>
+                <ViewsRail views={[]} selectedIds={[]} onToggle={jest.fn()} onClearAll={jest.fn()}/>
             </MantineTestProvider>,
         );
 

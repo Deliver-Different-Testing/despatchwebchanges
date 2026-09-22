@@ -11,7 +11,7 @@ import {ActionIcon, Badge, Box, Divider, Group, Text, Tooltip, useMantineTheme} 
 import {Menu as MenuIcon, ChevronRight} from 'lucide-react';
 import dayjs from 'dayjs';
 import {Icon} from '../icon/Icon';
-import {toolbarIconButtonStyle} from './ToolbarActions';
+import {toolbarIconButtonClassName, toolbarIconButtonStyle} from './ToolbarActions';
 import {APP_BAR_HEIGHT_PX} from './appBarMetrics';
 
 /** Height of the DFRNT wordmark inside the bar. */
@@ -196,6 +196,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                         aria-label="Open navigation menu"
                         onMouseEnter={onMenuHover}
                         onClick={onMenuClick}
+                        className={toolbarIconButtonClassName}
                         style={toolbarIconButtonStyle}
                     >
                         <Icon lucide={MenuIcon} size={18} />

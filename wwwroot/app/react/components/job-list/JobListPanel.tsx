@@ -25,10 +25,10 @@ import {JobListColumnEditor} from './JobListColumnEditor';
 import {availableColumns, DEFAULT_COLUMN_WIDTHS, orderColumns} from './jobListColumns';
 import {HeaderSlotPortal} from '../common/header-slot/HeaderSlotPortal';
 import {JobListTable} from './JobListTable';
-import {formatAddressWithFields, getDeliveryAddressUs, getPickupAddressUs} from './jobAddressFormat';
+import {flattenLineFormat, formatAddressWithFields, getDeliveryAddressUs, getPickupAddressUs} from './jobAddressFormat';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
-import type {AddressFieldKey, AddressViewModel} from '../../interfaces/address';
+import type {AddressViewModel} from '../../interfaces/address';
 import {
     addRestoreEvent,
     allocateJobs,
@@ -50,7 +50,7 @@ import {
     persistJobListColumnsToServer,
     toStatusFilter,
 } from './jobListPreferences';
-import {loadEffectiveAddressFieldOrder} from './addressFormatPreferences';
+import {loadEffectiveAddressFormat, type EffectiveAddressFormat} from './addressFormatPreferences';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
 import {DispatchDialog, type DispatchConfirmation} from '../dialogs/dispatch-dialog';
@@ -127,7 +127,7 @@ function getSortValue(
     job: DispatchJob,
     column: string,
     isUsCustomer?: boolean,
-    addressFieldOrder?: AddressFieldKey[],
+    addressFormat?: EffectiveAddressFormat,
 ): string | number | null {
     switch (column) {
         case 'date':
@@ -151,12 +151,12 @@ function getSortValue(
         case 'refA':
             return job.refA || '';
         case 'pickup':
-            return addressFieldOrder?.length
-                ? formatAddressWithFields(job.pickupAddress, addressFieldOrder, job.from)
+            return addressFormat?.pickup
+                ? formatAddressWithFields(job.pickupAddress, flattenLineFormat(addressFormat.pickup), job.from)
                 : getPickupAddressUs(job);
         case 'delivery':
-            return addressFieldOrder?.length
-                ? formatAddressWithFields(job.deliveryAddress, addressFieldOrder, job.toAddress)
+            return addressFormat?.delivery
+                ? formatAddressWithFields(job.deliveryAddress, flattenLineFormat(addressFormat.delivery), job.toAddress)
                 : getDeliveryAddressUs(job);
         case 'courier':
             return isUsCustomer
@@ -179,7 +179,7 @@ function sortJobs(
     jobs: DispatchJob[],
     sortState: JobListSort,
     isUsCustomer?: boolean,
-    addressFieldOrder?: AddressFieldKey[],
+    addressFormat?: EffectiveAddressFormat,
 ): DispatchJob[] {
     const sorted = [...jobs];
 
@@ -203,7 +203,7 @@ function sortJobs(
     const col = sortState.column!;
     const sortCache = new Map<number, string | number | null>();
     for (const job of sorted) {
-        sortCache.set(job.id, getSortValue(job, col, isUsCustomer, addressFieldOrder));
+        sortCache.set(job.id, getSortValue(job, col, isUsCustomer, addressFormat));
     }
 
     return sorted.sort((a, b) => {
@@ -357,14 +357,14 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [storagePrefix]);
 
-    // Effective address field order: user's own override, else the tenant
-    // default — undefined (unresolved yet, or neither configured) keeps the
-    // legacy hardcoded NZ/US format in JobListTable.
-    const [addressFieldOrder, setAddressFieldOrder] = useState<AddressFieldKey[] | undefined>(undefined);
+    // Effective address format: user's own override, else the tenant default,
+    // resolved independently per side — a side left undefined (unresolved yet,
+    // or neither configured) keeps the legacy hardcoded NZ/US format in JobListTable.
+    const [addressFormat, setAddressFormat] = useState<EffectiveAddressFormat | undefined>(undefined);
     useEffect(() => {
         let cancelled = false;
-        loadEffectiveAddressFieldOrder().then((fields) => {
-            if (!cancelled) setAddressFieldOrder(fields);
+        loadEffectiveAddressFormat().then((format) => {
+            if (!cancelled) setAddressFormat(format);
         }).catch((error) => console.error('Failed to load address format preference:', error));
         return () => {
             cancelled = true;
@@ -484,10 +484,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
 
         // Sort
-        filtered = sortJobs(filtered, sortState, isUsCustomer, addressFieldOrder);
+        filtered = sortJobs(filtered, sortState, isUsCustomer, addressFormat);
 
         return filtered;
-    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, addressFieldOrder, fetchConfig]);
+    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, addressFormat, fetchConfig]);
 
     // ── Computed: stats header ───────────────────────────────────────
     // The header describes the whole list, so the server counts it — before any category filter and
@@ -968,7 +968,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onColumnWidthsChange={handleColumnWidthsChange}
                 columns={tableColumns}
                 isUsCustomer={isUsCustomer}
-                addressFieldOrder={addressFieldOrder}
+                addressFormat={addressFormat}
                 appPage={appPage}
                 isJobSearchPage={isJobSearchPage}
                 loggedInCouriersOnly={loggedInCouriersOnlyEffective}
