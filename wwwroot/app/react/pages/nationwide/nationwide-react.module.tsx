@@ -19,6 +19,7 @@ import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model
 import type {ImportLayoutsResult} from '../../components/common/box-shell/layoutPersistence';
 import {NationwidePage} from './NationwidePage';
 import type {NationwideLayoutBridge, NationwidePageProps} from './NationwidePageProps';
+import type {StoredDateFilter} from '../../utils/dateFilterStorage';
 import {
     promptDeleteLayout as promptDeleteLayoutOnBridge,
     promptRenameLayout as promptRenameLayoutOnBridge,
@@ -116,6 +117,10 @@ export function updateRefreshIntervalMs(ms: number | false): void {
     layoutBridge?.updateRefreshIntervalMs(ms);
 }
 
+export function updateFilters(filter: StoredDateFilter): void {
+    layoutBridge?.updateFilters(filter);
+}
+
 export function setCurrentLayoutName(name: string): void {
     setCurrentLayoutNameOnBridge(layoutBridge, name);
 }
@@ -151,6 +156,7 @@ declare global {
             registerViewsListener: typeof registerViewsListener;
             setViewSelection: typeof setViewSelection;
             updateRefreshIntervalMs: typeof updateRefreshIntervalMs;
+            updateFilters: typeof updateFilters;
         };
     }
 }
@@ -168,6 +174,7 @@ window.ReactNationwide = {
     registerViewsListener,
     setViewSelection,
     updateRefreshIntervalMs,
+    updateFilters,
 };
 
 // Registered so $ocLazyLoad can dedupe and verify the load.

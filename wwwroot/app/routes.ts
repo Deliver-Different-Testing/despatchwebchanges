@@ -36,6 +36,10 @@ import {
     DRIVER_LOCATION_REFRESH_KEY as DISPATCH_DRIVER_LOC_REFRESH_KEY,
     TASK_REFRESH_KEY as DISPATCH_TASK_REFRESH_KEY,
 } from './react/pages/dispatch/lib/dispatchFilters';
+import {
+    loadNationwideDateFilter,
+    DATE_FILTER_KEY as NATIONWIDE_DATE_FILTER_KEY,
+} from './react/pages/nationwide/lib/dateFilter';
 import type {DfrntPageViewModel} from './interfaces/dfrnt-page-view-model.interface';
 import type IDateFilterData from './interfaces/date-filter-data.interface';
 import type {IBox, ILayout} from './interfaces/layout.interfaces';
@@ -577,6 +581,8 @@ class RouterConfig {
                 <div style="height: 100%; position: relative;">
                     <react-app-shell
                             section="Operations" title="Nationwide" beta="true"
+                            messages-count="ctrl.unreadMessageCount"
+                            on-messages-click="ctrl.openMessagingDialog($event)"
                             views="ctrl.views" views-loading="!ctrl.viewsInitialized"
                             on-toggle-view="ctrl.toggleView(view)" on-clear-all-views="ctrl.clearAllViews()"
                             layouts="ctrl.layouts" current-layout-name="ctrl.currentLayoutName"
@@ -584,7 +590,10 @@ class RouterConfig {
                             on-delete-layout="ctrl.deleteLayout(index)" on-rename-layout="ctrl.renameLayout(index)"
                             on-import-layouts="ctrl.importLayouts()"
                             on-settings-click="ctrl.openSettingsDialog($event)"
-                            on-customize-panels="ctrl.openCustomizePanelsDialog()" on-reset-layout="ctrl.resetLayout()">
+                            on-customize-panels="ctrl.openCustomizePanelsDialog()" on-reset-layout="ctrl.resetLayout()"
+                            date-filter-data="ctrl.dateFilterData"
+                            app-page="nationwide"
+                            on-date-filter-refresh="ctrl.refreshDataTimeSpan(dateFilterData)">
                     </react-app-shell>
                     <div id="react-nationwide-v2" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
                 </div>
@@ -622,7 +631,7 @@ class RouterConfig {
                     });
                 }]
             },
-            controller: ['$scope', '$stateParams', '$state', 'toastrService', 'APP_CONFIG',
+            controller: ['$scope', '$stateParams', '$state', 'toastrService', 'APP_CONFIG', '$http', '$interval',
                 function (
                     $scope: angular.IScope,
                     $stateParams: IDfrntStateParams,
@@ -633,7 +642,9 @@ class RouterConfig {
                         showErrorToast: (m: string) => void;
                         showInfoToast: (m: string) => void;
                     },
-                    appConfig: { US_Customer: boolean }
+                    appConfig: { US_Customer: boolean },
+                    $http: angular.IHttpService,
+                    $interval: angular.IIntervalService
                 ) {
                     const jobId = $stateParams.jobId ? parseInt($stateParams.jobId, 10) : undefined;
 
@@ -645,11 +656,51 @@ class RouterConfig {
                     const defaultLayout = createDefaultNationwideLayout();
                     const refreshIntervalKey = `refreshInterval-${AppPage.Domestic}-${window.ContactID}`;
 
+                    // ── Date filter — scopes the three job lists, pushed into
+                    // React via window.ReactNationwide.updateFilters. Persisted
+                    // under the same key NationwidePage.tsx reads on mount. ──
+                    const initialDate = loadNationwideDateFilter();
+                    const pushFilters = () => {
+                        window.ReactNationwide?.updateFilters({
+                            startDate: ctrl.dateFilterData.startDate,
+                            endDate: ctrl.dateFilterData.endDate,
+                            useTime: ctrl.dateFilterData.useTime ?? false,
+                        });
+                    };
+
                     const ctrl = {
                         layouts: [] as ILayout[],
                         currentLayoutName: undefined as string | undefined,
                         views: [] as DfrntPageViewModel[],
                         viewsInitialized: false,
+                        unreadMessageCount: 0,
+                        dateFilterData: {
+                            startDate: initialDate.startDate,
+                            endDate: initialDate.endDate,
+                            useTime: initialDate.useTime,
+                        } as IDateFilterData,
+
+                        refreshDataTimeSpan: (dateFilterData: IDateFilterData) => {
+                            ctrl.dateFilterData = dateFilterData;
+                            try {
+                                localStorage.setItem(NATIONWIDE_DATE_FILTER_KEY, JSON.stringify(dateFilterData));
+                            } catch { /* ignore */ }
+                            pushFilters();
+                        },
+
+                        openMessagingDialog: ($event: MouseEvent) => {
+                            const w = window as unknown as {
+                                ReactMessagingDialog?: { open: (opts?: unknown) => Promise<void> };
+                            };
+                            void $event;
+                            if (w.ReactMessagingDialog) {
+                                w.ReactMessagingDialog.open().catch(err =>
+                                    console.error('[nationwide] messaging dialog error', err)
+                                );
+                            } else {
+                                toastrService.showErrorToast('Messaging dialog is not loaded.');
+                            }
+                        },
 
                         toggleView: (_view: DfrntPageViewModel) => {
                             window.ReactNationwide?.setViewSelection(
@@ -792,8 +843,20 @@ class RouterConfig {
                         ctrl.viewsInitialized = true;
                         $scope.$applyAsync();
                     });
+                    pushFilters();
+
+                    // Unread-messages badge — poll every 60s (mirrors dispatch's
+                    // getUnreadMessageCount interval).
+                    const pollUnreadCount = () => {
+                        $http.get<number>('messages/GetUnreadMessageCount').then(res => {
+                            ctrl.unreadMessageCount = res.data ?? 0;
+                        }).catch(err => console.error('[nationwide] unread count error', err));
+                    };
+                    pollUnreadCount();
+                    const unreadPoll = $interval(pollUnreadCount, 60000);
 
                     $scope.$on('$destroy', () => {
+                        $interval.cancel(unreadPoll);
                         unregisterViews();
                         window.ReactNationwide?.unmount();
                     });

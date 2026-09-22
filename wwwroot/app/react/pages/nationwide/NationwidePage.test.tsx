@@ -1,4 +1,5 @@
 import React from 'react';
+import dayjs from 'dayjs';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
@@ -74,9 +75,14 @@ jest.mock('../../components/dialogs/edit-address-dialog/edit-address-dialog-reac
     openEditAddressDialog: jest.fn().mockResolvedValue(null),
 }));
 
-const dispatchDialogProps: {open?: boolean; initialType?: string; existingDestination?: {id: number; text: string}} = {};
+const dispatchDialogProps: {
+    open?: boolean;
+    initialType?: string;
+    existingDestination?: {id: number; text: string};
+    onDispatchCourier?: (confirmation: {type: string; destination: {id: number; text: string}}) => Promise<void>;
+} = {};
 jest.mock('../../components/dialogs/dispatch-dialog', () => ({
-    DispatchDialog: (props: {open?: boolean; initialType?: string; existingDestination?: {id: number; text: string}}) => {
+    DispatchDialog: (props: typeof dispatchDialogProps) => {
         Object.assign(dispatchDialogProps, props);
         return <div data-testid="mock-dispatch-dialog"/>;
     },
@@ -85,6 +91,11 @@ jest.mock('../../components/dialogs/dispatch-dialog', () => ({
 jest.mock('../../services/dispatchExecutorApi', () => ({
     ...jest.requireActual('../../services/dispatchExecutorApi'),
     getDispatchJobDetail: jest.fn(() => new Promise(() => {})),
+}));
+
+const executeDispatchConfirmationMock = jest.fn().mockResolvedValue({message: 'ok', severity: 'success'});
+jest.mock('../../components/dialogs/dispatch-dialog/executeDispatch', () => ({
+    executeDispatchConfirmation: (...args: unknown[]) => executeDispatchConfirmationMock(...args),
 }));
 
 const serverViews = [
@@ -125,6 +136,7 @@ describe('NationwidePage', () => {
         (window as unknown as {ContactID: number}).ContactID = 0;
         for (const key of Object.keys(listProps)) delete listProps[key];
         for (const key of Object.keys(listParamPushes)) delete listParamPushes[key];
+        executeDispatchConfirmationMock.mockClear();
     });
 
     it('renders all three job lists, each with its own storage prefix', () => {
@@ -277,6 +289,57 @@ describe('NationwidePage', () => {
             expect(dispatchDialogProps.initialType).toBe('Agent');
             expect(dispatchDialogProps.existingDestination).toEqual({id: 7, text: 'Acme Air'});
         });
+
+        it('blocks courier dispatch for US customers, matching V1\'s restriction', async () => {
+            // V1's handleJobDispatch() refused courier dispatch for isUsCustomer
+            // with a warning toast (nationwide.controller.ts). The shared
+            // DispatchDialog has no such gate, so this page must apply it itself.
+            const showToast = jest.fn();
+            renderPage({isUsCustomer: true, showToast});
+            await selectAJob();
+
+            const onAddAgent = widgetProps.onAddAgentToJob as (a: unknown) => Promise<void>;
+            await act(async () => {
+                await onAddAgent({agentId: 7, agentName: 'Acme Air'});
+            });
+
+            act(() => {
+                void dispatchDialogProps.onDispatchCourier!({
+                    type: 'Courier',
+                    destination: {id: 3, text: 'Fast Courier'},
+                });
+            });
+
+            await waitFor(() => expect(showToast).toHaveBeenCalledWith(
+                'Courier dispatch is not supported for US customers',
+                'warning',
+            ));
+            expect(executeDispatchConfirmationMock).not.toHaveBeenCalled();
+        });
+
+        it('still allows courier dispatch for non-US customers', async () => {
+            const showToast = jest.fn();
+            renderPage({isUsCustomer: false, showToast});
+            await selectAJob();
+
+            const onAddAgent = widgetProps.onAddAgentToJob as (a: unknown) => Promise<void>;
+            await act(async () => {
+                await onAddAgent({agentId: 7, agentName: 'Acme Air'});
+            });
+
+            act(() => {
+                void dispatchDialogProps.onDispatchCourier!({
+                    type: 'Courier',
+                    destination: {id: 3, text: 'Fast Courier'},
+                });
+            });
+
+            await waitFor(() => expect(executeDispatchConfirmationMock).toHaveBeenCalled());
+            expect(executeDispatchConfirmationMock).toHaveBeenCalledWith(
+                expect.objectContaining({id: 5, jobNo: 'JOB-5'}),
+                expect.objectContaining({type: 'Courier'}),
+            );
+        });
     });
 
     describe('job actions menu', () => {
@@ -380,6 +443,7 @@ describe('NationwidePage', () => {
                     registerViewsListener: expect.any(Function),
                     setViewSelection: expect.any(Function),
                     updateRefreshIntervalMs: expect.any(Function),
+                    updateFilters: expect.any(Function),
                 }),
             );
         });
@@ -420,6 +484,24 @@ describe('NationwidePage', () => {
 
             for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
                 expect(listProps[prefix].fetchConfig?.refetchInterval).toBe(30_000);
+            }
+        });
+
+        it('applies a date filter pushed from the host toolbar to every list', () => {
+            // V1 wired date-filter-data/on-date-filter-refresh into the toolbar
+            // (nationwide.template.html); nwV2 must do the same via the bridge.
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+            const startDate = dayjs('2026-03-01');
+            const endDate = dayjs('2026-03-02');
+            act(() => { bridge.updateFilters({startDate, endDate, useTime: true}); });
+
+            for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
+                expect(listProps[prefix].fetchConfig?.initialParams).toEqual(expect.objectContaining({
+                    startDate, endDate, useTime: true,
+                }));
             }
         });
     });

@@ -63,7 +63,8 @@ import {
 } from './lib/flightFormatting';
 import {useFlightAgentWidget} from './hooks/useFlightAgentWidget';
 import {buildRefreshIntervalOptions, resolveSavedInterval} from './lib/refreshInterval';
-import {loadDateFilterFrom} from '../../utils/dateFilterStorage';
+import type {StoredDateFilter} from '../../utils/dateFilterStorage';
+import {loadNationwideDateFilter} from './lib/dateFilter';
 import {
     loadSelectedViewIdsFrom,
     hasStoredViewSelectionAt,
@@ -176,10 +177,10 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
 
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
 
-    const dateFilter = useMemo(
-        () => loadDateFilterFrom(`dateFilter-${LegacyAppPage.Domestic}-${ContactID}`, {timeZone: ianaTimeZone}),
-        [ianaTimeZone],
+    const [dateFilter, setDateFilter] = useState<StoredDateFilter>(
+        () => loadNationwideDateFilter(ianaTimeZone),
     );
+    const applyDateFilter = useCallback((filter: StoredDateFilter) => setDateFilter(filter), []);
 
     const [refetchIntervalMs, setRefetchIntervalMs] = useState<number | false>(() => loadSavedRefreshIntervalMs());
     const applyRefreshIntervalMs = useCallback((ms: number | false) => setRefetchIntervalMs(ms), []);
@@ -242,6 +243,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             registerViewsListener,
             setViewSelection: applyViewSelection,
             updateRefreshIntervalMs: applyRefreshIntervalMs,
+            updateFilters: applyDateFilter,
         });
     }, [
         onLayoutBridgeReady,
@@ -255,6 +257,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         registerViewsListener,
         applyViewSelection,
         applyRefreshIntervalMs,
+        applyDateFilter,
     ]);
 
     // Resolve the starting selection once the server list lands: restore what
@@ -453,6 +456,14 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     const handleDispatchCourier = useCallback(async (confirmation: DispatchConfirmation) => {
         if (!flightAgentJob) return;
 
+        // V1's handleJobDispatch() refused courier dispatch for isUsCustomer;
+        // the shared DispatchDialog has no such gate, so this page applies it.
+        if (isUsCustomer && confirmation.type === 'Courier') {
+            showToast('Courier dispatch is not supported for US customers', 'warning');
+            closeDispatchDialog();
+            return;
+        }
+
         const {message, severity} = await executeDispatchConfirmation(
             {
                 id: flightAgentJob.id,
@@ -466,7 +477,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         closeDispatchDialog();
         refreshLists();
         await selectJobById(flightAgentJob.id);
-    }, [flightAgentJob, showToast, closeDispatchDialog, refreshLists, selectJobById]);
+    }, [flightAgentJob, isUsCustomer, showToast, closeDispatchDialog, refreshLists, selectJobById]);
 
     const handleSendToPartner = useCallback(async (partner: ISuggestion, agreedRate: number) => {
         if (!flightAgentJob) return;
