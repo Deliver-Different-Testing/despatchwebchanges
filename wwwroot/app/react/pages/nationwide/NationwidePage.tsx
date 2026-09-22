@@ -612,7 +612,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         statusId: currentJob.statusId,
     }] : []), [currentJob]);
 
-    const renderBoxContent = useCallback((boxName: string) => {
+    const renderBoxContent = useCallback((boxName: string, headerSlot?: HTMLElement | null) => {
         switch (boxName) {
             case NationwideBoxes.NewJobs:
             case NationwideBoxes.PodJobs:
@@ -716,6 +716,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                         appPage={LegacyAppPage.Domestic}
                         showToast={showToast}
                         onSelectJob={(jobId) => void selectJobById(jobId)}
+                        headerSlot={headerSlot}
                     />
                 );
 
