@@ -181,6 +181,9 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             pageSize: 50,
         },
         refetchInterval: refetchIntervalMs,
+        // GetCurrentWorkList has no searchText/pagination support and always
+        // returns the courier's full list, so the panel filters locally.
+        clientSideSearch: true,
     }), [courierId, startDate, endDate, refetchIntervalMs]);
 
     const showDriverList = isUsCustomer && (mode === 'overview' || mode === 'active');

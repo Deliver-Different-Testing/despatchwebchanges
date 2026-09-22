@@ -478,8 +478,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             });
         }
 
-        // Search filter (skip when backend handles it via fetchConfig)
-        if (debouncedSearchQuery && !fetchConfig) {
+        // Search filter (skip when the backend handles it via fetchConfig — unless
+        // that fetch has no server-side search of its own, e.g. Current Work).
+        if (debouncedSearchQuery && (!fetchConfig || fetchConfig.clientSideSearch)) {
             filtered = filtered.filter((job) => matchesSearch(job, debouncedSearchQuery));
         }
 
@@ -597,7 +598,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const handleSearchChange = useCallback(
         (query: string) => {
             setSearchQuery(query.toLowerCase());
-            if (fetchConfig) {
+            if (fetchConfig && !fetchConfig.clientSideSearch) {
                 hookDataRef.current.updateParams({searchText: query || undefined});
             }
             if (onSearchChange) onSearchChange(query);

@@ -1307,6 +1307,38 @@ describe('JobListPanel', () => {
                 expect(within(statsArea).getByText('3')).toBeInTheDocument();
             });
         });
+
+        it('filters locally and does not refetch when fetchConfig.clientSideSearch is set', async () => {
+            jest.useFakeTimers();
+            try {
+                const jobs = [
+                    createMockDispatchJob({id: 1, jobNo: 'ALPHA-001'}),
+                    createMockDispatchJob({id: 2, jobNo: 'BETA-002'}),
+                ];
+                const fetchConfig = createMockFetchConfig({
+                    clientSideSearch: true,
+                    fetchFn: jest.fn().mockResolvedValue({jobs, totalCount: 2, hasMore: false} as JobSearchResult),
+                });
+
+                renderWithMantineProviders(<JobListPanel {...createDefaultProps({fetchConfig})} />);
+
+                expect(await screen.findByText('ALPHA-001')).toBeInTheDocument();
+                (fetchConfig.fetchFn as jest.Mock).mockClear();
+
+                const searchInput = screen.getByPlaceholderText('Search jobs...');
+                await act(async () => { fireEvent.change(searchInput, {target: {value: 'ALPHA'}}); });
+                await act(async () => { await jest.advanceTimersByTimeAsync(300); });
+                await act(async () => { await jest.advanceTimersByTimeAsync(200); });
+
+                expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
+                expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
+
+                // A fully-loaded, non-paginated dataset must not be re-fetched per keystroke.
+                expect(fetchConfig.fetchFn).not.toHaveBeenCalled();
+            } finally {
+                jest.useRealTimers();
+            }
+        });
     });
 
     describe('Mark as Read on Click', () => {
