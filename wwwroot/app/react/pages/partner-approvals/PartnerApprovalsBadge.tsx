@@ -88,7 +88,7 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
                         size={18}
                         offset={2}
                     >
-                        <Icon lucide={Handshake} size={toolbarVariant ? 22 : 18} />
+                        <Icon lucide={Handshake} size={18} />
                     </Indicator>
                 </ActionIcon>
             </Tooltip>
