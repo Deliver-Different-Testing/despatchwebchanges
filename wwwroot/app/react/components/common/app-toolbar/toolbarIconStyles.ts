@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import classes from './toolbarIconStyles.module.css';
+import {growOnHoverClassName} from '../growOnHoverIcon';
 
 /**
  * Applied to every toolbar icon button: `variant="subtle" size="lg"`, round via the
@@ -19,9 +19,9 @@ export const toolbarIconButtonStyle = {
 /**
  * Pair with `style={toolbarIconButtonStyle}` on every toolbar `ActionIcon` — grows
  * the button on hover/focus instead of a background wash, so it reads the same
- * on both tenants' bar fills. See `toolbarIconStyles.module.css`.
+ * on both tenants' bar fills. See `growOnHoverIcon.module.css`.
  */
-export const toolbarIconButtonClassName = classes.iconButton;
+export const toolbarIconButtonClassName = growOnHoverClassName;
 
 /**
  * Opts a button out of `ActionIcon`'s `overflow: hidden` root.

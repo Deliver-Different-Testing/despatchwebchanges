@@ -8,7 +8,7 @@
 import React, {useEffect, useRef} from 'react';
 import {ActionIcon, Box, Tooltip} from '@mantine/core';
 import {GripVertical, RefreshCw} from 'lucide-react';
-import {PANEL_CONTROL_GLYPH_SIZE, PANEL_CONTROL_HEIGHT, panelIconButtonStyle} from '../../../components/common/panel-controls';
+import {PANEL_CONTROL_GLYPH_SIZE, PANEL_CONTROL_HEIGHT, panelIconButtonClassName} from '../../../components/common/panel-controls';
 import {Icon} from '../../../components/common/icon/Icon';
 import {PanelHeader} from '../../../components/common/panel-header';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
@@ -50,8 +50,8 @@ export interface BoxHeaderProps {
 
 /*
  * Both buttons share the panel bar with the other Mantine controls, so they take
- * the bar's own metrics and hover wash from `panel-controls` rather than choosing
- * their own. Hover is pseudo-state, so it rides `--ai-hover` (see
+ * the bar's own metrics and hover behaviour from `panel-controls` rather than
+ * choosing their own — grows on hover instead of a background wash (see
  * `panelControlTokens`); the box is a plain size.
  */
 const actionButtonProps = {
@@ -60,7 +60,7 @@ const actionButtonProps = {
     radius: 'xl' as const,
     w: PANEL_CONTROL_HEIGHT,
     h: PANEL_CONTROL_HEIGHT,
-    style: panelIconButtonStyle,
+    className: panelIconButtonClassName,
 };
 
 export const BoxHeader: React.FC<BoxHeaderProps> = ({
@@ -127,7 +127,7 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
                         aria-roledescription="sortable"
                         onKeyDown={handleReorderKeyDown}
                         opacity={0.85}
-                        style={{...panelIconButtonStyle, cursor: 'grab'}}
+                        style={{cursor: 'grab'}}
                     >
                         <Icon lucide={GripVertical} size={PANEL_CONTROL_GLYPH_SIZE}/>
                     </ActionIcon>
