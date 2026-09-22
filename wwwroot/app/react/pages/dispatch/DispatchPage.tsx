@@ -774,6 +774,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     onColumnSizes={boxLayout.setColumnSizes}
                     onBoxHeights={boxLayout.setBoxHeights}
                     onMoveBox={boxLayout.moveBox}
+                    onHideBox={(name) => boxLayout.setBoxVisibility(name, false)}
                     isDefaultLayout={boxLayout.isDefaultLayout}
                     columnEditMode={columnEditMode}
                     onExitColumnEditMode={handleExitColumnEditMode}

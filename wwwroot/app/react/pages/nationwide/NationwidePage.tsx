@@ -63,7 +63,8 @@ import {
 } from './lib/flightFormatting';
 import {useFlightAgentWidget} from './hooks/useFlightAgentWidget';
 import {buildRefreshIntervalOptions, resolveSavedInterval} from './lib/refreshInterval';
-import {loadDateFilterFrom} from '../../utils/dateFilterStorage';
+import type {StoredDateFilter} from '../../utils/dateFilterStorage';
+import {loadNationwideDateFilter} from './lib/dateFilter';
 import {
     loadSelectedViewIdsFrom,
     hasStoredViewSelectionAt,
@@ -176,10 +177,10 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
 
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
 
-    const dateFilter = useMemo(
-        () => loadDateFilterFrom(`dateFilter-${LegacyAppPage.Domestic}-${ContactID}`, {timeZone: ianaTimeZone}),
-        [ianaTimeZone],
+    const [dateFilter, setDateFilter] = useState<StoredDateFilter>(
+        () => loadNationwideDateFilter(ianaTimeZone),
     );
+    const applyDateFilter = useCallback((filter: StoredDateFilter) => setDateFilter(filter), []);
 
     const [refetchIntervalMs, setRefetchIntervalMs] = useState<number | false>(() => loadSavedRefreshIntervalMs());
     const applyRefreshIntervalMs = useCallback((ms: number | false) => setRefetchIntervalMs(ms), []);
@@ -242,6 +243,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             registerViewsListener,
             setViewSelection: applyViewSelection,
             updateRefreshIntervalMs: applyRefreshIntervalMs,
+            updateFilters: applyDateFilter,
         });
     }, [
         onLayoutBridgeReady,
@@ -255,6 +257,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         registerViewsListener,
         applyViewSelection,
         applyRefreshIntervalMs,
+        applyDateFilter,
     ]);
 
     // Resolve the starting selection once the server list lands: restore what
@@ -380,13 +383,17 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                 fromAirportId: widget.selectedOutboundAirport?.id,
                 toAirportId: widget.selectedInboundAirport?.id,
                 flightNumber: flight.flightNumber,
-                departureDate: formatDateForApiWithTzs(flight.departureTime),
-                flightSegments: (flight.flightSegments ?? []) as never,
+                departureDate: formatDateForApiWithTzs(flight.departureTime, flight.departureTimeZone),
+                flightSegments: (flight.flightSegments ?? []).map(segment => ({
+                    ...segment,
+                    departureTime: formatDateForApiWithTzs(segment.departureTime, segment.departureAirportTimeZone),
+                    arrivalTime: formatDateForApiWithTzs(segment.arrivalTime, segment.arrivalAirportTimeZone),
+                })),
                 packageReadyTime: result.packageReadyTime
-                    ? formatDateForApiWithTzs(result.packageReadyTime)
+                    ? formatDateForApiWithTzs(result.packageReadyTime, flight.arrivalTimeZone)
                     : undefined,
                 packageDeliverByTime: result.packageDeliverByTime
-                    ? formatDateForApiWithTzs(result.packageDeliverByTime)
+                    ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone)
                     : undefined,
                 packageDeliveryNotes: result.packageDeliveryNotes,
             });
@@ -402,11 +409,16 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
 
             refreshLists();
             showToast('Flight assigned to job', 'success');
+            // V1 refetched and re-selected the job so the widget and job-detail
+            // panel immediately reflect the new assignedFlight, matching the
+            // other two mutation handlers in this file.
+            await selectJobById(flightAgentJob.id);
         } catch (error) {
             console.error('Error assigning flight:', error);
             showToast('Could not assign the flight. Please try again.', 'error');
         }
-    }, [flightAgentJob, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast, refreshLists]);
+    }, [flightAgentJob, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast, refreshLists,
+        selectJobById]);
 
     const handleAddAgentToJob = useCallback(async (agent: Agent) => {
         if (!flightAgentJob) return;
@@ -453,6 +465,14 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     const handleDispatchCourier = useCallback(async (confirmation: DispatchConfirmation) => {
         if (!flightAgentJob) return;
 
+        // V1's handleJobDispatch() refused courier dispatch for isUsCustomer;
+        // the shared DispatchDialog has no such gate, so this page applies it.
+        if (isUsCustomer && confirmation.type === 'Courier') {
+            showToast('Courier dispatch is not supported for US customers', 'warning');
+            closeDispatchDialog();
+            return;
+        }
+
         const {message, severity} = await executeDispatchConfirmation(
             {
                 id: flightAgentJob.id,
@@ -466,7 +486,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         closeDispatchDialog();
         refreshLists();
         await selectJobById(flightAgentJob.id);
-    }, [flightAgentJob, showToast, closeDispatchDialog, refreshLists, selectJobById]);
+    }, [flightAgentJob, isUsCustomer, showToast, closeDispatchDialog, refreshLists, selectJobById]);
 
     const handleSendToPartner = useCallback(async (partner: ISuggestion, agreedRate: number) => {
         if (!flightAgentJob) return;

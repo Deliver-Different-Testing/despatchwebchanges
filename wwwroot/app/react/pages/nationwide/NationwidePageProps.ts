@@ -1,6 +1,7 @@
 import type {ShowToastFn} from '../../services/toastService';
 import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import type {ImportLayoutsResult} from '../../components/common/box-shell/layoutPersistence';
+import type {StoredDateFilter} from '../../utils/dateFilterStorage';
 
 export interface NationwideLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
@@ -25,6 +26,8 @@ export interface NationwideLayoutBridge {
     setViewSelection: (viewIds: number[]) => void;
     /** Push a new auto-refresh cadence (from the settings dialog) into the page; `false` = off. */
     updateRefreshIntervalMs: (ms: number | false) => void;
+    /** Push a new date-range filter (from the toolbar's date filter) into the page. */
+    updateFilters: (filter: StoredDateFilter) => void;
 }
 
 export interface NationwidePageProps {

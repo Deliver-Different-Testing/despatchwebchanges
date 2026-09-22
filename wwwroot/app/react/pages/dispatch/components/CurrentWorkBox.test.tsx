@@ -104,6 +104,11 @@ describe('CurrentWorkBox', () => {
             expect(jobListPanelProps.fetchConfig.initialParams.endDate).toBe(endDate);
         });
 
+        it('marks its fetchConfig for client-side search (GetCurrentWorkList has no searchText support)', () => {
+            renderBox({selectedJobCourierId: 42});
+            expect(jobListPanelProps.fetchConfig.clientSideSearch).toBe(true);
+        });
+
         it('shows the picked courier\'s job list after a courier search', async () => {
             renderBox();
             expect(screen.getByText(/select a courier to view/i)).toBeInTheDocument();
