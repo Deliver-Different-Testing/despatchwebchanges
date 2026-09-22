@@ -607,7 +607,6 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                             <ViewsRail
                                 views={pageViews ?? []}
                                 selectedIds={filters.despatchViewIds}
-                                isUsCustomer={isUsCustomer}
                                 loading={viewsLoading}
                                 onToggle={toggleView}
                                 onClearAll={clearViews}
