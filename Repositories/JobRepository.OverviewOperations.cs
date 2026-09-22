@@ -38,10 +38,19 @@ public partial class JobRepository
         // Apply status group - filter early
         query = statusGroup switch
         {
+            // A family counts as Active if the parent itself is Active, or any child leg
+            // still is — a child can remain active after its parent has completed (e.g. a
+            // follow-up leg), and grouping by parent must not make that leg disappear.
             JobStatusGroup.Active => query.Where(j =>
-                j.UcjbStatus.HasValue
-                && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
-                && !j.UcjbVoid
+                (j.UcjbStatus.HasValue
+                    && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
+                    && !j.UcjbVoid)
+                || j.InverseParent.Any(c =>
+                    c.UcjbId != j.UcjbId
+                    && !c.UcjbVoid
+                    && c.UcjbStatus.HasValue
+                    && JobStatusGroups.Active.Contains(c.UcjbStatus.Value)
+                )
             ),
 
             JobStatusGroup.Completed => query.Where(j =>

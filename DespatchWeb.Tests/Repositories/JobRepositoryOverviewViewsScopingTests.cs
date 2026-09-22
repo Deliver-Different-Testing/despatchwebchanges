@@ -179,6 +179,41 @@ public class JobRepositoryOverviewViewsScopingTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetJobsForOverviewPageAsync_ActiveChildOfCompletedParent_FamilyIsVisible()
+    {
+        // Arrange — a family's Active membership must consider every leg, not just the
+        // parent row. A child leg can still be active after its parent has completed
+        // (e.g. a follow-up leg added post-completion), and Job List/Open Jobs — which
+        // don't group by parent — show that leg regardless of the parent's own status.
+        // Deliveries groups by parent, so if it only checked the parent's status such a
+        // family would vanish from Active entirely: not a top-level row (fails the root
+        // test) and not reachable under any expand chevron (the parent row wouldn't be
+        // in the Active result to expand in the first place).
+        await using var context = _db.CreateContext();
+        context.TucJobs.AddRange(
+            new TucJob { UcjbId = 200, UcjbNumber = "JOB200", UcjbStatus = (int)JobStatus.Completed },
+            new TucJob { UcjbId = 201, UcjbNumber = "JOB200-1", ParentId = 200, UcjbStatus = (int)JobStatus.New }
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetJobsForOverviewPageAsync(
+            JobStatusGroup.Active,
+            new OverviewJobsRequest { DespatchViewIds = [] },
+            TestContext.Current.CancellationToken);
+
+        // Assert — the family surfaces under its parent row, with the active child
+        // reachable under the expand chevron.
+        var item = Assert.Single(result.Items);
+        Assert.Equal(200, item.JobId);
+
+        var child = Assert.Single(item.ChildJobs);
+        Assert.Equal(201, child.JobId);
+    }
+
+    [Fact]
     public async Task ResolveParentScopedJobs_MatchOnChildLeg_ReturnsParent()
     {
         // Arrange — a despatch view's WhereCondition is evaluated against the leg-level
