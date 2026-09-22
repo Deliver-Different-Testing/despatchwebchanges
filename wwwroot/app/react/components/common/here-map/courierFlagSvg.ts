@@ -14,6 +14,14 @@ import type {IAvailableCourierPosition} from '../../../../interfaces/courier.int
 
 export type CourierStatus = 'noJobs' | 'hasJobs' | 'overdue';
 
+/** What identifies a courier on the flag: their name, their code, or both. */
+export type MarkerLabelMode = 'name' | 'number' | 'both';
+
+export interface CourierFlagDisplaySettings {
+    markerLabel: MarkerLabelMode;
+    showJobCount: boolean;
+}
+
 export interface CourierFlagColors {
     bg: string;
     text: string;
@@ -53,11 +61,33 @@ export function lastDeliveryMinutes(lastDeliveryTime: string | null | undefined)
     return Math.max(0, Math.floor((Date.now() - completed) / 60_000));
 }
 
-export function getCourierFlagLines(courier: IAvailableCourierPosition): CourierFlagLines {
+/** The flag's identifying text for the given label mode, falling back to whichever of name/code is available. */
+function courierFlagLabel(courier: IAvailableCourierPosition, mode: MarkerLabelMode): string {
     const firstName = (courier.courierName || '').split(' ')[0];
-    const primary = courier.overDueJobs > 0
-        ? `${firstName} ${courier.totalJobs}/${courier.overDueJobs}`
-        : `${firstName} ${courier.totalJobs}`;
+    const code = courier.code || '';
+
+    switch (mode) {
+        case 'name':
+            return firstName || code;
+        case 'number':
+            return code || firstName;
+        case 'both':
+            return code && firstName ? `${code} · ${firstName}` : (code || firstName);
+    }
+}
+
+/** Matches the flag's original, pre-settings content: first name plus job count. */
+const DEFAULT_FLAG_DISPLAY_SETTINGS: CourierFlagDisplaySettings = {markerLabel: 'name', showJobCount: true};
+
+export function getCourierFlagLines(
+    courier: IAvailableCourierPosition,
+    settings: CourierFlagDisplaySettings = DEFAULT_FLAG_DISPLAY_SETTINGS,
+): CourierFlagLines {
+    const label = courierFlagLabel(courier, settings.markerLabel);
+    const jobCount = settings.showJobCount
+        ? (courier.overDueJobs > 0 ? `${courier.totalJobs}/${courier.overDueJobs}` : `${courier.totalJobs}`)
+        : null;
+    const primary = [label, jobCount].filter(Boolean).join(' ');
 
     const minutes = lastDeliveryMinutes(courier.lastDeliveryTime);
     if (minutes === null) {

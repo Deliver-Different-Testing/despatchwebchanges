@@ -14,4 +14,5 @@ export enum StaffPreferenceKey {
     JobListColumnsNwRepriceJobList = 'JobListColumnsNwRepriceJobList',
     DispatchAddressFormat = 'DispatchAddressFormat',
     DispatchCourierDisplayMode = 'DispatchCourierDisplayMode',
+    CourierMapDisplaySettings = 'CourierMapDisplaySettings',
 }

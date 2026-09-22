@@ -26,7 +26,7 @@ import {
     removeStaleMarkers,
     safeRemoveObject,
 } from '../../components/common/here-map/hereMapUtils';
-import type {CourierFlagLines} from '../../components/common/here-map/courierFlagSvg';
+import type {CourierFlagDisplaySettings, CourierFlagLines} from '../../components/common/here-map/courierFlagSvg';
 import {
     courierFlagAnchor,
     courierFlagCacheKey,
@@ -36,6 +36,9 @@ import {
     getCourierStatus,
 } from '../../components/common/here-map/courierFlagSvg';
 
+/** Matches today's existing flag content, used when no display settings are supplied. */
+const DEFAULT_DISPLAY_SETTINGS: CourierFlagDisplaySettings = {markerLabel: 'name', showJobCount: true};
+
 declare const H: any;
 
 export class CourierMarkerManager {
@@ -43,7 +46,8 @@ export class CourierMarkerManager {
     private readonly markerGroup: any;
     private courierMarkers: Map<number, CourierMarker> = new Map();
     private iconCache: Map<string, any> = new Map();
-    private readonly statusColors: Record<DriverStatus, MarkerColor>;
+    private statusColors: Record<DriverStatus, MarkerColor>;
+    private displaySettings: CourierFlagDisplaySettings;
     private tooltipElement: HTMLDivElement | null = null;
 
     private readonly handlePointerEnter: (evt: any) => void;
@@ -51,10 +55,12 @@ export class CourierMarkerManager {
 
     constructor(
         map: any,
-        statusColors: Record<DriverStatus, MarkerColor> = MARKER_COLORS
+        statusColors: Record<DriverStatus, MarkerColor> = MARKER_COLORS,
+        displaySettings: CourierFlagDisplaySettings = DEFAULT_DISPLAY_SETTINGS,
     ) {
         this.map = map;
         this.statusColors = statusColors;
+        this.displaySettings = displaySettings;
         this.markerGroup = new H.map.Group();
         this.map.addObject(this.markerGroup);
 
@@ -144,6 +150,28 @@ export class CourierMarkerManager {
     }
 
     /**
+     * Swaps the palette and flag content settings, then repaints every existing marker
+     * immediately — a settings change should be visible right away, not on the next poll.
+     */
+    updateSettings(
+        statusColors: Record<DriverStatus, MarkerColor>,
+        displaySettings: CourierFlagDisplaySettings,
+    ): void {
+        this.statusColors = statusColors;
+        this.displaySettings = displaySettings;
+        this.iconCache.clear();
+
+        this.courierMarkers.forEach((entry) => {
+            const courier = entry.marker.getData?.() as IAvailableCourierPosition | undefined;
+            if (!courier) return;
+
+            entry.marker.setIcon(this.getOrCreateIcon(courier));
+            entry.name = this.getFlagCacheKey(courier);
+            entry.status = getDriverStatus(courier);
+        });
+    }
+
+    /**
      * Center map on a specific courier
      */
     centerOnCourier(driver: IAvailableCourierPosition): void {
@@ -209,7 +237,7 @@ export class CourierMarkerManager {
     }
 
     private getFlagLines(courier: IAvailableCourierPosition): CourierFlagLines {
-        return getCourierFlagLines(courier);
+        return getCourierFlagLines(courier, this.displaySettings);
     }
 
     private getFlagCacheKey(courier: IAvailableCourierPosition): string {

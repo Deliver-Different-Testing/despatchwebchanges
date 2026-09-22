@@ -42,34 +42,65 @@ afterEach(() => {
     jest.useRealTimers();
 });
 
+const NAME_WITH_COUNT = {markerLabel: 'name' as const, showJobCount: true};
+const NUMBER_WITH_COUNT = {markerLabel: 'number' as const, showJobCount: true};
+const BOTH_WITH_COUNT = {markerLabel: 'both' as const, showJobCount: true};
+const NAME_NO_COUNT = {markerLabel: 'name' as const, showJobCount: false};
+
 describe('getCourierFlagLines', () => {
     it('builds the primary line from first name and job counts, appending overdue only when present', () => {
-        expect(getCourierFlagLines(courier()).primary).toBe('Dave 4');
-        expect(getCourierFlagLines(courier({overDueJobs: 1})).primary).toBe('Dave 4/1');
-        expect(getCourierFlagLines(courier({courierName: 'Cher'})).primary).toBe('Cher 4');
+        expect(getCourierFlagLines(courier(), NAME_WITH_COUNT).primary).toBe('Dave 4');
+        expect(getCourierFlagLines(courier({overDueJobs: 1}), NAME_WITH_COUNT).primary).toBe('Dave 4/1');
+        expect(getCourierFlagLines(courier({courierName: 'Cher'}), NAME_WITH_COUNT).primary).toBe('Cher 4');
     });
 
-    it('uses the first name, never the code', () => {
-        const lines = getCourierFlagLines(courier({courierName: 'Dave Smith', code: 'DT14'}));
+    it('uses the first name, never the code, when markerLabel is "name"', () => {
+        const lines = getCourierFlagLines(courier({courierName: 'Dave Smith', code: 'DT14'}), NAME_WITH_COUNT);
         expect(lines.primary).toContain('Dave');
         expect(lines.primary).not.toContain('DT14');
+    });
+
+    it('uses the courier code, never the name, when markerLabel is "number"', () => {
+        const lines = getCourierFlagLines(courier({courierName: 'Dave Smith', code: 'DT14'}), NUMBER_WITH_COUNT);
+        expect(lines.primary).toBe('DT14 4');
+        expect(lines.primary).not.toContain('Dave');
+    });
+
+    it('falls back to the first name when markerLabel is "number" but the code is blank', () => {
+        const lines = getCourierFlagLines(courier({courierName: 'Dave Smith', code: ''}), NUMBER_WITH_COUNT);
+        expect(lines.primary).toBe('Dave 4');
+    });
+
+    it('combines code and first name when markerLabel is "both"', () => {
+        const lines = getCourierFlagLines(courier({courierName: 'Dave Smith', code: 'DT14'}), BOTH_WITH_COUNT);
+        expect(lines.primary).toBe('DT14 · Dave 4');
+    });
+
+    it('falls back to whichever of code/name is available when markerLabel is "both"', () => {
+        expect(getCourierFlagLines(courier({code: ''}), BOTH_WITH_COUNT).primary).toBe('Dave 4');
+        expect(getCourierFlagLines(courier({courierName: '', code: 'DT14'}), BOTH_WITH_COUNT).primary).toBe('DT14 4');
+    });
+
+    it('omits the job count entirely when showJobCount is false, even when overdue', () => {
+        expect(getCourierFlagLines(courier(), NAME_NO_COUNT).primary).toBe('Dave');
+        expect(getCourierFlagLines(courier({overDueJobs: 1}), NAME_NO_COUNT).primary).toBe('Dave');
     });
 
     it('builds the secondary line from the last delivery city and elapsed minutes', () => {
         const lines = getCourierFlagLines(courier({
             lastDeliveryCity: 'Ponsonby',
             lastDeliveryTime: minutesAgo(12),
-        }));
+        }), NAME_WITH_COUNT);
         expect(lines.secondary).toBe('Ponsonby · 12m');
     });
 
     it('omits the secondary line entirely when there is no last delivery', () => {
-        expect(getCourierFlagLines(courier()).secondary).toBeNull();
-        expect(getCourierFlagLines(courier({lastDeliveryCity: 'Ponsonby'})).secondary).toBeNull();
+        expect(getCourierFlagLines(courier(), NAME_WITH_COUNT).secondary).toBeNull();
+        expect(getCourierFlagLines(courier({lastDeliveryCity: 'Ponsonby'}), NAME_WITH_COUNT).secondary).toBeNull();
     });
 
     it('shows the elapsed minutes alone when the city is missing', () => {
-        const lines = getCourierFlagLines(courier({lastDeliveryTime: minutesAgo(90)}));
+        const lines = getCourierFlagLines(courier({lastDeliveryTime: minutesAgo(90)}), NAME_WITH_COUNT);
         expect(lines.secondary).toBe('90m');
     });
 
@@ -77,7 +108,7 @@ describe('getCourierFlagLines', () => {
         const lines = getCourierFlagLines(courier({
             lastDeliveryCity: 'Ponsonby',
             lastDeliveryTime: minutesAgo(-5),
-        }));
+        }), NAME_WITH_COUNT);
         expect(lines.secondary).toBe('Ponsonby · 0m');
     });
 });
