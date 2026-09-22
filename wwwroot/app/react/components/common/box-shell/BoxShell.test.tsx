@@ -78,6 +78,21 @@ describe('BoxShell layout affordances', () => {
         expect(container.querySelectorAll('[data-panel-resize-handle]')).toHaveLength(0);
     });
 
+    it('offers a hide button alongside reorder in Edit Layout mode', () => {
+        const onHideBox = jest.fn();
+        renderShell({onMoveBox: jest.fn(), columnEditMode: true, onHideBox});
+
+        fireEvent.click(screen.getByRole('button', {name: /Hide/}));
+
+        expect(onHideBox).toHaveBeenCalledWith('jobList');
+    });
+
+    it('offers no hide button outside Edit Layout mode', () => {
+        renderShell({onMoveBox: jest.fn(), onHideBox: jest.fn()});
+
+        expect(screen.queryByRole('button', {name: /Hide/})).not.toBeInTheDocument();
+    });
+
     it('has no collapse control', () => {
         renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn(), columnEditMode: true});
 

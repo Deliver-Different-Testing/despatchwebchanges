@@ -33,6 +33,8 @@ export interface BoxShellProps {
         targetColumnId: string,
         targetIndex: number,
     ) => void;
+    /** Hide a panel from the current layout (edit mode only, alongside the drag handle). */
+    onHideBox?: (boxName: string) => void;
     /**
      * The Default layout is read-only: no resize gutters, no reorder, no column
      * stepper, and stored visibility is ignored (that record belongs to a user
@@ -128,6 +130,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
     onColumnSizes,
     onBoxHeights,
     onMoveBox,
+    onHideBox,
     isDefaultLayout = false,
     columnEditMode = false,
     onExitColumnEditMode,
@@ -372,6 +375,8 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                                             headerSlotRef={headerSlotRef}
                                                                             showRefresh={!!meta.showRefresh}
                                                                             showDragHandle={canReorder}
+                                                                            showHideButton={canReorder}
+                                                                            onHide={canReorder ? () => onHideBox?.(boxName) : undefined}
                                                                             onDragStart={canReorder
                                                                                 ? handleDragStart(column.id, originalIndex)
                                                                                 : undefined}

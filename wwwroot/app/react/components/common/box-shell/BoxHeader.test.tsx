@@ -51,3 +51,24 @@ describe('BoxHeader drag handle', () => {
         expect(onHandleFocused).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('BoxHeader hide button', () => {
+    it('does not render a hide button when showHideButton is false', () => {
+        renderHeader({showHideButton: false, onHide: jest.fn()});
+        expect(screen.queryByLabelText(/Hide Filters/)).not.toBeInTheDocument();
+    });
+
+    it('renders the hide button when enabled', () => {
+        renderHeader({showHideButton: true, onHide: jest.fn()});
+        expect(screen.getByLabelText(/Hide Filters/)).toBeInTheDocument();
+    });
+
+    it('calls onHide when clicked', () => {
+        const onHide = jest.fn();
+        renderHeader({showHideButton: true, onHide});
+
+        fireEvent.click(screen.getByLabelText(/Hide Filters/));
+
+        expect(onHide).toHaveBeenCalledTimes(1);
+    });
+});
