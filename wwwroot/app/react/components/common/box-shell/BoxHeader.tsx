@@ -22,7 +22,7 @@ export interface BoxHeaderProps {
     showRefresh?: boolean;
     /** Show a drag-handle affordance on the right (custom layouts only). */
     showDragHandle?: boolean;
-    /** Show a hide-panel affordance next to the drag handle (edit mode only). */
+    /** Show a hide-panel affordance next to the drag handle (custom layouts, when the user hasn't turned it off). */
     showHideButton?: boolean;
     /** Hide this panel from the current layout. */
     onHide?: () => void;

@@ -15,4 +15,5 @@ export enum StaffPreferenceKey {
     DispatchAddressFormat = 'DispatchAddressFormat',
     DispatchCourierDisplayMode = 'DispatchCourierDisplayMode',
     CourierMapDisplaySettings = 'CourierMapDisplaySettings',
+    ShowPanelHideButton = 'ShowPanelHideButton',
 }

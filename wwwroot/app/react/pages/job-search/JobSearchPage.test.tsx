@@ -69,6 +69,11 @@ jest.mock('../../services/courierApi', () => ({
     searchActiveCouriers: jest.fn(),
 }));
 
+jest.mock('../../services/preferencesApi', () => ({
+    getPreference: jest.fn().mockResolvedValue(null),
+    savePreference: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('../../components/common/task-history/TaskHistory', () => ({
     TaskHistory: () => <div data-testid="mock-task-history" />,
 }));

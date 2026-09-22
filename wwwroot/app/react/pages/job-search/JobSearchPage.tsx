@@ -39,6 +39,7 @@ import {JobSearchJobActionsMenu, type JobSearchJobActionId} from './components/J
 import {ScanList} from './components/ScanList';
 import {useSearchCriteria} from './hooks/useSearchCriteria';
 import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
+import {usePanelHideButtonSetting} from '../../components/common/box-shell/usePanelHideButtonSetting';
 import {useDeepLinkJob} from './hooks/useDeepLinkJob';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './lib/boxDefinitions';
 import {filterCouriersForNumericSearch, normalizeSearchDate} from './lib/searchCriteria';
@@ -96,6 +97,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
     // layout column stepper in the shell and each list's column editor.
     const [columnEditMode, setColumnEditMode] = useState(false);
+    const hideButtonEnabled = usePanelHideButtonSetting();
     const handleExitColumnEditMode = useCallback(() => {
         setColumnEditMode(false);
         onExitColumnEditMode?.();
@@ -762,6 +764,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     onBoxHeights={boxLayout.setBoxHeights}
                     onMoveBox={boxLayout.moveBox}
                     onHideBox={(name) => boxLayout.setBoxVisibility(name, false)}
+                    hideButtonEnabled={hideButtonEnabled}
                     isDefaultLayout={boxLayout.isDefaultLayout}
                     columnEditMode={columnEditMode}
                     onExitColumnEditMode={handleExitColumnEditMode}
