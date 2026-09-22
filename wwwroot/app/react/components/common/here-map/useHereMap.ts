@@ -81,6 +81,12 @@ export function useHereMap({
                 return false;
             }
 
+            // Strip HERE's native zoom/map-settings chrome; zoom and the layer
+            // picker are rendered as MUI controls (MapZoomViewControls) so the
+            // Overview map matches the rest of the app — same as the dispatch/courier maps.
+            newMapInstance.ui?.removeControl('zoom');
+            newMapInstance.ui?.removeControl('mapsettings');
+
             setPlatform(newPlatform);
             setMapInstance(newMapInstance);
             setIsInitialized(true);
