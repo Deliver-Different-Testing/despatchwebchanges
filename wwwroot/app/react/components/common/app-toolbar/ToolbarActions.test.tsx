@@ -436,7 +436,7 @@ describe('LayoutsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
         const customize = (await screen.findByText('Show/Hide Panels…')).closest('button')!;
-        const editColumns = screen.getByText('Edit Layout').closest('button')!;
+        const editColumns = screen.getByText('Edit columns').closest('button')!;
 
         expect(customize).toBeDisabled();
         expect(editColumns).toBeDisabled();
@@ -447,14 +447,14 @@ describe('LayoutsMenu', () => {
         expect(onToggleColumnEditMode).not.toHaveBeenCalled();
     });
 
-    it('should not render an Edit Layout entry without onToggleColumnEditMode', async () => {
+    it('should not render an Edit columns entry without onToggleColumnEditMode', async () => {
         renderWithMantine(<LayoutsMenu {...defaultProps} currentLayoutName="Custom Layout 1" />);
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Switch layout')).toBeInTheDocument();
-        expect(screen.queryByText('Edit Layout')).not.toBeInTheDocument();
+        expect(screen.queryByText('Edit columns')).not.toBeInTheDocument();
     });
 
-    it('should toggle the Edit Layout bar and reflect the current mode', async () => {
+    it('should toggle the Edit columns bar and reflect the current mode', async () => {
         const onToggleColumnEditMode = jest.fn();
         const {unmount} = renderWithMantine(
             <LayoutsMenu
@@ -464,7 +464,7 @@ describe('LayoutsMenu', () => {
             />,
         );
         fireEvent.click(screen.getByRole('button'));
-        fireEvent.click(await screen.findByText('Edit Layout'));
+        fireEvent.click(await screen.findByText('Edit columns'));
         expect(onToggleColumnEditMode).toHaveBeenCalledTimes(1);
         unmount();
 
@@ -477,7 +477,7 @@ describe('LayoutsMenu', () => {
             />,
         );
         fireEvent.click(screen.getByRole('button'));
-        expect(await screen.findByText('Done editing layout')).toBeInTheDocument();
+        expect(await screen.findByText('Done editing columns')).toBeInTheDocument();
     });
 
     it('should not render a Reset layout entry without onResetLayout', async () => {

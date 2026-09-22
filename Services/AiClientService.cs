@@ -4,6 +4,7 @@ using Anthropic.Core;
 using Anthropic.Models.Messages;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Ai;
 using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Services;

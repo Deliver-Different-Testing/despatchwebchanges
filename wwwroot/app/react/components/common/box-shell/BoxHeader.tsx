@@ -26,8 +26,8 @@ export interface BoxHeaderProps {
     showHideButton?: boolean;
     /** Hide this panel from the current layout. */
     onHide?: () => void;
-    /** Wired as the parent <div draggable=…> attribute. Leave undefined to disable drag. */
-    onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
+    /** Wired as the drag handle's draggable=… attribute. Leave undefined to disable drag. */
+    onDragStart?: (event: React.DragEvent<HTMLElement>) => void;
     onRefresh?: () => void;
     /** Keyboard reorder: move this panel up among its visible siblings. Undefined at the top. */
     onMoveUp?: () => void;
@@ -138,6 +138,8 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
                         ref={dragHandleRef}
                         aria-label={`Reorder ${title} — use the up and down arrow keys`}
                         aria-roledescription="sortable"
+                        draggable={!!onDragStart}
+                        onDragStart={onDragStart}
                         onKeyDown={handleReorderKeyDown}
                         opacity={0.85}
                         style={{cursor: 'grab'}}
@@ -150,7 +152,7 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
     );
 
     return (
-        <Box draggable={!!onDragStart} onDragStart={onDragStart} style={{cursor: onDragStart ? 'grab' : 'default'}}>
+        <Box>
             <PanelHeader
                 icon={<SymbolIcon name={icon} aria-hidden />}
                 title={composedTitle}

@@ -114,6 +114,9 @@ describe('CurrentWorkBox', () => {
             expect(screen.getByText(/select a courier to view/i)).toBeInTheDocument();
 
             await act(async () => {
+                screen.getByRole('button', {name: 'Search courier'}).click();
+            });
+            await act(async () => {
                 courierSearchSelectRef.fn?.({id: 99, text: 'Courier 99'});
             });
 
@@ -183,22 +186,15 @@ describe('CurrentWorkBox', () => {
             expect(screen.getByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
         });
 
-        it('offers the courier search field too, and drills into the picked courier', async () => {
-            // V1 showed the courier code box on every tenant, not just non-US ones.
+        it('does not offer the direct courier search — the drivers overview already has its own filter', () => {
             renderBox({isUsCustomer: true});
-            expect(screen.getByRole('button', {name: 'pick-courier'})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Search courier'})).not.toBeInTheDocument();
             expect(screen.getByTestId('mock-all-drivers')).toBeInTheDocument();
-
-            await act(async () => {
-                courierSearchSelectRef.fn?.({id: 99, text: 'Courier 99'});
-            });
-
-            expect(await screen.findByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
         });
     });
 
     describe('header slot', () => {
-        it('portals the scope toggle and truck button into the header slot', () => {
+        it('portals the scope toggle and truck button into the header slot, but not the courier search (US tenant)', () => {
             const slot = document.createElement('div');
             document.body.appendChild(slot);
             try {
@@ -213,9 +209,145 @@ describe('CurrentWorkBox', () => {
                 expect(within(slot).getByRole('radio', {name: /all drivers/i})).toBeInTheDocument();
                 expect(within(slot).getByRole('radio', {name: 'Jane Smith'})).toBeInTheDocument();
                 expect(within(slot).getByRole('button', {name: 'Truck loading status'})).toBeInTheDocument();
+                expect(within(slot).queryByRole('button', {name: 'Search courier'})).not.toBeInTheDocument();
             } finally {
                 document.body.removeChild(slot);
             }
+        });
+
+        it('portals the courier search into the header slot for non-US tenants', () => {
+            const slot = document.createElement('div');
+            document.body.appendChild(slot);
+            try {
+                renderBox({headerSlot: slot});
+                expect(within(slot).getByRole('button', {name: 'Search courier'})).toBeInTheDocument();
+            } finally {
+                document.body.removeChild(slot);
+            }
+        });
+    });
+
+    describe('courier display mode', () => {
+        it('shows the courier number on the non-US label when the mode is set to number', () => {
+            const slot = document.createElement('div');
+            document.body.appendChild(slot);
+            try {
+                renderBox({
+                    selectedJobCourierId: 42,
+                    selectedJobCourierName: 'Jane Smith',
+                    selectedJobCourierNumber: '007',
+                    courierDisplayMode: 'number',
+                    headerSlot: slot,
+                });
+                expect(within(slot).getByText('007')).toBeInTheDocument();
+                expect(within(slot).queryByText('Jane Smith')).not.toBeInTheDocument();
+            } finally {
+                document.body.removeChild(slot);
+            }
+        });
+
+        it('shows name and number together on the non-US label when the mode is set to both', () => {
+            const slot = document.createElement('div');
+            document.body.appendChild(slot);
+            try {
+                renderBox({
+                    selectedJobCourierId: 42,
+                    selectedJobCourierName: 'Jane Smith',
+                    selectedJobCourierNumber: '007',
+                    courierDisplayMode: 'both',
+                    headerSlot: slot,
+                });
+                expect(within(slot).getByText('Jane Smith · 007')).toBeInTheDocument();
+            } finally {
+                document.body.removeChild(slot);
+            }
+        });
+
+        it('shows no courier label on the non-US header when the mode is off', () => {
+            const slot = document.createElement('div');
+            document.body.appendChild(slot);
+            try {
+                renderBox({
+                    selectedJobCourierId: 42,
+                    selectedJobCourierName: 'Jane Smith',
+                    selectedJobCourierNumber: '007',
+                    courierDisplayMode: 'off',
+                    headerSlot: slot,
+                });
+                expect(within(slot).queryByText('Jane Smith')).not.toBeInTheDocument();
+                expect(within(slot).queryByText('007')).not.toBeInTheDocument();
+            } finally {
+                document.body.removeChild(slot);
+            }
+        });
+
+        it('reflects the courier number on the US focused-driver toggle when the mode is set to number', () => {
+            renderBox({
+                isUsCustomer: true,
+                selectedJobCourierId: 42,
+                selectedJobCourierName: 'Jane Smith',
+                selectedJobCourierNumber: '007',
+                courierDisplayMode: 'number',
+            });
+            expect(screen.getByRole('radio', {name: '007'})).toBeInTheDocument();
+        });
+
+        it('falls back to the driver name on the US toggle when number mode is requested but no number is available (manual pick)', async () => {
+            renderBox({isUsCustomer: true, courierDisplayMode: 'number'});
+
+            await act(async () => {
+                mockOverview.onDriverSelect?.({courierId: 7, name: 'Jane Smith'});
+            });
+
+            expect(await screen.findByRole('radio', {name: 'Jane Smith'})).toBeInTheDocument();
+        });
+    });
+
+    describe('courier search toggle', () => {
+        it('keeps the search field collapsed behind a header button until clicked', () => {
+            renderBox();
+            expect(screen.getByRole('button', {name: 'Search courier'})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
+        });
+
+        it('reveals the search field and hides the toggle button when clicked', async () => {
+            renderBox();
+
+            await act(async () => {
+                screen.getByRole('button', {name: 'Search courier'}).click();
+            });
+
+            expect(screen.getByRole('button', {name: 'pick-courier'})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Search courier'})).not.toBeInTheDocument();
+        });
+
+        it('collapses back to the toggle button after picking a courier', async () => {
+            renderBox();
+
+            await act(async () => {
+                screen.getByRole('button', {name: 'Search courier'}).click();
+            });
+            await act(async () => {
+                courierSearchSelectRef.fn?.({id: 99, text: 'Courier 99'});
+            });
+
+            expect(screen.getByRole('button', {name: 'Search courier'})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
+        });
+
+        it('collapses back to the toggle button on blur, without picking a courier', async () => {
+            renderBox();
+
+            await act(async () => {
+                screen.getByRole('button', {name: 'Search courier'}).click();
+            });
+            await act(async () => {
+                screen.getByRole('button', {name: 'pick-courier'}).focus();
+                screen.getByRole('button', {name: 'pick-courier'}).blur();
+            });
+
+            expect(screen.getByRole('button', {name: 'Search courier'})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
         });
     });
 });

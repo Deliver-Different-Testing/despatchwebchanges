@@ -33,7 +33,7 @@ export interface BoxShellProps {
         targetColumnId: string,
         targetIndex: number,
     ) => void;
-    /** Hide a panel from the current layout (edit mode only, alongside the drag handle). */
+    /** Hide a panel from the current layout (custom layouts only, alongside the drag handle). */
     onHideBox?: (boxName: string) => void;
     /**
      * The Default layout is read-only: no resize gutters, no reorder, no column
@@ -44,14 +44,14 @@ export interface BoxShellProps {
      */
     isDefaultLayout?: boolean;
     /**
-     * "Edit Layout" mode, toggled from the toolbar's Layouts menu. Gates every
-     * structural edit — the columns stepper bar, panel resize gutters, and
-     * drag/keyboard reorder — so widgets can't be nudged just by viewing a
-     * saved layout. Each job-list panel separately reveals its own column
-     * editor, unaffected by this mode.
+     * "Edit columns" mode, toggled from the toolbar's Layouts menu. Reveals the
+     * columns bar (layout column stepper) above the panels; each job-list panel
+     * separately reveals its own column editor. Panel resize and drag/keyboard
+     * reorder are independent of this mode — available any time on a custom
+     * (non-Default) layout.
      */
     columnEditMode?: boolean;
-    /** Leave "Edit Layout" mode from the bar's Done button. */
+    /** Leave "Edit columns" mode from the bar's Done button. */
     onExitColumnEditMode?: () => void;
     /** Append a column to the current layout. Supply both to show the stepper. */
     onAddColumn?: () => void;
@@ -139,8 +139,8 @@ export const BoxShell: React.FC<BoxShellProps> = ({
 }) => {
     const columnCount = layout.layout.columns.length;
     const showColumnStepper = !!onAddColumn && !!onRemoveColumn;
-    // Single gate for every structural edit: resize, reorder, and the columns
-    // stepper. The Default layout is always read-only regardless of mode.
+    // Gates only the columns stepper bar. Resize and reorder are governed
+    // separately, by isDefaultLayout alone — see canReorder below.
     const editable = columnEditMode && !isDefaultLayout;
     const dragRef = useRef<DragRef | null>(null);
     // Every PanelGroup emits its computed sizes once on mount. That emit carries
@@ -165,7 +165,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
     const pendingFocusRef = useRef<string | null>(null);
 
     const handleDragStart = (sourceColumnId: string, sourceIndex: number) =>
-        (event: React.DragEvent<HTMLDivElement>) => {
+        (event: React.DragEvent<HTMLElement>) => {
             dragRef.current = {sourceColumnId, sourceIndex};
             event.dataTransfer.effectAllowed = 'move';
             // Empty payload is fine — we read from the ref. Setting the MIME
@@ -218,7 +218,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                         tt="none"
                         leftSection={<Icon lucide={Columns3} size={14}/>}
                     >
-                        Editing layout
+                        Editing columns
                     </Badge>
                     <Text size="xs" c="dimmed" style={{flex: 1}}>
                         Set the layout&rsquo;s columns here, and each list&rsquo;s columns in its own panel
@@ -293,7 +293,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
 
                     return (
                         <Fragment key={column.id}>
-                            {columnIdx > 0 && editable && (
+                            {columnIdx > 0 && !isDefaultLayout && (
                                 <PanelResizeHandle>
                                     <Box className={`${classes.handle} ${classes.horizontal}`} />
                                 </PanelResizeHandle>
@@ -341,7 +341,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                 // Keyboard reorder targets the neighbouring visible panel's
                                                 // original index — mirroring the drag drop-on-box semantics so
                                                 // useBoxLayout.moveBox applies the same index adjustment.
-                                                const canReorder = !!onMoveBox && editable;
+                                                const canReorder = !!onMoveBox && !isDefaultLayout;
                                                 const prevVisible = vIdx > 0 ? visibleBoxes[vIdx - 1] : undefined;
                                                 const nextVisible = vIdx < visibleBoxes.length - 1
                                                     ? visibleBoxes[vIdx + 1]
@@ -355,7 +355,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
 
                                                 return (
                                                     <Fragment key={boxRef.name}>
-                                                        {vIdx > 0 && editable && (
+                                                        {vIdx > 0 && !isDefaultLayout && (
                                                             <PanelResizeHandle>
                                                                 <Box className={`${classes.handle} ${classes.vertical}`} />
                                                             </PanelResizeHandle>

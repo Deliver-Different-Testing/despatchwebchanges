@@ -16,6 +16,7 @@ import {
 import {CustomizePanelsDialog} from '../customize-panels-dialog/CustomizePanelsDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {createDialogHost} from '../../../utils/reactDialogHost';
+import type {CourierDisplayMode} from '../../../interfaces';
 
 interface DashboardSettingsPayload {
     config: DashboardSettingsConfig;
@@ -24,6 +25,7 @@ interface DashboardSettingsPayload {
     selectedTaskRefreshInterval: RefreshOption;
     refreshOptions: RefreshOption[];
     nationwideBetaEnabled?: boolean;
+    selectedCourierDisplayMode?: CourierDisplayMode;
 }
 
 const DISABLED_REFRESH: RefreshOption = {id: 0, text: 'Disabled'};
@@ -75,6 +77,7 @@ const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSetting
             selectedTaskRefreshInterval={payload.selectedTaskRefreshInterval}
             refreshOptions={payload.refreshOptions}
             nationwideBetaEnabled={payload.nationwideBetaEnabled}
+            selectedCourierDisplayMode={payload.selectedCourierDisplayMode}
             onClose={() => close(null)}
             onSave={(result: DashboardSettingsResult) => close(result)}
         />
@@ -87,6 +90,7 @@ export function openDashboardSettingsDialog(
     selectedDriverLocationRefreshInterval?: RefreshOption,
     selectedTaskRefreshInterval?: RefreshOption,
     nationwideBetaEnabled?: boolean,
+    selectedCourierDisplayMode?: CourierDisplayMode,
 ): Promise<DashboardSettingsResult | null> {
     return settingsHost.open({
         config,
@@ -95,6 +99,7 @@ export function openDashboardSettingsDialog(
         selectedTaskRefreshInterval: selectedTaskRefreshInterval ?? DISABLED_REFRESH,
         refreshOptions: [DISABLED_REFRESH, ...getMinsSelectionOptions()],
         nationwideBetaEnabled,
+        selectedCourierDisplayMode,
     });
 }
 

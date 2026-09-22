@@ -68,6 +68,9 @@ import {OverviewDeliveriesBox} from './components/OverviewDeliveriesBox';
 import {OpenJobsBox} from './components/OpenJobsBox';
 import {TruckModeMenu} from './components/TruckModeMenu';
 import type {TruckMode} from '../../components/common/driver-locations/DriverLocations.types';
+import {getPreference} from '../../services/preferencesApi';
+import {StaffPreferenceKey} from '../../../enums/staff-preference-key.enum';
+import {defaultCourierDisplayMode, type CourierDisplayMode} from './lib/courierDisplayMode';
 
 const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
 
@@ -92,9 +95,11 @@ export interface DispatchLayoutBridge {
     setViewSelection: (viewIds: number[]) => void;
     /** Push new auto-refresh intervals (from the settings dialog) into the page. */
     updateRefreshIntervals: (intervals: Partial<DispatchRefreshIntervals>) => void;
+    /** Push a newly-saved courier display mode (from the settings dialog) into the page. */
+    updateCourierDisplayMode: (mode: CourierDisplayMode) => void;
     /** Restore the current layout to the shipped arrangement (toolbar → Layouts → Reset layout). */
     resetCurrentLayout: () => void;
-    /** Show or hide the "Edit Layout" bar (toolbar → Layouts → Edit Layout). */
+    /** Show or hide the "Edit columns" bar (toolbar → Layouts → Edit columns). */
     setColumnEditMode: (enabled: boolean) => void;
     /** Open the Inter-Courier Charge dialog, wired to the page's toast. */
     openInterCourierCharge: () => void;
@@ -111,7 +116,7 @@ export interface DispatchPageProps {
     timeZoneShort?: string;
     deepLinkJobId?: number;
     /** Called once with imperative handles for the AppShell toolbar to drive layout selection. */
-    /** Leave "Edit Layout" mode; routes back through the toolbar so its menu stays in sync. */
+    /** Leave "Edit columns" mode; routes back through the toolbar so its menu stays in sync. */
     onExitColumnEditMode?: () => void;
     onLayoutBridgeReady?: (bridge: DispatchLayoutBridge) => void;
 }
@@ -154,9 +159,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     // Truck-mode filter for Driver Locations; the control lives in that box's
     // panel header (see boxRightSlotFor), so the state is lifted here.
     const [truckMode, setTruckMode] = useState<TruckMode>('On');
-    // "Edit Layout" mode, driven from the toolbar's Layouts menu: gates box
-    // resize/reorder and the layout column stepper in the shell, and reveals
-    // each list's own column editor.
+    // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
+    // layout column stepper in the shell and each list's column editor.
     const [columnEditMode, setColumnEditMode] = useState(false);
     const handleExitColumnEditMode = useCallback(() => {
         setColumnEditMode(false);
@@ -272,6 +276,25 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         setRefreshIntervals(prev => ({...prev, ...next}));
     }, []);
 
+    // How much courier info shows on the Current Work box's title once a courier is
+    // focused. Seeded from the region default and replaced by the user's saved
+    // StaffPreference, if any; the settings dialog pushes changes via the bridge.
+    const [courierDisplayMode, setCourierDisplayMode] = useState<CourierDisplayMode>(
+        () => defaultCourierDisplayMode(isUsCustomer),
+    );
+    useEffect(() => {
+        let cancelled = false;
+        getPreference(StaffPreferenceKey.DispatchCourierDisplayMode)
+            .then((raw) => {
+                if (cancelled || !raw) return;
+                const parsed = JSON.parse(raw) as CourierDisplayMode;
+                setCourierDisplayMode(parsed);
+            })
+            .catch((err) => console.error('[DispatchPage] failed to load courier display mode preference:', err));
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded once on mount
+    }, []);
+
     // Highlight-sync callback captured from the job list (V1 ReactJobList.selectJob)
     // so selecting a job from the map or supports highlights the matching row.
     const selectInListRef = useRef<((jobId: number) => void) | null>(null);
@@ -375,6 +398,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             registerViewsListener,
             setViewSelection: applyViewSelection,
             updateRefreshIntervals: applyRefreshIntervals,
+            updateCourierDisplayMode: setCourierDisplayMode,
             resetCurrentLayout: boxLayout.resetCurrentLayout,
             setColumnEditMode,
             openInterCourierCharge,
@@ -679,6 +703,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                             currentJob?.courierData?.courierName
                             ?? currentJob?.assignedCourier?.text
                         }
+                        selectedJobCourierNumber={currentJob?.courierData?.courierNumber}
+                        courierDisplayMode={courierDisplayMode}
                         onJobSelect={selectJob}
                         headerSlot={headerSlot}
                     />
@@ -738,7 +764,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             default:
                 return null;
         }
-    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, mapJobs, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode, pageViews, viewsLoading, toggleView, clearViews, mapCourierWork?.jobs, mapView.center, mapView.zoom, refreshIntervals.jobsMs, refreshIntervals.tasksMs, refreshIntervals.driverLocationsMs]);
+    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, mapJobs, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode, pageViews, viewsLoading, toggleView, clearViews, mapCourierWork?.jobs, mapView.center, mapView.zoom, refreshIntervals.jobsMs, refreshIntervals.tasksMs, refreshIntervals.driverLocationsMs, courierDisplayMode]);
 
     const subtitleFor = useCallback((boxName: string) => {
         if (boxName === DispatchBoxes.JobDetail) {

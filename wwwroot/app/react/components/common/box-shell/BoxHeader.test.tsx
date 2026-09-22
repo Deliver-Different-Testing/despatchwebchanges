@@ -52,6 +52,28 @@ describe('BoxHeader drag handle', () => {
     });
 });
 
+describe('BoxHeader drag scope', () => {
+    it('only the drag handle is draggable, not the rest of the header', () => {
+        renderHeader({showDragHandle: true, onDragStart: jest.fn(), showRefresh: true, onRefresh: jest.fn()});
+
+        expect(screen.getByLabelText(/Reorder Filters/)).toHaveAttribute('draggable', 'true');
+        expect(screen.getByText('Filters').closest('[draggable="true"]')).toBeNull();
+        expect(screen.getByLabelText('Refresh').closest('[draggable="true"]')).toBeNull();
+    });
+
+    it('only starts a drag from the drag handle, not the title or refresh button', () => {
+        const onDragStart = jest.fn();
+        renderHeader({showDragHandle: true, onDragStart, showRefresh: true, onRefresh: jest.fn()});
+
+        fireEvent.dragStart(screen.getByText('Filters'));
+        fireEvent.dragStart(screen.getByLabelText('Refresh'));
+        expect(onDragStart).not.toHaveBeenCalled();
+
+        fireEvent.dragStart(screen.getByLabelText(/Reorder Filters/));
+        expect(onDragStart).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('BoxHeader hide button', () => {
     it('does not render a hide button when showHideButton is false', () => {
         renderHeader({showHideButton: false, onHide: jest.fn()});

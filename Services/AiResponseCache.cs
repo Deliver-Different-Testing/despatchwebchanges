@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Ai;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 
