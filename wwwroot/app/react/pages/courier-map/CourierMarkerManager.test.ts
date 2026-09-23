@@ -263,6 +263,38 @@ describe('CourierMarkerManager', () => {
         });
     });
 
+    describe('updateSettings', () => {
+        it('repaints existing markers immediately with the new label/job-count settings', () => {
+            manager.updateMarkers([driver()]);
+            expect(lastSvg()).toContain('>Dave 4<');
+
+            manager.updateSettings(MARKER_COLORS, {markerLabel: 'number', showJobCount: false});
+
+            expect(lastSvg()).toContain('>DT14<');
+            expect(mockMarkerInstances[0].setIcon).toHaveBeenCalled();
+        });
+
+        it('repaints existing markers immediately when only the color palette changes', () => {
+            manager.updateMarkers([driver({totalJobs: 3, overDueJobs: 1})]);
+            expect(lastSvg()).toContain(MARKER_COLORS.overdue.bg);
+
+            const singleColor = {bg: '#123456', border: '#654321', text: '#ffffff'};
+            manager.updateSettings(
+                {overdue: singleColor, active: singleColor, idle: singleColor},
+                {markerLabel: 'name', showJobCount: true},
+            );
+
+            expect(lastSvg()).toContain('#123456');
+        });
+
+        it('applies the new settings to markers added afterward too', () => {
+            manager.updateSettings(MARKER_COLORS, {markerLabel: 'number', showJobCount: false});
+            manager.updateMarkers([driver()]);
+
+            expect(lastSvg()).toContain('>DT14<');
+        });
+    });
+
     describe('centerOnCourier', () => {
         it('centres and zooms in, but never zooms out', () => {
             manager.centerOnCourier(driver());

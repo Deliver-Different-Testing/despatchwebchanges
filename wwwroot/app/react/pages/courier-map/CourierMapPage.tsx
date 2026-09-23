@@ -5,7 +5,7 @@
  * Displays a HERE map with courier positions and a drivers panel sidebar.
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {Box} from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
@@ -20,9 +20,14 @@ import { useCourierMap } from './useCourierMap';
 import { DriversPanel } from './components/DriversPanel';
 import { MapControls } from './components/MapControls';
 import { MapZoomViewControls } from '../../components/common/dispatch-map/MapZoomViewControls';
+import type { MapZoomViewControlsHandle } from '../../components/common/dispatch-map/MapZoomViewControls';
 import { BELOW_APP_BAR_HEIGHT } from '../../components/common/app-toolbar/appBarMetrics';
 import { queryKeys } from '../../query';
 import { getAvailableCourierLocations, getAllFleetOptions } from '../../services/courierApi';
+import { LIVE_TEMPLATE } from './CourierMapDisplaySettings';
+import type { CourierMapDisplaySettings } from './CourierMapDisplaySettings';
+import { getPreference, savePreference } from '../../services/preferencesApi';
+import { StaffPreferenceKey } from '../../../enums/staff-preference-key.enum';
 
 interface CourierMapPageInternalProps extends CourierMapPageProps {
     apiKey: string | null;
@@ -38,6 +43,37 @@ export function CourierMapPage({
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [selectedFleetIds, setSelectedFleetIds] = useState<number[]>([]);
+
+    // Display settings — defaults to the Live template until/unless a saved StaffPreference
+    // loads, matching the DispatchCourierDisplayMode pattern (see courierDisplayMode.ts).
+    const [displaySettings, setDisplaySettings] = useState<CourierMapDisplaySettings>(LIVE_TEMPLATE);
+    const mapViewControlsRef = useRef<MapZoomViewControlsHandle>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        getPreference(StaffPreferenceKey.CourierMapDisplaySettings)
+            .then((raw) => {
+                if (cancelled || !raw) return;
+                setDisplaySettings(JSON.parse(raw) as CourierMapDisplaySettings);
+            })
+            .catch((err) => console.error('[CourierMapPage] failed to load display settings preference:', err));
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded once on mount
+    }, []);
+
+    const handleDisplaySettingsChange = useCallback((next: CourierMapDisplaySettings) => {
+        setDisplaySettings(next);
+        savePreference(StaffPreferenceKey.CourierMapDisplaySettings, JSON.stringify(next))
+            .catch((err) => console.error('[CourierMapPage] failed to save display settings preference:', err));
+    }, []);
+
+    // Drive the map's own satellite/roadmap/traffic rail from the current display settings —
+    // a preset click still goes through that rail's existing logic, it's just not duplicated
+    // as a second control in the settings menu.
+    useEffect(() => {
+        mapViewControlsRef.current?.setView(displaySettings.mapView);
+        mapViewControlsRef.current?.setTrafficEnabled(displaySettings.trafficEnabled);
+    }, [displaySettings.mapView, displaySettings.trafficEnabled]);
 
     // Debounce search term
     useEffect(() => {
@@ -68,6 +104,7 @@ export function CourierMapPage({
         apiKey,
         isUsCustomer,
         mapCenter,
+        displaySettings,
     });
 
     // Fetch courier fleet options (rarely change, cache 5 minutes)
@@ -174,20 +211,25 @@ export function CourierMapPage({
                     onSelectedFleetIdsChange={setSelectedFleetIds}
                 />
 
-                {/* Fit-all + refresh (top-left) */}
+                {/* Fit-all + refresh + display settings (top-left) */}
                 <MapControls
                     onFitAll={returnToOverview}
                     onRefresh={handleRefresh}
                     isLoading={isLoading}
+                    displaySettings={displaySettings}
+                    onDisplaySettingsChange={handleDisplaySettingsChange}
                 />
 
                 {/* Zoom + layer/traffic rail (bottom-left), shared with the dispatch map */}
                 {isInitialized && map && (
                     <MapZoomViewControls
+                        ref={mapViewControlsRef}
                         map={map}
                         platform={platform}
                         defaultLayers={defaultLayers}
                         placement="left"
+                        defaultView={displaySettings.mapView}
+                        defaultTrafficEnabled={displaySettings.trafficEnabled}
                     />
                 )}
             </Box>

@@ -18,4 +18,6 @@ public enum StaffPreferenceKey
     JobListColumnsNwRepriceJobList,
     DispatchAddressFormat,
     DispatchCourierDisplayMode,
+    CourierMapDisplaySettings,
+    ShowPanelHideButton,
 }

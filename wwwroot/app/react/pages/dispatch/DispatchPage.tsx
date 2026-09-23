@@ -38,6 +38,7 @@ import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {DispatchJobActionsMenu, DispatchJobActionId} from './components/DispatchJobActionsMenu';
 import {BoxShell} from '../../components/common/box-shell/BoxShell';
 import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
+import {usePanelHideButtonSetting} from '../../components/common/box-shell/usePanelHideButtonSetting';
 import type {ImportLayoutsResult, LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
 import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
 import {useLayoutPrompts} from '../../components/layout-prompts/useLayoutPrompts';
@@ -162,6 +163,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
     // layout column stepper in the shell and each list's column editor.
     const [columnEditMode, setColumnEditMode] = useState(false);
+    const hideButtonEnabled = usePanelHideButtonSetting();
     const handleExitColumnEditMode = useCallback(() => {
         setColumnEditMode(false);
         onExitColumnEditMode?.();
@@ -801,6 +803,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     onBoxHeights={boxLayout.setBoxHeights}
                     onMoveBox={boxLayout.moveBox}
                     onHideBox={(name) => boxLayout.setBoxVisibility(name, false)}
+                    hideButtonEnabled={hideButtonEnabled}
                     isDefaultLayout={boxLayout.isDefaultLayout}
                     columnEditMode={columnEditMode}
                     onExitColumnEditMode={handleExitColumnEditMode}

@@ -94,6 +94,13 @@ describe('BoxShell layout affordances', () => {
         expect(screen.queryByRole('button', {name: /Hide/})).not.toBeInTheDocument();
     });
 
+    it('hides the hide button when the user has turned it off, without affecting reorder', () => {
+        renderShell({onMoveBox: jest.fn(), onHideBox: jest.fn(), hideButtonEnabled: false});
+
+        expect(screen.queryByRole('button', {name: /Hide/})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /Reorder/})).toBeInTheDocument();
+    });
+
     it('has no collapse control', () => {
         renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
 

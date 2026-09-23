@@ -11,7 +11,7 @@
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Badge, Box, Button, Group, Stack, Text, Title} from '@mantine/core';
-import {ArrowLeftRight, MapPin, RotateCcw, Save, TriangleAlert} from 'lucide-react';
+import {ArrowLeftRight, EyeOff, MapPin, RotateCcw, Save, TriangleAlert} from 'lucide-react';
 import {SectionHeading, SettingRow} from '../../components/common/settings-controls/SettingsControls';
 import {AutoMateLogo} from '../../components/common/auto-mate-logo/AutoMateLogo';
 import {Icon} from '../../components/common/icon/Icon';
@@ -24,6 +24,11 @@ import {
     setAiAutoOpenEnabled,
     loadAutoMateFromServer,
 } from '../../../functions/aiSettings';
+import {
+    isPanelHideButtonEnabled,
+    setPanelHideButtonEnabled,
+    loadPanelHideButtonSettingFromServer,
+} from '../../../functions/panelHideButtonSettings';
 import {AddressFormatEditor} from './AddressFormatEditor';
 import {parseAddressFormatJson, serializeAddressFormatJson} from '../../components/job-list/jobAddressFormat';
 import type {AddressLineFormat} from '../../interfaces/address';
@@ -38,6 +43,7 @@ const EMPTY_FORMAT: AddressLineFormat = {line1: [], line2: []};
 export const SettingsPage: React.FC = () => {
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
     const [aiAutoOpen, setAiAutoOpenState] = useState<boolean>(isAiAutoOpenEnabled);
+    const [hideButtonEnabled, setHideButtonEnabledState] = useState<boolean>(isPanelHideButtonEnabled);
 
     // Address format: draft state the user edits freely, and the last-saved
     // baseline it's compared against for the Save button / leave guard. Each
@@ -104,6 +110,12 @@ export const SettingsPage: React.FC = () => {
         });
     }, []);
 
+    useEffect(() => {
+        void loadPanelHideButtonSettingFromServer().then(() => {
+            setHideButtonEnabledState(isPanelHideButtonEnabled());
+        });
+    }, []);
+
     const toggleAiEnabled = () => {
         setAiEnabledState((prev) => {
             const next = !prev;
@@ -116,6 +128,14 @@ export const SettingsPage: React.FC = () => {
         setAiAutoOpenState((prev) => {
             const next = !prev;
             setAiAutoOpenEnabled(next);
+            return next;
+        });
+    };
+
+    const toggleHideButtonEnabled = () => {
+        setHideButtonEnabledState((prev) => {
+            const next = !prev;
+            setPanelHideButtonEnabled(next);
             return next;
         });
     };
@@ -222,6 +242,22 @@ export const SettingsPage: React.FC = () => {
                         onToggle={toggleAiAutoOpen}
                     />
                 </Stack>
+            </Box>
+
+            <Box mt={32}>
+                <SectionHeading
+                    icon={<Icon lucide={EyeOff} size={20}/>}
+                    title="Dashboard"
+                />
+
+                <SettingRow
+                    title="Show per-panel hide button"
+                    description="Adds a quick hide icon to each panel's header on custom Dispatch and
+                        Job Search layouts, alongside the Show/Hide Panels dialog. Applies to your
+                        account only."
+                    checked={hideButtonEnabled}
+                    onToggle={toggleHideButtonEnabled}
+                />
             </Box>
 
             <Box mt={32}>

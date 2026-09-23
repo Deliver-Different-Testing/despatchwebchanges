@@ -12,6 +12,7 @@ import {ActionIcon, Divider, Loader, Paper, Tooltip} from '@mantine/core';
 import {RefreshCw, Scan} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import type { MapControlsProps } from '../CourierMapPage.types';
+import {DisplaySettingsMenu} from './DisplaySettingsMenu';
 
 const ICON_SIZE = 20;
 
@@ -26,7 +27,13 @@ const railButtonProps = {
     radius: 0,
 } as const;
 
-export function MapControls({ onFitAll, onRefresh, isLoading }: MapControlsProps) {
+export function MapControls({
+    onFitAll,
+    onRefresh,
+    isLoading,
+    displaySettings,
+    onDisplaySettingsChange,
+}: MapControlsProps) {
     return (
         <Paper
             shadow="md"
@@ -65,6 +72,8 @@ export function MapControls({ onFitAll, onRefresh, isLoading }: MapControlsProps
                     </ActionIcon>
                 </span>
             </Tooltip>
+            <Divider/>
+            <DisplaySettingsMenu settings={displaySettings} onChange={onDisplaySettingsChange}/>
         </Paper>
     );
 }

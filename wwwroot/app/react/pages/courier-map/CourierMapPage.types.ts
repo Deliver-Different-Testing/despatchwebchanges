@@ -9,6 +9,7 @@ import React from "react";
 import type { MantineTheme } from '@mantine/core';
 
 export type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
+export type { CourierMapDisplaySettings } from './CourierMapDisplaySettings';
 
 /**
  * Driver status based on workload
@@ -60,12 +61,26 @@ export const MARKER_COLORS: Record<DriverStatus, MarkerColor> = {
 const MAIN_SHADE = 5;
 const DARK_SHADE = 7;
 
-export function getMarkerColors(theme: MantineTheme): Record<DriverStatus, MarkerColor> {
+/**
+ * 'status' (default) keeps the red/brand/green split above. 'single' collapses every
+ * status to the brand color — for the courier-map display setting that trades status
+ * at-a-glance for a flatter, reference-screenshot look.
+ */
+export function getMarkerColors(
+    theme: MantineTheme,
+    colorMode: 'status' | 'single' = 'status',
+): Record<DriverStatus, MarkerColor> {
     const ramp = (name: string) => theme.colors[name] ?? theme.colors.gray;
     const brand = ramp(theme.primaryColor);
+    const brandColor: MarkerColor = { bg: brand[MAIN_SHADE], border: brand[DARK_SHADE], text: '#ffffff' };
+
+    if (colorMode === 'single') {
+        return { overdue: brandColor, active: brandColor, idle: brandColor };
+    }
+
     return {
         overdue: { bg: ramp('red')[MAIN_SHADE],   border: ramp('red')[DARK_SHADE],   text: '#ffffff' },
-        active:  { bg: brand[MAIN_SHADE],         border: brand[DARK_SHADE],         text: '#ffffff' },
+        active:  brandColor,
         idle:    { bg: ramp('green')[MAIN_SHADE], border: ramp('green')[DARK_SHADE], text: '#ffffff' },
     };
 }
@@ -162,6 +177,10 @@ export interface MapControlsProps {
     onRefresh: () => void;
     /** Whether data is loading (shows spinner on refresh button) */
     isLoading: boolean;
+    /** Current display settings, shown/edited via the display-settings popover */
+    displaySettings: import('./CourierMapDisplaySettings').CourierMapDisplaySettings;
+    /** Callback when the user changes a display setting or picks a preset */
+    onDisplaySettingsChange: (settings: import('./CourierMapDisplaySettings').CourierMapDisplaySettings) => void;
 }
 
 /**

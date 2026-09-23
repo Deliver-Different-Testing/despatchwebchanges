@@ -36,6 +36,11 @@ export interface BoxShellProps {
     /** Hide a panel from the current layout (custom layouts only, alongside the drag handle). */
     onHideBox?: (boxName: string) => void;
     /**
+     * User preference: show the per-panel hide button at all (custom layouts
+     * only). Defaults to true. Reorder/drag is unaffected either way.
+     */
+    hideButtonEnabled?: boolean;
+    /**
      * The Default layout is read-only: no resize gutters, no reorder, no column
      * stepper, and stored visibility is ignored (that record belongs to a user
      * layout). A panel the definitions ship as `visible: false` still stays
@@ -131,6 +136,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
     onBoxHeights,
     onMoveBox,
     onHideBox,
+    hideButtonEnabled = true,
     isDefaultLayout = false,
     columnEditMode = false,
     onExitColumnEditMode,
@@ -342,6 +348,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                 // original index — mirroring the drag drop-on-box semantics so
                                                 // useBoxLayout.moveBox applies the same index adjustment.
                                                 const canReorder = !!onMoveBox && !isDefaultLayout;
+                                                const canHide = canReorder && hideButtonEnabled;
                                                 const prevVisible = vIdx > 0 ? visibleBoxes[vIdx - 1] : undefined;
                                                 const nextVisible = vIdx < visibleBoxes.length - 1
                                                     ? visibleBoxes[vIdx + 1]
@@ -375,8 +382,8 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                                             headerSlotRef={headerSlotRef}
                                                                             showRefresh={!!meta.showRefresh}
                                                                             showDragHandle={canReorder}
-                                                                            showHideButton={canReorder}
-                                                                            onHide={canReorder ? () => onHideBox?.(boxName) : undefined}
+                                                                            showHideButton={canHide}
+                                                                            onHide={canHide ? () => onHideBox?.(boxName) : undefined}
                                                                             onDragStart={canReorder
                                                                                 ? handleDragStart(column.id, originalIndex)
                                                                                 : undefined}
