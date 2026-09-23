@@ -6,7 +6,7 @@
  * match the rest of the app instead of HERE Maps' native chrome.
  */
 
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {ActionIcon, Divider, Menu, Paper, Tooltip} from '@mantine/core';
 import {Check, Layers, Minus, Mountain, Plus, Satellite, TrafficCone, TriangleAlert} from 'lucide-react';
 import {IconMap} from '@tabler/icons-react';
@@ -60,6 +60,17 @@ interface MapZoomViewControlsProps {
     showViewPicker?: boolean;
     /** Which edge of the map the control rail anchors to. Defaults to 'right'. */
     placement?: 'left' | 'right';
+    /** Base view to apply on mount, once. Defaults to 'roadmap' (today's behaviour — no-op). */
+    defaultView?: ViewType;
+    /** Whether the traffic layer should already be on at mount. Defaults to false (today's behaviour). */
+    defaultTrafficEnabled?: boolean;
+}
+
+/** Imperative controls for a parent that needs to drive this rail's state from outside — e.g. a
+ * display-settings preset applying its saved view/traffic choice after the rail has mounted. */
+export interface MapZoomViewControlsHandle {
+    setView: (view: ViewType) => void;
+    setTrafficEnabled: (enabled: boolean) => void;
 }
 
 const VIEW_OPTIONS: ReadonlyArray<{value: ViewType; label: string; icon: React.ReactNode}> = [
@@ -114,15 +125,18 @@ function getTrafficIncidentsLayer(defaultLayers: any, platform: any): any | null
     }
 }
 
-export function MapZoomViewControls({
-    map,
-    platform,
-    defaultLayers,
-    showTraffic = true,
-    showIncidents = true,
-    showViewPicker = true,
-    placement = 'right',
-}: MapZoomViewControlsProps) {
+export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, MapZoomViewControlsProps>(
+    function MapZoomViewControls({
+        map,
+        platform,
+        defaultLayers,
+        showTraffic = true,
+        showIncidents = true,
+        showViewPicker = true,
+        placement = 'right',
+        defaultView = 'roadmap',
+        defaultTrafficEnabled = false,
+    }, ref) {
     const isLeft = placement === 'left';
     const tooltipPlacement = isLeft ? 'right' : 'left';
     const [activeView, setActiveView] = useState<ViewType>('roadmap');
@@ -142,7 +156,9 @@ export function MapZoomViewControls({
         map.setZoom(map.getZoom() - 1, true);
     };
 
-    const handleViewSelect = (view: ViewType) => {
+    /** Switches the base layer, unless `view` is already active. */
+    const applyView = (view: ViewType) => {
+        if (view === activeView) return;
         const layer = getLayer(defaultLayers, view);
         if (map && layer) {
             map.setBaseLayer(layer);
@@ -150,20 +166,35 @@ export function MapZoomViewControls({
         }
     };
 
-    const handleToggleTraffic = () => {
-        if (!map) return;
+    /** Adds/removes the traffic layer to reach `enabled`, unless it's already there. */
+    const applyTraffic = (enabled: boolean) => {
+        if (!map || enabled === trafficEnabled) return;
         if (!trafficLayerRef.current) {
             trafficLayerRef.current = getTrafficLayer(defaultLayers, platform);
         }
         const layer = trafficLayerRef.current;
         if (!layer) return;
-        if (trafficEnabled) {
-            map.removeLayer(layer);
-        } else {
+        if (enabled) {
             map.addLayer(layer);
+        } else {
+            map.removeLayer(layer);
         }
-        setTrafficEnabled(!trafficEnabled);
+        setTrafficEnabled(enabled);
     };
+
+    const handleViewSelect = (view: ViewType) => applyView(view);
+    const handleToggleTraffic = () => applyTraffic(!trafficEnabled);
+
+    useImperativeHandle(ref, () => ({setView: applyView, setTrafficEnabled: applyTraffic}));
+
+    // Apply the initial view/traffic the parent asked for, once, when the map first mounts —
+    // e.g. a display-settings preset ("Live" = satellite + traffic) applied at page load.
+    useEffect(() => {
+        if (!map) return;
+        applyView(defaultView);
+        applyTraffic(defaultTrafficEnabled);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- apply once when the map becomes available
+    }, [map]);
 
     const handleToggleIncidents = () => {
         if (!map) return;
@@ -283,4 +314,4 @@ export function MapZoomViewControls({
             )}
         </Paper>
     );
-}
+});

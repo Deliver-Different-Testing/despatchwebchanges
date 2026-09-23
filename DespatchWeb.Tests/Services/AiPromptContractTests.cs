@@ -2,6 +2,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Accessorial;
+using DespatchWeb.Models.Ai;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;

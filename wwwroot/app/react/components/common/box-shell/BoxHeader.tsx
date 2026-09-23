@@ -7,7 +7,7 @@
 
 import React, {useEffect, useRef} from 'react';
 import {ActionIcon, Box, Tooltip} from '@mantine/core';
-import {GripVertical, RefreshCw} from 'lucide-react';
+import {EyeOff, GripVertical, RefreshCw} from 'lucide-react';
 import {PANEL_CONTROL_GLYPH_SIZE, PANEL_CONTROL_HEIGHT, panelIconButtonClassName} from '../../../components/common/panel-controls';
 import {Icon} from '../../../components/common/icon/Icon';
 import {PanelHeader} from '../../../components/common/panel-header';
@@ -22,8 +22,12 @@ export interface BoxHeaderProps {
     showRefresh?: boolean;
     /** Show a drag-handle affordance on the right (custom layouts only). */
     showDragHandle?: boolean;
-    /** Wired as the parent <div draggable=…> attribute. Leave undefined to disable drag. */
-    onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
+    /** Show a hide-panel affordance next to the drag handle (custom layouts, when the user hasn't turned it off). */
+    showHideButton?: boolean;
+    /** Hide this panel from the current layout. */
+    onHide?: () => void;
+    /** Wired as the drag handle's draggable=… attribute. Leave undefined to disable drag. */
+    onDragStart?: (event: React.DragEvent<HTMLElement>) => void;
     onRefresh?: () => void;
     /** Keyboard reorder: move this panel up among its visible siblings. Undefined at the top. */
     onMoveUp?: () => void;
@@ -70,6 +74,8 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
     locked,
     showRefresh,
     showDragHandle,
+    showHideButton,
+    onHide,
     onDragStart,
     onRefresh,
     onMoveUp,
@@ -118,6 +124,13 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
                     </ActionIcon>
                 </Tooltip>
             ) : null}
+            {showHideButton && onHide ? (
+                <Tooltip label="Hide panel">
+                    <ActionIcon {...actionButtonProps} onClick={onHide} aria-label={`Hide ${title}`}>
+                        <Icon lucide={EyeOff} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                    </ActionIcon>
+                </Tooltip>
+            ) : null}
             {showDragHandle ? (
                 <Tooltip label="Drag, or use the arrow keys, to reorder">
                     <ActionIcon
@@ -125,6 +138,8 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
                         ref={dragHandleRef}
                         aria-label={`Reorder ${title} — use the up and down arrow keys`}
                         aria-roledescription="sortable"
+                        draggable={!!onDragStart}
+                        onDragStart={onDragStart}
                         onKeyDown={handleReorderKeyDown}
                         opacity={0.85}
                         style={{cursor: 'grab'}}
@@ -137,7 +152,7 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
     );
 
     return (
-        <Box draggable={!!onDragStart} onDragStart={onDragStart} style={{cursor: onDragStart ? 'grab' : 'default'}}>
+        <Box>
             <PanelHeader
                 icon={<SymbolIcon name={icon} aria-hidden />}
                 title={composedTitle}

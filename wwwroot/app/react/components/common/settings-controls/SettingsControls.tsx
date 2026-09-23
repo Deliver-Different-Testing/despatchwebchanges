@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Box, Group, Paper, Switch, Text, ThemeIcon, Title, alpha} from '@mantine/core';
+import {Box, Group, Paper, Radio, Stack, Switch, Text, ThemeIcon, Title, alpha} from '@mantine/core';
 import styles from './SettingsControls.module.css';
 
 /**
@@ -83,6 +83,43 @@ export function SettingRow({title, description, badge, accent = BRAND_ACCENT, ch
                     style={{'--switch-bg': accent} as React.CSSProperties}
                 />
             </Group>
+        </Paper>
+    );
+}
+
+/**
+ * One setting with several mutually-exclusive options: a title, an
+ * explanation and a visible radio group (not a dropdown) — the options are
+ * few enough, and the surface is a settings panel rather than a toolbar, so
+ * every choice should be visible and comparable at a glance.
+ */
+export function SettingRadioGroup<T extends string>({title, description, value, options, onChange, accent = BRAND_ACCENT}: {
+    title: string;
+    description: React.ReactNode;
+    value: T;
+    options: {value: T; label: string}[];
+    onChange: (value: T) => void;
+    accent?: string;
+}) {
+    return (
+        <Paper withBorder radius="md" p={16} style={{'--setting-accent': accent} as React.CSSProperties}>
+            <Radio.Group
+                label={<Text fz="sm" fw={600}>{title}</Text>}
+                description={<Text fz="sm" c="dimmed">{description}</Text>}
+                value={value}
+                onChange={(next) => onChange(next as T)}
+            >
+                <Stack gap={8} mt={12}>
+                    {options.map((option) => (
+                        <Radio
+                            key={option.value}
+                            value={option.value}
+                            label={option.label}
+                            styles={{radio: {'--radio-color': accent} as React.CSSProperties}}
+                        />
+                    ))}
+                </Stack>
+            </Radio.Group>
         </Paper>
     );
 }

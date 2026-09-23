@@ -10,6 +10,11 @@ import {
     setAiAutoOpenEnabled,
     loadAutoMateFromServer,
 } from '../../../functions/aiSettings';
+import {
+    isPanelHideButtonEnabled,
+    setPanelHideButtonEnabled,
+    loadPanelHideButtonSettingFromServer,
+} from '../../../functions/panelHideButtonSettings';
 import {deletePreference, getPreference, savePreference} from '../../services/preferencesApi';
 import {getTenantAddressFormatDefault} from '../../services/tenantSettingsApi';
 
@@ -19,6 +24,12 @@ jest.mock('../../../functions/aiSettings', () => ({
     isAiAutoOpenEnabled: jest.fn(),
     setAiAutoOpenEnabled: jest.fn(),
     loadAutoMateFromServer: jest.fn(),
+}));
+
+jest.mock('../../../functions/panelHideButtonSettings', () => ({
+    isPanelHideButtonEnabled: jest.fn(),
+    setPanelHideButtonEnabled: jest.fn(),
+    loadPanelHideButtonSettingFromServer: jest.fn(),
 }));
 
 jest.mock('../../services/preferencesApi', () => ({
@@ -36,6 +47,10 @@ const mockIsAiAutoOpenEnabled = isAiAutoOpenEnabled as jest.MockedFunction<typeo
 const mockSetAiEnabled = setAiEnabled as jest.MockedFunction<typeof setAiEnabled>;
 const mockSetAiAutoOpenEnabled = setAiAutoOpenEnabled as jest.MockedFunction<typeof setAiAutoOpenEnabled>;
 const mockLoadAutoMateFromServer = loadAutoMateFromServer as jest.MockedFunction<typeof loadAutoMateFromServer>;
+const mockIsPanelHideButtonEnabled = isPanelHideButtonEnabled as jest.MockedFunction<typeof isPanelHideButtonEnabled>;
+const mockSetPanelHideButtonEnabled = setPanelHideButtonEnabled as jest.MockedFunction<typeof setPanelHideButtonEnabled>;
+const mockLoadPanelHideButtonSettingFromServer =
+    loadPanelHideButtonSettingFromServer as jest.MockedFunction<typeof loadPanelHideButtonSettingFromServer>;
 const mockGetPreference = getPreference as jest.Mock;
 const mockSavePreference = savePreference as jest.Mock;
 const mockDeletePreference = deletePreference as jest.Mock;
@@ -54,6 +69,8 @@ describe('SettingsPage', () => {
         mockIsAiEnabled.mockReturnValue(false);
         mockIsAiAutoOpenEnabled.mockReturnValue(false);
         mockLoadAutoMateFromServer.mockResolvedValue(undefined);
+        mockIsPanelHideButtonEnabled.mockReturnValue(true);
+        mockLoadPanelHideButtonSettingFromServer.mockResolvedValue(undefined);
         mockGetPreference.mockResolvedValue(null);
         mockSavePreference.mockResolvedValue(undefined);
         mockDeletePreference.mockResolvedValue(undefined);
@@ -98,6 +115,32 @@ describe('SettingsPage', () => {
         await user.click(screen.getByRole('switch', {name: 'Show Auto-mate briefings'}));
 
         expect(mockSetAiEnabled).toHaveBeenCalledWith(true);
+    });
+
+    describe('Dashboard settings', () => {
+        it('renders the per-panel hide button toggle, checked by default', () => {
+            renderWithMantine(<SettingsPage />);
+
+            expect(screen.getByText('Show per-panel hide button')).toBeInTheDocument();
+            expect(screen.getByRole('switch', {name: 'Show per-panel hide button'})).toBeChecked();
+        });
+
+        it('reflects an existing opt-out', () => {
+            mockIsPanelHideButtonEnabled.mockReturnValue(false);
+
+            renderWithMantine(<SettingsPage />);
+
+            expect(screen.getByRole('switch', {name: 'Show per-panel hide button'})).not.toBeChecked();
+        });
+
+        it('persists a toggle immediately, with no separate save step', async () => {
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+
+            await user.click(screen.getByRole('switch', {name: 'Show per-panel hide button'}));
+
+            expect(mockSetPanelHideButtonEnabled).toHaveBeenCalledWith(false);
+        });
     });
 
     describe('Address format', () => {

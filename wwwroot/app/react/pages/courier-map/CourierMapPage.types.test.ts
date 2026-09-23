@@ -26,6 +26,7 @@ import type {
     MapControlsProps,
     UseCourierMapReturn,
 } from './CourierMapPage.types';
+import {LIVE_TEMPLATE} from './CourierMapDisplaySettings';
 
 describe('CourierMapPage Constants', () => {
     describe('US_BOUNDS', () => {
@@ -204,6 +205,23 @@ describe('CourierMapPage Constants', () => {
             expect(colors.active.text).toBe('#ffffff');
             expect(colors.idle.text).toBe('#ffffff');
         });
+
+        it('defaults to "status" coloring when colorMode is omitted', () => {
+            expect(getMarkerColors(theme)).toEqual(getMarkerColors(theme, 'status'));
+        });
+
+        it('collapses every status to one flat color in "single" mode', () => {
+            const colors = getMarkerColors(theme, 'single');
+            expect(colors.overdue).toEqual(colors.active);
+            expect(colors.idle).toEqual(colors.active);
+        });
+
+        it('uses the brand/primary color for the single-color mode', () => {
+            const colors = getMarkerColors(theme, 'single');
+            expect(colors.active.bg).toBe(theme.colors[theme.primaryColor][5]);
+            expect(colors.active.border).toBe(theme.colors[theme.primaryColor][7]);
+            expect(colors.active.text).toBe('#ffffff');
+        });
     });
 
 });
@@ -286,6 +304,8 @@ describe('CourierMapPage Type Definitions', () => {
                 onFitAll: jest.fn(),
                 onRefresh: jest.fn(),
                 isLoading: false,
+                displaySettings: LIVE_TEMPLATE,
+                onDisplaySettingsChange: jest.fn(),
             };
 
             expect(props.onFitAll).toBeDefined();
@@ -298,6 +318,8 @@ describe('CourierMapPage Type Definitions', () => {
                 onFitAll: jest.fn(),
                 onRefresh: jest.fn(),
                 isLoading: true,
+                displaySettings: LIVE_TEMPLATE,
+                onDisplaySettingsChange: jest.fn(),
             };
 
             expect(props.isLoading).toBe(true);

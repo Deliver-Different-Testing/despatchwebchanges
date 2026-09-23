@@ -1,4 +1,5 @@
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models.Ai;
 
 namespace DespatchWeb.Models.Response;
 

@@ -141,6 +141,79 @@ public class JobRepositoryOverviewViewsScopingTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetJobsForOverviewPageAsync_SelfReferencingParent_ChildJobsExcludesSelf()
+    {
+        // Arrange — SplitJobService marks a split job's parent row by setting
+        // ParentId to its own UcjbId (SplitJobService.cs:105-108), not null. TucJob.Parent/
+        // InverseParent is a plain self-referencing FK on ParentId, so that self-reference
+        // makes the parent match its own InverseParent query alongside its real child leg.
+        await using var context = _db.CreateContext();
+        context.TucJobs.AddRange(
+            new TucJob { UcjbId = 100, UcjbNumber = "JOB100", ParentId = 100, UcjbStatus = (int)JobStatus.Dispatched },
+            new TucJob
+            {
+                UcjbId = 101, UcjbNumber = "JOB100-1", ParentId = 100,
+                UcjbStatus = (int)JobStatus.Completed, UcjbJobDone = true
+            }
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetJobsForOverviewPageAsync(
+            JobStatusGroup.Active,
+            new OverviewJobsRequest { DespatchViewIds = [] },
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        var item = Assert.Single(result.Items);
+        Assert.Equal(100, item.JobId);
+
+        var child = Assert.Single(item.ChildJobs);
+        Assert.Equal(101, child.JobId);
+
+        // One real child, done — not 50% from the parent wrongly counting itself as a
+        // second, incomplete "child".
+        Assert.Equal(100, item.Completion);
+    }
+
+    [Fact]
+    public async Task GetJobsForOverviewPageAsync_ActiveChildOfCompletedParent_FamilyIsVisible()
+    {
+        // Arrange — a family's Active membership must consider every leg, not just the
+        // parent row. A child leg can still be active after its parent has completed
+        // (e.g. a follow-up leg added post-completion), and Job List/Open Jobs — which
+        // don't group by parent — show that leg regardless of the parent's own status.
+        // Deliveries groups by parent, so if it only checked the parent's status such a
+        // family would vanish from Active entirely: not a top-level row (fails the root
+        // test) and not reachable under any expand chevron (the parent row wouldn't be
+        // in the Active result to expand in the first place).
+        await using var context = _db.CreateContext();
+        context.TucJobs.AddRange(
+            new TucJob { UcjbId = 200, UcjbNumber = "JOB200", UcjbStatus = (int)JobStatus.Completed },
+            new TucJob { UcjbId = 201, UcjbNumber = "JOB200-1", ParentId = 200, UcjbStatus = (int)JobStatus.New }
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetJobsForOverviewPageAsync(
+            JobStatusGroup.Active,
+            new OverviewJobsRequest { DespatchViewIds = [] },
+            TestContext.Current.CancellationToken);
+
+        // Assert — the family surfaces under its parent row, with the active child
+        // reachable under the expand chevron.
+        var item = Assert.Single(result.Items);
+        Assert.Equal(200, item.JobId);
+
+        var child = Assert.Single(item.ChildJobs);
+        Assert.Equal(201, child.JobId);
+    }
+
+    [Fact]
     public async Task ResolveParentScopedJobs_MatchOnChildLeg_ReturnsParent()
     {
         // Arrange — a despatch view's WhereCondition is evaluated against the leg-level

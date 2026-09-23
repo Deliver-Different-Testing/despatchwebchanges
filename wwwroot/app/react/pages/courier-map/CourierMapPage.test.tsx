@@ -10,12 +10,23 @@ import {QueryClient} from '@tanstack/react-query';
 import {CourierMapPage} from './CourierMapPage';
 import type {CourierMapPageProps} from './CourierMapPage.types';
 import * as courierApi from '../../services/courierApi';
+import * as preferencesApi from '../../services/preferencesApi';
+import {StaffPreferenceKey} from '../../../enums/staff-preference-key.enum';
+import {CLASSIC_TEMPLATE} from './CourierMapDisplaySettings';
 import {renderWithMantine} from '../../__testUtils__';
+import {setupUser} from '../../__testUtils__/setupUser';
 
 // Mock the courier API
 jest.mock('../../services/courierApi', () => ({
     getAvailableCourierLocations: jest.fn(),
     getAllFleetOptions: jest.fn(),
+}));
+
+// Mock the StaffPreference API — the display-settings load/save round trip isn't this
+// file's concern, and letting it hit the network trips the test setup's unmocked-request guard.
+jest.mock('../../services/preferencesApi', () => ({
+    getPreference: jest.fn(() => Promise.resolve(null)),
+    savePreference: jest.fn(() => Promise.resolve()),
 }));
 
 // Mock useCourierMap hook
@@ -176,6 +187,41 @@ describe('CourierMapPage Component', () => {
             // MapZoomViewControls (shared with the dispatch map) provides MUI zoom buttons
             expect(screen.getByLabelText('Zoom in')).toBeInTheDocument();
             expect(screen.getByLabelText('Zoom out')).toBeInTheDocument();
+        });
+    });
+
+    describe('Display Settings', () => {
+        it('renders the display-settings control alongside fit-all and refresh', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            expect(screen.getByLabelText('Display settings')).toBeInTheDocument();
+        });
+
+        it('loads a saved display-settings preference on mount without re-saving it', async () => {
+            (preferencesApi.getPreference as jest.Mock).mockResolvedValueOnce(JSON.stringify(CLASSIC_TEMPLATE));
+
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            await waitFor(() => {
+                expect(preferencesApi.getPreference).toHaveBeenCalledWith(StaffPreferenceKey.CourierMapDisplaySettings);
+            });
+            expect(preferencesApi.savePreference).not.toHaveBeenCalled();
+        });
+
+        it('saves the picked preset as the new preference', async () => {
+            const user = setupUser();
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByText('Classic'));
+
+            expect(preferencesApi.savePreference).toHaveBeenCalledWith(
+                StaffPreferenceKey.CourierMapDisplaySettings,
+                JSON.stringify(CLASSIC_TEMPLATE),
+            );
         });
     });
 

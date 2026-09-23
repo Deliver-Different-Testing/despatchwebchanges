@@ -14,6 +14,7 @@ import {islandTree} from '../../theme/DfrntMantineProvider';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {DispatchPage, DispatchPageProps, DispatchLayoutBridge} from './DispatchPage';
 import type {DispatchFilters, DispatchRefreshIntervals} from './lib/dispatchFilters';
+import type {CourierDisplayMode} from './lib/courierDisplayMode';
 import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import type {ImportLayoutsResult} from '../../components/common/box-shell/layoutPersistence';
 import {createPageHost} from '../../utils/reactPageHost';
@@ -142,12 +143,17 @@ export function updateRefreshIntervals(intervals: Partial<DispatchRefreshInterva
     layoutBridge?.updateRefreshIntervals(intervals);
 }
 
+/** Apply a newly-saved courier display mode (settings dialog) without a page reload. */
+export function updateCourierDisplayMode(mode: CourierDisplayMode): void {
+    layoutBridge?.updateCourierDisplayMode(mode);
+}
+
 /** Restore the current layout to the shipped arrangement (toolbar → Layouts → Reset layout). */
 export function resetCurrentLayout(): void {
     layoutBridge?.resetCurrentLayout();
 }
 
-/** Show or hide the "Edit Layout" bar (toolbar → Layouts → Edit Layout). */
+/** Show or hide the "Edit columns" bar (toolbar → Layouts → Edit columns). */
 export function setColumnEditMode(enabled: boolean): void {
     layoutBridge?.setColumnEditMode(enabled);
 }
@@ -179,6 +185,7 @@ declare global {
             registerViewsListener: typeof registerViewsListener;
             setViewSelection: typeof setViewSelection;
             updateRefreshIntervals: typeof updateRefreshIntervals;
+            updateCourierDisplayMode: typeof updateCourierDisplayMode;
             resetCurrentLayout: typeof resetCurrentLayout;
             setColumnEditMode: typeof setColumnEditMode;
             openInterCourierCharge: typeof openInterCourierCharge;
@@ -200,6 +207,7 @@ window.ReactDispatch = {
     registerViewsListener,
     setViewSelection,
     updateRefreshIntervals,
+    updateCourierDisplayMode,
     resetCurrentLayout,
     setColumnEditMode,
     openInterCourierCharge,

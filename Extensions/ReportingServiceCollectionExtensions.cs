@@ -11,6 +11,7 @@ public static class ReportingServiceCollectionExtensions
         services.AddScoped<ICourierReportService, CourierReportService>();
         services.AddScoped<IPodReportService, PodReportService>();
         services.AddScoped<IPriceReportService, PriceReportService>();
+        
         services.AddHttpClient<IPdfOverlayClient, PdfOverlayClient>();
 
         return services;

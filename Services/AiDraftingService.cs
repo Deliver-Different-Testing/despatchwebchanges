@@ -4,6 +4,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Ai;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;

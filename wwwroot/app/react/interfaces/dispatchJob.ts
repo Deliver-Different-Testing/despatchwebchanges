@@ -284,6 +284,13 @@ export interface FetchConfig {
     initialParams: JobListSearchParams;
     /** Auto-refresh interval in ms (React Query refetchInterval). `false`/undefined = off. */
     refetchInterval?: number | false;
+    /**
+     * Set when the fetch returns the full result set and has no backend search
+     * support (e.g. Current Work, which loads a courier's whole job list with
+     * no `searchText`/pagination params). The panel filters locally instead of
+     * forwarding `searchText` to the fetch.
+     */
+    clientSideSearch?: boolean;
 }
 
 // ── Mount Configuration ──────────────────────────────────────────────

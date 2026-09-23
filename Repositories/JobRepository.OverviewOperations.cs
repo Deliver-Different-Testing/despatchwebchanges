@@ -38,10 +38,19 @@ public partial class JobRepository
         // Apply status group - filter early
         query = statusGroup switch
         {
+            // A family counts as Active if the parent itself is Active, or any child leg
+            // still is — a child can remain active after its parent has completed (e.g. a
+            // follow-up leg), and grouping by parent must not make that leg disappear.
             JobStatusGroup.Active => query.Where(j =>
-                j.UcjbStatus.HasValue
-                && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
-                && !j.UcjbVoid
+                (j.UcjbStatus.HasValue
+                    && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
+                    && !j.UcjbVoid)
+                || j.InverseParent.Any(c =>
+                    c.UcjbId != j.UcjbId
+                    && !c.UcjbVoid
+                    && c.UcjbStatus.HasValue
+                    && JobStatusGroups.Active.Contains(c.UcjbStatus.Value)
+                )
             ),
 
             JobStatusGroup.Completed => query.Where(j =>
@@ -144,16 +153,18 @@ public partial class JobRepository
                 Driver = j.UcjbCourier != null
                     ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     : null,
-                Completion = j.InverseParent.Any()
+                Completion = j.InverseParent.Any(c => c.UcjbId != j.UcjbId)
                     ? (int)Math.Round(
                         100.0 * j.InverseParent.Count(c =>
-                            c.UcjbJobDone
-                            || (c.UcjbStatus.HasValue
-                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                        ) / j.InverseParent.Count
+                            c.UcjbId != j.UcjbId
+                            && (c.UcjbJobDone
+                                || (c.UcjbStatus.HasValue
+                                    && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)))
+                        ) / j.InverseParent.Count(c => c.UcjbId != j.UcjbId)
                     )
                     : 0,
                 ChildJobs = j.InverseParent
+                    .Where(c => c.UcjbId != j.UcjbId)
                     .Select(c => new ChildDeliveryJob
                     {
                         JobId = c.UcjbId,
@@ -211,7 +222,8 @@ public partial class JobRepository
                         Lng = j.DeliveryLongitude ?? 0
                     },
                     ChildJobs = j
-                        .InverseParent.Select(c => new OverviewChildJobLocation
+                        .InverseParent.Where(c => c.UcjbId != j.UcjbId)
+                        .Select(c => new OverviewChildJobLocation
                         {
                             Id = c.UcjbId,
                             Pickup = new Coordinates
@@ -415,17 +427,19 @@ public partial class JobRepository
             "completion" => isAscending
                 ? query.OrderBy(j =>
                     100.0 * j.InverseParent.Count(c =>
-                        c.UcjbJobDone
-                        || (c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / j.InverseParent.Count
+                        c.UcjbId != j.UcjbId
+                        && (c.UcjbJobDone
+                            || (c.UcjbStatus.HasValue
+                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)))
+                    ) / j.InverseParent.Count(c => c.UcjbId != j.UcjbId)
                 )
                 : query.OrderByDescending(j =>
                     100.0 * j.InverseParent.Count(c =>
-                        c.UcjbJobDone
-                        || (c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / j.InverseParent.Count
+                        c.UcjbId != j.UcjbId
+                        && (c.UcjbJobDone
+                            || (c.UcjbStatus.HasValue
+                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)))
+                    ) / j.InverseParent.Count(c => c.UcjbId != j.UcjbId)
                 ),
 
             "pickup" => isAscending

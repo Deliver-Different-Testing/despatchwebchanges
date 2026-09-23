@@ -48,18 +48,18 @@ const twoBoxBoxes = {
 };
 
 describe('BoxShell layout affordances', () => {
-    it.each(['Default', 'My Layout'])('offers reorder in Edit Layout mode on the %s layout', (name) => {
-        renderShell({layout: {...layout, name}, onMoveBox: jest.fn(), columnEditMode: true});
+    it('offers reorder on a custom layout without needing Edit columns mode', () => {
+        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
 
         expect(screen.getByRole('button', {name: /Reorder/})).toBeInTheDocument();
         expect(screen.getByText('Live Job Data')).toBeInTheDocument();
     });
 
-    it('offers no reorder or resize affordances outside Edit Layout mode', () => {
+    it('offers no reorder or resize affordances on the Default layout', () => {
         const {container} = renderShell({
             layout: {
                 ...layout,
-                name: 'My Layout',
+                name: 'Default',
                 layout: {
                     columns: [
                         {id: 'col1', width: '50%', boxes: [{name: 'jobList', title: 'Live Job Data', visible: true}]},
@@ -72,22 +72,45 @@ describe('BoxShell layout affordances', () => {
                 map: {name: 'map', title: 'Map', visible: true},
             },
             onMoveBox: jest.fn(),
+            isDefaultLayout: true,
         });
 
         expect(screen.queryByRole('button', {name: /Reorder/})).not.toBeInTheDocument();
         expect(container.querySelectorAll('[data-panel-resize-handle]')).toHaveLength(0);
     });
 
+    it('offers a hide button alongside reorder on a custom layout', () => {
+        const onHideBox = jest.fn();
+        renderShell({onMoveBox: jest.fn(), onHideBox});
+
+        fireEvent.click(screen.getByRole('button', {name: /Hide/}));
+
+        expect(onHideBox).toHaveBeenCalledWith('jobList');
+    });
+
+    it('offers no hide button on the Default layout', () => {
+        renderShell({onMoveBox: jest.fn(), onHideBox: jest.fn(), isDefaultLayout: true});
+
+        expect(screen.queryByRole('button', {name: /Hide/})).not.toBeInTheDocument();
+    });
+
+    it('hides the hide button when the user has turned it off, without affecting reorder', () => {
+        renderShell({onMoveBox: jest.fn(), onHideBox: jest.fn(), hideButtonEnabled: false});
+
+        expect(screen.queryByRole('button', {name: /Hide/})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /Reorder/})).toBeInTheDocument();
+    });
+
     it('has no collapse control', () => {
-        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn(), columnEditMode: true});
+        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
 
         expect(screen.queryByRole('button', {name: /Collapse|Expand/})).not.toBeInTheDocument();
     });
 
-    it('hides the columns bar until "Edit Layout" mode is on', () => {
+    it('hides the columns bar until "Edit columns" mode is on', () => {
         renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
 
-        expect(screen.queryByText('Editing layout')).not.toBeInTheDocument();
+        expect(screen.queryByText('Editing columns')).not.toBeInTheDocument();
         expect(screen.queryByRole('group', {name: /number of columns/i})).not.toBeInTheDocument();
     });
 
@@ -156,10 +179,10 @@ describe('BoxShell columns bar', () => {
         ...props,
     });
 
-    it.each(['Default', 'My Layout'])('shows the stepper on the %s layout', (name) => {
-        editing({layout: multiCol(name, 2)});
+    it('shows the stepper on a custom layout', () => {
+        editing({layout: multiCol('My Layout', 2)});
 
-        expect(screen.getByText('Editing layout')).toBeInTheDocument();
+        expect(screen.getByText('Editing columns')).toBeInTheDocument();
         expect(screen.getByRole('group', {name: /number of columns/i})).toHaveTextContent('2');
     });
 
@@ -211,10 +234,20 @@ describe('BoxShell resize persistence', () => {
         map: {name: 'map', title: 'Map', visible: true},
     };
 
-    it.each(['Default', 'My Layout'])('renders a resize gutter between columns on the %s layout in Edit Layout mode', (name) => {
-        const {container} = renderShell({layout: multiCol(name), boxes: multiColBoxes, columnEditMode: true});
+    it('renders a resize gutter between columns on a custom layout without needing Edit columns mode', () => {
+        const {container} = renderShell({layout: multiCol('My Layout'), boxes: multiColBoxes});
 
         expect(container.querySelectorAll('[data-panel-resize-handle]')).toHaveLength(1);
+    });
+
+    it('renders no resize gutter on the Default layout', () => {
+        const {container} = renderShell({
+            layout: multiCol('Default'),
+            boxes: multiColBoxes,
+            isDefaultLayout: true,
+        });
+
+        expect(container.querySelectorAll('[data-panel-resize-handle]')).toHaveLength(0);
     });
 
     it('ignores the layout emitted on mount so a fresh load persists nothing', () => {

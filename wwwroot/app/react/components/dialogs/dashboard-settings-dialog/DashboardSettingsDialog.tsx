@@ -10,7 +10,7 @@
 
 import React, {useState} from 'react';
 import {Box, Divider, Group, Select, Paper, Stack, Text} from '@mantine/core';
-import {Clock, Settings, Sparkles} from 'lucide-react';
+import {Clock, IdCard, Settings, Sparkles} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {
     DialogFooter,
@@ -19,7 +19,15 @@ import {
     dialogContentBg,
     dialogSize,
 } from '../shared/mantine';
-import {SectionHeading, SettingRow} from '../../common/settings-controls/SettingsControls';
+import {SectionHeading, SettingRadioGroup, SettingRow} from '../../common/settings-controls/SettingsControls';
+import type {CourierDisplayMode} from '../../../interfaces';
+
+const COURIER_DISPLAY_MODE_OPTIONS: {value: CourierDisplayMode; label: string}[] = [
+    {value: 'off', label: 'Off'},
+    {value: 'name', label: 'Show Courier Name'},
+    {value: 'number', label: 'Show Courier Number'},
+    {value: 'both', label: 'Show Name and Number'},
+];
 
 // Types that mirror the AngularJS interfaces
 export interface RefreshOption {
@@ -44,6 +52,8 @@ export interface DashboardSettingsConfig {
     showTaskRefresh?: boolean;
     /** Show the "Use the new Nationwide" toggle (on by default). Nationwide settings only. */
     showNationwideBetaToggle?: boolean;
+    /** Show the "Current Work title" courier display setting. Dispatch page only. */
+    showCourierDisplayMode?: boolean;
 }
 
 export interface DashboardSettingsResult {
@@ -52,6 +62,8 @@ export interface DashboardSettingsResult {
     selectedTaskRefreshInterval?: RefreshOption;
     /** Set when `showNationwideBetaToggle` is true; the caller persists + redirects. */
     nationwideBetaEnabled?: boolean;
+    /** Set when `showCourierDisplayMode` is true; the caller persists + applies it. */
+    courierDisplayMode?: CourierDisplayMode;
 }
 
 export interface DashboardSettingsDialogProps {
@@ -62,6 +74,7 @@ export interface DashboardSettingsDialogProps {
     selectedTaskRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
     nationwideBetaEnabled?: boolean;
+    selectedCourierDisplayMode?: CourierDisplayMode;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
 }
@@ -110,6 +123,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     selectedTaskRefreshInterval: initialTaskInterval,
     refreshOptions,
     nationwideBetaEnabled: initialNationwideBetaEnabled,
+    selectedCourierDisplayMode: initialCourierDisplayMode,
     onClose,
     onSave,
 }) => {
@@ -125,6 +139,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [nationwideBetaEnabled, setNationwideBetaEnabled] = useState<boolean>(
         initialNationwideBetaEnabled ?? true,
     );
+    const [courierDisplayMode, setCourierDisplayMode] = useState<CourierDisplayMode>(
+        initialCourierDisplayMode ?? 'off',
+    );
 
     const handleSave = () => {
         onSave({
@@ -132,6 +149,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             selectedDriverLocationRefreshInterval: driverLocationInterval,
             selectedTaskRefreshInterval: taskInterval,
             nationwideBetaEnabled: config.showNationwideBetaToggle ? nationwideBetaEnabled : undefined,
+            ...(config.showCourierDisplayMode ? {courierDisplayMode} : {}),
         });
     };
 
@@ -189,6 +207,19 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         and off again at any time if you hit a problem. Applies to your account only."
                     checked={nationwideBetaEnabled}
                     onToggle={() => setNationwideBetaEnabled((prev) => !prev)}
+                />
+            </Box>
+        ),
+
+        config.showCourierDisplayMode && (
+            <Box p={24} key="courierDisplayMode">
+                <SectionHeading icon={<Icon lucide={IdCard}/>} title="Current Work title"/>
+                <SettingRadioGroup<CourierDisplayMode>
+                    title="Courier info on the Current Work title"
+                    description="Choose what shows once a courier is focused in the Current Work panel."
+                    value={courierDisplayMode}
+                    options={COURIER_DISPLAY_MODE_OPTIONS}
+                    onChange={setCourierDisplayMode}
                 />
             </Box>
         ),

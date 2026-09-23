@@ -11,6 +11,8 @@ export interface CourierSearchFieldProps {
     placeholder?: string;
     /** Used to warn when a typed code matches no courier (V1 parity). */
     showToast?: ShowToastFn;
+    /** Grabs focus on mount — used when the field is revealed from a header toggle. */
+    autoFocus?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export const CourierSearchField: React.FC<CourierSearchFieldProps> = ({
     onSelect,
     placeholder = 'Search courier by name or code…',
     showToast,
+    autoFocus,
 }) => {
     const [term, setTerm] = useState('');
     const [lookingUp, setLookingUp] = useState(false);
@@ -78,6 +81,7 @@ export const CourierSearchField: React.FC<CourierSearchFieldProps> = ({
                 key={resetKey}
                 aria-label="Search courier"
                 placeholder={placeholder}
+                autoFocus={autoFocus}
                 value={null}
                 onChange={(courier) => {
                     if (courier) select(courier);

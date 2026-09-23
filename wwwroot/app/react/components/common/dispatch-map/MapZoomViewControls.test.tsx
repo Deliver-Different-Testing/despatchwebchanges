@@ -1,8 +1,9 @@
 
 import React from 'react';
-import {screen, fireEvent} from '@testing-library/react';
+import {screen, fireEvent, act} from '@testing-library/react';
 import {setupUser} from '../../../__testUtils__/setupUser';
 import {MapZoomViewControls} from './MapZoomViewControls';
+import type {MapZoomViewControlsHandle} from './MapZoomViewControls';
 import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 function createMockMap() {
@@ -136,5 +137,71 @@ describe('MapZoomViewControls', () => {
         renderWithTheme(<MapZoomViewControls map={null} platform={null} defaultLayers={createMockLayers()}/>);
         expect(() => fireEvent.click(screen.getByLabelText('Zoom in'))).not.toThrow();
         expect(() => fireEvent.click(screen.getByLabelText('Zoom out'))).not.toThrow();
+    });
+
+    describe('defaultView / defaultTrafficEnabled', () => {
+        it('applies the base layer and traffic layer on mount when given non-default values', () => {
+            const map = createMockMap();
+            const layers = createMockLayers();
+            renderWithTheme(
+                <MapZoomViewControls
+                    map={map} platform={null} defaultLayers={layers}
+                    defaultView="satellite" defaultTrafficEnabled
+                />,
+            );
+
+            expect(map.setBaseLayer).toHaveBeenCalledWith(layers.raster.satellite.map);
+            expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.normal.traffic);
+            expect(screen.getByLabelText('Toggle traffic conditions')).toHaveAttribute('data-active', 'true');
+        });
+
+        it('does not touch the map when defaultView/defaultTrafficEnabled are omitted (today\'s behaviour)', () => {
+            const map = createMockMap();
+            renderWithTheme(<MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers()}/>);
+
+            expect(map.setBaseLayer).not.toHaveBeenCalled();
+            expect(map.addLayer).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('imperative handle', () => {
+        it('setView switches the base layer and updates the active view menu item', () => {
+            const map = createMockMap();
+            const layers = createMockLayers();
+            const ref = React.createRef<MapZoomViewControlsHandle>();
+            renderWithTheme(<MapZoomViewControls ref={ref} map={map} platform={null} defaultLayers={layers}/>);
+
+            act(() => ref.current?.setView('satellite'));
+
+            expect(map.setBaseLayer).toHaveBeenCalledWith(layers.raster.satellite.map);
+            fireEvent.click(screen.getByLabelText('Choose view'));
+            const satelliteItem = screen.getByText('Satellite').closest('[data-selected]');
+            expect(satelliteItem).toHaveAttribute('data-selected', 'true');
+        });
+
+        it('setTrafficEnabled adds/removes the traffic layer and updates the rail button state', () => {
+            const map = createMockMap();
+            const layers = createMockLayers();
+            const ref = React.createRef<MapZoomViewControlsHandle>();
+            renderWithTheme(<MapZoomViewControls ref={ref} map={map} platform={null} defaultLayers={layers}/>);
+
+            act(() => ref.current?.setTrafficEnabled(true));
+            expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.normal.traffic);
+            expect(screen.getByLabelText('Toggle traffic conditions')).toHaveAttribute('data-active', 'true');
+
+            act(() => ref.current?.setTrafficEnabled(false));
+            expect(map.removeLayer).toHaveBeenCalledWith(layers.vector!.normal.traffic);
+            expect(screen.getByLabelText('Toggle traffic conditions')).toHaveAttribute('data-active', 'false');
+        });
+
+        it("does not touch the map when the imperative call is a no-op (already at that state)", () => {
+            const map = createMockMap();
+            const layers = createMockLayers();
+            const ref = React.createRef<MapZoomViewControlsHandle>();
+            renderWithTheme(<MapZoomViewControls ref={ref} map={map} platform={null} defaultLayers={layers}/>);
+
+            act(() => ref.current?.setTrafficEnabled(false));
+            expect(map.removeLayer).not.toHaveBeenCalled();
+        });
     });
 });

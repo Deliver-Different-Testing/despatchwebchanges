@@ -12,21 +12,26 @@ import type { UseCourierMapReturn } from './CourierMapPage.types';
 import { DEFAULT_ZOOM, OVERVIEW_ZOOM, getMarkerColors } from './CourierMapPage.types';
 import { initPlatform, createMap } from '../../components/common/here-map/hereMapUtils';
 import { CourierMarkerManager } from './CourierMarkerManager';
+import type { CourierMapDisplaySettings } from './CourierMapDisplaySettings';
 
 interface UseCourierMapOptions {
     apiKey: string | null;
     isUsCustomer: boolean;
     mapCenter: { lat: number; lng: number };
+    displaySettings: CourierMapDisplaySettings;
 }
 
 export function useCourierMap({
     apiKey,
     isUsCustomer,
     mapCenter,
+    displaySettings,
 }: UseCourierMapOptions): UseCourierMapReturn {
     const theme = useMantineTheme();
     const themeRef = useRef(theme);
     themeRef.current = theme;
+    const displaySettingsRef = useRef(displaySettings);
+    displaySettingsRef.current = displaySettings;
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const platformRef = useRef<any>(null);
@@ -74,7 +79,8 @@ export function useCourierMap({
             // markers and the driver list stay in step with the palette.
             markerManagerRef.current = new CourierMarkerManager(
                 mapInstanceRef.current,
-                getMarkerColors(themeRef.current)
+                getMarkerColors(themeRef.current, displaySettingsRef.current.colorMode),
+                displaySettingsRef.current
             );
 
             // Track user zoom changes
@@ -102,6 +108,16 @@ export function useCourierMap({
             setIsInitialized(false);
         };
     }, [apiKey, isUsCustomer, mapCenter]);
+
+    // Repaint existing markers immediately when the display settings change (a settings
+    // menu edit or a template pick), rather than waiting for the next 30s poll.
+    useEffect(() => {
+        if (!isInitialized || !markerManagerRef.current) return;
+        markerManagerRef.current.updateSettings(
+            getMarkerColors(themeRef.current, displaySettings.colorMode),
+            displaySettings
+        );
+    }, [isInitialized, displaySettings]);
 
     // Update couriers on the map
     const updateCouriers = useCallback(
