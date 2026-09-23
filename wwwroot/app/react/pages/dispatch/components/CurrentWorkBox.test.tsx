@@ -114,9 +114,6 @@ describe('CurrentWorkBox', () => {
             expect(screen.getByText(/select a courier to view/i)).toBeInTheDocument();
 
             await act(async () => {
-                screen.getByRole('button', {name: 'Search courier'}).click();
-            });
-            await act(async () => {
                 courierSearchSelectRef.fn?.({id: 99, text: 'Courier 99'});
             });
 
@@ -188,7 +185,7 @@ describe('CurrentWorkBox', () => {
 
         it('does not offer the direct courier search — the drivers overview already has its own filter', () => {
             renderBox({isUsCustomer: true});
-            expect(screen.queryByRole('button', {name: 'Search courier'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
             expect(screen.getByTestId('mock-all-drivers')).toBeInTheDocument();
         });
     });
@@ -209,7 +206,7 @@ describe('CurrentWorkBox', () => {
                 expect(within(slot).getByRole('radio', {name: /all drivers/i})).toBeInTheDocument();
                 expect(within(slot).getByRole('radio', {name: 'Jane Smith'})).toBeInTheDocument();
                 expect(within(slot).getByRole('button', {name: 'Truck loading status'})).toBeInTheDocument();
-                expect(within(slot).queryByRole('button', {name: 'Search courier'})).not.toBeInTheDocument();
+                expect(within(slot).queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
             } finally {
                 document.body.removeChild(slot);
             }
@@ -220,7 +217,7 @@ describe('CurrentWorkBox', () => {
             document.body.appendChild(slot);
             try {
                 renderBox({headerSlot: slot});
-                expect(within(slot).getByRole('button', {name: 'Search courier'})).toBeInTheDocument();
+                expect(within(slot).getByRole('button', {name: 'pick-courier'})).toBeInTheDocument();
             } finally {
                 document.body.removeChild(slot);
             }
@@ -303,51 +300,20 @@ describe('CurrentWorkBox', () => {
         });
     });
 
-    describe('courier search toggle', () => {
-        it('keeps the search field collapsed behind a header button until clicked', () => {
+    describe('courier search', () => {
+        it('is always visible, with no toggle button to reveal it', () => {
             renderBox();
-            expect(screen.getByRole('button', {name: 'Search courier'})).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
-        });
-
-        it('reveals the search field and hides the toggle button when clicked', async () => {
-            renderBox();
-
-            await act(async () => {
-                screen.getByRole('button', {name: 'Search courier'}).click();
-            });
-
             expect(screen.getByRole('button', {name: 'pick-courier'})).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: 'Search courier'})).not.toBeInTheDocument();
         });
 
-        it('collapses back to the toggle button after picking a courier', async () => {
+        it('stays visible after picking a courier', async () => {
             renderBox();
 
-            await act(async () => {
-                screen.getByRole('button', {name: 'Search courier'}).click();
-            });
             await act(async () => {
                 courierSearchSelectRef.fn?.({id: 99, text: 'Courier 99'});
             });
 
-            expect(screen.getByRole('button', {name: 'Search courier'})).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
-        });
-
-        it('collapses back to the toggle button on blur, without picking a courier', async () => {
-            renderBox();
-
-            await act(async () => {
-                screen.getByRole('button', {name: 'Search courier'}).click();
-            });
-            await act(async () => {
-                screen.getByRole('button', {name: 'pick-courier'}).focus();
-                screen.getByRole('button', {name: 'pick-courier'}).blur();
-            });
-
-            expect(screen.getByRole('button', {name: 'Search courier'})).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: 'pick-courier'})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'pick-courier'})).toBeInTheDocument();
         });
     });
 });

@@ -30,7 +30,7 @@ export interface CourierSearchFieldProps {
  */
 export const CourierSearchField: React.FC<CourierSearchFieldProps> = ({
     onSelect,
-    placeholder = 'Search courier by name or code…',
+    placeholder = 'Search by courier name or number',
     showToast,
     autoFocus,
 }) => {
