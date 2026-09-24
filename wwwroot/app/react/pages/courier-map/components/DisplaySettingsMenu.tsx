@@ -8,13 +8,57 @@
  */
 
 import React, {useState} from 'react';
-import {ActionIcon, Divider, Group, Popover, SegmentedControl, Stack, Switch, Text, Tooltip} from '@mantine/core';
+import {ActionIcon, ColorInput, Divider, Group, Popover, SegmentedControl, Stack, Switch, Text, Tooltip, UnstyledButton} from '@mantine/core';
 import {Settings} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
+import {darkenHex} from '../CourierMapPage.types';
+import {dfrntBrand} from '../../../theme/dfrntMantineTheme';
 import {CLASSIC_TEMPLATE, LIVE_TEMPLATE, matchesTemplate} from '../CourierMapDisplaySettings';
 import type {CourierMapDisplaySettings} from '../CourierMapDisplaySettings';
 
 const ICON_SIZE = 20;
+
+/** Same darken fraction the live map applies to a custom flag's border — keeps the preview honest. */
+const PREVIEW_BORDER_DARKEN_AMOUNT = 0.2;
+
+/** Matches the map's own fallback (`getMarkerColors`'s single-mode default) so the preview is accurate before a custom color is picked. */
+const DEFAULT_FLAG_BG = '#228be6';
+const DEFAULT_FLAG_TEXT = '#ffffff';
+
+/** Quick-pick swatches: the app's own status/brand hexes, so a chosen flag color still reads as "this app" rather than an arbitrary color. */
+const FLAG_COLOR_SWATCHES = [
+    dfrntBrand.red, dfrntBrand.orange, dfrntBrand.gold, dfrntBrand.green,
+    dfrntBrand.cyan, dfrntBrand.reflexBlue, dfrntBrand.purple, dfrntBrand.inkBlue,
+];
+const TEXT_COLOR_SWATCHES = [dfrntBrand.white, dfrntBrand.inkBlue];
+
+/** The same pill-on-a-stem shape `createCourierFlagSvg` draws on the live map, at settings-menu scale. */
+function FlagPreview({bg, text}: {bg: string; text: string}) {
+    const border = darkenHex(bg, PREVIEW_BORDER_DARKEN_AMOUNT);
+    return (
+        <Group gap={0} align="stretch" wrap="nowrap" style={{alignSelf: 'flex-start'}}>
+            <Stack gap={0} align="flex-start">
+                <div
+                    style={{
+                        background: bg,
+                        color: text,
+                        border: `1px solid ${border}`,
+                        borderRadius: 999,
+                        padding: '3px 12px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        lineHeight: 1.3,
+                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.24)',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    Dave 4
+                </div>
+                <div style={{width: 2, height: 10, marginLeft: 10, background: border}}/>
+            </Stack>
+        </Group>
+    );
+}
 
 interface DisplaySettingsMenuProps {
     settings: CourierMapDisplaySettings;
@@ -93,6 +137,43 @@ export function DisplaySettingsMenu({settings, onChange}: DisplaySettingsMenuPro
                             ]}
                         />
                     </Stack>
+
+                    {settings.colorMode === 'single' && (
+                        <Stack gap={4}>
+                            <Group justify="space-between" gap="xs">
+                                <Text size="xs" fw={600} c="dimmed">Custom colors</Text>
+                                {(settings.singleColor || settings.singleTextColor) && (
+                                    <UnstyledButton
+                                        onClick={() => onChange({...settings, singleColor: undefined, singleTextColor: undefined})}
+                                    >
+                                        <Text size="xs" c="blue">Reset</Text>
+                                    </UnstyledButton>
+                                )}
+                            </Group>
+                            <FlagPreview
+                                bg={settings.singleColor ?? DEFAULT_FLAG_BG}
+                                text={settings.singleTextColor ?? DEFAULT_FLAG_TEXT}
+                            />
+                            <ColorInput
+                                size="xs"
+                                label="Flag color"
+                                placeholder="Default blue"
+                                value={settings.singleColor ?? ''}
+                                onChange={(value) => onChange({...settings, singleColor: value || undefined})}
+                                swatches={FLAG_COLOR_SWATCHES}
+                                swatchesPerRow={8}
+                            />
+                            <ColorInput
+                                size="xs"
+                                label="Text color"
+                                placeholder="Default white"
+                                value={settings.singleTextColor ?? ''}
+                                onChange={(value) => onChange({...settings, singleTextColor: value || undefined})}
+                                swatches={TEXT_COLOR_SWATCHES}
+                                swatchesPerRow={2}
+                            />
+                        </Stack>
+                    )}
                 </Stack>
             </Popover.Dropdown>
         </Popover>

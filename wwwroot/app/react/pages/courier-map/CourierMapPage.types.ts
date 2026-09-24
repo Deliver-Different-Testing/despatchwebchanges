@@ -61,21 +61,43 @@ export const MARKER_COLORS: Record<DriverStatus, MarkerColor> = {
 const MAIN_SHADE = 5;
 const DARK_SHADE = 7;
 
+/** How much darker the border is than a custom single-color bg (fraction of each RGB channel). */
+const CUSTOM_BORDER_DARKEN_AMOUNT = 0.2;
+
+/**
+ * Darkens a hex color by a fixed fraction of each RGB channel. Used to derive a marker's
+ * border from a user-chosen custom bg color, so custom flags keep the same bg+darker-edge
+ * look as the built-in status/brand colors instead of a flat, borderless fill.
+ */
+export function darkenHex(hex: string, amount: number): string {
+    const clean = hex.replace('#', '');
+    const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+    const num = parseInt(full, 16);
+    const channel = (shift: number) => Math.max(0, ((num >> shift) & 0xff) * (1 - amount));
+    const toHex = (v: number) => Math.round(v).toString(16).padStart(2, '0');
+    return `#${toHex(channel(16))}${toHex(channel(8))}${toHex(channel(0))}`;
+}
+
 /**
  * 'status' (default) keeps the red/brand/green split above. 'single' collapses every
- * status to the brand color — for the courier-map display setting that trades status
- * at-a-glance for a flatter, reference-screenshot look.
+ * status to one flat color — for the courier-map display setting that trades status
+ * at-a-glance for a flatter, reference-screenshot look. Defaults to a fixed blue
+ * (independent of tenant brand) unless the caller supplies a user-chosen customColor.
  */
 export function getMarkerColors(
     theme: MantineTheme,
     colorMode: 'status' | 'single' = 'status',
+    customColor?: { bg: string; text: string },
 ): Record<DriverStatus, MarkerColor> {
     const ramp = (name: string) => theme.colors[name] ?? theme.colors.gray;
     const brand = ramp(theme.primaryColor);
     const brandColor: MarkerColor = { bg: brand[MAIN_SHADE], border: brand[DARK_SHADE], text: '#ffffff' };
 
     if (colorMode === 'single') {
-        return { overdue: brandColor, active: brandColor, idle: brandColor };
+        const singleColor: MarkerColor = customColor
+            ? { bg: customColor.bg, border: darkenHex(customColor.bg, CUSTOM_BORDER_DARKEN_AMOUNT), text: customColor.text }
+            : { bg: ramp('blue')[MAIN_SHADE], border: ramp('blue')[DARK_SHADE], text: '#ffffff' };
+        return { overdue: singleColor, active: singleColor, idle: singleColor };
     }
 
     return {

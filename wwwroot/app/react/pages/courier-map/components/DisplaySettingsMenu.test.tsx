@@ -86,4 +86,70 @@ describe('DisplaySettingsMenu', () => {
         expect(screen.queryByText('Satellite')).not.toBeInTheDocument();
         expect(screen.queryByText('Roadmap')).not.toBeInTheDocument();
     });
+
+    describe('custom single color', () => {
+        it('shows the flag/text color pickers only when colorMode is single', async () => {
+            const user = setupUser();
+            renderMenu(LIVE_TEMPLATE);
+
+            await user.click(screen.getByLabelText('Display settings'));
+
+            expect(screen.getByLabelText('Flag color')).toBeInTheDocument();
+            expect(screen.getByLabelText('Text color')).toBeInTheDocument();
+        });
+
+        it('hides the color pickers in status mode', async () => {
+            const user = setupUser();
+            renderMenu(CLASSIC_TEMPLATE);
+
+            await user.click(screen.getByLabelText('Display settings'));
+
+            expect(screen.queryByLabelText('Flag color')).not.toBeInTheDocument();
+            expect(screen.queryByLabelText('Text color')).not.toBeInTheDocument();
+        });
+
+        it('sets singleColor when the user enters a flag color', async () => {
+            const user = setupUser();
+            const {onChange} = renderMenu(LIVE_TEMPLATE);
+
+            await user.click(screen.getByLabelText('Display settings'));
+            fireEvent.change(screen.getByLabelText('Flag color'), {target: {value: '#ff00ff'}});
+
+            expect(onChange).toHaveBeenLastCalledWith({...LIVE_TEMPLATE, singleColor: '#ff00ff'});
+        });
+
+        it('sets singleTextColor when the user enters a text color', async () => {
+            const user = setupUser();
+            const {onChange} = renderMenu(LIVE_TEMPLATE);
+
+            await user.click(screen.getByLabelText('Display settings'));
+            fireEvent.change(screen.getByLabelText('Text color'), {target: {value: '#000000'}});
+
+            expect(onChange).toHaveBeenLastCalledWith({...LIVE_TEMPLATE, singleTextColor: '#000000'});
+        });
+
+        it('does not show a reset control when no custom color is set', async () => {
+            const user = setupUser();
+            renderMenu(LIVE_TEMPLATE);
+
+            await user.click(screen.getByLabelText('Display settings'));
+
+            expect(screen.queryByText('Reset')).not.toBeInTheDocument();
+        });
+
+        it('resets both custom colors, leaving the rest of the settings untouched', async () => {
+            const user = setupUser();
+            const customized: CourierMapDisplaySettings = {
+                ...LIVE_TEMPLATE,
+                singleColor: '#ff00ff',
+                singleTextColor: '#000000',
+            };
+            const {onChange} = renderMenu(customized);
+
+            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByText('Reset'));
+
+            expect(onChange).toHaveBeenCalledWith({...LIVE_TEMPLATE, singleColor: undefined, singleTextColor: undefined});
+        });
+    });
 });

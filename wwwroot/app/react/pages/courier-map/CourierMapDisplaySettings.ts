@@ -18,6 +18,10 @@ export interface CourierMapDisplaySettings {
     colorMode: MarkerColorMode;
     mapView: MapViewMode;
     trafficEnabled: boolean;
+    /** Custom flag fill color for colorMode 'single'. Unset falls back to the default blue. */
+    singleColor?: string;
+    /** Custom flag text color for colorMode 'single'. Unset falls back to white. */
+    singleTextColor?: string;
 }
 
 /** New default: matches the requested satellite + traffic + numbered-marker look. */
