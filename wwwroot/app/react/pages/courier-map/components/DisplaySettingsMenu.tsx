@@ -158,19 +158,21 @@ export function DisplaySettingsMenu({settings, onChange}: DisplaySettingsMenuPro
                                 size="xs"
                                 label="Flag color"
                                 placeholder="Default blue"
-                                value={settings.singleColor ?? ''}
+                                value={settings.singleColor ?? DEFAULT_FLAG_BG}
                                 onChange={(value) => onChange({...settings, singleColor: value || undefined})}
                                 swatches={FLAG_COLOR_SWATCHES}
                                 swatchesPerRow={8}
+                                popoverProps={{withinPortal: false}}
                             />
                             <ColorInput
                                 size="xs"
                                 label="Text color"
                                 placeholder="Default white"
-                                value={settings.singleTextColor ?? ''}
+                                value={settings.singleTextColor ?? DEFAULT_FLAG_TEXT}
                                 onChange={(value) => onChange({...settings, singleTextColor: value || undefined})}
                                 swatches={TEXT_COLOR_SWATCHES}
                                 swatchesPerRow={2}
+                                popoverProps={{withinPortal: false}}
                             />
                         </Stack>
                     )}
