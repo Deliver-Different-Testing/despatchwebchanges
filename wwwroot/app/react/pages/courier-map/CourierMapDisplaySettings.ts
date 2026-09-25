@@ -22,6 +22,8 @@ export interface CourierMapDisplaySettings {
     singleColor?: string;
     /** Custom flag text color for colorMode 'single'. Unset falls back to white. */
     singleTextColor?: string;
+    /** Uniform marker size multiplier. Unset falls back to {@link DEFAULT_MARKER_SCALE}. Not part of a template — like the custom colors, picking a preset resets it. */
+    markerScale?: number;
 }
 
 /** New default: matches the requested satellite + traffic + numbered-marker look. */

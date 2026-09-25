@@ -16,7 +16,7 @@ describe('DisplaySettingsMenu', () => {
         const user = setupUser();
         renderMenu(LIVE_TEMPLATE);
 
-        await user.click(screen.getByLabelText('Display settings'));
+        await user.click(screen.getByLabelText('Marker settings'));
 
         expect(screen.getByText('Live')).toBeInTheDocument();
         expect(screen.getByText('Classic')).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('DisplaySettingsMenu', () => {
         const user = setupUser();
         const {onChange} = renderMenu(CLASSIC_TEMPLATE);
 
-        await user.click(screen.getByLabelText('Display settings'));
+        await user.click(screen.getByLabelText('Marker settings'));
         await user.click(screen.getByText('Live'));
 
         expect(onChange).toHaveBeenCalledWith(LIVE_TEMPLATE);
@@ -42,7 +42,7 @@ describe('DisplaySettingsMenu', () => {
         const user = setupUser();
         const {onChange} = renderMenu(LIVE_TEMPLATE);
 
-        await user.click(screen.getByLabelText('Display settings'));
+        await user.click(screen.getByLabelText('Marker settings'));
         await user.click(screen.getByText('Classic'));
 
         expect(onChange).toHaveBeenCalledWith(CLASSIC_TEMPLATE);
@@ -52,7 +52,7 @@ describe('DisplaySettingsMenu', () => {
         const user = setupUser();
         const {onChange} = renderMenu(CLASSIC_TEMPLATE);
 
-        await user.click(screen.getByLabelText('Display settings'));
+        await user.click(screen.getByLabelText('Marker settings'));
         await user.click(screen.getByText('Number'));
 
         expect(onChange).toHaveBeenCalledWith({...CLASSIC_TEMPLATE, markerLabel: 'number'});
@@ -60,7 +60,7 @@ describe('DisplaySettingsMenu', () => {
 
     it('changes only showJobCount when the switch is toggled', async () => {
         const {onChange} = renderMenu(LIVE_TEMPLATE);
-        fireEvent.click(screen.getByLabelText('Display settings'));
+        fireEvent.click(screen.getByLabelText('Marker settings'));
 
         fireEvent.click(screen.getByText('Show job count'));
 
@@ -71,7 +71,7 @@ describe('DisplaySettingsMenu', () => {
         const user = setupUser();
         const {onChange} = renderMenu(LIVE_TEMPLATE);
 
-        await user.click(screen.getByLabelText('Display settings'));
+        await user.click(screen.getByLabelText('Marker settings'));
         await user.click(screen.getByText('Color by status'));
 
         expect(onChange).toHaveBeenCalledWith({...LIVE_TEMPLATE, colorMode: 'status'});
@@ -81,7 +81,7 @@ describe('DisplaySettingsMenu', () => {
         const user = setupUser();
         renderMenu(LIVE_TEMPLATE);
 
-        await user.click(screen.getByLabelText('Display settings'));
+        await user.click(screen.getByLabelText('Marker settings'));
 
         expect(screen.queryByText('Satellite')).not.toBeInTheDocument();
         expect(screen.queryByText('Roadmap')).not.toBeInTheDocument();
@@ -92,7 +92,7 @@ describe('DisplaySettingsMenu', () => {
             const user = setupUser();
             renderMenu(LIVE_TEMPLATE);
 
-            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByLabelText('Marker settings'));
 
             expect(screen.getByLabelText('Flag color')).toBeInTheDocument();
             expect(screen.getByLabelText('Text color')).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe('DisplaySettingsMenu', () => {
             const user = setupUser();
             renderMenu(CLASSIC_TEMPLATE);
 
-            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByLabelText('Marker settings'));
 
             expect(screen.queryByLabelText('Flag color')).not.toBeInTheDocument();
             expect(screen.queryByLabelText('Text color')).not.toBeInTheDocument();
@@ -112,7 +112,7 @@ describe('DisplaySettingsMenu', () => {
             const user = setupUser();
             const {onChange} = renderMenu(LIVE_TEMPLATE);
 
-            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByLabelText('Marker settings'));
             fireEvent.change(screen.getByLabelText('Flag color'), {target: {value: '#ff00ff'}});
 
             expect(onChange).toHaveBeenLastCalledWith({...LIVE_TEMPLATE, singleColor: '#ff00ff'});
@@ -122,7 +122,7 @@ describe('DisplaySettingsMenu', () => {
             const user = setupUser();
             const {onChange} = renderMenu(LIVE_TEMPLATE);
 
-            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByLabelText('Marker settings'));
             fireEvent.change(screen.getByLabelText('Text color'), {target: {value: '#000000'}});
 
             expect(onChange).toHaveBeenLastCalledWith({...LIVE_TEMPLATE, singleTextColor: '#000000'});
@@ -132,7 +132,7 @@ describe('DisplaySettingsMenu', () => {
             const user = setupUser();
             renderMenu(LIVE_TEMPLATE);
 
-            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByLabelText('Marker settings'));
 
             expect(screen.queryByText('Reset')).not.toBeInTheDocument();
         });
@@ -146,10 +146,73 @@ describe('DisplaySettingsMenu', () => {
             };
             const {onChange} = renderMenu(customized);
 
-            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByLabelText('Marker settings'));
             await user.click(screen.getByText('Reset'));
 
             expect(onChange).toHaveBeenCalledWith({...LIVE_TEMPLATE, singleColor: undefined, singleTextColor: undefined});
+        });
+    });
+
+    describe('marker preview', () => {
+        function previewMarkup(): string {
+            return document.querySelector('[data-testid="marker-preview"]')!.innerHTML;
+        }
+
+        it('shows a live preview in status color mode, reflecting the label and job-count settings', async () => {
+            const user = setupUser();
+            renderMenu(CLASSIC_TEMPLATE); // status mode, name label, job count shown
+            await user.click(screen.getByLabelText('Marker settings'));
+
+            expect(previewMarkup()).toContain('>Dave 4<');
+        });
+
+        it('shows a live preview in single-color mode, using the effective flag colors', async () => {
+            const user = setupUser();
+            renderMenu({...LIVE_TEMPLATE, singleColor: '#ff00ff', singleTextColor: '#000000'});
+            await user.click(screen.getByLabelText('Marker settings'));
+
+            // LIVE_TEMPLATE labels by number with no job count.
+            expect(previewMarkup()).toContain('>DT4<');
+            expect(previewMarkup()).toContain('#ff00ff');
+        });
+
+        it('updates the preview text when the marker label mode differs', async () => {
+            const user = setupUser();
+            renderMenu({...CLASSIC_TEMPLATE, markerLabel: 'both'});
+            await user.click(screen.getByLabelText('Marker settings'));
+
+            expect(previewMarkup()).toContain('>DT4 · Dave 4<');
+        });
+
+        it('renders the preview larger when markerScale is bigger', async () => {
+            const user = setupUser();
+            const widthOf = () => Number(/width="(\d+)"/.exec(previewMarkup())![1]);
+
+            renderMenu(CLASSIC_TEMPLATE);
+            await user.click(screen.getByLabelText('Marker settings'));
+            const baseWidth = widthOf();
+
+            document.body.innerHTML = '';
+            const user2 = setupUser();
+            renderMenu({...CLASSIC_TEMPLATE, markerScale: 1.5});
+            await user2.click(screen.getByLabelText('Marker settings'));
+
+            expect(widthOf()).toBeGreaterThan(baseWidth);
+        });
+    });
+
+    describe('marker size', () => {
+        it('changes markerScale when the size slider is adjusted', async () => {
+            const user = setupUser();
+            const {onChange} = renderMenu(LIVE_TEMPLATE);
+
+            await user.click(screen.getByLabelText('Marker settings'));
+            // Mantine's Slider thumb doesn't expose an accessible name in this version — it's the
+            // only slider role in the menu, so query by role alone rather than by a name that never lands.
+            screen.getByRole('slider').focus();
+            await user.keyboard('{ArrowRight}');
+
+            expect(onChange).toHaveBeenLastCalledWith({...LIVE_TEMPLATE, markerScale: 1.25});
         });
     });
 });
