@@ -203,11 +203,11 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> GetSplitPricingBreakdown(int jobId)
+    public async Task<IActionResult> GetSplitPricingBreakdown(int jobId, bool isArchived = false)
     {
         try
         {
-            var breakdown = await jobQueryRepository.GetSplitPricingBreakdownAsync(jobId);
+            var breakdown = await jobQueryRepository.GetSplitPricingBreakdownAsync(jobId, isArchived);
             return Json(breakdown);
         }
         catch (Exception ex)

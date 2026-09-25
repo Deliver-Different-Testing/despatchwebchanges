@@ -10,15 +10,16 @@ import {RequestOptions} from './requestOptions';
 import type {SplitPriceBreakdown, UpdateSplitPricingBreakdownRequest} from '../interfaces/splitJobs';
 
 /**
- * Fetches the split-parent grid's data. Null means the job isn't a live split parent, or is one
- * with no allocation rows yet (split before this feature shipped) — not an error.
+ * Fetches the split-parent grid's data. Null means the job isn't a split parent, or is one with
+ * no allocation rows yet (split before this feature shipped) — not an error.
  */
 export async function getSplitPricingBreakdown(
     jobId: number,
+    isArchived = false,
     options?: RequestOptions,
 ): Promise<SplitPriceBreakdown | null> {
     const breakdown = await apiClient.get<SplitPriceBreakdown | null>(
-        'job/GetSplitPricingBreakdown', {jobId}, options,
+        'job/GetSplitPricingBreakdown', {jobId, isArchived}, options,
     );
     return breakdown ?? null;
 }

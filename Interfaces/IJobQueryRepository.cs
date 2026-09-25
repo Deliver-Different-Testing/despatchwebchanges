@@ -66,7 +66,7 @@ public interface IJobQueryRepository
 
     Task<SplitPricingLockState> GetSplitPricingLockStateAsync(int parentJobId);
 
-    Task<SplitPricingBreakdownDto?> GetSplitPricingBreakdownAsync(int jobId);
+    Task<SplitPricingBreakdownDto?> GetSplitPricingBreakdownAsync(int jobId, bool isArchived = false);
 
     Task<SuggestedFuelChargeViewModel> GetSuggestedFuelChargeAsync(int jobId, decimal chargeAmount, bool isPrebook,
         bool isArchived = false);
