@@ -279,6 +279,7 @@ describe('CourierMapPage Type Definitions', () => {
                 status: 'active',
                 lat: 40.7128,
                 lng: -74.006,
+                isSelected: false,
             };
 
             expect(marker.courierId).toBe(123);
@@ -379,6 +380,7 @@ describe('CourierMapPage Type Definitions', () => {
                 defaultLayers: null,
                 updateCouriers: jest.fn(),
                 centerOnCourier: jest.fn(),
+                setSelectedDriver: jest.fn(),
                 returnToOverview: jest.fn(),
             };
 

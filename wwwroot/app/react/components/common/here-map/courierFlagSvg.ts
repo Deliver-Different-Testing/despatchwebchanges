@@ -112,14 +112,23 @@ export function getCourierStatus(courier: IAvailableCourierPosition): CourierSta
     return 'hasJobs';
 }
 
+/** Accent used for the selected-driver highlight ring, independent of status colour. */
+export const HIGHLIGHT_BORDER_COLOR = '#FFC107';
+const HIGHLIGHT_STROKE_WIDTH = 3;
+
 /**
  * Icon cache key. It must include the secondary line: the minute count ticks between polls and a
- * key that ignored it would serve a stale icon forever.
+ * key that ignored it would serve a stale icon forever. `highlighted` is included too, so
+ * selecting/deselecting a driver repaints their flag even though nothing else about it changed.
  */
 export function courierFlagCacheKey(
-    lines: CourierFlagLines, status: CourierStatus, largeView: boolean, scale: number = DEFAULT_MARKER_SCALE
+    lines: CourierFlagLines,
+    status: CourierStatus,
+    largeView: boolean,
+    scale: number = DEFAULT_MARKER_SCALE,
+    highlighted: boolean = false,
 ): string {
-    return `${lines.primary}_${lines.secondary ?? ''}_${status}_${largeView}_${scale}`;
+    return `${lines.primary}_${lines.secondary ?? ''}_${status}_${largeView}_${scale}_${highlighted}`;
 }
 
 /**
@@ -154,7 +163,12 @@ function pillWidth(lines: CourierFlagLines): number {
  * stretches that fixed drawing to fit the larger box, which is a uniform scale-up for free and
  * means none of the drawing math below has to know about it.
  */
-export function createCourierFlagSvg(lines: CourierFlagLines, colors: CourierFlagColors, scale: number = DEFAULT_MARKER_SCALE): string {
+export function createCourierFlagSvg(
+    lines: CourierFlagLines,
+    colors: CourierFlagColors,
+    scale: number = DEFAULT_MARKER_SCALE,
+    highlighted: boolean = false,
+): string {
     const textWidth = pillWidth(lines);
     const totalWidth = textWidth + 6;
     const pillHeight = lines.secondary ? PILL_TWO_LINE_HEIGHT : PILL_ONE_LINE_HEIGHT;
@@ -163,6 +177,8 @@ export function createCourierFlagSvg(lines: CourierFlagLines, colors: CourierFla
     const radius = PILL_ONE_LINE_HEIGHT / 2;
     const renderedWidth = Math.round(totalWidth * scale);
     const renderedHeight = Math.round(height * scale);
+    const pillBorder = highlighted ? HIGHLIGHT_BORDER_COLOR : colors.border;
+    const pillBorderWidth = highlighted ? HIGHLIGHT_STROKE_WIDTH : 1;
 
     const secondary = lines.secondary
         ? `<text x="${centreX}" y="31" font-family="Roboto, Arial, sans-serif" font-size="10" `
@@ -176,8 +192,8 @@ export function createCourierFlagSvg(lines: CourierFlagLines, colors: CourierFla
                     <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.24"/>
                 </filter>
             </defs>
-            <line x1="4" y1="${2 + pillHeight}" x2="4" y2="${2 + pillHeight + STEM_LENGTH}" stroke="${colors.border}" stroke-width="2.5" stroke-linecap="round"/>
-            <rect x="4" y="2" width="${textWidth}" height="${pillHeight}" rx="${radius}" ry="${radius}" fill="${colors.bg}" stroke="${colors.border}" stroke-width="1" filter="url(#flagShadow)"/>
+            <line x1="4" y1="${2 + pillHeight}" x2="4" y2="${2 + pillHeight + STEM_LENGTH}" stroke="${pillBorder}" stroke-width="2.5" stroke-linecap="round"/>
+            <rect x="4" y="2" width="${textWidth}" height="${pillHeight}" rx="${radius}" ry="${radius}" fill="${colors.bg}" stroke="${pillBorder}" stroke-width="${pillBorderWidth}" filter="url(#flagShadow)"/>
             <text x="${centreX}" y="17" font-family="Roboto, Arial, sans-serif" font-size="12" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapeXml(lines.primary)}</text>
             ${secondary}
         </svg>`;

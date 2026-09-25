@@ -6,6 +6,7 @@ import {
     courierFlagCacheKey,
     createCourierFlagSvg,
     createLargeCourierFlagSvg,
+    DEFAULT_MARKER_SCALE,
     getCourierFlagLines,
     getCourierStatus,
     lastDeliveryMinutes,
@@ -166,6 +167,15 @@ describe('createCourierFlagSvg', () => {
         expect(svg).not.toContain('<script>');
         expect(svg).toContain('&amp;');
     });
+
+    it('draws a distinct accent ring around the pill when highlighted', () => {
+        const lines = {primary: 'Dave 4', secondary: null};
+        const normal = createCourierFlagSvg(lines, COLORS);
+        const highlighted = createCourierFlagSvg(lines, COLORS, DEFAULT_MARKER_SCALE, true);
+
+        expect(highlighted).not.toBe(normal);
+        expect(highlighted).not.toContain(COLORS.border);
+    });
 });
 
 describe('createLargeCourierFlagSvg', () => {
@@ -238,5 +248,12 @@ describe('courierFlagCacheKey', () => {
             .not.toBe(courierFlagCacheKey(lines, 'overdue', false));
         expect(courierFlagCacheKey(lines, 'hasJobs', false))
             .not.toBe(courierFlagCacheKey(lines, 'hasJobs', true));
+    });
+
+    it('changes when only highlighted differs, so selecting a driver repaints its flag', () => {
+        const lines = {primary: 'Dave 4', secondary: null};
+        const a = courierFlagCacheKey(lines, 'hasJobs', false, DEFAULT_MARKER_SCALE, false);
+        const b = courierFlagCacheKey(lines, 'hasJobs', false, DEFAULT_MARKER_SCALE, true);
+        expect(a).not.toBe(b);
     });
 });

@@ -9,7 +9,7 @@
 import {CourierMarkerManager} from './CourierMarkerManager';
 import type {IAvailableCourierPosition} from '../../../interfaces/courier.interface';
 import {MARKER_COLORS} from './CourierMapPage.types';
-import {COURIER_FLAG_HEIGHT} from '../../components/common/here-map/courierFlagSvg';
+import {COURIER_FLAG_HEIGHT, HIGHLIGHT_BORDER_COLOR} from '../../components/common/here-map/courierFlagSvg';
 
 const createMockMarker = (data?: any) => {
     let payload = data;
@@ -303,6 +303,77 @@ describe('CourierMarkerManager', () => {
             const scaledWidth = Number(/width="(\d+)"/.exec(lastSvg())![1]);
             expect(scaledWidth).toBeGreaterThan(baseWidth);
             expect(mockMarkerInstances[0].setIcon).toHaveBeenCalled();
+        });
+    });
+
+    describe('marker tap', () => {
+        it('invokes onMarkerTap with the tapped courier', () => {
+            const onMarkerTap = jest.fn();
+            const tapManager = new CourierMarkerManager(map, MARKER_COLORS, undefined, onMarkerTap);
+            tapManager.updateMarkers([driver()]);
+
+            const group = mockH.map.Group.mock.results.at(-1)!.value;
+            const tap = group.addEventListener.mock.calls
+                .find((call: any[]) => call[0] === 'tap')![1];
+            tap({target: mockMarkerInstances[0]});
+
+            expect(onMarkerTap).toHaveBeenCalledWith(expect.objectContaining({courierId: 1}));
+            tapManager.dispose();
+        });
+
+        it('does nothing when no onMarkerTap callback was supplied', () => {
+            manager.updateMarkers([driver()]);
+            const group = mockH.map.Group.mock.results[0].value;
+            const tap = group.addEventListener.mock.calls
+                .find((call: any[]) => call[0] === 'tap')![1];
+
+            expect(() => tap({target: mockMarkerInstances[0]})).not.toThrow();
+        });
+    });
+
+    describe('setSelectedCourier', () => {
+        it('repaints the selected marker with the highlight ring and clears it on the previous one', () => {
+            manager.updateMarkers([driver({courierId: 1}), driver({courierId: 2})]);
+            const [marker1, marker2] = mockMarkerInstances;
+
+            manager.setSelectedCourier(1);
+            expect(marker1.setIcon).toHaveBeenCalled();
+            expect(lastSvg()).toContain(HIGHLIGHT_BORDER_COLOR);
+
+            marker1.setIcon.mockClear();
+            marker2.setIcon.mockClear();
+
+            manager.setSelectedCourier(2);
+            expect(marker1.setIcon).toHaveBeenCalled();
+            expect(marker2.setIcon).toHaveBeenCalled();
+            expect(lastSvg()).toContain(HIGHLIGHT_BORDER_COLOR);
+        });
+
+        it('is a no-op when the same courier is already selected', () => {
+            manager.updateMarkers([driver()]);
+            manager.setSelectedCourier(1);
+            mockMarkerInstances[0].setIcon.mockClear();
+
+            manager.setSelectedCourier(1);
+            expect(mockMarkerInstances[0].setIcon).not.toHaveBeenCalled();
+        });
+
+        it('clears the highlight when deselected', () => {
+            manager.updateMarkers([driver()]);
+            manager.setSelectedCourier(1);
+            manager.setSelectedCourier(null);
+
+            const lastIcon = mockMarkerInstances[0].setIcon.mock.calls.at(-1)![0];
+            expect(lastIcon.svg).not.toContain(HIGHLIGHT_BORDER_COLOR);
+        });
+
+        it('keeps a driver highlighted across a poll refresh', () => {
+            manager.updateMarkers([driver()]);
+            manager.setSelectedCourier(1);
+
+            manager.updateMarkers([driver({lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(1)})]);
+
+            expect(lastSvg()).toContain(HIGHLIGHT_BORDER_COLOR);
         });
     });
 
