@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models.Dto.Cirium;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;

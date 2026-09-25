@@ -13,7 +13,7 @@ export type {SplitPriceBreakdown, UpdateSplitPricingBreakdownRequest};
 export function useSplitPricingBreakdown(jobId: number | undefined, options?: {enabled?: boolean}) {
     return useQuery<SplitPriceBreakdown | null, Error>({
         queryKey: queryKeys.splitPriceBreakdown.job(jobId ?? 0),
-        queryFn: ({signal}) => splitPriceBreakdownApi.getSplitPricingBreakdown(jobId!, {signal}),
+        queryFn: ({signal}) => splitPriceBreakdownApi.getSplitPricingBreakdown(jobId!, false, {signal}),
         enabled: !!jobId && (options?.enabled ?? true),
     });
 }

@@ -1132,6 +1132,72 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetSplitPricingBreakdownAsync_ArchivedSplitParent_ReturnsLegsAwareBreakdown()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        _context.TucJobArchives.AddRange(
+            new TucJobArchive { UcjbId = parentId, UcjbNumber = "J100", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent },
+            new TucJobArchive { UcjbId = legA, UcjbNumber = "J100A", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild, Sequence = 1, UcjbCourierId = 1 },
+            new TucJobArchive { UcjbId = legB, UcjbNumber = "J100B", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild, Sequence = 2 });
+        _context.TucCouriers.Add(new TucCourier
+        {
+            UccrId = 1, Code = "DRV1", UccrName = "Sam", UccrSurname = "Driver",
+            Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T"
+        });
+        _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(1, parentId, "Base", 100.00m, 40.00m));
+        _context.PricingBreakdownAllocationArchives.AddRange(
+            new PricingBreakdownAllocationArchive { ParentPricingBreakdownId = 1, LegJobId = legA, SharePercent = 80m, ChargeAmount = 80.00m, CostAmount = 32.00m },
+            new PricingBreakdownAllocationArchive { ParentPricingBreakdownId = 1, LegJobId = legB, SharePercent = 20m, ChargeAmount = 20.00m, CostAmount = 8.00m });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        var dto = await repository.GetSplitPricingBreakdownAsync(parentId, isArchived: true);
+
+        Assert.NotNull(dto);
+        Assert.Equal(100.00m, dto.TotalRevenue);
+        Assert.Equal(40.00m, dto.TotalCost);
+
+        var legAResult = Assert.Single(dto.Legs, l => l.JobId == legA);
+        Assert.Equal("J100A", legAResult.JobNumber);
+        Assert.Equal("Sam Driver", legAResult.DriverName);
+        Assert.Equal(80.00m, legAResult.Revenue);
+
+        var legBResult = Assert.Single(dto.Legs, l => l.JobId == legB);
+        Assert.Equal("J100B", legBResult.JobNumber);
+        Assert.Null(legBResult.DriverName);
+        Assert.Equal(20.00m, legBResult.Revenue);
+    }
+
+    [Fact]
+    public async Task GetSplitPricingBreakdownAsync_ArchivedSplitParentPredatingThisFeature_SynthesizesEqualSplit()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        _context.TucJobArchives.AddRange(
+            new TucJobArchive { UcjbId = parentId, UcjbNumber = "J100", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent },
+            new TucJobArchive { UcjbId = legA, UcjbNumber = "J100A", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild, Sequence = 1 },
+            new TucJobArchive { UcjbId = legB, UcjbNumber = "J100B", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild, Sequence = 2 });
+        _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(1, parentId, "Base", 100.00m, 40.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        var dto = await repository.GetSplitPricingBreakdownAsync(parentId, isArchived: true);
+
+        Assert.NotNull(dto);
+        Assert.Equal(2, dto.Legs.Count);
+        var item = Assert.Single(dto.Items);
+        Assert.Equal(2, item.Allocations.Count);
+        Assert.All(item.Allocations, a => Assert.Equal(50m, a.SharePercent));
+        Assert.Equal(100.00m, item.Allocations.Sum(a => a.Revenue));
+        Assert.Equal(40.00m, item.Allocations.Sum(a => a.Cost));
+    }
+
+    [Fact]
     public async Task UpdateSplitPricingBreakdownAsync_RevenueEdit_ReDerivesBothLegsByShare()
     {
         const int parentId = 100;

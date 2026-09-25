@@ -16,7 +16,7 @@
  */
 import React from 'react';
 import {Modal} from '@mantine/core';
-import {dialogScrollRegionStyle, dialogShellStyles} from './styles';
+import {dialogModalShadow, dialogScrollRegionStyle, dialogShellStyles} from './styles';
 import {DialogHeader} from './DialogHeader';
 import {DialogFooter} from './DialogFooter';
 import {DialogShellProps} from "./DialogShellProps";
@@ -87,10 +87,11 @@ export const DialogShell: React.FC<DialogShellProps> = ({
             centered
             padding={0}
             radius="xl"
+            shadow={dialogModalShadow}
             {...rest}
             styles={slotStyles}
         >
-            <Modal.Overlay backgroundOpacity={0.25} {...overlayProps} />
+            <Modal.Overlay backgroundOpacity={0.32} {...overlayProps} />
             <Modal.Content aria-label={label}>
                 <Modal.Body>
                     {header}

@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import {Button, Group} from '@mantine/core';
-import {dialogFooterBorder, dialogStickyChromeStyle} from './styles';
+import {dialogFooterBg, dialogFooterBorder, dialogStickyChromeStyle} from './styles';
 import {DialogFooterProps} from "./DialogFooterProps";
 
 export const DialogFooter: React.FC<DialogFooterProps> = ({
@@ -31,7 +31,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
         py="md"
         style={{
             borderTop: dialogFooterBorder,
-            backgroundColor: 'var(--mantine-color-white)',
+            backgroundColor: dialogFooterBg,
             ...dialogStickyChromeStyle('bottom'),
         }}
     >

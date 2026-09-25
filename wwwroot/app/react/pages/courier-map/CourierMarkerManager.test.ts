@@ -293,6 +293,17 @@ describe('CourierMarkerManager', () => {
 
             expect(lastSvg()).toContain('>DT14<');
         });
+
+        it('repaints existing markers at a new size when markerScale changes', () => {
+            manager.updateMarkers([driver()]);
+            const baseWidth = Number(/width="(\d+)"/.exec(lastSvg())![1]);
+
+            manager.updateSettings(MARKER_COLORS, {markerLabel: 'name', showJobCount: true, markerScale: 1.5});
+
+            const scaledWidth = Number(/width="(\d+)"/.exec(lastSvg())![1]);
+            expect(scaledWidth).toBeGreaterThan(baseWidth);
+            expect(mockMarkerInstances[0].setIcon).toHaveBeenCalled();
+        });
     });
 
     describe('centerOnCourier', () => {

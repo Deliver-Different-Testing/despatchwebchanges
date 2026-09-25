@@ -1,5 +1,5 @@
 #nullable enable
-using DespatchWeb.Models.Dto.Cirium;
+using DespatchWeb.Models.Dto;
 
 namespace DespatchWeb.Interfaces;
 

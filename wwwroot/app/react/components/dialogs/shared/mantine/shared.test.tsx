@@ -89,7 +89,7 @@ describe('Mantine dialog primitives', () => {
         const overlay = container.querySelector('.mantine-Modal-overlay') as HTMLElement;
         expect(overlay).toBeTruthy();
         expect(overlay.style.getPropertyValue('--overlay-filter')).toBe('');
-        expect(overlay.style.getPropertyValue('--overlay-bg')).toContain('0.25');
+        expect(overlay.style.getPropertyValue('--overlay-bg')).toContain('0.32');
     });
 
     it('lets a dialog override the overlay defaults', () => {

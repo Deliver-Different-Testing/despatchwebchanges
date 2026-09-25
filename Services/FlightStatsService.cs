@@ -2,7 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.Dto.Cirium;
+using DespatchWeb.Models.Dto;
 
 namespace DespatchWeb.Services;
 

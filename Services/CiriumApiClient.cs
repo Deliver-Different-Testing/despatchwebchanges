@@ -3,7 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models.Dto.Cirium;
+using DespatchWeb.Models.Dto;
 using Serilog;
 
 namespace DespatchWeb.Services;

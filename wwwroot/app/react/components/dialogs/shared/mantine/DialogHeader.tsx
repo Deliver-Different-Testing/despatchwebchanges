@@ -11,7 +11,13 @@
  */
 import React from 'react';
 import {Box, CloseButton, Group, Text, ThemeIcon} from '@mantine/core';
-import {dialogHeaderBorder, dialogStickyChromeStyle, headerChipProps, headerColors, headerOnColor} from './styles';
+import {
+    dialogHeaderBg,
+    dialogHeaderBorder,
+    dialogStickyChromeStyle,
+    headerChipProps,
+    headerOnColor,
+} from './styles';
 import {DialogHeaderProps} from "./DialogHeaderProps";
 import classes from './DialogHeader.module.css';
 
@@ -32,7 +38,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
             px="lg"
             py="sm"
             style={{
-                backgroundColor: headerColors[variant].bg,
+                backgroundColor: dialogHeaderBg,
                 color: fg,
                 borderBottom: dialogHeaderBorder,
                 ...dialogStickyChromeStyle('top'),
