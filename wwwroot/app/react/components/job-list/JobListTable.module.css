@@ -247,6 +247,27 @@
     }
 }
 
+/* Additive: a brief flash confirming a job was just dispatched. */
+.row[data-dispatched='true'] {
+    animation: dispatchedHighlight 1.5s ease-out;
+}
+
+@keyframes dispatchedHighlight {
+    0% {
+        background-color: var(--mantine-color-blue-1);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .row[data-new='true'],
+    .row[data-dispatched='true'] {
+        animation: none;
+    }
+}
+
 /* ── Cells ──────────────────────────────────────────────────────────── */
 
 .cellRight {
