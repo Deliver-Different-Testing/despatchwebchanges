@@ -195,7 +195,7 @@ describe('CourierMapPage Component', () => {
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);
 
-            expect(screen.getByLabelText('Display settings')).toBeInTheDocument();
+            expect(screen.getByLabelText('Marker settings')).toBeInTheDocument();
         });
 
         it('loads a saved display-settings preference on mount without re-saving it', async () => {
@@ -215,7 +215,7 @@ describe('CourierMapPage Component', () => {
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);
 
-            await user.click(screen.getByLabelText('Display settings'));
+            await user.click(screen.getByLabelText('Marker settings'));
             await user.click(screen.getByText('Classic'));
 
             expect(preferencesApi.savePreference).toHaveBeenCalledWith(

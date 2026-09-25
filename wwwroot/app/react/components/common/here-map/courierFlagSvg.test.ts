@@ -186,6 +186,41 @@ describe('courierFlagAnchor', () => {
         expect(courierFlagAnchor({primary: 'Dave', secondary: null}, true).y)
             .toBe(COURIER_FLAG_LARGE_HEIGHT);
     });
+
+    it('scales the anchor point along with the flag so the stem still meets the GPS point', () => {
+        const lines = {primary: 'Dave 4', secondary: null};
+        expect(courierFlagAnchor(lines, false, 1.5)).toEqual({
+            x: Math.round(4 * 1.5),
+            y: Math.round(COURIER_FLAG_HEIGHT.oneLine * 1.5),
+        });
+    });
+});
+
+describe('marker scale', () => {
+    const lines = {primary: 'Dave 4', secondary: null};
+
+    it('grows the rendered size but keeps the internal viewBox unscaled, so drawing math is untouched', () => {
+        const base = createCourierFlagSvg(lines, COLORS);
+        const scaled = createCourierFlagSvg(lines, COLORS, 1.5);
+
+        const attr = (svg: string, name: string) => Number(new RegExp(`${name}="(\\d+(?:\\.\\d+)?)"`).exec(svg)![1]);
+        const viewBox = (svg: string) => /viewBox="0 0 (\d+) (\d+)"/.exec(svg)!.slice(1, 3).map(Number);
+
+        expect(attr(scaled, 'width')).toBeCloseTo(attr(base, 'width') * 1.5, 0);
+        expect(attr(scaled, 'height')).toBeCloseTo(attr(base, 'height') * 1.5, 0);
+        expect(viewBox(scaled)).toEqual(viewBox(base));
+    });
+
+    it('leaves the flag at its normal size when no scale is given', () => {
+        const svg = createCourierFlagSvg(lines, COLORS);
+        expect(svg).toContain(`height="${COURIER_FLAG_HEIGHT.oneLine}"`);
+    });
+
+    it('changes the cache key when only the scale differs, so resizing repaints existing markers', () => {
+        const a = courierFlagCacheKey(lines, 'hasJobs', false, 1);
+        const b = courierFlagCacheKey(lines, 'hasJobs', false, 1.5);
+        expect(a).not.toBe(b);
+    });
 });
 
 describe('courierFlagCacheKey', () => {

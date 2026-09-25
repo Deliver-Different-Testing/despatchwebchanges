@@ -18,6 +18,7 @@ import {
     DRIVER_FOCUS_ZOOM,
     OVERVIEW_ZOOM,
     getMarkerColors,
+    darkenHex,
 } from './CourierMapPage.types';
 import type {
     CourierMarker,
@@ -216,11 +217,53 @@ describe('CourierMapPage Constants', () => {
             expect(colors.idle).toEqual(colors.active);
         });
 
-        it('uses the brand/primary color for the single-color mode', () => {
+        it('uses a fixed blue for the single-color mode by default, regardless of tenant brand', () => {
             const colors = getMarkerColors(theme, 'single');
-            expect(colors.active.bg).toBe(theme.colors[theme.primaryColor][5]);
-            expect(colors.active.border).toBe(theme.colors[theme.primaryColor][7]);
+            expect(colors.active.bg).toBe(theme.colors.blue[5]);
+            expect(colors.active.border).toBe(theme.colors.blue[7]);
             expect(colors.active.text).toBe('#ffffff');
+        });
+
+        describe('custom single color override', () => {
+            it('uses the custom bg/text for every status when supplied in single mode', () => {
+                const colors = getMarkerColors(theme, 'single', {bg: '#ff0000', text: '#000000'});
+                for (const status of ['overdue', 'active', 'idle'] as const) {
+                    expect(colors[status].bg).toBe('#ff0000');
+                    expect(colors[status].text).toBe('#000000');
+                }
+            });
+
+            it('derives the border as a darkened edge of the custom bg', () => {
+                const colors = getMarkerColors(theme, 'single', {bg: '#ff0000', text: '#000000'});
+                expect(colors.active.border).toBe(darkenHex('#ff0000', 0.2));
+                expect(colors.active.border).not.toBe('#ff0000');
+            });
+
+            it('falls back to the default blue when no custom color is supplied', () => {
+                const colors = getMarkerColors(theme, 'single', undefined);
+                expect(colors.active.bg).toBe(theme.colors.blue[5]);
+            });
+
+            it('is ignored in status mode', () => {
+                const withCustom = getMarkerColors(theme, 'status', {bg: '#ff0000', text: '#000000'});
+                const withoutCustom = getMarkerColors(theme, 'status');
+                expect(withCustom).toEqual(withoutCustom);
+            });
+        });
+    });
+
+    describe('darkenHex', () => {
+        it('reduces each RGB channel by the given ratio', () => {
+            expect(darkenHex('#ff0000', 0.2)).toBe('#cc0000');
+            expect(darkenHex('#ffffff', 0.5)).toBe('#808080');
+        });
+
+        it('accepts 3-digit hex shorthand', () => {
+            expect(darkenHex('#fff', 0.5)).toBe('#808080');
+        });
+
+        it('never goes below #000000', () => {
+            expect(darkenHex('#000000', 0.9)).toBe('#000000');
         });
     });
 

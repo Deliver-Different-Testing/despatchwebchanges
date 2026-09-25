@@ -32,6 +32,7 @@ import {
     courierFlagCacheKey,
     createCourierFlagSvg,
     createCourierTooltipHtml,
+    DEFAULT_MARKER_SCALE,
     getCourierFlagLines,
     getCourierStatus,
 } from '../../components/common/here-map/courierFlagSvg';
@@ -241,7 +242,11 @@ export class CourierMarkerManager {
     }
 
     private getFlagCacheKey(courier: IAvailableCourierPosition): string {
-        return courierFlagCacheKey(this.getFlagLines(courier), getCourierStatus(courier), false);
+        return courierFlagCacheKey(this.getFlagLines(courier), getCourierStatus(courier), false, this.markerScale);
+    }
+
+    private get markerScale(): number {
+        return this.displaySettings.markerScale ?? DEFAULT_MARKER_SCALE;
     }
 
     private getOrCreateIcon(courier: IAvailableCourierPosition): any {
@@ -253,8 +258,8 @@ export class CourierMarkerManager {
         }
 
         const icon = new H.map.Icon(
-            createCourierFlagSvg(lines, this.statusColors[getDriverStatus(courier)]),
-            {anchor: courierFlagAnchor(lines, false)}
+            createCourierFlagSvg(lines, this.statusColors[getDriverStatus(courier)], this.markerScale),
+            {anchor: courierFlagAnchor(lines, false, this.markerScale)}
         );
 
         // Evict oldest entry if cache is full

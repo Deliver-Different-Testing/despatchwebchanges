@@ -16,11 +16,11 @@ public sealed class PriceDetailReportRaw
 public sealed class PriceDetailHeaderRow
 {
     public int JobId { get; init; }
-    public string JobNo { get; init; } = "";
+    public string JobNo { get; init; } = string.Empty;
     public int? ClientId { get; init; }
-    public string ClientName { get; init; } = "";
-    public string Reference { get; init; } = "";
-    public string Service { get; init; } = "";
+    public string ClientName { get; init; } = string.Empty;
+    public string Reference { get; init; } = string.Empty;
+    public string Service { get; init; } = string.Empty;
 
     public decimal? HeaderAmount { get; init; }
     public decimal HeaderFuel { get; init; }
@@ -35,7 +35,7 @@ public sealed class PriceDetailHeaderRow
     public short? Qty { get; init; }
     public decimal? TotalDistance { get; init; }
     // Set after header projection from a separate items-table lookup (see JobRepository.PriceDetail).
-    public string Dims { get; set; } = "";
+    public string Dims { get; set; } = string.Empty;
 
     public DateTime? BookedAt { get; init; }
     public DateTime? PickedUpAt { get; init; }
@@ -45,8 +45,8 @@ public sealed class PriceDetailHeaderRow
     public DateTime? PickupTimeUtc { get; init; }
     public DateTime? CompletionUtc { get; init; }
 
-    public string PickupAddress { get; init; } = "";
-    public string DeliveryAddress { get; init; } = "";
+    public string PickupAddress { get; init; } = string.Empty;
+    public string DeliveryAddress { get; init; } = string.Empty;
 }
 
 // One row per current PricingBreakdown line (live or archive).
@@ -59,7 +59,7 @@ public sealed class PriceDetailLineRow
     public int? ChildJobId { get; init; }
 
     public int JobId { get; init; }
-    public string ChargeName { get; init; } = "";
+    public string ChargeName { get; init; } = string.Empty;
     public decimal ChargeAmount { get; init; }
     public decimal? CourierPay { get; init; }  // CostAmount = driver pay, not cost
 }
@@ -72,12 +72,12 @@ public sealed class PriceDetailLineRow
 public sealed class PricingChangeRow
 {
     public int JobId { get; init; }
-    public string ChangeType { get; init; } = "";
-    public string FieldName { get; init; } = "";
+    public string ChangeType { get; init; } = string.Empty;
+    public string FieldName { get; init; } = string.Empty;
     public string? OldValue { get; init; }
     public string? NewValue { get; init; }
     public DateTime AtUtc { get; init; }
-    public string UpdatedByType { get; init; } = "";
+    public string UpdatedByType { get; init; } = string.Empty;
     public string? StaffFirstName { get; init; }
     public string? StaffLastName { get; init; }
 

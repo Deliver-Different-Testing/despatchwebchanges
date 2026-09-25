@@ -203,11 +203,11 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> GetSplitPricingBreakdown(int jobId)
+    public async Task<IActionResult> GetSplitPricingBreakdown(int jobId, bool isArchived = false)
     {
         try
         {
-            var breakdown = await jobQueryRepository.GetSplitPricingBreakdownAsync(jobId);
+            var breakdown = await jobQueryRepository.GetSplitPricingBreakdownAsync(jobId, isArchived);
             return Json(breakdown);
         }
         catch (Exception ex)
@@ -2036,9 +2036,8 @@ public class JobController(
         }
         catch (ArchivedJobCompletionException e)
         {
-            Log.Information(
-                "UpdateJob refused: job {JobId}, field {JobProperty}, reason {Reason}",
-                jobId, field, e.Message);
+            Log.Information(e, "UpdateJob refused: job {JobId}, field {JobProperty}, reason",
+                jobId, field);
 
             return BadRequest(new { message = e.Message });
         }

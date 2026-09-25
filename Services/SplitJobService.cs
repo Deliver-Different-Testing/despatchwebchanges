@@ -6,6 +6,7 @@ using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Reporting;
 using Microsoft.EntityFrameworkCore;
@@ -264,11 +265,11 @@ public class SplitJobService(
 
         var parentInfo = await context.TucJobs
             .Where(j => j.UcjbId == parentJobId)
-            .Select(j => new
+            .Select(j => new ParentSplitJobInfoDto
             {
-                j.JobRelationshipTypeId,
-                j.RootParentId,
-                j.UcjbVoid,
+                JobRelationshipTypeId = j.JobRelationshipTypeId,
+                RootParentId = j.RootParentId,
+                UcjbVoid = j.UcjbVoid,
                 Pricing = new ParentPricing(
                     j.UcjbAmount, j.FuelSurchargeAmount, j.CourierPayment, j.TotalDistance)
             })
@@ -619,13 +620,15 @@ public class SplitJobService(
             TruckHours = parent.TruckHours
         };
 
+
     private static async Task<(int ParentRelTypeId, int ChildRelTypeId)> GetRelationshipTypeIdsAsync(
         DespatchContext context,
         CancellationToken ct)
     {
         var relTypes = await context.TblJobRelationshipTypes
             .Where(r => r.SystemName == ParentSystemName || r.SystemName == ChildSystemName)
-            .Select(r => new { r.SystemName, r.JobRelationshipTypeId })
+            .Select(r => new JobRelationshipTypeDto
+                { SystemName = r.SystemName, JobRelationshipTypeId = r.JobRelationshipTypeId })
             .ToListAsync(ct);
 
         var parentRelTypeId = relTypes.FirstOrDefault(r => r.SystemName == ParentSystemName)?.JobRelationshipTypeId
@@ -789,7 +792,8 @@ public class SplitJobService(
             .ToList();
 
         var probeLines = rootItems
-            .Select(p => new SplitPricingAllocator.ParentLine(p.PricingBreakdownId, p.ChargeName ?? string.Empty, 1m, null, p.IsAccessorial))
+            .Select(p => new SplitPricingAllocator.ParentLine(p.PricingBreakdownId, p.ChargeName ?? string.Empty, 1m,
+                null, p.IsAccessorial))
             .ToList();
         var resolvedShares = SplitPricingAllocator.Allocate(probeLines, legWeights, lineOverrides);
 
@@ -828,7 +832,7 @@ public class SplitJobService(
 
             var siblingLegIds = await context.TucJobs
                 .Where(j => j.ParentId == effectiveParentId && j.UcjbId != effectiveParentId
-                    && !j.UcjbVoid && j.UcjbId != parent.UcjbId)
+                                                            && !j.UcjbVoid && j.UcjbId != parent.UcjbId)
                 .Select(j => j.UcjbId)
                 .ToListAsync(ct);
             currentLegIds = [.. siblingLegIds, pickup.Job.UcjbId, delivery.Job.UcjbId];

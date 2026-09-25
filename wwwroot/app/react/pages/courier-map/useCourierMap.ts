@@ -21,6 +21,13 @@ interface UseCourierMapOptions {
     displaySettings: CourierMapDisplaySettings;
 }
 
+/** The user's custom single-color pair, or undefined to use the default blue. */
+function customSingleColor(settings: CourierMapDisplaySettings): { bg: string; text: string } | undefined {
+    return settings.singleColor && settings.singleTextColor
+        ? { bg: settings.singleColor, text: settings.singleTextColor }
+        : undefined;
+}
+
 export function useCourierMap({
     apiKey,
     isUsCustomer,
@@ -79,7 +86,7 @@ export function useCourierMap({
             // markers and the driver list stay in step with the palette.
             markerManagerRef.current = new CourierMarkerManager(
                 mapInstanceRef.current,
-                getMarkerColors(themeRef.current, displaySettingsRef.current.colorMode),
+                getMarkerColors(themeRef.current, displaySettingsRef.current.colorMode, customSingleColor(displaySettingsRef.current)),
                 displaySettingsRef.current
             );
 
@@ -114,7 +121,7 @@ export function useCourierMap({
     useEffect(() => {
         if (!isInitialized || !markerManagerRef.current) return;
         markerManagerRef.current.updateSettings(
-            getMarkerColors(themeRef.current, displaySettings.colorMode),
+            getMarkerColors(themeRef.current, displaySettings.colorMode, customSingleColor(displaySettings)),
             displaySettings
         );
     }, [isInitialized, displaySettings]);

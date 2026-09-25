@@ -1,5 +1,5 @@
 #nullable enable
-namespace DespatchWeb.Models.Dto.Cirium;
+namespace DespatchWeb.Models.Dto;
 
 // Wire DTOs for the DespatchWeb -> Integration Manager Cirium gateway. These mirror the neutral
 // contracts in IntegrationManager.Core/Carriers/Cirium/Contracts by JSON shape (camelCase, matched

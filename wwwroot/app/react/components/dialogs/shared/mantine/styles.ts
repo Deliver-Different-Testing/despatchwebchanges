@@ -177,14 +177,36 @@ export const sectionPaperProps = {
     bg: 'var(--mantine-color-white)',
 } as const;
 
-/** The dialog content area background — the warm off-white the white sections sit on. */
-export const dialogContentBg = 'var(--mantine-color-gray-1)';
+/**
+ * Header/footer chrome bar background — one step off white, so the bars read as
+ * their own plane instead of vanishing into the (white, in light mode) theme
+ * default for `Modal.Content`.
+ */
+export const dialogHeaderBg = 'var(--mantine-color-gray-1)';
+
+/** Footer bar background — the same tone as the header, bookending the dialog. */
+export const dialogFooterBg = dialogHeaderBg;
+
+/**
+ * The dialog content area background — one step deeper than the header/footer
+ * bars, so the scrolling body reads as its own plane between them. The white
+ * `sectionPaperProps` sections sit on this.
+ */
+export const dialogContentBg = 'var(--mantine-color-gray-2)';
 
 /** Footer keyline (top border) colour. */
 export const dialogFooterBorder = '1px solid var(--mantine-color-gray-3)';
 
 /** Header keyline (bottom border) colour — separates the header bar from the scrolling body. */
 export const dialogHeaderBorder = '1px solid var(--mantine-color-gray-3)';
+
+/**
+ * Modal elevation shadow: a tight, low-blur contact shadow plus a broad, soft
+ * ambient throw — two layers read as real lift, where the theme's single
+ * soft `tokens.shadow.md` (10% opacity) does not. Dialog-only: does not touch
+ * `tokens.shadow`, which `Card`/`Menu` also use.
+ */
+export const dialogModalShadow = '0 2px 4px rgba(0,0,0,.12), 0 24px 56px -8px rgba(0,0,0,.28)';
 
 /**
  * The modal shell's Mantine `styles`.
@@ -201,7 +223,7 @@ export const dialogHeaderBorder = '1px solid var(--mantine-color-gray-3)';
  * bites — without it the column overflows instead of scrolling.
  */
 export const dialogShellStyles = {
-    content: {display: 'flex', flexDirection: 'column', overflow: 'hidden'},
+    content: {display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: dialogContentBg},
     body: {padding: 0, display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0, overflow: 'hidden'},
 } satisfies Record<'content' | 'body', React.CSSProperties>;
 

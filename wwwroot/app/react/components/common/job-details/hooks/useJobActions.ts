@@ -1026,12 +1026,17 @@ export function useJobActions({
                 ? relatedJobs.find(rj => rj.id === j.rootParentId)
                 : undefined;
             const splitParentId = isSplitChild ? parentJob?.id : j.id;
-            const splitBreakdown = splitParentId != null ? await getSplitPricingBreakdown(splitParentId) : undefined;
+            const splitParentIsArchived = isSplitChild
+                ? (parentJob?.isArchived ?? j.isArchived ?? false)
+                : (j.isArchived ?? false);
+            const splitBreakdown = splitParentId != null
+                ? await getSplitPricingBreakdown(splitParentId, splitParentIsArchived)
+                : undefined;
             if (splitBreakdown) {
                 await ensureSplitPricingBreakdownDialog();
                 window.ReactSplitPricingBreakdownDialog?.setToastService({showToast});
                 await window.ReactSplitPricingBreakdownDialog?.open(splitBreakdown, {
-                    readOnly: isSplitChild,
+                    readOnly: isSplitChild || splitParentIsArchived,
                     highlightLegId: isSplitChild ? j.id : undefined,
                 });
                 await refreshAndNotify();

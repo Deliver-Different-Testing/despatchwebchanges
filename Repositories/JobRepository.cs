@@ -4388,20 +4388,29 @@ public partial class JobRepository(
     /// job (parent or child) is shown, so a job with no PricingBreakdownAllocation rows yet (split
     /// before this feature shipped) gets an equal-share split computed on read rather than a null.
     /// That computed split is never persisted — it's written for real only if/when the user edits
-    /// and saves, via the normal UpdateSplitPricingBreakdownAsync path. Returns null only when the
-    /// job isn't a live split parent, or has no pricing items or no live legs to show at all.
+    /// and saves, via the normal UpdateSplitPricingBreakdownAsync path (which stays live-only —
+    /// <paramref name="isArchived"/> only widens this read path, matching the app-wide convention
+    /// that an archived job is view-only). Returns null only when the job isn't a split parent, or
+    /// has no pricing items or no legs to show at all.
     /// </summary>
-    public async Task<SplitPricingBreakdownDto> GetSplitPricingBreakdownAsync(int jobId)
+    public async Task<SplitPricingBreakdownDto> GetSplitPricingBreakdownAsync(int jobId, bool isArchived = false)
     {
-        if (!await IsLiveSplitParentAsync(jobId, isArchived: false))
+        if (!await IsSplitParentAsync(jobId, isArchived))
         {
             return null;
         }
 
-        var parentItems = await Context.PricingBreakdowns
-            .Where(p => p.JobId == jobId && p.ChildJobId == null)
-            .OrderBy(p => p.PricingBreakdownId)
-            .ToListAsync();
+        var parentItems = isArchived
+            ? await Context.PricingBreakdownArchives
+                .Where(p => p.JobId == jobId && p.ChildJobId == null)
+                .OrderBy(p => p.PricingBreakdownId)
+                .Select(p => new SplitPricingParentItemRow(p.PricingBreakdownId, p.ChargeName, p.ChargeAmount, p.CostAmount, p.IsAccessorial))
+                .ToListAsync()
+            : await Context.PricingBreakdowns
+                .Where(p => p.JobId == jobId && p.ChildJobId == null)
+                .OrderBy(p => p.PricingBreakdownId)
+                .Select(p => new SplitPricingParentItemRow(p.PricingBreakdownId, p.ChargeName, p.ChargeAmount, p.CostAmount, p.IsAccessorial))
+                .ToListAsync();
 
         if (parentItems.Count == 0)
         {
@@ -4409,13 +4418,19 @@ public partial class JobRepository(
         }
 
         var itemIds = parentItems.Select(p => p.PricingBreakdownId).ToList();
-        var allocations = await Context.PricingBreakdownAllocations
-            .Where(a => itemIds.Contains(a.ParentPricingBreakdownId))
-            .ToListAsync();
+        var allocations = isArchived
+            ? await Context.PricingBreakdownAllocationArchives
+                .Where(a => itemIds.Contains(a.ParentPricingBreakdownId))
+                .Select(a => new SplitPricingAllocationRow(a.ParentPricingBreakdownId, a.LegJobId, a.SharePercent, a.ChargeAmount, a.CostAmount, a.CostOverride))
+                .ToListAsync()
+            : await Context.PricingBreakdownAllocations
+                .Where(a => itemIds.Contains(a.ParentPricingBreakdownId))
+                .Select(a => new SplitPricingAllocationRow(a.ParentPricingBreakdownId, a.LegJobId, a.SharePercent, a.ChargeAmount, a.CostAmount, a.CostOverride))
+                .ToListAsync();
 
         if (allocations.Count == 0)
         {
-            allocations = await SynthesizeEqualSplitAllocationsAsync(jobId, parentItems);
+            allocations = await SynthesizeEqualSplitAllocationsAsync(jobId, parentItems, isArchived);
             if (allocations.Count == 0)
             {
                 return null;
@@ -4423,16 +4438,15 @@ public partial class JobRepository(
         }
 
         var legIds = allocations.Select(a => a.LegJobId).Distinct().ToList();
-        var legJobs = await Context.TucJobs
-            .Where(j => legIds.Contains(j.UcjbId))
-            .OrderBy(j => j.Sequence)
-            .Select(j => new
-            {
-                j.UcjbId,
-                j.UcjbNumber,
-                DriverName = j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null
-            })
-            .ToListAsync();
+        var legJobs = isArchived
+            ? await GetArchivedSplitLegJobsAsync(legIds)
+            : await Context.TucJobs
+                .Where(j => legIds.Contains(j.UcjbId))
+                .OrderBy(j => j.Sequence)
+                .Select(j => new SplitPricingLegJobRow(
+                    j.UcjbId, j.UcjbNumber,
+                    j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null))
+                .ToListAsync();
 
         var lockState = await GetSplitPricingLockStateAsync(jobId);
 
@@ -4515,17 +4529,23 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// An even split across the parent's current live legs, computed in memory (never added to
-    /// the context) for a split parent that has no persisted PricingBreakdownAllocation rows yet.
+    /// An even split across the parent's current legs, computed in memory (never persisted) for a
+    /// split parent that has no persisted allocation rows yet.
     /// </summary>
-    private async Task<List<PricingBreakdownAllocation>> SynthesizeEqualSplitAllocationsAsync(
-        int parentJobId, List<PricingBreakdown> parentItems)
+    private async Task<List<SplitPricingAllocationRow>> SynthesizeEqualSplitAllocationsAsync(
+        int parentJobId, List<SplitPricingParentItemRow> parentItems, bool isArchived)
     {
-        var legIds = await Context.TucJobs
-            .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
-            .OrderBy(j => j.Sequence)
-            .Select(j => j.UcjbId)
-            .ToListAsync();
+        var legIds = isArchived
+            ? await Context.TucJobArchives
+                .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
+                .OrderBy(j => j.Sequence)
+                .Select(j => j.UcjbId)
+                .ToListAsync()
+            : await Context.TucJobs
+                .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
+                .OrderBy(j => j.Sequence)
+                .Select(j => j.UcjbId)
+                .ToListAsync();
 
         if (legIds.Count == 0)
         {
@@ -4535,7 +4555,7 @@ public partial class JobRepository(
         var sharePercent = 100m / legIds.Count;
         var fractions = legIds.Select(_ => sharePercent / 100m).ToList();
 
-        var synthesized = new List<PricingBreakdownAllocation>();
+        var synthesized = new List<SplitPricingAllocationRow>();
         foreach (var item in parentItems)
         {
             var revenues = PricingBreakdownAllocationCalculator.DistributeAmount(item.ChargeAmount, fractions);
@@ -4545,18 +4565,38 @@ public partial class JobRepository(
 
             for (var i = 0; i < legIds.Count; i++)
             {
-                synthesized.Add(new PricingBreakdownAllocation
-                {
-                    ParentPricingBreakdownId = item.PricingBreakdownId,
-                    LegJobId = legIds[i],
-                    SharePercent = sharePercent,
-                    ChargeAmount = revenues[i],
-                    CostAmount = costs?[i]
-                });
+                synthesized.Add(new SplitPricingAllocationRow(
+                    item.PricingBreakdownId, legIds[i], sharePercent, revenues[i], costs?[i], CostOverride: null));
             }
         }
 
         return synthesized;
+    }
+
+    /// <summary>
+    /// Leg job numbers and driver names for archived legs — <see cref="TucJobArchive"/> has no
+    /// <c>UcjbCourier</c> navigation property (unlike the live <see cref="TucJob"/>), so the
+    /// driver name needs a separate lookup against <see cref="TucCourier"/>.
+    /// </summary>
+    private async Task<List<SplitPricingLegJobRow>> GetArchivedSplitLegJobsAsync(List<int> legIds)
+    {
+        var legs = await Context.TucJobArchives
+            .Where(j => legIds.Contains(j.UcjbId))
+            .OrderBy(j => j.Sequence)
+            .Select(j => new { j.UcjbId, j.UcjbNumber, j.UcjbCourierId })
+            .ToListAsync();
+
+        var courierIds = legs.Where(l => l.UcjbCourierId.HasValue)
+            .Select(l => l.UcjbCourierId!.Value).Distinct().ToList();
+        var courierNames = await Context.TucCouriers
+            .Where(c => courierIds.Contains(c.UccrId))
+            .ToDictionaryAsync(c => c.UccrId, c => c.UccrName + " " + c.UccrSurname);
+
+        return legs
+            .Select(l => new SplitPricingLegJobRow(
+                l.UcjbId, l.UcjbNumber,
+                l.UcjbCourierId.HasValue && courierNames.TryGetValue(l.UcjbCourierId.Value, out var name) ? name : null))
+            .ToList();
     }
 
     public new async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
@@ -5555,6 +5595,20 @@ public partial class JobRepository(
             : await Context.TucJobs.Where(j => j.UcjbId == jobId)
                 .Select(j => j.JobRelationshipTypeId).FirstOrDefaultAsync())
         == (int)JobRelationshipTypes.SplitChild;
+
+    /// <summary>
+    /// True when <paramref name="jobId"/> is a split parent, live or archived — the read-only
+    /// display gate for <see cref="GetSplitPricingBreakdownAsync"/>. Unlike
+    /// <see cref="IsLiveSplitParentAsync"/>, this doesn't bail out for an archived job: showing
+    /// the per-leg grid is safe for a job nobody can edit through it anyway.
+    /// </summary>
+    private async Task<bool> IsSplitParentAsync(int jobId, bool isArchived) =>
+        (isArchived
+            ? await Context.TucJobArchives.Where(j => j.UcjbId == jobId)
+                .Select(j => j.JobRelationshipTypeId).FirstOrDefaultAsync()
+            : await Context.TucJobs.Where(j => j.UcjbId == jobId)
+                .Select(j => j.JobRelationshipTypeId).FirstOrDefaultAsync())
+        == (int)JobRelationshipTypes.SplitParent;
 
     /// <summary>
     /// True when <paramref name="jobId"/> is a split parent whose PricingBreakdownAllocation rows

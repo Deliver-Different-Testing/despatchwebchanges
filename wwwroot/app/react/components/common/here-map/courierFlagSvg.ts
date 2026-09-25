@@ -20,6 +20,8 @@ export type MarkerLabelMode = 'name' | 'number' | 'both';
 export interface CourierFlagDisplaySettings {
     markerLabel: MarkerLabelMode;
     showJobCount: boolean;
+    /** Uniform size multiplier for the rendered flag. Defaults to {@link DEFAULT_MARKER_SCALE}. */
+    markerScale?: number;
 }
 
 export interface CourierFlagColors {
@@ -38,6 +40,11 @@ export interface CourierFlagLines {
 /** Overall flag height, which drives the marker anchor — the stem tip must sit on the GPS point. */
 export const COURIER_FLAG_HEIGHT = {oneLine: 36, twoLine: 50} as const;
 export const COURIER_FLAG_LARGE_HEIGHT = 58;
+
+/** Range and default for the display-settings marker-size slider. */
+export const MARKER_SCALE_MIN = 0.75;
+export const MARKER_SCALE_MAX = 1.5;
+export const DEFAULT_MARKER_SCALE = 1;
 
 const PILL_ONE_LINE_HEIGHT = 22;
 const PILL_TWO_LINE_HEIGHT = 36;
@@ -110,15 +117,19 @@ export function getCourierStatus(courier: IAvailableCourierPosition): CourierSta
  * key that ignored it would serve a stale icon forever.
  */
 export function courierFlagCacheKey(
-    lines: CourierFlagLines, status: CourierStatus, largeView: boolean
+    lines: CourierFlagLines, status: CourierStatus, largeView: boolean, scale: number = DEFAULT_MARKER_SCALE
 ): string {
-    return `${lines.primary}_${lines.secondary ?? ''}_${status}_${largeView}`;
+    return `${lines.primary}_${lines.secondary ?? ''}_${status}_${largeView}_${scale}`;
 }
 
-/** Marker anchor for a flag — x on the stem, y at its tip so the flag hangs above the GPS point. */
-export function courierFlagAnchor(lines: CourierFlagLines, largeView: boolean): {x: number; y: number} {
-    if (largeView) return {x: PILL_X, y: COURIER_FLAG_LARGE_HEIGHT};
-    return {x: PILL_X, y: flagHeight(lines)};
+/**
+ * Marker anchor for a flag — x on the stem, y at its tip so the flag hangs above the GPS point.
+ * `scale` must match what was passed to {@link createCourierFlagSvg}: the anchor is in the icon's
+ * rendered pixel space, which grows with the flag even though the SVG's internal viewBox does not.
+ */
+export function courierFlagAnchor(lines: CourierFlagLines, largeView: boolean, scale: number = DEFAULT_MARKER_SCALE): {x: number; y: number} {
+    if (largeView) return {x: Math.round(PILL_X * scale), y: Math.round(COURIER_FLAG_LARGE_HEIGHT * scale)};
+    return {x: Math.round(PILL_X * scale), y: Math.round(flagHeight(lines) * scale)};
 }
 
 function flagHeight(lines: CourierFlagLines): number {
@@ -137,14 +148,21 @@ function pillWidth(lines: CourierFlagLines): number {
 /**
  * Material Design 3 tonal label on a rounded pin stem. One line when the courier has no last
  * delivery, two when they do.
+ *
+ * `scale` only changes the rendered `width`/`height` attributes — the `viewBox` (and every
+ * coordinate drawn below) stays in the original, unscaled space. The browser's SVG rasterizer
+ * stretches that fixed drawing to fit the larger box, which is a uniform scale-up for free and
+ * means none of the drawing math below has to know about it.
  */
-export function createCourierFlagSvg(lines: CourierFlagLines, colors: CourierFlagColors): string {
+export function createCourierFlagSvg(lines: CourierFlagLines, colors: CourierFlagColors, scale: number = DEFAULT_MARKER_SCALE): string {
     const textWidth = pillWidth(lines);
     const totalWidth = textWidth + 6;
     const pillHeight = lines.secondary ? PILL_TWO_LINE_HEIGHT : PILL_ONE_LINE_HEIGHT;
     const height = flagHeight(lines);
     const centreX = PILL_X + textWidth / 2;
     const radius = PILL_ONE_LINE_HEIGHT / 2;
+    const renderedWidth = Math.round(totalWidth * scale);
+    const renderedHeight = Math.round(height * scale);
 
     const secondary = lines.secondary
         ? `<text x="${centreX}" y="31" font-family="Roboto, Arial, sans-serif" font-size="10" `
@@ -152,7 +170,7 @@ export function createCourierFlagSvg(lines: CourierFlagLines, colors: CourierFla
           + `${escapeXml(lines.secondary)}</text>`
         : '';
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${height}" viewBox="0 0 ${totalWidth} ${height}">
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${renderedWidth}" height="${renderedHeight}" viewBox="0 0 ${totalWidth} ${height}">
             <defs>
                 <filter id="flagShadow" x="-30%" y="-30%" width="160%" height="160%">
                     <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.24"/>
@@ -166,11 +184,13 @@ export function createCourierFlagSvg(lines: CourierFlagLines, colors: CourierFla
 }
 
 /** The large-view pennant. Same content, bigger target for scanning a busy map at a glance. */
-export function createLargeCourierFlagSvg(lines: CourierFlagLines, colors: CourierFlagColors): string {
+export function createLargeCourierFlagSvg(lines: CourierFlagLines, colors: CourierFlagColors, scale: number = DEFAULT_MARKER_SCALE): string {
     const width = Math.max(96, Math.min(
         Math.max(lines.primary.length * 8, (lines.secondary?.length ?? 0) * SECONDARY_CHAR_WIDTH) + 28,
         MAX_PILL_WIDTH));
     const pennantRight = width - 4;
+    const renderedWidth = Math.round(width * scale);
+    const renderedHeight = Math.round(COURIER_FLAG_LARGE_HEIGHT * scale);
 
     const secondary = lines.secondary
         ? `<text x="${(8 + pennantRight) / 2}" y="32" font-family="Roboto, Arial, sans-serif" `
@@ -178,7 +198,7 @@ export function createLargeCourierFlagSvg(lines: CourierFlagLines, colors: Couri
           + `text-anchor="middle">${escapeXml(lines.secondary)}</text>`
         : '';
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${COURIER_FLAG_LARGE_HEIGHT}" viewBox="0 0 ${width} ${COURIER_FLAG_LARGE_HEIGHT}">
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${renderedWidth}" height="${renderedHeight}" viewBox="0 0 ${width} ${COURIER_FLAG_LARGE_HEIGHT}">
             <defs>
                 <filter id="largeFlagShadow" x="-20%" y="-30%" width="140%" height="170%">
                     <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.24"/>
