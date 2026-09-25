@@ -199,14 +199,58 @@ describe('SettingsPage', () => {
             await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
             await user.click(screen.getByRole('button', {name: 'Save'}));
 
+            // Delivery was never touched and still matches the (empty) tenant
+            // default, so it's saved as `null` rather than a snapshot.
             expect(mockSavePreference).toHaveBeenCalledWith(
                 'DispatchAddressFormat',
                 JSON.stringify({
                     pickup: {line1: ['streetName', 'postcode'], line2: []},
-                    delivery: {line1: [], line2: []},
+                    delivery: null,
                 }),
             );
             await waitFor(() => expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled());
+        });
+
+        it('saves an untouched side as null (not a snapshot) so it keeps following the tenant default', async () => {
+            mockGetPreference.mockResolvedValue(null);
+            mockGetTenantAddressFormatDefault.mockResolvedValue(
+                '{"pickup":{"line1":["postcode"],"line2":[]},"delivery":{"line1":["country"],"line2":[]}}',
+            );
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+            await waitFor(() => expect(radioFor('pickup', 'Postcode', 'Line 1')).toBeChecked());
+
+            // Customize delivery only; pickup is left matching the tenant default.
+            await user.click(radioFor('delivery', 'Street Name', 'Line 1'));
+            await user.click(screen.getByRole('button', {name: 'Save'}));
+
+            expect(mockSavePreference).toHaveBeenCalledWith(
+                'DispatchAddressFormat',
+                JSON.stringify({
+                    pickup: null,
+                    delivery: {line1: ['country', 'streetName'], line2: []},
+                }),
+            );
+        });
+
+        it('deletes the preference instead of saving when both sides are edited back to the tenant default', async () => {
+            mockGetPreference.mockResolvedValue(
+                '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',
+            );
+            mockGetTenantAddressFormatDefault.mockResolvedValue(
+                '{"pickup":{"line1":["postcode"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',
+            );
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+
+            await user.click(radioFor('pickup', 'Street Name', 'Off'));
+            await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
+            await user.click(screen.getByRole('button', {name: 'Save'}));
+
+            expect(mockSavePreference).not.toHaveBeenCalled();
+            expect(mockDeletePreference).toHaveBeenCalledWith('DispatchAddressFormat');
+            await waitFor(() => expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled());
         });
 
         it('copies the pickup draft onto delivery', async () => {
