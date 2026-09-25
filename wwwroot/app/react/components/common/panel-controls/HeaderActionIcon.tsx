@@ -21,11 +21,13 @@ export interface HeaderActionIconProps extends Omit<React.ComponentPropsWithoutR
 }
 
 export const HeaderActionIcon = React.forwardRef<HTMLButtonElement, HeaderActionIconProps>(
-    function HeaderActionIcon({label, tooltip, children, ...rest}, ref) {
-        // Everything but the three named props passes straight through: a
-        // `Menu.Target` clones this element to inject its own click handler and
-        // `aria-haspopup`/`aria-expanded`, and swallowing those would leave the
-        // button inert and unannounced.
+    function HeaderActionIcon({label, tooltip, children, className, ...rest}, ref) {
+        // Everything but the four named props passes straight through: a
+        // `Menu.Target` clones this element to inject its own click handler,
+        // `aria-haspopup`/`aria-expanded`, and its own (empty) `className` — the
+        // last of those must be merged rather than spread after ours, or it wipes
+        // out the grow-on-hover class and leaves this the one control on the bar
+        // that still washes blue on hover.
         return (
             <Tooltip label={tooltip ?? label} withArrow>
                 <ActionIcon
@@ -34,8 +36,8 @@ export const HeaderActionIcon = React.forwardRef<HTMLButtonElement, HeaderAction
                     radius="xl"
                     variant="subtle"
                     aria-label={label}
-                    className={`${classes.control} ${panelIconButtonClassName}`}
                     {...rest}
+                    className={`${classes.control} ${panelIconButtonClassName} ${className ?? ''}`}
                 >
                     {children}
                 </ActionIcon>

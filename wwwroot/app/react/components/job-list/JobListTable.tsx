@@ -166,24 +166,26 @@ function densityVars(densityMode: DensityMode): React.CSSProperties {
 }
 
 /**
- * The Assign chip fills its cell instead of floating in it: it paints the whole
- * row band — the compact control plus the cell padding above and below — and the
- * whole column, then hands that padding straight back as a negative block margin.
- * So the *painted* box grows with density while the *layout* box stays the
- * compact band, and row height is unchanged in all three modes (the chip is what
- * sets it — see `ACTION_BUTTON_COMPACT_HEIGHT`).
+ * The Assign *hit target* fills its cell instead of floating in it: it paints
+ * the whole row band — the compact control plus the cell padding above and
+ * below — and the whole column, then hands that padding straight back as a
+ * negative block margin. So the *painted* box grows with density while the
+ * *layout* box stays the compact band, and row height is unchanged in all
+ * three modes (the chip is what sets it — see `ACTION_BUTTON_COMPACT_HEIGHT`).
  *
- * Filling is the point rather than a side effect: this button is the empty state
- * of the courier picker, and clicking it swaps a `SearchSelect` into the same
+ * Filling is the point rather than a side effect: this is the empty state of
+ * the courier picker, and clicking it swaps a `SearchSelect` into the same
  * cell. Matching that footprint means the swap is a fill, not a jump, and the
- * hit target goes from a 22px chip to the row band the dispatcher is aiming at
- * anyway.
+ * hit target stays the whole row band the dispatcher is aiming at anyway —
+ * even though the visible chip inside it is only as wide as its label.
  */
 const ASSIGN_FILL_STYLE = {
-    '--ab-height': `calc(${ACTION_BUTTON_COMPACT_HEIGHT}px + 2 * var(--jl-cell-py))`,
+    height: `calc(${ACTION_BUTTON_COMPACT_HEIGHT}px + 2 * var(--jl-cell-py))`,
     marginBlock: 'calc(-1 * var(--jl-cell-py))',
-    display: 'block',
+    display: 'flex',
+    alignItems: 'center',
     width: '100%',
+    cursor: 'pointer',
 } as React.CSSProperties;
 
 function alignClass(align: ColumnDef['align'], right: string, center: string): string | undefined {
@@ -367,6 +369,30 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         }
     }, [newJobIds, jobs]);
 
+    // Track jobs that just gained a courier so we can flash a "dispatched" confirmation.
+    const prevCourierRef = useRef<Map<number, boolean> | null>(null);
+    const [dispatchedJobIds, setDispatchedJobIds] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        const prevCourier = prevCourierRef.current;
+        const currentCourier = new Map(jobs.map(j => [j.id, hasAssignedCourier(j)]));
+
+        if (prevCourier !== null) {
+            const justDispatched = new Set<number>();
+            for (const [id, has] of currentCourier) {
+                if (has && prevCourier.get(id) === false) justDispatched.add(id);
+            }
+            if (justDispatched.size > 0) {
+                setDispatchedJobIds(justDispatched);
+                const timer = setTimeout(() => setDispatchedJobIds(emptySet), 1500);
+                prevCourierRef.current = currentCourier;
+                return () => clearTimeout(timer);
+            }
+        }
+
+        prevCourierRef.current = currentCourier;
+    }, [jobs, emptySet]);
+
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const virtualizer = useVirtualizer({
@@ -467,6 +493,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                 isRelated={relatedJobIds.has(job.id)}
                                 isMultiSelected={multiSelectedIds.has(job.id)}
                                 isNew={newJobIds.has(job.id)}
+                                isDispatched={dispatchedJobIds.has(job.id)}
                                 columns={columns}
                                 densityMode={densityMode}
                                 isUsCustomer={isUsCustomer}
@@ -499,6 +526,7 @@ interface JobRowProps {
     isRelated: boolean;
     isMultiSelected: boolean;
     isNew: boolean;
+    isDispatched: boolean;
     columns: ColumnDef[];
     densityMode: DensityMode;
     isUsCustomer?: boolean;
@@ -516,6 +544,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
                                                       isRelated,
                                                       isMultiSelected,
                                                       isNew,
+                                                      isDispatched,
                                                       columns,
                                                       densityMode,
                                                       isUsCustomer,
@@ -553,6 +582,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             data-multiselected={isMultiSelected || undefined}
             data-unread={!job.hasBeenRead || undefined}
             data-new={isNew || undefined}
+            data-dispatched={isDispatched || undefined}
             aria-selected={isSelected}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
@@ -734,18 +764,19 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
         );
     }
 
-    // State 3: No courier → "Assign" button
+    // State 3: No courier → "Assign" button. The wrapper is the hit target and
+    // fills the cell (see ASSIGN_FILL_STYLE); the chip itself only hugs its
+    // icon and label so it doesn't read as an oversized control.
     return (
-        <ActionButton
-            ref={assignRef}
-            size="compact"
-            justify="start"
-            style={ASSIGN_FILL_STYLE}
-            leftSection={<Icon lucide={UserPlus} size={ACTION_BUTTON_COMPACT_GLYPH_SIZE}/>}
-            onClick={handleAssignClick}
-        >
-            Assign
-        </ActionButton>
+        <Box style={ASSIGN_FILL_STYLE} onClick={handleAssignClick}>
+            <ActionButton
+                ref={assignRef}
+                size="compact"
+                leftSection={<Icon lucide={UserPlus} size={ACTION_BUTTON_COMPACT_GLYPH_SIZE}/>}
+            >
+                Assign
+            </ActionButton>
+        </Box>
     );
 });
 CourierCell.displayName = 'CourierCell';

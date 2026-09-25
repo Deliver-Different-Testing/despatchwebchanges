@@ -53,11 +53,14 @@ export class CourierMarkerManager {
 
     private readonly handlePointerEnter: (evt: any) => void;
     private readonly handlePointerLeave: () => void;
+    private readonly handleTap: (evt: any) => void;
+    private selectedCourierId: number | null = null;
 
     constructor(
         map: any,
         statusColors: Record<DriverStatus, MarkerColor> = MARKER_COLORS,
         displaySettings: CourierFlagDisplaySettings = DEFAULT_DISPLAY_SETTINGS,
+        onMarkerTap?: (courier: IAvailableCourierPosition) => void,
     ) {
         this.map = map;
         this.statusColors = statusColors;
@@ -74,9 +77,16 @@ export class CourierMarkerManager {
             }
         };
         this.handlePointerLeave = () => this.hideTooltip();
+        this.handleTap = (evt: any) => {
+            const courier = evt?.target?.getData?.();
+            if (courier) {
+                onMarkerTap?.(courier);
+            }
+        };
 
         this.markerGroup.addEventListener('pointerenter', this.handlePointerEnter, true);
         this.markerGroup.addEventListener('pointerleave', this.handlePointerLeave, true);
+        this.markerGroup.addEventListener('tap', this.handleTap, true);
     }
 
     /**
@@ -95,6 +105,7 @@ export class CourierMarkerManager {
             }
 
             const existing = this.courierMarkers.get(courier.courierId);
+            const isSelected = courier.courierId === this.selectedCourierId;
 
             if (existing) {
                 // Check if position changed significantly
@@ -119,27 +130,30 @@ export class CourierMarkerManager {
                 existing.marker.setData(courier);
 
                 // Repaint when anything the flag renders changes — including the last-delivery
-                // minutes, which tick between polls.
-                const newLabel = this.getFlagCacheKey(courier);
+                // minutes, which tick between polls, and a selection flip, which doesn't touch
+                // the label/status at all.
+                const newLabel = this.getFlagCacheKey(courier, isSelected);
                 const newStatus = getDriverStatus(courier);
-                if (existing.name !== newLabel || existing.status !== newStatus) {
-                    existing.marker.setIcon(this.getOrCreateIcon(courier));
+                if (existing.name !== newLabel || existing.status !== newStatus || existing.isSelected !== isSelected) {
+                    existing.marker.setIcon(this.getOrCreateIcon(courier, isSelected));
                     existing.name = newLabel;
                     existing.status = newStatus;
+                    existing.isSelected = isSelected;
                 }
             } else {
                 // Create new marker
-                const marker = this.createCourierMarker(courier);
+                const marker = this.createCourierMarker(courier, isSelected);
                 const status = getDriverStatus(courier);
                 markersToAdd.push(marker);
 
                 this.courierMarkers.set(courier.courierId, {
                     courierId: courier.courierId,
                     marker: marker,
-                    name: this.getFlagCacheKey(courier),
+                    name: this.getFlagCacheKey(courier, isSelected),
                     status,
                     lat: courier.latitude!,
                     lng: courier.longitude!,
+                    isSelected,
                 });
             }
         });
@@ -166,9 +180,30 @@ export class CourierMarkerManager {
             const courier = entry.marker.getData?.() as IAvailableCourierPosition | undefined;
             if (!courier) return;
 
-            entry.marker.setIcon(this.getOrCreateIcon(courier));
-            entry.name = this.getFlagCacheKey(courier);
+            entry.marker.setIcon(this.getOrCreateIcon(courier, entry.isSelected));
+            entry.name = this.getFlagCacheKey(courier, entry.isSelected);
             entry.status = getDriverStatus(courier);
+        });
+    }
+
+    /**
+     * Marks a courier as the selected driver, repainting its flag with a highlight ring, and
+     * clears the highlight from whichever courier was previously selected. Persists across
+     * `updateMarkers` poll refreshes since `selectedCourierId` is plain instance state.
+     */
+    setSelectedCourier(courierId: number | null): void {
+        if (this.selectedCourierId === courierId) return;
+        this.selectedCourierId = courierId;
+
+        this.courierMarkers.forEach((entry) => {
+            const shouldBeSelected = entry.courierId === courierId;
+            if (entry.isSelected === shouldBeSelected) return;
+
+            const courier = entry.marker.getData?.() as IAvailableCourierPosition | undefined;
+            if (!courier) return;
+
+            entry.marker.setIcon(this.getOrCreateIcon(courier, shouldBeSelected));
+            entry.isSelected = shouldBeSelected;
         });
     }
 
@@ -213,6 +248,7 @@ export class CourierMarkerManager {
         if (this.markerGroup) {
             this.markerGroup.removeEventListener('pointerenter', this.handlePointerEnter, true);
             this.markerGroup.removeEventListener('pointerleave', this.handlePointerLeave, true);
+            this.markerGroup.removeEventListener('tap', this.handleTap, true);
         }
         safeRemoveObject(this.map, this.markerGroup);
         if (this.tooltipElement?.parentNode) {
@@ -241,24 +277,26 @@ export class CourierMarkerManager {
         return getCourierFlagLines(courier, this.displaySettings);
     }
 
-    private getFlagCacheKey(courier: IAvailableCourierPosition): string {
-        return courierFlagCacheKey(this.getFlagLines(courier), getCourierStatus(courier), false, this.markerScale);
+    private getFlagCacheKey(courier: IAvailableCourierPosition, isSelected: boolean): string {
+        return courierFlagCacheKey(
+            this.getFlagLines(courier), getCourierStatus(courier), false, this.markerScale, isSelected
+        );
     }
 
     private get markerScale(): number {
         return this.displaySettings.markerScale ?? DEFAULT_MARKER_SCALE;
     }
 
-    private getOrCreateIcon(courier: IAvailableCourierPosition): any {
+    private getOrCreateIcon(courier: IAvailableCourierPosition, isSelected: boolean): any {
         const lines = this.getFlagLines(courier);
-        const cacheKey = this.getFlagCacheKey(courier);
+        const cacheKey = this.getFlagCacheKey(courier, isSelected);
 
         if (this.iconCache.has(cacheKey)) {
             return this.iconCache.get(cacheKey);
         }
 
         const icon = new H.map.Icon(
-            createCourierFlagSvg(lines, this.statusColors[getDriverStatus(courier)], this.markerScale),
+            createCourierFlagSvg(lines, this.statusColors[getDriverStatus(courier)], this.markerScale, isSelected),
             {anchor: courierFlagAnchor(lines, false, this.markerScale)}
         );
 
@@ -274,9 +312,9 @@ export class CourierMarkerManager {
         return icon;
     }
 
-    private createCourierMarker(driver: IAvailableCourierPosition): any {
+    private createCourierMarker(driver: IAvailableCourierPosition, isSelected: boolean): any {
         const point = new H.geo.Point(driver.latitude, driver.longitude);
-        return new H.map.Marker(point, {icon: this.getOrCreateIcon(driver), data: driver});
+        return new H.map.Marker(point, {icon: this.getOrCreateIcon(driver, isSelected), data: driver});
     }
 
     private showTooltip(marker: any, courier: IAvailableCourierPosition): void {

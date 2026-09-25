@@ -31,7 +31,7 @@ import {
 } from '../../../functions/panelHideButtonSettings';
 import {AddressFormatEditor} from './AddressFormatEditor';
 import {parseAddressFormatJson, serializeAddressFormatJson} from '../../components/job-list/jobAddressFormat';
-import type {AddressLineFormat} from '../../interfaces/address';
+import type {AddressFormatSides, AddressLineFormat} from '../../interfaces/address';
 import {StaffPreferenceKey} from '../../../enums/staff-preference-key.enum';
 import {deletePreference, getPreference, savePreference} from '../../services/preferencesApi';
 import {getTenantAddressFormatDefault} from '../../services/tenantSettingsApi';
@@ -57,6 +57,10 @@ export const SettingsPage: React.FC = () => {
     const [deliveryDraft, setDeliveryDraft] = useState<AddressLineFormat>(EMPTY_FORMAT);
     const [hasAddressOverride, setHasAddressOverride] = useState(false);
     const [addressLoadError, setAddressLoadError] = useState(false);
+    // Remembered so Save can tell "still following the tenant default" apart
+    // from "coincidentally identical to it right now" — only a side that
+    // actually differs from this gets persisted as an explicit override.
+    const [tenantDefaults, setTenantDefaults] = useState<AddressFormatSides>({pickup: null, delivery: null});
     const [leaveResolver, setLeaveResolver] = useState<((decision: LeaveDecision) => void) | null>(null);
 
     const isDirty = JSON.stringify({pickup: pickupDraft, delivery: deliveryDraft})
@@ -92,6 +96,7 @@ export const SettingsPage: React.FC = () => {
                 setDeliveryDraft(delivery);
                 setHasAddressOverride(!!(userSides.pickup || userSides.delivery));
                 setAddressLoadError(tenantResult.status === 'rejected');
+                if (tenantResult.status === 'fulfilled') setTenantDefaults(tenantSides);
             }
         })();
         return () => {
@@ -141,11 +146,27 @@ export const SettingsPage: React.FC = () => {
     };
 
     const saveAddressFormat = useCallback(async (pickup: AddressLineFormat, delivery: AddressLineFormat) => {
-        await savePreference(StaffPreferenceKey.DispatchAddressFormat, serializeAddressFormatJson({pickup, delivery}));
+        // A side that still matches the tenant default is saved as `null`
+        // (no override) rather than a snapshot, so it keeps following the
+        // tenant default if that default changes later.
+        const toPersist = (draft: AddressLineFormat, tenantDefault: AddressLineFormat | null) =>
+            JSON.stringify(draft) === JSON.stringify(tenantDefault ?? EMPTY_FORMAT) ? null : draft;
+
+        const pickupToPersist = toPersist(pickup, tenantDefaults.pickup);
+        const deliveryToPersist = toPersist(delivery, tenantDefaults.delivery);
+
+        if (pickupToPersist === null && deliveryToPersist === null) {
+            await deletePreference(StaffPreferenceKey.DispatchAddressFormat);
+        } else {
+            await savePreference(
+                StaffPreferenceKey.DispatchAddressFormat,
+                serializeAddressFormatJson({pickup: pickupToPersist, delivery: deliveryToPersist}),
+            );
+        }
         setPickupSaved(pickup);
         setDeliverySaved(delivery);
-        setHasAddressOverride(true);
-    }, []);
+        setHasAddressOverride(pickupToPersist !== null || deliveryToPersist !== null);
+    }, [tenantDefaults]);
 
     const handleSaveClick = () => {
         void saveAddressFormat(pickupDraft, deliveryDraft)
@@ -165,6 +186,7 @@ export const SettingsPage: React.FC = () => {
                 setDeliverySaved(delivery);
                 setDeliveryDraft(delivery);
                 setHasAddressOverride(false);
+                setTenantDefaults(tenantSides);
             })
             .catch((error) => console.error('Failed to load tenant address format default:', error));
     };

@@ -28,6 +28,7 @@ import { LIVE_TEMPLATE } from './CourierMapDisplaySettings';
 import type { CourierMapDisplaySettings } from './CourierMapDisplaySettings';
 import { getPreference, savePreference } from '../../services/preferencesApi';
 import { StaffPreferenceKey } from '../../../enums/staff-preference-key.enum';
+import { loadSelectedFleetIds, saveSelectedFleetIds } from './courierMapFleetFilterStorage';
 
 interface CourierMapPageInternalProps extends CourierMapPageProps {
     apiKey: string | null;
@@ -42,7 +43,19 @@ export function CourierMapPage({
     const [isPanelHidden, setIsPanelHidden] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-    const [selectedFleetIds, setSelectedFleetIds] = useState<number[]>([]);
+    const [selectedFleetIds, setSelectedFleetIds] = useState<number[]>(() => loadSelectedFleetIds());
+    const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
+
+    const handleFleetIdsChange = useCallback((ids: number[]) => {
+        setSelectedFleetIds(ids);
+        saveSelectedFleetIds(ids);
+    }, []);
+
+    // useCourierMap needs a click handler at construction time, but that handler needs
+    // centerOnCourier/setSelectedDriver — which useCourierMap itself returns. This ref
+    // breaks the cycle: the map always calls the *latest* handleDriverClick without
+    // making onMarkerTap's identity (and therefore the map's init effect) depend on it.
+    const handleDriverClickRef = useRef<(driver: IAvailableCourierPosition) => void>(() => {});
 
     // Display settings — defaults to the Live template until/unless a saved StaffPreference
     // loads, matching the DispatchCourierDisplayMode pattern (see courierDisplayMode.ts).
@@ -99,12 +112,14 @@ export function CourierMapPage({
         defaultLayers,
         updateCouriers,
         centerOnCourier,
+        setSelectedDriver,
         returnToOverview,
     } = useCourierMap({
         apiKey,
         isUsCustomer,
         mapCenter,
         displaySettings,
+        onMarkerTap: (driver) => handleDriverClickRef.current(driver),
     });
 
     // Fetch courier fleet options (rarely change, cache 5 minutes)
@@ -160,10 +175,28 @@ export function CourierMapPage({
     // Handlers
     const handleDriverClick = useCallback(
         (driver: IAvailableCourierPosition) => {
+            setSelectedDriverId(driver.courierId);
             centerOnCourier(driver);
         },
         [centerOnCourier]
     );
+
+    useEffect(() => {
+        handleDriverClickRef.current = handleDriverClick;
+    }, [handleDriverClick]);
+
+    // Keep the map's highlighted flag in step with the selected driver.
+    useEffect(() => {
+        setSelectedDriver(selectedDriverId);
+    }, [selectedDriverId, setSelectedDriver]);
+
+    // Clear a stale selection if that driver drops out of the current results
+    // (went offline, or filtered out by the fleet filter/search).
+    useEffect(() => {
+        if (selectedDriverId != null && !validCouriers.some((c) => c.courierId === selectedDriverId)) {
+            setSelectedDriverId(null);
+        }
+    }, [validCouriers, selectedDriverId]);
 
     const handleRefresh = useCallback(async () => {
         await refetch();
@@ -208,7 +241,8 @@ export function CourierMapPage({
                     fleetOptions={fleetOptions}
                     isFleetOptionsLoading={isFleetOptionsLoading}
                     selectedFleetIds={selectedFleetIds}
-                    onSelectedFleetIdsChange={setSelectedFleetIds}
+                    onSelectedFleetIdsChange={handleFleetIdsChange}
+                    selectedDriverId={selectedDriverId}
                 />
 
                 {/* Fit-all + refresh + display settings (top-left) */}

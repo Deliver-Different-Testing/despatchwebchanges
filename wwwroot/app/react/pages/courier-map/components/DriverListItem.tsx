@@ -36,7 +36,7 @@ function getDriverInitials(name: string | undefined): string {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function DriverListItem({ driver, onClick }: DriverListItemProps) {
+export function DriverListItem({ driver, onClick, isSelected }: DriverListItemProps) {
     const theme = useMantineTheme();
     const statusColor = getStatusColor(driver, theme);
     const initials = getDriverInitials(driver.courierName);
@@ -49,6 +49,13 @@ export function DriverListItem({ driver, onClick }: DriverListItemProps) {
             style={{
                 '--status-color': statusColor,
                 '--status-tint': alpha(statusColor, 0.06),
+                // Inline rather than a CSS-module modifier class: the row needs to stay tinted
+                // after the click, not just on hover, and an inline value is what Jest's
+                // toHaveStyle can actually see (CSS modules resolve to {} under Jest).
+                ...(isSelected ? {
+                    backgroundColor: alpha(statusColor, 0.12),
+                    boxShadow: `inset 3px 0 0 ${statusColor}`,
+                } : {}),
             } as React.CSSProperties & Record<`--${string}`, string>}
         >
             <Avatar

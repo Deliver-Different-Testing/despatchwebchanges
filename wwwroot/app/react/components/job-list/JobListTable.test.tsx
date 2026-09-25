@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {screen, waitFor} from '@testing-library/react';
+import {act, screen, waitFor} from '@testing-library/react';
 import { renderWithMantine } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {availableColumns, orderColumns} from './jobListColumns';
@@ -384,11 +384,15 @@ describe('JobListTable', () => {
 
             const assign = screen.getByRole('button', {name: 'Assign'});
             expect(assign).toHaveAttribute('data-ab-size', 'compact');
+
+            // The chip itself only hugs its label; its wrapper is the hit target
+            // that fills the cell.
+            const wrapper = assign.parentElement as HTMLElement;
             // Paints the 22px band plus the cell padding above and below it...
-            expect(assign.style.getPropertyValue('--ab-height')).toBe('calc(22px + 2 * var(--jl-cell-py))');
+            expect(wrapper.style.height).toBe('calc(22px + 2 * var(--jl-cell-py))');
             // ...then gives that padding back, so the row height is unchanged.
-            expect(assign.style.marginBlock).toBe('calc(-1 * var(--jl-cell-py))');
-            expect(assign.style.width).toBe('100%');
+            expect(wrapper.style.marginBlock).toBe('calc(-1 * var(--jl-cell-py))');
+            expect(wrapper.style.width).toBe('100%');
         });
 
         it('does not render Assign button for flight or agent assigned jobs', () => {
@@ -497,6 +501,41 @@ describe('JobListTable', () => {
             await user.click(option);
 
             expect(props.onJobDispatch).toHaveBeenCalledWith(expect.objectContaining({id: 1}), 42, '101 - John Smith');
+        });
+    });
+
+    // ── Dispatch confirmation flash ────────────────────────────────────
+    describe('Dispatch confirmation flash', () => {
+        it('flashes the row when a job gains a courier, then clears the flash', () => {
+            jest.useFakeTimers();
+            try {
+                const job = createMockDispatchJob({id: 1, jobNo: 'J100', assignedCourier: undefined});
+                const {rerender} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+                const row = screen.getByText('J100').closest('tr')!;
+                expect(row).not.toHaveAttribute('data-dispatched');
+
+                const dispatchedJob = {...job, assignedCourier: {id: 5, text: '5 - Runner'}};
+                act(() => {
+                    rerender(<JobListTable {...createDefaultProps({jobs: [dispatchedJob]})}/>);
+                });
+                expect(row).toHaveAttribute('data-dispatched', 'true');
+
+                act(() => {
+                    jest.advanceTimersByTime(1500);
+                });
+                expect(row).not.toHaveAttribute('data-dispatched');
+            } finally {
+                jest.useRealTimers();
+            }
+        });
+
+        it('does not flash a job that already had a courier on first render', () => {
+            const job = createMockDispatchJob({id: 1, jobNo: 'J101', assignedCourier: {id: 5, text: '5 - Runner'}});
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+            const row = screen.getByText('J101').closest('tr')!;
+            expect(row).not.toHaveAttribute('data-dispatched');
         });
     });
 

@@ -117,6 +117,7 @@ export interface CourierMarker {
     status: DriverStatus;
     lat: number;
     lng: number;
+    isSelected: boolean;
 }
 
 /**
@@ -177,6 +178,8 @@ export interface DriversPanelProps {
     selectedFleetIds: number[];
     /** Callback when fleet selection changes */
     onSelectedFleetIdsChange: (ids: number[]) => void;
+    /** The currently selected driver's courierId, or null if none is selected */
+    selectedDriverId: number | null;
 }
 
 /**
@@ -187,6 +190,8 @@ export interface DriverListItemProps {
     driver: import('../../../interfaces/courier.interface').IAvailableCourierPosition;
     /** Callback when clicked */
     onClick: () => void;
+    /** Whether this driver is the currently selected one */
+    isSelected: boolean;
 }
 
 /**
@@ -223,6 +228,8 @@ export interface UseCourierMapReturn {
     updateCouriers: (couriers: import('../../../interfaces/courier.interface').IAvailableCourierPosition[]) => void;
     /** Center map on a specific courier */
     centerOnCourier: (driver: import('../../../interfaces/courier.interface').IAvailableCourierPosition) => void;
+    /** Highlight (or clear, with null) the selected driver's flag on the map */
+    setSelectedDriver: (courierId: number | null) => void;
     /** Fit all couriers in view / return to overview */
     returnToOverview: () => void;
 }
