@@ -39,6 +39,7 @@ jest.mock('./useCourierMap', () => ({
         defaultLayers: null,
         updateCouriers: jest.fn(),
         centerOnCourier: jest.fn(),
+        setSelectedDriver: jest.fn(),
         returnToOverview: jest.fn(),
     })),
 }));
@@ -178,6 +179,7 @@ describe('CourierMapPage Component', () => {
                 defaultLayers: {},
                 updateCouriers: jest.fn(),
                 centerOnCourier: jest.fn(),
+                setSelectedDriver: jest.fn(),
                 returnToOverview: jest.fn(),
             });
 
@@ -339,6 +341,7 @@ describe('CourierMapPage Component', () => {
                 isInitialized: true,
                 updateCouriers: jest.fn(),
                 centerOnCourier: jest.fn(),
+                setSelectedDriver: jest.fn(),
                 returnToOverview: mockReturnToOverview,
             });
 
@@ -377,6 +380,7 @@ describe('CourierMapPage Component', () => {
                 isInitialized: true,
                 updateCouriers: jest.fn(),
                 centerOnCourier: mockCenterOnCourier,
+                setSelectedDriver: jest.fn(),
                 returnToOverview: jest.fn(),
             });
 
@@ -392,6 +396,59 @@ describe('CourierMapPage Component', () => {
             expect(mockCenterOnCourier).toHaveBeenCalledWith(
                 expect.objectContaining({courierId: 1})
             );
+        });
+
+        it('highlights the clicked driver in the list and tells the map to select it', async () => {
+            const mockSetSelectedDriver = jest.fn();
+            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            useCourierMapMock.mockReturnValue({
+                mapContainerRef: {current: document.createElement('div')},
+                isInitialized: true,
+                updateCouriers: jest.fn(),
+                centerOnCourier: jest.fn(),
+                setSelectedDriver: mockSetSelectedDriver,
+                returnToOverview: jest.fn(),
+            });
+
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            expect(await screen.findByText(/John Smith/i)).toBeInTheDocument();
+            fireEvent.click(screen.getByText(/John Smith/i));
+
+            await waitFor(() => {
+                expect(mockSetSelectedDriver).toHaveBeenCalledWith(1);
+            });
+            expect(screen.getByText(/John Smith/i).closest('button')?.style.backgroundColor).not.toBe('');
+        });
+
+        it('tapping a marker on the map runs the same select-and-zoom path as a list click', async () => {
+            const mockCenterOnCourier = jest.fn();
+            const mockSetSelectedDriver = jest.fn();
+            let capturedOnMarkerTap: ((driver: {courierId: number}) => void) | undefined;
+            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            useCourierMapMock.mockImplementation((options: {onMarkerTap?: (driver: {courierId: number}) => void}) => {
+                capturedOnMarkerTap = options.onMarkerTap;
+                return {
+                    mapContainerRef: {current: document.createElement('div')},
+                    isInitialized: true,
+                    updateCouriers: jest.fn(),
+                    centerOnCourier: mockCenterOnCourier,
+                    setSelectedDriver: mockSetSelectedDriver,
+                    returnToOverview: jest.fn(),
+                };
+            });
+
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+            await screen.findByText(/John Smith/i);
+
+            capturedOnMarkerTap?.({courierId: 2});
+
+            expect(mockCenterOnCourier).toHaveBeenCalledWith(expect.objectContaining({courierId: 2}));
+            await waitFor(() => {
+                expect(mockSetSelectedDriver).toHaveBeenCalledWith(2);
+            });
         });
     });
 
@@ -428,6 +485,36 @@ describe('CourierMapPage Component', () => {
                 );
             });
         });
+
+        it('persists the fleet selection across a remount (navigating away and back)', async () => {
+            localStorage.clear();
+            (window as unknown as {ContactID: number}).ContactID = 0;
+
+            const props = createDefaultProps({isUsCustomer: false});
+            const {unmount} = renderWithProviders(<CourierMapPage {...props} />);
+
+            const fleetInput = await screen.findByRole('combobox', {name: 'Filter by fleet'});
+            fleetInput.focus();
+            fireEvent.click(fleetInput);
+            fireEvent.click(await screen.findByRole('option', {name: 'UA Wellington'}));
+
+            await waitFor(() => {
+                expect(courierApi.getAvailableCourierLocations).toHaveBeenLastCalledWith(
+                    165, -47, 180, -34, [34]
+                );
+            });
+
+            // The page is mounted/unmounted by the AngularJS host bridge on every
+            // navigation; a fresh mount must read the previous selection back.
+            unmount();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            await waitFor(() => {
+                expect(courierApi.getAvailableCourierLocations).toHaveBeenLastCalledWith(
+                    165, -47, 180, -34, [34]
+                );
+            });
+        });
     });
 
     describe('Courier Filtering', () => {
@@ -457,6 +544,7 @@ describe('CourierMapPage Component', () => {
                 isInitialized: true,
                 updateCouriers: mockUpdateCouriers,
                 centerOnCourier: jest.fn(),
+                setSelectedDriver: jest.fn(),
                 returnToOverview: jest.fn(),
             });
 

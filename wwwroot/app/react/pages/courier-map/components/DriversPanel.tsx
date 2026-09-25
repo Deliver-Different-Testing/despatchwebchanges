@@ -76,6 +76,7 @@ export function DriversPanel({
     isFleetOptionsLoading,
     selectedFleetIds,
     onSelectedFleetIdsChange,
+    selectedDriverId,
 }: DriversPanelProps) {
     const selectedFleets = useMemo(() => {
         const lookup = new Map(fleetOptions.map((f) => [f.id, f]));
@@ -241,6 +242,7 @@ export function DriversPanel({
                                     <DriverListItem
                                         driver={driver}
                                         onClick={() => onDriverClick(driver)}
+                                        isSelected={driver.courierId === selectedDriverId}
                                     />
                                 </Box>
                             ))}

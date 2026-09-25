@@ -19,6 +19,8 @@ interface UseCourierMapOptions {
     isUsCustomer: boolean;
     mapCenter: { lat: number; lng: number };
     displaySettings: CourierMapDisplaySettings;
+    /** Called when a courier's flag is tapped directly on the map. */
+    onMarkerTap?: (driver: IAvailableCourierPosition) => void;
 }
 
 /** The user's custom single-color pair, or undefined to use the default blue. */
@@ -33,12 +35,15 @@ export function useCourierMap({
     isUsCustomer,
     mapCenter,
     displaySettings,
+    onMarkerTap,
 }: UseCourierMapOptions): UseCourierMapReturn {
     const theme = useMantineTheme();
     const themeRef = useRef(theme);
     themeRef.current = theme;
     const displaySettingsRef = useRef(displaySettings);
     displaySettingsRef.current = displaySettings;
+    const onMarkerTapRef = useRef(onMarkerTap);
+    onMarkerTapRef.current = onMarkerTap;
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const platformRef = useRef<any>(null);
@@ -87,7 +92,8 @@ export function useCourierMap({
             markerManagerRef.current = new CourierMarkerManager(
                 mapInstanceRef.current,
                 getMarkerColors(themeRef.current, displaySettingsRef.current.colorMode, customSingleColor(displaySettingsRef.current)),
-                displaySettingsRef.current
+                displaySettingsRef.current,
+                (driver) => onMarkerTapRef.current?.(driver)
             );
 
             // Track user zoom changes
@@ -163,6 +169,12 @@ export function useCourierMap({
         []
     );
 
+    // Highlight/un-highlight a driver's flag; persists through the next poll refresh since
+    // CourierMarkerManager tracks selection as instance state.
+    const setSelectedDriver = useCallback((courierId: number | null) => {
+        markerManagerRef.current?.setSelectedCourier(courierId);
+    }, []);
+
     // Return to overview (fit all or reset to country view)
     const returnToOverview = useCallback(() => {
         if (!mapInstanceRef.current) return;
@@ -180,6 +192,7 @@ export function useCourierMap({
         defaultLayers: defaultLayersRef.current,
         updateCouriers,
         centerOnCourier,
+        setSelectedDriver,
         returnToOverview,
     };
 }
