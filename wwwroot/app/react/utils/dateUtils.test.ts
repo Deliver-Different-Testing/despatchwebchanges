@@ -443,5 +443,12 @@ describe('dateUtils', () => {
         ])('handles %s', (_, date, expected) => {
             expect(formatRelativeTime(date)).toBe(expected);
         });
+
+        it('rounds a DST-shortened 2 calendar days (47h elapsed) up to "2d ago" instead of truncating to 1d', () => {
+            // A due date computed as "2 days ago" via calendar-day subtraction can be only
+            // 47 real hours back across a DST spring-forward — truncating hours/24 would
+            // wrongly read "1d ago".
+            expect(formatRelativeTime(ago(47 * 60 * 60 * 1000))).toBe('2d ago');
+        });
     });
 });
