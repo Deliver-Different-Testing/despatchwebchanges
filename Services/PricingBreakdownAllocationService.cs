@@ -163,6 +163,7 @@ public class PricingBreakdownAllocationService : IPricingBreakdownAllocationServ
         DespatchContext context,
         int parentJobId,
         IReadOnlyList<int> currentLegIds,
+        IReadOnlyDictionary<int, decimal>? fallbackShareByLeg = null,
         CancellationToken ct = default)
     {
         var parentItems = await context.PricingBreakdownArchives
@@ -184,11 +185,20 @@ public class PricingBreakdownAllocationService : IPricingBreakdownAllocationServ
         var rowsByItemLeg = existingRows.ToDictionary(a => (a.ParentPricingBreakdownId, a.LegJobId));
 
         // An item added after the split has no rows yet; seed it at each leg's average share
-        // across the other items, as the live rewrite does.
+        // across the other items, as the live rewrite does. A leg with no rows for *any* item
+        // falls back to fallbackShareByLeg (its own recorded revenue ratio) when supplied, else
+        // an equal split.
         var siblingAverageByLeg = legIds.ToDictionary(legId => legId, legId =>
         {
             var shares = existingRows.Where(a => a.LegJobId == legId).Select(a => a.SharePercent).ToList();
-            return shares.Count > 0 ? shares.Average() : 100m / legIds.Count;
+            if (shares.Count > 0)
+            {
+                return shares.Average();
+            }
+
+            return fallbackShareByLeg is not null && fallbackShareByLeg.TryGetValue(legId, out var fallback)
+                ? fallback
+                : 100m / legIds.Count;
         });
 
         var legTotals = legIds.ToDictionary(legId => legId, _ => (Revenue: 0m, Fuel: 0m, CostSum: 0m, AnyCost: false));

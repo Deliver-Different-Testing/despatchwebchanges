@@ -732,6 +732,23 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateSplitPricingBreakdown_ArchivedJob_DoesNotAddEvent()
+    {
+        // AddEventAsync only looks up live TucJobs — calling it unconditionally for an archived
+        // job throws after the price data has already been saved, turning a successful save into
+        // a 500. Every sibling price action already guards this; this one must too.
+        var request = new UpdateSplitPricingBreakdownRequest { JobId = 1, IsArchived = true };
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateSplitPricingBreakdown(request);
+
+        Assert.IsType<OkResult>(result);
+        await _taskRepositoryMock.DidNotReceive().AddEventAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int>());
+    }
+
+    [Fact]
     public async Task Detail_ValidJobId_ReturnsJobDetails()
     {
         // Arrange
