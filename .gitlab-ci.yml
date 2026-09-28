@@ -77,10 +77,6 @@ workflow:
 test:backend:
   stage: .pre
   image: mcr.microsoft.com/dotnet/sdk:10.0
-  rules:
-    # TEMP: tests disabled for late-night release push 2026-09-29. Re-enable
-    # by deleting this rules block (restores .backend-test-rules). Revert by EOD 2026-09-30.
-    - when: never
   # Retry on any non-test failure reason (a dead/evicted K8s pod can be tagged with
   # several of these). Genuine test failures are `script_failure`, deliberately kept OUT
   # of the list so failing tests still fail fast and block the merge.
@@ -140,6 +136,14 @@ test:backend:
     when: runner_system_failure
   variables:
     NODE_OPTIONS: "--max-old-space-size=4096"
+    # Jest's --maxWorkers=50% reads the node's full core count (os.cpus()), not the
+    # pod's cgroup CPU quota, so it can oversubscribe and throttle on a constrained
+    # K8s runner. Pin the pod to a known size and match --maxWorkers to it below,
+    # mirroring test:backend's KUBERNETES_* fix for the same class of bug.
+    KUBERNETES_CPU_REQUEST: "2"
+    KUBERNETES_CPU_LIMIT: "2"
+    KUBERNETES_MEMORY_REQUEST: "2Gi"
+    KUBERNETES_MEMORY_LIMIT: "3Gi"
   cache:
     - key:
         files:
@@ -163,10 +167,6 @@ test:frontend:lint:
     - .frontend-base
     - .frontend-test-rules
   allow_failure: false
-  rules:
-    # TEMP: tests disabled for late-night release push 2026-09-29. Re-enable
-    # by deleting this rules block (restores .frontend-test-rules). Revert by EOD 2026-09-30.
-    - when: never
   script:
     - npm run validate
 
@@ -176,13 +176,9 @@ test:frontend:unit:
     - .frontend-base
     - .frontend-test-rules
   allow_failure: false
-  rules:
-    # TEMP: tests disabled for late-night release push 2026-09-29. Re-enable
-    # by deleting this rules block (restores .frontend-test-rules). Revert by EOD 2026-09-30.
-    - when: never
   parallel: 3
   script:
-    - npx jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=50%
+    - npx jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=2
 
 test:frontend:integration:
   stage: .pre
@@ -190,9 +186,5 @@ test:frontend:integration:
     - .frontend-base
     - .frontend-test-rules
   allow_failure: true
-  rules:
-    # TEMP: tests disabled for late-night release push 2026-09-29. Re-enable
-    # by deleting this rules block (restores .frontend-test-rules). Revert by EOD 2026-09-30.
-    - when: never
   script:
-    - npx jest --config jest.integration.config.js --ci --maxWorkers=50%
+    - npx jest --config jest.integration.config.js --ci --maxWorkers=2
