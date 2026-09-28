@@ -418,7 +418,10 @@ public class JobController(
 
             await jobCommandRepository.UpdateSplitPricingBreakdownAsync(request);
 
-            await taskRepository.AddEventAsync(request.JobId, "Manually rated price", (int)EventType.ChangePrice);
+            if (!request.IsArchived)
+            {
+                await taskRepository.AddEventAsync(request.JobId, "Manually rated price", (int)EventType.ChangePrice);
+            }
 
             return Ok();
         }

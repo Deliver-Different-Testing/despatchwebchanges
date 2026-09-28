@@ -78,10 +78,17 @@ public interface IPricingBreakdownAllocationService
     /// <param name="context">The caller's open context/transaction.</param>
     /// <param name="parentJobId">The archived split parent whose allocations to rewrite.</param>
     /// <param name="currentLegIds">The parent's current (non-void) legs, live or archived.</param>
+    /// <param name="fallbackShareByLeg">
+    /// Per-leg share (0-100) to seed with when a leg has no existing allocation row for *any* item
+    /// yet — e.g. each leg's own recorded revenue ratio, so a real historical split isn't flattened
+    /// to an equal split just because per-leg pricing wasn't recorded at split time. Omit to fall
+    /// back to an equal split, as before.
+    /// </param>
     /// <param name="ct">Cancellation token.</param>
     Task RewriteArchivedAllocationsForParentAsync(
         DespatchContext context,
         int parentJobId,
         IReadOnlyList<int> currentLegIds,
+        IReadOnlyDictionary<int, decimal>? fallbackShareByLeg = null,
         CancellationToken ct = default);
 }
