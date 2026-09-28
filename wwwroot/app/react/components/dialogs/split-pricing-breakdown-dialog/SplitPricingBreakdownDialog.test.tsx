@@ -119,13 +119,13 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByText('This job')).toBeInTheDocument();
     });
 
-    it('an archived parent keeps its items editable but hides Add Item and Delete', () => {
+    it('an archived parent that is not locked stays fully editable, including Add Item and Delete', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({breakdown: {...workedExample, isArchived: true}})} />);
 
         expect(screen.getByDisplayValue('Base')).toBeInTheDocument();
         expect(screen.getByLabelText('Revenue for Base')).toBeEnabled();
-        expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
-        expect(screen.queryByLabelText(/delete base/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /add item/i})).toBeEnabled();
+        expect(screen.getByLabelText(/delete base/i)).toBeEnabled();
     });
 
     it('saving an archived parent sends isArchived so the server writes the archive tables', async () => {

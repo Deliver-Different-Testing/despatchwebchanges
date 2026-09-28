@@ -225,9 +225,6 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
     const isEdit = props.mode === 'edit';
     const readOnly = props.mode === 'edit' && !!props.readOnly;
     const canEdit = isEdit && !readOnly;
-    // Adding/deleting items only goes through the live PricingBreakdown endpoints; an archived
-    // parent's existing items stay editable within the §7.5 locks.
-    const canChangeItems = canEdit && !(props.mode === 'edit' && props.breakdown.isArchived);
     const highlightLegId = props.mode === 'edit' ? props.highlightLegId : undefined;
 
     const initialBreakdown = useMemo(
@@ -673,7 +670,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
 
                 <Group justify="space-between" mb="md" wrap="nowrap">
                     <Text fw={600} fz="lg">Price Items</Text>
-                    {canChangeItems && (
+                    {canEdit && (
                         <Button
                             leftSection={<Icon lucide={Plus}/>}
                             size="sm"
@@ -685,7 +682,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                     )}
                 </Group>
 
-                {canChangeItems && isAdding && (
+                {canEdit && isAdding && (
                     <Paper withBorder radius="md" p="md" mb="md">
                         <Group gap="md" align="flex-end" wrap="wrap">
                             <TextInput
@@ -746,7 +743,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                 <Table.Th c="dimmed" ta="right">Total Cost</Table.Th>
                                 <Table.Th c="dimmed" ta="right">Profit</Table.Th>
                                 <Table.Th c="dimmed" ta="center">Margin</Table.Th>
-                                {canChangeItems && <Table.Th c="dimmed" ta="center" w={60}/>}
+                                {canEdit && <Table.Th c="dimmed" ta="center" w={60}/>}
                             </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
@@ -847,7 +844,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                                 </Badge>
                                             )}
                                         </Table.Td>
-                                        {canChangeItems && (
+                                        {canEdit && (
                                             <Table.Td ta="center">
                                                 <ActionIcon
                                                     variant="light"
@@ -863,7 +860,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                     </Table.Tr>
                                     {openShareItemId === item.pricingBreakdownId && (
                                         <Table.Tr>
-                                            <Table.Td colSpan={cells.length + (canChangeItems ? 7 : 6)}>
+                                            <Table.Td colSpan={cells.length + (canEdit ? 7 : 6)}>
                                                 <Group gap="lg" wrap="wrap" p="sm" align="flex-end">
                                                     <Text size="xs" fw={600} c="dimmed">Share of &quot;{name}&quot; per leg</Text>
                                                     {cells.map((cell) => (
