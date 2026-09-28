@@ -1,0 +1,710 @@
+@import "../../../css/status.less";
+
+.nationwide-view {
+  .nationwide-job-list {
+    // Ensure the table takes the full height to enable scrolling
+    table {
+      width: 100%;
+    }
+
+      @s-green: #b0f57b;
+      @s-blue: #bae1ff;
+      @s-white: #EEE;
+      @s-orange: #ffdfba;
+      @s-red: #ffb3ba;
+      @s-grey: #DDD;
+      @s-purple: #f1cbff;
+
+      @status-future-bg: fadeout(@s-green, 70%);
+      @status-current-bg: fadeout(@s-orange, 70%);
+      @status-past-bg: fadeout(@s-red, 70%);
+
+      tr {
+        &.related-job {
+          background: #e3f2fd !important;
+          border-left: 4px solid #2196f3 !important;
+
+          &:hover {
+            background-color: #bbdefb !important;
+          }
+
+          td {
+            color: #0d47a1 !important;
+          }
+
+          &.direct, &.chilled {
+            background-color: mix(#e3f2fd, rgba(33, 150, 243, 0.05), 80%) !important;
+          }
+        }
+
+          &.status-warning {
+              background: #ffebee !important;
+              border-left: 4px solid #f44336 !important;
+
+              &:hover {
+                  background-color: #ffcdd2 !important;
+              }
+
+              td {
+                  color: #212121 !important;
+              }
+
+              &.direct, &.chilled {
+                  background-color: mix(#ffebee, rgba(255, 0, 0, 0.05), 80%) !important;
+              }
+          }
+
+          &.status-future {
+              background-color: @s-green;
+
+              &:hover {
+                  background-color: fadeout(@status-future-bg, 60%);
+              }
+
+              &.direct, &.chilled {
+                  background-color: mix(@status-future-bg, rgba(255, 0, 0, 0.05), 80%);
+              }
+          }
+
+          &.status-current {
+              background-color: @s-orange;
+
+              &:hover {
+                  background-color: fadeout(@status-current-bg, 60%);
+              }
+
+              &.direct, &.chilled {
+                  background-color: mix(@status-current-bg, rgba(255, 0, 0, 0.05), 80%);
+              }
+          }
+
+          &.status-past {
+              background-color: @s-red;
+
+              &:hover {
+                  background-color: fadeout(@status-past-bg, 60%);
+              }
+
+              &.direct, &.chilled {
+                  background-color: mix(@status-past-bg, rgba(255, 0, 0, 0.05), 80%);
+              }
+          }
+
+          &.late {
+              background-color: #ffecec;
+          }
+
+          &:hover {
+              background-color: #fffaf5;
+          }
+
+          &.active {
+              background: #ffefe0;
+
+              td {
+                  background-color: transparent;
+              }
+          }
+      }
+
+    // Variables
+    @cell-padding-vertical: 4px;
+    @cell-padding-horizontal: 2px;
+    @row-height: 30px;
+    @cell-font-size: 12px;
+    @header-font-size: 13px;
+    @autocomplete-width: 110px;
+    @to-address-width: 250px;
+    @icon-size: 18px;
+
+    // Mixins
+    .no-select() {
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+    .truncate() {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    // Column width mixin
+    .column-width(@width) {
+      width: @width !important;
+      max-width: @width !important;
+      flex: 0 0 @width !important;
+    }
+
+    table.md-table {
+      // Column specific widths
+      th.md-column, td.md-cell {
+        // Time column
+        &:nth-child(1) {
+          .column-width(120px);
+        }
+
+        // Speed column
+        &:nth-child(2) {
+          .column-width(60px);
+        }
+
+        // Job No column
+        &:nth-child(3) {
+          .column-width(80px);
+        }
+
+        // Client column
+        &:nth-child(4) {
+          .column-width(70px);
+        }
+
+        // From column
+        &:nth-child(5) {
+          .column-width(150px);
+        }
+
+        // To column
+        &:nth-child(6) {
+          .column-width(@to-address-width);
+        }
+
+        // Dispatch column
+        &:nth-child(7) {
+          .column-width(@autocomplete-width);
+        }
+
+        // POD column
+        &:nth-child(8) {
+          .column-width(60px);
+        }
+
+        // Remain column
+        &:nth-child(9) {
+          .column-width(70px);
+        }
+
+        // Status column
+        &:nth-child(10) {
+          .column-width(80px);
+        }
+
+        // Actions column
+        &:nth-child(11) {
+          .column-width(100px);
+        }
+
+        &.actions {
+          .column-width(100px);
+          white-space: nowrap;
+
+          .action-icon {
+            cursor: pointer;
+            margin-right: 8px;
+            display: inline-block;
+
+            &:last-child {
+              margin-right: 0;
+            }
+          }
+        }
+      }
+
+      td.md-cell {
+        padding: @cell-padding-vertical @cell-padding-horizontal !important;
+        height: @row-height !important;
+        font-size: @cell-font-size;
+
+        [md-truncate] {
+          max-width: @to-address-width;
+          display: block;
+          .truncate();
+        }
+
+        md-icon {
+          font-size: @icon-size !important;
+          height: @icon-size;
+          width: @icon-size;
+          min-height: @icon-size;
+          min-width: @icon-size;
+        }
+
+        .dispatch-field {
+          display: block;
+          padding: 2px 4px !important;
+          border-radius: 2px;
+          font-size: @cell-font-size;
+          cursor: pointer;
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+          }
+        }
+      }
+
+      th.md-column {
+        padding: @cell-padding-vertical @cell-padding-horizontal !important;
+        height: @row-height !important;
+        font-size: @header-font-size;
+      }
+
+      tr.md-row {
+        &.active-job, &.active {
+          background-color: rgba(158, 158, 158, 0.2);
+        }
+      }
+    }
+
+    .droppable-box {
+      height: 100%;
+      width: 100%;
+      overflow: auto;
+    }
+
+    .clickable-row {
+      cursor: pointer;
+    }
+
+    .noselect {
+      .no-select();
+    }
+
+    .remain-time {
+      white-space: nowrap;
+    }
+
+    .table-footer-actions {
+      margin-top: 8px;
+    }
+
+    // Styles for the action buttons in empty state
+    .no-data .action-buttons {
+      margin-top: 16px;
+
+      .md-button {
+        margin: 0 8px;
+        min-width: 120px;
+      }
+    }
+
+    // Ensure proper spacing in the actions column for flight and agent tables
+    md-table-container table.md-table {
+      // Flight table specific styles
+      th.md-column[md-order-by="airline"],
+      td.md-cell:nth-child(1) {
+        .column-width(100px);
+      }
+
+      th.md-column[md-order-by="flightNumber"],
+      td.md-cell:nth-child(2) {
+        .column-width(80px);
+      }
+
+      // Date column
+      th.md-column[md-order-by="departureTime"]:nth-of-type(3),
+      td.md-cell:nth-child(3) {
+        .column-width(90px);
+      }
+
+      // Departure time column
+      th.md-column[md-order-by="departureTime"]:nth-of-type(4),
+      td.md-cell:nth-child(4) {
+        .column-width(60px);
+      }
+
+      // Arrival time column
+      th.md-column[md-order-by="arrivalTime"],
+      td.md-cell:nth-child(5) {
+        .column-width(60px);
+      }
+
+      // Duration column
+      th.md-column[md-order-by="duration"],
+      td.md-cell:nth-child(6) {
+        .column-width(80px);
+      }
+
+      // Stops column
+      th.md-column[md-order-by="stops"],
+      td.md-cell:nth-child(7) {
+        .column-width(60px);
+      }
+
+      // Rate column
+      th.md-column[md-order-by="amount"],
+      td.md-cell:nth-child(8) {
+        .column-width(70px);
+      }
+
+      // Aircraft column
+      th.md-column[md-order-by="aircraft"],
+      td.md-cell:nth-child(9) {
+        .column-width(80px);
+      }
+
+      // Agent table specific styles
+      th.md-column[md-order-by="agentName"],
+      td.md-cell:nth-child(1) {
+        .column-width(150px);
+      }
+
+      th.md-column[md-order-by="agentRate"],
+      td.md-cell:nth-child(2) {
+        .column-width(80px);
+      }
+
+      th.md-column[md-order-by="agentRanking"],
+      td.md-cell:nth-child(3) {
+        .column-width(80px);
+      }
+    }
+  }
+
+  .airline-filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 12px 8px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+
+  .airline-chip {
+    height: 32px;
+    border-radius: 16px;
+    min-width: 0;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    margin: 0 4px 0 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+
+    &.md-focused {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    &:last-child {
+      margin-right: 0;
+    }
+
+    md-icon {
+      font-size: 18px;
+      height: 18px;
+      width: 18px;
+      min-height: 18px;
+      min-width: 18px;
+      margin-right: 6px;
+    }
+
+    .airline-count {
+      font-weight: bold;
+      margin-right: 6px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .airline-label {
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+      letter-spacing: 0.4px;
+    }
+
+    // All airlines chip
+    &.total {
+      background-color: #f5f5f5;
+      color: rgba(0, 0, 0, 0.87);
+
+      &:hover {
+        background-color: #e0e0e0;
+      }
+    }
+  }
+
+  // Airline brand color mixin — applies to both .airline-chip and .airline-code
+  .airline-brand-color(@code, @bg, @fg: white, @darken: 10%) {
+    .airline-chip.@{code} {
+      background-color: @bg;
+      color: @fg;
+
+      &:hover {
+        background-color: darken(@bg, @darken);
+      }
+    }
+
+    .airline-code.@{code} {
+      background-color: @bg;
+      color: @fg;
+    }
+  }
+
+  .airline-brand-color(aa, #0078D2);           // American Airlines
+  .airline-brand-color(dl, #E01A4F);           // Delta Air Lines
+  .airline-brand-color(ua, #002244, white, 5%);// United Airlines
+  .airline-brand-color(wn, #304CB2);           // Southwest Airlines
+  .airline-brand-color(ac, #D82F2F);           // Air Canada
+  .airline-brand-color(b6, #003A70);           // JetBlue Airways
+  .airline-brand-color(as, #0060AF);           // Alaska Airlines
+  .airline-brand-color(ws, #0F8ED0);           // WestJet
+  .airline-brand-color(nk, #FFC600, #000);     // Spirit Airlines
+  .airline-brand-color(f9, #018A32);           // Frontier Airlines
+  .airline-brand-color(ts, #1F83BE);           // Air Transat
+  .airline-brand-color(ha, #481D7D);           // Hawaiian Airlines
+  .airline-brand-color(g4, #FFC72C, #000);     // Allegiant Air
+  .airline-brand-color(pd, #00BDF2);           // Porter Airlines
+  .airline-brand-color(f8, #59CAEE, #000);     // Flair Airlines
+  .airline-brand-color(y9, #A3CE39, #000);     // Lynx Air
+  .airline-brand-color(sy, #F4792B);           // Sun Country Airlines
+  .airline-brand-color(pvl, #024DA1);          // PAL Airlines
+  .airline-brand-color(wg, #FFBB00, #000);     // Sunwing Airlines
+
+  // Default for airlines not in the list above
+  @airline-known-codes: ~'.aa', ~'.dl', ~'.ua', ~'.wn', ~'.ac', ~'.b6', ~'.as', ~'.ws', ~'.nk', ~'.f9', ~'.ts', ~'.ha', ~'.g4', ~'.pd', ~'.f8', ~'.y9', ~'.sy', ~'.pvl', ~'.wg';
+
+  .airline-chip:not(.total):not(.aa):not(.dl):not(.ua):not(.wn):not(.ac):not(.b6):not(.as):not(.ws):not(.nk):not(.f9):not(.ts):not(.ha):not(.g4):not(.pd):not(.f8):not(.y9):not(.sy):not(.pvl):not(.wg) {
+    background-color: #757575;
+    color: white;
+
+    &:hover {
+      background-color: darken(#757575, 10%);
+    }
+  }
+
+  // Styling for airline codes in the flight table
+  .airline-code {
+    display: inline-block;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-weight: 500;
+    text-align: center;
+    font-size: 11px;
+
+    // Default for other airlines
+    &:not(.aa):not(.dl):not(.ua):not(.wn):not(.ac):not(.b6):not(.as):not(.ws):not(.nk):not(.f9):not(.ts):not(.ha):not(.g4):not(.pd):not(.f8):not(.y9):not(.sy):not(.pvl):not(.wg) {
+      background-color: #757575;
+      color: white;
+    }
+  }
+
+  // Styling for flight segments
+  .flight-number-container {
+    display: flex;
+    align-items: center;
+
+    .flight-number {
+      margin-right: 4px;
+    }
+
+    .segment-toggle {
+      cursor: pointer;
+      font-size: 18px;
+      color: #2196F3;
+    }
+  }
+
+  .airport-code {
+    font-size: 12px;
+    color: #757575;
+  }
+
+  .codeshare-marker {
+    margin-left: 3px;
+    color: #f44336;
+    font-weight: bold;
+  }
+
+  .has-segments {
+    background-color: rgba(33, 150, 243, 0.05);
+    cursor: pointer;
+
+    &:hover {
+      background-color: rgba(33, 150, 243, 0.1);
+    }
+  }
+
+  .segment-details-row {
+    background-color: #f5f5f5;
+
+    .segment-details {
+      padding: 12px;
+
+      .segment-journey {
+        width: 100%;
+
+        .segment-item {
+          margin-bottom: 16px;
+          border-left: 3px solid #2196F3;
+          padding-left: 12px;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .segment-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 500;
+            margin-bottom: 8px;
+
+            .segment-number {
+              color: #616161;
+            }
+
+            .segment-airline {
+              color: #2196F3;
+            }
+          }
+
+          .segment-info {
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 12px;
+
+            .segment-time {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+
+              .departure, .arrival {
+                text-align: center;
+                width: 120px;
+
+                .time {
+                  font-size: 16px;
+                  font-weight: bold;
+                }
+
+                .airport {
+                  font-size: 14px;
+                  color: #424242;
+                }
+
+                .terminal {
+                  font-size: 12px;
+                  color: #757575;
+                }
+              }
+
+              .flight-line {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 0 16px;
+
+                .flight-duration {
+                  color: #757575;
+                  font-size: 12px;
+                  margin-bottom: 4px;
+                }
+
+                .flight-line-inner {
+                  height: 2px;
+                  width: 100%;
+                  background-color: #bdbdbd;
+                  position: relative;
+
+                  &:after {
+                    content: "";
+                    position: absolute;
+                    right: -4px;
+                    top: -3px;
+                    border-top: 4px solid transparent;
+                    border-bottom: 4px solid transparent;
+                    border-left: 8px solid #bdbdbd;
+                  }
+                }
+              }
+            }
+
+            .segment-details-extra {
+              display: flex;
+              justify-content: space-between;
+              margin-top: 8px;
+              font-size: 12px;
+              color: #757575;
+
+              .aircraft {
+                margin-right: 16px;
+              }
+
+              .stops {
+                display: flex;
+                align-items: center;
+
+                md-icon {
+                  font-size: 16px;
+                  margin-right: 4px;
+                }
+              }
+            }
+          }
+
+          .connection-time {
+            /* display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 8px 0;
+            color: #FF9800;
+            font-weight: 500;
+            padding: 6px 0;
+
+            md-icon {
+                margin-right: 4px;
+                font-size: 18px;
+            }*/
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 8px 0;
+            padding: 8px 0;
+            color: #FF9800;
+            background-color: #ff98001a;
+            border-radius: 4px;
+          }
+
+          .connection-time-content {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 14px;
+          }
+        }
+      }
+    }
+  }
+
+
+  .direct-flight {
+    color: #4CAF50;
+    font-weight: 500;
+  }
+
+  .stops-badge {
+    display: inline-block;
+    background-color: #FF9800;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+
+  .search-container {
+    .search-icon {
+      color: rgba(0, 0, 0, 0.54);
+    }
+
+    md-input-container {
+      margin-bottom: 0;
+    }
+  }
+}

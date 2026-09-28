@@ -1,0 +1,8 @@
+namespace DespatchWeb.Enums;
+
+public enum HolidayDeliveryOptions
+{
+    DontBook = 0, // Default option
+    DeliverNextDay = 1,
+    BookAnyway = 2
+}

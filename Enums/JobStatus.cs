@@ -1,0 +1,29 @@
+namespace DespatchWeb.Enums;
+
+public enum JobStatus
+{
+    New = 0,
+    Dispatched = 1,
+    Accepted = 2,
+    Rejected = 3,
+    LatePickup = 4,
+    PickedUp = 5,
+    Completed = 6,
+    Warning = 7,
+    LateDelivery = 8,
+    AwaitingPod = 9,
+    Undeliverable = 10,
+    InTransit = 11,
+    Acknowledge = 12,
+    AssumingCompleted = 13,
+    ReadyForPacking = 14,
+    ReadyToPickup = 15,
+    AwaitingProcessing = 16,
+    OutForDelivery = 17,
+    Preassigned = 18,
+    OutboundAgentAssigned = 103,
+    InboundAgentAssigned = 104,
+    GroundAgentAssigned = 105,
+    Void = 1000,
+    Missing = 1001
+}

@@ -1,0 +1,294 @@
+@import "variables";
+
+md-toolbar.widget-toolbar {
+  background-color: @card-background !important;
+  color: #000000 !important;
+  border-bottom: 1px solid @surface-container-high !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  max-height: 44px !important;
+
+  .md-toolbar-tools {
+    background-color: transparent !important;
+    color: inherit !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    padding: 0 8px !important;
+    gap: 4px;
+
+    span, .md-title, .greeting-message {
+      color: #000000 !important;
+    }
+
+    .md-card-title {
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      margin-left: 4px !important;
+    }
+
+    md-icon {
+      color: #000000 !important;
+      fill: #000000 !important;
+      font-size: 20px !important;
+      width: 20px !important;
+      height: 20px !important;
+      min-width: 20px !important;
+      min-height: 20px !important;
+    }
+
+    .material-symbols-outlined {
+      color: #000000 !important;
+      font-size: 20px !important;
+    }
+
+    .md-button {
+      min-height: 32px !important;
+      height: 32px !important;
+      line-height: 32px !important;
+      padding: 0 12px !important;
+      margin: 0 2px !important;
+      font-size: 11px !important;
+      font-weight: 500 !important;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.08) !important;
+      }
+
+      &:focus {
+        background-color: rgba(0, 0, 0, 0.12) !important;
+      }
+
+      md-icon, .material-symbols-outlined {
+        color: #000000 !important;
+      }
+    }
+
+    .md-icon-button {
+      width: 32px !important;
+      height: 32px !important;
+      min-width: 32px !important;
+      min-height: 32px !important;
+      padding: 0 !important;
+      margin: 0 2px !important;
+      line-height: 32px !important;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.08) !important;
+      }
+
+      &:focus {
+        background-color: rgba(0, 0, 0, 0.12) !important;
+      }
+
+      md-icon, .material-symbols-outlined {
+        color: #000000 !important;
+        font-size: 18px !important;
+      }
+    }
+
+    // Compact FAB buttons in toolbar
+    .md-fab.md-mini {
+      width: 32px !important;
+      height: 32px !important;
+      min-width: 32px !important;
+      min-height: 32px !important;
+      line-height: 32px !important;
+
+      md-icon {
+        font-size: 18px !important;
+      }
+    }
+
+    // Input container styling for toolbar
+    md-input-container {
+      margin: 0 !important;
+      padding: 0 !important;
+      height: 32px !important;
+
+      input {
+        height: 32px !important;
+        padding: 0 8px 0 28px !important;
+        font-size: @font-sm !important;
+        border: 1px solid @surface-container-high !important;
+        border-radius: @radius-sm !important;
+        background: @surface-container-low !important;
+
+        &:focus {
+          border-color: @primary-blue !important;
+          background: @card-background !important;
+        }
+
+        &::placeholder {
+          font-size: 11px !important;
+        }
+      }
+
+      md-icon {
+        position: absolute !important;
+        left: 6px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        font-size: 16px !important;
+        width: 16px !important;
+        height: 16px !important;
+      }
+
+      .md-errors-spacer {
+        display: none !important;
+      }
+    }
+
+    .courier-match-search {
+      md-input-container {
+        width: 120px !important;
+      }
+    }
+
+    md-divider, .vertical-divider {
+      border-right-color: rgba(0, 0, 0, 0.12) !important;
+      background-color: rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .custom-badge {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      font-size: 10px !important;
+      padding: 2px 6px !important;
+      min-width: 16px !important;
+      height: 16px !important;
+      line-height: 12px !important;
+    }
+
+    md-progress-circular {
+      width: 24px !important;
+      height: 24px !important;
+
+      path {
+        stroke: #000000 !important;
+      }
+    }
+
+    .toolbar-logo {
+      filter: brightness(0) saturate(100%);
+    }
+
+    // View Tabs in Header
+    .view-tabs-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 auto;
+      justify-content: center;
+      min-width: 0;
+      margin: 0 16px;
+
+      .view-control-btn {
+        padding: 4px 10px;
+        border: 1px solid @primary-blue;
+        background: @primary-blue;
+        cursor: pointer;
+        font-size: @font-xs;
+        font-weight: @weight-semibold;
+        transition: all @duration-short @easing-standard;
+        border-radius: @radius-sm;
+        white-space: nowrap;
+        color: #ffffff !important;
+        flex-shrink: 0;
+
+        &:hover {
+          background: #358F9F !important;
+          border-color: #358F9F;
+        }
+
+        &:focus {
+          outline: none;
+        }
+      }
+
+      .view-tabs-scroll {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 2px 0;
+
+        &::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+
+          &:hover {
+            background: #a8a8a8;
+          }
+        }
+      }
+
+      .view-tab-btn {
+        padding: 4px 10px;
+        border: 1px solid @surface-container-high;
+        background: @card-background;
+        cursor: pointer;
+        font-size: @font-xs;
+        font-weight: @weight-medium;
+        transition: all @duration-short @easing-standard;
+        border-radius: @radius-sm;
+        white-space: nowrap;
+        color: #000000 !important;
+        flex-shrink: 0;
+
+        &.active {
+          background: #1e293b !important;
+          color: white !important;
+          border-color: #1e293b;
+        }
+
+        &:hover:not(.active) {
+          background: @surface-container-low !important;
+        }
+
+        &:focus {
+          outline: none;
+        }
+      }
+    }
+  }
+
+  md-menu-content {
+    md-toolbar {
+      background-color: inherit;
+      color: inherit;
+    }
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant md-toolbar.widget-toolbar {
+  .md-toolbar-tools {
+    .view-tabs-header {
+      .view-control-btn {
+        background: @nz-primary;
+        border-color: @nz-primary;
+        color: black !important;
+
+        &:hover {
+          background: @nz-primary-dark !important;
+          border-color: @nz-primary-dark;
+        }
+      }
+    }
+
+    md-input-container input:focus {
+      border-color: @nz-primary !important;
+    }
+  }
+}

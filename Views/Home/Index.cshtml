@@ -1,0 +1,32 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<script>
+     @{
+         var contactId = ViewBag.ContactID;
+         var clientInternal = ViewBag.ClientInternal;
+         var firstName = ViewBag.FirstName;
+         var fullName = ViewBag.FullName;
+         var dispatcher = ViewBag.DispatcherName;
+         var timezone = ViewBag.TimeZone;
+     }
+
+     var ContactID = '@contactId';
+     var ClientInternal = '@clientInternal';
+     var FirstName = '@firstName';
+     var FullName = '@fullName';
+     var Dispatcher = '@dispatcher';
+     var TimeZone = '@timezone';
+
+
+</script>
+<script>
+    var serverConfig = {
+        isUSCustomer: @Json.Serialize(ViewBag.IsUsTenant)
+        };
+    window.CurrencyCode = serverConfig.isUSCustomer ? 'USD' : 'NZD';
+</script>
+<div class="ui-viewer" ui-view>
+
+
+</div>

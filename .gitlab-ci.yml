@@ -1,0 +1,135 @@
+include:
+  - project: 'urgent-couriers/ci-templates'
+    file: 'ci-template.yml'
+    ref: 'main'
+
+# NuGet credentials for parent pipeline jobs (test:backend)
+# NOTE: The child pipeline (Auto-DevOps Docker build) gets these via
+# project-level CI/CD variables set in GitLab > Settings > CI/CD > Variables
+variables:
+  GITLAB_NUGET_USERNAME: "gitlab-ci-token"
+  GITLAB_NUGET_TOKEN: "${CI_JOB_TOKEN}"
+  NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+
+# Only run deploy on protected branches, not on MR pipelines
+deploy-dynamic-pipeline:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_TAG
+
+# Workflow rules - prioritize merge request pipelines to block merges on failure
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+  rules:
+    # Run pipeline for merge requests (blocks merge if tests fail)
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Run pipeline for protected branches after merge
+    - if: $CI_COMMIT_BRANCH == "master"
+    # Run pipeline for tags (releases)
+    - if: $CI_COMMIT_TAG
+
+# Path-based rules: only run backend tests when backend files change
+.backend-test-rules:
+  interruptible: true
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+      changes:
+        paths:
+          - "**/*.cs"
+          - "**/*.csproj"
+          - Directory.Build.props
+          - Directory.Packages.props
+          - nuget.config
+          - global.json
+          - .gitlab-ci.yml
+        compare_to: refs/heads/master
+
+# Path-based rules: only run frontend tests when frontend files change
+.frontend-test-rules:
+  interruptible: true
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+      changes:
+        paths:
+          - "wwwroot/**/*"
+          - package.json
+          - package-lock.json
+          - jest.config.js
+          - jest.integration.config.js
+          - tsconfig.json
+          - tsconfig.test.json
+          - eslint.config.mjs
+          - .gitlab-ci.yml
+        compare_to: refs/heads/master
+
+# Test jobs - only run on merge requests targeting protected branches
+test:backend:
+  stage: .pre
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  retry:
+    max: 2
+    when: runner_system_failure
+  allow_failure: false
+  cache:
+    key: dotnet-packages
+    paths:
+      - .nuget/packages/
+  script:
+    - dotnet restore
+    - dotnet run --project DespatchWeb.Tests --no-restore
+  extends: .backend-test-rules
+
+# Frontend base configuration
+.frontend-base:
+  image: node:20-alpine
+  interruptible: true
+  retry:
+    max: 2
+    when: runner_system_failure
+  variables:
+    NODE_OPTIONS: "--max-old-space-size=4096"
+  cache:
+    - key:
+        files:
+          - package-lock.json
+      paths:
+        - node_modules/
+        - .npm/
+      policy: pull-push
+    - key: jest-cache-${CI_COMMIT_REF_SLUG}
+      paths:
+        - .jest-cache/
+      policy: pull-push
+      fallback_keys:
+        - jest-cache-master
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+
+test:frontend:lint:
+  stage: .pre
+  extends:
+    - .frontend-base
+    - .frontend-test-rules
+  allow_failure: false
+  script:
+    - npm run validate
+
+test:frontend:unit:
+  stage: .pre
+  extends:
+    - .frontend-base
+    - .frontend-test-rules
+  allow_failure: false
+  parallel: 2
+  script:
+    - node --expose-gc ./node_modules/.bin/jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --forceExit --maxWorkers=50%
+
+test:frontend:integration:
+  stage: .pre
+  extends:
+    - .frontend-base
+    - .frontend-test-rules
+  allow_failure: true
+  script:
+    - node --expose-gc ./node_modules/.bin/jest --config jest.integration.config.js --ci --forceExit --maxWorkers=50%

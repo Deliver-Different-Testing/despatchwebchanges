@@ -1,0 +1,44 @@
+<div class="basic-box-scroll">
+    <div ng-if="ctrl.scanList && ctrl.scanList.length > 0">
+        <md-table-container>
+            <table md-dense
+                   md-progress="ctrl.scanPromise"
+                   md-table>
+                <thead md-head>
+                <tr md-row>
+                    <th md-column>
+                        <span>Date/Time</span>
+                    </th>
+                    <th md-column>
+                        <span>Scan Detail</span>
+                    </th>
+                    <th md-column>
+                        <span>Courier</span>
+                    </th>
+                </tr>
+                </thead>
+                <tbody md-body>
+                <tr data-index="{{$index}}"
+                    data-scanid="{{scan.bulkScanId}}"
+                    md-row
+                    ng-class="{'selected': ctrl.selected.indexOf(scan) > -1}"
+                    ng-repeat="scan in ctrl.scanList">
+                    <td md-cell>{{::scan.scanDateTime | momentFormat:"DD/MM/YYYY h:mm a"}}
+                        ({{::ctrl.timeZone | timezoneShort}})
+                    </td>
+                    <td md-cell>{{::scan.scanDetail}}</td>
+                    <td md-cell>{{::scan.courier}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </md-table-container>
+    </div>
+
+    <no-data-react
+            ng-if="!ctrl.scanList || ctrl.scanList.length == 0"
+            title="No Scans Available"
+            message="This job has no scan records. Please use the driver application to scan the job items."
+            icon="qr_code_scanner"
+            show-action="false">
+    </no-data-react>
+</div>

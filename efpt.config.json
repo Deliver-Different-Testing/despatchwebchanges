@@ -1,0 +1,653 @@
+﻿{
+   "CodeGenerationMode": 6,
+   "ContextClassName": "DespatchContext",
+   "ContextNamespace": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "IrregularWords": null,
+   "MinimumProductVersion": "2.6.1301",
+   "ModelNamespace": null,
+   "OutputContextPath": null,
+   "OutputPath": "EntityClasses",
+   "PluralRules": null,
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "DespatchWeb",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 0,
+   "SelectedToBeGenerated": 0,
+   "SingularRules": null,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "[dbo].[AccessorialChargeGroupMembers]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AccessorialChargeGroups]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AccessorialCharges]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AgentVehicles]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AirFreightRates]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CargoFacilities]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DespatchViewZoneGroup]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DFRNTPageViews]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ExtraCharges]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FlightCarriers]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FlightCarrierZones]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FlightWebhookEventTypes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FlightZoneCombos]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[IntMgrPartnerPairing]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobAccessorialCharges]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobDeliveryJourney]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobDeliveryJourneyArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobPartnerDispatch]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobRecoveryAgents]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PricingBreakdown]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PricingBreakdownArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblAfterHours]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblAfterhoursCourier]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblAirport]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkEvent]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkJob]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkJobItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkJobItemTypes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkJobNotes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkJobRun]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkRegion]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkRun]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkRunSchedule]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkScan]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClearListArea]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClearListAreaOrder]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClearListAreaPolygon]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClientAvailableSpeed]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClientAvailableSpeedItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClientContact]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClientContactInternetPermission]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClientContactJobType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblCourierGPS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblCourierLogInOut]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblDespatchView]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblEcoSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblHoliday]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblInternetPermission]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblJobDefault]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblJobLeaveNotHome]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblJobRelationshipType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPickUpDeliveryLocation]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygon]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygonGPS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygonSuburb]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblSMPPSettings]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblUndeliverableLocation]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TimeZone]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucAgentRanking]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucAgents]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucClient]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucClientContact]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucClientItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucContact]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucCourier]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucCourierFleet]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucEvent]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucEventAudit]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucEventType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TucEventType_EventTypeGroups]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TucEventTypeGroups]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucInsuranceCompany]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucInvoiceNo]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucInvoiceProcess]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucItemTypes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJob]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobAddressDeatil]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobBooking]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobBookingItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobBookingItemTypes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobChangeRequest]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobInternalStatus]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobItemsArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobItemTypes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobItemTypesArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobNationwide]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobReadTracker]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobStatus]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobTypeGrouping]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucManualMessage]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucMessage]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucNote]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucNoteArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucNoteHistory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucNoteType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucSource]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucStaff]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucSuburb]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UnitTypes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserQuickResponses]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[VehicleSize]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ZipPolygon]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ZoneGroup]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ZoneName]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ZoneZip]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DES_qryAllJobTypes]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[DESWEB_qry_Despatch_Job_View_Filters]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[DESWEB_qryDespatch]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblClient]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblContact]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblCourier]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblJob]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblReference]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[UTL_qryContact_Lookup]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[uvwBookingToday]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[DD_InsertPricingBreakdown]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DD_stpBulkScheduleJob_Insert]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DD_stpGetAgentDistanceRate]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DD_stpGetCarrierFlightRate]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DD_stpJob_Excelerator_Insert]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DD_stpJob_Rate_Described]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_AutoDespatchSelectedJobs_FSCourierID]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_ColsolidateMarsInformation]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_SplitJobRestore]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_UnSplit]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_qdfSwapPOD]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_qryPotentialCouriers]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpUpdateSplitJobMeetingAddress]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpVoidPrebookJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[GEN_qdfSetting_GetMaxAutoLateDeliveryAlert]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[GEN_qdfSetting_GetMaxAutoLatePickupAlert]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[REP_qryPerformance_Summary_PerformanceSpend]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[sp_AddJobAccessorial]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[sp_RateJob2]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspReassignJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspReDespatchJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspReDespatchJobByCourierID]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspRestoreJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpJob_InsertFromTblBulkJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpPPD_ExclusiveAmount]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_fncClearList_Other]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[UTL_fncClearListArea_Couriers]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[UTL_fncJob_ExtraRate]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[UTL_fncJob_RawBaseToAmount]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[UTL_fncS_GetNationwideService_RawPrice]",
+         "ObjectType": 2
+      }
+   ],
+   "UiHint": null,
+   "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDatabaseNamesForRoutines": true,
+   "UseDateOnlyTimeOnly": false,
+   "UseDbContextSplitting": false,
+   "UseDecimalDataAnnotationForSprocResult": true,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": true,
+   "UseInternalAccessModifiersForSprocsAndFunctions": false,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UsePrefixNavigationNaming": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false,
+   "UseT4Split": false
+}

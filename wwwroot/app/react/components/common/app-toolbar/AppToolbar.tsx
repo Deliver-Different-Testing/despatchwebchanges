@@ -1,0 +1,141 @@
+/**
+ * React App Toolbar Component
+ *
+ * A modern Material Design 3 compliant app bar.
+ * Layout: Logo | Title | Spacer | Actions | User Menu
+ */
+
+import React from 'react';
+import {alpha} from '@mui/material/styles';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
+import MenuIcon from '@mui/icons-material/Menu';
+import dayjs from 'dayjs';
+
+export interface AppToolbarProps {
+    title: string;
+    firstName: string;
+    logoUrl?: string;
+    children?: React.ReactNode;
+    onLogoClick?: () => void;
+    onMenuHover?: () => void;
+}
+
+/**
+ * Generate time-based greeting
+ */
+function greetUser(userName: string): string {
+    const currentHour = dayjs().hour();
+    let greeting: string;
+
+    if (currentHour < 12) {
+        greeting = 'Good morning';
+    } else if (currentHour < 18) {
+        greeting = 'Good afternoon';
+    } else {
+        greeting = 'Good evening';
+    }
+
+    return `${greeting}, ${userName}`;
+}
+
+export const AppToolbar: React.FC<AppToolbarProps> = ({
+    title,
+    firstName,
+    logoUrl = 'images/dfrnt_logo.png',
+    children,
+    onLogoClick,
+    onMenuHover,
+}) => {
+    const greeting = greetUser(firstName);
+
+    return (
+    <AppBar
+        position="static"
+        elevation={1}
+        sx={(theme) => ({
+            bgcolor: theme.palette.primary.main,
+            // Ensure proper contrast for both themes
+            color: theme.palette.primary.contrastText,
+        })}
+    >
+        <Toolbar
+            sx={{
+                minHeight: {xs: 56, sm: 64},
+                px: {xs: 1.5, sm: 2},
+                gap: 1,
+            }}
+        >
+            {/* Logo - Brand Identity */}
+            <Box
+                component="img"
+                src={logoUrl}
+                alt="DFRNT"
+                onClick={onLogoClick}
+                sx={{
+                    height: {xs: 32, sm: 36},
+                    cursor: onLogoClick ? 'pointer' : 'default',
+                    transition: 'opacity 0.2s',
+                    '&:hover': onLogoClick ? {
+                        opacity: 0.85,
+                    } : {},
+                }}
+            />
+
+            {/* Title - Page Context */}
+            <Typography
+                variant="h6"
+                component="h1"
+                noWrap
+                sx={{
+                    fontWeight: 500,
+                    fontSize: {xs: '1rem', sm: '1.125rem'},
+                    ml: 1.5,
+                    letterSpacing: '0.01em',
+                }}
+            >
+                {title}
+            </Typography>
+
+            {/* Spacer */}
+            <Box sx={{flexGrow: 1}} />
+
+            {/* Actions Container - Consistent spacing */}
+            {children && (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                    }}
+                >
+                    {children}
+                </Box>
+            )}
+
+            {/* Menu Button */}
+            <Tooltip title={greeting}>
+                <IconButton
+                    color="inherit"
+                    aria-label="Open navigation menu"
+                    onMouseEnter={onMenuHover}
+                    sx={(theme) => ({
+                        ml: 0.5,
+                        '&:hover': {
+                            bgcolor: alpha(theme.palette.common.white, 0.12),
+                        },
+                    })}
+                >
+                    <MenuIcon />
+                </IconButton>
+            </Tooltip>
+        </Toolbar>
+    </AppBar>
+    );
+};
+
+export default AppToolbar;

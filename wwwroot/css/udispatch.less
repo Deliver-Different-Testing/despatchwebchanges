@@ -1,0 +1,1408 @@
+@import 'variables';
+@import 'status';
+@import 'autocomplete';
+@import "badge";
+@import "settings-menu";
+@import 'card-toolbar';
+@import "toasts";
+@import "buttons";
+@import "data-table";
+
+html, body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  overflow: hidden;
+  background: @main-background-color !important;
+}
+
+.ui-viewer {
+  overflow-x: hidden;
+}
+
+.dashboard-padding {
+  padding: 4px;
+}
+
+@scroll-overflow: auto;
+
+.table-scroll {
+  overflow: @scroll-overflow;
+  height: calc(100% - 140px);
+}
+
+.table-scroll-with-pagination {
+  overflow: @scroll-overflow;
+  height: calc(100% - 110px);
+}
+
+.task-widget-list-scroll {
+  overflow: @scroll-overflow;
+  height: calc(100% - 80px);
+}
+
+.basic-box-scroll {
+  overflow: @scroll-overflow;
+  height: 100%;
+}
+
+/* This style is depreciated and will be removed in the future*/
+.card-content-scroll {
+  overflow: @scroll-overflow;
+  height: calc(100% - 64px);
+  width: 100%;
+}
+
+.toolbar-logo {
+  height: 50px;
+  width: auto;
+  margin-right: 8px;
+}
+
+/* Global scrollbar styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: fade(@scroll-bar-color, 70%) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+}
+
+.md-title {
+  font-size: @font-xl;
+  font-weight: @weight-medium;
+}
+
+.greeting-message {
+  font-size: @font-xl;
+  font-weight: @weight-medium;
+}
+
+.md-headline-title {
+  font-size: @font-lg;
+  font-weight: @weight-semibold;
+  max-height: 48px;
+  overflow: hidden;
+}
+
+.md-card-title {
+  .md-headline-title;
+  color: white;
+  margin-left: 8px;
+}
+
+.md-headline-subtitle {
+  font-size: @font-sm;
+  font-weight: @weight-normal;
+  color: @text-muted;
+  line-height: @line-normal;
+  margin-top: 4px;
+}
+
+.md-card-subtitle {
+  .md-headline-subtitle;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 8px;
+}
+
+.box-handle {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: grab;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  margin-right: 4px;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    cursor: grabbing;
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: scale(0.95);
+  }
+
+  md-icon {
+    font-size: 20px !important;
+    opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover md-icon {
+    opacity: 1;
+  }
+}
+
+// Box collapsed state
+.box.box-collapsed {
+  flex: 0 0 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  overflow: hidden !important;
+
+  md-toolbar {
+    border-radius: 8px;
+    min-height: 40px !important;
+    max-height: 40px !important;
+  }
+
+  .box-content {
+    display: none !important;
+    height: 0 !important;
+  }
+
+  .rg-bottom {
+    display: none !important;
+  }
+}
+
+.box-collapse-btn {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  md-icon {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+.box-collapsed .box-collapse-btn md-icon {
+  transform: rotate(180deg);
+}
+
+// Layout locked state - hides resize handles and disables customization on default layout
+.columns.layout-locked {
+  .column.resize-disabled,
+  .box.resize-disabled {
+    .rg-right,
+    .rg-bottom {
+      display: none !important;
+      pointer-events: none !important;
+    }
+  }
+}
+
+// Box dragging states - uses CSS custom properties for theme colors
+.box.dragging {
+  opacity: 0.95;
+  box-shadow: 0 12px 28px var(--theme-primary-medium, rgba(33, 150, 243, 0.3)),
+              0 8px 16px rgba(0, 0, 0, 0.15),
+              0 0 0 2px var(--theme-primary-medium, rgba(33, 150, 243, 0.3)) !important;
+  transform: rotate(0.5deg) scale(1.02);
+  z-index: 100;
+  animation: box-lift 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes box-lift {
+  0% {
+    transform: rotate(0) scale(1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  100% {
+    transform: rotate(0.5deg) scale(1.02);
+    box-shadow: 0 12px 28px var(--theme-primary-medium, rgba(33, 150, 243, 0.3)),
+                0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.box-placeholder {
+  background: var(--theme-primary-light, rgba(33, 150, 243, 0.15)) !important;
+  border: 2px dashed var(--theme-primary-medium, rgba(33, 150, 243, 0.3)) !important;
+  border-radius: 8px !important;
+  min-height: 80px;
+  animation: placeholder-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes placeholder-pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.column-sortable.ui-sortable-active {
+  background: var(--theme-primary-light, rgba(33, 150, 243, 0.15));
+  border-radius: 8px;
+  animation: column-highlight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes column-highlight {
+  0% {
+    background: transparent;
+  }
+  100% {
+    background: var(--theme-primary-light, rgba(33, 150, 243, 0.15));
+  }
+}
+
+// Resize in progress state
+.resizable.no-transition .box {
+  transition: none !important;
+}
+
+// Visual indicator during resize
+.box:has(.rg-bottom:active),
+.column:has(.rg-right:active) {
+  z-index: 50;
+}
+
+.vertical-divider {
+  width: 1px;
+  height: 32px;
+  background-color: black;
+  margin: 0 15px;
+  align-self: center;
+}
+
+.md-drag-button {
+  color: inherit;
+}
+
+.row-overflow {
+  height: 100%;
+  display: flex;
+  align-items: center;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: fade(@scroll-bar-color, 70%);
+    border-radius: 4px;
+  }
+
+  /* For Firefox */
+  scrollbar-color: fade(@scroll-bar-color, 70%) transparent;
+  scrollbar-width: thin;
+}
+
+.md-fab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.columns {
+  min-height: 50px;
+  flex: 1;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-around;
+  align-content: space-around;
+  gap: 4px;
+
+  .column {
+    box-sizing: border-box;
+    flex: 0;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 60px);
+    min-width: 50px;
+    padding-bottom: 4px;
+    transition: flex-basis 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    // Column resize handle (horizontal) - uses CSS custom properties for theme colors
+    .rg-right {
+      width: 8px !important;
+      height: 100% !important;
+      margin-right: -4px !important;
+      background: transparent !important;
+      z-index: 10 !important;
+      cursor: col-resize !important;
+      transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        background: var(--theme-primary-medium, rgba(33, 150, 243, 0.3)) !important;
+        box-shadow: 0 0 8px var(--theme-primary-medium, rgba(33, 150, 243, 0.3));
+      }
+
+      &:active {
+        background: var(--theme-primary-strong, rgba(33, 150, 243, 0.5)) !important;
+        box-shadow: 0 0 12px var(--theme-primary-strong, rgba(33, 150, 243, 0.5));
+      }
+
+      span {
+        display: none !important;
+      }
+    }
+
+    &:last-child {
+      flex: 1;
+
+      .rg-right {
+        display: none;
+      }
+    }
+
+    .column-sortable {
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      height: 100%;
+      background: transparent;
+      border-radius: 8px;
+      min-width: 50px;
+      margin-left: 0;
+      margin-right: 0;
+      gap: 4px;
+      transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      .box {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        margin-bottom: 0;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+        position: relative;
+        overflow: visible;
+        transition: flex-basis 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+        md-toolbar {
+          border-radius: 0;
+          min-height: 40px;
+          flex-shrink: 0;
+        }
+
+        // Box resize handle (vertical) - uses CSS custom properties for theme colors
+        .rg-bottom {
+          width: calc(100% + 8px) !important;
+          height: 12px !important;
+          margin-left: -4px !important;
+          margin-bottom: -6px !important;
+          background: transparent !important;
+          z-index: 20 !important;
+          cursor: row-resize !important;
+          transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          left: 0 !important;
+          border-radius: 4px;
+
+          &:hover {
+            background: var(--theme-primary-medium, rgba(33, 150, 243, 0.3)) !important;
+            box-shadow: 0 0 8px var(--theme-primary-medium, rgba(33, 150, 243, 0.3));
+          }
+
+          &:active {
+            background: var(--theme-primary-strong, rgba(33, 150, 243, 0.5)) !important;
+            box-shadow: 0 0 12px var(--theme-primary-strong, rgba(33, 150, 243, 0.5));
+          }
+
+          span {
+            display: none !important;
+          }
+        }
+
+        &:nth-last-child(2) {
+          flex: 0;
+          margin-bottom: 0;
+
+          .rg-bottom {
+            display: block;
+          }
+        }
+
+        &:last-child {
+          flex: 1;
+          margin-bottom: 0;
+
+          .rg-bottom {
+            display: none;
+          }
+        }
+
+        .box-content {
+          flex: 1;
+          min-height: 0;
+          background-color: whitesmoke;
+          font-size: 11px;
+          position: relative;
+          overflow: hidden;
+          transition: opacity 0.15s ease;
+
+          // React component wrappers need explicit dimensions
+          flight-agent-data-table-react,
+          here-map-react {
+            display: block;
+            width: 100%;
+            height: 100%;
+          }
+        }
+      }
+    }
+  }
+}
+
+@s-green: #b0f57b;
+@s-blue: #bae1ff;
+@s-white: #EEE;
+@s-orange: #ffdfba;
+@s-red: #ffb3ba;
+@s-grey: #DDD;
+@s-purple: #f1cbff;
+
+@status-future-bg: fadeout(@s-green, 70%);
+@status-current-bg: fadeout(@s-orange, 70%);
+@status-past-bg: fadeout(@s-red, 70%);
+
+table.table {
+  tr {
+    &.late {
+      background-color: #ffecec;
+    }
+
+    &:hover {
+      background-color: #fffaf5;
+    }
+
+    &.active {
+      background: #ffefe0;
+
+      td {
+        background-color: transparent;
+      }
+    }
+
+    &.related-job {
+      background: #e3f2fd !important;
+      border-left: 4px solid #2196f3 !important;
+
+      &:hover {
+        background-color: #bbdefb !important;
+      }
+
+      td {
+        color: #0d47a1 !important;
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(#e3f2fd, rgba(33, 150, 243, 0.05), 80%) !important;
+      }
+    }
+
+    &.status-warning {
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+
+      &:hover {
+        background-color: #ffcdd2;
+      }
+
+      td {
+        color: #212121;
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(#ffebee, rgba(255, 0, 0, 0.05), 80%);
+      }
+    }
+
+    &.status-future {
+      background-color: @s-green;
+
+      &:hover {
+        background-color: fadeout(@status-future-bg, 60%);
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(@status-future-bg, rgba(255, 0, 0, 0.05), 80%);
+      }
+    }
+
+    &.status-current {
+      background-color: @s-orange;
+
+      &:hover {
+        background-color: fadeout(@status-current-bg, 60%);
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(@status-current-bg, rgba(255, 0, 0, 0.05), 80%);
+      }
+    }
+
+    &.status-past {
+      background-color: @s-red;
+
+      &:hover {
+        background-color: fadeout(@status-past-bg, 60%);
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(@status-past-bg, rgba(255, 0, 0, 0.05), 80%);
+      }
+    }
+
+    // Updated direct class styling
+    &.direct {
+      color: red;
+      background-color: rgba(255, 0, 0, 0.05);
+
+      td {
+        color: red;
+      }
+
+      // Handle hover state for direct
+      &:hover {
+        background-color: rgba(255, 0, 0, 0.08);
+      }
+    }
+
+    // Updated chilled class styling
+    &.chilled {
+      color: dodgerblue;
+      background-color: rgba(30, 144, 255, 0.05);
+
+      td {
+        color: dodgerblue;
+      }
+
+      // Handle hover state for chilled
+      &:hover {
+        background-color: rgba(30, 144, 255, 0.08);
+      }
+
+      // When both direct and chilled are applied
+      &.direct {
+        color: purple;
+        background-color: rgba(128, 0, 128, 0.05);
+
+        td {
+          color: purple;
+        }
+
+        &:hover {
+          background-color: rgba(128, 0, 128, 0.08);
+        }
+      }
+    }
+  }
+}
+
+
+.tableMixin() {
+  th {
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  tr {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+
+
+    &.O {
+      background-color: @s-orange;
+    }
+
+    &.B {
+      background-color: @s-blue;
+    }
+
+    &.G {
+      background-color: @s-green;
+    }
+  }
+
+  td {
+    padding: 4px 8px;
+    border: 1px solid rgba(0, 0, 0, 0.5);
+
+    &.address-cell {
+      max-width: 250px; // Adjust this value as needed
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+
+      // Add hover tooltip
+      &:hover::after {
+        content: attr(title);
+        position: absolute;
+        left: 0;
+        top: 100%;
+        z-index: 1000;
+        background: @card-background;
+        padding: 5px;
+        border: 1px solid #ddd;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        white-space: normal;
+        max-width: 300px;
+        word-wrap: break-word;
+      }
+    }
+  }
+
+  @jobListInputHeight: 30px;
+  @jobListInputWidth: 40px;
+
+  md-autocomplete {
+    margin: 0;
+    height: @jobListInputHeight;
+    width: @jobListInputWidth;
+
+    .md-whiteframe-z1 {
+      box-shadow: none;
+    }
+
+    input {
+      height: 28px !important;
+      line-height: 28px !important;
+      padding: 2px 4px !important;
+    }
+  }
+
+  input.dispatchField,
+  input.lateCallField {
+    width: @jobListInputWidth;
+    height: @jobListInputHeight;
+    text-align: center;
+    padding: 2px 4px;
+  }
+}
+
+#currentWork {
+  .tableMixin();
+}
+
+#jobList {
+  .tableMixin();
+}
+
+#pbList {
+  .tableMixin();
+}
+
+#jobListPOD {
+  .tableMixin();
+}
+
+#jobListDelivery {
+  .tableMixin();
+}
+
+#jobListReprice {
+  .tableMixin();
+}
+
+#map_canvas_container {
+  position: relative;
+}
+
+#map_canvas {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none;
+  /* Non-prefixed version, currently
+                                   supported by Chrome and Opera */
+}
+
+.overlay-map-fix {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* background: #000; */
+  left: 0;
+  right: 0;
+  display: none;
+}
+
+@hoverColor: rgba(0, 0, 0, 0.05);
+@selectedHoverColor: rgba(0, 0, 0, 0.12);
+@textColor: rgba(0, 0, 0, 0.87);
+@labelColor: rgba(0, 0, 0, 0.54);
+@disabledColor: rgba(0, 0, 0, 0.38);
+
+md-table-container table.md-table tbody.md-body > tr.md-row:not([disabled]) {
+  &:hover {
+    background-color: @hoverColor;
+  }
+
+  &.md-selected:hover {
+    background-color: @selectedHoverColor;
+  }
+}
+
+md-table-pagination {
+  color: @textColor;
+
+  .label,
+  md-select .md-select-value,
+  md-select .md-select-value.md-select-placeholder,
+  .md-button {
+    color: @textColor;
+  }
+
+  .md-button[disabled] {
+    color: @disabledColor;
+  }
+}
+
+.search-input {
+  @input-height: 36px;
+  @input-bg-color: rgba(255, 255, 255, 0.2);
+  @input-bg-color-hover: rgba(255, 255, 255, 0.25);
+  @input-bg-color-focus: rgba(255, 255, 255, 0.3);
+  @input-text-color: rgba(255, 255, 255, 0.95);
+  @input-placeholder-color: rgba(255, 255, 255, 0.7);
+  @icon-color: rgba(255, 255, 255, 0.9);
+  @transition-duration: 0.2s;
+
+  &-container {
+    margin: 0;
+    padding: 0;
+    height: @input-height;
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .md-errors-spacer {
+      display: none;
+    }
+
+    input {
+      border: none;
+      background-color: @input-bg-color;
+      color: @input-text-color;
+      border-radius: 4px;
+      padding: 0 16px 0 40px;
+      height: @input-height;
+      line-height: @input-height;
+      transition: all @transition-duration cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%;
+      font-size: 16px;
+      font-weight: 500;
+
+      &:hover {
+        background-color: @input-bg-color-hover;
+      }
+
+      &:focus {
+        background-color: @input-bg-color-focus;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+      }
+
+      &::placeholder {
+        color: @input-placeholder-color;
+        transition: color @transition-duration ease;
+      }
+
+      &:focus::placeholder {
+        color: fade(@input-placeholder-color, 50%);
+      }
+    }
+
+    md-icon {
+      color: @icon-color;
+      position: absolute;
+      left: 45px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+      pointer-events: none;
+    }
+
+    &:hover {
+      input {
+        background-color: @input-bg-color-hover;
+      }
+    }
+  }
+}
+
+md-list-item {
+  &.selected {
+    background-color: rgba(0, 0, 0, 0.05);
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background-color: @primary-color;
+    }
+
+    md-icon,
+    p {
+      color: @primary-color;
+    }
+  }
+
+  &:not(.selected):hover {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+}
+
+.account-header {
+  pointer-events: none;
+  user-select: none;
+}
+
+// Variables
+@header-bg-color: #343a40;
+@header-border-color: #454d55;
+@header-text-color: white;
+@min-column-width: 100px;
+@table-z-index: 2;
+
+
+// Variables
+@border-color: #e0e0e0;
+@text-color: rgba(0, 0, 0, 0.87);
+@secondary-text: rgba(0, 0, 0, 0.54);
+
+// Drop box styles
+.drop-box {
+  border: 2px dashed @border-color;
+  border-radius: 4px;
+  padding: 32px;
+  text-align: center;
+  margin: 16px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: @primary-color;
+    background-color: rgba(33, 150, 243, 0.04);
+  }
+
+  md-icon {
+    color: @primary-color;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 8px 0;
+    color: @text-color;
+
+    &.md-caption {
+      color: @secondary-text;
+      font-size: 12px;
+    }
+  }
+
+  // Drag over state
+  &.dragover {
+    border-color: @primary-color;
+    background-color: rgba(33, 150, 243, 0.08);
+    transform: scale(1.01);
+  }
+}
+
+.popup-icon {
+  margin-right: 8px;
+}
+
+.scrollable-container {
+  height: 100vh;
+  overflow-y: auto;
+  background-color: #f5f7fa;
+  color: #333;
+}
+
+.current-filter-label {
+  padding: 8px 16px;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 14px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+
+  span {
+    display: flex;
+    align-items: center;
+  }
+}
+
+@background-color: #f8f8f8;
+@border-color: rgba(0, 0, 0, 0.12);
+
+.md-table-footer {
+  background-color: @background-color;
+  border-top: 1px solid @border-color;
+  height: auto;
+  min-height: 48px;
+  font-size: 13px;
+
+  &-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: 80px;
+  }
+
+  &-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 70px;
+    padding: 12px 16px;
+    background-color: @background-color;
+    border-bottom: 1px solid @border-color;
+    flex-wrap: nowrap;
+    min-width: max-content;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 8px;
+
+      > * {
+        margin-bottom: 8px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+}
+
+.date-selector {
+  margin-right: 16px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+
+  .cutoff-date {
+    font-size: 13px;
+    font-weight: 500;
+    color: #3c4043;
+    margin-bottom: 2px;
+  }
+
+  .today-button {
+    font-size: 11px;
+    line-height: 1;
+    min-height: 20px;
+    margin: 0;
+    padding: 2px 6px;
+    color: @primary-color;
+    text-transform: none;
+
+    :hover {
+      background-color: rgba(26, 115, 232, 0.05);
+    }
+  }
+
+  md-datepicker {
+    margin-left: 8px;
+    height: 36px;
+  }
+
+  .calendar-only-picker .md-datepicker-input-container {
+    visibility: hidden;
+    width: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
+  }
+
+  .calendar-only-picker .md-datepicker-button {
+    margin: 0;
+    padding: 0;
+    height: 36px;
+    width: 36px;
+    min-width: 36px;
+    line-height: 36px;
+  }
+}
+
+.date-selector .calendar-only-picker .md-datepicker-button .md-datepicker-calendar-icon {
+  fill: @primary-color;
+}
+
+.date-selector .calendar-only-picker .md-datepicker-triangle-button {
+  display: none;
+}
+
+.date-selector .md-icon-button {
+  margin: 0 4px;
+  color: #5f6368;
+}
+
+.date-selector .md-icon-button:hover {
+  background-color: rgba(95, 99, 104, 0.1);
+}
+
+.date-selector .md-icon-button md-icon {
+  color: #5f6368;
+}
+
+// Status summary section
+.status-summary {
+  display: flex;
+  gap: 8px;
+}
+
+// Status chip common styles (existing styles)
+.status-chip {
+  &.md-button {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 16px;
+    font-weight: 500;
+    height: 32px;
+    white-space: nowrap;
+    min-height: 32px;
+    margin: 0;
+    min-width: 0;
+    line-height: 32px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+
+    // Override Material button styles
+    &:not([disabled]) {
+      &:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      }
+    }
+
+    &.md-focused {
+      background-color: inherit !important;
+    }
+
+    .md-ripple-container {
+      border-radius: 16px;
+    }
+
+    md-icon {
+      font-size: 16px !important;
+      width: 16px !important;
+      height: 16px !important;
+      min-width: 16px;
+      min-height: 16px;
+      margin: 0 6px 0 0 !important;
+    }
+
+    span {
+      margin-right: 2px;
+    }
+
+    .status-label {
+      margin-left: 6px;
+      font-weight: normal;
+    }
+  }
+
+  // Color variations with material design colors (existing)
+  &.total {
+    &.md-button {
+      background-color: #E0E0E0 !important;
+      color: #202124 !important;
+
+      md-icon {
+        color: #202124 !important;
+      }
+    }
+  }
+
+  &.pending {
+    &.md-button {
+      background-color: #e8f0fe !important;
+      color: #174ea6 !important;
+
+      md-icon {
+        color: #1a73e8 !important;
+      }
+    }
+  }
+
+  &.in-transit {
+    &.md-button {
+      background-color: #e6f4ea !important;
+      color: #137333 !important;
+
+      md-icon {
+        color: #0f9d58 !important;
+      }
+    }
+  }
+
+  &.completed {
+    &.md-button {
+      background-color: #f1f3f4 !important;
+      color: #5f6368 !important;
+
+      md-icon {
+        color: #5f6368 !important;
+      }
+    }
+  }
+
+  &.problem {
+    &.md-button {
+      background-color: #fce8e6 !important;
+      color: #c5221f !important;
+
+      md-icon {
+        color: #ea4335 !important;
+      }
+    }
+  }
+
+  // Task-specific color variations (new)
+  &.mine {
+    &.md-button {
+      background-color: #e8f0fe !important;
+      color: #174ea6 !important;
+
+      md-icon {
+        color: #1a73e8 !important;
+      }
+    }
+  }
+
+  &.unassigned {
+    &.md-button {
+      background-color: #fff8e1 !important;
+      color: #b06000 !important;
+
+      md-icon {
+        color: #f9ab00 !important;
+      }
+    }
+  }
+
+  &.newest {
+    &.md-button {
+      background-color: #e6f4ea !important;
+      color: #137333 !important;
+
+      md-icon {
+        color: #0f9d58 !important;
+      }
+    }
+  }
+
+  &.oldest {
+    &.md-button {
+      background-color: #f1f3f4 !important;
+      color: #5f6368 !important;
+
+      md-icon {
+        color: #5f6368 !important;
+      }
+    }
+  }
+
+  &.unread {
+    &.md-button {
+      background-color: #e8eaff !important;
+      color: #3c4043 !important;
+
+      md-icon {
+        color: #5b50e8 !important;
+      }
+    }
+  }
+}
+
+
+@secondary-color: #d0f0f0;
+@header-color: #009796;
+
+// Tasks Status Summary container
+.tasks-status-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+@secondary-color: #d0f0f0;
+
+.dtp {
+  table.dtp-picker-days tr > td > a {
+    &.selected,
+    &.selected.hilite {
+      background: @primary-color !important;
+    }
+
+    &.hilite:not(.selected) {
+      color: @primary-color !important;
+    }
+  }
+
+  div {
+    &.dtp-date,
+    &.dtp-time {
+      background: @primary-color !important;
+    }
+
+    &.dtp-year-btn,
+    &.dtp-actual-year,
+    &.dtp-actual-maxtime {
+      color: @secondary-color !important;
+    }
+
+    &.dtp-actual-time.p60 span.selected {
+      color: @primary-color !important;
+    }
+  }
+
+  .dtp-hand.on {
+    background: @primary-color !important;
+  }
+
+  .dtp-actual-meridien a.selected {
+    background: @primary-color !important;
+  }
+
+  .dtp-picker-time > a.dtp-select-hour.selected {
+    background: @primary-color !important;
+  }
+
+  > .dtp-content > .dtp-date-view > header.dtp-header {
+    background: @primary-color !important;
+  }
+}
+
+md-menu-content {
+  &.dtp-month-list,
+  &.dtp-year-list {
+    background-color: @secondary-color !important;
+  }
+}
+
+.font-bold {
+  font-weight: bold;
+}
+
+md-dialog {
+  border-radius: 6px;
+  min-width: 400px;
+
+  md-toolbar {
+    border-radius: 6px 6px 0 0;
+  }
+}
+
+.dialog-icon {
+  margin: 0 !important;
+}
+
+.professional-menu-content {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 8px 0;
+  background: @card-background;
+  box-shadow: @menu-box-shadow;
+
+  .empty-state {
+    padding: 24px 20px;
+    text-align: center;
+
+    .empty-icon {
+      font-size: 48px;
+      color: #e0e0e0;
+      margin-bottom: 12px;
+    }
+
+    .empty-text {
+      margin: 0;
+      color: #757575;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+  }
+
+  .menu-header {
+    padding: 16px 20px 8px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 8px;
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+    }
+  }
+  
+  .view-list {
+    padding: 0 8px;
+
+    .view-item {
+      min-height: 48px;
+      padding: 0;
+      margin: 2px 0;
+      border-radius: 6px;
+      transition: background-color 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+    }
+  }
+}
+
+.close-dialog-button {
+  transition: background 0.3s ease !important;
+
+  md-icon {
+    transition: transform 0.3s ease !important;
+  }
+
+  &:hover {
+    md-icon {
+      transform: rotate(90deg) !important;
+    }
+  }
+}
+
+.md-dialog-container .md-select-menu-container,
+.md-dialog-container md-autocomplete .md-scroll-mask {
+  z-index: 1001 !important;
+}
+
+// Trigger Button
+.button-trigger {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.08);
+    transform: scale(1.05);
+  }
+}

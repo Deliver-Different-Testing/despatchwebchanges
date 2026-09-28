@@ -1,0 +1,425 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(CI)' != 'true'">
+    <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)" />
+  </Target>
+  <PropertyGroup Label="Globals">
+      <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="DespatchWeb.Tests" />
+  </ItemGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TypeScriptTarget>ES2021</TypeScriptTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TypeScriptTarget>ES2021</TypeScriptTarget>
+  </PropertyGroup>
+
+  <!-- Exclude test project from compilation -->
+  <ItemGroup>
+    <Compile Remove="DespatchWeb.Tests\**" />
+    <Content Remove="DespatchWeb.Tests\**" />
+    <None Remove="DespatchWeb.Tests\**" />
+    <EmbeddedResource Remove="DespatchWeb.Tests\**" />
+    <Compile Remove="EntityClasses\DespatchContext.JobItemTypes.cs" />
+  </ItemGroup>
+
+	<PropertyGroup>
+		<!-- Makes the TypeScript compilation task a no-op -->
+		<TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
+	</PropertyGroup>
+	
+  <ItemGroup>
+    <Content Remove="bundleconfig.json" />
+    <Content Remove="compilerconfig.json" />
+    <Content Remove="wwwroot\app\interfaces\heremaps-autocomplete.interfaces.ts" />
+    <Content Remove="wwwroot\css\udispatch.min.css" />
+
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+    <Content Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+    <Content Remove="wwwroot\app\types.min.js" />
+    <Content Remove="wwwroot\app\version-url.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="compilerconfig.json" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\angular\angular-material.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\angular\angular.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\angular-confirm\angular-confirm.min.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\angular-confirm\angular-confirm.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\resizable\angular-resizable.min.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\resizable\angular-resizable.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\.bower.json" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\css\bootstrap-theme.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\css\bootstrap-theme.css.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\css\bootstrap-theme.min.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\css\bootstrap-theme.min.css.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\css\bootstrap.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\css\bootstrap.css.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\css\bootstrap.min.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\css\bootstrap.min.css.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\fonts\glyphicons-halflings-regular.eot" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\fonts\glyphicons-halflings-regular.svg" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\fonts\glyphicons-halflings-regular.ttf" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\fonts\glyphicons-halflings-regular.woff" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\fonts\glyphicons-halflings-regular.woff2" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\js\bootstrap.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\js\bootstrap.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\js\npm.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\LICENSE" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-date-dialog\edit-date-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-date-dialog\edit-date-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-date-dialog\edit-date-dialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\app.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\app.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\app.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\app.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\csControl.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\csControl.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\csControl.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\csControl.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\csService.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\csService.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\csService.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\csService.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-event-dialog\add-event-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-event-dialog\add-event-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-event-dialog\add-event-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-event-dialog\add-event-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-notes-dialog\add-notes-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-notes-dialog\add-notes-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-notes-dialog\add-notes-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-notes-dialog\add-notes-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\additional-services-dialog\additional-services-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\additional-services-dialog\additional-services-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\additional-services-dialog\additional-services-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\additional-services-dialog\additional-services-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\create-job-dialog\create-job-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\create-job-dialog\create-job-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\create-job-dialog\create-job-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\create-job-dialog\create-job-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\job-file-upload-dialog\job-file-upload.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\job-file-upload-dialog\job-file-upload.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\job-file-upload-dialog\job-file-upload.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\job-file-upload-dialog\job-file-upload.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\select-dialog\select-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\select-dialog\select-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\select-dialog\select-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\select-dialog\select-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\send-message-dialog\send-message-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\send-message-dialog\send-message-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\send-message-dialog\send-message-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\send-message-dialog\send-message-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeControl.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeControl.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeControl.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeControl.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeService.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeService.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeService.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\homeService.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\Map.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\Map.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\Map.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\Map.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideControl.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideControl.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideControl.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideControl.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwide.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwide.service.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideService.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideService.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookControl.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookControl.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookControl.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookControl.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebook.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebook.service.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookService.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\prebooks\prebookService.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\filters.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\filters.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\filters.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\filters.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\label.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\label.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\label.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\label.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\map.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\map.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\map.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\map.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\mapLabels.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\mapLabels.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\mapLabels.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\mapLabels.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\dispatch-job.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\dispatch-job.service.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\dispatch-job.service.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\dispatch-job.service.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\greeting.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\greeting.service.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\greeting.service.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\greeting.service.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\job-detail.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\job-detail.service.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\job-detail.service.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\job-detail.service.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\loading.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\loading.service.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\loading.service.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\loading.service.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\rate-job.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\rate-job.service.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\rate-job.service.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\rate-job.service.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\toastr.service.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\toastr.service.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\toastr.service.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\toastr.service.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\types.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\types.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\types.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\types.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\version.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\version.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\version.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\version.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\top-bar\top-bar.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\top-bar\top-bar.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialogController.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialogController.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialogController.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialogController.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\sendMessageDialog\sendMessageDialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\sendMessageDialog\sendMessageDialogController.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\gpsForm\gpsForm.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\gpsForm\gpsFormController.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\tpls\map.tpl" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dispatch-map\services\marker.factory.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\home\services\job-table.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\ui-router\angular-ui-router.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\ui-router\ct-ui-router-extras.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.eot" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.svg" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.ttf" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.woff" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\fonts\glyphicons-halflings-regular.woff2" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\services\nationwide-layout.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.controller.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-notes-dialog\add-notes-dialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\prebooks\partials\preBookDetail.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\prebooks\prebook.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\warning-card\warning-card.component.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\warning-card\warning-card.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\autocomplete\angular-auto-complete.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\autocomplete\angular-auto-complete.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\add-pallet-dialog\add-pallet-dialog.controller.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\pickdate\angular-pickadate.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.component.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\parcel-visuailzation\parcel-visualization.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.component.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.interfaces.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\messaging\messaging.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.controller.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.interface.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.layout.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.interfaces.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\types\html.d.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-datepicker.directive.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-timepicker.directive.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\create-job-dialog\interfaces\ICreateJobDialogControllerScope.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.controller.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.template.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\react\services\api.ts" />
+      <_ContentIncludedByDefault Remove="wwwroot\app\components\common\data-table\data-table.interfaces.ts"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.component.ts"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.styles.less"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.template.html"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.component.ts"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.styles.less"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.template.html"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\enums\jobListType.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-highlight.service.spec.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.component.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.highlighting.spec.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.loggedInCouriersOnly.spec.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.sortBy.spec.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.template.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="efpt.config.json.user" />
+    <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
+    <None Include="wwwroot\css\udispatch.less" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" />
+    <PackageReference Include="Anthropic" />
+    <PackageReference Include="AspNetCore.HealthChecks.SqlServer" />
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="AWSSDK.SecurityToken" />
+    <PackageReference Include="AWSSDK.SSO" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" />
+    <PackageReference Include="DeliverDifferentReporting" />
+    <PackageReference Include="ExcelDataReader" />
+    <PackageReference Include="ExcelDataReader.DataSet" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="System.Linq.Async" />
+    <PackageReference Include="System.Linq.Dynamic.Core" />
+    <PackageReference Include="TimeZoneConverter" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="BannedSymbols.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\app-shell\app-shell.types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\no-data\types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\pod-photo-viewer\pod-photo-viewer.types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\side-nav\SideNav.types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.tsx" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\sticky-notes-react.module.tsx" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\dashboard-settings-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsConfig.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsDialogResult.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\void-job-confirmation-dialog\void-job-confirmation-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\jobSearchBoxes.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\JobSearchDateRange.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\podSearchResponse.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\interfaces\IScanDetailResult.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\NationwideBoxes.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\filters\minutesToTimeFilter.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.module.ts" />
+    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\contants.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\dangerous-goods.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\days-of-week.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\densityMode.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\file-upload-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\frequency.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\holiday-delivery-options.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\job-internal-status.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\job-note-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\job-photo-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\job-property.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\message-delivery-type.enum.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\podPhotoType.ts" />
+    <TypeScriptCompile Include="wwwroot\app\enums\task-item-config.ts" />
+    <TypeScriptCompile Include="wwwroot\app\filters.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\dtoMappings.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\isDefaultLayout.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\MinsSelectionOptions.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\setDateFilterDefaults.ts" />
+    <TypeScriptCompile Include="wwwroot\app\functions\toDtoMappings.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\aws.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\context-menu-option.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\dfrnt-page-view-model.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\DfrntStateParams.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\dialog-result.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\dispatch-executor-service.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\event-group-view-model.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\event-interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapCredentials.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\heremaps-autocomplete.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapsAppConfig.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\layout.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-request.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\requests.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\task-request.interfaces.ts" />
+    <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
+    <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\note-management-dialog\types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\routes.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\job-add-stop.service.ts" />
+    <TypeScriptCompile Include="wwwroot\app\services\tasks.service.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="wwwroot\dist\" />
+  </ItemGroup>
+</Project>

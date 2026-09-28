@@ -1,0 +1,188 @@
+/**
+ * Angular Component Wrapper
+ *
+ * A React component that renders AngularJS components inside React.
+ * This allows us to gradually migrate from AngularJS to React while
+ * keeping existing AngularJS components functional.
+ */
+
+import React, {useEffect, useRef, useCallback} from 'react';
+import angular from 'angular';
+
+interface AngularComponentWrapperProps {
+    /**
+     * The AngularJS directive/component name in kebab-case (e.g., 'job-detail-widget')
+     */
+    componentName: string;
+
+    /**
+     * Props to pass to the AngularJS component as attributes
+     */
+    bindings?: Record<string, unknown>;
+
+    /**
+     * AngularJS $compile service
+     */
+    $compile: angular.ICompileService;
+
+    /**
+     * AngularJS $rootScope or a child scope
+     */
+    scope: angular.IScope;
+
+    /**
+     * Optional CSS class for the wrapper div
+     */
+    className?: string;
+
+    /**
+     * Optional inline styles
+     */
+    style?: React.CSSProperties;
+}
+
+/**
+ * Converts a camelCase string to kebab-case
+ */
+function toKebabCase(str: string): string {
+    return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+/**
+ * A React component that wraps and renders an AngularJS component
+ */
+export const AngularComponentWrapper: React.FC<AngularComponentWrapperProps> = ({
+    componentName,
+    bindings = {},
+    $compile,
+    scope,
+    className,
+    style,
+}) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const childScopeRef = useRef<angular.IScope | null>(null);
+    const compiledElementRef = useRef<JQLite | null>(null);
+    // Coalesce bindings -> $digest calls: when React batches multiple updates
+    // into one effect-flush tick we only need one digest at the end. The flag
+    // also guards against the (rare) destroy-during-microtask race.
+    const digestScheduledRef = useRef(false);
+
+    // Memoize the compile function to avoid unnecessary re-renders
+    const compileComponent = useCallback(() => {
+        if (!containerRef.current || !$compile || !scope) return;
+
+        // Clean up previous compilation
+        if (compiledElementRef.current) {
+            compiledElementRef.current.remove();
+            compiledElementRef.current = null;
+        }
+        if (childScopeRef.current) {
+            childScopeRef.current.$destroy();
+            childScopeRef.current = null;
+        }
+
+        // Create a child scope for this component instance
+        const childScope = scope.$new(true);
+        childScopeRef.current = childScope;
+
+        // Build the HTML template with bindings
+        let bindingAttrs = '';
+        const scopeValues: Record<string, unknown> = {};
+
+        Object.entries(bindings).forEach(([key, value]) => {
+            const attrName = toKebabCase(key);
+            const scopeKey = `__binding_${key}`;
+
+            if (typeof value === 'function') {
+                // For functions, create a wrapper that passes arguments correctly
+                scopeValues[scopeKey] = value;
+                // Use & binding style for callbacks
+                bindingAttrs += ` ${attrName}="${scopeKey}($event, args)"`;
+            } else {
+                // For other values, bind directly to scope
+                scopeValues[scopeKey] = value;
+                bindingAttrs += ` ${attrName}="${scopeKey}"`;
+            }
+        });
+
+        // Apply values to the child scope
+        Object.assign(childScope, scopeValues);
+
+        // Create and compile the element
+        const template = `<${componentName}${bindingAttrs}></${componentName}>`;
+        const element = angular.element(template);
+
+        try {
+            const linkFn = $compile(element);
+            compiledElementRef.current = linkFn(childScope);
+
+            // Append to container
+            containerRef.current.innerHTML = '';
+            containerRef.current.appendChild(compiledElementRef.current[0]);
+
+            // Trigger digest if not already in progress
+            if (!childScope.$$phase && !scope.$root.$$phase) {
+                childScope.$digest();
+            }
+        } catch (error) {
+            console.error(`[AngularComponentWrapper] Error compiling ${componentName}:`, error);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bindings intentionally excluded; applied via scope.$apply
+    }, [componentName, $compile, scope]);
+
+    // Initial compilation
+    useEffect(() => {
+        compileComponent();
+
+        return () => {
+            // Cleanup on unmount
+            if (compiledElementRef.current) {
+                compiledElementRef.current.remove();
+                compiledElementRef.current = null;
+            }
+            if (childScopeRef.current) {
+                childScopeRef.current.$destroy();
+                childScopeRef.current = null;
+            }
+        };
+    }, [compileComponent]);
+
+    // Update bindings when they change
+    useEffect(() => {
+        if (!childScopeRef.current) return;
+
+        const childScope = childScopeRef.current;
+
+        Object.entries(bindings).forEach(([key, value]) => {
+            const scopeKey = `__binding_${key}`;
+            (childScope as unknown as Record<string, unknown>)[scopeKey] = value;
+        });
+
+        // Defer the digest to a microtask so React can finish its commit
+        // before AngularJS sweeps the scope. queueMicrotask coalesces multiple
+        // binding updates within the same React tick into a single digest.
+        if (digestScheduledRef.current) return;
+        digestScheduledRef.current = true;
+        queueMicrotask(() => {
+            digestScheduledRef.current = false;
+            const live = childScopeRef.current;
+            if (!live) return; // unmounted during the microtask
+            if (live.$$phase || scope.$root.$$phase) return; // digest already running
+            try {
+                live.$digest();
+            } catch {
+                // Ignore digest errors - component might be destroyed mid-flight
+            }
+        });
+    }, [bindings, scope]);
+
+    return (
+        <div
+            ref={containerRef}
+            className={className}
+            style={style}
+        />
+    );
+};
+
+export default AngularComponentWrapper;

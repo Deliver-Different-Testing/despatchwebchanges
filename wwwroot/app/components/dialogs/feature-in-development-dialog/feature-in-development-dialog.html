@@ -1,0 +1,28 @@
+<md-dialog aria-label="Feature in Development" class="feature-dialog">
+    <md-toolbar class="md-hue-1">
+        <div class="md-toolbar-tools">
+            <h2>Feature in Development</h2>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="md-dialog-content" layout="column" layout-align="center center">
+            <md-icon class="development-icon" md-font-set="material-symbols-outlined"
+                     style="font-size: 48px; margin: 16px;">
+                construction
+            </md-icon>
+
+            <h3 class="md-title" style="text-align: center;">This Feature is Under Development</h3>
+
+            <p class="md-body-1" style="text-align: center;">
+                We're working hard to bring you this feature. Please check back soon!
+            </p>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions layout="row" layout-align="center center">
+        <md-button class="md-primary" ng-click="ctrl.close()">
+            Got it
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

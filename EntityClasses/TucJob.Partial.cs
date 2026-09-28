@@ -1,0 +1,10 @@
+﻿namespace DespatchWeb.EntityClasses;
+
+public partial class TucJob
+{
+    public virtual TucJob Parent { get; set; }
+    public virtual ICollection<TucJob> InverseParent { get; set; } = new List<TucJob>();
+    public virtual TucClientContact LoggedInContact { get; set; }
+    public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
+    public virtual TucJobAddressDeatil AddressDetail { get; set; }
+}

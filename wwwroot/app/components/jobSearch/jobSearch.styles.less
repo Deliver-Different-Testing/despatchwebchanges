@@ -1,0 +1,244 @@
+@import '../../../css/variables';
+
+.job-search-view {
+  .search-criteria {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    height: 100%;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+
+  // Each criteria group
+  .criteria-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0; // Allow shrinking
+
+    .group-label {
+      font-size: @font-xs;
+      font-weight: @weight-semibold;
+      color: @text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  // Date buttons - wrap when narrow
+  .date-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .date-btn {
+      flex: 1 1 auto;
+      min-width: 70px;
+      max-width: 100%;
+      margin: 0 !important;
+      padding: 0 12px;
+      height: 32px;
+      min-height: 32px;
+      line-height: 32px;
+      font-size: @font-xs;
+      font-weight: @weight-medium;
+      border-radius: @radius-sm;
+      text-transform: none;
+
+      &:not(.md-primary) {
+        background: rgba(0, 0, 0, 0.04);
+        color: @text-dark;
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.08);
+        }
+      }
+
+      &.md-primary.md-raised {
+        box-shadow: none;
+      }
+    }
+  }
+
+  // Custom date range
+  .date-range {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+    .date-field {
+      flex: 1 1 120px;
+      min-width: 0;
+
+      label {
+        display: block;
+        font-size: @font-xs;
+        color: @text-muted;
+        margin-bottom: 4px;
+      }
+    }
+  }
+
+  // Chip inputs (multi-select)
+  md-chips {
+    padding: 0;
+    box-shadow: none;
+
+    .md-chips {
+      padding: 0 10px;
+      min-height: 34px;
+      background: @card-background;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: @radius-sm;
+      box-shadow: none;
+      transition: border-color @duration-short @easing-standard;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+
+      &:focus-within {
+        border-color: rgba(0, 0, 0, 0.3);
+      }
+
+      md-chip {
+        margin: 3px 4px 3px 0;
+        height: 22px;
+        line-height: 22px;
+        font-size: @font-xs;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: @radius-full;
+
+        .md-chip-content {
+          padding: 0 8px;
+        }
+
+        .md-chip-remove-container button {
+          width: 18px;
+          height: 18px;
+
+          md-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+            min-width: 14px;
+            min-height: 14px;
+          }
+        }
+      }
+    }
+
+    md-autocomplete {
+      flex: 1 1 100px;
+      min-width: 80px;
+      height: 34px;
+      background: transparent;
+
+      md-autocomplete-wrap {
+        box-shadow: none !important;
+        background: transparent;
+        height: 100%;
+
+        input {
+          padding: 8px 0;
+          font-size: @font-sm;
+          background: transparent;
+          border: none;
+          height: 100%;
+          line-height: 1;
+          box-sizing: border-box;
+
+          &::placeholder {
+            color: @text-muted;
+          }
+        }
+      }
+    }
+  }
+
+  // Text search inputs
+  .search-input {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    font-size: @font-sm;
+    color: @text-dark;
+    background: @card-background;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: rgba(0, 0, 0, 0.3);
+    }
+
+    &::placeholder {
+      color: @text-muted;
+    }
+  }
+
+  // Actions - sticky at bottom
+  .criteria-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+    .action-search {
+      flex: 1 1 auto;
+      min-width: 100px;
+      margin: 0 !important;
+      height: 36px;
+      line-height: 36px;
+    }
+
+    .action-secondary {
+      display: flex;
+      gap: 4px;
+
+      .md-icon-button {
+        margin: 0;
+        width: 36px;
+        height: 36px;
+
+        md-icon {
+          font-size: 20px;
+          color: @text-muted;
+        }
+
+        &:hover md-icon {
+          color: @text-dark;
+        }
+
+        &[disabled] md-icon {
+          color: rgba(0, 0, 0, 0.2);
+        }
+      }
+    }
+  }
+
+  // Autocomplete dropdown
+  .md-autocomplete-suggestions-container {
+    border-radius: 4px;
+    box-shadow: @menu-box-shadow;
+
+    li {
+      padding: 8px 12px;
+      font-size: @font-sm;
+
+      &:hover,
+      &.selected {
+        background: rgba(0, 0, 0, 0.04);
+      }
+    }
+  }
+}

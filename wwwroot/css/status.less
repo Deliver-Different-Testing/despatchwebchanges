@@ -1,0 +1,127 @@
+@import "variables.less";
+
+// Status Button Styles
+.status-button {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  line-height: 24px;
+  padding: 0 12px;
+  font-weight: @weight-medium;
+  font-size: @font-xs;
+  border-radius: @radius-full;
+  margin: 5px;
+  text-transform: uppercase;
+  min-width: auto;
+  transition: background-color @duration-short @easing-standard, transform @duration-short @easing-standard;
+
+  // Blue group (#BFDBFE with black text)
+  &.new, &.n,
+  &.preassigned, &.pa {
+    background-color: @status-blue;
+    color: black;
+
+    &:hover {
+      background-color: darken(@status-blue, 5%);
+    }
+  }
+
+  // Light green group (#BBF7D0 with black text)
+  &.despatched, &.d,
+  &.accepted, &.a {
+    background-color: @status-green;
+    color: black;
+
+    &:hover {
+      background-color: darken(@status-green, 5%);
+    }
+  }
+
+  // Dark green group (#86EFAC with black text)
+  &.picked-up, &.p,
+  &.in-transit, &.it,
+  &.out-for-delivery, &.ofd,
+  &.outbound-agent-assigned, &.oaa,
+  &.inbound-agent-assigned, &.iaa {
+    background-color: @status-green-dark;
+    color: black;
+
+    &:hover {
+      background-color: darken(@status-green-dark, 5%);
+    }
+  }
+
+  // Light red group (#FCA5A5 with black text)
+  &.rejected, &.r,
+  &.late-pickup, &.lp,
+  &.late-delivery, &.ld,
+  &.warning, &.w {
+    background-color: @status-red-light;
+    color: black;
+
+    &:hover {
+      background-color: darken(@status-red-light, 5%);
+    }
+  }
+
+  // Red group (#EF4444 with white text)
+  &.undeliverable, &.ud,
+  &.void, &.v {
+    background-color: @status-red;
+    color: white;
+
+    &:hover {
+      background-color: darken(@status-red, 5%);
+    }
+  }
+
+  // Gray group (#9CA3AF with white text)
+  &.completed, &.c,
+  &.awaiting-pod, &.aw,
+  &.assuming-completed, &.asc {
+    background-color: @status-gray;
+    color: white;
+
+    &:hover {
+      background-color: darken(@status-gray, 5%);
+    }
+  }
+
+  // Additional statuses
+  &.awaiting-quote {
+    background-color: @status-blue;
+    color: black;
+
+    &:hover {
+      background-color: darken(@status-blue, 5%);
+    }
+  }
+
+  // Icon styling
+  .status-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  // Remove default button styling
+  &.md-button {
+    min-height: 30px;
+    line-height: 24px;
+  }
+
+  // Focus state
+  &:focus {
+    outline: 2px solid @primary-blue;
+    outline-offset: 2px;
+  }
+
+  // Active/pressed state
+  &:active {
+    transform: scale(0.98);
+  }
+}

@@ -1,0 +1,12 @@
+using DespatchWeb.Models.Response;
+
+namespace DespatchWeb.Interfaces;
+
+public interface IAiAssistantService
+{
+    Task<AiChatResponse> ChatAsync(List<AiMessage> messages, CancellationToken ct = default);
+
+    IAsyncEnumerable<string> StreamChatAsync(
+        List<AiMessage> messages,
+        CancellationToken ct = default);
+}

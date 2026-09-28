@@ -1,0 +1,217 @@
+﻿@import "variables";
+
+@bg-light: lighten(@standard-grey, 45%);
+@border-light: lighten(@standard-grey, 35%);
+@border-subtle: fade(@text-dark, 6%);
+@shadow-light: fade(@text-dark, 8%);
+@shadow-medium: fade(@text-dark, 15%);
+
+.flex-center() {
+  display: flex;
+  align-items: center;
+}
+
+.gradient-bg() {
+  background: linear-gradient(135deg, @bg-light 0%, @border-light 100%);
+}
+
+// Settings Menu Styles
+.settings-menu-content {
+  width: 250px !important;
+  max-width: 90vw;
+  overflow: hidden;
+  border-radius: @radius-md;
+  box-shadow: @elevation-3;
+  border: 1px solid @shadow-light;
+}
+
+.settings-container {
+  padding: 0;
+}
+
+// Settings Section
+.settings-section {
+  padding: (@spacing + 6px);
+}
+
+.settings-label {
+  display: block;
+  font-size: @font-base;
+  font-weight: @weight-medium;
+  color: @text-muted;
+  margin-bottom: 8px;
+  letter-spacing: -0.005em;
+  line-height: @line-normal;
+}
+
+.settings-select {
+  width: 100%;
+  margin-bottom: @spacing + 2px;
+
+  .md-select-value {
+    border-bottom: 2px solid @border-light;
+    padding-bottom: 8px;
+
+    // Show selected value
+    .md-select-value-label {
+      color: @text-dark;
+      font-weight: @weight-medium;
+    }
+  }
+
+  &.md-focused .md-select-value {
+    border-bottom-color: @primary-blue;
+  }
+
+  md-select-menu {
+    z-index: 10000 !important;
+  }
+}
+
+.md-select-menu-container {
+  z-index: 10000 !important;
+  position: fixed !important;
+
+  md-option {
+    cursor: pointer;
+
+    &:hover {
+      background-color: @hover-color;
+    }
+
+    &.md-selected {
+      background-color: fade(@primary-blue, 10%);
+      color: @primary-blue;
+      font-weight: @weight-medium;
+    }
+  }
+}
+
+md-backdrop.md-select-backdrop {
+  z-index: 9998 !important;
+}
+
+
+// Status Indicator
+.status-indicator {
+  background: @bg-light;
+  border: 1px solid @border-light;
+  border-radius: @radius-md;
+  padding: (@spacing - 2px);
+  margin-top: 8px;
+}
+
+.status-content {
+  .flex-center();
+}
+
+.status-icon-wrapper {
+  .flex-center();
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: (@spacing - 2px);
+  animation: statusPulse 2s infinite ease-in-out;
+}
+
+.status-icon {
+  &.status-active {
+    color: @primary-green !important;
+  }
+
+  &.status-inactive {
+    color: @standard-grey !important;
+  }
+}
+
+.status-text {
+  flex: 1;
+}
+
+.status-label {
+  display: block;
+  font-size: @font-sm;
+  font-weight: @weight-medium;
+  color: @text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  line-height: @line-tight;
+}
+
+.status-value {
+  display: block;
+  font-size: @font-base;
+  font-weight: @weight-semibold;
+  color: @text-dark;
+  line-height: @line-normal;
+}
+
+// Settings Trigger Button
+.settings-trigger {
+  &:hover {
+    background-color: @hover-color;
+
+    md-icon {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+// Status-specific styles
+.status-active .status-icon-wrapper {
+  background: fade(@primary-green, 10%);
+}
+
+.status-inactive .status-icon-wrapper {
+  background: fade(@standard-grey, 10%);
+  animation: none;
+}
+
+// Animations
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+// Focus and accessibility
+.settings-select:focus-within,
+.md-select.md-focused {
+  outline: 2px solid fade(@primary-blue, 25%);
+  outline-offset: 2px;
+}
+
+// Responsive Design
+@media (max-width: 480px) {
+  .settings-menu-content {
+    width: 280px !important;
+  }
+
+  .settings-section {
+    padding: @spacing + 2px;
+  }
+
+  .settings-header {
+    padding: @spacing (@spacing + 2px) (@spacing - 4px);
+  }
+}
+
+// NZ tenant theme overrides
+.nz-tenant {
+  .settings-select {
+    &.md-focused .md-select-value {
+      border-bottom-color: @nz-primary;
+    }
+  }
+
+  .md-select-menu-container md-option.md-selected {
+    background-color: fade(@nz-primary, 10%);
+    color: @nz-primary-dark;
+  }
+
+  .settings-select:focus-within,
+  .md-select.md-focused {
+    outline-color: fade(@nz-primary, 25%);
+  }
+}

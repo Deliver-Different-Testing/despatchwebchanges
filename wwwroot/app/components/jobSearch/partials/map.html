@@ -1,0 +1,26 @@
+<dispatch-map-react
+    class="full-height-map"
+    current-job="ctrl.currentJob"
+    jobs="ctrl.jobs"
+    map-center="ctrl.mapCenter"
+    map-zoom="ctrl.mapZoom">
+</dispatch-map-react>
+
+<style>
+    dispatch-map-react {
+        display: block;
+        flex: 1;
+        height: 100% !important;
+        min-height: 0;
+        position: relative;
+    }
+
+    .full-height-map {
+        height: 100% !important;
+    }
+
+    /* Handle resize in progress */
+    .box.resizable-dragging .box-content {
+        pointer-events: none; /* Prevents map interaction during resize */
+    }
+</style>

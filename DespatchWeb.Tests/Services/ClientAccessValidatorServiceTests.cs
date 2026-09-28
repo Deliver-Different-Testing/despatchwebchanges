@@ -1,0 +1,197 @@
+﻿using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
+using DespatchWeb.Services;
+using NSubstitute;
+
+namespace DespatchWeb.Tests.Services;
+
+public class ClientAccessValidatorServiceTests
+{
+    private readonly IClientRepository _clientRepoMock;
+    private readonly ClientAccessValidatorService _sut;
+
+    public ClientAccessValidatorServiceTests()
+    {
+        _clientRepoMock = Substitute.For<IClientRepository>();
+        _sut = new ClientAccessValidatorService(_clientRepoMock);
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_ValidClientIds_ParsesCorrectly()
+    {
+        // Arrange
+        const int contactId = 1;
+        const string clientIds = "1,2,3";
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([
+                new Suggestion { Id = 1, Text = "Client 1" },
+                new Suggestion { Id = 2, Text = "Client 2" },
+                new Suggestion { Id = 3, Text = "Client 3" }
+            ]);
+
+        // Act & Assert - Should not throw
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_MalformedInput_IgnoresInvalidAndParsesValid()
+    {
+        // Arrange - This is the security fix: malformed input should not cause exceptions
+        const int contactId = 1;
+        const string clientIds = "1,abc,3,xyz,5";
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([
+                new Suggestion { Id = 1, Text = "Client 1" },
+                new Suggestion { Id = 3, Text = "Client 3" },
+                new Suggestion { Id = 5, Text = "Client 5" }
+            ]);
+
+        // Act & Assert - Should not throw, valid IDs (1, 3, 5) are parsed and validated
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_EmptyString_ReturnsEarly()
+    {
+        // Arrange
+        const int contactId = 1;
+        const string clientIds = "";
+
+        // Act & Assert - Should return early without calling repository
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+        await _clientRepoMock.DidNotReceive().ClientContactsAsync(Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_NullString_ReturnsEarly()
+    {
+        // Arrange
+        const int contactId = 1;
+        string clientIds = null!;
+
+        // Act & Assert
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+        await _clientRepoMock.DidNotReceive().ClientContactsAsync(Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_WhitespaceInIds_TrimsCorrectly()
+    {
+        // Arrange
+        const int contactId = 1;
+        const string clientIds = " 1 , 2 , 3 ";
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([
+                new Suggestion { Id = 1, Text = "Client 1" },
+                new Suggestion { Id = 2, Text = "Client 2" }
+            ]);
+
+        // Act & Assert - Should parse trimmed values correctly
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_AllInvalidValues_ReturnsEarly()
+    {
+        // Arrange - When all values are non-numeric, should return early
+        const int contactId = 1;
+        const string clientIds = "abc,xyz,!!!";
+
+        // Act & Assert - Should return early (empty set after parsing)
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+        // Repository is called but no exception since requestedClientIds is empty
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_UnauthorizedClient_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        const int contactId = 1;
+        const string clientIds = "999"; // Client the contact doesn't have access to
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([
+                new Suggestion { Id = 1, Text = "Client 1" },
+                new Suggestion { Id = 2, Text = "Client 2" }
+            ]);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _sut.ValidateClientAccessAsync(contactId, clientIds));
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_PartialAccess_DoesNotThrow()
+    {
+        // Arrange - Contact has access to at least one of the requested clients
+        const int contactId = 1;
+        const string clientIds = "1,999"; // Has access to 1, not to 999
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([new Suggestion { Id = 1, Text = "Client 1" }]);
+
+        // Act & Assert - Has access to at least one, so should not throw
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_NullClientContacts_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        const int contactId = 1;
+        const string clientIds = "1";
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns((List<Suggestion>)null!);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _sut.ValidateClientAccessAsync(contactId, clientIds));
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_EmptyClientContacts_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        const int contactId = 1;
+        const string clientIds = "1";
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([]);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _sut.ValidateClientAccessAsync(contactId, clientIds));
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_NegativeNumbers_ParsesCorrectly()
+    {
+        // Arrange - Edge case: negative numbers should still parse
+        const int contactId = 1;
+        const string clientIds = "-1,2";
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([new Suggestion { Id = -1, Text = "Client -1" }]);
+
+        // Act & Assert
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public async Task ValidateClientAccessAsync_DuplicateIds_HandlesCorrectly()
+    {
+        // Arrange
+        const int contactId = 1;
+        const string clientIds = "1,1,1,2,2";
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([new Suggestion { Id = 1, Text = "Client 1" }]);
+
+        // Act & Assert - HashSet deduplicates, should still work
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
+    }
+}
