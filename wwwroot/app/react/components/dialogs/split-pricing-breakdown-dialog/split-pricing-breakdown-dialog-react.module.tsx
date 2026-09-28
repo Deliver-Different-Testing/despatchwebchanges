@@ -16,8 +16,8 @@ import type {SplitPriceBreakdown, UpdateSplitPricingBreakdownRequest} from '../.
 
 interface ApiService {
     save: (request: UpdateSplitPricingBreakdownRequest) => Promise<void>;
-    addItem: (jobId: number, name: string, revenue: number) => Promise<SplitPriceBreakdown>;
-    deleteItem: (jobId: number, pricingBreakdownId: number) => Promise<SplitPriceBreakdown>;
+    addItem: (jobId: number, name: string, revenue: number, isArchived: boolean) => Promise<SplitPriceBreakdown>;
+    deleteItem: (jobId: number, pricingBreakdownId: number, isArchived: boolean) => Promise<SplitPriceBreakdown>;
 }
 
 interface SplitPricingBreakdownPayload {
@@ -27,8 +27,8 @@ interface SplitPricingBreakdownPayload {
     highlightLegId?: number;
 }
 
-async function refetchOrThrow(jobId: number): Promise<SplitPriceBreakdown> {
-    const refreshed = await splitPriceBreakdownApi.getSplitPricingBreakdown(jobId);
+async function refetchOrThrow(jobId: number, isArchived: boolean): Promise<SplitPriceBreakdown> {
+    const refreshed = await splitPriceBreakdownApi.getSplitPricingBreakdown(jobId, isArchived);
     if (!refreshed) {
         throw new Error('This job is no longer a split parent with an editable breakdown.');
     }
@@ -44,9 +44,10 @@ const host = createDialogHost<SplitPricingBreakdownPayload, null>({
             breakdown={payload.breakdown}
             onClose={() => close(null)}
             onSave={(request) => payload.apiService.save(request)}
-            onAddItem={(name, revenue) => payload.apiService.addItem(payload.breakdown.jobId, name, revenue)}
-            onDeleteItem={(pricingBreakdownId) =>
-                payload.apiService.deleteItem(payload.breakdown.jobId, pricingBreakdownId)}
+            onAddItem={(name, revenue) => payload.apiService.addItem(
+                payload.breakdown.jobId, name, revenue, payload.breakdown.isArchived ?? false)}
+            onDeleteItem={(pricingBreakdownId) => payload.apiService.deleteItem(
+                payload.breakdown.jobId, pricingBreakdownId, payload.breakdown.isArchived ?? false)}
             showToast={showToast}
             readOnly={payload.readOnly}
             highlightLegId={payload.highlightLegId}
@@ -61,13 +62,13 @@ export function setToastService(service: ToastService): void {
 function createDefaultApiService(): ApiService {
     return {
         save: (request) => splitPriceBreakdownApi.updateSplitPricingBreakdown(request),
-        addItem: async (jobId, name, revenue) => {
-            await pricingBreakdownApi.addPriceBreakdown({name, amount: revenue, childJobId: jobId});
-            return refetchOrThrow(jobId);
+        addItem: async (jobId, name, revenue, isArchived) => {
+            await pricingBreakdownApi.addPriceBreakdown({name, amount: revenue, childJobId: jobId, isArchived});
+            return refetchOrThrow(jobId, isArchived);
         },
-        deleteItem: async (jobId, pricingBreakdownId) => {
-            await pricingBreakdownApi.deletePriceBreakdown({chargeId: pricingBreakdownId, jobId, isArchived: false});
-            return refetchOrThrow(jobId);
+        deleteItem: async (jobId, pricingBreakdownId, isArchived) => {
+            await pricingBreakdownApi.deletePriceBreakdown({chargeId: pricingBreakdownId, jobId, isArchived});
+            return refetchOrThrow(jobId, isArchived);
         },
     };
 }

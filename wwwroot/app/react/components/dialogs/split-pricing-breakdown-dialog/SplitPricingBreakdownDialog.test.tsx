@@ -95,13 +95,21 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByText('KT4071VB')).toBeInTheDocument();
     });
 
-    it('shows the read-only-on-children banner', () => {
+    it('shows the one-breakdown-for-the-whole-split banner', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
 
-        expect(screen.getByText(/managed here, on the parent job/i)).toBeInTheDocument();
+        expect(screen.getByText(/one breakdown for the whole split/i)).toBeInTheDocument();
     });
 
-    it('readOnly mode (a split child viewing its parent) hides every edit control and shows Close instead of Save', () => {
+    it('opened from a split child it stays editable, with that child’s leg highlighted', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({highlightLegId: 202})} />);
+
+        expect(screen.getByText('This job')).toBeInTheDocument();
+        expect(screen.getByLabelText('Revenue for Base')).toBeEnabled();
+        expect(screen.getByRole('button', {name: /save & close/i})).toBeInTheDocument();
+    });
+
+    it('readOnly mode (a locked job) hides every edit control and shows Close instead of Save', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({readOnly: true})} />);
 
         expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
@@ -117,6 +125,28 @@ describe('SplitPricingBreakdownDialog', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({readOnly: true, highlightLegId: 202})} />);
 
         expect(screen.getByText('This job')).toBeInTheDocument();
+    });
+
+    it('an archived parent that is not locked stays fully editable, including Add Item and Delete', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({breakdown: {...workedExample, isArchived: true}})} />);
+
+        expect(screen.getByDisplayValue('Base')).toBeInTheDocument();
+        expect(screen.getByLabelText('Revenue for Base')).toBeEnabled();
+        expect(screen.getByRole('button', {name: /add item/i})).toBeEnabled();
+        expect(screen.getByLabelText(/delete base/i)).toBeEnabled();
+    });
+
+    it('saving an archived parent sends isArchived so the server writes the archive tables', async () => {
+        const onSave = jest.fn().mockResolvedValue(undefined);
+        renderWithMantine(<SplitPricingBreakdownDialog
+            {...createMockProps({onSave, breakdown: {...workedExample, isArchived: true}})}
+        />);
+
+        fireEvent.change(screen.getByLabelText('Revenue for Base'), {target: {value: '200'}});
+        fireEvent.click(screen.getByRole('button', {name: /save & close/i}));
+
+        await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+        expect(onSave.mock.calls[0][0]).toMatchObject({jobId: 4071, isArchived: true});
     });
 
     it('Save & Close is disabled until something changes', () => {
