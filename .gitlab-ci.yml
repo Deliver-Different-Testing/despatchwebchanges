@@ -144,12 +144,17 @@ test:backend:
     KUBERNETES_CPU_LIMIT: "2"
     KUBERNETES_MEMORY_REQUEST: "2Gi"
     KUBERNETES_MEMORY_LIMIT: "3Gi"
+    # husky's "prepare" script installs git hooks, which are pointless in an
+    # ephemeral CI container and were running (and being timed) on every job.
+    HUSKY: "0"
   cache:
+    # npm ci always deletes and reinstalls node_modules, so caching that directory
+    # buys nothing and just costs a large upload/download. Only .npm/ (npm's own
+    # package cache) actually makes npm ci faster.
     - key:
         files:
           - package-lock.json
       paths:
-        - node_modules/
         - .npm/
       policy: pull-push
     - key: jest-cache-${CI_COMMIT_REF_SLUG}
@@ -158,6 +163,14 @@ test:backend:
       policy: pull-push
       fallback_keys:
         - jest-cache-master
+    # tsc --noEmit is incremental (tsconfig.json already sets tsBuildInfoFile), but
+    # that only helps if .tsbuildinfo survives between CI runs.
+    - key: tsbuildinfo-${CI_COMMIT_REF_SLUG}
+      paths:
+        - .tsbuildinfo
+      policy: pull-push
+      fallback_keys:
+        - tsbuildinfo-master
   before_script:
     - npm ci --cache .npm --prefer-offline
 
