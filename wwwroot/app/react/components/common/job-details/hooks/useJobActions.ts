@@ -1036,7 +1036,7 @@ export function useJobActions({
                 await ensureSplitPricingBreakdownDialog();
                 window.ReactSplitPricingBreakdownDialog?.setToastService({showToast});
                 await window.ReactSplitPricingBreakdownDialog?.open(splitBreakdown, {
-                    readOnly: isSplitChild || splitParentIsArchived,
+                    readOnly: isSplitChild || !!j.locked,
                     highlightLegId: isSplitChild ? j.id : undefined,
                 });
                 await refreshAndNotify();

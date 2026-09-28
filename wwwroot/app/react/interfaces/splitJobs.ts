@@ -100,6 +100,7 @@ export interface SplitPriceBreakdownLeg {
 
 export interface SplitPriceBreakdown {
     jobId: number;
+    isArchived?: boolean;
     totalRevenue: number;
     totalCost: number;
     grossProfit: number;
@@ -125,6 +126,7 @@ export interface SplitPricingAllocationUpdate {
 
 export interface UpdateSplitPricingBreakdownRequest {
     jobId: number;
+    isArchived?: boolean;
     itemRevenues: SplitPricingItemRevenueUpdate[];
     allocations: SplitPricingAllocationUpdate[];
 }

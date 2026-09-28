@@ -119,6 +119,28 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByText('This job')).toBeInTheDocument();
     });
 
+    it('an archived parent keeps its items editable but hides Add Item and Delete', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({breakdown: {...workedExample, isArchived: true}})} />);
+
+        expect(screen.getByDisplayValue('Base')).toBeInTheDocument();
+        expect(screen.getByLabelText('Revenue for Base')).toBeEnabled();
+        expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/delete base/i)).not.toBeInTheDocument();
+    });
+
+    it('saving an archived parent sends isArchived so the server writes the archive tables', async () => {
+        const onSave = jest.fn().mockResolvedValue(undefined);
+        renderWithMantine(<SplitPricingBreakdownDialog
+            {...createMockProps({onSave, breakdown: {...workedExample, isArchived: true}})}
+        />);
+
+        fireEvent.change(screen.getByLabelText('Revenue for Base'), {target: {value: '200'}});
+        fireEvent.click(screen.getByRole('button', {name: /save & close/i}));
+
+        await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+        expect(onSave.mock.calls[0][0]).toMatchObject({jobId: 4071, isArchived: true});
+    });
+
     it('Save & Close is disabled until something changes', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
         expect(screen.getByRole('button', {name: /save & close/i})).toBeDisabled();
