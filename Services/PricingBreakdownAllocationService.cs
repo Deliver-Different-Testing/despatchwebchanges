@@ -163,6 +163,7 @@ public class PricingBreakdownAllocationService : IPricingBreakdownAllocationServ
         DespatchContext context,
         int parentJobId,
         IReadOnlyList<int> currentLegIds,
+        IReadOnlyDictionary<int, decimal>? fallbackLegSharePercents = null,
         CancellationToken ct = default)
     {
         var parentItems = await context.PricingBreakdownArchives
@@ -188,7 +189,14 @@ public class PricingBreakdownAllocationService : IPricingBreakdownAllocationServ
         var siblingAverageByLeg = legIds.ToDictionary(legId => legId, legId =>
         {
             var shares = existingRows.Where(a => a.LegJobId == legId).Select(a => a.SharePercent).ToList();
-            return shares.Count > 0 ? shares.Average() : 100m / legIds.Count;
+            if (shares.Count > 0)
+            {
+                return shares.Average();
+            }
+
+            return fallbackLegSharePercents is not null && fallbackLegSharePercents.TryGetValue(legId, out var fallback)
+                ? fallback
+                : 100m / legIds.Count;
         });
 
         var legTotals = legIds.ToDictionary(legId => legId, _ => (Revenue: 0m, Fuel: 0m, CostSum: 0m, AnyCost: false));

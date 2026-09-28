@@ -4563,8 +4563,10 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// An even split across the parent's current legs, computed in memory (never persisted) for a
-    /// split parent that has no persisted allocation rows yet.
+    /// A split across the parent's current legs, computed in memory (never persisted) for a split
+    /// parent that has no persisted allocation rows yet: even for a live parent, and for an archived
+    /// one the legs' own stored split (see <see cref="GetArchivedLegAmountSharesAsync"/>) — the same
+    /// split its first save persists.
     /// </summary>
     private async Task<List<SplitPricingAllocationRow>> SynthesizeEqualSplitAllocationsAsync(
         int parentJobId, List<SplitPricingParentItemRow> parentItems, bool isArchived)
@@ -4586,8 +4588,10 @@ public partial class JobRepository(
             return [];
         }
 
-        var sharePercent = 100m / legIds.Count;
-        var fractions = legIds.Select(_ => sharePercent / 100m).ToList();
+        var sharesByLeg = isArchived
+            ? await GetArchivedLegAmountSharesAsync(legIds)
+            : legIds.ToDictionary(legId => legId, _ => 100m / legIds.Count);
+        var fractions = legIds.Select(legId => sharesByLeg[legId] / 100m).ToList();
 
         var synthesized = new List<SplitPricingAllocationRow>();
         foreach (var item in parentItems)
@@ -4600,7 +4604,7 @@ public partial class JobRepository(
             for (var i = 0; i < legIds.Count; i++)
             {
                 synthesized.Add(new SplitPricingAllocationRow(
-                    item.PricingBreakdownId, legIds[i], sharePercent, revenues[i], costs?[i], CostOverride: null));
+                    item.PricingBreakdownId, legIds[i], sharesByLeg[legIds[i]], revenues[i], costs?[i], CostOverride: null));
             }
         }
 
@@ -5784,7 +5788,8 @@ public partial class JobRepository(
         {
             // Persist the split the grid is showing (an equal split is synthesized on read for any
             // missing rows) so the edits below have rows to land on.
-            await PricingBreakdownAllocation.RewriteArchivedAllocationsForParentAsync(Context, request.JobId, currentLegIds);
+            await PricingBreakdownAllocation.RewriteArchivedAllocationsForParentAsync(
+                Context, request.JobId, currentLegIds, await GetArchivedLegAmountSharesAsync(currentLegIds));
         }
 
         foreach (var itemRevenue in request.ItemRevenues)
@@ -5945,8 +5950,33 @@ public partial class JobRepository(
     private async Task RewriteArchivedSplitParentAsync(int parentJobId)
     {
         var legIds = await GetArchivedSplitCurrentLegIdsAsync(parentJobId);
-        await PricingBreakdownAllocation.RewriteArchivedAllocationsForParentAsync(Context, parentJobId, legIds);
+        await PricingBreakdownAllocation.RewriteArchivedAllocationsForParentAsync(
+            Context, parentJobId, legIds, await GetArchivedLegAmountSharesAsync(legIds));
         await SetSplitParentAmountFromItemsAsync(parentJobId, isArchived: true);
+    }
+
+    /// <summary>
+    /// Each archived leg's share (0-100) of the legs' combined stored UcjbAmount — the split made
+    /// when the job was split (mileage-weighted), still carried on the legs after their allocation
+    /// rows went missing. Even when the legs carry no amount.
+    /// </summary>
+    private async Task<Dictionary<int, decimal>> GetArchivedLegAmountSharesAsync(IReadOnlyList<int> legIds)
+    {
+        var amounts = await Context.TucJobArchives
+            .Where(j => legIds.Contains(j.UcjbId))
+            .Select(j => new { j.UcjbId, Amount = j.UcjbAmount ?? 0m })
+            .ToDictionaryAsync(j => j.UcjbId, j => Math.Max(j.Amount, 0m));
+
+        var total = legIds.Sum(legId => amounts.GetValueOrDefault(legId));
+        if (total <= 0m)
+        {
+            return legIds.ToDictionary(legId => legId, _ => 100m / legIds.Count);
+        }
+
+        var shares = legIds.ToDictionary(
+            legId => legId, legId => Math.Round(amounts.GetValueOrDefault(legId) / total * 100m, 6));
+        shares[legIds[^1]] += 100m - shares.Values.Sum();
+        return shares;
     }
 
     /// <summary>
