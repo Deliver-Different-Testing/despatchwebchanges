@@ -330,6 +330,87 @@ describe('CourierMapPage Component', () => {
             // Search input should update
             expect(searchInput).toHaveValue('John');
         });
+
+        it('narrows the map markers to search matches, hiding the rest', async () => {
+            const mockUpdateCouriers = jest.fn();
+            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            useCourierMapMock.mockReturnValue({
+                mapContainerRef: {current: document.createElement('div')},
+                isInitialized: true,
+                updateCouriers: mockUpdateCouriers,
+                centerOnCourier: jest.fn(),
+                setSelectedDriver: jest.fn(),
+                returnToOverview: jest.fn(),
+            });
+
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+            await screen.findByText(/John Smith/i);
+
+            fireEvent.change(screen.getByPlaceholderText(/search by name or code/i), {
+                target: {value: 'John'},
+            });
+
+            await waitFor(() => {
+                const lastCall = mockUpdateCouriers.mock.calls.at(-1)![0];
+                expect(lastCall).toEqual([expect.objectContaining({courierId: 1})]);
+            });
+        });
+
+        it('auto-selects and zooms to the courier once search uniquely matches them', async () => {
+            const mockCenterOnCourier = jest.fn();
+            const mockSetSelectedDriver = jest.fn();
+            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            useCourierMapMock.mockReturnValue({
+                mapContainerRef: {current: document.createElement('div')},
+                isInitialized: true,
+                updateCouriers: jest.fn(),
+                centerOnCourier: mockCenterOnCourier,
+                setSelectedDriver: mockSetSelectedDriver,
+                returnToOverview: jest.fn(),
+            });
+
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+            await screen.findByText(/John Smith/i);
+
+            fireEvent.change(screen.getByPlaceholderText(/search by name or code/i), {
+                target: {value: 'JS001'},
+            });
+
+            await waitFor(() => {
+                expect(mockCenterOnCourier).toHaveBeenCalledWith(expect.objectContaining({courierId: 1}));
+            });
+            expect(mockSetSelectedDriver).toHaveBeenCalledWith(1);
+        });
+
+        it('does not auto-select or zoom when the search matches more than one courier', async () => {
+            const mockUpdateCouriers = jest.fn();
+            const mockCenterOnCourier = jest.fn();
+            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            useCourierMapMock.mockReturnValue({
+                mapContainerRef: {current: document.createElement('div')},
+                isInitialized: true,
+                updateCouriers: mockUpdateCouriers,
+                centerOnCourier: mockCenterOnCourier,
+                setSelectedDriver: jest.fn(),
+                returnToOverview: jest.fn(),
+            });
+
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+            await screen.findByText(/John Smith/i);
+
+            // Matches both mock couriers by name ('John'/'Jane') and code ('JS001'/'JD001').
+            fireEvent.change(screen.getByPlaceholderText(/search by name or code/i), {
+                target: {value: 'J'},
+            });
+
+            await waitFor(() => {
+                expect(mockUpdateCouriers.mock.calls.at(-1)![0]).toHaveLength(2);
+            });
+            expect(mockCenterOnCourier).not.toHaveBeenCalled();
+        });
     });
 
     describe('Map Controls Interaction', () => {

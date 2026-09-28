@@ -15,6 +15,7 @@ import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import classes from './DriversPanel.module.css';
 import { NoData } from '../../../components/common/no-data';
+import { matchesCourierSearch } from '../CourierMapPage.types';
 import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
 
@@ -91,18 +92,10 @@ export function DriversPanel({
         return { totalJobs, overdueCount };
     }, [drivers]);
 
-    const filteredDrivers = useMemo(() => {
-        if (!searchTerm || searchTerm.trim() === '') {
-            return drivers;
-        }
-
-        const term = searchTerm.toLowerCase().trim();
-        return drivers.filter((driver) => {
-            const name = (driver.courierName || '').toLowerCase();
-            const code = (driver.code || '').toLowerCase();
-            return name.includes(term) || code.includes(term);
-        });
-    }, [drivers, searchTerm]);
+    const filteredDrivers = useMemo(
+        () => drivers.filter((driver) => matchesCourierSearch(driver, searchTerm)),
+        [drivers, searchTerm]
+    );
 
     // MultiSelect speaks strings; the fleet ids are numbers.
     const fleetData = useMemo(

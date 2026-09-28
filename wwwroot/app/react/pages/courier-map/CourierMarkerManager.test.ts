@@ -1,9 +1,10 @@
 /**
  * CourierMarkerManager Tests
  *
- * The Courier Map draws the same courier flag as the dispatch map — driver, job counts and the
- * last-delivery line — but colours it from the Mantine theme so it follows dark mode. These tests
- * pin that parity, since the two managers are separate classes over one shared flag builder.
+ * The Courier Map draws the same courier flag as the dispatch map — driver and job counts,
+ * plus the last-delivery line once selected — but colours it from the Mantine theme so it
+ * follows dark mode. These tests pin that parity, since the two managers are separate classes
+ * over one shared flag builder.
  */
 
 import {CourierMarkerManager} from './CourierMarkerManager';
@@ -139,7 +140,7 @@ describe('CourierMarkerManager', () => {
     });
 
     describe('flag content', () => {
-        it('reads like the dispatch flag: first name, job counts and last delivery', () => {
+        it('reads like the dispatch flag for name and job counts, but hides the last-delivery line unless selected', () => {
             manager.updateMarkers([driver({
                 overDueJobs: 1,
                 lastDeliveryCity: 'Ponsonby',
@@ -147,6 +148,19 @@ describe('CourierMarkerManager', () => {
             })]);
 
             expect(lastSvg()).toContain('>Dave 4/1<');
+            expect(lastSvg()).not.toContain('Ponsonby');
+            expect(lastSvg()).toContain(`height="${COURIER_FLAG_HEIGHT.oneLine}"`);
+        });
+
+        it('shows the last-delivery line too once the courier is selected', () => {
+            manager.updateMarkers([driver({
+                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryTime: minutesAgo(12),
+            })]);
+
+            manager.setSelectedCourier(1);
+
+            expect(lastSvg()).toContain('>Dave 4<');
             expect(lastSvg()).toContain('Ponsonby · 12m');
             expect(lastSvg()).toContain(`height="${COURIER_FLAG_HEIGHT.twoLine}"`);
         });
@@ -160,8 +174,9 @@ describe('CourierMarkerManager', () => {
             expect(lastSvg()).not.toContain('DT14');
         });
 
-        it('stays one line for a courier with no completed delivery', () => {
+        it('stays one line for a courier with no completed delivery, even when selected', () => {
             manager.updateMarkers([driver()]);
+            manager.setSelectedCourier(1);
             expect(lastSvg()).toContain(`height="${COURIER_FLAG_HEIGHT.oneLine}"`);
         });
 
@@ -197,11 +212,27 @@ describe('CourierMarkerManager', () => {
             manager.updateMarkers([driver({
                 courierId: 2, lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(3),
             })]);
+            manager.setSelectedCourier(2);
             expect(mockH.map.Icon.mock.calls.at(-1)![1].anchor)
                 .toEqual({x: 4, y: COURIER_FLAG_HEIGHT.twoLine});
         });
 
-        it('repaints and refreshes the payload as the minutes tick', () => {
+        it('repaints and refreshes the payload as the minutes tick while selected', () => {
+            manager.updateMarkers([driver({
+                lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(12),
+            })]);
+            manager.setSelectedCourier(1);
+            const marker = mockMarkerInstances[0];
+            marker.setIcon.mockClear();
+
+            const later = driver({lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(13)});
+            manager.updateMarkers([later]);
+
+            expect(marker.setIcon).toHaveBeenCalled();
+            expect(marker.getData().lastDeliveryTime).toBe(later.lastDeliveryTime);
+        });
+
+        it('does not repaint an unselected marker as the minutes tick, since the line is hidden', () => {
             manager.updateMarkers([driver({
                 lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(12),
             })]);
@@ -211,8 +242,7 @@ describe('CourierMarkerManager', () => {
             const later = driver({lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(13)});
             manager.updateMarkers([later]);
 
-            expect(marker.setIcon).toHaveBeenCalled();
-            expect(marker.getData().lastDeliveryTime).toBe(later.lastDeliveryTime);
+            expect(marker.setIcon).not.toHaveBeenCalled();
         });
     });
 
