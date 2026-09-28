@@ -15,6 +15,7 @@ import {
     NZ_BOUNDS,
     REFRESH_INTERVAL_MS,
     SEARCH_DEBOUNCE_MS,
+    matchesCourierSearch,
 } from './CourierMapPage.types';
 import { useCourierMap } from './useCourierMap';
 import { DriversPanel } from './components/DriversPanel';
@@ -165,12 +166,20 @@ export function CourierMapPage({
         [couriers]
     );
 
-    // Update map markers when couriers change
+    // Couriers matching the current search — narrows the map's marker set the same way it
+    // narrows the drivers-panel list, so a searched-for driver hidden behind others (e.g.
+    // "#97") isn't lost in a crowd of unrelated markers.
+    const searchMatchedCouriers = useMemo(
+        () => validCouriers.filter((c) => matchesCourierSearch(c, debouncedSearchTerm)),
+        [validCouriers, debouncedSearchTerm]
+    );
+
+    // Update map markers when couriers or the search narrowing them change
     useEffect(() => {
-        if (isInitialized && validCouriers.length >= 0) {
-            updateCouriers(validCouriers);
+        if (isInitialized) {
+            updateCouriers(searchMatchedCouriers);
         }
-    }, [isInitialized, validCouriers, updateCouriers]);
+    }, [isInitialized, searchMatchedCouriers, updateCouriers]);
 
     // Handlers
     const handleDriverClick = useCallback(
@@ -185,6 +194,24 @@ export function CourierMapPage({
         handleDriverClickRef.current = handleDriverClick;
     }, [handleDriverClick]);
 
+    // Once a search narrows the results down to exactly one courier, select and zoom to them
+    // automatically — the point of hiding the rest is to stop hunting for an overlapped
+    // marker, so the user shouldn't need a second click to get there. Guarded by search term
+    // (not just the match count) so this fires once per distinct search rather than on every
+    // poll refresh of the same unique match.
+    const lastAutoSelectSearchRef = useRef<string | null>(null);
+    useEffect(() => {
+        const trimmed = debouncedSearchTerm.trim();
+        if (!trimmed) {
+            lastAutoSelectSearchRef.current = null;
+            return;
+        }
+        if (searchMatchedCouriers.length === 1 && lastAutoSelectSearchRef.current !== trimmed) {
+            lastAutoSelectSearchRef.current = trimmed;
+            handleDriverClick(searchMatchedCouriers[0]);
+        }
+    }, [debouncedSearchTerm, searchMatchedCouriers, handleDriverClick]);
+
     // Keep the map's highlighted flag in step with the selected driver.
     useEffect(() => {
         setSelectedDriver(selectedDriverId);
@@ -193,10 +220,10 @@ export function CourierMapPage({
     // Clear a stale selection if that driver drops out of the current results
     // (went offline, or filtered out by the fleet filter/search).
     useEffect(() => {
-        if (selectedDriverId != null && !validCouriers.some((c) => c.courierId === selectedDriverId)) {
+        if (selectedDriverId != null && !searchMatchedCouriers.some((c) => c.courierId === selectedDriverId)) {
             setSelectedDriverId(null);
         }
-    }, [validCouriers, selectedDriverId]);
+    }, [searchMatchedCouriers, selectedDriverId]);
 
     const handleRefresh = useCallback(async () => {
         await refetch();

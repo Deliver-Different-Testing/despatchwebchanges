@@ -108,6 +108,23 @@ export function getMarkerColors(
 }
 
 /**
+ * Whether a courier matches a driver-search term (by name or code). Shared between the
+ * drivers-panel list filter and the map's marker set so the two never disagree about who
+ * currently matches a search.
+ */
+export function matchesCourierSearch(
+    driver: import('../../../interfaces/courier.interface').IAvailableCourierPosition,
+    term: string,
+): boolean {
+    const trimmed = term.toLowerCase().trim();
+    if (!trimmed) return true;
+
+    const name = (driver.courierName || '').toLowerCase();
+    const code = (driver.code || '').toLowerCase();
+    return name.includes(trimmed) || code.includes(trimmed);
+}
+
+/**
  * Internal marker tracking state
  */
 export interface CourierMarker {
