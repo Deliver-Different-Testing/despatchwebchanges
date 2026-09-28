@@ -717,6 +717,28 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateSplitPricingBreakdown_ArchivedJob_ReturnsOkWithoutAddingEvent()
+    {
+        var request = new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = 1,
+            IsArchived = true,
+            ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 1, Revenue = 200m }]
+        };
+        _taskRepositoryMock.AddEventAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int>())
+            .Returns(Task.FromException(new ArgumentNullException("job")));
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateSplitPricingBreakdown(request);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).UpdateSplitPricingBreakdownAsync(request);
+        await _taskRepositoryMock.DidNotReceive().AddEventAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int>());
+    }
+
+    [Fact]
     public async Task UpdateSplitPricingBreakdown_LockRejection_Returns409()
     {
         var request = new UpdateSplitPricingBreakdownRequest { JobId = 1 };
