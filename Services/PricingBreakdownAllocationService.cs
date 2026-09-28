@@ -177,23 +177,41 @@ public class PricingBreakdownAllocationService : IPricingBreakdownAllocationServ
 
         var legIds = currentLegIds.ToList();
         var itemIds = parentItems.Select(p => p.PricingBreakdownId).ToList();
-        var rowsByItemLeg = (await context.PricingBreakdownAllocationArchives
-                .AsTracking()
-                .Where(a => itemIds.Contains(a.ParentPricingBreakdownId) && legIds.Contains(a.LegJobId))
-                .ToListAsync(ct))
-            .ToDictionary(a => (a.ParentPricingBreakdownId, a.LegJobId));
+        var existingRows = await context.PricingBreakdownAllocationArchives
+            .AsTracking()
+            .Where(a => itemIds.Contains(a.ParentPricingBreakdownId) && legIds.Contains(a.LegJobId))
+            .ToListAsync(ct);
+        var rowsByItemLeg = existingRows.ToDictionary(a => (a.ParentPricingBreakdownId, a.LegJobId));
+
+        // An item added after the split has no rows yet; seed it at each leg's average share
+        // across the other items, as the live rewrite does.
+        var siblingAverageByLeg = legIds.ToDictionary(legId => legId, legId =>
+        {
+            var shares = existingRows.Where(a => a.LegJobId == legId).Select(a => a.SharePercent).ToList();
+            return shares.Count > 0 ? shares.Average() : 100m / legIds.Count;
+        });
 
         var legTotals = legIds.ToDictionary(legId => legId, _ => (Revenue: 0m, Fuel: 0m, CostSum: 0m, AnyCost: false));
 
         foreach (var item in parentItems)
         {
-            // Unlike the live rewrite this never inserts: the caller has already checked every
-            // (item, leg) pair has a persisted archive row, so a missing one is a bug, not a seed.
             var rows = legIds
-                .Select(legId => rowsByItemLeg.TryGetValue((item.PricingBreakdownId, legId), out var row)
-                    ? row
-                    : throw new InvalidOperationException(
-                        $"Archived item {item.PricingBreakdownId} has no allocation row for leg {legId}."))
+                .Select(legId =>
+                {
+                    if (rowsByItemLeg.TryGetValue((item.PricingBreakdownId, legId), out var row))
+                    {
+                        return row;
+                    }
+
+                    var seeded = new PricingBreakdownAllocationArchive
+                    {
+                        ParentPricingBreakdownId = item.PricingBreakdownId,
+                        LegJobId = legId,
+                        SharePercent = siblingAverageByLeg[legId]
+                    };
+                    context.PricingBreakdownAllocationArchives.Add(seeded);
+                    return seeded;
+                })
                 .ToList();
 
             var fractions = rows.Select(r => r.SharePercent / 100m).ToList();

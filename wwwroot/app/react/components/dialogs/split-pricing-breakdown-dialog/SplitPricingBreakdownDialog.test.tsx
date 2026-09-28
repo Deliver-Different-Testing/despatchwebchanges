@@ -95,13 +95,21 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByText('KT4071VB')).toBeInTheDocument();
     });
 
-    it('shows the read-only-on-children banner', () => {
+    it('shows the one-breakdown-for-the-whole-split banner', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
 
-        expect(screen.getByText(/managed here, on the parent job/i)).toBeInTheDocument();
+        expect(screen.getByText(/one breakdown for the whole split/i)).toBeInTheDocument();
     });
 
-    it('readOnly mode (a split child viewing its parent) hides every edit control and shows Close instead of Save', () => {
+    it('opened from a split child it stays editable, with that child’s leg highlighted', () => {
+        renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({highlightLegId: 202})} />);
+
+        expect(screen.getByText('This job')).toBeInTheDocument();
+        expect(screen.getByLabelText('Revenue for Base')).toBeEnabled();
+        expect(screen.getByRole('button', {name: /save & close/i})).toBeInTheDocument();
+    });
+
+    it('readOnly mode (a locked job) hides every edit control and shows Close instead of Save', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({readOnly: true})} />);
 
         expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
@@ -119,13 +127,13 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByText('This job')).toBeInTheDocument();
     });
 
-    it('an archived parent keeps its items editable but hides Add Item and Delete', () => {
+    it('an archived parent that is not locked stays fully editable, including Add Item and Delete', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({breakdown: {...workedExample, isArchived: true}})} />);
 
         expect(screen.getByDisplayValue('Base')).toBeInTheDocument();
         expect(screen.getByLabelText('Revenue for Base')).toBeEnabled();
-        expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
-        expect(screen.queryByLabelText(/delete base/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /add item/i})).toBeEnabled();
+        expect(screen.getByLabelText(/delete base/i)).toBeEnabled();
     });
 
     it('saving an archived parent sends isArchived so the server writes the archive tables', async () => {

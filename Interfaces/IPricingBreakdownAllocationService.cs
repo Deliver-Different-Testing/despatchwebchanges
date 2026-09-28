@@ -72,8 +72,8 @@ public interface IPricingBreakdownAllocationService
     /// The archive-table counterpart of <see cref="RewriteAllocationsForParentAsync"/>: re-derives
     /// every PricingBreakdownAllocationArchive row's ChargeAmount/CostAmount from the parent's
     /// archived items and the rows' own SharePercent/CostOverride, then writes each leg's
-    /// UcjbAmount, FuelSurchargeAmount and CourierPayment. Only rewrites existing rows — it never
-    /// seeds or removes one, so the caller must have checked every (item, leg) pair has a row.
+    /// UcjbAmount, FuelSurchargeAmount and CourierPayment. A newly added item is seeded at each
+    /// leg's average share across the other items; rows are never removed here.
     /// </summary>
     /// <param name="context">The caller's open context/transaction.</param>
     /// <param name="parentJobId">The archived split parent whose allocations to rewrite.</param>
