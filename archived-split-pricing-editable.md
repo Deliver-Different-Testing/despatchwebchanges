@@ -3,6 +3,35 @@
 **For:** Jacob · **From:** Steve · **Date:** 28 Sep 2026
 **Branch:** `fix/archived-split-pricing-editable`, based directly on GitLab `master` `9b493e12` (28 Sep 16:33)
 
+## Get the code (it's already written and tested, so don't recode it)
+
+- **All changes in one diff:** https://github.com/Deliver-Different-Testing/despatchwebchanges/compare/9b493e12...fix/archived-split-pricing-editable
+- **Branch:** https://github.com/Deliver-Different-Testing/despatchwebchanges/tree/fix/archived-split-pricing-editable
+- **The 3 code commits** (the other 2 commits on the branch only touch this doc):
+  1. [`6e66f5bd`](https://github.com/Deliver-Different-Testing/despatchwebchanges/commit/6e66f5bd860bb61d748536c1b4659f9f5c1be00c): archived split parents editable unless invoiced, settled or locked; archive-table save path
+  2. [`aebbdcc8`](https://github.com/Deliver-Different-Testing/despatchwebchanges/commit/aebbdcc8b78233ff972dc51cc3e7086401b8d75a): Add/Delete item on archived split parents; parent `UcjbAmount` kept equal to its items, live and archived
+  3. [`b6958c86`](https://github.com/Deliver-Different-Testing/despatchwebchanges/commit/b6958c865831b41d73f517e94c22ff1d4b1d3019): editable from either leg (not just the parent)
+
+**To pull it into GitLab.** These three commits cherry-pick cleanly onto `develop` `fd7af78b`; that was checked on 28 Sep.
+
+```bash
+git fetch https://github.com/Deliver-Different-Testing/despatchwebchanges.git fix/archived-split-pricing-editable
+git checkout -b fix/archived-split-pricing-editable origin/develop
+git cherry-pick 6e66f5bd aebbdcc8 b6958c86
+```
+
+**Changed files:**
+- `Repositories/JobRepository.cs`
+- `Services/PricingBreakdownAllocationService.cs`
+- `Interfaces/IPricingBreakdownAllocationService.cs`
+- `Models/Dto/SplitPricingBreakdownDto.cs`
+- `Models/RequestModels/UpdateSplitPricingBreakdownRequest.cs`
+- `wwwroot/app/react/components/common/job-details/hooks/useJobActions.ts`
+- `wwwroot/app/react/components/dialogs/split-pricing-breakdown-dialog/SplitPricingBreakdownDialog.tsx`
+- `wwwroot/app/react/components/dialogs/split-pricing-breakdown-dialog/split-pricing-breakdown-dialog-react.module.tsx`
+- `wwwroot/app/react/interfaces/splitJobs.ts`
+- Tests in `DespatchWeb.Tests/Repositories/JobRepositoryPricingBreakdownTests.cs`, `useJobActions.test.ts` and `SplitPricingBreakdownDialog.test.tsx`
+
 ## The bug
 
 Open the Price Breakdown on an archived split parent from last week (e.g. **E2142V**) and the per-leg grid opens **"view only"**. Every field is greyed out, even though the parent isn't invoiced and neither leg is settled.
