@@ -64,7 +64,7 @@ export interface EditModeProps {
     onAddItem: (name: string, revenue: number) => Promise<SplitPriceBreakdown>;
     onDeleteItem: (pricingBreakdownId: number) => Promise<SplitPriceBreakdown>;
     showToast?: ShowToastFn;
-    /** True when opened from a split child — shows the parent's breakdown, view only. */
+    /** True when the job (or its split parent) is locked — view only. */
     readOnly?: boolean;
     /** The viewing split child's own leg, highlighted among the legs shown. */
     highlightLegId?: number;
@@ -441,7 +441,12 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                 });
             });
 
-            await props.onSave({jobId: props.breakdown.jobId, itemRevenues, allocations});
+            await props.onSave({
+                jobId: props.breakdown.jobId,
+                isArchived: props.breakdown.isArchived ?? false,
+                itemRevenues,
+                allocations,
+            });
             showToast?.('Split pricing breakdown saved', 'success');
             props.onClose();
         } catch (error) {
@@ -560,10 +565,10 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                     </>
                 ) : (
                     <Alert color="cyan" variant="light">
-                        Pricing for every leg is managed here, on the parent job. The child jobs
-                        show these figures read-only, so the parent and its legs can&apos;t drift
-                        out of sync.
-                        {readOnly && ' You are viewing this job’s leg below, highlighted.'}
+                        One breakdown for the whole split, the same from the parent or either leg.
+                        Revenue changes are divided across the legs by their share, so the legs
+                        always add up to the parent.
+                        {highlightLegId != null && ' You are viewing this job’s leg below, highlighted.'}
                     </Alert>
                 )}
             </Box>
