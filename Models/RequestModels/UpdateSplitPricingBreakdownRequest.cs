@@ -8,6 +8,8 @@ namespace DespatchWeb.Models.RequestModels;
 public sealed class UpdateSplitPricingBreakdownRequest
 {
     public int JobId { get; init; }
+    /// <summary>True when the parent has archived — the save then targets the Archive tables.</summary>
+    public bool IsArchived { get; init; }
     public IReadOnlyList<SplitPricingItemRevenueUpdate> ItemRevenues { get; init; } = [];
     public IReadOnlyList<SplitPricingAllocationUpdate> Allocations { get; init; } = [];
 }

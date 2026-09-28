@@ -4388,9 +4388,8 @@ public partial class JobRepository(
     /// job (parent or child) is shown, so a job with no PricingBreakdownAllocation rows yet (split
     /// before this feature shipped) gets an equal-share split computed on read rather than a null.
     /// That computed split is never persisted — it's written for real only if/when the user edits
-    /// and saves, via the normal UpdateSplitPricingBreakdownAsync path (which stays live-only —
-    /// <paramref name="isArchived"/> only widens this read path, matching the app-wide convention
-    /// that an archived job is view-only). Returns null only when the job isn't a split parent, or
+    /// and saves, via the normal UpdateSplitPricingBreakdownAsync path (an archived parent can only
+    /// be saved once it has persisted allocation rows). Returns null only when the job isn't a split parent, or
     /// has no pricing items or no legs to show at all.
     /// </summary>
     public async Task<SplitPricingBreakdownDto> GetSplitPricingBreakdownAsync(int jobId, bool isArchived = false)
@@ -4512,6 +4511,7 @@ public partial class JobRepository(
         return new SplitPricingBreakdownDto
         {
             JobId = jobId,
+            IsArchived = isArchived,
             TotalRevenue = totalRevenue,
             TotalCost = totalCost,
             GrossProfit = grossProfit,
@@ -5597,10 +5597,8 @@ public partial class JobRepository(
         == (int)JobRelationshipTypes.SplitChild;
 
     /// <summary>
-    /// True when <paramref name="jobId"/> is a split parent, live or archived — the read-only
-    /// display gate for <see cref="GetSplitPricingBreakdownAsync"/>. Unlike
-    /// <see cref="IsLiveSplitParentAsync"/>, this doesn't bail out for an archived job: showing
-    /// the per-leg grid is safe for a job nobody can edit through it anyway.
+    /// True when <paramref name="jobId"/> is a split parent, live or archived. Unlike
+    /// <see cref="IsLiveSplitParentAsync"/>, this doesn't bail out for an archived job.
     /// </summary>
     private async Task<bool> IsSplitParentAsync(int jobId, bool isArchived) =>
         (isArchived
@@ -5651,10 +5649,18 @@ public partial class JobRepository(
     /// </summary>
     public async Task UpdateSplitPricingBreakdownAsync(UpdateSplitPricingBreakdownRequest request)
     {
-        if (!await IsLiveSplitParentAsync(request.JobId, isArchived: false))
+        var isArchived = request.IsArchived;
+        if (!isArchived && !await IsLiveSplitParentAsync(request.JobId, isArchived: false))
         {
             throw new InvalidOperationException($"Job {request.JobId} is not a live split parent.");
         }
+
+        var currentLegIds = isArchived
+            ? await GetEditableArchivedSplitLegIdsAsync(request.JobId)
+            : await Context.TucJobs
+                .Where(j => j.ParentId == request.JobId && j.UcjbId != request.JobId && !j.UcjbVoid)
+                .Select(j => j.UcjbId)
+                .ToListAsync();
 
         if (request.ItemRevenues.Count == 0 && request.Allocations.Count == 0)
         {
@@ -5685,11 +5691,6 @@ public partial class JobRepository(
             }
         }
 
-        var currentLegIds = await Context.TucJobs
-            .Where(j => j.ParentId == request.JobId && j.UcjbId != request.JobId && !j.UcjbVoid)
-            .Select(j => j.UcjbId)
-            .ToListAsync();
-
         foreach (var group in request.Allocations.Where(a => a.SharePercent.HasValue).GroupBy(a => a.PricingBreakdownId))
         {
             var legIdsInGroup = group.Select(a => a.LegJobId).ToList();
@@ -5710,9 +5711,13 @@ public partial class JobRepository(
         if (renames.Count > 0)
         {
             var renamedIds = renames.Select(r => r.PricingBreakdownId).ToList();
-            var currentNames = await Context.PricingBreakdowns
-                .Where(p => renamedIds.Contains(p.PricingBreakdownId))
-                .ToDictionaryAsync(p => p.PricingBreakdownId, p => p.ChargeName);
+            var currentNames = isArchived
+                ? await Context.PricingBreakdownArchives
+                    .Where(p => renamedIds.Contains(p.PricingBreakdownId))
+                    .ToDictionaryAsync(p => p.PricingBreakdownId, p => p.ChargeName)
+                : await Context.PricingBreakdowns
+                    .Where(p => renamedIds.Contains(p.PricingBreakdownId))
+                    .ToDictionaryAsync(p => p.PricingBreakdownId, p => p.ChargeName);
 
             foreach (var rename in renames)
             {
@@ -5744,7 +5749,16 @@ public partial class JobRepository(
         foreach (var itemRevenue in request.ItemRevenues)
         {
             var newName = itemRevenue.Name?.Trim();
-            if (newName is not null)
+            if (isArchived)
+            {
+                await Context.PricingBreakdownArchives
+                    .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId
+                        && p.JobId == request.JobId && p.ChildJobId == null)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(p => p.ChargeAmount, itemRevenue.Revenue)
+                        .SetProperty(p => p.ChargeName, p => newName ?? p.ChargeName));
+            }
+            else if (newName is not null)
             {
                 await Context.PricingBreakdowns
                     .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId)
@@ -5760,7 +5774,44 @@ public partial class JobRepository(
             }
         }
 
-        if (request.Allocations.Count > 0)
+        if (request.Allocations.Count > 0 && isArchived)
+        {
+            var itemIds = request.Allocations.Select(a => a.PricingBreakdownId).Distinct().ToList();
+            var parentItemIds = await Context.PricingBreakdownArchives
+                .Where(p => p.JobId == request.JobId && p.ChildJobId == null && itemIds.Contains(p.PricingBreakdownId))
+                .Select(p => p.PricingBreakdownId)
+                .ToListAsync();
+            var archiveRowsByKey = (await Context.PricingBreakdownAllocationArchives
+                    .AsTracking()
+                    .Where(a => parentItemIds.Contains(a.ParentPricingBreakdownId))
+                    .ToListAsync())
+                .ToDictionary(a => (a.ParentPricingBreakdownId, a.LegJobId));
+
+            foreach (var update in request.Allocations)
+            {
+                if (!archiveRowsByKey.TryGetValue((update.PricingBreakdownId, update.LegJobId), out var row))
+                {
+                    continue;
+                }
+
+                if (update.SharePercent.HasValue)
+                {
+                    row.SharePercent = update.SharePercent.Value;
+                }
+
+                if (update.ResetCostOverride)
+                {
+                    row.CostOverride = null;
+                }
+                else if (update.CostOverride.HasValue)
+                {
+                    row.CostOverride = update.CostOverride.Value;
+                }
+            }
+
+            await Context.SaveChangesAsync();
+        }
+        else if (request.Allocations.Count > 0)
         {
             var itemIds = request.Allocations.Select(a => a.PricingBreakdownId).Distinct().ToList();
             var allocationRows = await Context.PricingBreakdownAllocations
@@ -5794,7 +5845,51 @@ public partial class JobRepository(
             await Context.SaveChangesAsync();
         }
 
+        if (isArchived)
+        {
+            await PricingBreakdownAllocation.RewriteArchivedAllocationsForParentAsync(Context, request.JobId, currentLegIds);
+            return;
+        }
+
         await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, request.JobId);
+    }
+
+    /// <summary>
+    /// The current legs of an archived split parent whose grid can be saved: the parent must still
+    /// have its own (unattributed) items, and every one of them a persisted allocation row for
+    /// every current leg. A pre-feature split only has the equal split synthesized on read, and
+    /// nothing in the archive tables to write it back to.
+    /// </summary>
+    private async Task<List<int>> GetEditableArchivedSplitLegIdsAsync(int parentJobId)
+    {
+        if (!await IsSplitParentAsync(parentJobId, isArchived: true))
+        {
+            throw new InvalidOperationException($"Job {parentJobId} is not an archived split parent.");
+        }
+
+        var legIds = await Context.TucJobArchives
+            .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
+            .Select(j => j.UcjbId)
+            .Union(Context.TucJobs
+                .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
+                .Select(j => j.UcjbId))
+            .ToListAsync();
+
+        var itemIds = await Context.PricingBreakdownArchives
+            .Where(p => p.JobId == parentJobId && p.ChildJobId == null)
+            .Select(p => p.PricingBreakdownId)
+            .ToListAsync();
+
+        var allocationCount = await Context.PricingBreakdownAllocationArchives
+            .CountAsync(a => itemIds.Contains(a.ParentPricingBreakdownId) && legIds.Contains(a.LegJobId));
+
+        if (legIds.Count == 0 || itemIds.Count == 0 || allocationCount != itemIds.Count * legIds.Count)
+        {
+            throw new InvalidOperationException(
+                $"Job {parentJobId} was split before per-leg pricing was recorded, so its archived breakdown can't be edited here.");
+        }
+
+        return legIds;
     }
 
     /// <summary>

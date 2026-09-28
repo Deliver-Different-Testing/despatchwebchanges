@@ -1413,6 +1413,184 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
             }));
     }
 
+    [Fact]
+    public async Task GetSplitPricingBreakdownAsync_ArchivedSplitParent_FlagsDtoAsArchived()
+    {
+        SeedTwoLegArchivedSplitParent(100, 101, 102, itemAmount: 100.00m, shareA: 60m, shareB: 40m);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var dto = await CreateRepository().GetSplitPricingBreakdownAsync(100, isArchived: true);
+
+        Assert.NotNull(dto);
+        Assert.True(dto.IsArchived);
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdownAsync_ArchivedNotInvoicedOrSettled_RevenueEditReDerivesArchivedLegs()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        SeedTwoLegArchivedSplitParent(parentId, legA, legB, itemAmount: 100.00m, shareA: 60m, shareB: 40m, costAmount: 50.00m);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdateSplitPricingBreakdownAsync(new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = parentId,
+            IsArchived = true,
+            ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 1, Revenue = 200.00m, Name = "Base Rate" }]
+        });
+
+        _context.ChangeTracker.Clear();
+        var item = await _context.PricingBreakdownArchives.SingleAsync(p => p.PricingBreakdownId == 1, TestContext.Current.CancellationToken);
+        Assert.Equal(200.00m, item.ChargeAmount);
+        Assert.Equal("Base Rate", item.ChargeName);
+        var legAJob = await _context.TucJobArchives.SingleAsync(j => j.UcjbId == legA, TestContext.Current.CancellationToken);
+        var legBJob = await _context.TucJobArchives.SingleAsync(j => j.UcjbId == legB, TestContext.Current.CancellationToken);
+        Assert.Equal(120.00m, legAJob.UcjbAmount);
+        Assert.Equal(80.00m, legBJob.UcjbAmount);
+        Assert.Equal(30.00m, legAJob.CourierPayment);
+        Assert.Equal(20.00m, legBJob.CourierPayment);
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdownAsync_ArchivedNotInvoicedOrSettled_ShareAndCostOverrideApplied()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        SeedTwoLegArchivedSplitParent(parentId, legA, legB, itemAmount: 100.00m, shareA: 50m, shareB: 50m, costAmount: 40.00m);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdateSplitPricingBreakdownAsync(new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = parentId,
+            IsArchived = true,
+            Allocations =
+            [
+                new SplitPricingAllocationUpdate { PricingBreakdownId = 1, LegJobId = legA, SharePercent = 70m, CostOverride = 25.00m },
+                new SplitPricingAllocationUpdate { PricingBreakdownId = 1, LegJobId = legB, SharePercent = 30m }
+            ]
+        });
+
+        _context.ChangeTracker.Clear();
+        var rows = await _context.PricingBreakdownAllocationArchives.ToListAsync(TestContext.Current.CancellationToken);
+        var rowA = Assert.Single(rows, r => r.LegJobId == legA);
+        var rowB = Assert.Single(rows, r => r.LegJobId == legB);
+        Assert.Equal(70.00m, rowA.ChargeAmount);
+        Assert.Equal(25.00m, rowA.CostAmount);
+        Assert.Equal(30.00m, rowB.ChargeAmount);
+        Assert.Equal(12.00m, rowB.CostAmount);
+        var legAJob = await _context.TucJobArchives.SingleAsync(j => j.UcjbId == legA, TestContext.Current.CancellationToken);
+        Assert.Equal(70.00m, legAJob.UcjbAmount);
+        Assert.Equal(25.00m, legAJob.CourierPayment);
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdownAsync_ArchivedParentInvoiced_RejectsRevenueEdit()
+    {
+        const int parentId = 100;
+        SeedTwoLegArchivedSplitParent(parentId, 101, 102, itemAmount: 100.00m, shareA: 50m, shareB: 50m, parentInvoiceNo: 555);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateRepository().UpdateSplitPricingBreakdownAsync(
+            new UpdateSplitPricingBreakdownRequest
+            {
+                JobId = parentId,
+                IsArchived = true,
+                ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 1, Revenue = 200.00m }]
+            }));
+
+        _context.ChangeTracker.Clear();
+        var item = await _context.PricingBreakdownArchives.SingleAsync(p => p.PricingBreakdownId == 1, TestContext.Current.CancellationToken);
+        Assert.Equal(100.00m, item.ChargeAmount);
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdownAsync_ArchivedOneLegSettled_RejectsThatLegsCostButAllowsTheOther()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        _context.CourierSettlementBatches.Add(new CourierSettlementBatch { Id = 1, Created = new DateTime(2026, 9, 12) });
+        SeedTwoLegArchivedSplitParent(parentId, legA, legB, itemAmount: 100.00m, shareA: 50m, shareB: 50m, costAmount: 40.00m, legASettlementBatchId: 1);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.UpdateSplitPricingBreakdownAsync(
+            new UpdateSplitPricingBreakdownRequest
+            {
+                JobId = parentId,
+                IsArchived = true,
+                Allocations = [new SplitPricingAllocationUpdate { PricingBreakdownId = 1, LegJobId = legA, CostOverride = 5.00m }]
+            }));
+
+        await repository.UpdateSplitPricingBreakdownAsync(new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = parentId,
+            IsArchived = true,
+            Allocations = [new SplitPricingAllocationUpdate { PricingBreakdownId = 1, LegJobId = legB, CostOverride = 15.00m }]
+        });
+
+        _context.ChangeTracker.Clear();
+        var legBJob = await _context.TucJobArchives.SingleAsync(j => j.UcjbId == legB, TestContext.Current.CancellationToken);
+        Assert.Equal(15.00m, legBJob.CourierPayment);
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdownAsync_ArchivedSplitPredatingAllocations_Rejects()
+    {
+        const int parentId = 100;
+        _context.TucJobArchives.AddRange(
+            new TucJobArchive { UcjbId = parentId, UcjbNumber = "J100", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent },
+            new TucJobArchive { UcjbId = 101, UcjbNumber = "J100A", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild },
+            new TucJobArchive { UcjbId = 102, UcjbNumber = "J100B", ParentId = parentId, JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild });
+        _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(1, parentId, "Base", 100.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateRepository().UpdateSplitPricingBreakdownAsync(
+            new UpdateSplitPricingBreakdownRequest
+            {
+                JobId = parentId,
+                IsArchived = true,
+                ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 1, Revenue = 200.00m }]
+            }));
+    }
+
+    private void SeedTwoLegArchivedSplitParent(
+        int parentId, int legA, int legB, decimal itemAmount, decimal shareA, decimal shareB,
+        decimal? costAmount = null, int? parentInvoiceNo = null, int? legASettlementBatchId = null)
+    {
+        _context.TucJobArchives.AddRange(
+            new TucJobArchive
+            {
+                UcjbId = parentId, UcjbNumber = "J100", ParentId = parentId, UcjbInvoiceNo = parentInvoiceNo,
+                JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent
+            },
+            new TucJobArchive
+            {
+                UcjbId = legA, UcjbNumber = "J100A", ParentId = parentId, CourierSettlementBatchId = legASettlementBatchId,
+                JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild, Sequence = 1
+            },
+            new TucJobArchive
+            {
+                UcjbId = legB, UcjbNumber = "J100B", ParentId = parentId,
+                JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild, Sequence = 2
+            });
+        _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(1, parentId, "Base", itemAmount, costAmount));
+        _context.PricingBreakdownAllocationArchives.AddRange(
+            new PricingBreakdownAllocationArchive
+            {
+                ParentPricingBreakdownId = 1, LegJobId = legA, SharePercent = shareA,
+                ChargeAmount = itemAmount * shareA / 100m, CostAmount = costAmount * shareA / 100m
+            },
+            new PricingBreakdownAllocationArchive
+            {
+                ParentPricingBreakdownId = 1, LegJobId = legB, SharePercent = shareB,
+                ChargeAmount = itemAmount * shareB / 100m, CostAmount = costAmount * shareB / 100m
+            });
+    }
+
     private void SeedTwoLegSplitParent(
         int parentId, int legA, int legB, decimal itemAmount, decimal shareA, decimal shareB, decimal? costAmount = null)
     {
