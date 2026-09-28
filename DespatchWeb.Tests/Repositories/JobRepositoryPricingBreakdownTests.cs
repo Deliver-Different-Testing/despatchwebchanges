@@ -1710,6 +1710,57 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         Assert.Equal(100.00m, parent.UcjbAmount);
     }
 
+    [Fact]
+    public async Task UpdateSplitPricingBreakdownAsync_LiveRevenueEditWithUnevenShares_LegsStillSumToParent()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        SeedTwoLegSplitParent(parentId, legA, legB, itemAmount: 90.00m, shareA: 33.333333m, shareB: 66.666667m);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdateSplitPricingBreakdownAsync(new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = parentId,
+            ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 1, Revenue = 100.01m }]
+        });
+
+        _context.ChangeTracker.Clear();
+        var parent = await _context.TucJobs.SingleAsync(j => j.UcjbId == parentId, TestContext.Current.CancellationToken);
+        var legAmounts = await _context.TucJobs
+            .Where(j => j.UcjbId == legA || j.UcjbId == legB)
+            .Select(j => j.UcjbAmount ?? 0m)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(100.01m, parent.UcjbAmount);
+        Assert.Equal(parent.UcjbAmount, legAmounts.Sum());
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdownAsync_ArchivedRevenueEditWithUnevenShares_LegsStillSumToParent()
+    {
+        const int parentId = 100;
+        const int legA = 101;
+        const int legB = 102;
+        SeedTwoLegArchivedSplitParent(parentId, legA, legB, itemAmount: 90.00m, shareA: 33.333333m, shareB: 66.666667m);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdateSplitPricingBreakdownAsync(new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = parentId,
+            IsArchived = true,
+            ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 1, Revenue = 100.01m }]
+        });
+
+        _context.ChangeTracker.Clear();
+        var parent = await _context.TucJobArchives.SingleAsync(j => j.UcjbId == parentId, TestContext.Current.CancellationToken);
+        var legAmounts = await _context.TucJobArchives
+            .Where(j => j.UcjbId == legA || j.UcjbId == legB)
+            .Select(j => j.UcjbAmount ?? 0m)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(100.01m, parent.UcjbAmount);
+        Assert.Equal(parent.UcjbAmount, legAmounts.Sum());
+    }
+
     private void SeedTwoLegSplitParent(
         int parentId, int legA, int legB, decimal itemAmount, decimal shareA, decimal shareB, decimal? costAmount = null)
     {

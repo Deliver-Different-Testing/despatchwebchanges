@@ -1016,9 +1016,9 @@ export function useJobActions({
             return;
         }
         // Every split job — parent or child — shares one price breakdown view: the per-leg grid,
-        // fetched from the parent. A split child's pricing is derived from the parent (docs/pricing/
-        // job-splitting-price-breakdown.md §6), so it opens the same grid read-only with its own
-        // leg highlighted rather than a separate flat dialog.
+        // fetched from the parent and editable from any of them. Saves always land on the parent,
+        // which re-derives each leg, so the legs keep summing to the parent. A child opens it with
+        // its own leg highlighted.
         const isSplitParent = j.jobRelationshipTypeId === JobRelationshipType.SplitParent;
         const isSplitChild = j.jobRelationshipTypeId === JobRelationshipType.SplitChild;
         if (isSplitParent || isSplitChild) {
@@ -1036,7 +1036,7 @@ export function useJobActions({
                 await ensureSplitPricingBreakdownDialog();
                 window.ReactSplitPricingBreakdownDialog?.setToastService({showToast});
                 await window.ReactSplitPricingBreakdownDialog?.open(splitBreakdown, {
-                    readOnly: isSplitChild || !!j.locked,
+                    readOnly: !!j.locked || !!parentJob?.locked,
                     highlightLegId: isSplitChild ? j.id : undefined,
                 });
                 await refreshAndNotify();
