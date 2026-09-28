@@ -1,78 +1,87 @@
-# Archived split jobs: Price Breakdown locked when it shouldn't be
+# Split job Price Breakdown: editable when archived, from any leg, parent kept in step
 
 **For:** Jacob · **From:** Steve · **Date:** 28 Sep 2026
-**Branch:** `fix/archived-split-pricing-editable` (off GitLab master as of `9b493e12`, 28 Sep 16:33)
+**Branch:** `fix/archived-split-pricing-editable`, based directly on GitLab `master` `9b493e12` (28 Sep 16:33)
 
 ## The bug
 
-Open the Price Breakdown on an archived split parent from last week (e.g. **E2142V**) and the per-leg grid opens **"view only"**. Every share %, revenue and cost field is disabled, even when the parent isn't invoiced and neither leg is settled.
+Open the Price Breakdown on an archived split parent from last week (e.g. **E2142V**) and the per-leg grid opens **"view only"**. Every field is greyed out, even though the parent isn't invoiced and neither leg is settled.
 
-Rule we want: **archived is not a lock.** Only these lock, per §7.5 of `job-splitting-price-breakdown.md`:
+## Steve's rules (decided 28 Sep)
 
-| Lock | Trigger |
-|---|---|
-| Revenue + Share | Parent invoiced (`UcjbInvoiceNo` or `InvoiceProcess.UcipDone`) |
-| Share | Any leg settled (`CourierSettlementBatchId`) |
-| That leg's cost | That leg settled |
-| Whole grid | Job `Locked` (`UcjbLocked`) — same as the flat dialog |
+1. **One modal for the whole split.** It's the same grid and equally editable whether it's opened from the parent or from either leg. Revenue lives on the parent; the cost columns belong to the legs.
+2. **Archived is not a lock.** Only these lock (§7.5):
+
+   | Lock | Trigger |
+   |---|---|
+   | Revenue + Share (and Add/Delete item) | Parent invoiced (`UcjbInvoiceNo` or `InvoiceProcess.UcipDone`) |
+   | Share | Any leg settled (`CourierSettlementBatchId`) |
+   | That leg's cost | That leg settled |
+   | Whole grid | Job or its split parent `Locked` (`UcjbLocked`), same as the flat dialog |
+
+3. **Add/Delete item** is allowed on archived split parents, within the locks.
+4. **A revenue change updates the parent's amount** and is divided across the legs by their share, which starts from the mileage split. **The legs must always sum to the parent.**
+5. **Splits archived before the per-leg editor existed stay as they are.** They have no allocation rows, and Steve confirms they're all invoiced.
 
 ## Root cause
 
-1. **Front end.** `useJobActions.ts` `handlePricingClick` opened the grid with `readOnly: isSplitChild || splitParentIsArchived`. That was added in `cb920f9d` (25 Sep). Before that commit, archived split parents fell back to the flat dialog, which is only gated on `!!j.locked`. So this is a regression.
-2. **Back end.** `UpdateSplitPricingBreakdownAsync` rejects anything that isn't a *live* split parent. It also only writes to `PricingBreakdowns` / `PricingBreakdownAllocations` / `TucJobs`. Removing the front-end flag on its own would just turn this into a 409 on save.
+- **Front end.** `useJobActions.ts` opened the grid with `readOnly: isSplitChild || splitParentIsArchived`. The archived part came in with `cb920f9d` (25 Sep, released 25 Sep 14:00) and is a regression: before that, archived split parents fell back to the flat dialog, which is only gated on `locked`.
+- **Back end.** `UpdateSplitPricingBreakdownAsync` rejected anything that wasn't a *live* split parent, and only wrote to the live tables.
+- **Existing parent-amount gap, on live jobs too.** Split-grid saves and add/update/delete on a split parent re-derived the legs but never updated the parent's `UcjbAmount`.
+  - `sp_JobArchive` (migration `20260916141729`, lines 138–151) skips any family where `ABS(parent.ucjbAmount − SUM(child amount)) > 1`.
+  - So a big enough revenue edit on a live split would stop that family from ever archiving. This branch fixes that as well.
 
-`GetSplitPricingLockStateAsync` already reads the archive tables for invoiced/settled, so the lock rules themselves were right. They were being overridden by the blanket `readOnly`.
-
-## What the branch changes
+## What the branch changes (3 code commits + this doc)
 
 ### Back end
-- **`UpdateSplitPricingBreakdownRequest.IsArchived`** (new). The save targets the archive tables when it's true.
-- **`SplitPricingBreakdownDto.IsArchived`** (new). It's set from the read path so the grid can echo it back on save.
-- **`JobRepository.UpdateSplitPricingBreakdownAsync`** branches on `IsArchived`:
-  - It gets current legs from the new `GetEditableArchivedSplitLegIdsAsync`. That's the non-void children in `TucJobArchives` ∪ `TucJobs`, because a leg can lag its parent into archive.
-  - The lock checks, share-sum and fuel-rename validation are unchanged and shared by both paths.
-  - Item revenue/name writes go to `PricingBreakdownArchives`, scoped to `JobId == parent && ChildJobId == null`.
-  - Share/cost-override writes go to `PricingBreakdownAllocationArchives`, scoped to the parent's own items.
-  - It finishes with `RewriteArchivedAllocationsForParentAsync` instead of the live rewrite.
-- **`GetEditableArchivedSplitLegIdsAsync`** (new, private) refuses the save (`InvalidOperationException` → 409) unless every root item has a persisted archive allocation row for every current leg. A pre-feature split only has the equal split synthesised on read, and there's nothing in the archive to write it back to. See open question 1.
-- **`PricingBreakdownAllocationService.RewriteArchivedAllocationsForParentAsync`** (new, also on `IPricingBreakdownAllocationService`) mirrors the live rewrite against the archive tables:
-  - It re-derives each allocation's `ChargeAmount` / `CostAmount` from `SharePercent` / `CostOverride`.
-  - It writes each leg's `UcjbAmount`, `FuelSurchargeAmount` and `CourierPayment` to whichever of `TucJobArchives` / `TucJobs` holds the leg.
-  - It never inserts or deletes rows.
+- **`UpdateSplitPricingBreakdownRequest.IsArchived` / `SplitPricingBreakdownDto.IsArchived`** (new). The read path sets the DTO flag and the grid echoes it back on save.
+- **`UpdateSplitPricingBreakdownAsync`** branches on `IsArchived`:
+  - Archived saves write to `PricingBreakdownArchives` / `PricingBreakdownAllocationArchives`, scoped to the parent's own root items.
+  - Lock, share-sum and fuel-rename validation are shared by both paths.
+  - Both paths end by setting the parent amount.
+- **`GetEditableArchivedSplitLegIdsAsync`** refuses an archived *grid save* (409) unless every root item has an archive allocation row for every current leg. That covers rule 5.
+- **Archived `AddJobPriceBreakdownAsync` / `DeleteJobPriceBreakdownAsync`** on a split parent that has allocation rows (`IsEditableArchivedSplitParentAsync`):
+  - They refuse if the parent is invoiced.
+  - Add seeds the new item's allocation rows.
+  - Delete removes the item's allocation rows explicitly, because the archive table has no FK cascade.
+  - Both then re-derive the legs and update the parent amount.
+  - Anything else keeps the existing flat behaviour.
+- **`SetSplitParentAmountFromItemsAsync`** (new) sets parent `UcjbAmount` = the sum of its root items' `ChargeAmount`. It's called after every split-grid save and every add/update/delete on a split parent, live and archived.
+- **`PricingBreakdownAllocationService.RewriteArchivedAllocationsForParentAsync`** (new, also on `IPricingBreakdownAllocationService`) is the archive-table version of the live rewrite:
+  - It seeds a new item's rows at each leg's average share across the other items, as the live rewrite does.
+  - It re-derives each allocation's revenue/cost using `PricingBreakdownAllocationCalculator.DistributeAmount`, which puts the rounding remainder on one leg so the legs sum exactly.
+  - It writes each leg's `UcjbAmount`, `FuelSurchargeAmount` and `CourierPayment` to whichever of `TucJobArchives` / `TucJobs` holds that leg, since legs can lag their parent into archive.
+- Confirmed in `dbmigrationsv2` (`20260916090100`): `PricingBreakdownAllocationArchive.PricingBreakdownAllocationID` is `IDENTITY(1,1)` with no FKs, so the inserts are safe.
 
 ### Front end
-- **`useJobActions.ts`**: `readOnly: isSplitChild || !!j.locked`. Split children stay view-only by design.
+- **`useJobActions.ts`**: `readOnly: !!j.locked || !!parentJob?.locked`. The same grid is editable from the parent or a child, and a child still gets its own leg highlighted.
 - **`SplitPricingBreakdownDialog.tsx`**:
-  - New `canChangeItems = canEdit && !breakdown.isArchived` hides **Add Item** and **Delete** for archived parents, since those still go through the live-only `PricingBreakdown` endpoints.
-  - Revenue, name, share and cost stay editable within the locks.
+  - Add/Delete are available whenever the grid is editable.
   - Save sends `isArchived`.
+  - The banner now reads "One breakdown for the whole split, the same from the parent or either leg…", replacing the "child jobs show these figures read-only" wording.
+- **`split-pricing-breakdown-dialog-react.module.tsx`**: add, delete and refetch pass `isArchived`.
 - **`interfaces/splitJobs.ts`**: optional `isArchived` on `SplitPriceBreakdown` and `UpdateSplitPricingBreakdownRequest`.
 
 ### Tests
-- **xUnit** (`JobRepositoryPricingBreakdownTests`):
-  - The archived DTO is flagged as archived.
-  - A revenue + rename edit on an archived parent that isn't invoiced or settled re-derives the archived legs.
-  - A share + cost-override edit is applied.
-  - An invoiced parent rejects a revenue edit and writes nothing.
-  - With one leg settled, that leg's cost is rejected and the other leg's cost is accepted.
-  - A pre-allocation archived split is rejected.
-- **Jest**:
-  - The `useJobActions` archived test is flipped (archived, not locked → editable), and a locked-archived test is added.
-  - Two dialog tests: an archived parent hides Add/Delete but keeps fields editable, and save sends `isArchived`.
+- **xUnit** (`JobRepositoryPricingBreakdownTests`, 14 new):
+  - Archived grid save: revenue + rename, share + cost override, invoiced rejects, settled leg rejects only that leg's cost, and pre-allocation split rejects.
+  - Parent amount updates after live and archived saves and after a live add.
+  - Archived add seeds the leg rows and updates the amounts; archived add on an invoiced parent is rejected.
+  - Archived delete removes the leg rows and updates the amounts.
+  - **Legs sum to the parent** after an uneven-share (33.333333 / 66.666667) revenue edit, on both live and archived.
+- **Jest:**
+  - Archived and not locked → editable, including Add/Delete; archived and locked → read-only.
+  - A split child → editable with its leg highlighted; a child whose parent is locked → read-only.
+  - Save sends `isArchived`.
 
-## Verification status
+## Verification
+- C# build: clean. **xUnit full suite 3291/3291.**
+- **Jest 125/125** on the dialog and hook suites. `tsc --noEmit` clean. ESLint: no errors.
+- Pre-push hook (lint, tsc, .NET tests, Jest): passed on push.
+- **Not done yet:** a manual check against a real archived split, e.g. E2142V.
 
-This branch sits directly on GitLab `master` `9b493e12` (28 Sep), so it's two commits you can merge or cherry-pick as they are.
+## Deploy note
+Apply **`20260928120000_GrantPricingBreakdownAllocationArchivePermissions`** on every tenant before this goes out. Without it, reading an archived split fails with a SELECT permission error, and this branch also needs INSERT/UPDATE/DELETE on that table.
 
-- **C# build:** succeeds, with no new warnings in the changed files.
-- **xUnit:** the full suite passes, 3283/3283. That includes the 6 new archived-split tests in `JobRepositoryPricingBreakdownTests` (62/62).
-- **Jest:** 109/109 pass across `SplitPricingBreakdownDialog.test` and `useJobActions.test`. The 3 new or changed assertions fail on the pre-fix code.
-- **Pre-push hook:** lint, `tsc`, .NET tests and Jest all passed on push.
-- **Not yet done:** a manual check in a running app against a real archived split, e.g. E2142V from last week.
-
-## Open questions for Jacob
-
-1. **Pre-feature archived splits.** These have root items but no `PricingBreakdownAllocationArchive` rows, and they still 409 on save. To support them we'd insert the synthesised rows. Is `PricingBreakdownAllocationArchive.PricingBreakdownAllocationID` an identity column, or does the archive job copy IDs across from live? EF currently assumes identity. Answer that and it's a small follow-up.
-2. **Add/Delete item on archived parents.** These are hidden for now. Do we need them, or is editing existing items enough?
-3. **Parent `UcjbAmount`.** Neither the live nor the archive split save updates the parent's own amount after a revenue edit. This is existing behaviour and I left it alone. Is that intended, with the parent total always derived from the legs?
-4. **Live path scoping (existing, untouched).** Live `UpdateSplitPricingBreakdownAsync` updates `PricingBreakdowns` by `PricingBreakdownId` alone, without checking the item belongs to `request.JobId`. The archive branch scopes it. Worth tightening live the same way.
+## Open item
+- Live `UpdateSplitPricingBreakdownAsync` still updates `PricingBreakdowns` by `PricingBreakdownId` alone, without checking the item belongs to `request.JobId`. This isn't changed here; the archive branch is scoped. Worth tightening the live path the same way.
